@@ -11,16 +11,20 @@ export const DEFAULT_CONFIG = Object.freeze({
   // --- World ---
   width: 900,
   height: 620,
-  seed: 1,
+  // The default seed is chosen (from a 17-seed survey) to reliably evolve a
+  // visible predator/prey mix within the first couple of minutes, so the
+  // headline mechanic shows itself on load. Most seeds stay herbivore; hit the
+  // 🎲 button to wander into other worlds.
+  seed: 314,
 
   // --- Food ---
   // These were hand-tuned by sweeping seeds: they give a soft early game (no
   // "death valley" crash), a lively steady state of ~300-500 creatures that
   // oscillates below the cap rather than pinning to it, and food that stays
   // visibly grazed (foraging pressure you can see).
-  foodStart: 360, // pellets present at world birth
+  foodStart: 280, // pellets present at world birth
   foodMax: 520, // hard cap on standing food
-  foodSpawnRate: 2.5, // pellets added per simulated tick (fractional accrues)
+  foodSpawnRate: 1.8, // pellets added per simulated tick (fractional accrues)
   foodEnergy: 23, // energy granted by eating one pellet
   foodRadius: 3,
 
@@ -49,6 +53,27 @@ export const DEFAULT_CONFIG = Object.freeze({
   visionRadius: 168, // how far a creature can see food/others
   eatRadius: 8, // contact distance to consume food
 
+  // --- Predation (v1.1) ---
+  // Creatures with a diet gene at/above the threshold are carnivores and can
+  // attack smaller creatures on contact. Nutrition from plants scales with how
+  // herbivorous you are, and from meat with how carnivorous — so becoming a
+  // predator means giving up efficient grazing. That trade-off, plus the
+  // metabolic cost of the size predators need, is what keeps the two niches in
+  // balance instead of everyone becoming a carnivore.
+  predation: true, // master switch for the whole mechanic
+  carnivoreThreshold: 0.55, // diet gene >= this ⇒ can hunt
+  preySizeRatio: 1.1, // predator must be > prey.radius * this (clearly bigger)
+  biteEnergy: 40, // energy transferred per successful bite
+  meatEfficiency: 1.0, // fraction of a bite a full carnivore absorbs
+  plantPenaltyFromDiet: 0.4, // how much carnivory reduces plant nutrition (0..1)
+  biteCooldown: 8, // ticks a predator must wait between bites ("handling time")
+  // Ongoing metabolic cost of carnivory (per unit diet, per tick). This is the
+  // upkeep of "hunting apparatus": it makes being a predator cost something
+  // even when you aren't eating, so in a world with no viable prey selection
+  // pushes the diet gene back down toward herbivory. Predators only persist
+  // where hunting actually pays for this cost.
+  carnivoreMetabolicCost: 0.03,
+
   // --- Body ---
   bodyRadiusMin: 3.5,
   bodyRadiusMax: 8.0,
@@ -57,7 +82,11 @@ export const DEFAULT_CONFIG = Object.freeze({
   // --- Mutation ---
   mutationRate: 0.09,
   mutationStrength: 0.16,
-  sexualReproduction: false, // asexual splitting by default
+  // Reproduction mode. Off by default: creatures split asexually (a mutated
+  // clone). Turn it on and a reproducing creature crosses genomes with the
+  // nearest partner within mateRadius, if one is close enough.
+  sexualReproduction: false,
+  mateRadius: 34,
 
   // --- Simulation ---
   stepsPerFrame: 1, // increased by the speed control

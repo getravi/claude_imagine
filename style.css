@@ -291,6 +291,9 @@ details .field {
   display: flex;
   flex-direction: column;
 }
+.insp-grid .insp-wide {
+  grid-column: 1 / -1;
+}
 .insp-grid label {
   font-size: 10px;
   text-transform: uppercase;

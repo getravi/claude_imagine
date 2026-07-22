@@ -6,7 +6,8 @@ import { RNG } from "../src/rng.js";
 
 test("genome length = brain weights + body genes", () => {
   const brain = NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs);
-  assert.equal(genomeLength(), brain + 3);
+  // Four body genes as of v1.1: size, metabolism, hue, diet.
+  assert.equal(genomeLength(), brain + 4);
 });
 
 test("random genome has the right length and body genes in [0,1)", () => {
@@ -16,6 +17,22 @@ test("random genome has the right length and body genes in [0,1)", () => {
   assert.ok(g.sizeGene >= 0 && g.sizeGene < 1);
   assert.ok(g.metabolismGene >= 0 && g.metabolismGene < 1);
   assert.ok(g.hueGene >= 0 && g.hueGene < 1);
+  assert.ok(g.dietGene >= 0 && g.dietGene < 1);
+});
+
+test("body genes are distinct storage slots (no aliasing)", () => {
+  // A crafted genome with known trailing values decodes each body gene from
+  // its own slot, in the documented order: size, metabolism, hue, diet.
+  const data = new Float32Array(genomeLength());
+  data[data.length - 4] = 0.11; // size
+  data[data.length - 3] = 0.22; // metabolism
+  data[data.length - 2] = 0.33; // hue
+  data[data.length - 1] = 0.44; // diet
+  const g = new Genome(data);
+  assert.ok(Math.abs(g.sizeGene - 0.11) < 1e-6);
+  assert.ok(Math.abs(g.metabolismGene - 0.22) < 1e-6);
+  assert.ok(Math.abs(g.hueGene - 0.33) < 1e-6);
+  assert.ok(Math.abs(g.dietGene - 0.44) < 1e-6);
 });
 
 test("buildBrain yields a net of the declared topology", () => {
@@ -62,6 +79,7 @@ test("body genes stay within [0, 1] after mutation", () => {
   assert.ok(g.sizeGene >= 0 && g.sizeGene <= 1);
   assert.ok(g.metabolismGene >= 0 && g.metabolismGene <= 1);
   assert.ok(g.hueGene >= 0 && g.hueGene <= 1);
+  assert.ok(g.dietGene >= 0 && g.dietGene <= 1);
 });
 
 test("crossover takes each gene from one of the two parents", () => {

@@ -12,8 +12,43 @@ import { RNG } from "./rng.js";
 
 const $ = (id) => document.getElementById(id);
 
+// ---- Shareable permalinks ----
+// The world's identity (seed) and a few key parameters live in the URL hash, so
+// a fascinating world is one copied link away. On load we read them; whenever
+// they change we rewrite the hash (without adding history entries).
+function parseHash() {
+  const h = location.hash.replace(/^#/, "");
+  if (!h) return {};
+  const p = new URLSearchParams(h);
+  const o = {};
+  const num = (k, key, parse) => {
+    if (p.has(k)) {
+      const v = parse(p.get(k));
+      if (Number.isFinite(v)) o[key] = v;
+    }
+  };
+  num("seed", "seed", (v) => parseInt(v, 10));
+  num("food", "foodSpawnRate", parseFloat);
+  num("metab", "metabolicBase", parseFloat);
+  num("mut", "mutationRate", parseFloat);
+  if (p.has("pred")) o.predation = p.get("pred") === "1";
+  if (p.has("sex")) o.sexualReproduction = p.get("sex") === "1";
+  return o;
+}
+
+function syncHash() {
+  const p = new URLSearchParams();
+  p.set("seed", config.seed);
+  p.set("food", config.foodSpawnRate.toFixed(2));
+  p.set("metab", config.metabolicBase);
+  p.set("mut", config.mutationRate);
+  p.set("pred", config.predation ? "1" : "0");
+  p.set("sex", config.sexualReproduction ? "1" : "0");
+  history.replaceState(null, "", "#" + p.toString());
+}
+
 // ---- State ----
-let config = makeConfig();
+let config = makeConfig(parseHash());
 let world = new World(config);
 let renderer;
 let running = true;
@@ -30,6 +65,7 @@ function boot() {
 
   wireControls();
   wireCanvas(canvas);
+  syncHash();
   requestAnimationFrame(loop);
 }
 
@@ -62,6 +98,12 @@ function updateHUD() {
   $("stat-fps").textContent = Math.round(fpsSmooth);
   const div = s.diversity(world, uiRng);
   $("stat-div").textContent = div.toFixed(3);
+  // Carnivores: count and share of the population.
+  const pop = world.creatures.length;
+  const carn = s.carnivoreCount || 0;
+  const pct = pop > 0 ? Math.round((carn / pop) * 100) : 0;
+  $("stat-carn").textContent = `${carn} (${pct}%)`;
+  $("stat-kills").textContent = s.kills.toLocaleString();
 }
 
 // ---- Live population chart ----
@@ -115,6 +157,12 @@ function updateInspector() {
   }
   panel.classList.remove("empty");
   const energyPct = Math.round((c.energy / config.energyMax) * 100);
+  const isPred = c.carnivory >= config.carnivoreThreshold;
+  const dietLabel = isPred
+    ? `🔺 carnivore ${c.carnivory.toFixed(2)}`
+    : c.carnivory < 0.25
+    ? `🌿 herbivore ${c.carnivory.toFixed(2)}`
+    : `◦ omnivore ${c.carnivory.toFixed(2)}`;
   panel.innerHTML = `
     <div class="insp-row"><span class="swatch" style="background:hsl(${c.hue},70%,55%)"></span>
       <strong>Creature #${c.id}</strong></div>
@@ -125,6 +173,7 @@ function updateInspector() {
       <div><label>Children</label><b>${c.children}</b></div>
       <div><label>Size</label><b>${c.radius.toFixed(1)}</b></div>
       <div><label>Metabolism</label><b>${c.metabolismScale.toFixed(2)}×</b></div>
+      <div class="insp-wide"><label>Diet</label><b>${dietLabel}</b></div>
     </div>
     <div class="brainwrap"><label>Brain weights</label>${brainSparkline(c)}</div>
   `;
@@ -176,7 +225,7 @@ function wireControls() {
     $("speed-label").textContent = speed + "×";
   });
 
-  // Live parameter sliders.
+  // Live parameter sliders (each nudges the config and updates the permalink).
   bindSlider("foodSpawnRate", "food-rate", (v) => v.toFixed(1));
   bindSlider("metabolicBase", "metabolism", (v) => v.toFixed(3));
   bindSlider("mutationRate", "mutation", (v) => v.toFixed(2));
@@ -185,10 +234,21 @@ function wireControls() {
   $("toggle-vision").addEventListener("change", (e) => {
     renderer.showVision = e.target.checked;
   });
+  $("toggle-predation").checked = config.predation;
+  $("toggle-predation").addEventListener("change", (e) => {
+    config.predation = e.target.checked;
+    syncHash();
+  });
+  $("toggle-sexual").checked = config.sexualReproduction;
+  $("toggle-sexual").addEventListener("change", (e) => {
+    config.sexualReproduction = e.target.checked;
+    syncHash();
+  });
 
-  // Save / load.
+  // Save / load / share.
   $("btn-save").addEventListener("click", saveWorld);
   $("btn-load").addEventListener("click", loadWorld);
+  $("btn-share").addEventListener("click", shareLink);
 }
 
 function bindSlider(configKey, elId, fmt) {
@@ -201,6 +261,7 @@ function bindSlider(configKey, elId, fmt) {
     const v = parseFloat(e.target.value);
     config[configKey] = v;
     if (label) label.textContent = fmt(v);
+    syncHash();
   });
 }
 
@@ -210,6 +271,19 @@ function resetWorld(seed) {
   world = new World(config);
   renderer.config = config;
   renderer.selected = null;
+  syncHash();
+}
+
+// Copy the current permalink to the clipboard (falls back gracefully).
+function shareLink() {
+  syncHash();
+  const url = location.href;
+  const done = () => flash("Link copied — share this world!");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done, () => flash(url));
+  } else {
+    flash(url);
+  }
 }
 
 function wireCanvas(canvas) {
@@ -238,6 +312,8 @@ function loadWorld() {
     world.loadJSON(obj);
     renderer.config = config;
     renderer.selected = null;
+    $("seed-input").value = config.seed;
+    syncHash();
     flash("World loaded.");
   } catch (err) {
     flash("Could not load world.");

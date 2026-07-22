@@ -175,27 +175,112 @@ quietly satisfying confirmation that the seed really does pin the whole world.
 Then I tore the browser tooling back out, because the project's promise is *zero
 dependencies* and I meant it.
 
-## What I'd build next (roadmap)
+## Roadmap (updated for v1.1)
 
-These are the doors I left open on purpose, roughly in the order I find them
-tempting:
+Doors left open, and which ones v1.1 walked through:
 
-1. **Sexual reproduction.** Crossover already exists in `genome.js`; wire up
-   mate-finding (the neighbour senses are already there) and let two energetic
-   creatures pool genes. Watch whether it speeds adaptation.
-2. **Predation / trophic levels.** Let some lineages gain energy from *other
-   creatures*, not just food. The neighbour senses make this possible in
-   principle already; it could produce an arms race.
+1. ✅ **Sexual reproduction** — shipped in v1.1 as an opt-in toggle (see Entry 9).
+2. ✅ **Predation / trophic levels** — the headline of v1.1 (Entries 7–8).
 3. **NEAT-style evolving topology.** Start brains minimal and let structure grow.
-   The single biggest lever on how sophisticated behaviour can get.
+   The single biggest lever on how sophisticated behaviour can get. Still open.
 4. **Within-lifetime learning.** Hebbian plasticity so brains adapt during a
    life, and the interplay (Baldwin effect) between learning and evolution.
 5. **A real genealogy view.** I track lineage by colour and generation; a proper
    interactive phylogenetic tree would make the evolutionary story legible.
 6. **Environmental structure.** Seasons, food that grows in patches, gradients,
    day/night — heterogeneity is what drives specialisation and diversity.
-7. **Shareable permalinks.** Encode seed + parameters in the URL so a fascinating
-   world is one link away.
+7. ✅ **Shareable permalinks** — shipped in v1.1 (Entry 10).
+
+---
+
+## Entry 7 — deciding to build an ecosystem, not just foragers · 2026-07-22
+
+The brief was "keep going on the roadmap," and one item towered over the rest:
+**predation.** Everything in v1.0 shares a single strategy — find the green dots.
+It's lovely, but it's one trophic level. Adding predators turns a *population* of
+foragers into an *ecosystem* with an arms race: prey that must flee, predators
+that must catch, and the eternal question of whether the two can coexist without
+one wiping out the other. That's the difference between watching evolution and
+watching *ecology*.
+
+The design I chose keeps the causal chain short, the way v1.0 did. I added a
+single **diet gene** (0 = pure herbivore, 1 = pure carnivore). A carnivorous
+creature that's meaningfully bigger than a neighbour can bite it; the bite drains
+the victim and feeds the biter in proportion to its carnivory. Plant nutrition
+falls as carnivory rises, so the two diets genuinely trade off rather than one
+dominating for free. I also grew the brain from 11 inputs to 16 so a creature can
+sense its nearest *prey* and nearest *threat* separately, and know its own diet
+and size — that last part matters, because it lets one evolved brain behave like
+a hunter or like the hunted depending on the body it woke up in.
+
+Crucially, I wrote **no** rule that says "predators shall exist." Predators are
+selected into being — or not — by the same energy accounting as everything else.
+
+## Entry 8 — the predation tuning saga (four failures) · 2026-07-22
+
+This was the hardest balancing I've done on this project, and I got it wrong
+three times before getting it right. I'm writing all four attempts down because
+the *sequence* is the actual story of how you tune an evolving system.
+
+**Attempt 1 — collapse.** My first predation constants let a predator eat
+anything roughly its own size. Across a seed sweep, most worlds were fine, but
+seed 7 **collapsed to ~4 creatures**: predators evolved, boomed, ate all the
+prey, then starved — the classic Lotka–Volterra overshoot. Ecologically
+authentic; terrible as a toy someone opens for the first time.
+
+**Attempt 2 — over-correction.** I added a bite cooldown ("handling time," a real
+stabiliser from predator–prey theory), required predators to be clearly bigger
+than prey, and gave carnivores a grazing fallback so they couldn't mass-starve.
+No more collapses! But now I'd swung too far: **predators barely emerged at all**,
+and worse, the diet gene drifted upward cosmetically — worlds showed "99%
+carnivore, 0 kills." Everything *looked* like a predator and nothing *hunted*.
+
+**Attempt 3 — the wrong lever.** I gave carnivory an intrinsic metabolic cost,
+reasoning it would push the diet gene back down where hunting didn't pay. It
+helped the drift a little, but predators still didn't meaningfully evolve. I
+stared at the numbers and finally understood the real problem.
+
+**The insight.** My world was simply *too food-rich for predation to be worth
+evolving.* When plants are abundant, herbivory is easy, every creature
+reproduces regardless, and the diet gene is nearly **neutral** — so it drifts and
+nothing selects for the hard work of hunting. Predators evolve under *resource
+competition*, and I hadn't given the world any. This is real ecology: you don't
+get carnivores in a garden of Eden.
+
+**Attempt 4 — make plants contested.** I cut the food supply (spawn rate 2.5 →
+1.8). Suddenly everything clicked. With plant food genuinely limited, the diet
+gene *woke up*: in most worlds it stays low (herbivores, rendered as cool
+chevrons), but in a real minority of worlds a predator lineage discovers that the
+abundant herbivore biomass is an unexploited food source, and an arms race
+ignites. A 17-seed survey showed **zero collapses**, healthy populations
+everywhere, and genuine predator/prey ecosystems in about a quarter of seeds
+(kills up to ~100 per thousand ticks, generations into the 20s). That's exactly
+what I wanted: predation as an *earned, emergent* outcome, not a scripted one.
+
+The lesson I'll keep: when an evolved trait won't appear, the fix usually isn't a
+bigger reward for the trait — it's creating the *ecological pressure* that makes
+the trait worth paying for.
+
+## Entry 9 — sexual reproduction · 2026-07-22
+
+The genome already had uniform crossover from v1.0; it just wasn't wired to
+anything. I added mate-finding (the neighbour scan was already there) so that,
+when enabled, a reproducing creature crosses genomes with its nearest partner
+instead of cloning itself. I left it **off by default**: it changes evolutionary
+dynamics in subtle ways I didn't want to entangle with the predation tuning, and
+it's more interesting as a thing you switch on and compare. Only the initiating
+parent pays the energy cost, which keeps the bookkeeping identical to asexual
+splitting — a small decision that made it a clean, low-risk addition.
+
+## Entry 10 — worlds you can hand to someone · 2026-07-22
+
+Determinism was a first-day decision, and this is where it finally pays a
+dividend to *users*, not just tests. The seed and the key parameters now live in
+the URL hash and update as you tweak the sliders; a **Share** button copies the
+link. Because a `(seed, parameters)` pair reproduces a world exactly, that link
+*is* the world — hand it to someone and they watch the same pond evolve the same
+way. A feature that would have been fiddly to bolt on later cost almost nothing,
+because the foundation was laid to support it from the start.
 
 ## A closing note
 

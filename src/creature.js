@@ -47,6 +47,10 @@ export class Creature {
     this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
     // Metabolism gene scales base drain from 70%..130% of the world default.
     this.metabolismScale = 0.7 + 0.6 * genome.metabolismGene;
+    // Diet: 0 = pure herbivore, 1 = pure carnivore. Drives what this creature
+    // can eat, how much nutrition it gets from plants vs meat, and whether it
+    // is a predator to others.
+    this.carnivory = genome.dietGene;
 
     // An internal clock that lets brains produce rhythmic behaviour (the input
     // is sin(phase)); the phase advances a little each tick.
@@ -58,48 +62,50 @@ export class Creature {
 
     // Transient display value: the "colour signal" output, for rendering.
     this.signal = 0;
+    // Age at which this creature last landed a bite (for a brief attack flash).
+    this.lastBiteAge = -1000;
 
     // Scratch input buffer reused every tick.
     this._in = new Float32Array(this.brain.nIn);
   }
 
   /**
-   * Populate the input vector from the nearest food and nearest neighbour,
-   * both supplied by the world (which found them via the spatial grid).
-   * Bearings are expressed relative to the creature's own heading, so a brain
-   * learns "turn toward food" independent of absolute compass direction.
+   * True if this creature could eat `other`: it must be carnivorous enough to
+   * bother, and physically bigger than its target. Size having a metabolic
+   * cost is what stops everything simply evolving to be huge — being a predator
+   * is a real trade-off, not a free win.
    */
-  sense(nearestFood, foodDist, nearestMate, mateDist) {
+  canEat(other) {
+    return (
+      this.carnivory >= this.config.carnivoreThreshold &&
+      this.radius > other.radius * this.config.preySizeRatio
+    );
+  }
+
+  /**
+   * Populate the input vector. The world supplies, via the spatial grid, the
+   * nearest food, the nearest creature this one could *eat* (prey), and the
+   * nearest creature that could eat *it* (threat). Bearings are relative to the
+   * creature's own heading, so "turn toward food" / "flee the threat" are
+   * direction-independent rules a brain can learn once and reuse everywhere.
+   */
+  sense(nearestFood, foodDist, nearestPrey, preyDist, nearestThreat, threatDist) {
     const cfg = this.config;
     const inp = this._in;
     const R = cfg.visionRadius;
 
-    // Relative bearing + proximity to nearest food.
-    let foodSin = 0;
-    let foodCos = 0;
-    let foodProx = 0;
-    if (nearestFood) {
-      const dx = wrapDelta(this.x, nearestFood.x, cfg.width);
-      const dy = wrapDelta(this.y, nearestFood.y, cfg.height);
+    // Helper: relative bearing (sin, cos) and proximity to a target.
+    const rel = (t, dist) => {
+      if (!t) return [0, 0, 0];
+      const dx = wrapDelta(this.x, t.x, cfg.width);
+      const dy = wrapDelta(this.y, t.y, cfg.height);
       const ang = normalizeAngle(Math.atan2(dy, dx) - this.heading);
-      foodSin = Math.sin(ang);
-      foodCos = Math.cos(ang);
-      foodProx = clamp(1 - foodDist / R, 0, 1);
-    }
+      return [Math.sin(ang), Math.cos(ang), clamp(1 - dist / R, 0, 1)];
+    };
 
-    // Relative bearing + proximity to nearest other creature.
-    let mateSin = 0;
-    let mateCos = 0;
-    let mateProx = 0;
-    if (nearestMate) {
-      const dx = wrapDelta(this.x, nearestMate.x, cfg.width);
-      const dy = wrapDelta(this.y, nearestMate.y, cfg.height);
-      const ang = normalizeAngle(Math.atan2(dy, dx) - this.heading);
-      mateSin = Math.sin(ang);
-      mateCos = Math.cos(ang);
-      mateProx = clamp(1 - mateDist / R, 0, 1);
-    }
-
+    const [foodSin, foodCos, foodProx] = rel(nearestFood, foodDist);
+    const [preySin, preyCos, preyProx] = rel(nearestPrey, preyDist);
+    const [threatSin, threatCos, threatProx] = rel(nearestThreat, threatDist);
     const speed = Math.hypot(this.vx, this.vy) / cfg.maxSpeed;
 
     // The exact input list (length must equal BRAIN.inputs in genome.js):
@@ -108,12 +114,18 @@ export class Creature {
     inp[2] = foodSin;
     inp[3] = foodCos;
     inp[4] = foodProx;
-    inp[5] = mateSin;
-    inp[6] = mateCos;
-    inp[7] = mateProx;
-    inp[8] = speed;
-    inp[9] = Math.sin(this.phase); // internal oscillator
-    inp[10] = clamp(this.age / cfg.maxAge, 0, 1) * 2 - 1; // sense of mortality
+    inp[5] = preySin;
+    inp[6] = preyCos;
+    inp[7] = preyProx;
+    inp[8] = threatSin;
+    inp[9] = threatCos;
+    inp[10] = threatProx;
+    inp[11] = speed;
+    inp[12] = Math.sin(this.phase); // internal oscillator
+    inp[13] = clamp(this.age / cfg.maxAge, 0, 1) * 2 - 1; // sense of mortality
+    inp[14] = this.carnivory * 2 - 1; // knows its own diet...
+    inp[15] =
+      ((this.radius - cfg.bodyRadiusMin) / (cfg.bodyRadiusMax - cfg.bodyRadiusMin)) * 2 - 1; // ...and its own size
   }
 
   /** Run the brain. Returns [turn, thrust, colourSignal], each in (-1, 1). */
@@ -162,7 +174,9 @@ export class Creature {
     const sizeFactor = 1 + (this.radius - cfg.bodyRadiusMin) * cfg.sizeCostFactor * 0.1;
     const base = cfg.metabolicBase * this.metabolismScale * sizeFactor;
     const move = cfg.metabolicMove * thrust * sizeFactor;
-    this.energy -= base + move;
+    // Upkeep of being a predator — see carnivoreMetabolicCost in config.js.
+    const dietCost = cfg.carnivoreMetabolicCost * this.carnivory;
+    this.energy -= base + move + dietCost;
 
     this.age++;
     if (this.energy <= 0 || this.age >= cfg.maxAge) this.dead = true;
@@ -174,25 +188,32 @@ export class Creature {
   }
 
   /**
-   * Asexual reproduction: spend half the energy to make a mutated child placed
-   * just beside the parent. The world calls this and inserts the returned
+   * Reproduce: spend part of this creature's energy to make a mutated child
+   * placed just behind it. The world calls this and inserts the returned
    * creature into the population.
+   *
+   * If a `mate` genome is supplied (sexual reproduction), the child's genome is
+   * a uniform crossover of the two parents before mutation; otherwise the child
+   * is a mutated clone of this parent (asexual). Only the initiating parent
+   * pays the energy cost — the mate simply donates genes — which keeps the
+   * energy bookkeeping identical to the asexual case.
    * @param {RNG} rng
+   * @param {import('./genome.js').Genome|null} [mate]
    */
-  reproduce(rng) {
+  reproduce(rng, mate = null) {
     const cfg = this.config;
     const childEnergy = this.energy * cfg.reproduceCost;
     this.energy -= childEnergy;
     this.children++;
 
-    const childGenome = this.genome.mutate(rng, cfg.mutationRate, cfg.mutationStrength);
+    const base = mate ? Genome.crossover(this.genome, mate, rng) : this.genome;
+    const childGenome = base.mutate(rng, cfg.mutationRate, cfg.mutationStrength);
     const offset = this.radius + 2;
     const cx = wrap(this.x + Math.cos(this.heading + Math.PI) * offset, cfg.width);
     const cy = wrap(this.y + Math.sin(this.heading + Math.PI) * offset, cfg.height);
 
     const child = new Creature(childGenome, cfg, cx, cy, rng, this.generation + 1);
     child.energy = childEnergy;
-    // Nudge the child's hue toward its decoded gene but keep lineage cohesion.
     return child;
   }
 

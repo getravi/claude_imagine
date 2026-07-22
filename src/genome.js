@@ -1,23 +1,25 @@
 // genome.js — a creature's heritable material.
 //
-// A genome is just a flat Float32Array of neural-network weights plus a couple
-// of "body" genes (size, metabolism). Reproduction copies the genome and
-// perturbs it; selection is implicit (bad brains starve). There is no explicit
-// fitness function anywhere in Vivarium — that is the whole point. Fitness is
-// simply "did you gather enough energy to reproduce before you died?"
+// A genome is just a flat Float32Array of neural-network weights plus a handful
+// of "body" genes (size, metabolism, hue, diet). Reproduction copies the genome
+// and perturbs it; selection is implicit (bad brains starve). There is no
+// explicit fitness function anywhere in Vivarium — that is the whole point.
+// Fitness is simply "did you gather enough energy to reproduce before you died?"
 
 import { NeuralNet } from "./nn.js";
 import { clamp } from "./vec.js";
 
 // Brain topology. Kept in one place so genome, creature, and UI agree.
+// As of v1.1 the brain also senses prey and threats separately and knows its
+// own diet and size, so it grew from 11 inputs to 16 and 10 hidden to 12.
 export const BRAIN = Object.freeze({
-  inputs: 11, // see creature.js sense() for the exact list
-  hidden: 10,
+  inputs: 16, // see creature.js sense() for the exact list
+  hidden: 12,
   outputs: 3, // turn, thrust, and a "colour signal" the creature can flash
 });
 
 // Number of extra body genes appended after the brain weights.
-const BODY_GENES = 3; // [sizeGene, metabolismGene, hueGene]
+const BODY_GENES = 4; // [sizeGene, metabolismGene, hueGene, dietGene]
 
 export function genomeLength() {
   return NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs) + BODY_GENES;
@@ -43,14 +45,21 @@ export class Genome {
     return this.data.subarray(0, this.data.length - BODY_GENES);
   }
 
-  // Body genes, mapped from raw storage to meaningful ranges.
+  // Body genes, mapped from raw storage to meaningful ranges. Stored in the
+  // last BODY_GENES slots of the vector, in this fixed order.
   get sizeGene() {
-    return this.data[this.data.length - 3];
+    return this.data[this.data.length - 4];
   }
   get metabolismGene() {
-    return this.data[this.data.length - 2];
+    return this.data[this.data.length - 3];
   }
   get hueGene() {
+    return this.data[this.data.length - 2];
+  }
+  // Diet: 0 = pure herbivore (lives on plants), 1 = pure carnivore (lives on
+  // meat), values between are omnivores. This single gene, under selection,
+  // is what lets predators and prey differentiate from a common ancestor.
+  get dietGene() {
     return this.data[this.data.length - 1];
   }
 

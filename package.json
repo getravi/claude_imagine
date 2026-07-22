@@ -1,7 +1,7 @@
 {
   "name": "vivarium",
-  "version": "1.0.0",
-  "description": "A browser-based artificial life simulation: creatures with tiny evolving neural-network brains learn to survive. No dependencies.",
+  "version": "1.1.0",
+  "description": "A browser-based artificial life simulation: creatures with tiny evolving neural-network brains learn to forage, hunt, and survive. No dependencies.",
   "type": "module",
   "scripts": {
     "test": "node --test",
@@ -13,6 +13,7 @@
     "neuroevolution",
     "neural-network",
     "evolution",
+    "predator-prey",
     "simulation",
     "generative",
     "canvas"

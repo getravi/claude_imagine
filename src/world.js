@@ -80,34 +80,77 @@ export class World {
         }
       });
 
-      // Nearest other creature within vision.
-      let nm = null;
-      let nmD2 = cfg.visionRadius * cfg.visionRadius;
+      // Nearest prey (a creature c could eat) and nearest threat (a creature
+      // that could eat c), found in a single scan of nearby cells.
+      let prey = null;
+      let preyD2 = cfg.visionRadius * cfg.visionRadius;
+      let threat = null;
+      let threatD2 = cfg.visionRadius * cfg.visionRadius;
+      let mate = null; // nearest potential partner (sexual reproduction)
+      let mateD2 = cfg.mateRadius * cfg.mateRadius;
       this.creatureGrid.forEachNear(c.x, c.y, (o) => {
-        if (o === c) return;
+        if (o === c || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
-        if (d2 < nmD2) {
-          nmD2 = d2;
-          nm = o;
+        if (d2 < preyD2 && c.canEat(o)) {
+          preyD2 = d2;
+          prey = o;
+        }
+        if (d2 < threatD2 && o.canEat(c)) {
+          threatD2 = d2;
+          threat = o;
+        }
+        if (cfg.sexualReproduction && d2 < mateD2) {
+          mateD2 = d2;
+          mate = o;
         }
       });
 
-      c.sense(nf, nf ? Math.sqrt(nfD2) : Infinity, nm, nm ? Math.sqrt(nmD2) : Infinity);
+      c.sense(
+        nf,
+        nf ? Math.sqrt(nfD2) : Infinity,
+        prey,
+        prey ? Math.sqrt(preyD2) : Infinity,
+        threat,
+        threat ? Math.sqrt(threatD2) : Infinity
+      );
       c.act(c.think());
 
-      // 3. Eating: consume the nearest pellet if we're on top of it. We reuse
-      // the nearest-food result from sensing — good enough, and cheap.
+      // 3a. Grazing: consume the nearest pellet if we're on top of it. Nutrition
+      // from plants shrinks as a creature becomes more carnivorous, so pure
+      // predators get almost nothing from grazing and must hunt.
       if (nf && !nf.eaten) {
         const eatR = cfg.eatRadius + c.radius * 0.4;
         if (nfD2 <= eatR * eatR) {
           nf.eaten = true;
-          c.energy = Math.min(cfg.energyMax, c.energy + cfg.foodEnergy);
+          const plantGain = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * c.carnivory);
+          c.energy = Math.min(cfg.energyMax, c.energy + plantGain);
         }
       }
 
-      // 4. Reproduction.
+      // 3b. Predation: bite the nearest prey if bodies are touching. The bite
+      // drains the victim (which may kill it) and feeds the predator in
+      // proportion to how carnivorous it is.
+      if (cfg.predation && prey && !prey.dead && c.age - c.lastBiteAge >= cfg.biteCooldown) {
+        const reach = c.radius + prey.radius + 2;
+        if (preyD2 <= reach * reach) {
+          const amount = Math.min(prey.energy, cfg.biteEnergy);
+          prey.energy -= amount;
+          c.energy = Math.min(
+            cfg.energyMax,
+            c.energy + amount * cfg.meatEfficiency * c.carnivory
+          );
+          c.lastBiteAge = c.age; // for the rendering "flash"
+          if (prey.energy <= 0) {
+            prey.dead = true;
+            this.stats.kills++;
+          }
+        }
+      }
+
+      // 4. Reproduction (sexual if enabled and a partner is near, else asexual).
       if (c.canReproduce() && this.creatures.length + born.length < cfg.populationMax) {
-        born.push(c.reproduce(this.rng));
+        const mateGenome = cfg.sexualReproduction && mate ? mate.genome : null;
+        born.push(c.reproduce(this.rng, mateGenome));
         this.stats.births++;
       }
     }

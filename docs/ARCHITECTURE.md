@@ -81,14 +81,23 @@ front, constructing one and stepping it N times is a pure function of
    - **Find the nearest food** within vision, by asking the food grid only for
      candidates in the 3×3 block of cells around the creature, then doing exact
      toroidal distance tests on those.
-   - **Find the nearest neighbour** the same way, via the creature grid.
+   - **Find the nearest prey and nearest threat** in a single scan of the
+     creature grid — the nearest neighbour this creature *could eat*, and the
+     nearest one that could eat *it* (plus a nearest *mate* if sexual
+     reproduction is on).
    - **`sense(...)`** — pack those findings into the creature's input vector.
    - **`think()`** — run the brain's forward pass.
    - **`act(...)`** — apply turn/thrust, integrate position (wrapping around the
-     torus), and subtract the metabolic cost. This may mark the creature dead.
-   - **Eat** — if it's sitting on the nearest pellet, consume it for energy.
+     torus), and subtract the metabolic cost (including the upkeep of carnivory).
+     This may mark the creature dead.
+   - **Graze** — if it's sitting on the nearest pellet, consume it; nutrition
+     scales down with how carnivorous it is.
+   - **Bite** — if predation is on and the nearest prey is touching, drain the
+     prey (killing it if its energy hits zero) and feed, subject to a per-predator
+     bite cooldown.
    - **Reproduce** — if it's over the energy threshold and the population cap
-     isn't hit, spawn a mutated child into a `born` buffer.
+     isn't hit, spawn a child into a `born` buffer (a mutated clone, or a
+     crossover with the nearest mate when sexual reproduction is enabled).
 
 3. **Reap and recruit.** Remove dead creatures; append the `born` buffer.
 
@@ -130,16 +139,16 @@ correct.
 A brain (`nn.js`) is one hidden layer, `tanh` throughout:
 
 ```
-inputs (11) ──[weights]──► hidden (10, tanh) ──[weights]──► outputs (3, tanh)
+inputs (16) ──[weights]──► hidden (12, tanh) ──[weights]──► outputs (3, tanh)
 ```
 
 The weights live in a single flat `Float32Array` laid out as:
 
 ```
-[ hidden weights: 10×11 ] [ hidden biases: 10 ] [ output weights: 3×10 ] [ output biases: 3 ]
+[ hidden weights: 12×16 ] [ hidden biases: 12 ] [ output weights: 3×12 ] [ output biases: 3 ]
 ```
 
-That flat layout is the whole point: the genome *is* this array (plus three body
+That flat layout is the whole point: the genome *is* this array (plus four body
 genes), so mutation is just "add a little noise to some entries" and crossover is
 "pick each entry from one parent or the other." The three outputs are turn,
 thrust, and a "colour signal" the creature can flash (currently only used for
@@ -155,9 +164,11 @@ When a `Creature` is born it decodes its genome once:
 
 - The brain weights build its `NeuralNet` (via a **copy**, so the running net
   never mutates the stored genome — there's a test for exactly this).
-- Three body genes map to: **size** (radius, which affects metabolic cost),
-  **metabolism** (a multiplier on base energy drain), and **hue** (its colour,
-  which drifts as a lineage mutates and gives you the visible "family tree").
+- Four body genes map to: **size** (radius, which affects metabolic cost and
+  who it can eat / be eaten by), **metabolism** (a multiplier on base energy
+  drain), **hue** (its colour, which drifts as a lineage mutates and gives you
+  the visible "family tree"), and **diet** (0 = herbivore … 1 = carnivore,
+  which governs grazing nutrition, hunting, and the upkeep cost of carnivory).
 
 ## Rendering is read-only
 

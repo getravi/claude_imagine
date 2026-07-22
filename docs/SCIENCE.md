@@ -97,11 +97,21 @@ normalised to roughly `[-1, 1]`):
 | energy | how full its energy tank is |
 | food bearing (sin, cos) | direction to the nearest visible food, *relative to its own heading* |
 | food proximity | how close that food is |
-| neighbour bearing (sin, cos) | direction to the nearest other creature, relative to heading |
-| neighbour proximity | how close that neighbour is |
+| prey bearing (sin, cos) | direction to the nearest creature it *could eat*, relative to heading |
+| prey proximity | how close that prey is |
+| threat bearing (sin, cos) | direction to the nearest creature that *could eat it*, relative to heading |
+| threat proximity | how close that threat is |
 | speed | how fast it's currently moving |
 | oscillator | `sin` of an internal clock, enabling rhythmic behaviour |
 | age | a sense of how far through its lifespan it is |
+| own diet | how carnivorous it is (so behaviour can depend on being predator or prey) |
+| own size | how big it is |
+
+Splitting "nearest creature" into separate **prey** and **threat** channels is
+what lets the same brain architecture produce both hunting ("turn toward prey")
+and fleeing ("turn away from the threat") — and feeding a creature its *own* diet
+and size means a single evolved genome can express a hunter's strategy or a
+prey's strategy depending on the body it develops.
 
 Two design details matter a lot here:
 
@@ -124,14 +134,53 @@ selection acts through:
   a metabolism gene).
 - **Moving** costs extra, proportional to thrust — so laziness is cheap and
   sprinting is expensive.
-- **Eating** a food pellet adds a fixed chunk of energy (capped).
+- **Grazing** a food pellet adds energy — but less the more carnivorous you are.
+- **Hunting** a bite of a smaller creature adds energy — but more the more
+  carnivorous you are, and being carnivorous carries an ongoing metabolic cost.
 - **Reproducing** hands half your energy to your child.
 
 This creates genuine trade-offs that selection can explore. A bigger body might
-help in some interaction but costs more to run. A high-metabolism creature burns
-energy faster but... there has to be a compensating advantage for that gene to
-survive, and if there isn't, it won't. These trade-offs are what keep the design
-from collapsing into a single optimal strategy.
+help you hunt but costs more to run. A high-metabolism creature burns energy
+faster but... there has to be a compensating advantage for that gene to survive,
+and if there isn't, it won't. These trade-offs are what keep the design from
+collapsing into a single optimal strategy.
+
+## Predation and the evolution of a food web
+
+The diet gene (0 = pure herbivore, 1 = pure carnivore) turns the energy economy
+into an ecosystem. A carnivorous creature that is meaningfully bigger than a
+neighbour can bite it, draining the victim's energy and gaining some in return,
+scaled by how carnivorous it is. Because plant nutrition *falls* as carnivory
+rises, herbivory and carnivory are genuinely alternative niches rather than one
+strictly dominating.
+
+The interesting scientific point is that **predators are never scripted into
+existence** — they have to be selected for, and that only happens under the right
+ecological conditions. In a food-rich world, herbivory is so easy that the diet
+gene is nearly neutral and no predators evolve; carnivores appear only when plant
+food is *contested* enough that the untapped biomass of grazers becomes a
+worthwhile resource to exploit. This mirrors reality: predation is a response to
+competition, not a free lunch.
+
+When predators do evolve, the system exhibits the hallmark of predator–prey
+ecology: **oscillation**. Predators boom when prey are plentiful, over-hunt,
+crash the prey, then crash themselves, letting prey recover — the
+[Lotka–Volterra](https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations)
+cycle, emerging here from individual agents rather than differential equations.
+Left unchecked this can drive a world extinct, so Vivarium includes the same
+kinds of stabilisers that keep real food webs from collapsing:
+
+- a **handling time** (bite cooldown) capping how fast one predator can kill —
+  the discrete analogue of a Holling type II functional response;
+- a required **size refuge** (predators must be clearly bigger than prey), so not
+  every creature is edible by every other;
+- an **intrinsic cost** of carnivory, so predators can't persist where hunting
+  doesn't pay; and
+- a **grazing fallback**, so a predator whose prey has crashed can limp along on
+  plants rather than mass-starving.
+
+Tuned together (see the [devlog](DEVLOG.md) for the full, four-attempt story),
+these keep predator/prey dynamics oscillating instead of collapsing.
 
 ## Determinism and reproducibility
 
@@ -146,18 +195,20 @@ by sharing its seed, and why the test suite can assert exact outcomes.
 
 Being honest about the boundaries:
 
-- **No within-lifetime learning.** Brains are frozen from birth.
-- **No sexual reproduction by default.** Reproduction is asexual splitting.
-  (Crossover is implemented in [genome.js](../src/genome.js) and can be enabled;
-  it's off by default to keep lineages legible.)
+- **No within-lifetime learning.** Brains are frozen from birth; all adaptation
+  is across generations.
+- **Asexual by default.** Reproduction is mutated cloning. Sexual reproduction
+  (uniform crossover) is implemented and can be toggled on, but it's off by
+  default to keep lineages legible.
 - **No genotype→phenotype development.** Genes map almost directly to traits.
-- **No co-evolving food or predators.** Food is passive; there are no dedicated
-  predators (though nothing stops a creature from evolving to exploit others —
-  the neighbour senses make that *possible* in principle).
+- **Passive food.** Plants don't move, grow in patches, or fight back; they just
+  appear. (Predators, by contrast, now *do* co-evolve — see the food-web section
+  above.)
 - **Fixed brain topology.** Structure never evolves, only weights.
 
 Each of these is a door left deliberately open. See the roadmap in the
-[devlog](DEVLOG.md).
+[devlog](DEVLOG.md) — predation and sexual reproduction started as items on that
+list and were built in v1.1.
 
 ## Further reading
 

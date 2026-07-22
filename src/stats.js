@@ -12,8 +12,10 @@ export class Stats {
     this.tick = 0;
     this.births = 0;
     this.deaths = 0;
+    this.kills = 0; // deaths specifically caused by predation
     this.maxGeneration = 0;
     this.maxPopEver = 0;
+    this.carnivoreFrac = 0; // fraction of the population that are carnivores
   }
 
   /**
@@ -28,14 +30,20 @@ export class Stats {
 
     let maxGen = 0;
     let sumGen = 0;
+    let carnivores = 0;
+    const threshold = world.config.carnivoreThreshold;
     for (let i = 0; i < pop; i++) {
-      const g = world.creatures[i].generation;
+      const cr = world.creatures[i];
+      const g = cr.generation;
       if (g > maxGen) maxGen = g;
       sumGen += g;
+      if (cr.carnivory >= threshold) carnivores++;
     }
     if (maxGen > this.maxGeneration) this.maxGeneration = maxGen;
     this.avgGeneration = pop > 0 ? sumGen / pop : 0;
     this.currentMaxGeneration = maxGen;
+    this.carnivoreFrac = pop > 0 ? carnivores / pop : 0;
+    this.carnivoreCount = carnivores;
 
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {

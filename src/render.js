@@ -88,16 +88,46 @@ export class Renderer {
     ctx.arc(0, 0, r * 3, 0, Math.PI * 2);
     ctx.fill();
 
+    // Is this a predator? Carnivores get a sharper, more elongated body and a
+    // warm predatory outline, while keeping their inherited hue so lineage is
+    // still readable.
+    const isPredator = c.carnivory >= cfg.carnivoreThreshold;
+    const nose = isPredator ? 2.1 : 1.4; // carnivores are daggers, not chevrons
+
     // Body: a chevron pointing along the heading.
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = `hsl(${c.hue}, ${sat}%, ${light + 15}%)`;
     ctx.beginPath();
-    ctx.moveTo(r * 1.4, 0);
+    ctx.moveTo(r * nose, 0);
     ctx.lineTo(-r, r * 0.85);
     ctx.lineTo(-r * 0.5, 0);
     ctx.lineTo(-r, -r * 0.85);
     ctx.closePath();
     ctx.fill();
+
+    if (isPredator) {
+      // Warm outline whose intensity tracks how carnivorous it is...
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = `hsla(8, 90%, 60%, ${0.35 + 0.5 * c.carnivory})`;
+      ctx.stroke();
+      // ...plus a bright warm core, so predators read at a glance even amid the
+      // bloom. This is the clearest "this one hunts" signal in the pond.
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = `hsla(14, 100%, 60%, ${0.5 + 0.4 * c.carnivory})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    // Attack flash: a brief bright burst right after landing a bite.
+    if (c.age - c.lastBiteAge < 4) {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = "rgba(255, 120, 90, 0.6)";
+      ctx.beginPath();
+      ctx.arc(r * nose, 0, r * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   }

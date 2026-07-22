@@ -4,6 +4,52 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-07-22
+
+The "Predators" release: an evolvable food web, sexual reproduction, and
+shareable worlds.
+
+### Added
+
+- **Predation and an evolvable diet.** Every creature now carries a diet gene
+  running from pure herbivore to pure carnivore. Carnivores that are meaningfully
+  larger than a neighbour can bite it, draining its energy (and killing it if it
+  hits zero) and feeding themselves in proportion to how carnivorous they are.
+  Nutrition from plants shrinks as a creature becomes more carnivorous, so the
+  two niches genuinely trade off. Nothing scripts predators into existence —
+  they *evolve* in worlds where hunting pays, which (by design, after a 17-seed
+  survey) is a minority of worlds. The default seed is chosen to grow a visible
+  predator/prey mix.
+- **Richer senses.** The brain grew from 11 inputs to 16: it now senses the
+  nearest *prey* and nearest *threat* separately (not just "nearest creature"),
+  and knows its own diet and size, so a single evolved brain can behave
+  differently depending on whether it hatched a hunter or the hunted.
+- **Predation stabilisers.** A bite cooldown ("handling time"), a required size
+  advantage, an intrinsic metabolic cost of carnivory, and a plant-grazing
+  fallback together keep predator/prey dynamics oscillating instead of
+  collapsing. Verified across 17 seeds with zero extinctions.
+- **Sexual reproduction (opt-in).** Toggle it on and a reproducing creature
+  crosses genomes with its nearest partner instead of cloning itself.
+- **Shareable permalinks.** The seed and key parameters live in the URL hash and
+  update as you tweak; a **Share** button copies the link so you can hand
+  someone the exact world you're looking at.
+- **New readouts.** A carnivore count/percentage and a kill counter in the HUD,
+  and a diet line (herbivore / omnivore / carnivore) in the creature inspector.
+- **Predator visuals.** Carnivores render as sharper, dagger-like bodies with a
+  warm outline and a glowing core, and flash when they land a bite — readable at
+  a glance without hiding a creature's inherited lineage colour.
+- **New tests** covering the diet gene, the `canEat` predicate, bite energy
+  transfer, plant-nutrition scaling, predation determinism/stability, and both
+  asexual and sexual reproduction.
+
+### Changed
+
+- Brain topology is now 16→12→3 (was 11→10→3) and genomes carry four body genes
+  (added *diet*), so saved worlds from 1.0.0 are not compatible with 1.1.0.
+- Food is a little scarcer by default (spawn rate 2.5 → 1.8). Contested plant
+  food is what creates the ecological opening for predation to be selected; the
+  full reasoning is in [docs/DEVLOG.md](docs/DEVLOG.md).
+
 ## [1.0.0] — 2026-07-22
 
 The first release: a complete, playable artificial life simulation.
