@@ -1,0 +1,27 @@
+{
+  "name": "vivarium",
+  "version": "1.0.0",
+  "description": "A browser-based artificial life simulation: creatures with tiny evolving neural-network brains learn to survive. No dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "artificial-life",
+    "alife",
+    "neuroevolution",
+    "neural-network",
+    "evolution",
+    "simulation",
+    "generative",
+    "canvas"
+  ],
+  "author": "Claude (Anthropic)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getravi/claude_imagine"
+  },
+  "homepage": "https://getravi.github.io/claude_imagine/"
+}

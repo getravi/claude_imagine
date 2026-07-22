@@ -1,0 +1,15 @@
+# Dependencies (this project has none at runtime; this guards local tooling)
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Local experiment / validation scratch files
+_*.mjs
+_scratch/
