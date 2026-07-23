@@ -44,7 +44,8 @@ The dependency arrows point from a module to what it imports.
 | `rng.js` | Seedable PRNG (mulberry32) + distributions (uniform, normal). | — |
 | `vec.js` | 2D and **toroidal** geometry: wrap, wrapped distance, angle math. | — |
 | `nn.js` | Fixed-topology feed-forward neural network + forward pass. | — |
-| `genome.js` | The heritable weight vector; mutation, crossover, distance. | — |
+| `genome.js` | The fixed-topology genome: weights, plasticity, mutation, crossover, distance. | — |
+| `neat.js` | Optional evolvable-topology genome + network (graph brains). | — |
 | `creature.js` | One agent: sense → think → act → metabolism → reproduce. | — |
 | `food.js` | Passive energy pellets and their spawning. | — |
 | `grid.js` | Spatial hash grid for O(1)-ish neighbour queries on a torus. | — |
@@ -235,6 +236,23 @@ live population (correcting the incremental counts, which don't see deaths),
 records a snapshot, and marks newly-extinct species. `mullerplot.js` turns those
 snapshots into the stacked-area "Tree of Life" chart, and the renderer can dim
 every creature outside a chosen species to spotlight one lineage in the pond.
+
+## Two genome kinds behind one interface
+
+As of v1.5 a creature's genome is one of two completely different data
+structures: the fixed-topology `Genome` (a flat weight vector) or the
+`NeatGenome` (a graph of nodes and connections), chosen by `config.evolvableTopology`.
+The rest of the code never branches on which it holds, because both expose the
+same surface: the body-gene getters (`sizeGene`, `dietGene`, …), `buildBrain()`,
+`mutateForConfig()`, a static `crossover()`, `distance()`, `clone()`, and
+`toData()`/`fromData()` for save/load. There are exactly two dispatch points —
+the world picks which `random()` to call when making a creature, and reproduction
+routes crossover through `this.genome.constructor.crossover`. Everything else,
+including the entire phylogeny, is genome-agnostic.
+
+Like the plasticity genes, the NEAT path is instantiated only when its toggle is
+on, so it consumes no RNG in the default path and every fixed-topology world stays
+bit-for-bit identical (fingerprint-verified).
 
 ## Rendering is read-only
 

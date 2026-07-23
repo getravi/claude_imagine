@@ -139,6 +139,19 @@ export class Genome {
   }
 
   /**
+   * Config-driven mutation entry point, matching the surface NeatGenome also
+   * exposes so Creature can reproduce without knowing which genome type it holds.
+   */
+  mutateForConfig(rng, config) {
+    return this.mutate(rng, config.mutationRate, config.mutationStrength, config.plasticity);
+  }
+
+  /** Serialize for save/load (tagged so it can be restored alongside NEAT). */
+  toData() {
+    return { k: "fixed", d: Array.from(this.data) };
+  }
+
+  /**
    * Uniform crossover of two genomes (sexual reproduction, optional in the sim).
    * Each gene is taken from one parent or the other with equal probability.
    */

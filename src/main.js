@@ -38,6 +38,7 @@ function parseHash() {
   if (p.has("sea")) o.seasons = p.get("sea") === "1";
   if (p.has("bio")) o.foodPatches = p.get("bio") === "1";
   if (p.has("pla")) o.plasticity = p.get("pla") === "1";
+  if (p.has("neat")) o.evolvableTopology = p.get("neat") === "1";
   return o;
 }
 
@@ -52,6 +53,7 @@ function syncHash() {
   p.set("sea", config.seasons ? "1" : "0");
   p.set("bio", config.foodPatches ? "1" : "0");
   p.set("pla", config.plasticity ? "1" : "0");
+  p.set("neat", config.evolvableTopology ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -194,6 +196,9 @@ function updateHUD() {
   $("stat-carn").textContent = `${carn} (${pct}%)`;
   $("stat-kills").textContent = s.kills.toLocaleString();
   $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
+  $("stat-brain").textContent = config.evolvableTopology
+    ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
+    : "fixed";
 }
 
 // ---- Live population chart ----
@@ -267,15 +272,23 @@ function updateInspector() {
       <div class="insp-wide"><label>Species</label>
         <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
     </div>
-    <div class="brainwrap"><label>Brain — inherited</label>${sparkFromWeights(
-      c.genome.brainWeights
-    )}${
-    c.brain.plastic
-      ? `<label class="learned-label">Brain — current (learned) 🧠</label>${sparkFromWeights(
-          c.brain.w
-        )}`
-      : ""
-  }</div>
+    ${
+      c.genome.conns // NEAT genome: show the evolved network graph
+        ? `<div class="brainwrap"><label>Brain — evolved network (${
+            c.genome.complexity.conns
+          } connections, ${c.genome.complexity.nodes} hidden) 🧬</label>${brainGraphSVG(
+            c.genome
+          )}</div>`
+        : `<div class="brainwrap"><label>Brain — inherited</label>${sparkFromWeights(
+            c.genome.brainWeights
+          )}${
+            c.brain.plastic
+              ? `<label class="learned-label">Brain — current (learned) 🧠</label>${sparkFromWeights(
+                  c.brain.w
+                )}`
+              : ""
+          }</div>`
+    }
   `;
   const link = document.getElementById("insp-species");
   if (link) {
@@ -301,6 +314,62 @@ function sparkFromWeights(w) {
   }
   html += "</div>";
   return html;
+}
+
+// Render a NEAT genome as an actual network diagram: inputs on the left, evolved
+// hidden neurons in the middle, motor outputs on the right, connections coloured
+// by weight (blue positive, red negative). Makes evolved topology legible at a
+// glance — you can watch structure differ between creatures and grow over
+// generations. Built as an inline SVG string since the inspector is re-rendered
+// from innerHTML each frame.
+function brainGraphSVG(genome) {
+  const W = 288;
+  const H = 150;
+  const nIn = 16;
+  const nOut = 3;
+  const pad = 12;
+  const pos = new Map();
+  const place = (id, x, y) => pos.set(id, [x, y]);
+  const spread = (count, i) => pad + ((H - 2 * pad) * (count === 1 ? 0.5 : i / (count - 1)));
+  for (let i = 0; i < nIn; i++) place(i, pad, spread(nIn, i));
+  for (let o = 0; o < nOut; o++) place(nIn + o, W - pad, spread(nOut, o));
+  const hidden = genome.nodes;
+  hidden.forEach((id, i) => {
+    // Stagger hidden nodes horizontally so chains are visible, not overlapping.
+    const x = W * (0.36 + 0.28 * ((i % 3) / 2));
+    place(id, x, spread(Math.max(hidden.length, 1), i));
+  });
+
+  let edges = "";
+  for (const c of genome.conns) {
+    if (!c.on) continue;
+    const a = pos.get(c.from);
+    const b = pos.get(c.to);
+    if (!a || !b) continue;
+    const hue = c.w >= 0 ? 205 : 8;
+    const op = Math.min(0.85, 0.15 + Math.abs(c.w) / 3);
+    const wdt = Math.min(2.4, 0.4 + Math.abs(c.w) / 2.5);
+    edges += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(
+      1
+    )}" y2="${b[1].toFixed(1)}" stroke="hsla(${hue},85%,60%,${op.toFixed(
+      2
+    )})" stroke-width="${wdt.toFixed(2)}"/>`;
+  }
+  let nodes = "";
+  for (const [id, [x, y]] of pos) {
+    let fill = "#7fd0ff"; // hidden default
+    let r = 3;
+    if (id < nIn) fill = "#5adc96"; // inputs (green)
+    else if (id < nIn + nOut) {
+      fill = "#ffb060"; // outputs (orange)
+      r = 4;
+    } else {
+      fill = "#e0e6f0"; // evolved hidden (bright)
+      r = 4;
+    }
+    nodes += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}"/>`;
+  }
+  return `<svg class="braingraph" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg>`;
 }
 
 // ---- Controls ----
@@ -371,6 +440,14 @@ function wireControls() {
     // weights). Newborns pick up the flag automatically via the config.
     for (const c of world.creatures) c.brain = buildBrainFor(c.genome, config);
     syncHash();
+  });
+  $("toggle-neat").checked = config.evolvableTopology;
+  $("toggle-neat").addEventListener("change", (e) => {
+    config.evolvableTopology = e.target.checked;
+    // Fixed-topology and NEAT genomes are different data structures, so flipping
+    // this restarts the world with fresh genomes of the chosen kind.
+    resetWorld(config.seed);
+    flash(config.evolvableTopology ? "Evolvable brains on — world restarted." : "Fixed brains restored — world restarted.");
   });
 
   // Save / load / share.

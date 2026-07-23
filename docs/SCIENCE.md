@@ -82,9 +82,39 @@ Key properties of this choice:
 The more famous cousin of this approach is **NEAT** (NeuroEvolution of
 Augmenting Topologies, Stanley & Miikkulainen, 2002), which evolves the network
 *structure* as well as the weights, growing brains from minimal to complex.
-Vivarium stays fixed-topology on purpose — it's easier to reason about and
-plenty expressive for foraging — but NEAT-style structural evolution is the
-natural next step for anyone who wants to fork this.
+Vivarium ships a trimmed-down NEAT as an optional mode — see the next section.
+
+## Evolving the brain's structure (NEAT)
+
+By default the brain's *shape* is fixed and only its weights evolve. Turn on
+evolvable topology and Vivarium instead uses a graph genome in the spirit of
+**NEAT**: brains start **minimal** — a few direct sense→motor connections and no
+hidden neurons — and *complexify* over generations through two structural
+mutations:
+
+- **add connection**: wire together two previously-unconnected neurons;
+- **add node**: splice a new neuron into an existing connection (the old link is
+  disabled and replaced by two, so behaviour is preserved at first and free to
+  diverge after).
+
+The reason this is interesting rather than just "bigger networks" is that
+complexity has to **pay for itself**. A new neuron only persists if the creatures
+carrying it out-reproduce the ones without it. In Vivarium's world, foraging is a
+nearly-linear problem, so a minimal network already does it well — and so, most of
+the time, brains *stay* minimal, and only a few lineages evolve hidden structure
+where it happens to help. That distribution isn't imposed; it's selection's
+verdict on how much brain the problem is worth. It's the same principle behind the
+"start minimal, add only what earns its keep" philosophy that makes NEAT famous:
+evolution is a stingy engineer.
+
+Two honest simplifications relative to canonical NEAT: Vivarium identifies
+connections by their endpoint node ids rather than global *innovation numbers*,
+so crossover can't perfectly align hidden neurons that arose independently in
+different lineages (the "competing conventions" problem — a non-issue for the
+default asexual reproduction, where structure only grows within a lineage); and
+it uses a lightweight structural+weight distance rather than NEAT's full
+compatibility metric. The essential idea — heritable, selectable, growing
+topology — is faithfully present.
 
 ## Within-lifetime learning and the Baldwin effect
 
@@ -311,11 +341,13 @@ Being honest about the boundaries:
   (They *do* concentrate in biomes and wax and wane with the seasons — see the
   heterogeneity section — and predators genuinely co-evolve, per the food-web
   section.)
-- **Fixed brain topology.** Structure never evolves, only weights.
+- **Topology is fixed unless you ask otherwise.** By default only weights evolve;
+  turn on evolvable topology (the NEAT section above) and structure evolves too.
 
 Each of these is a door left deliberately open. See the roadmap in the
-[devlog](DEVLOG.md) — predation and sexual reproduction started as items on that
-list and were built in v1.1.
+[devlog](DEVLOG.md) — over successive versions, predation, sexual reproduction,
+a genealogy view, seasons and biomes, within-lifetime learning, and evolvable
+topology all moved from that list into the simulation.
 
 ## Further reading
 

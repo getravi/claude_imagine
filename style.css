@@ -322,6 +322,13 @@ details .field {
   margin-top: 8px;
   color: var(--accent);
 }
+.braingraph {
+  display: block;
+  margin-top: 6px;
+  background: #05080d;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
 .genome {
   display: flex;
   flex-wrap: wrap;

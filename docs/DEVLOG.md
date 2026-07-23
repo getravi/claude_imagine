@@ -181,9 +181,8 @@ Doors left open, and which ones v1.1 walked through:
 
 1. ✅ **Sexual reproduction** — shipped in v1.1 as an opt-in toggle (see Entry 9).
 2. ✅ **Predation / trophic levels** — the headline of v1.1 (Entries 7–8).
-3. **NEAT-style evolving topology.** Start brains minimal and let structure grow.
-   The single biggest lever on how sophisticated behaviour can get. Still open —
-   now the last big unbuilt idea on this list.
+3. ✅ **NEAT-style evolving topology** — shipped in v1.5 (Entry 14). Brains grow
+   their own structure.
 4. ✅ **Within-lifetime learning** — evolvable Hebbian plasticity shipped in v1.4
    (Entry 13), including the Baldwin effect.
 5. ✅ **A genealogy view** — shipped in v1.2 as a live phylogeny + Muller plot
@@ -192,10 +191,14 @@ Doors left open, and which ones v1.1 walked through:
    (Entry 12). Gradients and drifting biomes remain as further refinements.
 7. ✅ **Shareable permalinks** — shipped in v1.1 (Entry 10).
 
-After v1.4, six of the seven roadmap items have shipped. The one remaining "big
-lever" is **NEAT-style evolving topology** (#3) — letting the brain's *structure*
-grow, not just its weights and their plasticity. It's the most invasive change of
-all (a variable-length genome), and it's the natural finale.
+As of v1.5, **all seven** of the roadmap items I first sketched have shipped. The
+doors I deliberately left open on day one — sexual reproduction, predation,
+evolving topology, within-lifetime learning, a genealogy view, environmental
+structure, and shareable permalinks — are now all built, each as its own release
+with its own tuning story. What comes next is no longer a fixed list: richer
+plasticity rules, biomes that drift, communication and signalling between
+creatures, letting plasticity and evolvable topology compose, or whatever a
+contributor dreams up. The foundation is here; the pond is open-ended now.
 
 ---
 
@@ -427,6 +430,56 @@ to open, and the tuned world behind you is exactly as you left it.
 That discipline — a new capability that costs the existing behaviour *nothing*
 until asked for — is the part of this release I'm proudest of. The learning is
 the fun; the invariant is the craft.
+
+## Entry 14 — the last big lever: brains that grow · 2026-07-23
+
+Every brain so far, even the plastic ones of v1.4, had a *shape* fixed at the
+start: 16 inputs, 12 hidden, 3 outputs. Evolution could tune the wires but never
+add one. v1.5 removes that ceiling with the roadmap's final and most ambitious
+item: **evolvable topology**, the idea behind NEAT (NeuroEvolution of Augmenting
+Topologies). Brains now start as bare graphs — a handful of direct sense→motor
+connections, no hidden neurons at all — and *grow*: a mutation can add a
+connection between two nodes, or splice a brand-new neuron into an existing
+connection. Structure itself is now heritable and under selection.
+
+The design decision that made this tractable was to **not** try to unify the two
+brain kinds. A fixed-topology genome is a flat array of weights; a NEAT genome is
+a list of nodes and a list of connections. Forcing them into one representation
+would have been a mess. Instead I wrote a completely separate `NeatGenome` that
+exposes the *same surface* the rest of the code already expected — the body-gene
+getters, `buildBrain`, `mutateForConfig`, a static `crossover`, `distance`,
+`clone`, serialization — so `Creature` and the phylogeny never learn which kind
+of genome they're holding. The single dispatch point is one line in the world
+that picks which `random()` to call, and one in reproduction that routes crossover
+through `this.genome.constructor`. Everything else is polymorphism doing its job.
+
+That let me keep the invariant I've now held for two releases running: **off by
+default and free when off.** NEAT genomes are only created when the toggle is on,
+so the default path draws from the RNG exactly as before, and I diffed against a
+v1.4 fingerprint to prove the pond is unchanged to the last digit.
+
+The most interesting *result* was a lesson in humility. I expected to crank the
+structural-mutation rates up and watch brains balloon into big tangled networks.
+They didn't — and shouldn't. Foraging in this world is a fairly linear problem, so
+a minimal near-linear network already does it well, and NEAT, correctly, only
+keeps a new neuron when it earns its place. Push the add-node rate too high and
+you don't get cleverer creatures, you get *unstable* ones — a lineage's working
+brain gets disrupted faster than selection can refine it, and I watched a seed
+crash. So I tuned the rates *down*, to where topology grows steadily in some
+lineages without destabilising the ecosystem, and I let the honest result stand:
+most brains stay simple, a few evolve hidden structure, and that distribution is
+selection's verdict, not mine. The right amount of complexity is an evolved
+property, not a slider I should force.
+
+Which is exactly why the **brain-graph view** matters. A weight sparkline can't
+show topology, so I gave the inspector an actual network diagram — inputs down the
+left, evolved hidden neurons in the middle, motors on the right, connections
+coloured by weight. Now "this lineage evolved a hidden neuron" isn't a number in a
+stat; it's a node you can point at. The first time I clicked a creature and saw a
+single white neuron sitting between the senses and the motors, wired in by nothing
+but survival, the whole arc of the project felt complete: from a flat pond of
+identical foragers to creatures whose very *brain architecture* is a product of
+their history.
 
 ## A closing note
 

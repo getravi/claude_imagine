@@ -4,6 +4,42 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] — 2026-07-23
+
+The "Growing Brains" release: evolvable neural *topology* (NEAT-style) — the last
+big roadmap item.
+
+### Added
+
+- **Evolvable brain topology (opt-in).** A new graph-based genome (`neat.js`)
+  where brains start minimal — a few direct sense→motor connections, no hidden
+  neurons — and *grow* structure over generations: mutation can add a connection
+  or splice a whole new neuron into an existing one. This is the core idea of
+  NEAT (NeuroEvolution of Augmenting Topologies), trimmed to Vivarium's
+  essentials. Complexity is only kept when it earns its place, so most brains
+  stay simple and a few lineages evolve hidden structure — exactly as selection
+  dictates.
+- **Live brain-graph visualization.** With evolvable topology on, the inspector
+  draws a creature's actual network — input, hidden, and output nodes with
+  connections coloured by weight — so you can see evolved structure differ
+  between creatures and grow across generations.
+- **A Brain complexity stat** (average connections and hidden neurons), a NEAT
+  toggle wired into the permalink, and full save/load support for graph genomes.
+- **New tests** for minimal founders, network output, add-node/add-connection
+  mutations, distance, serialization round-trips, and NEAT-world
+  survival/determinism (75 total).
+
+### Notes
+
+- Like plasticity in v1.4, this is **off by default and free when off**: NEAT is
+  a separate genome type instantiated only when the toggle is on, so it consumes
+  no RNG in the default path and every world stays **bit-for-bit identical** to
+  v1.4 (verified against a recorded fingerprint). Structural mutation rates were
+  tuned across ten seeds so topology grows without destabilising the ecosystem.
+- Predation, seasons, biomes, and the phylogeny all work under evolvable
+  topology. Neural plasticity (v1.4) and NEAT are separate modes and don't
+  currently compose — plasticity applies to fixed-topology brains.
+
 ## [1.4.0] — 2026-07-23
 
 The "Plastic Minds" release: brains that learn within a lifetime, not just across

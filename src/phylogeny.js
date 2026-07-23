@@ -22,7 +22,11 @@
 export class Phylogeny {
   constructor(config) {
     this.config = config;
-    this.threshold = config.speciationDistance;
+    // NEAT genomes use a different distance metric, so they get their own
+    // species-split threshold.
+    this.threshold = config.evolvableTopology
+      ? config.neatCompatThreshold
+      : config.speciationDistance;
     this.sampleInterval = config.phylogenySampleInterval;
     /** @type {Species[]} */
     this.species = [];

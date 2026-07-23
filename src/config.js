@@ -111,6 +111,19 @@ export const DEFAULT_CONFIG = Object.freeze({
   learnDecay: 0.015, // pull back toward the inherited baseline
   weightClamp: 8, // hard bound on a learned weight (runaway safety net)
 
+  // --- Evolvable brain topology (NEAT-style) — v1.5, opt-in ---
+  // OFF by default: brains keep the fixed 16→12→3 shape and every world is
+  // identical to earlier versions. Switch it on and brains instead start minimal
+  // (a few direct sense→motor links, no hidden neurons) and *grow* structure —
+  // new connections and spliced-in neurons — whenever mutation and selection
+  // favour more complex wiring.
+  evolvableTopology: false,
+  neatWeightRate: 0.09, // per-connection weight mutation probability
+  neatWeightStrength: 0.16, // stdev of a weight nudge
+  neatAddConn: 0.07, // probability of adding a connection per reproduction
+  neatAddNode: 0.035, // probability of splicing in a neuron per reproduction
+  neatCompatThreshold: 0.28, // species split distance when topology evolves
+
   // --- Mutation ---
   mutationRate: 0.09,
   mutationStrength: 0.16,

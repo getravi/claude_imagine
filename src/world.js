@@ -16,6 +16,7 @@ import { SpatialGrid } from "./grid.js";
 import { FoodField, Food } from "./food.js";
 import { Creature } from "./creature.js";
 import { Genome } from "./genome.js";
+import { NeatGenome } from "./neat.js";
 import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
 import { FertilityField, seasonalFactor, seasonPhase } from "./environment.js";
@@ -59,8 +60,14 @@ export class World {
 
   _randomCreature() {
     const cfg = this.config;
+    // A fresh genome of whichever kind this world uses. When evolvableTopology is
+    // off (the default), this is exactly Genome.random(this.rng) as before, so
+    // the RNG stream — and thus every existing world — is unchanged.
+    const genome = cfg.evolvableTopology
+      ? NeatGenome.random(this.rng)
+      : Genome.random(this.rng);
     return new Creature(
-      Genome.random(this.rng),
+      genome,
       cfg,
       this.rng.range(0, cfg.width),
       this.rng.range(0, cfg.height),

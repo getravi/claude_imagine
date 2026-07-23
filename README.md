@@ -83,6 +83,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
+| **Evolvable brains (NEAT)** | Toggle evolvable topology: brains start minimal and grow their own structure over generations. Off by default; flipping it restarts the world with graph-based brains. |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
@@ -124,6 +125,11 @@ lineage, so you can see where it lives and how far it has spread.
   within their lifetime do better, evolution *discovers* learning — the stat
   climbs from zero. Click a creature to see its *inherited* vs *current
   (learned)* brain fingerprints diverge. (This is the [Baldwin effect](https://en.wikipedia.org/wiki/Baldwin_effect).)
+- **Switch on Evolvable brains (NEAT)** and click creatures to inspect their
+  networks. Founders have no hidden neurons — just direct sense→motor wiring —
+  but over generations some lineages grow hidden structure (watch the Brain stat
+  and look for the extra node in the graph). Most stay simple, because simple is
+  enough: complexity only survives where it earns its keep.
 - **Find a great world and Share it.** The link encodes the seed and parameters,
   so whoever opens it watches the very same pond evolve.
 
@@ -181,6 +187,10 @@ lets weights adapt as a creature lives. Since plasticity starts at zero in every
 genome, a lineage only *learns* if evolution finds that learning pays — the
 Baldwin effect, emerging on its own.
 
+Or turn on **evolvable brain topology** (NEAT-style): brains start as bare
+graphs and *grow their own structure* — new connections and whole new neurons —
+over generations. Click a creature to see its actual evolved network.
+
 For the full story, see:
 
 - **[docs/SCIENCE.md](docs/SCIENCE.md)** — the artificial-life and neuroevolution
@@ -200,6 +210,7 @@ src/
   vec.js            2D + toroidal ("wrap-around") geometry
   nn.js             the neural network (+ optional lifetime learning)
   genome.js         heritable material: weights, plasticity, mutation, crossover
+  neat.js           optional evolvable-topology brains (graph genome)
   creature.js       a single agent: sense → think → act → metabolism
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries

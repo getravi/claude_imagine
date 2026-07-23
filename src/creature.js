@@ -13,8 +13,20 @@
 
 import { wrapDelta, wrap, normalizeAngle, clamp, lerp } from "./vec.js";
 import { Genome } from "./genome.js";
+import { NeatGenome } from "./neat.js";
 
 let NEXT_ID = 1;
+
+/**
+ * Reconstruct a genome from its serialized form, dispatching on the kind tag so
+ * save/load works for both fixed-topology and NEAT worlds. Falls back to the
+ * pre-v1.5 format (a bare array of numbers) for old saves.
+ */
+export function deserializeGenome(g) {
+  if (Array.isArray(g)) return new Genome(Float32Array.from(g)); // legacy format
+  if (g && g.k === "neat") return NeatGenome.fromData(g);
+  return new Genome(Float32Array.from(g.d));
+}
 
 /**
  * Build a creature's brain from its genome, wiring in lifetime learning only if
@@ -221,13 +233,11 @@ export class Creature {
     this.energy -= childEnergy;
     this.children++;
 
-    const base = mate ? Genome.crossover(this.genome, mate, rng) : this.genome;
-    const childGenome = base.mutate(
-      rng,
-      cfg.mutationRate,
-      cfg.mutationStrength,
-      cfg.plasticity // only evolve plasticity genes when learning is enabled
-    );
+    // Dispatch crossover to whichever genome kind this creature carries
+    // (fixed-topology or NEAT); both expose a static crossover and a
+    // config-driven mutateForConfig, so this code is genome-agnostic.
+    const base = mate ? this.genome.constructor.crossover(this.genome, mate, rng) : this.genome;
+    const childGenome = base.mutateForConfig(rng, cfg);
     const offset = this.radius + 2;
     const cx = wrap(this.x + Math.cos(this.heading + Math.PI) * offset, cfg.width);
     const cy = wrap(this.y + Math.sin(this.heading + Math.PI) * offset, cfg.height);
@@ -240,7 +250,7 @@ export class Creature {
   /** Serialize enough to recreate this creature (for save/load). */
   toJSON() {
     return {
-      g: Array.from(this.genome.data),
+      g: this.genome.toData(),
       x: this.x,
       y: this.y,
       h: this.heading,
@@ -251,7 +261,7 @@ export class Creature {
   }
 
   static fromJSON(obj, config, rng) {
-    const genome = new Genome(Float32Array.from(obj.g));
+    const genome = deserializeGenome(obj.g);
     const c = new Creature(genome, config, obj.x, obj.y, rng, obj.gen || 0);
     c.heading = obj.h;
     c.energy = obj.e;

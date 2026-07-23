@@ -65,6 +65,26 @@ export class Stats {
       this.avgLearning = 0;
     }
 
+    // Brain complexity: average evolved structure, when topology can evolve.
+    if (world.config.evolvableTopology && pop > 0) {
+      let hidden = 0;
+      let conns = 0;
+      let maxHidden = 0;
+      for (let i = 0; i < pop; i++) {
+        const cx = world.creatures[i].genome.complexity;
+        hidden += cx.nodes;
+        conns += cx.conns;
+        if (cx.nodes > maxHidden) maxHidden = cx.nodes;
+      }
+      this.avgHidden = hidden / pop;
+      this.avgConns = conns / pop;
+      this.maxHidden = maxHidden;
+    } else {
+      this.avgHidden = 0;
+      this.avgConns = 0;
+      this.maxHidden = 0;
+    }
+
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {
       this.popHistory.push({

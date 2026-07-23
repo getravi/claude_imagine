@@ -1,6 +1,6 @@
 {
   "name": "vivarium",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "A browser-based artificial life simulation: creatures with tiny evolving neural-network brains learn to forage, hunt, and survive. No dependencies.",
   "type": "module",
   "scripts": {
