@@ -7,7 +7,11 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # Deploy from main, and also from the initial working branch while it remains
+    # the repository's default branch (the github-pages environment only permits
+    # deploys from the default branch). Once main is made the default, the second
+    # entry can be removed.
+    branches: [main, claude/public-repo-project-vdav3j]
   workflow_dispatch: {}
 
 # Allow this workflow to publish a Pages deployment.
