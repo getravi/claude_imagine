@@ -18,7 +18,9 @@ predators either.
 
 A live **Tree of Life** below the pond tracks the whole thing as a phylogeny —
 you can watch species branch, sweep to dominance, and go extinct in real time,
-and click any lineage to spotlight it.
+and click any lineage to spotlight it. The world even has **seasons** (food
+booms in summer, bottlenecks in winter) and **biomes** (fertile patches where
+food concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
@@ -42,7 +44,11 @@ No install, no build step, no dependencies. Just open it in a browser.
   hunt smaller creatures instead of grazing; they flash when they land a bite.
   Cool-coloured chevrons are herbivores. This is the diet gene, and it *evolves*.
 - **The green motes are food.** Grazing restores energy; moving and merely
-  existing cost energy. Run out and you die.
+  existing cost energy. Run out and you die. Food concentrates in **biomes**
+  (faint fertile glows), so creatures cluster there.
+- **A season badge** (top-left of the pond) tracks the year: food blooms in
+  summer and grows scarce in winter, and the background tints cool or warm to
+  match.
 - **Brighter creatures have more energy.** Dim ones are starving.
 - **No creature has a goal, a score, or a reward.** They just run inherited
   neural networks. Foraging, fleeing, hunting, and loitering in food-rich
@@ -73,6 +79,8 @@ lineage, so you can see where it lives and how far it has spread.
 | **Speed** | Simulation steps per frame (1×–20×). Crank it up to fast-forward evolution. |
 | **Live parameters** | Tune food rate, metabolism, and mutation rate *while it runs* and watch the ecosystem respond. |
 | **Predation** | Toggle whether carnivores can hunt. On by default — turn it off for a pure-herbivore world. |
+| **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
+| **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
@@ -91,6 +99,12 @@ lineage, so you can see where it lives and how far it has spread.
   full arms race.
 - **Turn predation off**, reset, and compare: a calmer, more crowded pond of
   pure grazers.
+- **Ride the seasons.** Watch the population/food chart pulse with the year —
+  crashing in winter, blooming in summer. In a predator world the winters get
+  genuinely dangerous. Toggle *Seasons* off to see the difference a constant
+  climate makes.
+- **Watch the biomes.** Creatures pile into the fertile glowing patches and
+  leave the barren stretches empty; the emptiness becomes a risky crossing.
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)
@@ -150,6 +164,11 @@ if sexual reproduction is on). Run out of energy, or grow too old, and you
 code — *fitness is just survival*. Over generations, selection quietly tunes
 those weight vectors into competent foraging — and, where it pays, hunting.
 
+The world those rules play out in isn't uniform: food concentrates in **biomes**
+and rises and falls with the **seasons**, so the best strategy depends on where
+and when you live — which is exactly what keeps evolution from settling on one
+answer.
+
 For the full story, see:
 
 - **[docs/SCIENCE.md](docs/SCIENCE.md)** — the artificial-life and neuroevolution
@@ -172,6 +191,7 @@ src/
   creature.js       a single agent: sense → think → act → metabolism
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries
+  environment.js    biomes (fertile patches) and seasons
   stats.js          rolling population/lineage measurements
   phylogeny.js      groups creatures into species (observation only)
   world.js          the simulation: steps everything forward

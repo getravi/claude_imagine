@@ -28,11 +28,31 @@ export const DEFAULT_CONFIG = Object.freeze({
   foodEnergy: 23, // energy granted by eating one pellet
   foodRadius: 3,
 
+  // --- Environment: seasons (temporal) & biomes (spatial) — v1.3 ---
+  // Seasons swing the food spawn rate on a sine "year", so the pond booms in
+  // summer and bottlenecks in winter. Amplitude is kept moderate so winter
+  // never wipes the world out (verified across seasons and seeds).
+  seasons: true,
+  seasonLength: 2600, // ticks per full year
+  seasonAmplitude: 0.3, // food rate swings within [1-amp, 1+amp]
+  // Biomes concentrate food into fertile patches instead of spreading it evenly,
+  // so where a creature lives matters. patchFloor keeps the barren areas from
+  // being total deserts. Total food influx is unchanged — only its placement.
+  foodPatches: true,
+  patchCount: 4, // number of fertile biome centres
+  patchRadius: 135, // spread (sigma) of each biome, in pixels
+  patchFloor: 0.15, // minimum fertility far from any biome (0..1)
+
   // --- Population ---
   populationStart: 40,
   populationMax: 650, // safety cap so the sim can't explode
   autoReseed: true, // sprinkle fresh random creatures if life dies out
-  reseedCount: 8,
+  reseedCount: 8, // added at once when the world goes fully extinct
+  // Gentle rescue: if a crash (e.g. a harsh winter in a predator world) drops
+  // the population below this, trickle in a couple of fresh creatures per tick
+  // so it bounces back quickly instead of lingering near-dead. Keeps the toy
+  // from ever *looking* extinct without erasing the drama of a population crash.
+  reseedFloor: 5,
 
   // --- Creature energy budget ---
   energyStart: 95,

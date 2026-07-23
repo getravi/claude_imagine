@@ -187,9 +187,13 @@ Doors left open, and which ones v1.1 walked through:
    life, and the interplay (Baldwin effect) between learning and evolution.
 5. ✅ **A genealogy view** — shipped in v1.2 as a live phylogeny + Muller plot
    (Entry 11).
-6. **Environmental structure.** Seasons, food that grows in patches, gradients,
-   day/night — heterogeneity is what drives specialisation and diversity.
+6. ✅ **Environmental structure** — seasons and biomes shipped in v1.3
+   (Entry 12). Gradients and drifting biomes remain as further refinements.
 7. ✅ **Shareable permalinks** — shipped in v1.1 (Entry 10).
+
+Still open after v1.3: **NEAT-style evolving topology** (#3) and **within-lifetime
+learning** (#4) — the two remaining "big levers," both about the brains
+themselves rather than the world around them.
 
 ---
 
@@ -323,6 +327,54 @@ this project to do: it made an abstract force *visible*.
 The last touch was linking the two lenses: click a species and the whole pond
 dims to ghosts except that lineage, so you can see not just *that* it's winning
 but *where* it lives and how it's spread. Two views of one truth.
+
+## Entry 12 — giving the world weather and geography · 2026-07-23
+
+Through v1.2 the world was uniform: food appeared anywhere with equal odds, at a
+constant rate. That's a strangely featureless planet. Real habitats vary in
+*space* (fertile valleys, barren stretches) and *time* (seasons), and that
+variation is one of evolution's great engines of diversity — different places and
+different times reward different strategies, so lineages can specialise instead
+of all grinding toward one global optimum. v1.3 gives the pond both.
+
+**Biomes (space).** Food now spawns preferentially in a few fertile patches — a
+smooth fertility field built from Gaussian bumps, sampled by rejection so pellets
+land in fertile spots more often. Crucially the *total* food influx is unchanged;
+only its placement. The effect on screen is immediate and lovely: creatures
+gather into the fertile zones and thin out in the barren gaps, so the pond
+develops a geography you can see. It also gives the phylogeny something new to
+chew on — spatially separated groups can drift apart, the beginnings of
+allopatric speciation.
+
+**Seasons (time).** A sine wave over a ~2600-tick "year" swells and starves the
+food supply. Summers bloom, winters bottleneck. I added a season badge and a
+subtle background tint (cold blue in winter, warmer in summer) so the passage of
+the year is legible without reading a number.
+
+**The tuning problem I should have seen coming.** Seasons plus predators is a
+combustible mix. A predator-heavy world is *already* prone to boom-bust
+oscillation; drop a harsh winter on top and the two troughs can align into a
+crash. My first amplitude (0.5) looked gorgeous on most seeds and then sent one
+predator world (seed 5) into a near-extinction spiral — average population 40,
+bottoming out at 1, limping along on the extinction safety net. A toy that
+occasionally looks dead for a while is a toy people close.
+
+I did the usual sweep, across many seeds and *several full years* each (you have
+to simulate multiple winters to catch the bad one). Dropping the amplitude to 0.3
+fixed almost everything — seed 5 now swings healthily between ~35 in deep winter
+and ~390 at the height of summer, averaging 223. But one seed in a dozen could
+still crash hard. Rather than flatten the seasons for everyone to protect a rare
+case, I added a **gentle low-population rescue**: below a small floor, a couple of
+fresh creatures trickle in per tick. It turns "limps at one creature for a
+minute" into "crashes, then quickly repopulates" — which is *more* dramatic, not
+less, and it means the pond can suffer a genuine mass-crash and visibly recover,
+while never just sitting there dead. Deep winters can still wipe out most of the
+pond; they just can't make it boring.
+
+The through-line of all this tuning, across three releases now: the fix for an
+ecosystem misbehaving is almost never a single knob cranked hard. It's finding
+the regime where the drama is real but self-correcting — and, where the dynamics
+are inherently fragile, adding a soft floor rather than clamping the ceiling.
 
 ## A closing note
 

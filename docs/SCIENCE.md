@@ -182,6 +182,36 @@ kinds of stabilisers that keep real food webs from collapsing:
 Tuned together (see the [devlog](DEVLOG.md) for the full, four-attempt story),
 these keep predator/prey dynamics oscillating instead of collapsing.
 
+## Environmental heterogeneity: biomes and seasons
+
+A perfectly uniform, unchanging environment is evolution's least interesting
+case: there is one best strategy, everything converges on it, and diversity
+collapses. Real environments vary in **space** and **time**, and that variation
+is a major engine of biodiversity. Vivarium models both.
+
+**Biomes (spatial heterogeneity).** Food concentrates in fertile patches rather
+than spreading evenly, so *where* a creature lives matters. This does two things
+of scientific interest. First, it rewards different behaviours in different
+places (loiter in a rich patch vs. range widely between poor ones). Second, and
+more subtly, it can seed **allopatric speciation** — geographically separated
+sub-populations experience slightly different pressures and drift apart, the same
+way a mountain range or an island splits a species in the wild. Watch the Tree of
+Life while biomes are on and you may catch lineages diverging by region.
+
+**Seasons (temporal heterogeneity).** Food supply rises and falls on a yearly
+cycle, so *when* a creature lives matters. Seasonality selects for strategies
+that a constant climate never would: riding out lean winters, exploiting summer
+booms, timing reproduction. It also drives **population cycles** — the pond
+blooms and crashes with the year — and those recurring bottlenecks are
+evolutionarily potent, because a bottleneck is a moment of intense selection and
+a loss of genetic diversity (a founder effect in miniature) every single winter.
+
+Combine seasons with predation and you get the full drama: a hard winter can
+crash the prey, which crashes the predators, which lets the survivors rebuild —
+boom-and-bust ecology playing out from individual agents, not equations. (Tuning
+this so it stays dramatic without simply dying out is a story in the
+[devlog](DEVLOG.md).)
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just
@@ -241,9 +271,10 @@ Being honest about the boundaries:
   (uniform crossover) is implemented and can be toggled on, but it's off by
   default to keep lineages legible.
 - **No genotype→phenotype development.** Genes map almost directly to traits.
-- **Passive food.** Plants don't move, grow in patches, or fight back; they just
-  appear. (Predators, by contrast, now *do* co-evolve — see the food-web section
-  above.)
+- **Passive food.** Plants don't move or fight back, and they don't evolve.
+  (They *do* concentrate in biomes and wax and wane with the seasons — see the
+  heterogeneity section — and predators genuinely co-evolve, per the food-web
+  section.)
 - **Fixed brain topology.** Structure never evolves, only weights.
 
 Each of these is a door left deliberately open. See the roadmap in the

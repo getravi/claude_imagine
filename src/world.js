@@ -18,6 +18,7 @@ import { Creature } from "./creature.js";
 import { Genome } from "./genome.js";
 import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
+import { FertilityField, seasonalFactor, seasonPhase } from "./environment.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -30,7 +31,13 @@ export class World {
     // exist before we make the founders, so it can classify them.
     this.phylogeny = new Phylogeny(config);
 
-    this.food = new FoodField(config, this.rng);
+    // Spatial structure: the fertility field (biomes) is built from the RNG so a
+    // seed reproduces the same landscape. Food spawns preferentially in it.
+    this.environment = new FertilityField(config, this.rng);
+    this.seasonFactor = seasonalFactor(0, config);
+    this.seasonPhase = seasonPhase(0, config);
+
+    this.food = new FoodField(config, this.rng, this.environment);
     /** @type {Creature[]} */
     this.creatures = [];
     for (let i = 0; i < config.populationStart; i++) {
@@ -178,13 +185,20 @@ export class World {
     }
     for (const b of born) this.creatures.push(b);
 
-    // Food upkeep.
+    // Food upkeep. The seasonal factor swells or starves the food supply.
+    this.seasonFactor = seasonalFactor(this.tick, cfg);
+    this.seasonPhase = seasonPhase(this.tick, cfg);
     this.food.compact();
-    this.food.step();
+    this.food.step(this.seasonFactor);
 
-    // 6. Safety valve: don't let the toy die permanently.
-    if (this.creatures.length === 0 && cfg.autoReseed) {
-      for (let i = 0; i < cfg.reseedCount; i++) {
+    // 6. Safety valves: don't let the toy die permanently or linger near-dead.
+    // A full extinction gets a burst of founders; a near-crash gets a gentle
+    // trickle so it recovers quickly rather than sitting at one or two creatures.
+    if (cfg.autoReseed) {
+      let reseed = 0;
+      if (this.creatures.length === 0) reseed = cfg.reseedCount;
+      else if (this.creatures.length < cfg.reseedFloor) reseed = 2;
+      for (let i = 0; i < reseed; i++) {
         const c = this._randomCreature();
         this.phylogeny.assign(c, this.tick, null);
         this.creatures.push(c);

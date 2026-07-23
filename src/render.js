@@ -40,10 +40,31 @@ export class Renderer {
 
     // Trail effect: instead of a hard clear, paint a translucent dark veil so
     // moving creatures leave a faint comet tail. Cheap, and it makes motion
-    // legible at a glance.
+    // legible at a glance. The veil is tinted by the season — cold blue in
+    // winter, warmer in summer — so time of year reads at a glance.
+    const phase = world.seasonPhase ?? 0.5;
+    const vr = Math.round(6 + 4 * phase);
+    const vg = Math.round(10 + 4 * phase);
+    const vb = Math.round(20 - 8 * phase);
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "rgba(6, 10, 16, 0.28)";
+    ctx.fillStyle = `rgba(${vr}, ${vg}, ${vb}, 0.28)`;
     ctx.fillRect(0, 0, cfg.width, cfg.height);
+
+    // Biomes: faint fertile glows so you can see where food concentrates.
+    if (cfg.foodPatches && world.environment) {
+      ctx.globalCompositeOperation = "lighter";
+      for (const c of world.environment.centres) {
+        const rad = cfg.patchRadius * 1.8;
+        const grd = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, rad);
+        grd.addColorStop(0, "rgba(30, 78, 66, 0.16)");
+        grd.addColorStop(0.6, "rgba(30, 70, 62, 0.06)");
+        grd.addColorStop(1, "rgba(30, 70, 62, 0)");
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     // Food: additive green motes so dense patches glow.
     ctx.globalCompositeOperation = "lighter";

@@ -4,6 +4,40 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-07-23
+
+The "Seasons & Biomes" release: the environment gains structure in time and
+space.
+
+### Added
+
+- **Seasons (temporal structure).** Food abundance now swings on a sine "year"
+  (`environment.js`), so the pond booms in summer and bottlenecks in winter. A
+  season badge on the pond shows the current season and year, and the background
+  is subtly tinted — cold blue in winter, warmer in summer.
+- **Biomes (spatial structure).** Food no longer spawns uniformly; it
+  concentrates in a handful of fertile patches (a `FertilityField` built
+  deterministically from the seed), drawn as faint glows. Where a creature lives
+  now matters — creatures cluster in the fertile zones and lineages can
+  specialise by region. Total food influx is unchanged; only its placement.
+- **A gentle low-population rescue.** If a crash (e.g. a harsh winter in a
+  predator-heavy world) drops the population below a floor, a couple of fresh
+  creatures trickle in per tick so it bounces back quickly instead of lingering
+  near-dead. The world can crash dramatically, but never just sits looking
+  extinct.
+- **Toggles** for Seasons and Biomes (both on by default), wired into the
+  shareable permalink alongside the existing parameters.
+- **New tests** for the fertility field (determinism, range, fertile-biased
+  sampling, in-bounds), the seasonal factor (bounds, averages to 1, off = 1),
+  and world survival across several simulated years (59 tests total).
+
+### Notes
+
+- Seasonal amplitude was tuned (0.3) and verified across many seeds and several
+  full years so that even predator-dominated worlds — the most fragile under
+  winter scarcity — swing dramatically but recover rather than dying out. The
+  tuning story is in [docs/DEVLOG.md](docs/DEVLOG.md).
+
 ## [1.2.0] — 2026-07-23
 
 The "Lineages" release: a live phylogeny you can watch and explore.

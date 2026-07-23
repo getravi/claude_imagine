@@ -34,6 +34,8 @@ function parseHash() {
   num("mut", "mutationRate", parseFloat);
   if (p.has("pred")) o.predation = p.get("pred") === "1";
   if (p.has("sex")) o.sexualReproduction = p.get("sex") === "1";
+  if (p.has("sea")) o.seasons = p.get("sea") === "1";
+  if (p.has("bio")) o.foodPatches = p.get("bio") === "1";
   return o;
 }
 
@@ -45,7 +47,24 @@ function syncHash() {
   p.set("mut", config.mutationRate);
   p.set("pred", config.predation ? "1" : "0");
   p.set("sex", config.sexualReproduction ? "1" : "0");
+  p.set("sea", config.seasons ? "1" : "0");
+  p.set("bio", config.foodPatches ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
+}
+
+// Turn the world's season phase into a label + icon for the badge.
+function seasonLabel(world) {
+  if (!config.seasons) return { icon: "◷", name: "No seasons", year: null };
+  const angle = (2 * Math.PI * world.tick) / config.seasonLength;
+  const s = Math.sin(angle);
+  const rising = Math.cos(angle) > 0; // heading toward summer
+  let icon, name;
+  if (s > 0.5) [icon, name] = ["☀️", "Summer"];
+  else if (s < -0.5) [icon, name] = ["❄️", "Winter"];
+  else if (rising) [icon, name] = ["🌱", "Spring"];
+  else [icon, name] = ["🍂", "Autumn"];
+  const year = Math.floor(world.tick / config.seasonLength) + 1;
+  return { icon, name, year };
 }
 
 // ---- State ----
@@ -83,9 +102,17 @@ function loop(now) {
   drawChart(world);
   drawPhylogeny(world);
   updateHUD();
+  updateSeasonBadge(world);
   updateInspector();
 
   requestAnimationFrame(loop);
+}
+
+function updateSeasonBadge(world) {
+  const { icon, name, year } = seasonLabel(world);
+  $("season-badge").innerHTML =
+    `<span class="icon">${icon}</span> ${name}` +
+    (year ? ` <span class="yr">· year ${year}</span>` : "");
 }
 
 // ---- Tree of Life (Muller plot + legend) ----
@@ -301,6 +328,16 @@ function wireControls() {
   // Toggles.
   $("toggle-vision").addEventListener("change", (e) => {
     renderer.showVision = e.target.checked;
+  });
+  $("toggle-seasons").checked = config.seasons;
+  $("toggle-seasons").addEventListener("change", (e) => {
+    config.seasons = e.target.checked;
+    syncHash();
+  });
+  $("toggle-patches").checked = config.foodPatches;
+  $("toggle-patches").addEventListener("change", (e) => {
+    config.foodPatches = e.target.checked;
+    syncHash();
   });
   $("toggle-predation").checked = config.predation;
   $("toggle-predation").addEventListener("change", (e) => {

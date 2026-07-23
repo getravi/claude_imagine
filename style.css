@@ -330,6 +330,32 @@ details .field {
   background: #142130;
 }
 
+/* ---- Season badge ---- */
+.season-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(8, 14, 22, 0.72);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 5px 12px 5px 10px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+.season-badge .icon {
+  font-size: 15px;
+}
+.season-badge .yr {
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
 /* ---- Flash message ---- */
 .flash {
   position: absolute;

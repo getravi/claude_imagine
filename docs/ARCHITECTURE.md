@@ -48,6 +48,7 @@ The dependency arrows point from a module to what it imports.
 | `creature.js` | One agent: sense → think → act → metabolism → reproduce. | — |
 | `food.js` | Passive energy pellets and their spawning. | — |
 | `grid.js` | Spatial hash grid for O(1)-ish neighbour queries on a torus. | — |
+| `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
 | `stats.js` | Rolling population/lineage/diversity measurements. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
@@ -103,11 +104,14 @@ front, constructing one and stepping it N times is a pure function of
 
 3. **Reap and recruit.** Remove dead creatures; append the `born` buffer.
 
-4. **Food upkeep.** Drop eaten pellets (`compact`) and spawn new ones (`step`).
+4. **Food upkeep.** Drop eaten pellets (`compact`) and spawn new ones (`step`),
+   at a rate scaled by the current **season** and placed by the **biome**
+   fertility field (both from `environment.js`).
 
-5. **Safety valves.** If the population hit zero and auto-reseed is on, sprinkle
-   a few fresh random creatures so the toy never dies permanently. The
-   population cap is enforced during reproduction so it can never explode.
+5. **Safety valves.** Enforce the population cap (during reproduction, so it can
+   never explode); reseed a burst of founders on full extinction; and trickle in
+   a couple of creatures if a crash pushes the population below a small floor, so
+   a dramatic crash recovers instead of lingering near-dead.
 
 6. **Advance the clock** and sample stats.
 
@@ -135,6 +139,27 @@ under a millisecond.
 The grid only *narrows the candidate set*; callers still do a precise toroidal
 distance test on the candidates. That separation keeps the grid dumb and
 correct.
+
+## Environment: biomes and seasons
+
+`environment.js` shapes *where* and *how fast* food appears, without touching
+creatures directly.
+
+- **Biomes** are a `FertilityField`: a few Gaussian "bumps" whose centres are
+  drawn from the world RNG (so a seed reproduces the same landscape). Its `at()`
+  returns a fertility in `[floor, 1]`, and `sample()` picks a spawn position by
+  **rejection sampling** — propose a uniform point, accept it with probability
+  equal to its fertility — so pellets concentrate in fertile areas. A bounded
+  retry count means it can never spin forever, and the total food influx is
+  unchanged; only its *placement* is biased.
+- **Seasons** are a pure function of the tick: `seasonalFactor(tick)` is a sine
+  wave in `[1 − amplitude, 1 + amplitude]` that multiplies the food spawn rate,
+  so the pond booms and bottlenecks over a "year". Being a function of the tick
+  (not wall-clock time) keeps it deterministic.
+
+Both are read by `FoodField.step()` (which takes the seasonal multiplier) and
+`spawnOne()` (which consults the fertility field), and both are drawn as ambient
+cues by the renderer — faint biome glows and a season-tinted trail veil.
 
 ## The brain, concretely
 
