@@ -16,6 +16,7 @@ export class Stats {
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
+    this.avgLearning = 0; // mean within-lifetime weight drift (plasticity on)
   }
 
   /**
@@ -44,6 +45,25 @@ export class Stats {
     this.currentMaxGeneration = maxGen;
     this.carnivoreFrac = pop > 0 ? carnivores / pop : 0;
     this.carnivoreCount = carnivores;
+
+    // Learning: how far, on average, plastic brains have drifted from the
+    // weights they were born with (0 when plasticity is off). A live readout of
+    // how much within-lifetime adaptation is happening across the population.
+    if (world.config.plasticity && pop > 0) {
+      let drift = 0;
+      let n = 0;
+      for (let i = 0; i < pop; i++) {
+        const b = world.creatures[i].brain;
+        if (!b.plastic) continue;
+        const w = b.w;
+        const wi = b.wInit;
+        for (let k = 0; k < w.length; k++) drift += Math.abs(w[k] - wi[k]);
+        n += w.length;
+      }
+      this.avgLearning = n > 0 ? drift / n : 0;
+    } else {
+      this.avgLearning = 0;
+    }
 
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {

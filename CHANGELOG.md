@@ -4,6 +4,43 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] — 2026-07-23
+
+The "Plastic Minds" release: brains that learn within a lifetime, not just across
+generations.
+
+### Added
+
+- **Neural plasticity / within-lifetime learning (opt-in).** Each connection now
+  has an evolvable *plasticity* gene. With the feature on, a creature's weights
+  adapt as it lives (a Hebbian nudge toward co-activation, plus a decay back
+  toward the inherited baseline that keeps learning bounded and reversible) — so
+  a lineage can evolve to *learn*, not just to be born knowing. Plasticity starts
+  at zero in every genome, so if learning ever becomes adaptive, it does so
+  because selection discovered it — the **Baldwin effect**, visible in the new
+  Learning stat climbing from zero.
+- **Live brain visualization.** The creature inspector now shows two weight
+  "fingerprints": the *inherited* brain and, when plasticity is on, the *current
+  (learned)* brain — so you can watch a single creature's mind change as it
+  lives.
+- **A Learning stat** in the HUD: the average distance a plastic brain has
+  drifted from the weights it was born with (reads "off" when plasticity is off).
+- **A plasticity toggle**, wired into the shareable permalink; flipping it
+  rebuilds every living brain so the change takes effect immediately.
+- **New tests** for the genome layout, static-vs-plastic behaviour, bounded
+  learning (no runaway weights), plasticity-only-mutates-when-enabled, distance
+  ignoring plasticity, and world stability/determinism with learning on (67
+  total).
+
+### Notes
+
+- **Backward compatibility is exact.** The plasticity genes were engineered to
+  consume zero random-number draws and to be excluded from genetic distance when
+  the feature is off — so with plasticity off (the default), every world is
+  **bit-for-bit identical** to v1.3, down to each creature's position and energy.
+  This was verified against a recorded v1.3 fingerprint. Turning plasticity on is
+  a deliberate step into a different regime.
+
 ## [1.3.0] — 2026-07-23
 
 The "Seasons & Biomes" release: the environment gains structure in time and

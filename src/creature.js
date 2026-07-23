@@ -16,6 +16,18 @@ import { Genome } from "./genome.js";
 
 let NEXT_ID = 1;
 
+/**
+ * Build a creature's brain from its genome, wiring in lifetime learning only if
+ * the plasticity feature is switched on in the config. Kept as a free function
+ * so the UI can rebuild every brain when the toggle flips.
+ */
+export function buildBrainFor(genome, config) {
+  const learn = config.plasticity
+    ? { rate: config.learnRate, decay: config.learnDecay, clamp: config.weightClamp }
+    : null;
+  return genome.buildBrain(learn);
+}
+
 export class Creature {
   /**
    * @param {Genome} genome
@@ -28,8 +40,8 @@ export class Creature {
   constructor(genome, config, x, y, rng, generation = 0) {
     this.id = NEXT_ID++;
     this.genome = genome;
-    this.brain = genome.buildBrain();
     this.config = config;
+    this.brain = buildBrainFor(genome, config);
 
     this.x = x;
     this.y = y;
@@ -210,7 +222,12 @@ export class Creature {
     this.children++;
 
     const base = mate ? Genome.crossover(this.genome, mate, rng) : this.genome;
-    const childGenome = base.mutate(rng, cfg.mutationRate, cfg.mutationStrength);
+    const childGenome = base.mutate(
+      rng,
+      cfg.mutationRate,
+      cfg.mutationStrength,
+      cfg.plasticity // only evolve plasticity genes when learning is enabled
+    );
     const offset = this.radius + 2;
     const cx = wrap(this.x + Math.cos(this.heading + Math.PI) * offset, cfg.width);
     const cy = wrap(this.y + Math.sin(this.heading + Math.PI) * offset, cfg.height);

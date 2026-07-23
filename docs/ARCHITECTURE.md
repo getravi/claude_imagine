@@ -185,6 +185,17 @@ The exact input list is defined in `Creature.sense()` and its length is asserted
 to match `BRAIN.inputs` in `genome.js` — change one and you must change the
 other, so they're kept adjacent in spirit and documented in both places.
 
+**Optional within-lifetime learning.** The full genome layout is
+`[ weights ][ plasticity ][ body genes ]` — a parallel plasticity vector the same
+length as the weights. When the plasticity feature is on, `NeuralNet` keeps a
+mutable current weight, its inherited baseline, and the plasticity coefficients,
+and after each forward pass nudges every connection by a Hebbian term (gated by
+its plasticity gene) plus a decay back toward the baseline. When it's off, the
+net is exactly the static v1.0–v1.3 network. The plasticity genes are engineered
+to cost **zero** RNG draws and to be excluded from `distance()` when the feature
+is off, so every world stays bit-for-bit identical by default (there's a
+fingerprint check for this) — see the devlog for why that invariant mattered.
+
 ## Genome → creature
 
 When a `Creature` is born it decodes its genome once:

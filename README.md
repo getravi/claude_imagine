@@ -82,6 +82,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
+| **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
@@ -118,6 +119,11 @@ lineage, so you can see where it lives and how far it has spread.
 - **Read the Tree of Life.** Find a wide band and click it — watch its members
   light up in the pond while everything else fades. Then look for a thin band
   that appears partway across: that's a new species being born from an older one.
+- **Switch on Neural plasticity and watch the Learning stat.** Brains start
+  fully innate (plasticity is zero in every genome), but if lineages that adapt
+  within their lifetime do better, evolution *discovers* learning — the stat
+  climbs from zero. Click a creature to see its *inherited* vs *current
+  (learned)* brain fingerprints diverge. (This is the [Baldwin effect](https://en.wikipedia.org/wiki/Baldwin_effect).)
 - **Find a great world and Share it.** The link encodes the seed and parameters,
   so whoever opens it watches the very same pond evolve.
 
@@ -169,6 +175,12 @@ and rises and falls with the **seasons**, so the best strategy depends on where
 and when you live — which is exactly what keeps evolution from settling on one
 answer.
 
+Optionally, brains can also **learn within a lifetime** (neural plasticity):
+each connection carries an evolvable plasticity gene, and turning the feature on
+lets weights adapt as a creature lives. Since plasticity starts at zero in every
+genome, a lineage only *learns* if evolution finds that learning pays — the
+Baldwin effect, emerging on its own.
+
 For the full story, see:
 
 - **[docs/SCIENCE.md](docs/SCIENCE.md)** — the artificial-life and neuroevolution
@@ -186,8 +198,8 @@ style.css           the look
 src/
   rng.js            seedable PRNG (reproducible worlds)
   vec.js            2D + toroidal ("wrap-around") geometry
-  nn.js             the neural network
-  genome.js         heritable material: weights, mutation, crossover
+  nn.js             the neural network (+ optional lifetime learning)
+  genome.js         heritable material: weights, plasticity, mutation, crossover
   creature.js       a single agent: sense → think → act → metabolism
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries

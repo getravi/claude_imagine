@@ -99,6 +99,18 @@ export const DEFAULT_CONFIG = Object.freeze({
   bodyRadiusMax: 8.0,
   maxAge: 4200, // ticks; nothing lives forever
 
+  // --- Neural plasticity / within-lifetime learning (v1.4) ---
+  // OFF by default: when off, brains are static from birth and every world is
+  // bit-for-bit identical to earlier versions. Switch it on and each connection
+  // can adapt during a creature's life, gated by an evolved plasticity gene —
+  // a Hebbian nudge toward co-activation plus a decay back to the inherited
+  // baseline (see nn.js). Lets a lineage evolve to *learn*, not just to be born
+  // knowing (the Baldwin effect).
+  plasticity: false,
+  learnRate: 0.02, // Hebbian step size per tick
+  learnDecay: 0.015, // pull back toward the inherited baseline
+  weightClamp: 8, // hard bound on a learned weight (runaway safety net)
+
   // --- Mutation ---
   mutationRate: 0.09,
   mutationStrength: 0.16,

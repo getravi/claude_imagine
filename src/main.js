@@ -10,6 +10,7 @@ import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
 import { drawMuller } from "./mullerplot.js";
+import { buildBrainFor } from "./creature.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +37,7 @@ function parseHash() {
   if (p.has("sex")) o.sexualReproduction = p.get("sex") === "1";
   if (p.has("sea")) o.seasons = p.get("sea") === "1";
   if (p.has("bio")) o.foodPatches = p.get("bio") === "1";
+  if (p.has("pla")) o.plasticity = p.get("pla") === "1";
   return o;
 }
 
@@ -49,6 +51,7 @@ function syncHash() {
   p.set("sex", config.sexualReproduction ? "1" : "0");
   p.set("sea", config.seasons ? "1" : "0");
   p.set("bio", config.foodPatches ? "1" : "0");
+  p.set("pla", config.plasticity ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -190,6 +193,7 @@ function updateHUD() {
   const pct = pop > 0 ? Math.round((carn / pop) * 100) : 0;
   $("stat-carn").textContent = `${carn} (${pct}%)`;
   $("stat-kills").textContent = s.kills.toLocaleString();
+  $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
 }
 
 // ---- Live population chart ----
@@ -263,7 +267,15 @@ function updateInspector() {
       <div class="insp-wide"><label>Species</label>
         <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
     </div>
-    <div class="brainwrap"><label>Brain weights</label>${brainSparkline(c)}</div>
+    <div class="brainwrap"><label>Brain — inherited</label>${sparkFromWeights(
+      c.genome.brainWeights
+    )}${
+    c.brain.plastic
+      ? `<label class="learned-label">Brain — current (learned) 🧠</label>${sparkFromWeights(
+          c.brain.w
+        )}`
+      : ""
+  }</div>
   `;
   const link = document.getElementById("insp-species");
   if (link) {
@@ -274,9 +286,11 @@ function updateInspector() {
   }
 }
 
-// Render the genome as a tiny colour strip — a visual "fingerprint" of the brain.
-function brainSparkline(c) {
-  const w = c.genome.brainWeights;
+// Render a weight vector as a tiny colour strip — a visual "fingerprint" of the
+// brain. Positive weights read blue, negative red, intensity by magnitude. With
+// plasticity on, showing this for both the inherited and current weights makes
+// within-lifetime learning visible as the strip shifts.
+function sparkFromWeights(w) {
   const n = Math.min(w.length, 120);
   let html = '<div class="genome">';
   for (let i = 0; i < n; i++) {
@@ -347,6 +361,15 @@ function wireControls() {
   $("toggle-sexual").checked = config.sexualReproduction;
   $("toggle-sexual").addEventListener("change", (e) => {
     config.sexualReproduction = e.target.checked;
+    syncHash();
+  });
+  $("toggle-plasticity").checked = config.plasticity;
+  $("toggle-plasticity").addEventListener("change", (e) => {
+    config.plasticity = e.target.checked;
+    // Rebuild every living brain so the change takes effect immediately (new
+    // brains start learning; turning it off freezes them at their current
+    // weights). Newborns pick up the flag automatically via the config.
+    for (const c of world.creatures) c.brain = buildBrainFor(c.genome, config);
     syncHash();
   });
 

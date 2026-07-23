@@ -86,6 +86,41 @@ Vivarium stays fixed-topology on purpose — it's easier to reason about and
 plenty expressive for foraging — but NEAT-style structural evolution is the
 natural next step for anyone who wants to fork this.
 
+## Within-lifetime learning and the Baldwin effect
+
+By default a Vivarium brain is frozen at birth: evolution tunes the weights, but
+no individual ever changes. That is *phylogenetic* adaptation — change across
+generations. Real nervous systems also do *ontogenetic* adaptation — they change
+within a single lifetime, through learning. Vivarium can model that too, via an
+optional **neural plasticity** feature.
+
+Each connection carries a second heritable number, a **plasticity coefficient**,
+alongside its weight. When plasticity is enabled, a creature's weights update
+every tick by a **Hebbian** rule — Donald Hebb's 1949 principle, often summarised
+as *"neurons that fire together, wire together"*: a connection strengthens in
+proportion to the co-activation of the neurons it joins, gated by its evolved
+plasticity coefficient. A decay term continually pulls each weight back toward
+the value it was born with, which keeps learning **bounded and reversible** (a
+working memory rather than runaway drift) and is the biologically-flavoured
+cousin of weight regularisation.
+
+The scientifically interesting part is what happens when you let this *evolve*.
+Every genome starts with **zero** plasticity — brains are born fully innate — so
+learning is not handed to the creatures; it has to be *discovered*. If a lineage
+that can adjust within its lifetime tends to survive and reproduce more, then
+mutations that raise plasticity are selected, and the population evolves the
+*capacity to learn* from nothing. This is the **Baldwin effect** (James Mark
+Baldwin, 1896): learning and evolution interacting, where the ability to learn a
+useful behaviour during life can guide and accelerate its genetic assimilation.
+Turn plasticity on in Vivarium and you can watch it happen — the plasticity genes
+climb from zero and the Learning stat rises off the floor.
+
+Vivarium's plasticity is deliberately the simplest useful form (a single
+coefficient per connection, a fixed Hebbian-plus-decay rule). Richer schemes
+exist — the full **ABCD / "neuromodulated" plasticity** rules of Soltoggio and
+others give each connection several evolvable coefficients and a modulatory
+signal — and would be a natural extension.
+
 ## The creature's senses
 
 A brain is only as good as its inputs. Each tick a creature perceives (all
@@ -265,8 +300,9 @@ by sharing its seed, and why the test suite can assert exact outcomes.
 
 Being honest about the boundaries:
 
-- **No within-lifetime learning.** Brains are frozen from birth; all adaptation
-  is across generations.
+- **Learning is optional and off by default.** With neural plasticity off, brains
+  are frozen from birth and all adaptation is across generations; turn it on (see
+  the Baldwin-effect section above) and brains also adapt within a lifetime.
 - **Asexual by default.** Reproduction is mutated cloning. Sexual reproduction
   (uniform crossover) is implemented and can be toggled on, but it's off by
   default to keep lineages legible.

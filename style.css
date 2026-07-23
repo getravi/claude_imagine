@@ -316,6 +316,11 @@ details .field {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ink-faint);
+  display: block;
+}
+.brainwrap .learned-label {
+  margin-top: 8px;
+  color: var(--accent);
 }
 .genome {
   display: flex;

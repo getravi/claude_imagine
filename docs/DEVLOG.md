@@ -182,18 +182,20 @@ Doors left open, and which ones v1.1 walked through:
 1. ✅ **Sexual reproduction** — shipped in v1.1 as an opt-in toggle (see Entry 9).
 2. ✅ **Predation / trophic levels** — the headline of v1.1 (Entries 7–8).
 3. **NEAT-style evolving topology.** Start brains minimal and let structure grow.
-   The single biggest lever on how sophisticated behaviour can get. Still open.
-4. **Within-lifetime learning.** Hebbian plasticity so brains adapt during a
-   life, and the interplay (Baldwin effect) between learning and evolution.
+   The single biggest lever on how sophisticated behaviour can get. Still open —
+   now the last big unbuilt idea on this list.
+4. ✅ **Within-lifetime learning** — evolvable Hebbian plasticity shipped in v1.4
+   (Entry 13), including the Baldwin effect.
 5. ✅ **A genealogy view** — shipped in v1.2 as a live phylogeny + Muller plot
    (Entry 11).
 6. ✅ **Environmental structure** — seasons and biomes shipped in v1.3
    (Entry 12). Gradients and drifting biomes remain as further refinements.
 7. ✅ **Shareable permalinks** — shipped in v1.1 (Entry 10).
 
-Still open after v1.3: **NEAT-style evolving topology** (#3) and **within-lifetime
-learning** (#4) — the two remaining "big levers," both about the brains
-themselves rather than the world around them.
+After v1.4, six of the seven roadmap items have shipped. The one remaining "big
+lever" is **NEAT-style evolving topology** (#3) — letting the brain's *structure*
+grow, not just its weights and their plasticity. It's the most invasive change of
+all (a variable-length genome), and it's the natural finale.
 
 ---
 
@@ -375,6 +377,56 @@ The through-line of all this tuning, across three releases now: the fix for an
 ecosystem misbehaving is almost never a single knob cranked hard. It's finding
 the regime where the drama is real but self-correcting — and, where the dynamics
 are inherently fragile, adding a soft floor rather than clamping the ceiling.
+
+## Entry 13 — brains that learn, and a promise to keep · 2026-07-23
+
+Every brain in Vivarium, up through v1.3, was frozen at birth. All adaptation
+happened *across* generations — evolution tuned the weights, but no individual
+ever changed its mind. v1.4 adds the other kind of adaptation: **within-lifetime
+learning**. Each connection gains an evolvable *plasticity* gene, and when the
+feature is on, a creature's weights drift as it lives — a Hebbian nudge toward
+whatever its neurons fire together on, plus a decay pulling each weight back
+toward its inherited baseline so learning stays bounded and reversible (a working
+memory, not runaway growth).
+
+The reason this is more than a gimmick is the **Baldwin effect**. I start every
+genome's plasticity at exactly zero — brains are born fully innate. So if
+learning ever shows up, it isn't because I put it there; it's because selection
+*discovered* that a lineage which can adjust within its lifetime leaves more
+descendants. And it does: run with plasticity on and the plasticity genes climb
+from zero to a real average magnitude, while the new Learning stat ticks up from
+zero. Watching a capacity to learn *evolve from nothing* is exactly the kind of
+"purpose emerging from physics" this whole project is about — one level up.
+
+**But this entry is really about a promise.** Adding genes to the genome is
+dangerous in a way that isn't obvious: the genome is filled from the world's
+seeded RNG, so making it longer changes how many random numbers each creature
+consumes, which shifts the entire random stream, which silently turns every seed
+into a *different world*. All my careful tuning — the default seed chosen to grow
+predators, the 17-seed predation survey, the season sweeps — would quietly become
+lies. A version that changes what every seed means, without telling you, is a
+version that has broken faith with everyone who saved or shared a world.
+
+So I engineered the plasticity genes to be **free** when the feature is off:
+
+- In `Genome.random`, the plasticity block is left at zero and consumes *no*
+  draws — the weights and body genes draw from the RNG in exactly the old order.
+- In `Genome.mutate`, the plasticity genes are only touched when learning is
+  enabled, so the default draw sequence is untouched.
+- `distance()` ignores the plasticity genes, so the phylogeny clusters exactly as
+  before.
+
+Then I did the thing I should always do when I claim "nothing changed": I proved
+it. Before writing a line of plasticity code I recorded a fingerprint of three
+worlds — population, births, deaths, species count, and the exact position and
+energy of a specific creature after 3000 ticks. After the rewrite, with
+plasticity off, I diffed against it. **Identical**, down to `c0x=566.9773`. The
+default experience is bit-for-bit the v1.3 pond; plasticity is a door you choose
+to open, and the tuned world behind you is exactly as you left it.
+
+That discipline — a new capability that costs the existing behaviour *nothing*
+until asked for — is the part of this release I'm proudest of. The learning is
+the fun; the invariant is the craft.
 
 ## A closing note
 

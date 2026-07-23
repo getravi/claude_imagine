@@ -25,7 +25,18 @@ export class NeuralNet {
    * @param {number} nOut - number of outputs
    * @param {Float32Array} [weights] - flat weight vector; random-ish if omitted
    */
-  constructor(nIn, nHidden, nOut, weights) {
+  /**
+   * @param {number} nIn
+   * @param {number} nHidden
+   * @param {number} nOut
+   * @param {Float32Array} [weights] flat weight vector (see layout below)
+   * @param {Float32Array} [plasticity] per-weight plasticity coefficients, same
+   *   length/layout as weights. If provided together with `learn`, the network
+   *   becomes *plastic*: its weights adapt each forward pass (within-lifetime
+   *   learning). Omit for a static brain — the v1.0–v1.3 behaviour.
+   * @param {{rate:number, decay:number, clamp:number}} [learn] learning params
+   */
+  constructor(nIn, nHidden, nOut, weights, plasticity = null, learn = null) {
     this.nIn = nIn;
     this.nHidden = nHidden;
     this.nOut = nOut;
@@ -46,6 +57,16 @@ export class NeuralNet {
       this.w = weights;
     } else {
       this.w = new Float32Array(this.wLen); // zeros; caller usually supplies genome
+    }
+
+    // Plasticity: when enabled, `w` is the *current* (learned) weight and drifts
+    // over the creature's life; `wInit` is the inherited baseline it decays back
+    // toward, and `plast` gates how much each connection learns.
+    this.plastic = !!(plasticity && learn);
+    if (this.plastic) {
+      this.plast = plasticity;
+      this.wInit = Float32Array.from(weights);
+      this.learn = learn;
     }
 
     // Scratch buffers reused every tick to avoid per-frame allocation.
@@ -92,6 +113,46 @@ export class NeuralNet {
       _out[k] = tanh(_out[k] + w[p++]);
     }
 
+    if (this.plastic) this._learn(inputs);
+
     return _out;
+  }
+
+  /**
+   * Within-lifetime learning. After a forward pass, nudge each plastic
+   * connection by a Hebbian term (co-activation of the two neurons it joins,
+   * gated by the connection's evolved plasticity coefficient) plus a decay term
+   * pulling it back toward its inherited baseline. The decay keeps learning
+   * bounded and reversible — a working memory, not runaway growth — and a hard
+   * clamp is a final safety net. Biases are left static.
+   */
+  _learn(inputs) {
+    const { w, wInit, plast, nIn, nHidden, nOut, _hidden, _out } = this;
+    const { rate, decay, clamp } = this.learn;
+    let p = 0;
+    // Input → hidden connections.
+    for (let j = 0; j < nHidden; j++) {
+      const post = _hidden[j];
+      for (let i = 0; i < nIn; i++) {
+        let nw = w[p] + rate * plast[p] * inputs[i] * post + decay * (wInit[p] - w[p]);
+        if (nw > clamp) nw = clamp;
+        else if (nw < -clamp) nw = -clamp;
+        w[p] = nw;
+        p++;
+      }
+    }
+    p += nHidden; // skip hidden biases (static)
+    // Hidden → output connections.
+    for (let k = 0; k < nOut; k++) {
+      const post = _out[k];
+      for (let j = 0; j < nHidden; j++) {
+        let nw = w[p] + rate * plast[p] * _hidden[j] * post + decay * (wInit[p] - w[p]);
+        if (nw > clamp) nw = clamp;
+        else if (nw < -clamp) nw = -clamp;
+        w[p] = nw;
+        p++;
+      }
+    }
+    // Output biases left untouched.
   }
 }
