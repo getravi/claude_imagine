@@ -356,6 +356,8 @@ section.band {
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-2);
+  text-decoration: none;
+  color: inherit;
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 .shot:hover {
@@ -376,6 +378,7 @@ section.band {
   display: block;
   font-size: 0.98rem;
   margin-bottom: 3px;
+  color: var(--ink);
 }
 .shot .cap span {
   color: var(--ink-faint);
