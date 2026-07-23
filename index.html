@@ -132,6 +132,21 @@
       </aside>
     </main>
 
+    <section class="phylo">
+      <div class="phylo-head">
+        <h2>🌳 Tree of Life</h2>
+        <span class="phylo-info" id="phylo-info"></span>
+        <button id="btn-clear-highlight" class="mini hidden">✕ Clear highlight</button>
+      </div>
+      <p class="phylo-sub">
+        Each band is a species — a cluster of genetically similar creatures —
+        stacked by abundance over time. Watch lineages appear, sweep to
+        dominance, and go extinct. Click one to spotlight it in the pond above.
+      </p>
+      <canvas id="muller" width="1276" height="170"></canvas>
+      <div class="legend" id="species-legend"></div>
+    </section>
+
     <footer class="foot">
       <p>
         No creature is programmed to seek food. Each one just runs a small neural

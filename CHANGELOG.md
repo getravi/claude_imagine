@@ -4,6 +4,38 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-07-23
+
+The "Lineages" release: a live phylogeny you can watch and explore.
+
+### Added
+
+- **Tree of Life — a live phylogeny tracker.** A new module (`phylogeny.js`)
+  watches the population from the outside and groups creatures into *species* by
+  genetic similarity: a newborn joins the nearest living species within a genetic
+  distance, or founds a new one (branching from its parent's species) if it has
+  drifted too far. Species are born, sweep to dominance, and go extinct as you
+  watch — and it stays fully deterministic, so a seed reproduces its whole
+  phylogeny.
+- **Muller plot.** A new stacked-area visualization (`mullerplot.js`) under the
+  pond shows every species' abundance over time, each band coloured by its
+  lineage. You can literally see selective sweeps (a band widening), speciation
+  (a new band pinching into existence), and extinctions (a band pinching shut).
+- **Lineage spotlight.** Click a species in the legend — or the new "spotlight
+  lineage" link in a creature's inspector — to highlight that lineage in the
+  pond; every other creature dims to a ghost so you can see where the lineage
+  lives and how far it has spread.
+- **Phylogeny readouts:** a live "N species alive · M ever · K extinct" counter,
+  and a colour-chip legend of the currently dominant species with member counts.
+- **New tests** for species classification, branching, extinction tracking,
+  determinism, and bounded snapshot history (51 tests total).
+
+### Notes
+
+- Species membership is not saved with a world (Save/Load), so loading a world
+  rebuilds a fresh phylogeny by re-clustering the restored population; the deep
+  pre-save history is not reconstructed.
+
 ## [1.1.0] — 2026-07-22
 
 The "Predators" release: an evolvable food web, sexual reproduction, and

@@ -19,6 +19,7 @@ export class Renderer {
     this.showVision = false;
     this.showEnergy = true;
     this.selected = null; // a creature to highlight/inspect
+    this.highlightSpeciesId = null; // when set, other species are dimmed
     this._resize();
   }
 
@@ -74,6 +75,11 @@ export class Renderer {
     const sat = 60 + c.signal * 25;
 
     ctx.save();
+    // Lineage highlighting: fade creatures that aren't in the highlighted
+    // species, so one lineage stands out against the rest of the pond.
+    if (this.highlightSpeciesId != null && c.speciesId !== this.highlightSpeciesId) {
+      ctx.globalAlpha = 0.12;
+    }
     ctx.translate(c.x, c.y);
     ctx.rotate(c.heading);
 

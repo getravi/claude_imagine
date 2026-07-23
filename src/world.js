@@ -17,6 +17,7 @@ import { FoodField, Food } from "./food.js";
 import { Creature } from "./creature.js";
 import { Genome } from "./genome.js";
 import { Stats } from "./stats.js";
+import { Phylogeny } from "./phylogeny.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -25,11 +26,17 @@ export class World {
     this.rng = new RNG(config.seed);
     this.tick = 0;
 
+    // The phylogeny watches the population and groups it into species. It must
+    // exist before we make the founders, so it can classify them.
+    this.phylogeny = new Phylogeny(config);
+
     this.food = new FoodField(config, this.rng);
     /** @type {Creature[]} */
     this.creatures = [];
     for (let i = 0; i < config.populationStart; i++) {
-      this.creatures.push(this._randomCreature());
+      const c = this._randomCreature();
+      this.phylogeny.assign(c, 0, null); // founders have no parent species
+      this.creatures.push(c);
     }
 
     // Grids sized so each cell is about one vision radius across — that keeps
@@ -40,6 +47,7 @@ export class World {
 
     this.stats = new Stats();
     this.stats.sample(this);
+    this.phylogeny.sample(this, 0);
   }
 
   _randomCreature() {
@@ -150,7 +158,11 @@ export class World {
       // 4. Reproduction (sexual if enabled and a partner is near, else asexual).
       if (c.canReproduce() && this.creatures.length + born.length < cfg.populationMax) {
         const mateGenome = cfg.sexualReproduction && mate ? mate.genome : null;
-        born.push(c.reproduce(this.rng, mateGenome));
+        const child = c.reproduce(this.rng, mateGenome);
+        // Classify the newborn: it joins its parent's species unless it has
+        // drifted far enough to found a new one branching from it.
+        this.phylogeny.assign(child, this.tick, c.speciesId);
+        born.push(child);
         this.stats.births++;
       }
     }
@@ -173,19 +185,24 @@ export class World {
     // 6. Safety valve: don't let the toy die permanently.
     if (this.creatures.length === 0 && cfg.autoReseed) {
       for (let i = 0; i < cfg.reseedCount; i++) {
-        this.creatures.push(this._randomCreature());
+        const c = this._randomCreature();
+        this.phylogeny.assign(c, this.tick, null);
+        this.creatures.push(c);
       }
     }
 
     this.tick++;
     this.stats.sample(this);
+    this.phylogeny.sample(this, this.tick);
   }
 
   /** Add n fresh random creatures (used by the "seed life" button). */
   addRandomCreatures(n) {
     for (let i = 0; i < n; i++) {
       if (this.creatures.length >= this.config.populationMax) break;
-      this.creatures.push(this._randomCreature());
+      const c = this._randomCreature();
+      this.phylogeny.assign(c, this.tick, null);
+      this.creatures.push(c);
     }
   }
 
@@ -208,5 +225,11 @@ export class World {
     this.tick = obj.tick || 0;
     this.creatures = obj.creatures.map((o) => Creature.fromJSON(o, this.config, this.rng));
     this.food.items = obj.food.map((f) => new Food(f.x, f.y));
+    // Species membership isn't serialised, so rebuild a fresh phylogeny by
+    // re-clustering the restored population (each treated as a founder). The
+    // deep history before the save is gone, but grouping resumes correctly.
+    this.phylogeny = new Phylogeny(this.config);
+    for (const c of this.creatures) this.phylogeny.assign(c, this.tick, null);
+    this.phylogeny.sample(this, this.tick);
   }
 }

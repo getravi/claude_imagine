@@ -16,6 +16,10 @@ And in some worlds it goes further: a lineage evolves to stop grazing and start
 warm-glowing hunters chasing shoals of cool-coloured prey. Nobody programmed the
 predators either.
 
+A live **Tree of Life** below the pond tracks the whole thing as a phylogeny —
+you can watch species branch, sweep to dominance, and go extinct in real time,
+and click any lineage to spotlight it.
+
 No install, no build step, no dependencies. Just open it in a browser.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
@@ -44,6 +48,19 @@ No install, no build step, no dependencies. Just open it in a browser.
   neural networks. Foraging, fleeing, hunting, and loitering in food-rich
   patches are *emergent* — selection, not code.
 
+### The Tree of Life
+
+Below the pond, a live **Muller plot** groups creatures into species by genetic
+similarity and stacks each species' abundance over time:
+
+![The Tree of Life: a Muller plot of species rising and falling over time](docs/screenshots/phylogeny.png)
+
+A band **widening** is a lineage sweeping to dominance; a band **pinching into
+existence** is a new species branching off as a lineage drifts; a band
+**pinching shut** is an extinction. Click any species (in the legend, or via a
+creature's inspector) to **spotlight** it — the whole pond dims except that
+lineage, so you can see where it lives and how far it has spread.
+
 ## Controls
 
 | Control | What it does |
@@ -59,7 +76,8 @@ No install, no build step, no dependencies. Just open it in a browser.
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
-| **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, body traits, and a colour "fingerprint" of its brain weights. |
+| **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
+| **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
 
 ## Things to try
 
@@ -83,6 +101,9 @@ No install, no build step, no dependencies. Just open it in a browser.
 - **Watch the colours.** Genetic diversity (top-right stat) starts high — every
   founder is a different colour — and collapses as one lineage wins, then rises
   again as mutations diversify the winners.
+- **Read the Tree of Life.** Find a wide band and click it — watch its members
+  light up in the pond while everything else fades. Then look for a thin band
+  that appears partway across: that's a new species being born from an older one.
 - **Find a great world and Share it.** The link encodes the seed and parameters,
   so whoever opens it watches the very same pond evolve.
 
@@ -152,8 +173,10 @@ src/
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries
   stats.js          rolling population/lineage measurements
+  phylogeny.js      groups creatures into species (observation only)
   world.js          the simulation: steps everything forward
   render.js         canvas drawing
+  mullerplot.js     the "Tree of Life" stacked-area chart
   config.js         every tunable "physics constant" in one place
   main.js           boot, animation loop, UI wiring
 test/               unit + integration tests (node --test)

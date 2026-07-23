@@ -49,8 +49,10 @@ The dependency arrows point from a module to what it imports.
 | `food.js` | Passive energy pellets and their spawning. | — |
 | `grid.js` | Spatial hash grid for O(1)-ish neighbour queries on a torus. | — |
 | `stats.js` | Rolling population/lineage/diversity measurements. | — |
+| `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
+| `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `main.js` | Boot, the requestAnimationFrame loop, all UI wiring. | yes |
 
 ## The world and its state
@@ -169,6 +171,34 @@ When a `Creature` is born it decodes its genome once:
   drain), **hue** (its colour, which drifts as a lineage mutates and gives you
   the visible "family tree"), and **diet** (0 = herbivore … 1 = carnivore,
   which governs grazing nutrition, hunting, and the upkeep cost of carnivory).
+
+## Species and the phylogeny (observation only)
+
+`phylogeny.js` sits *outside* the simulation and watches it. The world calls it
+at exactly three moments — when a founder is created, when a creature is born,
+and once per tick to sample — and it never influences a single creature's
+behaviour. This separation is deliberate: it means the phylogeny can be as
+elaborate as we like without ever threatening determinism or the tuned dynamics.
+
+A **species** is a cluster of genetically similar creatures. It carries a fixed
+*representative* genome (its founder's), a colour, a birth tick, and a parent
+species (for the tree). Classification is **online phenetic clustering**: when a
+creature is born, it joins the nearest *living* species whose representative is
+within `speciationDistance` (mean absolute genome difference); if none qualifies,
+it founds a new species branching from its biological parent's. That's
+O(living species) per birth — cheap, because only a handful coexist.
+
+The threshold matters more than it looks. Founders start far apart in genome
+space (~1.1), but a lineage drifts only slightly per generation, so the threshold
+must sit well below the founder spacing for descendants to *shed* new species as
+they diverge — otherwise you get winnowing of the founders but no branching. See
+the devlog for that tuning story.
+
+Every few ticks the phylogeny re-tallies each species' true membership from the
+live population (correcting the incremental counts, which don't see deaths),
+records a snapshot, and marks newly-extinct species. `mullerplot.js` turns those
+snapshots into the stacked-area "Tree of Life" chart, and the renderer can dim
+every creature outside a chosen species to spotlight one lineage in the pond.
 
 ## Rendering is read-only
 

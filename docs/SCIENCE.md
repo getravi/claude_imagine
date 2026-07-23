@@ -182,6 +182,46 @@ kinds of stabilisers that keep real food webs from collapsing:
 Tuned together (see the [devlog](DEVLOG.md) for the full, four-attempt story),
 these keep predator/prey dynamics oscillating instead of collapsing.
 
+## Species, phylogeny, and Muller plots
+
+Vivarium's creatures never have a species assigned to them — they are just
+individuals with genomes. Species are something we *infer* by watching, the same
+problem biologists face. Vivarium groups creatures using a **phenetic species
+concept**: a species is a cluster of genetically similar organisms (as opposed to
+the *biological* species concept of interbreeding populations, or *phylogenetic*
+concepts based strictly on ancestry). Concretely, a newborn joins the nearest
+living cluster within a genetic-distance threshold, or founds a new one that
+branches from its parent's — so the "species" you see are a running,
+distance-based clustering of the population.
+
+This produces a genuine, if simplified, **phylogeny** — a branching tree of
+descent — because each new species records the species it branched from. Over a
+run you get the two fundamental macro-evolutionary motions:
+
+- **Anagenesis** (change within a lineage): a species drifts until its
+  descendants are different enough to be called a new species.
+- **Cladogenesis** (splitting): the tree branches; a parent species can give rise
+  to several children that coexist and compete.
+
+The **Muller plot** used to visualise this is a real tool from experimental
+evolution — famously used to show clonal dynamics in long-running microbial
+experiments like the *E. coli* Long-Term Evolution Experiment. Each lineage is a
+band; the band's thickness is its abundance; time runs along the horizontal axis.
+Reading it, you can spot:
+
+- a **selective sweep** — a band widening as a fitter lineage displaces others;
+- **speciation** — a new band pinching into existence mid-plot;
+- **extinction** — a band pinching shut;
+- **clonal interference** — several lineages jockeying, none fixing, because
+  competing beneficial variants get in each other's way.
+
+A caveat worth stating: because classification is by overall genetic distance to
+a fixed representative, it is a *phenetic* grouping, not a perfect record of
+ancestry — convergent drift could in principle place two unrelated creatures in
+the same cluster. It's a faithful, legible approximation of the tree of life, not
+a ground-truth genealogy. (A true ancestry-tracked genealogy is a natural future
+refinement — see the roadmap.)
+
 ## Determinism and reproducibility
 
 Vivarium is fully **deterministic**: a given `(seed, parameters)` pair produces
@@ -221,3 +261,6 @@ list and were built in v1.1.
 - Melanie Mitchell, *An Introduction to Genetic Algorithms* (1996).
 - Karl Sims, "Evolving Virtual Creatures," SIGGRAPH 1994 — the classic that made
   a generation of people fall in love with evolved behaviour.
+- Richard E. Lenski et al., the *E. coli* Long-Term Evolution Experiment
+  (1988– ) — decades of real evolution whose lineage dynamics are often shown as
+  Muller plots, the same visualisation Vivarium's Tree of Life uses.

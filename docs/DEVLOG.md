@@ -185,8 +185,8 @@ Doors left open, and which ones v1.1 walked through:
    The single biggest lever on how sophisticated behaviour can get. Still open.
 4. **Within-lifetime learning.** Hebbian plasticity so brains adapt during a
    life, and the interplay (Baldwin effect) between learning and evolution.
-5. **A real genealogy view.** I track lineage by colour and generation; a proper
-   interactive phylogenetic tree would make the evolutionary story legible.
+5. ✅ **A genealogy view** — shipped in v1.2 as a live phylogeny + Muller plot
+   (Entry 11).
 6. **Environmental structure.** Seasons, food that grows in patches, gradients,
    day/night — heterogeneity is what drives specialisation and diversity.
 7. ✅ **Shareable permalinks** — shipped in v1.1 (Entry 10).
@@ -281,6 +281,48 @@ link. Because a `(seed, parameters)` pair reproduces a world exactly, that link
 *is* the world — hand it to someone and they watch the same pond evolve the same
 way. A feature that would have been fiddly to bolt on later cost almost nothing,
 because the foundation was laid to support it from the start.
+
+## Entry 11 — making evolution legible: the Tree of Life · 2026-07-23
+
+By v1.1 the pond *did* a lot, but it only showed you one thing: individuals,
+right now. The evolutionary story — who descended from whom, which lineages won,
+which vanished — was happening but invisible, inferable only from the drifting
+colours. For a project whose whole pitch is "watch evolution happen," that felt
+like a missing sense. So v1.2 adds a second lens: a live **phylogeny**.
+
+The design question was how to define a "species" in a world that has none. I
+went with **online phenetic clustering**: each species has a fixed representative
+genome (its founder's), and a newborn joins the nearest living species within a
+genetic-distance threshold, or founds a new species — branching from its
+biological parent's — if it has drifted too far from all of them. It's O(living
+species) per birth, which is nothing, and it's completely deterministic, so a
+seed still reproduces its entire tree of life down to the species IDs. Crucially,
+none of it feeds back into the simulation: the phylogeny is a pure observer.
+
+Tuning the speciation threshold had a lovely subtlety. My first value (0.38) gave
+me *winnowing* but no *branching*: all 40 founding lineages competed and a few
+won, but no genuinely new species ever appeared, because a drifting lineage never
+wandered far enough from its founder before some other founder's cluster claimed
+it. The founders start ~1.1 apart in genome space, but a lineage only drifts
+~0.015 per generation — so the threshold has to be well below the founder spacing
+for descendants to *shed* new species as they diverge. Dropping it to 0.15 lit up
+the tree: new species now branch off every few hundred ticks, in real
+parent→child chains (I watched 3→40→41→…), spread across the whole run. The tree
+grows.
+
+For the visualization I built a **Muller plot** — the stacked-area chart
+biologists use for exactly this, where each lineage is a band and you read
+evolution off the shapes: a band widening is a selective sweep, a band pinching
+into existence is speciation, a band pinching shut is extinction. Tiny
+short-lived species fold into a grey "other" band so the picture stays legible.
+The first time I watched a single cyan band swell from a sliver on the left to
+half the chart on the right — a lineage sweeping to dominance, drawn live from
+the same deterministic data the pond runs on — it did the thing I most wanted
+this project to do: it made an abstract force *visible*.
+
+The last touch was linking the two lenses: click a species and the whole pond
+dims to ghosts except that lineage, so you can see not just *that* it's winning
+but *where* it lives and how it's spread. Two views of one truth.
 
 ## A closing note
 

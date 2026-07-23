@@ -88,6 +88,15 @@ export const DEFAULT_CONFIG = Object.freeze({
   sexualReproduction: false,
   mateRadius: 34,
 
+  // --- Phylogeny / speciation (v1.2, observation only) ---
+  // A newborn joins the nearest living species within this genetic distance
+  // (mean absolute weight difference), else founds a new one. Smaller = finer
+  // splitting into more species; larger = coarser. This never affects the
+  // simulation, only how lineages are grouped for the "tree of life" view.
+  speciationDistance: 0.15,
+  phylogenySampleInterval: 6, // ticks between abundance snapshots
+  phylogenyHistory: 520, // snapshots kept for the Muller plot
+
   // --- Simulation ---
   stepsPerFrame: 1, // increased by the speed control
 });

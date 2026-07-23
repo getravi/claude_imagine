@@ -9,6 +9,7 @@ import { makeConfig } from "./config.js";
 import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
+import { drawMuller } from "./mullerplot.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -80,10 +81,68 @@ function loop(now) {
 
   renderer.draw(world);
   drawChart(world);
+  drawPhylogeny(world);
   updateHUD();
   updateInspector();
 
   requestAnimationFrame(loop);
+}
+
+// ---- Tree of Life (Muller plot + legend) ----
+let mullerCtx = null;
+let legendSig = ""; // avoid rebuilding the legend DOM every frame
+function drawPhylogeny(world) {
+  const canvas = $("muller");
+  if (!mullerCtx) {
+    mullerCtx = canvas.getContext("2d");
+    // Match the backing buffer to the displayed size once, for crisp lines.
+    const w = Math.round(canvas.clientWidth) || canvas.width;
+    canvas.width = w;
+  }
+  const ph = world.phylogeny;
+  const shown = drawMuller(mullerCtx, ph, {
+    width: canvas.width,
+    height: canvas.height,
+    highlightId: renderer.highlightSpeciesId,
+  });
+
+  $("phylo-info").textContent =
+    `${ph.livingCount()} species alive · ${ph.species.length} ever · ` +
+    `${ph.species.filter((s) => s.extinctTick >= 0).length} extinct`;
+
+  // Rebuild the legend only when the set of shown species (or highlight) changes.
+  const living = shown.filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
+  const sig = living.map((s) => s.id).join(",") + "|" + renderer.highlightSpeciesId;
+  if (sig !== legendSig) {
+    legendSig = sig;
+    buildLegend(living);
+  } else {
+    // Cheap in-place count refresh.
+    for (const s of living) {
+      const el = document.getElementById("chip-n-" + s.id);
+      if (el) el.textContent = s.count;
+    }
+  }
+}
+
+function buildLegend(living) {
+  const box = $("species-legend");
+  box.innerHTML = "";
+  for (const s of living.slice(0, 16)) {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (renderer.highlightSpeciesId === s.id ? " active" : "");
+    chip.innerHTML =
+      `<span class="dot" style="background:hsl(${s.hue},70%,55%);color:hsl(${s.hue},70%,55%)"></span>` +
+      `species ${s.id} <span class="n" id="chip-n-${s.id}">${s.count}</span>`;
+    chip.addEventListener("click", () => toggleHighlight(s.id));
+    box.appendChild(chip);
+  }
+}
+
+function toggleHighlight(id) {
+  renderer.highlightSpeciesId = renderer.highlightSpeciesId === id ? null : id;
+  legendSig = ""; // force legend refresh to update the active chip
+  $("btn-clear-highlight").classList.toggle("hidden", renderer.highlightSpeciesId == null);
 }
 
 // ---- HUD ----
@@ -174,9 +233,18 @@ function updateInspector() {
       <div><label>Size</label><b>${c.radius.toFixed(1)}</b></div>
       <div><label>Metabolism</label><b>${c.metabolismScale.toFixed(2)}×</b></div>
       <div class="insp-wide"><label>Diet</label><b>${dietLabel}</b></div>
+      <div class="insp-wide"><label>Species</label>
+        <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
     </div>
     <div class="brainwrap"><label>Brain weights</label>${brainSparkline(c)}</div>
   `;
+  const link = document.getElementById("insp-species");
+  if (link) {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleHighlight(c.speciesId);
+    });
+  }
 }
 
 // Render the genome as a tiny colour strip — a visual "fingerprint" of the brain.
@@ -249,6 +317,13 @@ function wireControls() {
   $("btn-save").addEventListener("click", saveWorld);
   $("btn-load").addEventListener("click", loadWorld);
   $("btn-share").addEventListener("click", shareLink);
+
+  // Tree of Life: clear the lineage spotlight.
+  $("btn-clear-highlight").addEventListener("click", () => {
+    renderer.highlightSpeciesId = null;
+    legendSig = "";
+    $("btn-clear-highlight").classList.add("hidden");
+  });
 }
 
 function bindSlider(configKey, elId, fmt) {
@@ -271,6 +346,9 @@ function resetWorld(seed) {
   world = new World(config);
   renderer.config = config;
   renderer.selected = null;
+  renderer.highlightSpeciesId = null; // species ids don't carry across worlds
+  legendSig = "";
+  $("btn-clear-highlight").classList.add("hidden");
   syncHash();
 }
 

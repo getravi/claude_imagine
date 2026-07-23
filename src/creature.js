@@ -42,6 +42,9 @@ export class Creature {
     this.generation = generation;
     this.children = 0;
     this.dead = false;
+    // Which species (in phylogeny.js) this creature belongs to. Assigned from
+    // outside at birth; -1 means "not yet classified".
+    this.speciesId = -1;
 
     // Body traits decoded from body genes.
     this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
