@@ -83,6 +83,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Predation** | Toggle whether carnivores can hunt. On by default — turn it off for a pure-herbivore world. |
 | **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
+| **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
 | **Evolvable brains (NEAT)** | Toggle evolvable topology: brains start minimal and grow their own structure over generations. Off by default; flipping it restarts the world with graph-based brains. |
@@ -109,6 +110,9 @@ lineage, so you can see where it lives and how far it has spread.
   climate makes.
 - **Watch the biomes.** Creatures pile into the fertile glowing patches and
   leave the barren stretches empty; the emptiness becomes a risky crossing.
+- **Turn on Drifting biomes** and watch the fertile patches slide across the
+  world — the shoals of creatures follow the food, migrating to track it. The
+  pond can never settle into a fixed pattern.
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)

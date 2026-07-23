@@ -42,6 +42,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   patchCount: 4, // number of fertile biome centres
   patchRadius: 135, // spread (sigma) of each biome, in pixels
   patchFloor: 0.15, // minimum fertility far from any biome (0..1)
+  // Drifting biomes: pixels/tick each biome roams. 0 = static (default, so
+  // worlds are unchanged); a small value makes the food landscape continuously
+  // shift, forcing migration and preventing the pond from settling.
+  biomeDrift: 0,
 
   // --- Population ---
   populationStart: 40,

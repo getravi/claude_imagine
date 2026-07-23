@@ -24,10 +24,37 @@ export class FertilityField {
     this.sigma = config.patchRadius;
     this.twoSigma2 = 2 * this.sigma * this.sigma;
     // Biome centres, placed once from the world RNG so a seed reproduces the
-    // same landscape every time.
+    // same landscape every time. `centres` are the *current* positions (read by
+    // at()/sample()/the renderer); they start at these and, if drift is on, roam
+    // from here.
     this.centres = [];
     for (let i = 0; i < config.patchCount; i++) {
       this.centres.push({ x: rng.range(0, config.width), y: rng.range(0, config.height) });
+    }
+    // Per-biome drift directions, spread by the golden angle so each biome heads
+    // a different way and the food landscape continuously reshuffles. These are
+    // derived from the index — NOT the RNG — so enabling drift costs zero draws
+    // and leaves every existing world untouched.
+    this.driftDirs = this.centres.map((_, i) => {
+      const a = i * 2.399963; // golden angle in radians
+      return { x: Math.cos(a), y: Math.sin(a) };
+    });
+  }
+
+  /**
+   * Advance drifting biomes by one tick. With `driftPerTick === 0` (the default)
+   * nothing moves and the field is exactly the static one. Integrated
+   * incrementally (rather than as base + v·t) so changing the drift speed at
+   * runtime alters the pace smoothly instead of teleporting the biomes.
+   */
+  update(driftPerTick) {
+    if (!driftPerTick) return;
+    const { width, height } = this.config;
+    for (let i = 0; i < this.centres.length; i++) {
+      const c = this.centres[i];
+      const d = this.driftDirs[i];
+      c.x = ((c.x + d.x * driftPerTick) % width + width) % width;
+      c.y = ((c.y + d.y * driftPerTick) % height + height) % height;
     }
   }
 

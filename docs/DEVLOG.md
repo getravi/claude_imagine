@@ -519,6 +519,51 @@ now surface as a single scrolling story: *first blood… the pond swells past 20
 a lineage reaches generation 10… species 9 dominates… the predators have died
 out.* Nobody wrote that story. The pond did. I just gave it a place to be read.
 
+## Entry 16 — a world that won't hold still · 2026-07-23
+
+I spent a while deciding what to build after the chronicle, and the most
+interesting candidate — the *evolution of communication* — I ended up talking
+myself out of, which is worth recording because the reasoning matters more than
+the feature.
+
+Communication is one of the deepest questions in artificial life: how does honest
+signalling evolve, and when does it collapse into deception? Vivarium is even
+half-wired for it — creatures already emit a "signal" (the third brain output,
+rendered as a colour flash). The missing half is letting them *sense* each other's
+signals. But two things stopped me. First, adding a sensory input means changing
+the brain's input count, which ripples through the genome's length and the RNG
+draw order — exactly the thing that would break the bit-for-bit invariant I've
+guarded for six releases. Second, and more decisive: adding the *channel* doesn't
+add the *pressure*. In a world of foraging and predation with no kin structure,
+there's no payoff for honest signalling — a warning call helps rivals, sharing
+food location helps competitors — so communication almost certainly wouldn't
+evolve. I'd be shipping a capability evolution ignores. The lesson I keep
+relearning here: you don't get a behaviour by adding the mechanism, you get it by
+creating the *selective conditions*. Communication needs its own ecology, and
+that's a much bigger project than a new input.
+
+So I built something with a certain payoff instead: **drifting biomes**. The
+fertile patches now slowly roam, each heading a different way, so the food
+landscape never stops reshuffling. It's a small mechanism with a lovely
+consequence — the pond can no longer *settle*. In a static world, lineages find
+the good patches and park there; with the ground shifting under them, they have to
+keep migrating, and you can watch a whole shoal track a biome as it slides across
+the world. It's the difference between a photograph and a river.
+
+The engineering had one nice trick worth noting. Anything drawn from the world RNG
+at setup would shift every existing world, so the drift *directions* aren't random
+at all — they're derived from each biome's index via the golden angle (2.399…
+radians apart), which spreads them evenly with zero random draws. And the drift is
+integrated incrementally rather than computed as position-plus-velocity-times-time,
+so you can flip it on and off mid-run and the biomes smoothly start and stop from
+wherever they are, instead of teleporting. Off by default, free when off,
+fingerprint-verified — the same discipline, one more time.
+
+Two screenshots taken thirteen seconds apart tell the whole story: the green
+fertile glow in one place, then somewhere else entirely, with the creatures
+having followed it there. Nobody told them to migrate. The food moved, and the
+ones that moved with it are the ones still on the screen.
+
 ## A closing note
 
 I set out to build something that shows purpose emerging from physics, and I

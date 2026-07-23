@@ -39,8 +39,12 @@ function parseHash() {
   if (p.has("bio")) o.foodPatches = p.get("bio") === "1";
   if (p.has("pla")) o.plasticity = p.get("pla") === "1";
   if (p.has("neat")) o.evolvableTopology = p.get("neat") === "1";
+  if (p.has("drift")) o.biomeDrift = p.get("drift") === "1" ? DRIFT_SPEED : 0;
   return o;
 }
+
+// The biome-drift speed used when the "Drifting biomes" toggle is on.
+const DRIFT_SPEED = 0.1;
 
 function syncHash() {
   const p = new URLSearchParams();
@@ -54,6 +58,7 @@ function syncHash() {
   p.set("bio", config.foodPatches ? "1" : "0");
   p.set("pla", config.plasticity ? "1" : "0");
   p.set("neat", config.evolvableTopology ? "1" : "0");
+  p.set("drift", config.biomeDrift > 0 ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -447,6 +452,13 @@ function wireControls() {
   $("toggle-patches").checked = config.foodPatches;
   $("toggle-patches").addEventListener("change", (e) => {
     config.foodPatches = e.target.checked;
+    syncHash();
+  });
+  $("toggle-drift").checked = config.biomeDrift > 0;
+  $("toggle-drift").addEventListener("change", (e) => {
+    // Live-toggleable: drift directions are fixed, so this just starts/stops
+    // the biomes roaming from wherever they currently are.
+    config.biomeDrift = e.target.checked ? DRIFT_SPEED : 0;
     syncHash();
   });
   $("toggle-predation").checked = config.predation;

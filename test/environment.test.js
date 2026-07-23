@@ -53,6 +53,41 @@ test("sampled positions are always in bounds", () => {
   }
 });
 
+test("biomes stay put with drift 0 and roam with drift > 0", () => {
+  const cfg = makeConfig();
+  const field = new FertilityField(cfg, new RNG(4));
+  const start = field.centres.map((c) => ({ x: c.x, y: c.y }));
+  for (let i = 0; i < 500; i++) field.update(0); // no drift
+  field.centres.forEach((c, i) => {
+    assert.equal(c.x, start[i].x, "no drift ⇒ no movement (x)");
+    assert.equal(c.y, start[i].y, "no drift ⇒ no movement (y)");
+  });
+  for (let i = 0; i < 500; i++) field.update(0.1); // drifting
+  let moved = false;
+  field.centres.forEach((c, i) => {
+    if (Math.abs(c.x - start[i].x) > 1 || Math.abs(c.y - start[i].y) > 1) moved = true;
+  });
+  assert.ok(moved, "positive drift should move the biomes");
+});
+
+test("drifting biomes stay within world bounds (wrap)", () => {
+  const cfg = makeConfig();
+  const field = new FertilityField(cfg, new RNG(8));
+  for (let i = 0; i < 20000; i++) field.update(0.2);
+  for (const c of field.centres) {
+    assert.ok(c.x >= 0 && c.x < cfg.width, "x wrapped in bounds");
+    assert.ok(c.y >= 0 && c.y < cfg.height, "y wrapped in bounds");
+  }
+});
+
+test("drift directions are RNG-free (two fields share the same directions)", () => {
+  const cfg = makeConfig();
+  const a = new FertilityField(cfg, new RNG(1));
+  const b = new FertilityField(cfg, new RNG(999)); // different RNG
+  // Directions come from the index, not the RNG, so they must match.
+  assert.deepEqual(a.driftDirs, b.driftDirs);
+});
+
 test("seasonal factor swings within [1-amp, 1+amp] and averages ~1", () => {
   const cfg = makeConfig({ seasons: true, seasonAmplitude: 0.3, seasonLength: 2600 });
   let sum = 0;

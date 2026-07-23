@@ -197,7 +197,9 @@ export class World {
     }
     for (const b of born) this.creatures.push(b);
 
-    // Food upkeep. The seasonal factor swells or starves the food supply.
+    // Environment upkeep: drift the biomes, then spawn food (seasonally scaled,
+    // placed by the now-updated fertility field).
+    this.environment.update(cfg.biomeDrift);
     this.seasonFactor = seasonalFactor(this.tick, cfg);
     this.seasonPhase = seasonPhase(this.tick, cfg);
     this.food.compact();

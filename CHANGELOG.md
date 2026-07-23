@@ -4,6 +4,28 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] — 2026-07-23
+
+The "Shifting Lands" release: the environment never stops changing.
+
+### Added
+
+- **Drifting biomes (opt-in).** The fertile patches can now slowly roam, each in
+  a different direction (spread by the golden angle), so the food landscape
+  continuously reshuffles — biomes spread, cross, and cluster over time. This
+  keeps the pond from ever settling: creatures must keep migrating to follow the
+  food, and you can watch shoals track a drifting biome across the world. A
+  "Drifting biomes" toggle (wired into the permalink) turns it on and off live.
+- **New tests** for drift (static when off, roaming when on, wrapping in bounds,
+  and RNG-free drift directions) — 84 total.
+
+### Notes
+
+- Off by default, and **free when off**: drift directions are derived from the
+  biome index rather than the RNG, and the update is a no-op at zero drift, so
+  every world is unchanged (verified bit-for-bit against a v1.5/v1.6 fingerprint).
+  Enabling drift is stable across seeds — the pond migrates but doesn't collapse.
+
 ## [1.6.0] — 2026-07-23
 
 The "Chronicle" release: the pond tells its own story.

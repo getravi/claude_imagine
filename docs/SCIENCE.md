@@ -263,6 +263,14 @@ sub-populations experience slightly different pressures and drift apart, the sam
 way a mountain range or an island splits a species in the wild. Watch the Tree of
 Life while biomes are on and you may catch lineages diverging by region.
 
+Biomes can optionally **drift**, each roaming in a different direction. A moving
+habitat is a standing source of directional selection: the environment a lineage
+adapted to is always sliding out from under it, so foraging strategies that track
+the food (rather than parking in one spot) are continually favoured. Shifting
+habitats are, in the real world, a major driver of both migration and speciation —
+a static optimum lets a population converge and stop; a moving one keeps evolution
+in motion.
+
 **Seasons (temporal heterogeneity).** Food supply rises and falls on a yearly
 cycle, so *when* a creature lives matters. Seasonality selects for strategies
 that a constant climate never would: riding out lean winters, exploiting summer
