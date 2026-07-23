@@ -40,12 +40,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          # Auto-enable Pages (build type "workflow") on the first run so the
-          # site goes live without anyone flipping a settings toggle by hand.
-          enablement: true
+      - uses: actions/configure-pages@v5
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
