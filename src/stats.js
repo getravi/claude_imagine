@@ -13,6 +13,7 @@ export class Stats {
     this.births = 0;
     this.deaths = 0;
     this.kills = 0; // deaths specifically caused by predation
+    this.scavenged = 0; // total scavenging bites taken from corpses
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores

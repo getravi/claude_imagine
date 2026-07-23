@@ -91,6 +91,15 @@ export const DEFAULT_CONFIG = Object.freeze({
   meatEfficiency: 1.0, // fraction of a bite a full carnivore absorbs
   plantPenaltyFromDiet: 0.4, // how much carnivory reduces plant nutrition (0..1)
   biteCooldown: 8, // ticks a predator must wait between bites ("handling time")
+
+  // Scavenging (v1.8, opt-in): when a creature dies it leaves a corpse that
+  // carnivores can feed on — closing the nutrient loop (death → food) and
+  // opening a scavenger niche distinct from hunting. Off by default, and a pure
+  // no-op when off, so worlds are unchanged.
+  scavenging: false,
+  corpseEnergyBase: 14, // baseline meat in a corpse...
+  corpseEnergyPerRadius: 3.2, // ...plus this much per unit of body radius
+  corpseDecay: 0.16, // meat lost per tick as a corpse rots away
   // Ongoing metabolic cost of carnivory (per unit diet, per tick). This is the
   // upkeep of "hunting apparatus": it makes being a predator cost something
   // even when you aren't eating, so in a world with no viable prey selection

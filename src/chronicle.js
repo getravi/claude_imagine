@@ -35,6 +35,7 @@ export class Chronicle {
     this._lowDiversity = false;
     this._dominant = -1;
     this._reportedExtinct = new Set();
+    this._dieoff = false;
   }
 
   _push(tick, icon, cat, msg) {
@@ -124,6 +125,17 @@ export class Chronicle {
       this._hiddenMax = s.maxHidden;
       const word = this._hiddenMax === 1 ? "its first hidden neuron" : `${this._hiddenMax} hidden neurons`;
       this._push(tick, "🕸️", "brain", `A brain has grown ${word}.`);
+    }
+
+    // --- Scavenging: a glut of corpses after a die-off ---
+    if (this.config.scavenging) {
+      const corpses = world.corpses.length;
+      if (!this._dieoff && corpses >= 40) {
+        this._dieoff = true;
+        this._push(tick, "🦴", "death", `A die-off leaves ${corpses} corpses — the scavengers move in.`);
+      } else if (this._dieoff && corpses < 15) {
+        this._dieoff = false;
+      }
     }
 
     // --- Throttled scans ---

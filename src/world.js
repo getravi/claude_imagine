@@ -13,7 +13,7 @@
 
 import { RNG } from "./rng.js";
 import { SpatialGrid } from "./grid.js";
-import { FoodField, Food } from "./food.js";
+import { FoodField, Food, Corpse } from "./food.js";
 import { Creature } from "./creature.js";
 import { Genome } from "./genome.js";
 import { NeatGenome } from "./neat.js";
@@ -53,6 +53,10 @@ export class World {
     const cell = Math.max(40, config.visionRadius * 0.75);
     this.creatureGrid = new SpatialGrid(config.width, config.height, cell);
     this.foodGrid = new SpatialGrid(config.width, config.height, cell);
+    // Corpses (scavenging). Empty and unused unless the feature is on.
+    /** @type {import('./food.js').Corpse[]} */
+    this.corpses = [];
+    this.corpseGrid = new SpatialGrid(config.width, config.height, cell);
 
     this.stats = new Stats();
     this.stats.sample(this);
@@ -90,6 +94,10 @@ export class World {
     this.foodGrid.clear();
     for (const c of this.creatures) this.creatureGrid.insert(c);
     for (const f of this.food.items) this.foodGrid.insert(f);
+    if (cfg.scavenging) {
+      this.corpseGrid.clear();
+      for (const k of this.corpses) this.corpseGrid.insert(k);
+    }
 
     const born = [];
 
@@ -132,11 +140,28 @@ export class World {
         }
       });
 
+      // Scavenging: a carnivore also perceives the nearest corpse as an edible
+      // target. Whichever is nearer — a living prey or a corpse — becomes what it
+      // homes in on, so scavenging reuses the very same hunting behaviour. With
+      // scavenging off, no corpse is ever found, so preyTarget === prey exactly.
+      let preyTarget = prey;
+      let preyTargetD2 = preyD2;
+      if (cfg.scavenging && c.carnivory >= cfg.carnivoreThreshold) {
+        this.corpseGrid.forEachNear(c.x, c.y, (k) => {
+          if (k.energy <= 0) return;
+          const d2 = torusDist2(c.x, c.y, k.x, k.y, cfg.width, cfg.height);
+          if (d2 < preyTargetD2) {
+            preyTargetD2 = d2;
+            preyTarget = k;
+          }
+        });
+      }
+
       c.sense(
         nf,
         nf ? Math.sqrt(nfD2) : Infinity,
-        prey,
-        prey ? Math.sqrt(preyD2) : Infinity,
+        preyTarget,
+        preyTarget ? Math.sqrt(preyTargetD2) : Infinity,
         threat,
         threat ? Math.sqrt(threatD2) : Infinity
       );
@@ -154,22 +179,34 @@ export class World {
         }
       }
 
-      // 3b. Predation: bite the nearest prey if bodies are touching. The bite
-      // drains the victim (which may kill it) and feeds the predator in
-      // proportion to how carnivorous it is.
-      if (cfg.predation && prey && !prey.dead && c.age - c.lastBiteAge >= cfg.biteCooldown) {
-        const reach = c.radius + prey.radius + 2;
-        if (preyD2 <= reach * reach) {
-          const amount = Math.min(prey.energy, cfg.biteEnergy);
-          prey.energy -= amount;
-          c.energy = Math.min(
-            cfg.energyMax,
-            c.energy + amount * cfg.meatEfficiency * c.carnivory
-          );
-          c.lastBiteAge = c.age; // for the rendering "flash"
-          if (prey.energy <= 0) {
-            prey.dead = true;
-            this.stats.kills++;
+      // 3b. Feeding on flesh — the target is whichever the creature homed in on.
+      // A corpse is scavenged; a living creature is bitten (predation). Both
+      // respect the bite cooldown. With scavenging off, preyTarget is always a
+      // living creature, so this is exactly the predation path as before.
+      if (preyTarget && c.age - c.lastBiteAge >= cfg.biteCooldown) {
+        if (preyTarget.isCorpse) {
+          const reach = c.radius + cfg.foodRadius + 6;
+          if (preyTargetD2 <= reach * reach && preyTarget.energy > 0) {
+            const chunk = Math.min(preyTarget.energy, cfg.biteEnergy);
+            preyTarget.energy -= chunk;
+            c.energy = Math.min(cfg.energyMax, c.energy + chunk * cfg.meatEfficiency * c.carnivory);
+            c.lastBiteAge = c.age;
+            this.stats.scavenged++;
+          }
+        } else if (cfg.predation && !preyTarget.dead) {
+          const reach = c.radius + preyTarget.radius + 2;
+          if (preyTargetD2 <= reach * reach) {
+            const amount = Math.min(preyTarget.energy, cfg.biteEnergy);
+            preyTarget.energy -= amount;
+            c.energy = Math.min(
+              cfg.energyMax,
+              c.energy + amount * cfg.meatEfficiency * c.carnivory
+            );
+            c.lastBiteAge = c.age; // for the rendering "flash"
+            if (preyTarget.energy <= 0) {
+              preyTarget.dead = true;
+              this.stats.kills++;
+            }
           }
         }
       }
@@ -186,16 +223,35 @@ export class World {
       }
     }
 
-    // 5. Remove the dead; append newborns.
+    // 5. Remove the dead; append newborns. When scavenging is on, each corpse
+    // left behind holds meat proportional to the creature's body size —
+    // recycling its biomass back into the food web.
     if (this.creatures.some((c) => c.dead)) {
       const survivors = [];
       for (const c of this.creatures) {
-        if (c.dead) this.stats.deaths++;
-        else survivors.push(c);
+        if (c.dead) {
+          this.stats.deaths++;
+          if (cfg.scavenging) {
+            const meat = cfg.corpseEnergyBase + c.radius * cfg.corpseEnergyPerRadius;
+            this.corpses.push(new Corpse(c.x, c.y, meat));
+          }
+        } else survivors.push(c);
       }
       this.creatures = survivors;
     }
     for (const b of born) this.creatures.push(b);
+
+    // Corpses rot away over time (and shrink as they're fed on); drop the empty
+    // ones. Skipped entirely when scavenging is off, so there's nothing to do.
+    if (cfg.scavenging && this.corpses.length > 0) {
+      let w = 0;
+      for (let i = 0; i < this.corpses.length; i++) {
+        const k = this.corpses[i];
+        k.energy -= cfg.corpseDecay;
+        if (k.energy > 0) this.corpses[w++] = k;
+      }
+      this.corpses.length = w;
+    }
 
     // Environment upkeep: drift the biomes, then spawn food (seasonally scaled,
     // placed by the now-updated fertility field).
@@ -254,6 +310,7 @@ export class World {
     this.tick = obj.tick || 0;
     this.creatures = obj.creatures.map((o) => Creature.fromJSON(o, this.config, this.rng));
     this.food.items = obj.food.map((f) => new Food(f.x, f.y));
+    this.corpses = []; // corpses are transient; start the loaded world clean
     // Species membership isn't serialised, so rebuild a fresh phylogeny by
     // re-clustering the restored population (each treated as a founder). The
     // deep history before the save is gone, but grouping resumes correctly.

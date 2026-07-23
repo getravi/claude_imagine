@@ -40,6 +40,7 @@ function parseHash() {
   if (p.has("pla")) o.plasticity = p.get("pla") === "1";
   if (p.has("neat")) o.evolvableTopology = p.get("neat") === "1";
   if (p.has("drift")) o.biomeDrift = p.get("drift") === "1" ? DRIFT_SPEED : 0;
+  if (p.has("scav")) o.scavenging = p.get("scav") === "1";
   return o;
 }
 
@@ -59,6 +60,7 @@ function syncHash() {
   p.set("pla", config.plasticity ? "1" : "0");
   p.set("neat", config.evolvableTopology ? "1" : "0");
   p.set("drift", config.biomeDrift > 0 ? "1" : "0");
+  p.set("scav", config.scavenging ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -464,6 +466,11 @@ function wireControls() {
   $("toggle-predation").checked = config.predation;
   $("toggle-predation").addEventListener("change", (e) => {
     config.predation = e.target.checked;
+    syncHash();
+  });
+  $("toggle-scavenging").checked = config.scavenging;
+  $("toggle-scavenging").addEventListener("change", (e) => {
+    config.scavenging = e.target.checked;
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

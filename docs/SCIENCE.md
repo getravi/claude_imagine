@@ -247,6 +247,19 @@ kinds of stabilisers that keep real food webs from collapsing:
 Tuned together (see the [devlog](DEVLOG.md) for the full, four-attempt story),
 these keep predator/prey dynamics oscillating instead of collapsing.
 
+Optionally, the food web can also close its loop through **scavenging**. Normally
+a creature's energy leaves the world when it dies; with scavenging on, its body
+becomes a corpse — a pool of meat that carnivores can feed on before it rots.
+This models the ecological role of **decomposers and scavengers**, who recycle
+dead biomass back into the living system rather than letting it disappear. Its
+most visible effect is temporal: a seasonal die-off, which is normally just a
+population crash, becomes a pulse of carrion that briefly rewards anything able
+to eat the dead — the same way a harsh winter in the wild leaves a spring feast
+for scavengers. Vivarium treats scavenging as *opportunistic* (a carnivore homes
+in on a nearby corpse exactly as it would on easy prey) rather than a separately
+evolved strategy, which is a fair first approximation of how many real carnivores
+actually behave.
+
 ## Environmental heterogeneity: biomes and seasons
 
 A perfectly uniform, unchanging environment is evolution's least interesting

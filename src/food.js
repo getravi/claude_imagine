@@ -15,6 +15,20 @@ export class Food {
   }
 }
 
+// A corpse: the remains of a dead creature, left behind when scavenging is on.
+// It holds a pool of "meat" energy that carnivores can feed on over several
+// bites, and it rots away over time if nothing eats it. Sensed and consumed only
+// by carnivores (via the same prey channel they hunt with), so scavenging reuses
+// hunting behaviour rather than needing a new sense.
+export class Corpse {
+  constructor(x, y, energy) {
+    this.x = x;
+    this.y = y;
+    this.energy = energy;
+    this.isCorpse = true; // lets the eating code tell a corpse from live prey
+  }
+}
+
 export class FoodField {
   /**
    * @param {object} config

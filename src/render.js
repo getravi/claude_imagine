@@ -66,6 +66,19 @@ export class Renderer {
       }
     }
 
+    // Corpses: dim maroon splotches that fade as they rot. Drawn under the food
+    // and creatures. Nothing to draw when scavenging is off (the list is empty).
+    if (world.corpses.length) {
+      ctx.globalCompositeOperation = "source-over";
+      for (const k of world.corpses) {
+        const a = Math.min(0.7, 0.15 + k.energy / 60);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(150, 55, 48, ${a.toFixed(2)})`;
+        ctx.arc(k.x, k.y, cfg.foodRadius + 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     // Food: additive green motes so dense patches glow.
     ctx.globalCompositeOperation = "lighter";
     for (const f of world.food.items) {

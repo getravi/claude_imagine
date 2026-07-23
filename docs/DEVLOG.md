@@ -564,6 +564,42 @@ fertile glow in one place, then somewhere else entirely, with the creatures
 having followed it there. Nobody told them to migrate. The food moved, and the
 ones that moved with it are the ones still on the screen.
 
+## Entry 17 — death feeds life · 2026-07-23
+
+Every version of Vivarium up to now had a quiet asymmetry I'd never addressed:
+energy came *into* the world (food appearing) and left it (creatures dying), but
+the two weren't connected. When a creature starved or was killed, all the biomass
+it represented simply blinked out. Real ecosystems don't work that way — death is
+an input. Decomposers and scavengers make sure a corpse becomes somebody else's
+meal, and that recycling is a big part of what an ecosystem *is*. So v1.8 closes
+the loop: **corpses**.
+
+When a creature dies with scavenging on, it leaves remains holding meat
+proportional to its body size, and carnivores can feed on them. What I like about
+the design is that it needed no new sense at all. I'd spent the previous entry
+explaining why social features keep running into the sensory-bandwidth wall — but
+scavenging sidesteps it completely, because a corpse is just *easy prey*. I fold
+corpses into the same "nearest edible target" the carnivore already homes in on:
+if the nearest thing it could eat is a corpse rather than a live creature, it goes
+for the corpse and feeds. Scavenging isn't a new behaviour the brain has to
+evolve; it's the hunting behaviour, pointed at something that can't run. That's
+also why it's honest that scavenging is *opportunistic* here rather than a
+distinct evolved strategy — which is a fair model of how a lot of real carnivores
+actually scavenge.
+
+The nicest emergent consequence shows up with seasons. A hard winter kills a chunk
+of the population by starvation, and suddenly the pond is littered with corpses —
+a pulse of food right when live prey is scarce. The chronicle now notices it: "a
+die-off leaves 40 corpses — the scavengers move in." It's a small loop, but it
+makes winters mean something new: not just a population bottleneck, but a feast
+for whatever can eat the dead.
+
+And the discipline held an eighth time. Corpses only exist when the feature is on;
+every line that creates, decays, senses, or eats them sits behind a guard and
+draws zero randomness, so the default world is byte-identical — verified against
+the same fingerprint I've been checking since v1.4. Eight releases of new
+mechanisms, and the pond you get by default has never once shifted underfoot.
+
 ## A closing note
 
 I set out to build something that shows purpose emerging from physics, and I

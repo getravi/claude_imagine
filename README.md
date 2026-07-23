@@ -81,6 +81,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Speed** | Simulation steps per frame (1×–20×). Crank it up to fast-forward evolution. |
 | **Live parameters** | Tune food rate, metabolism, and mutation rate *while it runs* and watch the ecosystem respond. |
 | **Predation** | Toggle whether carnivores can hunt. On by default — turn it off for a pure-herbivore world. |
+| **Scavenging** | Toggle whether dead creatures leave corpses that carnivores can feed on — a nutrient cycle and a scavenger niche. Off by default. |
 | **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
@@ -113,6 +114,9 @@ lineage, so you can see where it lives and how far it has spread.
 - **Turn on Drifting biomes** and watch the fertile patches slide across the
   world — the shoals of creatures follow the food, migrating to track it. The
   pond can never settle into a fixed pattern.
+- **Turn on Scavenging with Seasons** and watch a winter: as creatures starve, a
+  glut of corpses (dim maroon marks) appears — and carnivores converge to feed on
+  the dead. Death feeds life.
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)

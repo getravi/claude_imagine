@@ -179,6 +179,7 @@ body {
 /* Category accents on the left border. */
 .chronicle-feed li.cat-crash { border-left-color: #e0555f; }
 .chronicle-feed li.cat-predation { border-left-color: #ff7a4d; }
+.chronicle-feed li.cat-death { border-left-color: #b0524a; }
 .chronicle-feed li.cat-lineage { border-left-color: #9a7bff; }
 .chronicle-feed li.cat-pop { border-left-color: #62c8ff; }
 .chronicle-feed li.cat-recover { border-left-color: #5adc96; }

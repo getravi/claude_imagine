@@ -4,6 +4,36 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] — 2026-07-23
+
+The "Scavengers" release: death feeds life — a nutrient cycle and a scavenger
+niche.
+
+### Added
+
+- **Scavenging (opt-in).** When a creature dies it now leaves a **corpse** holding
+  meat proportional to its body size. Carnivores can feed on corpses — they
+  perceive the nearest corpse through the *same* prey channel they hunt with, so
+  scavenging reuses hunting behaviour rather than needing a new sense. Corpses rot
+  away over time if nothing eats them. This closes the loop that every earlier
+  version left open: energy from the dead re-enters the food web instead of just
+  vanishing, and a distinct scavenger role becomes viable — most dramatically
+  after a winter die-off, when a glut of corpses feeds a scavenging surge.
+- **Corpse rendering** (dim maroon marks that fade as they rot), a **Scavenging
+  toggle** wired into the permalink, and a **Chronicle event** when a die-off
+  leaves a glut of corpses.
+- **New tests**: no corpses when off, corpses from deaths when on, a carnivore
+  scavenging an adjacent corpse, herbivores ignoring corpses, corpses rotting to
+  nothing, and scavenging-world stability/determinism (90 total).
+
+### Notes
+
+- Off by default and a pure no-op when off — corpse creation, decay, sensing, and
+  eating are all guarded, and none of it draws from the world RNG — so every world
+  is bit-for-bit unchanged (fingerprint-verified). Enabling scavenging is stable
+  across seeds; in carnivore-rich worlds corpses are consumed as fast as they
+  appear, while in herbivore worlds they accumulate and rot.
+
 ## [1.7.0] — 2026-07-23
 
 The "Shifting Lands" release: the environment never stops changing.
