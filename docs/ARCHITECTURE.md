@@ -56,6 +56,7 @@ The dependency arrows point from a module to what it imports.
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
+| `scenarios.js` | Curated one-click world presets (data only). | — |
 | `main.js` | Boot, the requestAnimationFrame loop, all UI wiring. | yes |
 
 ## The world and its state

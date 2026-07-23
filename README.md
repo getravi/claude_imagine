@@ -26,6 +26,11 @@ concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
+New here? The **Scenarios** strip at the top offers six one-click worlds — from a
+calm herbivore *Genesis* to a full-blown *Savanna* food web to *Augmented Minds*
+whose brains grow their own structure — each a hand-picked doorway into what the
+simulation can do.
+
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
 
 ![The Vivarium interface: a teeming pond of glowing creatures with a live stats panel](docs/screenshots/vivarium.png)
@@ -73,6 +78,7 @@ lineage, so you can see where it lives and how far it has spread.
 
 | Control | What it does |
 | --- | --- |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Thinking Pond, Augmented Minds, The Whole World). |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |
@@ -235,6 +241,7 @@ src/
   render.js         canvas drawing
   mullerplot.js     the "Tree of Life" stacked-area chart
   config.js         every tunable "physics constant" in one place
+  scenarios.js      curated one-click world presets
   main.js           boot, animation loop, UI wiring
 test/               unit + integration tests (node --test)
 docs/               science, architecture, devlog, screenshots

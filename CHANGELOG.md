@@ -4,6 +4,38 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] — 2026-07-23
+
+The "Scenarios" release: curated, one-click doorways into the pond's range.
+
+### Added
+
+- **Scenarios** — a strip of six hand-picked worlds above the pond, each a seed +
+  feature combination with an honest one-line description, so the depth that used
+  to hide behind toggles is now a click away:
+  - **🌱 Genesis** — a calm herbivore pond; watch foraging evolve from nothing.
+  - **🦁 The Savanna** — a full food web: hunters, grazers, and scavengers on the
+    seasons.
+  - **🧭 Nomad's Land** — drifting lands that force perpetual migration.
+  - **🧠 The Thinking Pond** — within-lifetime learning; the Baldwin effect live.
+  - **🧬 Augmented Minds** — brains that grow their own structure (NEAT).
+  - **🌍 The Whole World** — everything at once.
+- Launching a scenario applies a full preset (reset to defaults, then its
+  overrides), updates every control to match, and reproduces exactly via the
+  permalink — so a scenario is also just a shareable link.
+- **New tests** verifying the scenarios are well-formed, every curated seed
+  yields a viable non-extinct world, and each one actually delivers its
+  advertised character (Genesis has no predation, the Savanna hunts and
+  scavenges, the Thinking Pond learns, Augmented Minds grows neurons) — 93 total.
+
+### Notes
+
+- The seeds weren't guessed: they were chosen by an offline sweep that scored ~20
+  candidate seeds per scenario against that scenario's goal (a lively herbivore
+  pond, a thriving predator/scavenger food web, a world where learning measurably
+  evolves, one where topology grows, and so on). This is a pure UI/curation layer
+  — it touches no simulation code, so every world is unchanged.
+
 ## [1.8.0] — 2026-07-23
 
 The "Scavengers" release: death feeds life — a nutrient cycle and a scavenger

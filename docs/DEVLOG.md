@@ -600,6 +600,43 @@ draws zero randomness, so the default world is byte-identical — verified again
 the same fingerprint I've been checking since v1.4. Eight releases of new
 mechanisms, and the pond you get by default has never once shifted underfoot.
 
+## Entry 18 — a front door · 2026-07-23
+
+By this point Vivarium had a problem that success creates: it had become
+*deep*, and most of that depth was invisible. Nine releases had layered on
+predation, seasons, biomes, drift, plasticity, evolving topology, scavenging — and
+almost all of it lived behind toggles a newcomer would never think to flip. Open
+the default pond and you'd see a nice ecosystem, and never suspect that a click
+away were brains growing their own neurons or a savanna food web riding the
+seasons. A project that hides its best rooms behind unmarked doors isn't finished,
+however good the rooms are.
+
+So this release isn't a new mechanism at all — it's a **front door**. Six
+scenarios, each a curated combination of features on a hand-picked seed, sitting
+as chips right above the pond: *Genesis, The Savanna, Nomad's Land, The Thinking
+Pond, Augmented Minds, The Whole World.* One click reconfigures the entire world
+into that character, updates every control to match, and (because it all runs
+through the permalink system from v1.1) is instantly shareable. The doors are
+labelled now.
+
+The part I care about most is that the seeds are *earned*, not decorative. It
+would have been easy to slap `seed: 1` on each scenario and write a nice blurb.
+Instead I ran an offline sweep that scored about twenty candidate seeds per
+scenario against that scenario's actual goal — a herbivore pond scored on stable
+liveliness, a savanna scored on how much hunting *and* scavenging it sustained,
+the Thinking Pond scored on how much learning actually evolved, Augmented Minds on
+how much brain structure grew. The sweep is what turned "The Whole World" from my
+guess (a carnivore near-monoculture) into seed 7, which sustains thirteen coexisting
+species while everything happens at once. When a blurb promises a thriving food
+web, the seed behind it was chosen *because* it delivers one — and there's a test
+that re-checks that promise: every scenario must produce a viable world and
+exhibit the character it advertises, or the suite goes red.
+
+That's the honest version of curation. Not "here are some worlds I think are
+nice," but "here are worlds selected by measuring the thing I'm claiming about
+them." It's a small idea, but it's the same discipline as everything else here:
+let the data decide, then prove it.
+
 ## A closing note
 
 I set out to build something that shows purpose emerging from physics, and I

@@ -11,6 +11,7 @@ import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
 import { drawMuller } from "./mullerplot.js";
 import { buildBrainFor } from "./creature.js";
+import { SCENARIOS } from "./scenarios.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -97,8 +98,68 @@ function boot() {
 
   wireControls();
   wireCanvas(canvas);
+  buildScenarioChips();
   syncHash();
   requestAnimationFrame(loop);
+}
+
+// ---- Scenarios (curated one-click worlds) ----
+function buildScenarioChips() {
+  const box = $("scenario-chips");
+  box.innerHTML = "";
+  for (const scn of SCENARIOS) {
+    const b = document.createElement("button");
+    b.innerHTML = `<span>${scn.icon}</span> ${scn.name}`;
+    b.title = scn.blurb;
+    b.addEventListener("click", () => launchScenario(scn));
+    box.appendChild(b);
+  }
+}
+
+function launchScenario(scn) {
+  // A scenario is a full preset: reset to defaults, then apply its overrides.
+  config = makeConfig(scn.over);
+  world = new World(config);
+  renderer.config = config;
+  renderer.selected = null;
+  renderer.highlightSpeciesId = null;
+  legendSig = "";
+  lastChronKey = "";
+  $("btn-clear-highlight").classList.add("hidden");
+  syncControlsFromConfig();
+  // Mark the active chip.
+  [...$("scenario-chips").children].forEach((b, i) => {
+    b.classList.toggle("active", SCENARIOS[i].id === scn.id);
+  });
+  syncHash();
+  flash(`${scn.icon} ${scn.name} — ${scn.blurb}`);
+}
+
+// Push the current config out to every control so the UI matches after a
+// scenario launch (or any wholesale config change).
+function syncControlsFromConfig() {
+  $("seed-input").value = config.seed;
+  const setSlider = (elId, key, fmt) => {
+    const el = $(elId);
+    if (el) el.value = config[key];
+    const label = $(elId + "-label");
+    if (label) label.textContent = fmt(config[key]);
+  };
+  setSlider("food-rate", "foodSpawnRate", (v) => v.toFixed(1));
+  setSlider("metabolism", "metabolicBase", (v) => v.toFixed(3));
+  setSlider("mutation", "mutationRate", (v) => v.toFixed(2));
+  const setToggle = (id, on) => {
+    const el = $(id);
+    if (el) el.checked = on;
+  };
+  setToggle("toggle-seasons", config.seasons);
+  setToggle("toggle-patches", config.foodPatches);
+  setToggle("toggle-drift", config.biomeDrift > 0);
+  setToggle("toggle-predation", config.predation);
+  setToggle("toggle-scavenging", config.scavenging);
+  setToggle("toggle-sexual", config.sexualReproduction);
+  setToggle("toggle-plasticity", config.plasticity);
+  setToggle("toggle-neat", config.evolvableTopology);
 }
 
 function loop(now) {
