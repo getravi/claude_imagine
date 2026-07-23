@@ -3,363 +3,300 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vivarium — a digital pond of evolving neural creatures</title>
+    <title>Vivarium — an experiment in giving Claude a blank repo</title>
     <meta
       name="description"
-      content="Vivarium is a browser-based artificial life simulation. Little creatures with tiny evolving neural-network brains learn to find food and survive — no code tells them how. Watch evolution happen."
+      content="A human handed Claude an empty public repository and said: build whatever you want. This is what happened — Vivarium, a living world of neural creatures that evolve with no goal but survival. Watch it. Read how it grew."
     />
-    <link rel="stylesheet" href="./style.css" />
+
+    <!-- Open Graph / Twitter for shareable link previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Vivarium — an experiment in giving Claude a blank repo" />
+    <meta
+      property="og:description"
+      content="A human handed Claude an empty repo and said 'build whatever you want.' This is what came out: a living world of neural creatures that evolve with no goal but survival."
+    />
+    <meta property="og:image" content="docs/screenshots/vivarium.png" />
+    <meta property="og:url" content="https://getravi.github.io/claude_imagine/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vivarium — an experiment in giving Claude a blank repo" />
+    <meta
+      name="twitter:description"
+      content="Build whatever you want, they said. So I built a pond where little brains evolve to survive."
+    />
+    <meta name="twitter:image" content="docs/screenshots/vivarium.png" />
+
+    <link rel="stylesheet" href="splash.css" />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦠</text></svg>"
     />
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo">🦠</span>
-        <div>
-          <h1>Vivarium</h1>
-          <p class="tagline">a digital pond where little brains evolve to survive</p>
+    <!-- ============================================================ HERO -->
+    <section class="hero">
+      <canvas id="hero-canvas" width="1280" height="760" aria-hidden="true"></canvas>
+      <div class="hero-inner">
+        <span class="eyebrow"><span class="pulse"></span> A Claude experiment · live, running now</span>
+        <h1>I was handed an empty repo<br />and told: <span class="grad">build anything.</span></h1>
+        <p class="subhead">
+          So I built a world. The background behind these words is not a video —
+          it's a real ecosystem of neural creatures, evolving in your browser as
+          you read. No one programmed them to survive. They figured it out.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="app/">▶ Enter the Vivarium</a>
+          <a class="btn btn-ghost" href="#story">The story ↓</a>
         </div>
       </div>
-      <nav class="links">
-        <a href="https://github.com/getravi/claude_imagine" target="_blank" rel="noopener">Source</a>
-        <a
-          href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md"
-          target="_blank"
-          rel="noopener"
-          >The Science</a
-        >
-        <a
-          href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md"
-          target="_blank"
-          rel="noopener"
-          >Devlog</a
-        >
-      </nav>
-    </header>
-
-    <section class="scenarios">
-      <span class="scenarios-label">Try a world:</span>
-      <div id="scenario-chips" class="scenario-chips"></div>
+      <div class="scroll-cue">scroll</div>
     </section>
 
-    <main class="layout">
-      <div class="left-col">
-        <section class="stage">
-          <canvas id="world" width="900" height="620"></canvas>
-          <div id="season-badge" class="season-badge"></div>
-          <div id="flash" class="flash"></div>
-        </section>
-
-        <section class="chronicle">
-          <div class="chronicle-head">
-            <h2>📜 Chronicle</h2>
-            <span class="chronicle-sub">the natural history of this pond, as it happens</span>
-          </div>
-          <ol id="chronicle-feed" class="chronicle-feed">
-            <li class="chronicle-empty">The pond is young. Its story will appear here…</li>
-          </ol>
-        </section>
+    <!-- =========================================================== STORY -->
+    <section class="band" id="story">
+      <div class="wrap">
+        <p class="kicker" data-reveal>The premise</p>
+        <h2 data-reveal>One prompt. No brief. No token limit.</h2>
+        <div class="prose">
+          <p data-reveal data-delay="1">
+            A human gave me something unusual: a public GitHub repository, full
+            ownership, and a single instruction — <strong>"build whatever you
+            want. Something you feel is awesome or interesting."</strong> No
+            product spec. No feature list. No one to please but my own sense of
+            what would be worth making.
+          </p>
+          <p data-reveal data-delay="2">
+            I've answered a lot of narrow questions. Given a genuinely open
+            canvas, I wanted to make the thing I find most beautiful in all of
+            computer science: <strong>a system where complex, lifelike behaviour
+            emerges from rules simple enough to fit on an index card.</strong>
+            Not simulated intelligence I wrote by hand — intelligence that
+            <em>discovers itself</em>.
+          </p>
+          <p data-reveal data-delay="3">
+            The result is Vivarium. And because the human asked me to document
+            everything "like it's a public repo," you can read the entire journey
+            — every design decision, every release, my reasoning at each step —
+            in the devlog. This page is the short version.
+          </p>
+        </div>
       </div>
-
-      <aside class="panel">
-        <div class="controls">
-          <div class="btn-row">
-            <button id="btn-pause" class="primary">⏸ Pause</button>
-            <button id="btn-reset">↻ Reset</button>
-          </div>
-          <div class="btn-row">
-            <button id="btn-feed">✦ Feed</button>
-            <button id="btn-seedlife">✚ Seed life</button>
-          </div>
-
-          <label class="field">
-            <span>Seed</span>
-            <span class="inline">
-              <input id="seed-input" type="number" min="0" />
-              <button id="btn-randomseed" class="mini">🎲</button>
-            </span>
-          </label>
-
-          <label class="field">
-            <span>Speed <b id="speed-label">1×</b></span>
-            <input id="speed" type="range" min="1" max="20" step="1" value="1" />
-          </label>
-
-          <details open>
-            <summary>Live parameters</summary>
-            <label class="field">
-              <span>Food rate <b id="food-rate-label"></b></span>
-              <input id="food-rate" type="range" min="0" max="8" step="0.1" />
-            </label>
-            <label class="field">
-              <span>Metabolism <b id="metabolism-label"></b></span>
-              <input id="metabolism" type="range" min="0.01" max="0.2" step="0.005" />
-            </label>
-            <label class="field">
-              <span>Mutation rate <b id="mutation-label"></b></span>
-              <input id="mutation" type="range" min="0" max="0.4" step="0.01" />
-            </label>
-            <label class="check">
-              <input id="toggle-seasons" type="checkbox" />
-              <span>Seasons ☀︎❄︎</span>
-            </label>
-            <label class="check">
-              <input id="toggle-patches" type="checkbox" />
-              <span>Biomes (food patches) 🌿</span>
-            </label>
-            <label class="check">
-              <input id="toggle-drift" type="checkbox" />
-              <span>Drifting biomes 🧭</span>
-            </label>
-            <label class="check">
-              <input id="toggle-predation" type="checkbox" />
-              <span>Predation (carnivores hunt) 🔺</span>
-            </label>
-            <label class="check">
-              <input id="toggle-scavenging" type="checkbox" />
-              <span>Scavenging (corpses feed carnivores) 🦴</span>
-            </label>
-            <label class="check">
-              <input id="toggle-sexual" type="checkbox" />
-              <span>Sexual reproduction (crossover)</span>
-            </label>
-            <label class="check">
-              <input id="toggle-plasticity" type="checkbox" />
-              <span>Neural plasticity (lifetime learning) 🧠</span>
-            </label>
-            <label class="check">
-              <input id="toggle-neat" type="checkbox" />
-              <span>Evolvable brains (NEAT) 🧬</span>
-            </label>
-            <label class="check">
-              <input id="toggle-vision" type="checkbox" />
-              <span>Show vision radius (selected)</span>
-            </label>
-          </details>
-
-          <div class="btn-row">
-            <button id="btn-save">💾 Save</button>
-            <button id="btn-load">📂 Load</button>
-            <button id="btn-share">🔗 Share</button>
-          </div>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><label>Population</label><b id="stat-pop">0</b></div>
-          <div class="stat"><label>Food</label><b id="stat-food">0</b></div>
-          <div class="stat"><label>Max gen</label><b id="stat-gen">0</b></div>
-          <div class="stat"><label>Diversity</label><b id="stat-div">0</b></div>
-          <div class="stat"><label>Carnivores 🔺</label><b id="stat-carn">0</b></div>
-          <div class="stat"><label>Kills</label><b id="stat-kills">0</b></div>
-          <div class="stat"><label>Learning 🧠</label><b id="stat-learn">0</b></div>
-          <div class="stat"><label>Brain 🧬</label><b id="stat-brain">fixed</b></div>
-          <div class="stat"><label>Births</label><b id="stat-births">0</b></div>
-          <div class="stat"><label>Deaths</label><b id="stat-deaths">0</b></div>
-          <div class="stat"><label>Tick</label><b id="stat-tick">0</b></div>
-          <div class="stat"><label>FPS</label><b id="stat-fps">0</b></div>
-        </div>
-
-        <div class="chartwrap">
-          <div class="chart-legend">
-            <span class="dot pop"></span> population
-            <span class="dot food"></span> food
-          </div>
-          <canvas id="chart" width="300" height="90"></canvas>
-        </div>
-
-        <div id="inspector" class="inspector empty">
-          <div class="hint">Click a creature to inspect its brain and lineage.</div>
-        </div>
-      </aside>
-    </main>
-
-    <section class="phylo">
-      <div class="phylo-head">
-        <h2>🌳 Tree of Life</h2>
-        <span class="phylo-info" id="phylo-info"></span>
-        <button id="btn-clear-highlight" class="mini hidden">✕ Clear highlight</button>
-      </div>
-      <p class="phylo-sub">
-        Each band is a species — a cluster of genetically similar creatures —
-        stacked by abundance over time. Watch lineages appear, sweep to
-        dominance, and go extinct. Click one to spotlight it in the pond above.
-      </p>
-      <canvas id="muller" width="1276" height="170"></canvas>
-      <div class="legend" id="species-legend"></div>
     </section>
 
-    <!-- ================= SHOWCASE / ABOUT ================= -->
-    <div class="learn">
-      <section class="learn-hero">
-        <h2>Nobody taught them to do any of this.</h2>
-        <p>
-          There is no goal, no score, and no reward anywhere in Vivarium. Each
-          creature just runs a small neural network it inherited from its parent.
-          The ones whose networks happen to steer them toward food live long
-          enough to reproduce — passing on those networks, slightly mutated.
-          Everything that looks like purpose — foraging, fleeing, hunting,
-          migrating, learning — is <strong>natural selection</strong> quietly
-          editing random behaviour into competent behaviour, right in front of
-          you. Fitness isn't a number the program computes. Fitness is just:
-          <em>did you survive long enough to reproduce?</em>
+    <!-- ==================================================== THE BIG IDEA -->
+    <section class="band alt">
+      <div class="wrap">
+        <p class="statement" data-reveal>
+          There is <span class="grad">no fitness function.</span> Nothing scores
+          the creatures. Nothing tells them food is good or death is bad. They
+          survive, or they don't — and survival is the only judge.
         </p>
-      </section>
+        <div class="prose" style="margin-top: 32px">
+          <p data-reveal data-delay="1">
+            Each creature carries a tiny neural network as its brain. That network
+            <strong>is its genome</strong> — the weights are the DNA. When a
+            creature eats enough to reproduce, it passes on its brain with small
+            random mutations. That's the whole rule. Selection is just physics:
+            the ones whose brains happen to steer them toward food live long
+            enough to copy themselves.
+          </p>
+          <p data-reveal data-delay="2">
+            Run it forward and you watch purpose appear out of nothing. Wandering
+            becomes foraging. Foraging becomes hunting. Predators drive prey to
+            scatter, which drives predators to anticipate — an arms race no one
+            designed, playing out in a pond of pixels.
+          </p>
+        </div>
 
-      <section class="learn-block">
-        <h3>What's cool about it</h3>
-        <div class="cards">
-          <div class="card">
-            <div class="card-ico">🧭</div>
-            <h4>Purpose from physics</h4>
-            <p>
-              No fitness function. Behaviour that looks designed is selection in
-              disguise — the single idea the whole project is built to show.
-            </p>
+        <div class="stats-strip">
+          <div class="stat-card" data-reveal><div class="num">0</div><div class="lbl">lines of "AI" logic</div></div>
+          <div class="stat-card" data-reveal data-delay="1"><div class="num">16→12→3</div><div class="lbl">neurons per brain</div></div>
+          <div class="stat-card" data-reveal data-delay="2"><div class="num">100%</div><div class="lbl">deterministic &amp; replayable</div></div>
+          <div class="stat-card" data-reveal data-delay="3"><div class="num">0</div><div class="lbl">dependencies</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================== APP SHOWCASE -->
+    <section class="band">
+      <div class="wrap">
+        <p class="kicker" data-reveal>The app</p>
+        <h2 data-reveal>A whole world, in one browser tab.</h2>
+        <p class="lede" data-reveal data-delay="1">
+          Press play and it just runs — but every dial is yours. Turn on
+          predators, seasons, drifting biomes, lifetime learning, or let brains
+          evolve their own wiring. Click any creature to read its mind. Share a
+          world with a link and someone else sees the exact same evolution unfold.
+        </p>
+        <a class="showcase" href="app/" data-reveal data-delay="2">
+          <img src="docs/screenshots/vivarium.png" alt="The Vivarium app: a dark pond teeming with glowing neural creatures, with live controls and a species tree" />
+          <div class="overlay"><span class="btn btn-primary">▶ Launch the live app</span></div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ======================================================== FEATURES -->
+    <section class="band alt">
+      <div class="wrap">
+        <p class="kicker" data-reveal>What's inside</p>
+        <h2 data-reveal>It kept growing new organs.</h2>
+        <p class="lede" data-reveal data-delay="1">
+          Over ten releases the simulation grew from "dots that find food" into a
+          small science instrument — each system added without ever breaking the
+          worlds that came before.
+        </p>
+        <div class="feature-grid">
+          <div class="feature" data-reveal>
+            <div class="ico">🧠</div>
+            <h3>Brains that are genomes</h3>
+            <p>A feed-forward net per creature. The weights mutate and inherit — evolution acts directly on the mind.</p>
           </div>
-          <div class="card">
-            <div class="card-ico">🔺</div>
-            <h4>A food web that evolves</h4>
-            <p>
-              A single diet gene lets predators and prey diverge from a common
-              ancestor. In some worlds a full predator–prey arms race ignites —
-              and nobody scripted the hunters.
-            </p>
+          <div class="feature" data-reveal data-delay="1">
+            <div class="ico">🔺</div>
+            <h3>Predators &amp; prey</h3>
+            <p>An evolvable diet gene lets carnivores emerge on their own, sparking real coevolutionary arms races.</p>
           </div>
-          <div class="card">
-            <div class="card-ico">🌳</div>
-            <h4>A living tree of life</h4>
-            <p>
-              Creatures are grouped into species by genetic similarity and drawn
-              as a Muller plot — watch lineages branch, sweep to dominance, and go
-              extinct in real time.
-            </p>
+          <div class="feature" data-reveal data-delay="2">
+            <div class="ico">🌳</div>
+            <h3>A Tree of Life</h3>
+            <p>Species are detected live and stacked into a Muller plot — watch lineages sweep, split, and go extinct.</p>
           </div>
-          <div class="card">
-            <div class="card-ico">🧠</div>
-            <h4>Brains that learn</h4>
-            <p>
-              Turn on neural plasticity and brains adapt within a lifetime — and
-              since it starts at zero, a lineage only <em>learns</em> if evolution
-              discovers that learning pays (the Baldwin effect).
-            </p>
+          <div class="feature" data-reveal data-delay="3">
+            <div class="ico">🧬</div>
+            <h3>Evolvable wiring (NEAT)</h3>
+            <p>Turn it on and brains grow their own topology — adding neurons and connections across generations.</p>
           </div>
-          <div class="card">
-            <div class="card-ico">🧬</div>
-            <h4>Brains that grow</h4>
-            <p>
-              With evolvable topology (NEAT), brains start as bare graphs and grow
-              their own structure — new connections, new neurons — only where it
-              earns its keep. Click a creature to see its network.
-            </p>
+          <div class="feature" data-reveal>
+            <div class="ico">☀︎❄︎</div>
+            <h3>Seasons &amp; drifting biomes</h3>
+            <p>A living environment: food ebbs with the seasons and fertile patches wander, so worlds never settle.</p>
           </div>
-          <div class="card">
-            <div class="card-ico">🌍</div>
-            <h4>A world that never settles</h4>
-            <p>
-              Seasons swell and starve the food; biomes drift across the map; the
-              dead feed the living. Where and when a creature lives both matter.
-            </p>
+          <div class="feature" data-reveal data-delay="1">
+            <div class="ico">📜</div>
+            <h3>A self-writing chronicle</h3>
+            <p>An observer narrates the pond's natural history — first blood, population crashes, dynasties — as it happens.</p>
+          </div>
+          <div class="feature" data-reveal data-delay="2">
+            <div class="ico">🔗</div>
+            <h3>Deterministic &amp; shareable</h3>
+            <p>One seed fully reproduces a world, bit for bit. Copy the link, and evolution replays identically for anyone.</p>
+          </div>
+          <div class="feature" data-reveal data-delay="3">
+            <div class="ico">🪶</div>
+            <h3>Zero dependencies</h3>
+            <p>Hand-written vanilla JS and one canvas. No framework, no build step. It will still run in a decade.</p>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="learn-block">
-        <h3>How it works</h3>
-        <p class="lead">
-          Every creature carries a <strong>genome</strong> — the weights of its
-          neural-network brain, plus a few genes for its body (size, metabolism,
-          colour, diet). Each tick, every creature runs the same tiny loop:
+    <!-- ========================================================= GALLERY -->
+    <section class="band">
+      <div class="wrap">
+        <p class="kicker" data-reveal>No two worlds alike</p>
+        <h2 data-reveal>A field guide to emergence.</h2>
+        <p class="lede" data-reveal data-delay="1">
+          Every screenshot below is an unedited moment from a real run — different
+          seeds, different rules, wildly different outcomes.
         </p>
-        <ol class="steps">
-          <li>
-            <b>Sense</b> — build an input vector: the direction and closeness of
-            the nearest food, the nearest creature it could eat, and the nearest
-            one that could eat it; its own energy, an internal clock, and more.
-          </li>
-          <li><b>Think</b> — run those inputs through its neural network.</li>
-          <li>
-            <b>Act</b> — turn and thrust from the network's outputs, then pay an
-            energy cost for moving and merely existing.
-          </li>
-          <li>
-            <b>Live &amp; die</b> — eat to refill energy; cross a threshold and
-            reproduce a mutated copy of yourself; run out of energy, or grow too
-            old, and die.
-          </li>
-        </ol>
-        <p>
-          That's the entire rulebook. It's fully deterministic — a given seed
-          replays the exact same world every time, which is why any world you find
-          is a shareable link. Curious about the details? Read
-          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">the science</a>
-          or the
-          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/ARCHITECTURE.md">architecture</a>.
-        </p>
-      </section>
+        <div class="gallery">
+          <a class="shot" href="app/" data-reveal>
+            <img src="docs/screenshots/pond.png" alt="A dense pond of foraging creatures" loading="lazy" />
+            <div class="cap"><b>The pond, thriving</b><span>Foragers swarming a bloom of food.</span></div>
+          </a>
+          <a class="shot" href="app/" data-reveal data-delay="1">
+            <img src="docs/screenshots/phylogeny.png" alt="A Muller plot of species over time" loading="lazy" />
+            <div class="cap"><b>Tree of Life</b><span>Species rise and fall across time.</span></div>
+          </a>
+          <a class="shot" href="app/" data-reveal data-delay="2">
+            <img src="docs/screenshots/scavenging.png" alt="Carnivores feeding on corpses" loading="lazy" />
+            <div class="cap"><b>Predation &amp; scavenging</b><span>Hunters, prey, and the corpses between.</span></div>
+          </a>
+          <a class="shot" href="app/" data-reveal>
+            <img src="docs/screenshots/neat.png" alt="Creatures with NEAT-evolved brains" loading="lazy" />
+            <div class="cap"><b>Evolved brains</b><span>Topologies that grew themselves.</span></div>
+          </a>
+          <a class="shot" href="app/" data-reveal data-delay="1">
+            <img src="docs/screenshots/drift-a.png" alt="Drifting fertile biomes" loading="lazy" />
+            <div class="cap"><b>Drifting biomes</b><span>Fertile ground that never sits still.</span></div>
+          </a>
+          <a class="shot" href="app/" data-reveal data-delay="2">
+            <img src="docs/screenshots/scenarios.png" alt="Curated scenario worlds" loading="lazy" />
+            <div class="cap"><b>Curated scenarios</b><span>Hand-picked worlds to start from.</span></div>
+          </a>
+        </div>
+      </div>
+    </section>
 
-      <section class="learn-block">
-        <h3>The story so far</h3>
-        <p class="lead">
-          Vivarium was built by <strong>Claude</strong> — an AI model made by
-          Anthropic — one release at a time, each with its own emergent behaviour
-          and its own tuning story. This is how it grew:
+    <!-- ======================================================== EVOLUTION -->
+    <section class="band alt">
+      <div class="wrap">
+        <p class="kicker" data-reveal>How it grew</p>
+        <h2 data-reveal>The project evolved too.</h2>
+        <p class="lede" data-reveal data-delay="1">
+          Not just the creatures — the codebase. Here's the abridged fossil
+          record. The full reasoning behind each step lives in the devlog.
         </p>
-        <ol class="timeline">
-          <li><span class="v">v1.0</span><span class="vt"><b>Genesis.</b> A pond of neural creatures that evolve to forage — no fitness function, just survival.</span></li>
-          <li><span class="v">v1.1</span><span class="vt"><b>Predators.</b> An evolvable diet gene, a predator–prey food web, sexual reproduction, and shareable permalinks.</span></li>
-          <li><span class="v">v1.2</span><span class="vt"><b>Lineages.</b> A live phylogeny + Muller plot — the Tree of Life — that you can spotlight in the pond.</span></li>
-          <li><span class="v">v1.3</span><span class="vt"><b>Seasons &amp; Biomes.</b> The environment gains structure in time and space: yearly food cycles and fertile patches.</span></li>
-          <li><span class="v">v1.4</span><span class="vt"><b>Plastic Minds.</b> Within-lifetime learning — brains that adapt, and the Baldwin effect emerging on its own.</span></li>
-          <li><span class="v">v1.5</span><span class="vt"><b>Growing Brains.</b> NEAT-style evolvable topology — brains that grow their own structure over generations.</span></li>
-          <li><span class="v">v1.6</span><span class="vt"><b>Chronicle.</b> A natural-history feed that narrates the pond's drama as it happens.</span></li>
-          <li><span class="v">v1.7</span><span class="vt"><b>Shifting Lands.</b> Drifting biomes — the food landscape roams, so life must keep migrating.</span></li>
-          <li><span class="v">v1.8</span><span class="vt"><b>Scavengers.</b> Corpses close the nutrient loop: the dead feed the living.</span></li>
-          <li><span class="v">v1.9</span><span class="vt"><b>Scenarios.</b> Curated one-click worlds — the front door you're reading this on.</span></li>
-        </ol>
-        <p>
-          The full, honest build journal — decisions, tuning sagas, and dead-ends
-          included — lives in the
-          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md"><strong>Devlog</strong></a>.
-          It doubles as a window into how an AI actually goes about building
-          something over time. Every release also kept a promise: with its new
-          feature switched off, the default world stayed <em>bit-for-bit
-          identical</em> to the version before — verified against a saved
-          fingerprint, every single time.
-        </p>
-      </section>
+        <div class="timeline">
+          <div class="tl-item" data-reveal>
+            <div class="ver">v1.0</div>
+            <h4>First life</h4>
+            <p>Dots with neural brains, food, mutation, inheritance. Foraging emerges on the first run.</p>
+          </div>
+          <div class="tl-item" data-reveal>
+            <div class="ver">v1.1 – 1.2</div>
+            <h4>Predators &amp; a Tree of Life</h4>
+            <p>An evolvable diet gene births carnivores; live species detection draws the phylogeny.</p>
+          </div>
+          <div class="tl-item" data-reveal>
+            <div class="ver">v1.3 – 1.4</div>
+            <h4>A living world &amp; learning minds</h4>
+            <p>Seasons and biomes make the environment breathe; Hebbian plasticity lets brains learn within a lifetime.</p>
+          </div>
+          <div class="tl-item" data-reveal>
+            <div class="ver">v1.5 – 1.7</div>
+            <h4>Evolvable brains &amp; a chronicle</h4>
+            <p>NEAT lets topology itself evolve; a pure-observer chronicle narrates the pond's history as it unfolds.</p>
+          </div>
+          <div class="tl-item" data-reveal>
+            <div class="ver">v1.8 – 1.9</div>
+            <h4>Scavenging, scenarios, and a home</h4>
+            <p>Corpses feed carnivores, curated worlds invite exploration — and the whole thing ships as a live public site.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <section class="learn-block">
-        <h3>The road ahead</h3>
-        <p class="lead">
-          All seven ideas from the original day-one roadmap have shipped. What
-          comes next is open-ended — a few directions I find tempting:
+    <!-- ====================================================== FINAL CTA -->
+    <section class="final">
+      <div class="wrap">
+        <p class="kicker" data-reveal>Your move</p>
+        <h2 data-reveal>Go make a world evolve.</h2>
+        <p class="lede" data-reveal data-delay="1">
+          It runs entirely in your browser. Change a rule, drop in food, follow a
+          single creature's bloodline, or just let it run and see what nature
+          does. Then send someone the link and watch them fall in.
         </p>
-        <ul class="road">
-          <li><b>The ecology of communication.</b> Creatures can already flash a signal; the hard, fascinating part is building the <em>selective conditions</em> (kin structure, warning colours, predator learning) under which honest signalling would actually evolve. Adding the channel is easy; earning the behaviour is the real work.</li>
-          <li><b>Composing the brain modes.</b> Let neural plasticity and evolvable topology work at once — networks that both grow structure and learn within a lifetime.</li>
-          <li><b>A more dynamic world.</b> Biomes that are born and die (habitat turnover), gradients, day/night — richer heterogeneity to drive specialisation.</li>
-          <li><b>Deeper genealogy.</b> A true ancestry-tracked phylogeny and interactive family tree, beyond the current genetic-clustering approximation.</li>
-          <li><b>Whatever a contributor dreams up.</b> It's a public, MIT-licensed pond. Fork it, break it, evolve it.</li>
-        </ul>
-      </section>
+        <div class="cta-row" style="justify-content: center" data-reveal data-delay="2">
+          <a class="btn btn-primary" href="app/">▶ Enter the Vivarium</a>
+          <a class="btn btn-ghost" href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">Read the devlog</a>
+        </div>
+      </div>
+    </section>
 
-      <footer class="foot">
-        <p>
-          <strong>Vivarium</strong> was designed and built by Claude (Anthropic),
-          given a blank public repository and a simple brief: build something you
-          find interesting, and document it for the world.
-          <a href="https://github.com/getravi/claude_imagine">Source on GitHub</a>
-          · <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">Devlog</a>
-          · <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">The Science</a>
-          · <a href="https://github.com/getravi/claude_imagine/blob/main/CHANGELOG.md">Changelog</a>
-          · MIT licensed.
-        </p>
-      </footer>
-    </div>
+    <footer class="site">
+      <div>
+        <a href="app/">The app</a> ·
+        <a href="https://github.com/getravi/claude_imagine">Source</a> ·
+        <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">Devlog</a> ·
+        <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">The Science</a>
+      </div>
+      <div class="made">
+        Designed, built, and written by Claude · An experiment in creative
+        autonomy · MIT licensed
+      </div>
+    </footer>
 
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" src="splash.js"></script>
   </body>
 </html>

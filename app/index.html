@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vivarium — a digital pond of evolving neural creatures</title>
+    <meta
+      name="description"
+      content="Vivarium is a browser-based artificial life simulation. Little creatures with tiny evolving neural-network brains learn to find food and survive — no code tells them how. Watch evolution happen."
+    />
+    <link rel="stylesheet" href="../style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦠</text></svg>"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">🦠</span>
+        <div>
+          <h1>Vivarium</h1>
+          <p class="tagline">a digital pond where little brains evolve to survive</p>
+        </div>
+      </div>
+      <nav class="links">
+        <a href="https://github.com/getravi/claude_imagine" target="_blank" rel="noopener">Source</a>
+        <a
+          href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md"
+          target="_blank"
+          rel="noopener"
+          >The Science</a
+        >
+        <a
+          href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md"
+          target="_blank"
+          rel="noopener"
+          >Devlog</a
+        >
+      </nav>
+    </header>
+
+    <section class="scenarios">
+      <span class="scenarios-label">Try a world:</span>
+      <div id="scenario-chips" class="scenario-chips"></div>
+    </section>
+
+    <main class="layout">
+      <div class="left-col">
+        <section class="stage">
+          <canvas id="world" width="900" height="620"></canvas>
+          <div id="season-badge" class="season-badge"></div>
+          <div id="flash" class="flash"></div>
+        </section>
+
+        <section class="chronicle">
+          <div class="chronicle-head">
+            <h2>📜 Chronicle</h2>
+            <span class="chronicle-sub">the natural history of this pond, as it happens</span>
+          </div>
+          <ol id="chronicle-feed" class="chronicle-feed">
+            <li class="chronicle-empty">The pond is young. Its story will appear here…</li>
+          </ol>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <div class="controls">
+          <div class="btn-row">
+            <button id="btn-pause" class="primary">⏸ Pause</button>
+            <button id="btn-reset">↻ Reset</button>
+          </div>
+          <div class="btn-row">
+            <button id="btn-feed">✦ Feed</button>
+            <button id="btn-seedlife">✚ Seed life</button>
+          </div>
+
+          <label class="field">
+            <span>Seed</span>
+            <span class="inline">
+              <input id="seed-input" type="number" min="0" />
+              <button id="btn-randomseed" class="mini">🎲</button>
+            </span>
+          </label>
+
+          <label class="field">
+            <span>Speed <b id="speed-label">1×</b></span>
+            <input id="speed" type="range" min="1" max="20" step="1" value="1" />
+          </label>
+
+          <details open>
+            <summary>Live parameters</summary>
+            <label class="field">
+              <span>Food rate <b id="food-rate-label"></b></span>
+              <input id="food-rate" type="range" min="0" max="8" step="0.1" />
+            </label>
+            <label class="field">
+              <span>Metabolism <b id="metabolism-label"></b></span>
+              <input id="metabolism" type="range" min="0.01" max="0.2" step="0.005" />
+            </label>
+            <label class="field">
+              <span>Mutation rate <b id="mutation-label"></b></span>
+              <input id="mutation" type="range" min="0" max="0.4" step="0.01" />
+            </label>
+            <label class="check">
+              <input id="toggle-seasons" type="checkbox" />
+              <span>Seasons ☀︎❄︎</span>
+            </label>
+            <label class="check">
+              <input id="toggle-patches" type="checkbox" />
+              <span>Biomes (food patches) 🌿</span>
+            </label>
+            <label class="check">
+              <input id="toggle-drift" type="checkbox" />
+              <span>Drifting biomes 🧭</span>
+            </label>
+            <label class="check">
+              <input id="toggle-predation" type="checkbox" />
+              <span>Predation (carnivores hunt) 🔺</span>
+            </label>
+            <label class="check">
+              <input id="toggle-scavenging" type="checkbox" />
+              <span>Scavenging (corpses feed carnivores) 🦴</span>
+            </label>
+            <label class="check">
+              <input id="toggle-sexual" type="checkbox" />
+              <span>Sexual reproduction (crossover)</span>
+            </label>
+            <label class="check">
+              <input id="toggle-plasticity" type="checkbox" />
+              <span>Neural plasticity (lifetime learning) 🧠</span>
+            </label>
+            <label class="check">
+              <input id="toggle-neat" type="checkbox" />
+              <span>Evolvable brains (NEAT) 🧬</span>
+            </label>
+            <label class="check">
+              <input id="toggle-vision" type="checkbox" />
+              <span>Show vision radius (selected)</span>
+            </label>
+          </details>
+
+          <div class="btn-row">
+            <button id="btn-save">💾 Save</button>
+            <button id="btn-load">📂 Load</button>
+            <button id="btn-share">🔗 Share</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><label>Population</label><b id="stat-pop">0</b></div>
+          <div class="stat"><label>Food</label><b id="stat-food">0</b></div>
+          <div class="stat"><label>Max gen</label><b id="stat-gen">0</b></div>
+          <div class="stat"><label>Diversity</label><b id="stat-div">0</b></div>
+          <div class="stat"><label>Carnivores 🔺</label><b id="stat-carn">0</b></div>
+          <div class="stat"><label>Kills</label><b id="stat-kills">0</b></div>
+          <div class="stat"><label>Learning 🧠</label><b id="stat-learn">0</b></div>
+          <div class="stat"><label>Brain 🧬</label><b id="stat-brain">fixed</b></div>
+          <div class="stat"><label>Births</label><b id="stat-births">0</b></div>
+          <div class="stat"><label>Deaths</label><b id="stat-deaths">0</b></div>
+          <div class="stat"><label>Tick</label><b id="stat-tick">0</b></div>
+          <div class="stat"><label>FPS</label><b id="stat-fps">0</b></div>
+        </div>
+
+        <div class="chartwrap">
+          <div class="chart-legend">
+            <span class="dot pop"></span> population
+            <span class="dot food"></span> food
+          </div>
+          <canvas id="chart" width="300" height="90"></canvas>
+        </div>
+
+        <div id="inspector" class="inspector empty">
+          <div class="hint">Click a creature to inspect its brain and lineage.</div>
+        </div>
+      </aside>
+    </main>
+
+    <section class="phylo">
+      <div class="phylo-head">
+        <h2>🌳 Tree of Life</h2>
+        <span class="phylo-info" id="phylo-info"></span>
+        <button id="btn-clear-highlight" class="mini hidden">✕ Clear highlight</button>
+      </div>
+      <p class="phylo-sub">
+        Each band is a species — a cluster of genetically similar creatures —
+        stacked by abundance over time. Watch lineages appear, sweep to
+        dominance, and go extinct. Click one to spotlight it in the pond above.
+      </p>
+      <canvas id="muller" width="1276" height="170"></canvas>
+      <div class="legend" id="species-legend"></div>
+    </section>
+
+    <footer class="appfoot">
+      <a class="home-link" href="../">← Vivarium — the experiment</a>
+      <span class="appfoot-links">
+        <a href="https://github.com/getravi/claude_imagine">Source</a> ·
+        <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">Devlog</a> ·
+        <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">The Science</a> ·
+        Built by Claude · MIT
+      </span>
+    </footer>
+
+
+    <script type="module" src="../src/main.js"></script>
+  </body>
+</html>

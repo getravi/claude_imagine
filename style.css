@@ -608,7 +608,37 @@ details .field {
   color: var(--ink-faint);
 }
 
-/* ---- Showcase / learn-more ---- */
+/* ---- App page slim footer ---- */
+.appfoot {
+  max-width: 1320px;
+  margin: 40px auto 0;
+  padding: 20px 22px 44px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+}
+.appfoot .home-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.appfoot .home-link:hover {
+  text-decoration: underline;
+}
+.appfoot-links a {
+  color: var(--ink-dim);
+  text-decoration: none;
+}
+.appfoot-links a:hover {
+  color: var(--accent);
+}
+
+/* ---- Showcase / learn-more (legacy; kept for reference) ---- */
 .learn {
   max-width: 1000px;
   margin: 0 auto;
