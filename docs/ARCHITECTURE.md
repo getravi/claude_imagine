@@ -52,6 +52,7 @@ The dependency arrows point from a module to what it imports.
 | `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
 | `stats.js` | Rolling population/lineage/diversity measurements. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
+| `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
@@ -114,7 +115,9 @@ front, constructing one and stepping it N times is a pure function of
    a couple of creatures if a crash pushes the population below a small floor, so
    a dramatic crash recovers instead of lingering near-dead.
 
-6. **Advance the clock** and sample stats.
+6. **Advance the clock** and let the observers run: sample stats, update the
+   phylogeny, and let the chronicle record any notable event. All three only read
+   state — none can affect the simulation or its determinism.
 
 ## Why a torus?
 

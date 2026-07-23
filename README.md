@@ -18,9 +18,11 @@ predators either.
 
 A live **Tree of Life** below the pond tracks the whole thing as a phylogeny —
 you can watch species branch, sweep to dominance, and go extinct in real time,
-and click any lineage to spotlight it. The world even has **seasons** (food
-booms in summer, bottlenecks in winter) and **biomes** (fertile patches where
-food concentrates), so *when* and *where* a creature lives both matter.
+and click any lineage to spotlight it. A **Chronicle** narrates the pond's
+natural history as it unfolds — first blood, population crashes, a species rising
+to dominance and later going extinct. The world even has **seasons** (food booms
+in summer, bottlenecks in winter) and **biomes** (fertile patches where food
+concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
@@ -120,6 +122,9 @@ lineage, so you can see where it lives and how far it has spread.
 - **Read the Tree of Life.** Find a wide band and click it — watch its members
   light up in the pond while everything else fades. Then look for a thin band
   that appears partway across: that's a new species being born from an older one.
+- **Follow the Chronicle.** Below the pond, the natural-history feed narrates the
+  drama as it happens — leave it running and read the pond's story unfold: first
+  blood, booms and crashes, dynasties rising and falling.
 - **Switch on Neural plasticity and watch the Learning stat.** Brains start
   fully innate (plasticity is zero in every genome), but if lineages that adapt
   within their lifetime do better, evolution *discovers* learning — the stat
@@ -217,6 +222,7 @@ src/
   environment.js    biomes (fertile patches) and seasons
   stats.js          rolling population/lineage measurements
   phylogeny.js      groups creatures into species (observation only)
+  chronicle.js      narrates notable events into a timeline (observation only)
   world.js          the simulation: steps everything forward
   render.js         canvas drawing
   mullerplot.js     the "Tree of Life" stacked-area chart

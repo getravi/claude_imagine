@@ -4,6 +4,34 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] — 2026-07-23
+
+The "Chronicle" release: the pond tells its own story.
+
+### Added
+
+- **A living Chronicle** (`chronicle.js`) — a pure observer, like the phylogeny,
+  that watches the world each tick and records notable events into a readable
+  timeline: population milestones and crashes, the first predation and shifts in
+  the carnivore share, a lineage reaching a deep generation, a species rising to
+  dominance and later going extinct, a new oldest creature, selective sweeps in
+  diversity, and — when those features are on — the moment learning is discovered
+  or a brain grows its first hidden neuron. It ties six releases of emergent
+  behaviour into a natural history you can follow.
+- **A Chronicle panel** in the UI, filling the space beneath the pond, with a
+  live newest-first feed: category-coloured accents, icons, and timestamps, with
+  fresh events briefly highlighted as they arrive.
+- **New tests** for event recording, ordered/one-shot milestones, predation
+  ordering, bounded history, and — importantly — that the chronicle is a *pure
+  observer* that never perturbs the world's determinism (81 total).
+
+### Notes
+
+- The chronicle draws its randomness (for the diversity probe) from its own
+  seeded generator, so it cannot affect the world RNG: every world is unchanged
+  and two identical worlds write identical chronicles. Verified bit-for-bit
+  against a v1.5 fingerprint.
+
 ## [1.5.0] — 2026-07-23
 
 The "Growing Brains" release: evolvable neural *topology* (NEAT-style) — the last

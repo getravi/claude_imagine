@@ -86,6 +86,12 @@ body {
   max-width: 1320px;
   margin: 0 auto;
 }
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
 .stage {
   position: relative;
   border-radius: var(--radius);
@@ -94,6 +100,92 @@ body {
   background: #04070b;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(10, 30, 50, 0.3);
 }
+
+/* ---- Chronicle ---- */
+.chronicle {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+.chronicle-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.chronicle-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.chronicle-sub {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+.chronicle-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chronicle-feed li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  color: var(--ink);
+  border-left: 2px solid transparent;
+}
+.chronicle-feed li:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.018);
+}
+.chronicle-feed li.fresh {
+  animation: chron-in 0.5s ease;
+}
+@keyframes chron-in {
+  from {
+    background: rgba(98, 200, 255, 0.16);
+  }
+}
+.chronicle-feed .c-icon {
+  font-size: 15px;
+  flex: 0 0 auto;
+}
+.chronicle-feed .c-when {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  min-width: 62px;
+}
+.chronicle-feed .c-msg {
+  flex: 1;
+}
+.chronicle-feed .chronicle-empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+/* Category accents on the left border. */
+.chronicle-feed li.cat-crash { border-left-color: #e0555f; }
+.chronicle-feed li.cat-predation { border-left-color: #ff7a4d; }
+.chronicle-feed li.cat-lineage { border-left-color: #9a7bff; }
+.chronicle-feed li.cat-pop { border-left-color: #62c8ff; }
+.chronicle-feed li.cat-recover { border-left-color: #5adc96; }
+.chronicle-feed li.cat-brain,
+.chronicle-feed li.cat-learning { border-left-color: #78beff; }
+.chronicle-feed li.cat-longevity { border-left-color: #d8c26a; }
+.chronicle-feed li.cat-diversity { border-left-color: #5adc96; }
 #world {
   display: block;
   width: 100%;

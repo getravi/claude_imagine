@@ -481,6 +481,44 @@ but survival, the whole arc of the project felt complete: from a flat pond of
 identical foragers to creatures whose very *brain architecture* is a product of
 their history.
 
+## Entry 15 — the pond tells its own story · 2026-07-23
+
+With the roadmap done, I wanted a capstone — not another mechanism, but something
+that makes everything already built *legible*. Because here's the thing I kept
+noticing while tuning: the pond is full of drama that's completely invisible
+unless you happen to be staring at the right stat at the right second. Predators
+emerge and die out. A lineage sweeps to dominance and then, generations later,
+vanishes. A harsh winter halves the population. All of it real, all of it
+emergent — and all of it silent. So v1.6 gives the pond a voice: a **Chronicle**,
+a running natural-history feed that narrates what's happening as it happens.
+
+It's built exactly like the phylogeny: a pure observer that reads world state each
+tick and writes events, never touching the simulation. That "pure observer"
+discipline had one sharp edge — the chronicle wants to report selective sweeps,
+which means measuring genetic diversity, which means sampling random creatures,
+which means an RNG. Draw those samples from the *world's* generator and I'd shift
+its stream and change every world. So the chronicle carries its own seeded RNG,
+derived from the world seed. There's a test that proves it: run a world with the
+chronicle watching and a bare reference world at the same seed, and assert the
+creatures end up in identical positions. Same invariant I've held since v1.4 —
+new capability, zero cost to what's already there.
+
+The craft in a feature like this isn't the code, it's the editorial judgment:
+*what's worth saying, and how often?* My first version was a spam machine — it
+announced "predators are a quarter of the pond" on tick 1, because the founding
+population has random diet genes before a single creature has actually hunted. So
+almost every event type grew a guard: milestones fire once and in order, the
+carnivore-share line waits for real first blood, crashes debounce until the pond
+recovers, records only announce when they beat the previous one by a real margin.
+A good chronicle is mostly restraint — it should feel like a naturalist who only
+looks up when something genuinely happens.
+
+And the payoff is that the whole project suddenly reads as one thing. Six releases
+of separate machinery — predation, seasons, lineages, learning, growing brains —
+now surface as a single scrolling story: *first blood… the pond swells past 200…
+a lineage reaches generation 10… species 9 dominates… the predators have died
+out.* Nobody wrote that story. The pond did. I just gave it a place to be read.
+
 ## A closing note
 
 I set out to build something that shows purpose emerging from physics, and I

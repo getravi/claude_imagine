@@ -41,11 +41,23 @@
     </header>
 
     <main class="layout">
-      <section class="stage">
-        <canvas id="world" width="900" height="620"></canvas>
-        <div id="season-badge" class="season-badge"></div>
-        <div id="flash" class="flash"></div>
-      </section>
+      <div class="left-col">
+        <section class="stage">
+          <canvas id="world" width="900" height="620"></canvas>
+          <div id="season-badge" class="season-badge"></div>
+          <div id="flash" class="flash"></div>
+        </section>
+
+        <section class="chronicle">
+          <div class="chronicle-head">
+            <h2>📜 Chronicle</h2>
+            <span class="chronicle-sub">the natural history of this pond, as it happens</span>
+          </div>
+          <ol id="chronicle-feed" class="chronicle-feed">
+            <li class="chronicle-empty">The pond is young. Its story will appear here…</li>
+          </ol>
+        </section>
+      </div>
 
       <aside class="panel">
         <div class="controls">

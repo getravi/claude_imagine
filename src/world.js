@@ -19,6 +19,7 @@ import { Genome } from "./genome.js";
 import { NeatGenome } from "./neat.js";
 import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
+import { Chronicle } from "./chronicle.js";
 import { FertilityField, seasonalFactor, seasonPhase } from "./environment.js";
 import { torusDist2 } from "./vec.js";
 
@@ -56,6 +57,10 @@ export class World {
     this.stats = new Stats();
     this.stats.sample(this);
     this.phylogeny.sample(this, 0);
+
+    // The chronicle narrates the world's history. Pure observer, like the
+    // phylogeny — reads state, never changes it, uses its own RNG.
+    this.chronicle = new Chronicle(config);
   }
 
   _randomCreature() {
@@ -215,6 +220,7 @@ export class World {
     this.tick++;
     this.stats.sample(this);
     this.phylogeny.sample(this, this.tick);
+    this.chronicle.observe(this, this.tick);
   }
 
   /** Add n fresh random creatures (used by the "seed life" button). */
@@ -252,5 +258,6 @@ export class World {
     this.phylogeny = new Phylogeny(this.config);
     for (const c of this.creatures) this.phylogeny.assign(c, this.tick, null);
     this.phylogeny.sample(this, this.tick);
+    this.chronicle = new Chronicle(this.config); // fresh history for the loaded world
   }
 }

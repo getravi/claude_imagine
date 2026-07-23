@@ -109,8 +109,35 @@ function loop(now) {
   updateHUD();
   updateSeasonBadge(world);
   updateInspector();
+  updateChronicle(world);
 
   requestAnimationFrame(loop);
+}
+
+// ---- Chronicle feed (natural-history timeline) ----
+let lastChronKey = "";
+function updateChronicle(world) {
+  const ev = world.chronicle.events;
+  const newest = ev.length ? ev[ev.length - 1] : null;
+  const key = ev.length + "|" + (newest ? newest.tick + newest.msg : "");
+  if (key === lastChronKey) return; // nothing changed since last render
+  lastChronKey = key;
+
+  const feed = $("chronicle-feed");
+  if (ev.length === 0) {
+    feed.innerHTML = '<li class="chronicle-empty">The pond is young. Its story will appear here…</li>';
+    return;
+  }
+  let html = "";
+  for (let i = ev.length - 1; i >= 0; i--) {
+    const e = ev[i];
+    const when = "t" + e.tick.toLocaleString() + (e.year ? ` · yr${e.year}` : "");
+    const fresh = i === ev.length - 1 ? " fresh" : "";
+    html +=
+      `<li class="cat-${e.cat}${fresh}"><span class="c-icon">${e.icon}</span>` +
+      `<span class="c-when">${when}</span><span class="c-msg">${e.msg}</span></li>`;
+  }
+  feed.innerHTML = html;
 }
 
 function updateSeasonBadge(world) {
@@ -485,6 +512,7 @@ function resetWorld(seed) {
   renderer.selected = null;
   renderer.highlightSpeciesId = null; // species ids don't carry across worlds
   legendSig = "";
+  lastChronKey = ""; // force the chronicle feed to re-render for the new world
   $("btn-clear-highlight").classList.add("hidden");
   syncHash();
 }
