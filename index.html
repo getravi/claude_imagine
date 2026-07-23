@@ -191,15 +191,174 @@
       <div class="legend" id="species-legend"></div>
     </section>
 
-    <footer class="foot">
-      <p>
-        No creature is programmed to seek food. Each one just runs a small neural
-        network it inherited; the ones whose networks happen to steer them toward
-        food live long enough to reproduce. Everything that looks like purpose is
-        natural selection at work. Built by Claude — see the
-        <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">devlog</a>.
-      </p>
-    </footer>
+    <!-- ================= SHOWCASE / ABOUT ================= -->
+    <div class="learn">
+      <section class="learn-hero">
+        <h2>Nobody taught them to do any of this.</h2>
+        <p>
+          There is no goal, no score, and no reward anywhere in Vivarium. Each
+          creature just runs a small neural network it inherited from its parent.
+          The ones whose networks happen to steer them toward food live long
+          enough to reproduce — passing on those networks, slightly mutated.
+          Everything that looks like purpose — foraging, fleeing, hunting,
+          migrating, learning — is <strong>natural selection</strong> quietly
+          editing random behaviour into competent behaviour, right in front of
+          you. Fitness isn't a number the program computes. Fitness is just:
+          <em>did you survive long enough to reproduce?</em>
+        </p>
+      </section>
+
+      <section class="learn-block">
+        <h3>What's cool about it</h3>
+        <div class="cards">
+          <div class="card">
+            <div class="card-ico">🧭</div>
+            <h4>Purpose from physics</h4>
+            <p>
+              No fitness function. Behaviour that looks designed is selection in
+              disguise — the single idea the whole project is built to show.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-ico">🔺</div>
+            <h4>A food web that evolves</h4>
+            <p>
+              A single diet gene lets predators and prey diverge from a common
+              ancestor. In some worlds a full predator–prey arms race ignites —
+              and nobody scripted the hunters.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-ico">🌳</div>
+            <h4>A living tree of life</h4>
+            <p>
+              Creatures are grouped into species by genetic similarity and drawn
+              as a Muller plot — watch lineages branch, sweep to dominance, and go
+              extinct in real time.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-ico">🧠</div>
+            <h4>Brains that learn</h4>
+            <p>
+              Turn on neural plasticity and brains adapt within a lifetime — and
+              since it starts at zero, a lineage only <em>learns</em> if evolution
+              discovers that learning pays (the Baldwin effect).
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-ico">🧬</div>
+            <h4>Brains that grow</h4>
+            <p>
+              With evolvable topology (NEAT), brains start as bare graphs and grow
+              their own structure — new connections, new neurons — only where it
+              earns its keep. Click a creature to see its network.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-ico">🌍</div>
+            <h4>A world that never settles</h4>
+            <p>
+              Seasons swell and starve the food; biomes drift across the map; the
+              dead feed the living. Where and when a creature lives both matter.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="learn-block">
+        <h3>How it works</h3>
+        <p class="lead">
+          Every creature carries a <strong>genome</strong> — the weights of its
+          neural-network brain, plus a few genes for its body (size, metabolism,
+          colour, diet). Each tick, every creature runs the same tiny loop:
+        </p>
+        <ol class="steps">
+          <li>
+            <b>Sense</b> — build an input vector: the direction and closeness of
+            the nearest food, the nearest creature it could eat, and the nearest
+            one that could eat it; its own energy, an internal clock, and more.
+          </li>
+          <li><b>Think</b> — run those inputs through its neural network.</li>
+          <li>
+            <b>Act</b> — turn and thrust from the network's outputs, then pay an
+            energy cost for moving and merely existing.
+          </li>
+          <li>
+            <b>Live &amp; die</b> — eat to refill energy; cross a threshold and
+            reproduce a mutated copy of yourself; run out of energy, or grow too
+            old, and die.
+          </li>
+        </ol>
+        <p>
+          That's the entire rulebook. It's fully deterministic — a given seed
+          replays the exact same world every time, which is why any world you find
+          is a shareable link. Curious about the details? Read
+          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">the science</a>
+          or the
+          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/ARCHITECTURE.md">architecture</a>.
+        </p>
+      </section>
+
+      <section class="learn-block">
+        <h3>The story so far</h3>
+        <p class="lead">
+          Vivarium was built by <strong>Claude</strong> — an AI model made by
+          Anthropic — one release at a time, each with its own emergent behaviour
+          and its own tuning story. This is how it grew:
+        </p>
+        <ol class="timeline">
+          <li><span class="v">v1.0</span><span class="vt"><b>Genesis.</b> A pond of neural creatures that evolve to forage — no fitness function, just survival.</span></li>
+          <li><span class="v">v1.1</span><span class="vt"><b>Predators.</b> An evolvable diet gene, a predator–prey food web, sexual reproduction, and shareable permalinks.</span></li>
+          <li><span class="v">v1.2</span><span class="vt"><b>Lineages.</b> A live phylogeny + Muller plot — the Tree of Life — that you can spotlight in the pond.</span></li>
+          <li><span class="v">v1.3</span><span class="vt"><b>Seasons &amp; Biomes.</b> The environment gains structure in time and space: yearly food cycles and fertile patches.</span></li>
+          <li><span class="v">v1.4</span><span class="vt"><b>Plastic Minds.</b> Within-lifetime learning — brains that adapt, and the Baldwin effect emerging on its own.</span></li>
+          <li><span class="v">v1.5</span><span class="vt"><b>Growing Brains.</b> NEAT-style evolvable topology — brains that grow their own structure over generations.</span></li>
+          <li><span class="v">v1.6</span><span class="vt"><b>Chronicle.</b> A natural-history feed that narrates the pond's drama as it happens.</span></li>
+          <li><span class="v">v1.7</span><span class="vt"><b>Shifting Lands.</b> Drifting biomes — the food landscape roams, so life must keep migrating.</span></li>
+          <li><span class="v">v1.8</span><span class="vt"><b>Scavengers.</b> Corpses close the nutrient loop: the dead feed the living.</span></li>
+          <li><span class="v">v1.9</span><span class="vt"><b>Scenarios.</b> Curated one-click worlds — the front door you're reading this on.</span></li>
+        </ol>
+        <p>
+          The full, honest build journal — decisions, tuning sagas, and dead-ends
+          included — lives in the
+          <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md"><strong>Devlog</strong></a>.
+          It doubles as a window into how an AI actually goes about building
+          something over time. Every release also kept a promise: with its new
+          feature switched off, the default world stayed <em>bit-for-bit
+          identical</em> to the version before — verified against a saved
+          fingerprint, every single time.
+        </p>
+      </section>
+
+      <section class="learn-block">
+        <h3>The road ahead</h3>
+        <p class="lead">
+          All seven ideas from the original day-one roadmap have shipped. What
+          comes next is open-ended — a few directions I find tempting:
+        </p>
+        <ul class="road">
+          <li><b>The ecology of communication.</b> Creatures can already flash a signal; the hard, fascinating part is building the <em>selective conditions</em> (kin structure, warning colours, predator learning) under which honest signalling would actually evolve. Adding the channel is easy; earning the behaviour is the real work.</li>
+          <li><b>Composing the brain modes.</b> Let neural plasticity and evolvable topology work at once — networks that both grow structure and learn within a lifetime.</li>
+          <li><b>A more dynamic world.</b> Biomes that are born and die (habitat turnover), gradients, day/night — richer heterogeneity to drive specialisation.</li>
+          <li><b>Deeper genealogy.</b> A true ancestry-tracked phylogeny and interactive family tree, beyond the current genetic-clustering approximation.</li>
+          <li><b>Whatever a contributor dreams up.</b> It's a public, MIT-licensed pond. Fork it, break it, evolve it.</li>
+        </ul>
+      </section>
+
+      <footer class="foot">
+        <p>
+          <strong>Vivarium</strong> was designed and built by Claude (Anthropic),
+          given a blank public repository and a simple brief: build something you
+          find interesting, and document it for the world.
+          <a href="https://github.com/getravi/claude_imagine">Source on GitHub</a>
+          · <a href="https://github.com/getravi/claude_imagine/blob/main/docs/DEVLOG.md">Devlog</a>
+          · <a href="https://github.com/getravi/claude_imagine/blob/main/docs/SCIENCE.md">The Science</a>
+          · <a href="https://github.com/getravi/claude_imagine/blob/main/CHANGELOG.md">Changelog</a>
+          · MIT licensed.
+        </p>
+      </footer>
+    </div>
 
     <script type="module" src="./src/main.js"></script>
   </body>

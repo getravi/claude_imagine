@@ -608,17 +608,213 @@ details .field {
   color: var(--ink-faint);
 }
 
+/* ---- Showcase / learn-more ---- */
+.learn {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 10px 22px 0;
+}
+.learn-hero {
+  border-top: 1px solid var(--line);
+  margin-top: 34px;
+  padding-top: 48px;
+  text-align: center;
+}
+.learn-hero h2 {
+  font-size: clamp(24px, 4vw, 38px);
+  margin: 0 0 18px;
+  letter-spacing: 0.2px;
+  background: linear-gradient(180deg, var(--ink) 0%, var(--accent) 220%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.learn-hero p {
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--ink-dim);
+  font-size: 16px;
+  line-height: 1.7;
+}
+.learn-hero strong,
+.learn-block strong {
+  color: var(--ink);
+}
+.learn-hero em,
+.learn-block em {
+  color: var(--accent-2);
+  font-style: normal;
+}
+.learn-block {
+  margin-top: 56px;
+}
+.learn-block h3 {
+  font-size: 22px;
+  margin: 0 0 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.learn-block .lead {
+  color: var(--ink-dim);
+  font-size: 15.5px;
+  line-height: 1.7;
+  max-width: 760px;
+}
+.learn-block p {
+  color: var(--ink-dim);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 760px;
+}
+.learn-block a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.learn-block a:hover {
+  text-decoration: underline;
+}
+
+/* Feature cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card:hover {
+  border-color: #29435c;
+  transform: translateY(-2px);
+}
+.card-ico {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.card h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--ink);
+}
+.card p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+/* How-it-works steps */
+.steps {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+  display: grid;
+  gap: 10px;
+  max-width: 820px;
+}
+.steps li {
+  position: relative;
+  padding: 12px 14px 12px 52px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-dim);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.steps li b {
+  color: var(--ink);
+}
+.steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #12293a;
+  border: 1px solid #2a5a7a;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Version timeline */
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+}
+.timeline li {
+  display: flex;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+.timeline .v {
+  flex: 0 0 46px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+}
+.timeline .vt {
+  color: var(--ink-dim);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.timeline .vt b {
+  color: var(--ink);
+}
+
+/* Roadmap list */
+.road {
+  padding-left: 0;
+  list-style: none;
+  margin: 16px 0;
+  display: grid;
+  gap: 10px;
+  max-width: 820px;
+}
+.road li {
+  padding: 12px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid #2a5a7a;
+  border-radius: 8px;
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.road li b {
+  color: var(--ink);
+}
+
 /* ---- Footer ---- */
 .foot {
   max-width: 1320px;
-  margin: 0 auto;
-  padding: 8px 22px 40px;
+  margin: 56px auto 0;
+  padding: 22px 0 48px;
+  border-top: 1px solid var(--line);
   color: var(--ink-faint);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.7;
 }
 .foot a {
   color: var(--ink-dim);
+}
+.foot a:hover {
+  color: var(--accent);
 }
 
 /* ---- Responsive ---- */
