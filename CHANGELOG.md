@@ -4,6 +4,32 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.12.0] — 2026-07-24
+
+Accessibility: reduce motion on request (or automatically, from the OS).
+
+### Added
+
+- **Reduce motion** toggle in the controls panel. When on, the renderer clears
+  each frame fully instead of painting a translucent veil, so creatures no
+  longer leave comet-tail smears behind them — the app's main continuous-motion
+  effect.
+- The toggle **defaults to the OS-level `prefers-reduced-motion` setting** on
+  load, and keeps following it live if the visitor changes that OS setting
+  mid-session, while still being freely overridable by hand either way.
+
+### Notes
+
+- Pure rendering preference: `Renderer.reducedMotion` only changes how a frame
+  is painted, never simulation state, so it draws no randomness and every
+  world stays bit-for-bit identical regardless of its setting. `render.js` and
+  `main.js` are outside the `node --test` suite (no DOM/canvas in Node), so
+  this was sanity-checked in a real headless browser (Chromium via Playwright)
+  against `app/index.html`: the checkbox starts unchecked with no OS
+  preference, starts checked when the OS prefers reduced motion, toggles
+  cleanly by hand in both directions, and the simulation keeps ticking with it
+  on — all with a clean console.
+
 ## [1.11.0] — 2026-07-24
 
 Observation: export the live chart as CSV.

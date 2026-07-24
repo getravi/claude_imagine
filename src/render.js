@@ -20,6 +20,11 @@ export class Renderer {
     this.showEnergy = true;
     this.selected = null; // a creature to highlight/inspect
     this.highlightSpeciesId = null; // when set, other species are dimmed
+    // Reduced motion: when true, each frame clears fully instead of leaving a
+    // translucent veil, so creatures no longer trail comet-tails behind them.
+    // Purely a drawing choice — it never reads or writes simulation state, so
+    // it has no bearing on determinism.
+    this.reducedMotion = false;
     this._resize();
   }
 
@@ -47,7 +52,7 @@ export class Renderer {
     const vg = Math.round(10 + 4 * phase);
     const vb = Math.round(20 - 8 * phase);
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = `rgba(${vr}, ${vg}, ${vb}, 0.28)`;
+    ctx.fillStyle = this.reducedMotion ? `rgb(${vr}, ${vg}, ${vb})` : `rgba(${vr}, ${vg}, ${vb}, 0.28)`;
     ctx.fillRect(0, 0, cfg.width, cfg.height);
 
     // Biomes: faint fertile glows so you can see where food concentrates.

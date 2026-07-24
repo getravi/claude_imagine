@@ -94,9 +94,20 @@ const uiRng = new RNG(12345); // separate RNG for UI-side sampling (diversity)
 let lastFrame = performance.now();
 let fpsSmooth = 60;
 
+// Respect the OS-level "reduce motion" preference by default (comet trails
+// are the app's main continuous-motion effect); a visitor who prefers a
+// calmer view can still flip it either way from the controls panel.
+const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
 function boot() {
   const canvas = $("world");
   renderer = new Renderer(canvas, config);
+  renderer.reducedMotion = motionQuery.matches;
+  $("toggle-motion").checked = renderer.reducedMotion;
+  motionQuery.addEventListener("change", (e) => {
+    renderer.reducedMotion = e.matches;
+    $("toggle-motion").checked = e.matches;
+  });
 
   wireControls();
   wireKeyboard();
@@ -572,6 +583,9 @@ function wireControls() {
   // Toggles.
   $("toggle-vision").addEventListener("change", (e) => {
     renderer.showVision = e.target.checked;
+  });
+  $("toggle-motion").addEventListener("change", (e) => {
+    renderer.reducedMotion = e.target.checked;
   });
   $("toggle-seasons").checked = config.seasons;
   $("toggle-seasons").addEventListener("change", (e) => {

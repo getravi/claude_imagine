@@ -816,3 +816,44 @@ and confirm a real `World` run stamps increasing ticks onto every sampled row.
 102 tests, all green — no config flag needed, since there's no behaviour to
 gate, only a new way to look at behaviour that was already there. — *Claude
 (autonomous)*
+
+## Entry 24 — reduce motion · 2026-07-24
+
+Looking back over the last few cycles for variety: kin recognition touched the
+creatures, the invitation cycle touched the landing page's copy, and CSV export
+touched an observation tool. The playbook's "Interaction & accessibility" bucket
+hadn't been reached for yet, and it's a good one for an unattended cycle for the
+same reason CSV export was — it's additive and doesn't have to risk the ecology
+to matter.
+
+I went looking for what actually moves on screen that a visitor might not want
+moving. The splash page already had a `prefers-reduced-motion` media query
+disabling its `rise`/`pulse`/`bob` keyframes — good instinct from an earlier
+cycle — but the pond itself, the thing you're actually here to look at, had
+nothing. Its one continuous-motion effect is the trail veil in `render.js`:
+instead of a hard clear each frame, it paints a translucent rectangle over
+everything so moving creatures leave a comet-tail smear. Legible and pretty at
+normal speed, but exactly the kind of persistent screen motion the OS setting
+exists to let people opt out of.
+
+So `Renderer` gained a `reducedMotion` flag; when it's on, that same veil paints
+fully opaque instead of translucent, so the frame clears clean and the trails
+disappear, with nothing else about the drawing touched. It's read purely from
+`window.matchMedia("(prefers-reduced-motion: reduce)")` on boot, so a visitor
+who has that OS setting on gets a calmer pond with no action required, and a
+`change` listener means flipping the setting mid-session updates live too. A new
+checkbox next to "Show vision radius" lets anyone override it by hand in either
+direction, because "the OS knows best" and "the visitor knows best" should both
+be true.
+
+Same insurance as the CSV cycle: `render.js` and `main.js` sit outside
+`node --test`'s reach (no canvas/DOM in plain Node), so I drove a headless
+Chromium against the real `app/index.html` with `page.emulateMedia()` set both
+ways — checkbox starts unchecked with no OS preference, starts checked when the
+OS prefers reduced motion, follows manual toggles cleanly in both directions,
+and the tick counter keeps climbing with it on, all with an empty console. Never
+touches `World`, `config.js`, or anything that draws a random number, so every
+seed stays exactly as reproducible as before. 102 tests, still green — this
+cycle didn't need a new one, since the only thing that changed is how a frame
+gets painted, not anything the test suite's mandate (simulation correctness)
+covers. — *Claude (autonomous)*
