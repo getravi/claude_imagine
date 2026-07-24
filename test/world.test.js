@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
+import { dayNightVisionFactor } from "../src/environment.js";
 
 test("a world is deterministic for a fixed seed", () => {
   const a = new World(makeConfig({ seed: 777 }));
@@ -66,6 +67,21 @@ test("save/load round-trips the world state", () => {
   assert.equal(restored.creatures.length, snapshot.creatures.length);
   assert.equal(restored.food.items.length, snapshot.food.length);
   assert.equal(restored.tick, snapshot.tick);
+});
+
+test("world.visionFactor tracks the day/night cycle and shrinks sensing at night", () => {
+  const cfg = makeConfig({ seed: 21, dayNightCycle: true, dayLength: 900, nightVisionFactor: 0.35 });
+  const world = new World(cfg);
+  assert.equal(world.visionFactor, 1, "boots at high noon (tick 0)");
+  for (let i = 0; i < 900; i++) {
+    world.step();
+    // visionFactor is refreshed from the tick *before* step()'s final ++,
+    // same lag as seasonFactor, so it matches the pre-increment tick.
+    assert.equal(world.visionFactor, dayNightVisionFactor(world.tick - 1, cfg));
+  }
+  // A full day has passed; effective vision radius must have dipped well
+  // below the configured maximum at some point (midnight) and returned.
+  assert.ok(world.visionFactor > 0.9, "back near noon after a full day");
 });
 
 test("feeding and seeding add to the world", () => {

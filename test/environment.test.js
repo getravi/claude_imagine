@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FertilityField, seasonalFactor, seasonPhase } from "../src/environment.js";
+import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "../src/environment.js";
 import { makeConfig } from "../src/config.js";
 import { RNG } from "../src/rng.js";
 import { World } from "../src/world.js";
@@ -116,6 +116,61 @@ test("seasonPhase stays in [0, 1]", () => {
     const p = seasonPhase(t, cfg);
     assert.ok(p >= 0 && p <= 1);
   }
+});
+
+test("day/night cycle disabled means a constant vision factor of 1", () => {
+  const cfg = makeConfig({ dayNightCycle: false });
+  for (let t = 0; t < 3000; t += 41) assert.equal(dayNightVisionFactor(t, cfg), 1);
+});
+
+test("day/night factor swings within [nightVisionFactor, 1] and peaks at noon", () => {
+  const cfg = makeConfig({ dayNightCycle: true, dayLength: 900, nightVisionFactor: 0.35 });
+  let min = Infinity;
+  let max = -Infinity;
+  for (let t = 0; t < 900; t++) {
+    const f = dayNightVisionFactor(t, cfg);
+    min = Math.min(min, f);
+    max = Math.max(max, f);
+  }
+  assert.ok(min >= cfg.nightVisionFactor - 1e-9);
+  assert.ok(max <= 1 + 1e-9);
+  assert.equal(dayNightVisionFactor(0, cfg), 1, "tick 0 is high noon");
+  assert.ok(
+    Math.abs(dayNightVisionFactor(450, cfg) - cfg.nightVisionFactor) < 1e-9,
+    "half a day in is the deepest night"
+  );
+});
+
+test("day/night is a smooth, deterministic function of tick alone", () => {
+  const cfg = makeConfig({ dayNightCycle: true });
+  for (let t = 0; t < 5000; t += 17) {
+    assert.equal(dayNightVisionFactor(t, cfg), dayNightVisionFactor(t, cfg));
+  }
+});
+
+test("a world with the day/night cycle on stays alive and deterministic", () => {
+  const a = new World(makeConfig({ seed: 314, dayNightCycle: true }));
+  const b = new World(makeConfig({ seed: 314, dayNightCycle: true }));
+  for (let i = 0; i < 4000; i++) {
+    a.step();
+    b.step();
+  }
+  assert.ok(a.creatures.length > 0, "world should not be permanently extinct");
+  assert.equal(a.creatures.length, b.creatures.length);
+  assert.equal(a.stats.kills, b.stats.kills);
+  assert.equal(a.stats.births, b.stats.births);
+});
+
+test("with the day/night cycle off, worlds are bit-for-bit unaffected", () => {
+  const withFlag = new World(makeConfig({ seed: 314, dayNightCycle: false }));
+  const withoutFlag = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 3000; i++) {
+    withFlag.step();
+    withoutFlag.step();
+  }
+  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
+  assert.equal(withFlag.stats.kills, withoutFlag.stats.kills);
+  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
 });
 
 test("a world with seasons and biomes survives several years", () => {

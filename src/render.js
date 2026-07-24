@@ -190,7 +190,10 @@ export class Renderer {
     if (this.showVision) {
       ctx.strokeStyle = "rgba(120, 180, 255, 0.15)";
       ctx.beginPath();
-      ctx.arc(c.x, c.y, cfg.visionRadius, 0, Math.PI * 2);
+      // Shrinks with the day/night cycle (visionFactor is a constant 1 when
+      // that's off), so the overlay always matches what the world actually lets
+      // creatures sense.
+      ctx.arc(c.x, c.y, cfg.visionRadius * (world.visionFactor ?? 1), 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();

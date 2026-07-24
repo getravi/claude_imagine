@@ -119,6 +119,16 @@ export const DEFAULT_CONFIG = Object.freeze({
   kinRecognition: false,
   kinRecognitionDistance: 0.05,
 
+  // Day/night cycle (opt-in): vision radius breathes on a fixed period, full
+  // by day and shrunk toward nightVisionFactor at the deepest night, via a
+  // smooth cosine — creatures go effectively night-blind on a schedule with
+  // no new sense or gene required. Off by default, and the factor is a
+  // constant 1 whenever it's off, so default worlds are bit-for-bit
+  // unaffected (see environment.js#dayNightVisionFactor).
+  dayNightCycle: false,
+  dayLength: 900, // ticks for one full day/night cycle
+  nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1)
+
   // --- Body ---
   bodyRadiusMin: 3.5,
   bodyRadiusMax: 8.0,

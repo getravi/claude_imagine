@@ -4,6 +4,44 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.13.0] — 2026-07-24
+
+A day/night cycle: creatures go effectively night-blind on a schedule.
+
+### Added
+
+- **Day/night cycle** toggle (opt-in, off by default). When on, the effective
+  vision radius used to find food, prey, and threats breathes on a fixed
+  period — full at "noon," shrinking on a smooth cosine to
+  `nightVisionFactor` (35% by default) at the deepest "midnight," and back —
+  so a pond swings between confident daytime foraging/hunting and a much
+  shorter-sighted, more cautious night, with no new sense or gene needed.
+  `dayLength` (ticks per full cycle) and `nightVisionFactor` are tunable.
+- `environment.js` gains `dayNightVisionFactor(tick, config)`, the pure
+  function driving it — deterministic in `tick` alone, mirroring the existing
+  `seasonalFactor`. The "show vision radius" overlay now draws the true
+  shrunk radius so what you see matches what creatures can actually sense.
+- A new **Day/night cycle 🌙** checkbox in the controls panel, wired through
+  permalinks (`night=1`).
+- **New tests** (`test/environment.test.js`, `test/world.test.js`) covering:
+  a constant factor of 1 when off, the [nightVisionFactor, 1] range and noon/
+  midnight extremes when on, determinism, a world surviving and staying
+  reproducible with it enabled, bit-for-bit-unaffected worlds with it off,
+  and `World.visionFactor` tracking the cycle tick-for-tick.
+
+### Notes
+
+- Off by default and draws zero randomness in either state — `dayNightVisionFactor`
+  returns a constant `1` whenever the flag is off, so it can be multiplied in
+  unconditionally and every existing world, including the default seed-314
+  pond, stays bit-for-bit identical. 108 tests, all green.
+- Touches `render.js`'s vision-overlay draw call (outside `node --test`'s
+  reach, no DOM in plain Node), so I sanity-checked it in headless Chromium
+  against the real `app/index.html`: the checkbox starts unchecked, toggling
+  it updates the permalink hash both ways, the sim keeps ticking with it on,
+  the vision-radius overlay and creature inspector still work with it
+  enabled, and the console stayed clean throughout.
+
 ## [1.12.0] — 2026-07-24
 
 Accessibility: reduce motion on request (or automatically, from the OS).

@@ -20,7 +20,7 @@ import { NeatGenome } from "./neat.js";
 import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
 import { Chronicle } from "./chronicle.js";
-import { FertilityField, seasonalFactor, seasonPhase } from "./environment.js";
+import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -38,6 +38,7 @@ export class World {
     this.environment = new FertilityField(config, this.rng);
     this.seasonFactor = seasonalFactor(0, config);
     this.seasonPhase = seasonPhase(0, config);
+    this.visionFactor = dayNightVisionFactor(0, config);
 
     this.food = new FoodField(config, this.rng, this.environment);
     /** @type {Creature[]} */
@@ -101,11 +102,16 @@ export class World {
 
     const born = [];
 
+    // Effective vision radius for this tick. With the day/night cycle off,
+    // visionFactor is a constant 1 and this is exactly cfg.visionRadius, so
+    // sensing is unchanged unless the feature is switched on.
+    const visionR2 = cfg.visionRadius * this.visionFactor * (cfg.visionRadius * this.visionFactor);
+
     // 2. Sense, think, act.
     for (const c of this.creatures) {
       // Nearest food within vision.
       let nf = null;
-      let nfD2 = cfg.visionRadius * cfg.visionRadius;
+      let nfD2 = visionR2;
       this.foodGrid.forEachNear(c.x, c.y, (f) => {
         if (f.eaten) return;
         const d2 = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
@@ -118,9 +124,9 @@ export class World {
       // Nearest prey (a creature c could eat) and nearest threat (a creature
       // that could eat c), found in a single scan of nearby cells.
       let prey = null;
-      let preyD2 = cfg.visionRadius * cfg.visionRadius;
+      let preyD2 = visionR2;
       let threat = null;
-      let threatD2 = cfg.visionRadius * cfg.visionRadius;
+      let threatD2 = visionR2;
       let mate = null; // nearest potential partner (sexual reproduction)
       let mateD2 = cfg.mateRadius * cfg.mateRadius;
       this.creatureGrid.forEachNear(c.x, c.y, (o) => {
@@ -258,6 +264,7 @@ export class World {
     this.environment.update(cfg.biomeDrift);
     this.seasonFactor = seasonalFactor(this.tick, cfg);
     this.seasonPhase = seasonPhase(this.tick, cfg);
+    this.visionFactor = dayNightVisionFactor(this.tick, cfg);
     this.food.compact();
     this.food.step(this.seasonFactor);
 

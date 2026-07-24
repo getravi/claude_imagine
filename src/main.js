@@ -43,6 +43,7 @@ function parseHash() {
   if (p.has("drift")) o.biomeDrift = p.get("drift") === "1" ? DRIFT_SPEED : 0;
   if (p.has("scav")) o.scavenging = p.get("scav") === "1";
   if (p.has("kin")) o.kinRecognition = p.get("kin") === "1";
+  if (p.has("night")) o.dayNightCycle = p.get("night") === "1";
   return o;
 }
 
@@ -64,6 +65,7 @@ function syncHash() {
   p.set("drift", config.biomeDrift > 0 ? "1" : "0");
   p.set("scav", config.scavenging ? "1" : "0");
   p.set("kin", config.kinRecognition ? "1" : "0");
+  p.set("night", config.dayNightCycle ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -172,6 +174,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-predation", config.predation);
   setToggle("toggle-scavenging", config.scavenging);
   setToggle("toggle-kin", config.kinRecognition);
+  setToggle("toggle-daynight", config.dayNightCycle);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -617,6 +620,11 @@ function wireControls() {
   $("toggle-kin").checked = config.kinRecognition;
   $("toggle-kin").addEventListener("change", (e) => {
     config.kinRecognition = e.target.checked;
+    syncHash();
+  });
+  $("toggle-daynight").checked = config.dayNightCycle;
+  $("toggle-daynight").addEventListener("change", (e) => {
+    config.dayNightCycle = e.target.checked;
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

@@ -125,3 +125,21 @@ export function seasonPhase(tick, config) {
   const s = Math.sin((2 * Math.PI * tick) / config.seasonLength);
   return (s + 1) / 2;
 }
+
+/**
+ * Vision-radius multiplier for the day/night cycle, in [nightVisionFactor, 1]:
+ * 1 at high noon, nightVisionFactor at the deepest night, moving between them
+ * on a smooth cosine "day" so there's no discontinuity at dawn or dusk.
+ * Deterministic in `tick` (no wall-clock time), so day/night doesn't break
+ * reproducibility. Returns a constant 1 whenever `dayNightCycle` is off, so
+ * callers can multiply by it unconditionally without branching, and default
+ * worlds stay exactly as they were before this existed.
+ * @param {number} tick
+ * @param {object} config
+ */
+export function dayNightVisionFactor(tick, config) {
+  if (!config.dayNightCycle) return 1;
+  const phase = (2 * Math.PI * tick) / config.dayLength;
+  const daylight = (Math.cos(phase) + 1) / 2; // 1 at noon (tick 0), 0 at midnight
+  return config.nightVisionFactor + (1 - config.nightVisionFactor) * daylight;
+}
