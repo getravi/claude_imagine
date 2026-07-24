@@ -4,6 +4,31 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.11.0] — 2026-07-24
+
+Observation: export the live chart as CSV.
+
+### Added
+
+- **Export CSV** button next to Save/Load/Share. Downloads the population,
+  food, and max-generation history that already drives the live chart as a
+  `tick,population,food,max_generation` CSV file, named with the current seed
+  and tick, so a visitor can pull the raw numbers into a spreadsheet of their
+  own instead of only eyeballing the sparkline.
+- `Stats.popHistory` entries now carry their `tick`, and `Stats.toCSV()` is a
+  new pure, read-only formatter — it only serialises what `sample()` already
+  recorded and never touches simulation state.
+- **New tests** (`test/stats.test.js`) covering CSV formatting on an empty and
+  a populated history, and that a real `World` run records an increasing
+  `tick` on every sampled row.
+
+### Notes
+
+- Pure observation feature: no RNG draws, no config flag, no change to any
+  simulation state, so every world remains bit-for-bit identical. Verified the
+  button in a real browser (Chromium via Playwright) — it triggers a valid CSV
+  download with no console errors.
+
 ## [1.10.1] — 2026-07-24
 
 Landing page: say plainly that the site keeps evolving on its own.

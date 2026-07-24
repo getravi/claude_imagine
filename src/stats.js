@@ -89,12 +89,27 @@ export class Stats {
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {
       this.popHistory.push({
+        tick: this.tick,
         pop,
         food: world.food.items.length,
         gen: maxGen,
       });
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
     }
+  }
+
+  /**
+   * Render the retained population/food/generation history as CSV text, so a
+   * visitor can pull the chart's raw numbers into a spreadsheet. Pure and
+   * read-only: it never touches the simulation, only formats what sample()
+   * already recorded.
+   */
+  toCSV() {
+    const lines = ["tick,population,food,max_generation"];
+    for (const h of this.popHistory) {
+      lines.push(`${h.tick},${h.pop},${h.food},${h.gen}`);
+    }
+    return lines.join("\n") + "\n";
   }
 
   /** Mean genetic distance across a small random sample — a diversity proxy. */

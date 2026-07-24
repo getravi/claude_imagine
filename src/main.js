@@ -632,6 +632,7 @@ function wireControls() {
   $("btn-save").addEventListener("click", saveWorld);
   $("btn-load").addEventListener("click", loadWorld);
   $("btn-share").addEventListener("click", shareLink);
+  $("btn-export-csv").addEventListener("click", exportCSV);
 
   // Tree of Life: clear the lineage spotlight.
   $("btn-clear-highlight").addEventListener("click", () => {
@@ -712,6 +713,20 @@ function loadWorld() {
   } catch (err) {
     flash("Could not load world.");
   }
+}
+
+// Download the live population/food/generation chart as a CSV file, so a
+// visitor can pull the raw numbers into a spreadsheet of their own.
+function exportCSV() {
+  const csv = world.stats.toCSV();
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `vivarium-seed${config.seed}-tick${world.tick}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flash("Chart data exported.");
 }
 
 let flashTimer = null;
