@@ -100,13 +100,24 @@ export class Creature {
    * True if this creature could eat `other`: it must be carnivorous enough to
    * bother, and physically bigger than its target. Size having a metabolic
    * cost is what stops everything simply evolving to be huge — being a predator
-   * is a real trade-off, not a free win.
+   * is a real trade-off, not a free win. With kin recognition on, a target
+   * genetically close enough to be immediate family (see kinRecognitionDistance
+   * in config.js) is spared even when otherwise eligible.
    */
   canEat(other) {
-    return (
-      this.carnivory >= this.config.carnivoreThreshold &&
-      this.radius > other.radius * this.config.preySizeRatio
-    );
+    if (
+      this.carnivory < this.config.carnivoreThreshold ||
+      this.radius <= other.radius * this.config.preySizeRatio
+    ) {
+      return false;
+    }
+    if (
+      this.config.kinRecognition &&
+      this.genome.distance(other.genome) < this.config.kinRecognitionDistance
+    ) {
+      return false;
+    }
+    return true;
   }
 
   /**

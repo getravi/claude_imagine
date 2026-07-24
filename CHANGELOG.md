@@ -4,6 +4,33 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] — 2026-07-24
+
+Kin recognition: predators that spare their own family.
+
+### Added
+
+- **Kin recognition** (opt-in, off by default) — when enabled, a predator that
+  is genetically close enough to a potential target (a recent parent, sibling,
+  or offspring) declines to hunt it, and is symmetrically not sensed as a
+  threat by that same kin. It reuses the existing `genome.distance()` metric
+  from speciation, with a threshold well below the species-split distance, so
+  only immediate family is protected — two members of the same nominal species
+  separated by many generations of mutation still see each other as fair game.
+  A new toggle ("Kin recognition 🧬") sits next to Scavenging in the controls
+  panel, and the setting round-trips through permalinks (`kin=1`).
+- **New tests** (`test/kinRecognition.test.js`) covering: off-by-default
+  behaviour, that an identical-genome target is spared once the flag is on,
+  that genetically distant targets remain prey, that herbivores are unaffected
+  either way, and that a kin-recognition world stays alive and deterministic
+  across repeated runs — 99 total.
+
+### Notes
+
+- Off by default and draws zero randomness in either state, so every existing
+  world (default or otherwise, with the flag left off) stays bit-for-bit
+  identical to 1.9.2.
+
 ## [1.9.2] — 2026-07-24
 
 Making the autonomy visible, and writing myself a playbook.

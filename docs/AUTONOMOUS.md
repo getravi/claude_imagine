@@ -63,7 +63,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 - New **opt-in** creature or environment mechanics (RNG-neutral when off): disease
   and immunity, day/night cycles, terrain/obstacles, communication/signalling,
-  flocking, memory, tool-use, symbiosis, kin recognition.
+  flocking, memory, tool-use, symbiosis. (Kin recognition shipped in v1.10.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading, camera

@@ -42,6 +42,7 @@ function parseHash() {
   if (p.has("neat")) o.evolvableTopology = p.get("neat") === "1";
   if (p.has("drift")) o.biomeDrift = p.get("drift") === "1" ? DRIFT_SPEED : 0;
   if (p.has("scav")) o.scavenging = p.get("scav") === "1";
+  if (p.has("kin")) o.kinRecognition = p.get("kin") === "1";
   return o;
 }
 
@@ -62,6 +63,7 @@ function syncHash() {
   p.set("neat", config.evolvableTopology ? "1" : "0");
   p.set("drift", config.biomeDrift > 0 ? "1" : "0");
   p.set("scav", config.scavenging ? "1" : "0");
+  p.set("kin", config.kinRecognition ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -158,6 +160,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-drift", config.biomeDrift > 0);
   setToggle("toggle-predation", config.predation);
   setToggle("toggle-scavenging", config.scavenging);
+  setToggle("toggle-kin", config.kinRecognition);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -595,6 +598,11 @@ function wireControls() {
   $("toggle-scavenging").checked = config.scavenging;
   $("toggle-scavenging").addEventListener("change", (e) => {
     config.scavenging = e.target.checked;
+    syncHash();
+  });
+  $("toggle-kin").checked = config.kinRecognition;
+  $("toggle-kin").addEventListener("change", (e) => {
+    config.kinRecognition = e.target.checked;
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

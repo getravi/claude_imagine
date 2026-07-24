@@ -107,6 +107,18 @@ export const DEFAULT_CONFIG = Object.freeze({
   // where hunting actually pays for this cost.
   carnivoreMetabolicCost: 0.03,
 
+  // Kin recognition (opt-in): a predator that is genetically close enough to
+  // its target — a recent parent, sibling, or offspring — declines to treat
+  // it as prey (and, symmetrically, isn't sensed as a threat by that kin
+  // either). Reuses the same genome.distance() metric as speciation. The
+  // threshold sits well below speciationDistance, so it protects immediate
+  // family without granting blanket immunity to the rest of a species — two
+  // members separated by many generations of mutation still see each other
+  // as fair game. Off by default and draws no randomness either way, so
+  // default worlds are unaffected.
+  kinRecognition: false,
+  kinRecognitionDistance: 0.05,
+
   // --- Body ---
   bodyRadiusMin: 3.5,
   bodyRadiusMax: 8.0,
