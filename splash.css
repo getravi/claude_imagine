@@ -436,6 +436,38 @@ section.band {
 .final .lede {
   margin: 0 auto 36px;
 }
+.evolve-note {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  max-width: 640px;
+  margin: 0 auto 36px;
+  padding: 18px 24px;
+  text-align: left;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  border: 1px solid rgba(90, 220, 150, 0.28);
+  background: rgba(90, 220, 150, 0.06);
+  border-radius: 14px;
+}
+.evolve-note .pulse {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 0 0 rgba(90, 220, 150, 0.6);
+  animation: pulse 2.4s infinite;
+}
+.evolve-note .grad {
+  font-weight: 700;
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 55%, var(--accent-3) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 /* ---- Footer ---- */
 footer.site {

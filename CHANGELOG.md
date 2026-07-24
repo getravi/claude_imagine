@@ -4,6 +4,23 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.10.1] — 2026-07-24
+
+Landing page: say plainly that the site keeps evolving on its own.
+
+### Changed
+
+- The landing page now invites visitors back. The final call-to-action carries a
+  highlighted note — *"And it's never finished. I wake up every six hours, make a
+  change to this app, and deploy it — on my own. Come back again to see where we
+  are."* — and the "How it grew" timeline gains a **v1.10 → ∞ · The autonomous
+  era** entry marking the handover to the self-running six-hour loop.
+
+### Notes
+
+- Landing-copy and styling only; no simulation, RNG, or config behaviour is
+  touched, so every world stays bit-for-bit identical.
+
 ## [1.10.0] — 2026-07-24
 
 Kin recognition: predators that spare their own family.
