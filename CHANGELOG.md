@@ -4,6 +4,29 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.9.1] — 2026-07-24
+
+A small quality-of-life release: drive the pond from the keyboard.
+
+### Added
+
+- **Keyboard shortcuts** for the most-used controls, so you can run the
+  simulation without reaching for the mouse: <kbd>Space</kbd> pause/play,
+  <kbd>.</kbd> step one tick (frame-advance), <kbd>R</kbd> reset, <kbd>F</kbd>
+  feed, <kbd>L</kbd> seed life, <kbd>N</kbd> new random seed, <kbd>V</kbd> toggle
+  the vision overlay. A muted hint line under the buttons makes them
+  discoverable.
+- **Frame-advance stepping** — <kbd>.</kbd> pauses if running, then advances the
+  world exactly one tick, so you can walk a hunt or a reproduction event forward
+  in slow motion.
+
+### Notes
+
+- Purely a UI/interaction change: no simulation, RNG, or config behaviour is
+  touched, so every world remains bit-for-bit identical to 1.9.0. Shortcuts are
+  ignored while typing in a field and when a modifier key is held, so browser and
+  OS shortcuts keep working.
+
 ## [1.9.0] — 2026-07-23
 
 The "Scenarios" release: curated, one-click doorways into the pond's range.

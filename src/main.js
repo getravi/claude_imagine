@@ -97,6 +97,7 @@ function boot() {
   renderer = new Renderer(canvas, config);
 
   wireControls();
+  wireKeyboard();
   wireCanvas(canvas);
   buildScenarioChips();
   syncHash();
@@ -467,12 +468,74 @@ function brainGraphSVG(genome) {
   return `<svg class="braingraph" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg>`;
 }
 
+// Toggle the simulation between running and paused, keeping the button label in
+// sync. Shared by the Pause button and the Space keyboard shortcut.
+function togglePause() {
+  running = !running;
+  $("btn-pause").textContent = running ? "⏸ Pause" : "▶ Play";
+}
+
+// Advance exactly one simulation step, like a video player's frame-advance.
+// Pauses first if running, so repeated taps walk the world forward tick by tick
+// — handy for watching a hunt or a reproduction event unfold in slow motion.
+function stepOnce() {
+  if (running) togglePause();
+  world.step();
+}
+
+// ---- Keyboard shortcuts ----
+// Single-key accelerators for the most-used controls, so you can drive the pond
+// without reaching for the mouse. Ignored while typing in a field (e.g. the seed
+// box) and whenever a modifier is held, so browser/OS shortcuts still work.
+function wireKeyboard() {
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+
+    switch (e.key) {
+      case " ":
+        togglePause();
+        break;
+      case ".":
+        stepOnce();
+        break;
+      case "r":
+      case "R":
+        resetWorld(config.seed);
+        break;
+      case "f":
+      case "F":
+        world.addFood(60);
+        break;
+      case "l":
+      case "L":
+        world.addRandomCreatures(12);
+        break;
+      case "n":
+      case "N": {
+        const seed = Math.floor(Math.random() * 1e9);
+        $("seed-input").value = seed;
+        resetWorld(seed);
+        break;
+      }
+      case "v":
+      case "V": {
+        const box = $("toggle-vision");
+        box.checked = !box.checked;
+        renderer.showVision = box.checked;
+        break;
+      }
+      default:
+        return; // let every other key pass through untouched
+    }
+    e.preventDefault();
+  });
+}
+
 // ---- Controls ----
 function wireControls() {
-  $("btn-pause").addEventListener("click", () => {
-    running = !running;
-    $("btn-pause").textContent = running ? "⏸ Pause" : "▶ Play";
-  });
+  $("btn-pause").addEventListener("click", togglePause);
 
   $("btn-reset").addEventListener("click", () => resetWorld(config.seed));
 
