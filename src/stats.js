@@ -14,6 +14,11 @@ export class Stats {
     this.deaths = 0;
     this.kills = 0; // deaths specifically caused by predation
     this.scavenged = 0; // total scavenging bites taken from corpses
+    this.infections = 0; // cumulative cases of the disease (contagion on)
+    this.recoveries = 0; // cumulative recoveries, each one a new immune creature
+    this.infectedCount = 0; // currently sick
+    this.immuneCount = 0; // currently alive and immune
+    this.peakInfected = 0; // worst simultaneous caseload ever seen
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
@@ -64,6 +69,25 @@ export class Stats {
       this.avgLearning = n > 0 ? drift / n : 0;
     } else {
       this.avgLearning = 0;
+    }
+
+    // Contagion: the live S/I/R split of the population. Counted only when the
+    // feature is on — with it off no creature is ever sick or immune, so the
+    // loop would be a per-tick scan for a guaranteed pair of zeroes.
+    if (world.config.disease) {
+      let sick = 0;
+      let immune = 0;
+      for (let i = 0; i < pop; i++) {
+        const cr = world.creatures[i];
+        if (cr.infected) sick++;
+        else if (cr.immune) immune++;
+      }
+      this.infectedCount = sick;
+      this.immuneCount = immune;
+      if (sick > this.peakInfected) this.peakInfected = sick;
+    } else {
+      this.infectedCount = 0;
+      this.immuneCount = 0;
     }
 
     // Brain complexity: average evolved structure, when topology can evolve.

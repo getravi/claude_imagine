@@ -100,6 +100,11 @@ export class World {
       for (const k of this.corpses) this.corpseGrid.insert(k);
     }
 
+    // 1b. Contagion, if the pathogen exists in this world at all. Runs on the
+    // grid just built, before anything moves, so exposure is judged on the same
+    // positions a watcher sees. Skipped entirely when the feature is off.
+    if (cfg.disease) this._stepDisease();
+
     const born = [];
 
     // Effective vision radius for this tick. With the day/night cycle off,
@@ -286,6 +291,69 @@ export class World {
     this.stats.sample(this);
     this.phylogeny.sample(this, this.tick);
     this.chronicle.observe(this, this.tick);
+  }
+
+  /**
+   * One tick of epidemiology: expose the susceptible, recover the long-sick,
+   * and — if the pathogen has burned out — let a new case walk in.
+   *
+   * Only ever called when `config.disease` is on, so a world without the
+   * feature draws not one random number here and is unchanged by its existence.
+   * Order inside the tick matters for reproducibility, so it is fixed: every
+   * infected host rolls against each susceptible neighbour it can reach (more
+   * contacts really is more risk), the new cases are collected and applied only
+   * *after* the whole pass, so an infection can't chain through three hosts
+   * within a single tick, and the epidemic advances one hop at a time no matter
+   * what order the creatures happen to sit in the array.
+   */
+  _stepDisease() {
+    const cfg = this.config;
+    const r2 = cfg.infectionRadius * cfg.infectionRadius;
+    const caught = [];
+    let sick = 0;
+
+    for (const c of this.creatures) {
+      if (!c.infected) continue;
+      sick++;
+      this.creatureGrid.forEachNear(c.x, c.y, (o) => {
+        if (o === c || o.infected || o.immune || o.dead) return;
+        const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
+        if (d2 <= r2 && this.rng.chance(cfg.infectionChance)) caught.push(o);
+      });
+    }
+
+    // Recovery: an infection runs its course, and the survivor is immune for
+    // life. Done before the new cases land so a creature that recovers this
+    // tick can't be re-infected by an exposure from the same tick.
+    for (const c of this.creatures) {
+      if (c.infected && c.age - c.infectedAtAge >= cfg.diseaseDuration) {
+        c.infected = false;
+        c.immune = true;
+        this.stats.recoveries++;
+      }
+    }
+
+    for (const o of caught) {
+      if (o.infected || o.immune) continue; // already exposed earlier in this pass
+      o.infected = true;
+      o.infectedAtAge = o.age;
+      this.stats.infections++;
+    }
+
+    // Reintroduction: with no case left anywhere the pathogen is gone for good,
+    // so one arrives on a fixed schedule — the first outbreak included. If the
+    // creature it lands on happens to be immune, nothing takes hold and the
+    // next window tries again.
+    if (sick === 0 && caught.length === 0 && this.creatures.length > 0 && this.tick > 0) {
+      if (this.tick % cfg.diseaseReintroduce === 0) {
+        const host = this.creatures[this.rng.int(0, this.creatures.length - 1)];
+        if (!host.immune) {
+          host.infected = true;
+          host.infectedAtAge = host.age;
+          this.stats.infections++;
+        }
+      }
+    }
   }
 
   /** Add n fresh random creatures (used by the "seed life" button). */

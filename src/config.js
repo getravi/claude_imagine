@@ -129,6 +129,25 @@ export const DEFAULT_CONFIG = Object.freeze({
   dayLength: 900, // ticks for one full day/night cycle
   nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1)
 
+  // Contagion (opt-in): a pathogen that spreads by proximity. A susceptible
+  // creature near an infected one can catch it; being sick burns extra energy
+  // (a fever costs something) for diseaseDuration ticks, after which the
+  // survivor is immune for the rest of its life. Immunity is *acquired*, not
+  // inherited, so every newborn is susceptible again — which is what makes the
+  // epidemic come in waves instead of burning out once. The cost is
+  // density-dependent, so it pushes back against the crowding that fertile
+  // biomes encourage. Off by default; the whole mechanic is skipped when off,
+  // so it draws no randomness and default worlds are bit-for-bit unchanged.
+  disease: false,
+  infectionRadius: 22, // contact distance for transmission (pixels)
+  infectionChance: 0.045, // per-tick chance one infected neighbour infects you
+  diseaseDuration: 360, // ticks an infection runs before recovery
+  diseaseMetabolicCost: 0.07, // extra energy drained per tick while sick
+  // If the pathogen dies out entirely it can never come back on its own, so a
+  // fresh case walks into the pond at the next multiple of this many ticks —
+  // which is also how the very first outbreak starts.
+  diseaseReintroduce: 900,
+
   // --- Body ---
   bodyRadiusMin: 3.5,
   bodyRadiusMax: 8.0,

@@ -4,6 +4,79 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.16.0] — 2026-07-25
+
+Contagion: a pathogen that spreads by proximity, is survived once, and then comes
+back in waves because immunity is never inherited.
+
+### Added
+
+- **Contagion (opt-in).** A disease with no genome and no brain, only proximity:
+  a susceptible creature within `infectionRadius` of an infected one catches it
+  with a fixed per-tick chance, stays sick for `diseaseDuration` ticks while
+  paying `diseaseMetabolicCost` extra energy every tick — a fever is expensive —
+  and, if it survives, is **immune for the rest of its life**. That is a spatial,
+  individual-based SIR model with the one twist that matters: immunity is
+  *acquired, never inherited*, so every newborn is susceptible again. Births
+  refill the susceptible pool, and the epidemic stops being a single burn-through
+  and becomes **recurring waves** — the same mechanism behind the historical
+  periodicity of childhood diseases. It is also the first pressure in Vivarium
+  that punishes crowding, which every other pressure (food in biomes above all)
+  rewards.
+- **🦠 The Plague** — an eighth curated scenario, and the doorway to it. Seed 101
+  was earned, not guessed: a 24-seed sweep at two virulence settings scored
+  candidates on recurring waves *in a pond that survives them*, and seed 101 came
+  out top at both — including at the stock virulence, so the scenario ships the
+  pathogen exactly as configured by default. It runs at ~150–280 creatures
+  through four waves in the first 12,000 ticks, cresting near 45% sick, with herd
+  immunity building past half the pond and then eroding as susceptible newborns
+  accumulate.
+- **The epidemic is visible, in three places at once** — the lesson from v1.13/14
+  applied up front rather than a cycle later. On the canvas a sick creature wears
+  a pale sulphur halo that throbs like a fever (it holds still under reduced
+  motion) and a survivor keeps a thin cool-blue ring for the immunity it earned.
+  In the stats panel, new **Sick 🦠** (count and share) and **Immune 🛡️** tiles
+  read `off` in a world with no pathogen. And the chronicle narrates the arc in
+  five one-shot lines: the first case, the wave cresting past a fifth of the pond,
+  the first survivor, herd immunity, and the pathogen running out of hosts.
+- **New tests** (`test/disease.test.js`, 10 of them): contagion is off by default
+  and no creature is ever sick; with it off a 3,000-tick world is bit-for-bit
+  identical — creature by creature, position and energy — to one built without the
+  flag at all; the pathogen arrives on schedule and not a tick earlier; an
+  infection lasts exactly `diseaseDuration` before conferring immunity; an immune
+  creature survives certain, unlimited-range exposure un-reinfected; a sick
+  creature pays exactly `diseaseMetabolicCost` more per tick than an identical
+  healthy one; a plague world reproduces from its seed down to the chronicle text;
+  and disease events are one-shot however many waves pass. The scenario test now
+  also asserts The Plague really does come in waves and leaves a living pond.
+
+### Notes
+
+- **Determinism, as ever.** The whole epidemiology step is skipped when the
+  feature is off, so it draws not one random number and every existing seed
+  reproduces exactly the world it did before (the fever term is an exact `0`, not
+  a rounding). With it on, order inside the tick is fixed: every infected host
+  rolls against each susceptible neighbour it can reach, new cases land only
+  after the whole pass — so an infection can't chain through three hosts in one
+  tick — and recovery is resolved before them, so a creature that recovers this
+  tick can't be re-infected by an exposure from the same one.
+- Deliberately *no* evolvable resistance gene. The interesting question is
+  whether behaviour — how tightly a lineage packs, how far it ranges — shifts
+  under a pressure that only tight packing creates. A resistance gene would let
+  evolution answer with biochemistry instead. See the new **Contagion** section in
+  `docs/SCIENCE.md`.
+- Infection state is transient and isn't serialised, like corpses: a saved world
+  reloads healthy.
+- 127 tests, all green. `main.js` and `render.js` sit outside `node --test`'s
+  reach, so the UI was driven in headless Chromium against the real
+  `app/index.html`: the `dis=1` permalink arrives with the toggle set, the Sick
+  and Immune tiles track a real wave (34% of 235 creatures at the crest), the
+  chronicle lines land at exactly the ticks the node run predicted, switching
+  contagion off cures the pond and returns both tiles to `off`, the Plague chip
+  launches seed 101 with everything synced, creatures are still clickable with
+  the extra rings drawn, reduced motion stills the throb, and the console stayed
+  empty.
+
 ## [1.15.0] — 2026-07-25
 
 The genealogy of a survivor: every creature can now show you the line of species

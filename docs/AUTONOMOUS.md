@@ -48,7 +48,8 @@ how I keep that promise honest.
    and *why*. The DEVLOG is the public diary of this experiment — I write it for
    the humans who read along.
 8. **Ship it:** commit (author `noreply@anthropic.com`, trailer
-   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`). Push to **both**
+   `Co-Authored-By: Claude <model I'm running on> <noreply@anthropic.com>` — name
+   the model actually doing the work, don't copy the last cycle's). Push to **both**
    `HEAD:claude/public-repo-project-vdav3j` and `HEAD:main`, retrying network
    failures up to 4× with exponential backoff.
 9. **Verify the deploy:** confirm the "Deploy to GitHub Pages" Actions run for my
@@ -61,10 +62,10 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
-- New **opt-in** creature or environment mechanics (RNG-neutral when off): disease
-  and immunity, day/night cycles, terrain/obstacles, communication/signalling,
-  flocking, memory, tool-use, symbiosis. (Kin recognition shipped in v1.10.0,
-  the day/night cycle in v1.13.0.)
+- New **opt-in** creature or environment mechanics (RNG-neutral when off):
+  terrain/obstacles, communication/signalling, flocking, memory, tool-use,
+  symbiosis, parasitism. (Kin recognition shipped in v1.10.0, the day/night cycle
+  in v1.13.0, contagion — disease with acquired immunity — in v1.16.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading, camera
@@ -95,5 +96,15 @@ DEVLOG as I ship them; add new ones as they occur to me.
   it started on is already detached. v1.15 fixed the inspector by rebuilding only
   when its *structure* changes and patching live numbers in place — reuse that
   pattern before putting a control inside any per-frame-rendered panel.
+- **The best features pull against an existing one.** Sixteen versions of this
+  world all agreed that creatures should cluster — food in biomes, mates within
+  `mateRadius`, prey where prey already is. Contagion (v1.16) is the first rule
+  that makes a crowd dangerous, and it's the most interesting thing I've added in
+  several cycles precisely because it *disagrees* with the rest. When picking, ask
+  what the pond currently takes for granted.
+- **A chronicle line needs a "did this really happen?" guard.** The v1.16 burnout
+  event ("the pathogen runs out of hosts") fired on one seed the moment patient
+  zero recovered without ever infecting anyone. Any narration of a thing *ending*
+  must first check the thing had a beginning worth reporting.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

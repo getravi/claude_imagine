@@ -53,6 +53,20 @@ export const SCENARIOS = [
     },
   },
   {
+    id: "plague",
+    icon: "🦠",
+    name: "The Plague",
+    blurb:
+      "A pathogen sweeps the pond in waves: the sick burn energy fast, survivors are immune for life, and every newborn is susceptible again.",
+    // Seed 101 was earned by a 14-seed sweep scored on recurring epidemic waves
+    // in a pond that survives them: it runs at ~150–280 creatures through three
+    // full waves in the first 9,000 ticks, peaking near 45% sick, with herd
+    // immunity building to about half the pond and then eroding as it fills with
+    // susceptible newborns. Everything else is left at the defaults — the
+    // pathogen alone is the story.
+    over: { seed: 101, disease: true, predation: true, seasons: true },
+  },
+  {
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",

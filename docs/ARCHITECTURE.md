@@ -83,6 +83,14 @@ front, constructing one and stepping it N times is a pure function of
    rather than tracking moves incrementally — simpler, and cheap because
    clearing reuses the cell arrays instead of reallocating.)
 
+1b. **Contagion** (only if `disease` is on). Using the grid just rebuilt — so
+   exposure is judged on the positions a watcher can see — every infected
+   creature rolls against each susceptible neighbour within `infectionRadius`;
+   new cases are applied only after the whole pass, so an infection advances one
+   hop per tick regardless of array order. Infections older than
+   `diseaseDuration` recover into lifelong immunity, and if no case is left
+   anywhere a fresh one arrives on the `diseaseReintroduce` schedule.
+
 2. **For each creature:**
    - **Find the nearest food** within vision, by asking the food grid only for
      candidates in the 3×3 block of cells around the creature, then doing exact
@@ -94,7 +102,8 @@ front, constructing one and stepping it N times is a pure function of
    - **`sense(...)`** — pack those findings into the creature's input vector.
    - **`think()`** — run the brain's forward pass.
    - **`act(...)`** — apply turn/thrust, integrate position (wrapping around the
-     torus), and subtract the metabolic cost (including the upkeep of carnivory).
+     torus), and subtract the metabolic cost (including the upkeep of carnivory
+     and, when sick, the price of a fever).
      This may mark the creature dead.
    - **Graze** — if it's sitting on the nearest pellet, consume it; nutrition
      scales down with how carnivorous it is.

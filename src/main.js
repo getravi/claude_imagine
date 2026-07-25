@@ -45,6 +45,7 @@ function parseHash() {
   if (p.has("scav")) o.scavenging = p.get("scav") === "1";
   if (p.has("kin")) o.kinRecognition = p.get("kin") === "1";
   if (p.has("night")) o.dayNightCycle = p.get("night") === "1";
+  if (p.has("dis")) o.disease = p.get("dis") === "1";
   return o;
 }
 
@@ -67,6 +68,7 @@ function syncHash() {
   p.set("scav", config.scavenging ? "1" : "0");
   p.set("kin", config.kinRecognition ? "1" : "0");
   p.set("night", config.dayNightCycle ? "1" : "0");
+  p.set("dis", config.disease ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -190,6 +192,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-scavenging", config.scavenging);
   setToggle("toggle-kin", config.kinRecognition);
   setToggle("toggle-daynight", config.dayNightCycle);
+  setToggle("toggle-disease", config.disease);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -328,6 +331,11 @@ function updateHUD() {
   const pct = pop > 0 ? Math.round((carn / pop) * 100) : 0;
   $("stat-carn").textContent = `${carn} (${pct}%)`;
   $("stat-kills").textContent = s.kills.toLocaleString();
+  // Contagion: the live sick / immune split (both "off" without a pathogen).
+  $("stat-sick").textContent = config.disease
+    ? `${s.infectedCount} (${pop > 0 ? Math.round((s.infectedCount / pop) * 100) : 0}%)`
+    : "off";
+  $("stat-immune").textContent = config.disease ? s.immuneCount : "off";
   $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
   $("stat-brain").textContent = config.evolvableTopology
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
@@ -709,6 +717,21 @@ function wireControls() {
   $("toggle-daynight").checked = config.dayNightCycle;
   $("toggle-daynight").addEventListener("change", (e) => {
     config.dayNightCycle = e.target.checked;
+    syncHash();
+  });
+  $("toggle-disease").checked = config.disease;
+  $("toggle-disease").addEventListener("change", (e) => {
+    config.disease = e.target.checked;
+    // Switching it off cures the pond outright: infection state is only ever
+    // read while the feature is on, so leaving creatures flagged sick would keep
+    // them paying the fever's energy cost with nothing left to end it.
+    if (!config.disease) {
+      for (const c of world.creatures) {
+        c.infected = false;
+        c.immune = false;
+        c.infectedAtAge = -1;
+      }
+    }
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

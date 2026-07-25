@@ -87,6 +87,15 @@ export class Creature {
     // creatures share a colour family — a visible "family tree".
     this.hue = (genome.hueGene * 360) % 360;
 
+    // Contagion (opt-in — see `disease` in config.js). Epidemiological state:
+    // susceptible until infected, infected for diseaseDuration ticks, then
+    // immune for the rest of this creature's life. Immunity is acquired, never
+    // inherited, so every newborn starts susceptible. All three fields stay at
+    // these values unless the feature is switched on.
+    this.infected = false;
+    this.immune = false;
+    this.infectedAtAge = -1; // age at which the current infection began
+
     // Transient display value: the "colour signal" output, for rendering.
     this.signal = 0;
     // Age at which this creature last landed a bite (for a brief attack flash).
@@ -214,7 +223,10 @@ export class Creature {
     const move = cfg.metabolicMove * thrust * sizeFactor;
     // Upkeep of being a predator — see carnivoreMetabolicCost in config.js.
     const dietCost = cfg.carnivoreMetabolicCost * this.carnivory;
-    this.energy -= base + move + dietCost;
+    // The price of a fever (contagion). `infected` can only ever be true while
+    // that feature is on, so this term is an exact 0 in every other world.
+    const illCost = this.infected ? cfg.diseaseMetabolicCost : 0;
+    this.energy -= base + move + dietCost + illCost;
 
     this.age++;
     if (this.energy <= 0 || this.age >= cfg.maxAge) this.dead = true;

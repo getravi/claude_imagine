@@ -298,6 +298,40 @@ boom-and-bust ecology playing out from individual agents, not equations. (Tuning
 this so it stays dramatic without simply dying out is a story in the
 [devlog](DEVLOG.md).)
 
+## Contagion: epidemics, acquired immunity, and the cost of crowding
+
+Predation is not the only way one creature's existence can be bad for another's.
+Vivarium's optional **contagion** adds a pathogen with no genome, no brain, and no
+interest in anything but proximity: a susceptible creature within
+`infectionRadius` of an infected one catches the illness with a fixed per-tick
+probability, stays sick for `diseaseDuration` ticks while paying an extra
+metabolic cost (a fever is expensive), and then — if it survives — is **immune for
+the rest of its life**.
+
+That is a textbook **SIR model** (susceptible → infected → recovered), with two
+differences that matter. First, it is *individual-based and spatial*: there is no
+well-mixed population and no differential equation, only creatures that happen to
+be near each other, so the epidemic spreads as a front through whatever crowd the
+food has assembled. Second, and more interesting, **immunity is acquired but never
+inherited.** Every newborn is susceptible again. Births therefore continuously
+replenish the susceptible pool, which is exactly the condition under which a real
+epidemic stops being a single burn-through event and becomes **recurring waves** —
+the mechanism behind the historical periodicity of childhood diseases like measles.
+Watch the *Sick* and *Immune* stats in a plague world and you can see the cycle:
+cases climb, the pond passes herd immunity, the pathogen runs out of hosts and
+vanishes, susceptibles accumulate with each generation, and the next arrival
+ignites another wave.
+
+The evolutionary consequence is a **density-dependent cost**. Every other pressure
+in Vivarium pushes creatures *together*: food concentrates in biomes, so the best
+place to be is where everyone else already is. A contact-transmitted pathogen is
+the first pressure that punishes exactly that — it makes the crowd itself
+dangerous, and it is the same trade-off that shapes real herding, colonial nesting,
+and schooling behaviour. Contagion is deliberately *not* given an evolvable
+resistance gene, because the interesting question is whether a lineage's
+**behaviour** — how tightly it packs, how far it ranges — shifts under a pressure
+that only tight packing creates.
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just

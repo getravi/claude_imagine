@@ -41,6 +41,11 @@ export class Chronicle {
     this._lastKills = 0;
     this._reportedExtinct = new Set();
     this._dieoff = false;
+    this._outbreak = false;
+    this._epidemic = false;
+    this._recovered = false;
+    this._herd = false;
+    this._burnout = false;
   }
 
   _push(tick, icon, cat, msg) {
@@ -113,6 +118,9 @@ export class Chronicle {
 
     // --- Day and night (only when the cycle is actually running) ---
     if (this.config.dayNightCycle) this._checkNight(world, tick, s);
+
+    // --- Contagion (only when a pathogen exists in this world) ---
+    if (this.config.disease) this._checkDisease(tick, pop, s);
 
     // --- Generation depth ---
     for (const g of [10, 25, 50, 100, 200]) {
@@ -190,6 +198,41 @@ export class Chronicle {
 
     this._wasDark = dark;
     this._lastKills = s.kills;
+  }
+
+  /**
+   * The arc of an epidemic, in five moments: the first case, the wave cresting,
+   * the first creature to survive it, the pond passing half immune, and the
+   * pathogen running out of hosts. All one-shot — immunity is acquired but not
+   * inherited, so newborn susceptibles let the waves return indefinitely, and a
+   * bulletin per wave would bury the rest of the feed.
+   */
+  _checkDisease(tick, pop, s) {
+    if (!this._outbreak && s.infections > 0) {
+      this._outbreak = true;
+      this._push(tick, "🦠", "disease", `A pathogen appears — the first creature falls sick.`);
+    }
+    const sick = s.infectedCount || 0;
+    if (!this._epidemic && pop >= 40 && sick >= 0.2 * pop) {
+      this._epidemic = true;
+      const pct = Math.round((sick / pop) * 100);
+      this._push(tick, "🤒", "disease", `An epidemic — ${sick} creatures are sick (${pct}% of the pond).`);
+    }
+    if (!this._recovered && s.recoveries > 0) {
+      this._recovered = true;
+      this._push(tick, "💪", "disease", `The first survivor shakes off the illness — immune for life.`);
+    }
+    if (!this._herd && pop >= 40 && (s.immuneCount || 0) >= 0.5 * pop) {
+      this._herd = true;
+      this._push(tick, "🛡️", "disease", `Half the pond has survived the disease — herd immunity.`);
+    }
+    // Burnout only counts once the disease actually took hold: a first case that
+    // recovers without ever passing the illness on hasn't "run out of hosts",
+    // it simply never spread.
+    if (!this._burnout && (s.peakInfected || 0) >= 10 && sick === 0 && pop > 0) {
+      this._burnout = true;
+      this._push(tick, "🧫", "disease", `The pathogen runs out of hosts and burns out.`);
+    }
   }
 
   _checkOldest(world, tick) {

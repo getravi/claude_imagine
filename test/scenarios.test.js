@@ -52,6 +52,22 @@ test("each scenario delivers the character it advertises", () => {
   assert.ok(minVision < 0.35, "The Long Night should go properly dark");
   assert.ok(night.stats.kills > 0, "The Long Night should still be a predator world");
 
+  // The Plague: a real epidemic arrives, is survived, and comes back in waves.
+  const plague = new World(makeConfig(byId.plague.over));
+  let waves = 0;
+  let inWave = false;
+  for (let i = 0; i < 6000; i++) {
+    plague.step();
+    const sick = plague.stats.infectedCount;
+    if (!inWave && sick >= 18) {
+      inWave = true;
+      waves++;
+    } else if (inWave && sick <= 3) inWave = false;
+  }
+  assert.ok(plague.stats.recoveries > 0, "The Plague should be survivable");
+  assert.ok(waves >= 2, `The Plague should come in waves (saw ${waves})`);
+  assert.ok(plague.creatures.length > 60, "The Plague should leave a living pond");
+
   // The Thinking Pond: learning actually happens.
   const thinking = new World(makeConfig(byId.thinking.over));
   for (let i = 0; i < 5000; i++) thinking.step();

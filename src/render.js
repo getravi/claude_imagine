@@ -165,6 +165,28 @@ export class Renderer {
       ctx.globalCompositeOperation = "source-over";
     }
 
+    // Contagion: a sick creature wears a pale sulphur halo that throbs like a
+    // fever, and a survivor keeps a thin cool ring for the immunity it earned.
+    // Both flags are permanently false unless contagion is switched on, so this
+    // costs an untaken branch in every other world. The throb is motion, so it
+    // holds still when reduced motion is asked for.
+    if (c.infected) {
+      const throb = this.reducedMotion ? 0.5 : (Math.sin(c.age * 0.18) + 1) / 2;
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = `hsla(68, 85%, 62%, ${(0.35 + 0.45 * throb).toFixed(2)})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 3 + throb, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalCompositeOperation = "source-over";
+    } else if (c.immune) {
+      ctx.strokeStyle = "rgba(150, 205, 255, 0.32)";
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 2.4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     // Attack flash: a brief bright burst right after landing a bite.
     if (c.age - c.lastBiteAge < 4) {
       ctx.globalCompositeOperation = "lighter";
