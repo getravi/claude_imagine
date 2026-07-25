@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "../src/environment.js";
+import {
+  FertilityField,
+  seasonalFactor,
+  seasonPhase,
+  dayNightVisionFactor,
+  dayNightPhase,
+} from "../src/environment.js";
 import { makeConfig } from "../src/config.js";
 import { RNG } from "../src/rng.js";
 import { World } from "../src/world.js";
@@ -145,6 +151,28 @@ test("day/night is a smooth, deterministic function of tick alone", () => {
   const cfg = makeConfig({ dayNightCycle: true });
   for (let t = 0; t < 5000; t += 17) {
     assert.equal(dayNightVisionFactor(t, cfg), dayNightVisionFactor(t, cfg));
+  }
+});
+
+test("day/night phase reads 1 at noon, 0 at midnight, 0.5 at dawn and dusk", () => {
+  const cfg = makeConfig({ dayNightCycle: true, dayLength: 800 });
+  assert.ok(Math.abs(dayNightPhase(0, cfg) - 1) < 1e-9, "tick 0 is high noon");
+  assert.ok(Math.abs(dayNightPhase(400, cfg) - 0) < 1e-9, "half a day in is midnight");
+  assert.ok(Math.abs(dayNightPhase(200, cfg) - 0.5) < 1e-9, "a quarter day in is dusk");
+  assert.ok(Math.abs(dayNightPhase(600, cfg) - 0.5) < 1e-9, "three quarters in is dawn");
+  for (let t = 0; t < 1600; t += 7) {
+    const p = dayNightPhase(t, cfg);
+    assert.ok(p >= -1e-9 && p <= 1 + 1e-9, `phase stays in 0..1 (t=${t})`);
+  }
+});
+
+test("day/night phase tracks the vision factor it displays", () => {
+  // The badge shows the phase; the creatures feel the vision factor. They must
+  // agree about what time it is, or the readout would lie.
+  const cfg = makeConfig({ dayNightCycle: true, dayLength: 640, nightVisionFactor: 0.3 });
+  for (let t = 0; t < 1280; t += 11) {
+    const fromPhase = cfg.nightVisionFactor + (1 - cfg.nightVisionFactor) * dayNightPhase(t, cfg);
+    assert.ok(Math.abs(fromPhase - dayNightVisionFactor(t, cfg)) < 1e-12, `agree at t=${t}`);
   }
 });
 

@@ -39,6 +39,19 @@ test("each scenario delivers the character it advertises", () => {
   assert.ok(savanna.stats.kills > 0, "Savanna should have hunting");
   assert.ok(savanna.stats.scavenged > 0, "Savanna should have scavenging");
 
+  // The Long Night: the sun really sets, and the hunting survives it.
+  const night = new World(makeConfig(byId.longnight.over));
+  let minVision = Infinity;
+  let maxVision = -Infinity;
+  for (let i = 0; i < 4000; i++) {
+    night.step();
+    minVision = Math.min(minVision, night.visionFactor);
+    maxVision = Math.max(maxVision, night.visionFactor);
+  }
+  assert.ok(maxVision > 0.99, "The Long Night should reach full daylight");
+  assert.ok(minVision < 0.35, "The Long Night should go properly dark");
+  assert.ok(night.stats.kills > 0, "The Long Night should still be a predator world");
+
   // The Thinking Pond: learning actually happens.
   const thinking = new World(makeConfig(byId.thinking.over));
   for (let i = 0; i < 5000; i++) thinking.step();

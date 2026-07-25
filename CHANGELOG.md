@@ -4,6 +4,48 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.14.0] — 2026-07-25
+
+Give the night a face: a clock on the pond, a doorway to it, and a chronicle
+that says when the sun went down.
+
+### Added
+
+- **🌙 The Long Night** — a seventh curated scenario, and the first doorway into
+  the day/night cycle shipped in v1.13. No seasons at all: the only clock is the
+  sun, sight collapses to 28% of its daytime reach at midnight, and predators
+  and prey go blind together. Seed 64 was earned, not guessed — an 18-seed sweep
+  scored candidates on surviving the dark with a genuinely *mixed* pond, and it
+  came back with a world that holds ~180–300 creatures, settles at a ~55%
+  carnivore share, and carries 13 living species past 6,000 ticks.
+- A **time-of-day readout** on the world badge (🌞 Day · 🌆 Dusk · 🌙 Night ·
+  🌅 Dawn), shown only while the cycle is running. Until now the night was
+  invisible: creatures simply went short-sighted for no reason a watcher could
+  see. Backed by `environment.js#dayNightPhase(tick, config)`, a pure 0..1
+  daylight value that mirrors the existing `seasonPhase`.
+- **Three new chronicle events**, one-shot so a repeating cycle can't flood the
+  feed: the first nightfall (naming how far sight shrinks), the first dawn that
+  ends it, and — the one worth waiting for — the first kill made in the dark.
+- **New tests** (`test/environment.test.js`, `test/chronicle.test.js`,
+  `test/scenarios.test.js`): the phase's noon/midnight/dawn/dusk values and 0..1
+  range, its exact agreement with the vision factor creatures actually feel, the
+  night events firing exactly once each and in order, no night events at all
+  when the cycle is off, and The Long Night reaching both full daylight and true
+  dark while still hunting.
+
+### Notes
+
+- Nothing here touches the simulation: the new phase function is display-only,
+  the chronicle remains a pure observer that draws no randomness, and the night
+  events are guarded on `dayNightCycle`, so a world with the cycle off writes
+  exactly the chronicle it wrote before. 112 tests, all green.
+- The badge and scenario chip live in `main.js`/`style.css`, outside
+  `node --test`'s reach, so they were checked in headless Chromium against the
+  real `app/index.html`: the chip launches seed 64 with `night=1&sea=0` in the
+  permalink and every control synced, all four times of day appear on the badge
+  as the clock turns, no readout appears with the cycle off, the three night
+  lines land in the chronicle feed, and the console stayed clean.
+
 ## [1.13.0] — 2026-07-24
 
 A day/night cycle: creatures go effectively night-blind on a schedule.

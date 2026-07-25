@@ -232,6 +232,7 @@ body {
 .chronicle-feed li.cat-learning { border-left-color: #78beff; }
 .chronicle-feed li.cat-longevity { border-left-color: #d8c26a; }
 .chronicle-feed li.cat-diversity { border-left-color: #5adc96; }
+.chronicle-feed li.cat-night { border-left-color: #8a93e8; }
 #world {
   display: block;
   width: 100%;
@@ -514,6 +515,14 @@ details .field {
 }
 .season-badge .icon {
   font-size: 15px;
+}
+.season-badge .tod {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 9px;
+  margin-left: 2px;
+  border-left: 1px solid var(--line);
 }
 .season-badge .yr {
   color: var(--ink-faint);

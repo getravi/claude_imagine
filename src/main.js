@@ -12,6 +12,7 @@ import { RNG } from "./rng.js";
 import { drawMuller } from "./mullerplot.js";
 import { buildBrainFor } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
+import { dayNightPhase } from "./environment.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -82,6 +83,20 @@ function seasonLabel(world) {
   else [icon, name] = ["🍂", "Autumn"];
   const year = Math.floor(world.tick / config.seasonLength) + 1;
   return { icon, name, year };
+}
+
+// Turn the world's day/night phase into a label + icon for the badge. Only ever
+// shown while the cycle is switched on — with it off it is permanently noon,
+// which isn't worth a readout. Nothing else on screen says what time it is, so
+// without this a visitor sees creatures go strangely short-sighted for no
+// visible reason.
+function timeOfDayLabel(world) {
+  const light = dayNightPhase(world.tick, config);
+  // Daylight is a cosine, so it's climbing back toward noon while sin is negative.
+  const rising = Math.sin((2 * Math.PI * world.tick) / config.dayLength) < 0;
+  if (light > 0.75) return { icon: "🌞", name: "Day" };
+  if (light < 0.25) return { icon: "🌙", name: "Night" };
+  return rising ? { icon: "🌅", name: "Dawn" } : { icon: "🌆", name: "Dusk" };
 }
 
 // ---- State ----
@@ -228,9 +243,14 @@ function updateChronicle(world) {
 
 function updateSeasonBadge(world) {
   const { icon, name, year } = seasonLabel(world);
-  $("season-badge").innerHTML =
+  let html =
     `<span class="icon">${icon}</span> ${name}` +
     (year ? ` <span class="yr">· year ${year}</span>` : "");
+  if (config.dayNightCycle) {
+    const t = timeOfDayLabel(world);
+    html += ` <span class="tod"><span class="icon">${t.icon}</span> ${t.name}</span>`;
+  }
+  $("season-badge").innerHTML = html;
 }
 
 // ---- Tree of Life (Muller plot + legend) ----

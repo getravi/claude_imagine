@@ -34,6 +34,11 @@ export class Chronicle {
     this._maxAge = 0;
     this._lowDiversity = false;
     this._dominant = -1;
+    this._nightFell = false;
+    this._dawnBroke = false;
+    this._nightKill = false;
+    this._wasDark = false;
+    this._lastKills = 0;
     this._reportedExtinct = new Set();
     this._dieoff = false;
   }
@@ -106,6 +111,9 @@ export class Chronicle {
       this._push(tick, "🕊️", "predation", `The predators have died out.`);
     }
 
+    // --- Day and night (only when the cycle is actually running) ---
+    if (this.config.dayNightCycle) this._checkNight(world, tick, s);
+
     // --- Generation depth ---
     for (const g of [10, 25, 50, 100, 200]) {
       if (s.currentMaxGeneration >= g && !this._genCrossed.has(g)) {
@@ -142,6 +150,46 @@ export class Chronicle {
     if (tick % 32 === 0) this._checkOldest(world, tick);
     if (tick % 64 === 0) this._checkDiversity(world, tick);
     if (tick % 48 === 0) this._checkSpecies(world, tick, pop);
+  }
+
+  /**
+   * The day/night cycle is the one rhythm you can't read off the canvas — the
+   * pond looks the same at midnight, the creatures just stop finding things. So
+   * the chronicle marks the three moments that carry that story: the first
+   * nightfall, the first dawn after it, and the first kill made in the dark.
+   * All one-shot: night returns every `dayLength` ticks, and a nightly bulletin
+   * would bury everything else in the feed.
+   */
+  _checkNight(world, tick, s) {
+    const cfg = this.config;
+    const span = 1 - cfg.nightVisionFactor;
+    if (span <= 1e-9) return; // a "night" that costs no sight isn't a night
+    // How much of the daylight is left, 0 (deepest night) .. 1 (high noon).
+    const daylight = (world.visionFactor - cfg.nightVisionFactor) / span;
+    const dark = daylight < 0.25;
+
+    if (dark && !this._nightFell) {
+      this._nightFell = true;
+      const pct = Math.round(cfg.nightVisionFactor * 100);
+      this._push(
+        tick,
+        "🌙",
+        "night",
+        `Night falls for the first time — sight shrinks to ${pct}% until dawn.`
+      );
+    } else if (!dark && this._wasDark && !this._dawnBroke) {
+      this._dawnBroke = true;
+      this._push(tick, "🌅", "night", `Dawn breaks, and the pond can see again.`);
+    }
+
+    // A kill landed during this tick, and this tick is dark.
+    if (dark && !this._nightKill && s.kills > this._lastKills) {
+      this._nightKill = true;
+      this._push(tick, "🌑", "night", `First blood after dark — a hunter that doesn't need the light.`);
+    }
+
+    this._wasDark = dark;
+    this._lastKills = s.kills;
   }
 
   _checkOldest(world, tick) {

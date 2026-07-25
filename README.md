@@ -26,9 +26,9 @@ concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
-New here? The **Scenarios** strip at the top offers six one-click worlds — from a
-calm herbivore *Genesis* to a full-blown *Savanna* food web to *Augmented Minds*
-whose brains grow their own structure — each a hand-picked doorway into what the
+New here? The **Scenarios** strip at the top offers seven one-click worlds — from a
+calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Long Night*,
+where sight collapses at midnight — each a hand-picked doorway into what the
 simulation can do.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
@@ -78,7 +78,7 @@ lineage, so you can see where it lives and how far it has spread.
 
 | Control | What it does |
 | --- | --- |
-| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Thinking Pond, Augmented Minds, The Whole World). |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Thinking Pond, Augmented Minds, The Whole World). |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |

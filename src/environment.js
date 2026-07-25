@@ -143,3 +143,15 @@ export function dayNightVisionFactor(tick, config) {
   const daylight = (Math.cos(phase) + 1) / 2; // 1 at noon (tick 0), 0 at midnight
   return config.nightVisionFactor + (1 - config.nightVisionFactor) * daylight;
 }
+
+/**
+ * A 0..1 "how light is it" value for display: 1 at high noon, 0 at the deepest
+ * night, 0.5 at dawn and dusk. Purely cosmetic — like seasonPhase, it reports
+ * the shape of the cycle regardless of whether the feature is switched on, and
+ * callers decide whether to show it.
+ * @param {number} tick
+ * @param {object} config
+ */
+export function dayNightPhase(tick, config) {
+  return (Math.cos((2 * Math.PI * tick) / config.dayLength) + 1) / 2;
+}

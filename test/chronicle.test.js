@@ -67,6 +67,31 @@ test("the chronicle is a pure observer (uses its own RNG, not the world's)", () 
   }
 });
 
+test("the chronicle narrates the day/night cycle, once each", () => {
+  const world = new World(
+    makeConfig({ seed: 64, dayNightCycle: true, dayLength: 700, nightVisionFactor: 0.28, seasons: false })
+  );
+  for (let i = 0; i < 6000; i++) world.step();
+  const night = world.chronicle.events.filter((e) => e.cat === "night");
+  const fell = night.filter((e) => e.msg.includes("Night falls"));
+  const dawn = night.filter((e) => e.msg.includes("Dawn breaks"));
+  const dark = night.filter((e) => e.msg.includes("after dark"));
+  assert.equal(fell.length, 1, "the first nightfall is reported exactly once");
+  assert.equal(dawn.length, 1, "the first dawn is reported exactly once");
+  assert.equal(dark.length, 1, "the first kill in the dark is reported exactly once");
+  assert.ok(dawn[0].tick > fell[0].tick, "dawn follows the night it ends");
+});
+
+test("no night events when the day/night cycle is off", () => {
+  const world = new World(makeConfig({ seed: 64, seasons: false }));
+  for (let i = 0; i < 6000; i++) world.step();
+  assert.equal(
+    world.chronicle.events.filter((e) => e.cat === "night").length,
+    0,
+    "a world with no night has nothing to say about it"
+  );
+});
+
 test("event history stays bounded", () => {
   const world = new World(makeConfig({ seed: 5 }));
   for (let i = 0; i < 12000; i++) world.step();

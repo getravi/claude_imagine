@@ -38,6 +38,21 @@ export const SCENARIOS = [
     over: { seed: 88, biomeDrift: 0.1, seasons: true },
   },
   {
+    id: "longnight",
+    icon: "🌙",
+    name: "The Long Night",
+    blurb:
+      "No seasons here, only sun and moon: sight collapses to a quarter at midnight, and hunters must work the dark.",
+    over: {
+      seed: 64,
+      dayNightCycle: true,
+      dayLength: 700,
+      nightVisionFactor: 0.28,
+      predation: true,
+      seasons: false,
+    },
+  },
+  {
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",
