@@ -54,6 +54,7 @@ The dependency arrows point from a module to what it imports.
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
+| `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
@@ -282,6 +283,15 @@ tricks: a translucent dark veil each frame instead of a hard clear (so movement
 leaves comet trails), and additive (`lighter`) compositing for the glow (so
 dense clusters bloom). Creature lightness tracks energy, so a starving pond
 visibly dims.
+
+The view itself lives in `camera.js` — a centre, a zoom, and an optional
+creature to follow. Because the world is a torus the camera never meets an edge:
+everything is drawn at whichever wrapped image of itself is nearest the centre,
+so the seam is invisible however far the view roams. At zoom 1 the camera is
+deliberately the exact identity (zooming back out snaps the centre home), which
+keeps the default view — the one every screenshot and permalink assumes — pixel
+for pixel what it has always been. It holds no simulation state and draws no
+random numbers, so where you happen to be looking can never change what happens.
 
 ## Persistence
 

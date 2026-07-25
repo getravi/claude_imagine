@@ -13,6 +13,7 @@ import { drawMuller } from "./mullerplot.js";
 import { buildBrainFor } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { dayNightPhase } from "./environment.js";
+import { ZOOM_STEP } from "./camera.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -153,7 +154,7 @@ function launchScenario(scn) {
   // A scenario is a full preset: reset to defaults, then apply its overrides.
   config = makeConfig(scn.over);
   world = new World(config);
-  renderer.config = config;
+  renderer.setConfig(config);
   renderer.selected = null;
   renderer.highlightSpeciesId = null;
   legendSig = "";
@@ -207,7 +208,11 @@ function loop(now) {
     for (let i = 0; i < speed; i++) world.step();
   }
 
+  // The camera catches up to whatever it is following before anything is drawn,
+  // so a followed creature never lags a frame behind its own halo.
+  renderer.camera.update();
   renderer.draw(world);
+  updateViewBadge();
   drawChart(world);
   drawPhylogeny(world);
   updateHUD();
@@ -242,6 +247,32 @@ function updateChronicle(world) {
       `<span class="c-when">${when}</span><span class="c-msg">${e.msg}</span></li>`;
   }
   feed.innerHTML = html;
+}
+
+// ---- View badge (zoom / follow) ----
+// The rule from v1.14: a feature isn't finished until the screen says it is on.
+// The badge appears the moment the view stops being the whole pond, names the
+// magnification, and says whose shoulder you're looking over. It also keeps the
+// Follow checkbox honest — the camera lets go by itself when its creature dies
+// or when a drag takes the wheel, and the control has to admit that.
+let viewSig = "";
+function updateViewBadge() {
+  const cam = renderer.camera;
+  const badge = $("zoom-badge");
+  const follow = $("toggle-follow");
+  if (follow.checked !== !!cam.target) follow.checked = !!cam.target;
+
+  const sig = cam.isDefault() ? "" : cam.zoom.toFixed(2) + "|" + (cam.target ? cam.target.id : "");
+  if (sig === viewSig) return;
+  viewSig = sig;
+  // A zoomed-in view is draggable, and the cursor should say so — however the
+  // zoom got there (wheel, keyboard, or following someone).
+  $("world").style.cursor = cam.zoom > 1 ? "grab" : "";
+  badge.classList.toggle("hidden", sig === "");
+  if (sig === "") return;
+  badge.innerHTML =
+    `<span class="icon">🔍</span> ${cam.zoom.toFixed(1)}×` +
+    (cam.target ? ` <span class="following">🎯 #${cam.target.id}</span>` : "");
 }
 
 function updateSeasonBadge(world) {
@@ -635,6 +666,18 @@ function wireKeyboard() {
         renderer.showVision = box.checked;
         break;
       }
+      case "+":
+      case "=":
+        renderer.camera.zoomBy(ZOOM_STEP);
+        break;
+      case "-":
+      case "_":
+        renderer.camera.zoomBy(1 / ZOOM_STEP);
+        if (renderer.camera.zoom === 1) renderer.camera.setTarget(null);
+        break;
+      case "0":
+        renderer.camera.reset();
+        break;
       default:
         return; // let every other key pass through untouched
     }
@@ -681,6 +724,19 @@ function wireControls() {
   });
   $("toggle-motion").addEventListener("change", (e) => {
     renderer.reducedMotion = e.target.checked;
+  });
+  $("toggle-follow").addEventListener("change", (e) => {
+    if (!e.target.checked) {
+      renderer.camera.setTarget(null);
+      return;
+    }
+    const c = renderer.selected;
+    if (!c || c.dead) {
+      e.target.checked = false;
+      flash("Click a creature first, then follow it.");
+      return;
+    }
+    renderer.camera.setTarget(c);
   });
   $("toggle-seasons").checked = config.seasons;
   $("toggle-seasons").addEventListener("change", (e) => {
@@ -789,7 +845,7 @@ function resetWorld(seed) {
   // Preserve any live-tuned parameters, just change the seed and rebuild.
   config = makeConfig({ ...config, seed });
   world = new World(config);
-  renderer.config = config;
+  renderer.setConfig(config);
   renderer.selected = null;
   renderer.highlightSpeciesId = null; // species ids don't carry across worlds
   legendSig = "";
@@ -810,12 +866,91 @@ function shareLink() {
   }
 }
 
+// ---- Canvas interaction: select, pan, zoom, follow ----
+// A press that barely moves is a click and selects a creature; a press that
+// travels drags the view. Telling them apart by distance rather than by a timer
+// keeps a slow, deliberate click on a small creature working. Pointer events
+// (not mouse events) so a finger on a phone pans the same way.
+const DRAG_SLOP = 4; // px of travel a press may make and still count as a click
+
 function wireCanvas(canvas) {
-  canvas.addEventListener("click", (e) => {
+  const cam = () => renderer.camera;
+  let press = null;
+
+  // Client pixels → canvas pixels (the canvas is laid out responsively, so the
+  // two only coincide at full width).
+  const toCanvas = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (config.width / rect.width);
-    const y = (e.clientY - rect.top) * (config.height / rect.height);
-    renderer.selected = renderer.pick(world, x, y);
+    return {
+      x: (e.clientX - rect.left) * (config.width / rect.width),
+      y: (e.clientY - rect.top) * (config.height / rect.height),
+    };
+  };
+
+  const pickAt = (e) => {
+    const p = toCanvas(e);
+    const w = cam().screenToWorld(p.x, p.y);
+    return renderer.pick(world, w.x, w.y);
+  };
+
+  canvas.addEventListener("pointerdown", (e) => {
+    const p = toCanvas(e);
+    press = { x: p.x, y: p.y, travel: 0, id: e.pointerId };
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    const p = toCanvas(e);
+    const dx = p.x - press.x;
+    const dy = p.y - press.y;
+    press.travel += Math.abs(dx) + Math.abs(dy);
+    if (press.travel > DRAG_SLOP) {
+      // Taking the view by hand releases the follow lock.
+      cam().setTarget(null);
+      cam().panByScreen(dx, dy);
+    }
+    press.x = p.x;
+    press.y = p.y;
+  });
+
+  canvas.addEventListener("pointerup", (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    if (press.travel <= DRAG_SLOP) {
+      renderer.selected = pickAt(e);
+      // Following, then clicking someone else, hands the camera over.
+      if (cam().target) cam().setTarget(renderer.selected);
+    }
+    press = null;
+  });
+
+  canvas.addEventListener("pointercancel", () => {
+    press = null;
+  });
+
+  // Wheel zooms about the cursor, so you magnify what you were looking at.
+  canvas.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const p = toCanvas(e);
+      cam().zoomBy(e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, p.x, p.y);
+      if (cam().zoom === 1) cam().setTarget(null);
+    },
+    { passive: false }
+  );
+
+  // Double-click a creature to ride along with it; double-click open water to
+  // fall back to the whole pond.
+  canvas.addEventListener("dblclick", (e) => {
+    const c = pickAt(e);
+    if (c) {
+      renderer.selected = c;
+      cam().setTarget(c);
+      flash(`Following creature #${c.id} — drag, or press 0, to let go.`);
+    } else {
+      cam().reset();
+    }
   });
 }
 
@@ -834,7 +969,7 @@ function loadWorld() {
     config = makeConfig({ ...config, seed: obj.seed });
     world = new World(config);
     world.loadJSON(obj);
-    renderer.config = config;
+    renderer.setConfig(config);
     renderer.selected = null;
     $("seed-input").value = config.seed;
     syncHash();

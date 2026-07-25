@@ -568,6 +568,35 @@ details .field {
   font-size: 11px;
 }
 
+/* ---- Zoom / follow badge ----
+   Only present while the view is something other than the whole pond, so the
+   default screen stays as uncluttered as it has always been. */
+.zoom-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(8, 14, 22, 0.72);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 5px 12px 5px 10px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-family: var(--mono);
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+.zoom-badge.hidden {
+  display: none;
+}
+.zoom-badge .following {
+  padding-left: 9px;
+  border-left: 1px solid var(--line);
+  color: var(--ink-faint);
+}
+
 /* ---- Flash message ---- */
 .flash {
   position: absolute;

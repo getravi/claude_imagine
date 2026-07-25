@@ -50,6 +50,7 @@
         <section class="stage">
           <canvas id="world" width="900" height="620"></canvas>
           <div id="season-badge" class="season-badge"></div>
+          <div id="zoom-badge" class="zoom-badge hidden"></div>
           <div id="flash" class="flash"></div>
         </section>
 
@@ -76,7 +77,11 @@
           </div>
           <p class="kbd-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
-            <kbd>F</kbd> feed · <kbd>N</kbd> new seed · <kbd>V</kbd> vision
+            <kbd>F</kbd> feed · <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
+            <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond
+          </p>
+          <p class="kbd-hint" aria-label="Mouse controls">
+            Scroll to zoom · drag to pan · double-click a creature to follow it
           </p>
 
           <label class="field">
@@ -153,6 +158,10 @@
             <label class="check">
               <input id="toggle-vision" type="checkbox" />
               <span>Show vision radius (selected)</span>
+            </label>
+            <label class="check">
+              <input id="toggle-follow" type="checkbox" />
+              <span>Follow selected creature 🎯</span>
             </label>
             <label class="check">
               <input id="toggle-motion" type="checkbox" />

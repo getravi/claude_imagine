@@ -4,6 +4,54 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.17.0] — 2026-07-25
+
+A lens for the pond: zoom in, pan around a world with no edges, and follow one
+creature through its life.
+
+### Added
+
+- **A camera** (`src/camera.js`). Scroll to zoom about the cursor (1× to 8×),
+  drag to pan, <kbd>+</kbd>/<kbd>−</kbd> to step the magnification and
+  <kbd>0</kbd> to return to the whole pond. The world is a torus, so the view
+  never meets an edge: everything is drawn at whichever wrapped image of itself
+  is nearest the camera, and panning past a seam simply arrives back where it
+  started. Eighteen versions of detail — the carnivore's dagger silhouette, the
+  fever halo, the immunity ring, the attack flash — were previously being drawn
+  at four pixels across.
+- **Follow a creature 🎯.** Double-click any creature (or tick *Follow selected
+  creature*) and the camera rides along with it, so you can watch a single
+  animal hunt, breed and die rather than watching a population statistic. It
+  releases the moment the creature dies — a camera trained on a corpse is a bug,
+  not a memorial — and the moment you take the view back by hand with a drag.
+- **A view badge**, top-right of the canvas, present only while the view is
+  something other than the whole pond: the current magnification, and whose life
+  you are riding along in. The Follow checkbox is driven *from* the camera, so it
+  admits it when the camera lets go on its own.
+- **New tests** (`test/camera.test.js`, 11 of them), including the invariant that
+  matters most: at zoom 1 the camera is the exact identity, so the default view
+  is pixel-for-pixel the one every screenshot and permalink has always assumed —
+  and zooming back out snaps home rather than leaving the world nudged sideways.
+  Also: zoom clamping, anchored zoom keeping the point under the cursor fixed,
+  panning by screen pixels ÷ zoom, the seam being invisible, screen↔world
+  round-tripping, follow-and-release, and the canvas transform matrix agreeing
+  with `worldToScreen`.
+
+### Notes
+
+- **Determinism is untouched by construction.** The camera reads the world and
+  never writes it, draws no random numbers, and holds no simulation state, so
+  where a visitor happens to be looking cannot change what happens. No existing
+  test needed adjusting.
+- Clicking and dragging are told apart by travel distance (4px) rather than by a
+  timer, so a slow, deliberate click on a small creature still selects it. Pointer
+  events throughout, so a finger pans the same way a mouse does.
+- 138 tests, all green. `main.js` and `render.js` are outside `node --test`'s
+  reach, so the interaction was driven in headless Chromium against the real
+  `app/index.html`: wheel zoom, drag-pan, click-to-select, follow by checkbox and
+  by double-click, the keyboard shortcuts, a scenario launch resetting the view,
+  60fps and a clean console.
+
 ## [1.16.0] — 2026-07-25
 
 Contagion: a pathogen that spreads by proximity, is survived once, and then comes
