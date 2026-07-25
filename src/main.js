@@ -373,37 +373,81 @@ function drawSeries(ctx, hist, W, H, valueOf, stroke) {
 }
 
 // ---- Inspector (selected creature) ----
+// The panel used to be rebuilt from innerHTML on every frame. That was fine
+// while everything in it was text, but a *button* replaced 60× a second can't
+// be clicked: a human click spans several frames, and the element it started on
+// is detached before the mouse comes up. So the structure is now rebuilt only
+// when it actually changes — a different creature, or an ancestry chain that
+// gained a link or lost a lineage — and the handful of fields that tick (age,
+// energy, children, learned weights) are patched in place.
+let inspKey = "";
 function updateInspector() {
   const panel = $("inspector");
   const c = renderer.selected;
   if (!c || c.dead) {
-    panel.classList.add("empty");
-    panel.innerHTML =
-      '<div class="hint">Click a creature to inspect its brain and lineage.</div>';
     if (c && c.dead) renderer.selected = null;
+    if (inspKey !== "-") {
+      inspKey = "-";
+      panel.classList.add("empty");
+      panel.innerHTML =
+        '<div class="hint">Click a creature to inspect its brain and lineage.</div>';
+    }
     return;
   }
-  panel.classList.remove("empty");
-  const energyPct = Math.round((c.energy / config.energyMax) * 100);
+
+  const chain = world.phylogeny.ancestry(c.speciesId);
+  const key = c.id + "|" + chain.map((s) => s.id).join(",");
+  if (key !== inspKey) {
+    inspKey = key;
+    panel.classList.remove("empty");
+    panel.innerHTML = inspectorHTML(c, chain);
+    const link = document.getElementById("insp-species");
+    if (link) {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        toggleHighlight(c.speciesId);
+      });
+    }
+    for (const pip of panel.querySelectorAll(".anc")) {
+      pip.addEventListener("click", () => toggleHighlight(Number(pip.dataset.id)));
+    }
+  }
+
+  // Live fields, patched without disturbing anything clickable.
+  $("insp-age").textContent = c.age;
+  $("insp-energy").textContent = Math.round((c.energy / config.energyMax) * 100) + "%";
+  $("insp-children").textContent = c.children;
+  const learned = document.getElementById("insp-learned");
+  if (learned) learned.innerHTML = sparkFromWeights(c.brain.w);
+  // An ancestor can die out while you watch: toggle the class rather than
+  // re-rendering the chain, so a lineage going hollow never eats a click.
+  for (const pip of panel.querySelectorAll(".anc")) {
+    const s = world.phylogeny.byId.get(Number(pip.dataset.id));
+    if (s) pip.classList.toggle("gone", s.count === 0);
+  }
+}
+
+function inspectorHTML(c, chain) {
   const isPred = c.carnivory >= config.carnivoreThreshold;
   const dietLabel = isPred
     ? `🔺 carnivore ${c.carnivory.toFixed(2)}`
     : c.carnivory < 0.25
     ? `🌿 herbivore ${c.carnivory.toFixed(2)}`
     : `◦ omnivore ${c.carnivory.toFixed(2)}`;
-  panel.innerHTML = `
+  return `
     <div class="insp-row"><span class="swatch" style="background:hsl(${c.hue},70%,55%)"></span>
       <strong>Creature #${c.id}</strong></div>
     <div class="insp-grid">
       <div><label>Generation</label><b>${c.generation}</b></div>
-      <div><label>Age</label><b>${c.age}</b></div>
-      <div><label>Energy</label><b>${energyPct}%</b></div>
-      <div><label>Children</label><b>${c.children}</b></div>
+      <div><label>Age</label><b id="insp-age">${c.age}</b></div>
+      <div><label>Energy</label><b id="insp-energy">—</b></div>
+      <div><label>Children</label><b id="insp-children">${c.children}</b></div>
       <div><label>Size</label><b>${c.radius.toFixed(1)}</b></div>
       <div><label>Metabolism</label><b>${c.metabolismScale.toFixed(2)}×</b></div>
       <div class="insp-wide"><label>Diet</label><b>${dietLabel}</b></div>
       <div class="insp-wide"><label>Species</label>
         <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
+      ${ancestryRow(c, chain)}
     </div>
     ${
       c.genome.conns // NEAT genome: show the evolved network graph
@@ -416,20 +460,40 @@ function updateInspector() {
             c.genome.brainWeights
           )}${
             c.brain.plastic
-              ? `<label class="learned-label">Brain — current (learned) 🧠</label>${sparkFromWeights(
+              ? `<label class="learned-label">Brain — current (learned) 🧠</label><div id="insp-learned">${sparkFromWeights(
                   c.brain.w
-                )}`
+                )}</div>`
               : ""
           }</div>`
     }
   `;
-  const link = document.getElementById("insp-species");
-  if (link) {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggleHighlight(c.speciesId);
-    });
-  }
+}
+
+// The genealogy of a survivor: the chain of species this creature descends
+// from, founder first, each one a clickable pip that spotlights that lineage.
+// Extinct ancestors are drawn hollow, so you can see at a glance how much of a
+// creature's family tree is already gone. Long chains keep only the most recent
+// links (the deep past is a wall of pips nobody can read) behind a "…" marker.
+const ANCESTRY_SHOWN = 6;
+function ancestryRow(c, chain) {
+  if (chain.length < 2) return ""; // a founder has no story to tell yet
+  const branchings = chain.length - 1;
+  const shown = chain.slice(-ANCESTRY_SHOWN);
+  const elided = chain.length - shown.length;
+  const pips = shown
+    .map((s) => {
+      const cls = "anc" + (s.count === 0 ? " gone" : "") + (s.id === c.speciesId ? " current" : "");
+      const title = `Species ${s.id} — born tick ${s.birthTick}`;
+      return `<button type="button" class="${cls}" data-id="${s.id}" title="${title}"
+        style="--anc-hue:${s.hue}">${s.id}</button>`;
+    })
+    .join('<span class="anc-arrow">›</span>');
+  return `<div class="insp-wide"><label>Ancestry — ${branchings} branching${
+    branchings === 1 ? "" : "s"
+  } deep</label>
+    <div class="ancestry">${
+      elided ? `<span class="anc-arrow" title="${elided} older ancestors">…</span>` : ""
+    }${pips}</div></div>`;
 }
 
 // Render a weight vector as a tiny colour strip — a visual "fingerprint" of the

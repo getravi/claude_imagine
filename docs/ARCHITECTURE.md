@@ -241,6 +241,13 @@ records a snapshot, and marks newly-extinct species. `mullerplot.js` turns those
 snapshots into the stacked-area "Tree of Life" chart, and the renderer can dim
 every creature outside a chosen species to spotlight one lineage in the pond.
 
+Because every branched species records the species of its founder's parent,
+the tree can also be read *upward*: `Phylogeny.ancestry(id)` walks those parent
+links back to the founding species, returning the chain oldest-first. That is
+what the inspector's ancestry row draws — the genealogy of whichever creature
+you clicked. The walk is cycle-guarded and depth-bounded because it runs inside
+the render loop.
+
 ## Two genome kinds behind one interface
 
 As of v1.5 a creature's genome is one of two completely different data

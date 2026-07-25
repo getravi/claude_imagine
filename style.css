@@ -465,6 +465,44 @@ details .field {
 .insp-grid a:hover {
   text-decoration: underline;
 }
+/* Ancestry chain: one pip per species in a creature's descent, tinted with
+   that species' inherited hue. Extinct ancestors are hollow. */
+.ancestry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+}
+.anc {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #06121c;
+  background: hsl(var(--anc-hue), 70%, 62%);
+  border: 1px solid hsl(var(--anc-hue), 70%, 62%);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.anc:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 8px hsla(var(--anc-hue), 70%, 62%, 0.6);
+}
+.anc.gone {
+  background: transparent;
+  color: hsl(var(--anc-hue), 45%, 62%);
+  border-style: dashed;
+  border-color: hsla(var(--anc-hue), 45%, 62%, 0.6);
+}
+.anc.current {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.anc-arrow {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
 .brainwrap label {
   font-size: 10px;
   text-transform: uppercase;

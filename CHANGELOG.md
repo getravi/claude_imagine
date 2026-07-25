@@ -4,6 +4,58 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.15.0] — 2026-07-25
+
+The genealogy of a survivor: every creature can now show you the line of species
+it descends from — and the inspector holds still long enough to click it.
+
+### Added
+
+- **Ancestry chain in the inspector.** Click a creature and, if its lineage has
+  ever branched, a new row draws the whole descent — founder first, one pip per
+  species, ending in its own. Pips carry each species' inherited hue, ancestors
+  with no living members are drawn hollow and dashed, and clicking any pip
+  spotlights that lineage in the pond exactly as the Tree of Life legend does.
+  Deep chains keep the six most recent links behind a "…" marker. Founding
+  species get no row: there is no story there yet.
+- `Phylogeny.ancestry(id)` — the pure function behind it. Every branched species
+  already recorded its parent, so the tree could always be read *upward*; this
+  walks those links back to the founder and returns the chain oldest-first, so
+  `chain.length - 1` is how many times the lineage has split. Cycle-guarded and
+  depth-bounded, because it runs inside the render loop.
+- **New tests** (`test/phylogeny.test.js`): a founder's chain is just itself; in
+  an evolved world every living creature's chain roots in a parentless founder,
+  ends on its own species, and has each link the true parent of the next, born
+  no later; an unknown id gives an empty chain; a deliberately cyclic tree
+  terminates instead of hanging; and the chains are identical across two worlds
+  built from the same seed.
+
+### Fixed
+
+- **The inspector no longer rebuilds itself 60 times a second.** It was
+  re-rendered from `innerHTML` on every frame, which was harmless while it held
+  only text but quietly broke anything clickable inside it: a human click spans
+  several frames, and the element it began on was detached long before the mouse
+  came up. The panel is now rebuilt only when its structure changes — a
+  different creature, or an ancestry chain that gained a link — while age,
+  energy, offspring count and the learned-weights strip are patched in place.
+  An ancestor dying out toggles a class rather than re-rendering the chain, so a
+  lineage going hollow can never eat a click. This also repairs the existing
+  "spotlight lineage" link, which had the same flaw.
+
+### Notes
+
+- Pure observation, as the phylogeny has always been: no new randomness, nothing
+  read back into the simulation, no config change. Every seed reproduces exactly
+  the world it did before. 117 tests, all green.
+- `main.js` sits outside `node --test`'s reach, so the row was checked in
+  headless Chromium against the real `app/index.html`: the chain renders with
+  the right ids and hues, its last pip is the creature's own species and matches
+  the Species row, clicking a pip lights up the matching legend chip and reveals
+  **Clear highlight**, the same pip node survives two seconds of frames at 20×
+  speed (~9,600 ticks) instead of being replaced, age and energy keep ticking in
+  place, and the console stayed empty.
+
 ## [1.14.0] — 2026-07-25
 
 Give the night a face: a clock on the pond, a doorway to it, and a chronicle

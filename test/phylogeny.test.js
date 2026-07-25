@@ -58,6 +58,65 @@ test("every living creature belongs to a known species", () => {
   }
 });
 
+test("a founder's ancestry is just itself", () => {
+  const world = new World(makeConfig({ seed: 1 }));
+  for (const s of world.phylogeny.species) {
+    const chain = world.phylogeny.ancestry(s.id);
+    assert.equal(chain.length, 1, "a founding species has no ancestors");
+    assert.equal(chain[0].id, s.id);
+  }
+});
+
+test("ancestry walks a lineage back to a founder", () => {
+  const world = new World(makeConfig({ seed: 5 }));
+  for (let i = 0; i < 6000; i++) world.step();
+  const ph = world.phylogeny;
+  let deepest = 0;
+  for (const c of world.creatures) {
+    const chain = ph.ancestry(c.speciesId);
+    assert.ok(chain.length >= 1, "a living creature has a chain");
+    // Oldest first, ending with the creature's own species...
+    assert.equal(chain[chain.length - 1].id, c.speciesId);
+    // ...starting at a founder...
+    assert.equal(chain[0].parentId, null, "the chain roots in a founder");
+    // ...with every link a true parent of the next, born no later than it.
+    for (let i = 1; i < chain.length; i++) {
+      assert.equal(chain[i].parentId, chain[i - 1].id, "consecutive links are parent/child");
+      assert.ok(chain[i].birthTick >= chain[i - 1].birthTick, "children are born after parents");
+    }
+    if (chain.length > deepest) deepest = chain.length;
+  }
+  assert.ok(deepest > 1, "at least one lineage should have branched by now");
+});
+
+test("ancestry of an unknown species is empty", () => {
+  const world = new World(makeConfig({ seed: 1 }));
+  assert.deepEqual(world.phylogeny.ancestry(99999), []);
+  assert.deepEqual(world.phylogeny.ancestry(null), []);
+});
+
+test("ancestry terminates on a malformed (cyclic) tree", () => {
+  const world = new World(makeConfig({ seed: 1 }));
+  const ph = world.phylogeny;
+  const [a, b] = ph.species;
+  a.parentId = b.id; // a loop the real tree can never build, but the UI must survive
+  b.parentId = a.id;
+  const chain = ph.ancestry(a.id);
+  assert.equal(chain.length, 2, "a cycle is walked at most once per species");
+  assert.equal(chain[chain.length - 1].id, a.id);
+});
+
+test("ancestry is deterministic for a fixed seed", () => {
+  const a = new World(makeConfig({ seed: 314 }));
+  const b = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 2500; i++) {
+    a.step();
+    b.step();
+  }
+  const chains = (w) => w.creatures.map((c) => w.phylogeny.ancestry(c.speciesId).map((s) => s.id));
+  assert.deepEqual(chains(a), chains(b));
+});
+
 test("snapshot history is bounded", () => {
   const cfg = makeConfig({ seed: 7 });
   const world = new World(cfg);

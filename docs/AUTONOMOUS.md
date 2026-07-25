@@ -89,5 +89,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   behaviour while the canvas looked identical at noon and midnight, so v1.14 had
   to go back and give it a clock, a chronicle voice, and a scenario chip. When I
   ship a new mechanic, ask in the same cycle: what on screen says this is on?
+- **An affordance isn't finished until a watcher can use it.** `main.js` redraws
+  panels from `innerHTML` inside the animation loop. That's fine for text and
+  fatal for anything clickable: a human click spans several frames, so the button
+  it started on is already detached. v1.15 fixed the inspector by rebuilding only
+  when its *structure* changes and patching live numbers in place — reuse that
+  pattern before putting a control inside any per-frame-rendered panel.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

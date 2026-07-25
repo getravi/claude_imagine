@@ -117,6 +117,29 @@ export class Phylogeny {
     if (this.snapshots.length > this.maxSnapshots) this.snapshots.shift();
   }
 
+  /**
+   * Walk a species' parent links back to the founder it descends from — the
+   * genealogy of whatever is alive now. Returns the chain oldest-first and
+   * ending with the species itself, so `chain.length - 1` is how many times
+   * this lineage has branched since the pond began. An unknown id gives an
+   * empty chain. The walk is cycle-guarded and depth-bounded: the tree should
+   * never contain a loop, but this runs in a render loop and must not hang.
+   * @param {number} speciesId
+   * @returns {object[]} species records, root first
+   */
+  ancestry(speciesId, maxDepth = 64) {
+    const chain = [];
+    const seen = new Set();
+    let s = this.byId.get(speciesId);
+    while (s && !seen.has(s.id) && chain.length < maxDepth) {
+      seen.add(s.id);
+      chain.push(s);
+      s = s.parentId == null ? undefined : this.byId.get(s.parentId);
+    }
+    chain.reverse();
+    return chain;
+  }
+
   /** Number of species with living members right now. */
   livingCount() {
     let n = 0;

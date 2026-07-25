@@ -97,6 +97,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
+| **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
 | **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
 
 ## Things to try
