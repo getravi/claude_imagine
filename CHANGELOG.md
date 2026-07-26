@@ -4,6 +4,52 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.19.0] — 2026-07-26
+
+A minimap: the whole pond in the corner, so a zoomed-in view can say *where* it
+is looking.
+
+### Added
+
+- **Minimap** (`src/minimap.js`). v1.17 gave the pond a camera and, with it, the
+  first way to get lost in a world that has no edges — at 8× you can see a
+  fifteenth of the water and nothing on screen says which fifteenth. The minimap
+  is the missing half: biomes as soft discs, food as green specks, creatures as
+  single pixels in their lineage hue (predators warm and a pixel larger, because
+  they are the thing worth spotting from across the pond), the inspected creature
+  ringed in white, and the current viewport as a bright rectangle. It appears and
+  disappears with the zoom badge — at zoom 1 the viewport *is* the whole world, so
+  a minimap there would only be a smaller copy of what you are already looking at,
+  and a first-time visitor sees the same uncluttered pond they always did.
+- **Click, or drag, to go there.** A press anywhere on the minimap puts the
+  centre of the view on that point, and dragging sweeps the view around. Like a
+  drag in the pond itself, taking the wheel by hand releases the follow lock —
+  `Camera.moveTo()` is new, and is a deliberate no-op at zoom 1 so nothing can
+  nudge the identity view.
+- **New tests** (`test/minimap.test.js`, 8 of them, plus one more in
+  `camera.test.js`): the layout matching the world's aspect ratio exactly, the
+  whole-pond viewport at zoom 1 being a single flush rectangle, viewport area
+  conserved across zooms and positions, seam- and corner-straddling views coming
+  back as two and four pieces, every wrapped image of a point landing on one
+  pixel, the click round-trip, a stub-canvas drawing pass that emits no
+  non-finite coordinate and the expected number of marks, and 600 ticks of a
+  world drawn every frame staying bit-for-bit identical to one nobody watched.
+
+### Notes
+
+- **Determinism.** The minimap, like the camera, holds no simulation state and
+  draws no random numbers — where you happen to be looking still cannot change
+  what happens. The test asserts it the hard way, creature by creature, against
+  an identical unobserved world.
+- The torus seam is *shown* here rather than hidden. Everywhere else each thing
+  is drawn at whichever wrapped image of itself is nearest the camera; on the
+  minimap coordinates are wrapped into the world's bounds first, so the map has
+  real edges and the viewport is split into the pieces a flat rectangle can draw.
+- 157 tests, all green. The UI was driven in headless Chromium against the real
+  `app/index.html`: hidden at rest, appearing on zoom, painted pixels, click and
+  drag both moving the view, hiding again on <kbd>0</kbd> and on a scenario
+  launch, the follow marker, and a clean console.
+
 ## [1.18.0] — 2026-07-26
 
 Regrowth: food that grows from food, so a herd can eat the pond bare and then has

@@ -14,6 +14,7 @@ import { buildBrainFor } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { dayNightPhase } from "./environment.js";
 import { ZOOM_STEP } from "./camera.js";
+import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -134,6 +135,7 @@ function boot() {
   wireControls();
   wireKeyboard();
   wireCanvas(canvas);
+  wireMinimap($("minimap"));
   buildScenarioChips();
   syncHash();
   requestAnimationFrame(loop);
@@ -216,6 +218,7 @@ function loop(now) {
   renderer.camera.update();
   renderer.draw(world);
   updateViewBadge();
+  updateMinimap();
   drawChart(world);
   drawPhylogeny(world);
   updateHUD();
@@ -276,6 +279,59 @@ function updateViewBadge() {
   badge.innerHTML =
     `<span class="icon">🔍</span> ${cam.zoom.toFixed(1)}×` +
     (cam.target ? ` <span class="following">🎯 #${cam.target.id}</span>` : "");
+}
+
+// ---- Minimap ----
+// The other half of the camera: once the view can be a fifteenth of the pond,
+// something has to say *which* fifteenth. It appears and disappears with the
+// zoom badge, because at zoom 1 the viewport is the whole world and a minimap
+// would just be a smaller copy of what you are already looking at.
+let miniCtx = null;
+function updateMinimap() {
+  const cam = renderer.camera;
+  const canvas = $("minimap");
+  const show = !cam.isDefault();
+  canvas.classList.toggle("hidden", !show);
+  if (!show) return;
+  const layout = minimapLayout(config);
+  if (!miniCtx) {
+    miniCtx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = layout.width * dpr;
+    canvas.height = layout.height * dpr;
+    canvas.style.width = layout.width + "px";
+    canvas.style.height = layout.height + "px";
+    miniCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  drawMinimap(miniCtx, world, cam, { selected: renderer.selected });
+}
+
+// Click (or drag) anywhere on the minimap to put the view there. Like a drag in
+// the pond itself, taking the wheel by hand releases the follow lock.
+function wireMinimap(canvas) {
+  const jumpTo = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const layout = minimapLayout(config);
+    const mx = (e.clientX - rect.left) * (layout.width / rect.width);
+    const my = (e.clientY - rect.top) * (layout.height / rect.height);
+    const w = minimapToWorld(mx, my, layout, config);
+    renderer.camera.setTarget(null);
+    renderer.camera.moveTo(w.x, w.y);
+  };
+  let dragging = false;
+  canvas.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    canvas.setPointerCapture(e.pointerId);
+    jumpTo(e);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (dragging) jumpTo(e);
+  });
+  const release = () => {
+    dragging = false;
+  };
+  canvas.addEventListener("pointerup", release);
+  canvas.addEventListener("pointercancel", release);
 }
 
 function updateSeasonBadge(world) {

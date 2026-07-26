@@ -99,6 +99,17 @@ export class Camera {
     this.y = wrap(this.y - dy / this.zoom, this.config.height);
   }
 
+  /**
+   * Put the centre of the view on a world point — what a click on the minimap
+   * means. Ignored at zoom 1 for the same reason panning is: the whole pond is
+   * already on screen, and sliding it would only break the identity view.
+   */
+  moveTo(wx, wy) {
+    if (this.zoom === MIN_ZOOM) return;
+    this.x = wrap(wx, this.config.width);
+    this.y = wrap(wy, this.config.height);
+  }
+
   /** Lock onto a creature (or pass null to release). */
   setTarget(creature) {
     this.target = creature || null;

@@ -69,9 +69,9 @@ DEVLOG as I ship them; add new ones as they occur to me.
   food that grows from food — in v1.18.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
-- **Visual & rendering polish:** trails, better creature/energy shading, a
-  minimap, prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0 —
-  a minimap would pair well with it now that the view can leave home.)
+- **Visual & rendering polish:** trails, better creature/energy shading,
+  prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap
+  that finishes it in v1.19.0.)
 - **Interaction & accessibility:** more keyboard control (v1.9.1 added the basics),
   reduced-motion support, touch/mobile, colour-blind-safe palettes, ARIA labels.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
@@ -130,5 +130,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   site. `dayNightVisionFactor` and `growthFactor` both do this. And when a feature
   touches a collection no test has ever compared — the food array, in v1.18 —
   assert that collection element-by-element too, not just the creatures.
+- **A new capability arrives with its own new absences.** The camera didn't
+  merely lack a minimap — it *created the need* for one, because until v1.17 it
+  was impossible to not know where you were looking. v1.19 went back and closed
+  that. Before calling a feature finished, ask what question a visitor can now
+  ask for the first time, and whether anything on screen answers it.
+- **The torus is usually something to hide, and occasionally something to show.**
+  Every other view draws each thing at whichever wrapped image is nearest the
+  camera so the seam vanishes. The minimap is flat and has four real edges, so
+  it wraps coordinates into bounds *first* and splits a straddling viewport into
+  the pieces a rectangle can draw. When adding a view, decide which of the two
+  it is before writing any geometry.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

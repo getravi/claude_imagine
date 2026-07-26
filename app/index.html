@@ -51,6 +51,14 @@
           <canvas id="world" width="900" height="620"></canvas>
           <div id="season-badge" class="season-badge"></div>
           <div id="zoom-badge" class="zoom-badge hidden"></div>
+          <canvas
+            id="minimap"
+            class="minimap hidden"
+            width="180"
+            height="124"
+            title="The whole pond — click to move the view"
+            aria-label="Minimap of the whole pond; click to move the view"
+          ></canvas>
           <div id="flash" class="flash"></div>
         </section>
 
@@ -81,7 +89,8 @@
             <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond
           </p>
           <p class="kbd-hint" aria-label="Mouse controls">
-            Scroll to zoom · drag to pan · double-click a creature to follow it
+            Scroll to zoom · drag to pan · double-click a creature to follow it ·
+            click the minimap to jump
           </p>
 
           <label class="field">

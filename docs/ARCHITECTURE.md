@@ -55,6 +55,7 @@ The dependency arrows point from a module to what it imports.
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
+| `minimap.js` | The whole pond in miniature, with the viewport drawn on it (read-only). | canvas |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
@@ -305,6 +306,16 @@ deliberately the exact identity (zooming back out snaps the centre home), which
 keeps the default view — the one every screenshot and permalink assumes — pixel
 for pixel what it has always been. It holds no simulation state and draws no
 random numbers, so where you happen to be looking can never change what happens.
+
+`minimap.js` is the other half of that lens. A camera over an edgeless world can
+show you a fifteenth of the pond with nothing to say *which* fifteenth, so once
+the view leaves home a small whole-pond view appears in the corner with the
+viewport drawn on it. The minimap is the one place the torus seam is a real
+edge rather than something to hide: coordinates are wrapped into the world's
+bounds before they are scaled, and a viewport that straddles a seam is returned
+by `viewportRects()` as the two (or four) pieces a flat rectangle can actually
+draw. Its invariant is the camera's, restated: at zoom 1 the viewport is the
+entire world in one piece, which is exactly why the minimap hides itself there.
 
 ## Persistence
 

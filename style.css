@@ -597,6 +597,24 @@ details .field {
   color: var(--ink-faint);
 }
 
+/* ---- Minimap ---- */
+/* Only ever on screen while the view is zoomed in, so the default pond stays
+   as uncluttered as it has always been. */
+.minimap {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(7, 12, 19);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  cursor: crosshair;
+  touch-action: none;
+}
+.minimap.hidden {
+  display: none;
+}
+
 /* ---- Flash message ---- */
 .flash {
   position: absolute;

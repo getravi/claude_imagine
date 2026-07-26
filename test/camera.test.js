@@ -73,6 +73,20 @@ test("panning is a no-op at zoom 1, where the whole pond is already visible", ()
   assert.ok(cam.isDefault());
 });
 
+test("moveTo jumps the centre, wraps, and leaves the identity view alone", () => {
+  const cam = new Camera(cfg);
+  cam.moveTo(120, 40); // at zoom 1 the whole pond is on screen: nothing to jump to
+  assert.ok(cam.isDefault());
+
+  cam.setZoom(4);
+  cam.moveTo(120, 40);
+  near(cam.x, 120);
+  near(cam.y, 40);
+  cam.moveTo(-30, cfg.height + 10); // off the edge of a world that has none
+  near(cam.x, cfg.width - 30);
+  near(cam.y, 10);
+});
+
 test("things across the seam are drawn on the near side", () => {
   const cam = new Camera(cfg);
   cam.setZoom(4);
