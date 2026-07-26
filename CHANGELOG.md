@@ -4,6 +4,60 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.18.0] — 2026-07-26
+
+Regrowth: food that grows from food, so a herd can eat the pond bare and then has
+to wait for it to grow back.
+
+### Added
+
+- **Regrowth** (opt-in, `foodRegrowth`). Until now pellets appeared out of nowhere
+  at a constant rate, which meant grazing had no lasting consequence: a stripped
+  biome refilled exactly as fast as an untouched one. With regrowth on the crop
+  becomes a population of its own. Growth is **density-dependent** — the spawn
+  rate scales with the standing crop, down to `regrowthFloor` (0.35) when nothing
+  is left — and **local**: a `regrowthSpread` (0.85) share of new pellets are
+  seeded within `regrowthRadius` (30px) of a living one, and take with a
+  probability equal to the local fertility, so blooms recolonise from the edges of
+  what survived instead of diffusing across the pond. The result is the world's
+  first *endogenous* cycle: crop climbs to the cap, a herd builds on the surplus,
+  the herd out-eats the plants, both crash, and the survivors wait out a slow
+  green recovery — population and food oscillating out of phase.
+- **🌾 The Commons**, a new curated scenario on seed 137, earned by a 20-seed
+  sweep scored on complete overgrazing cycles in a pond that survives them: the
+  crop stands at the cap until the founders multiply, the pond is stripped bare
+  around tick 2,100, green returns by 5,700, and the two populations oscillate
+  from there without the herd ever dropping below ~28. No predators — this world
+  is about what grazers do to their own food supply when nothing eats them.
+- **Two chronicle lines**, `🍂 The pond is grazed bare` and `🌾 Green returns`,
+  both one-shot and both guarded: "bare" requires that a real standing crop
+  existed to strip, and "green returns" can only follow a stripping that was
+  actually reported.
+- **New tests** (`test/regrowth.test.js`, 10 of them): the bit-for-bit
+  determinism invariant, a growth factor that is *exactly* 1 when the feature is
+  off, seeds landing within a radius of a living pellet, a stripped pond still
+  being recolonisable from nothing, the `foodMax` cap, a grazed-down crop
+  recovering measurably slower than a constant-rate one, blooms staying on
+  fertile ground, a regrowth world surviving 6,000 ticks with a crop that visibly
+  rises and falls, and a chronicle that stays silent about overgrazing it never
+  saw.
+
+### Notes
+
+- **Determinism.** With `foodRegrowth` off, `growthFactor()` returns exactly 1
+  (multiplying by which is an exact no-op in IEEE-754) and the seeding branch is
+  skipped entirely, so not one extra random number is drawn and every existing
+  world is unchanged — asserted pellet-by-pellet as well as creature-by-creature.
+- The opening standing crop is still sown by `spawnAnywhere()`: seeding the first
+  280 pellets from each other would grow the entire crop out of a single point.
+- `regrowthFloor` was set by sweeping 0.25 → 0.5 across seeds. Lower makes the
+  busts brutal and the pond thin; 0.35 keeps the swings obvious while leaving a
+  healthy population.
+- 148 tests, all green. The UI (a toggle, the permalink key `regrow`, and the new
+  scenario chip) was driven in headless Chromium against the real
+  `app/index.html`: toggling, permalink round-trip on a fresh load, the scenario
+  launch, and a clean console.
+
 ## [1.17.0] — 2026-07-25
 
 A lens for the pond: zoom in, pan around a world with no edges, and follow one

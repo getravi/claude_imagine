@@ -119,7 +119,9 @@ front, constructing one and stepping it N times is a pure function of
 
 4. **Food upkeep.** Drop eaten pellets (`compact`) and spawn new ones (`step`),
    at a rate scaled by the current **season** and placed by the **biome**
-   fertility field (both from `environment.js`).
+   fertility field (both from `environment.js`). With `foodRegrowth` on, the rate
+   is additionally scaled by the standing crop and most new pellets are seeded
+   next to an existing one, so the food is a population rather than a supply.
 
 5. **Safety valves.** Enforce the population cap (during reproduction, so it can
    never explode); reseed a burst of founders on full extinction; and trickle in
@@ -175,6 +177,17 @@ creatures directly.
 Both are read by `FoodField.step()` (which takes the seasonal multiplier) and
 `spawnOne()` (which consults the fertility field), and both are drawn as ambient
 cues by the renderer — faint biome glows and a season-tinted trail veil.
+
+**Regrowth** (`foodRegrowth`, opt-in) lives in `food.js` rather than
+`environment.js`, because it makes the crop depend on *itself* rather than on the
+world. Two changes, both no-ops when the flag is off: `growthFactor()` scales the
+spawn rate from `regrowthFloor` (bare pond) to 1 (full crop), and `spawnOne()`
+sends a `regrowthSpread` share of new pellets to `_seedNear()`, which drops them
+within `regrowthRadius` of a randomly chosen living pellet and lets the ground
+refuse the seed with probability `1 − fertility` (so blooms stay in their biomes
+instead of diffusing across the pond). The initial standing crop is sown with
+`spawnAnywhere()` — seeding it from itself would grow all 280 pellets out of a
+single point.
 
 ## The brain, concretely
 

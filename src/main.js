@@ -47,6 +47,7 @@ function parseHash() {
   if (p.has("kin")) o.kinRecognition = p.get("kin") === "1";
   if (p.has("night")) o.dayNightCycle = p.get("night") === "1";
   if (p.has("dis")) o.disease = p.get("dis") === "1";
+  if (p.has("regrow")) o.foodRegrowth = p.get("regrow") === "1";
   return o;
 }
 
@@ -70,6 +71,7 @@ function syncHash() {
   p.set("kin", config.kinRecognition ? "1" : "0");
   p.set("night", config.dayNightCycle ? "1" : "0");
   p.set("dis", config.disease ? "1" : "0");
+  p.set("regrow", config.foodRegrowth ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -194,6 +196,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-kin", config.kinRecognition);
   setToggle("toggle-daynight", config.dayNightCycle);
   setToggle("toggle-disease", config.disease);
+  setToggle("toggle-regrowth", config.foodRegrowth);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -788,6 +791,11 @@ function wireControls() {
         c.infectedAtAge = -1;
       }
     }
+    syncHash();
+  });
+  $("toggle-regrowth").checked = config.foodRegrowth;
+  $("toggle-regrowth").addEventListener("change", (e) => {
+    config.foodRegrowth = e.target.checked;
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

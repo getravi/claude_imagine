@@ -67,6 +67,22 @@ export const SCENARIOS = [
     over: { seed: 101, disease: true, predation: true, seasons: true },
   },
   {
+    id: "commons",
+    icon: "🌾",
+    name: "The Commons",
+    blurb:
+      "Plants breed from plants, so a herd can eat the pond bare — and then has to wait for it to grow back. Crop and grazers rise and fall against each other.",
+    // Seed 137 was earned by a 20-seed sweep scored on complete overgrazing
+    // cycles in a pond that survives them: the founders leave the crop untouched
+    // long enough for it to stand at the cap, the herd that builds on it strips
+    // the pond bare around tick 2,100, green returns by 5,700, and from there
+    // grazers and plants oscillate out of phase — a peak of one sitting in the
+    // trough of the other — without the population ever dropping below ~28.
+    // Hunters are left out on purpose: this world is about what the grazers do
+    // to their own food supply when nothing is eating them.
+    over: { seed: 137, foodRegrowth: true, predation: false, seasons: true },
+  },
+  {
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",

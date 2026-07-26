@@ -26,10 +26,10 @@ concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
-New here? The **Scenarios** strip at the top offers eight one-click worlds — from a
+New here? The **Scenarios** strip at the top offers nine one-click worlds — from a
 calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Plague*, where
-a pathogen sweeps the pond in waves — each a hand-picked doorway into what the
-simulation can do.
+a pathogen sweeps the pond in waves, to *The Commons*, where a herd can eat the
+pond bare — each a hand-picked doorway into what the simulation can do.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
 
@@ -78,7 +78,7 @@ lineage, so you can see where it lives and how far it has spread.
 
 | Control | What it does |
 | --- | --- |
-| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Thinking Pond, Augmented Minds, The Whole World). |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Thinking Pond, Augmented Minds, The Whole World). |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |
@@ -91,6 +91,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
+| **Regrowth** | Toggle food that grows from food: most new pellets are seeded next to an existing one, and the crop grows fastest when there is most of it. A herd can strip a patch bare and then has to wait for it to grow back, so the pond swings through boom-and-bust cycles. Off by default. Watch the *Food* stat. |
 | **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Off by default. Watch the *Sick* and *Immune* stats. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
@@ -132,6 +133,11 @@ lineage, so you can see where it lives and how far it has spread.
   ring for the immunity they earned. The *Sick* count climbs, crests, and collapses
   as the pathogen runs out of hosts — then climbs again once enough susceptible
   newborns have accumulated. Immunity is never inherited, so the waves never stop.
+- **Turn on Regrowth** (or hit the *Commons* scenario) and watch the food become a
+  population: pellets thicken into blooms where the crop survived and vanish from
+  the ground a herd has worked over. The *Food* stat and the population then
+  oscillate against each other — every grazer boom is followed by a bare pond and
+  a die-back, because the plants were eaten faster than they could breed.
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)

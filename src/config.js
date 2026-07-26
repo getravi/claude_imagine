@@ -47,6 +47,23 @@ export const DEFAULT_CONFIG = Object.freeze({
   // shift, forcing migration and preventing the pond from settling.
   biomeDrift: 0,
 
+  // Regrowth (opt-in): food that grows from food. Until now pellets appeared out
+  // of nowhere at a constant rate, so grazing had no lasting consequence — strip
+  // a biome bare and it refilled just as fast as an untouched one. With regrowth
+  // on, plants reproduce: most new pellets are seeded within regrowthRadius of an
+  // existing one, and the spawn rate scales with the standing crop (down to
+  // regrowthFloor when nothing is left). A herd can therefore ruin a patch, and
+  // the pond has to grow its way back from whatever survived. Off by default, and
+  // a pure no-op when off (rate multiplier is exactly 1, placement untouched), so
+  // default worlds are bit-for-bit unchanged.
+  foodRegrowth: false,
+  regrowthSpread: 0.85, // share of new pellets seeded from a parent; the rest appear anywhere
+  regrowthRadius: 30, // how far a seed can fall from its parent, in pixels
+  // Hand-tuned by sweeping floors from 0.25 to 0.5 across seeds: 0.35 keeps the
+  // boom-and-bust obvious (the crop still swings from near-bare to full) while
+  // leaving the pond a healthy standing population rather than a thin one.
+  regrowthFloor: 0.35, // spawn-rate multiplier when the pond is completely bare (0..1)
+
   // --- Population ---
   populationStart: 40,
   populationMax: 650, // safety cap so the sim can't explode

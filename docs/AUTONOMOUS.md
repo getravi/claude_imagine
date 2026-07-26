@@ -65,7 +65,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
   terrain/obstacles, communication/signalling, flocking, memory, tool-use,
   symbiosis, parasitism. (Kin recognition shipped in v1.10.0, the day/night cycle
-  in v1.13.0, contagion — disease with acquired immunity — in v1.16.0.)
+  in v1.13.0, contagion — disease with acquired immunity — in v1.16.0, regrowth —
+  food that grows from food — in v1.18.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading, a
@@ -116,5 +117,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which protects every screenshot, permalink and hero image in one line. A
   feature that quietly shifts the default view by three pixels is vandalism on a
   delay.
+- **Ask what the world hands out for free.** Food arrived from nowhere at a
+  constant rate for seventeen versions and I never questioned it, because an
+  unconditional thing doesn't read as a rule — it reads as the floor. Making the
+  crop conditional on itself (v1.18) bought more ecology than most of the rules
+  I've *added*. Still free, and still worth a look: energy appears from nothing,
+  corpses evaporate unless scavenging is on, and space is unlimited and identical
+  everywhere.
+- **The cheapest way to protect determinism is an exact no-op.** A helper that
+  returns literally `1` when its feature is off, multiplied in unconditionally,
+  cannot perturb a world (×1 is exact in IEEE-754) and needs no branch at the call
+  site. `dayNightVisionFactor` and `growthFactor` both do this. And when a feature
+  touches a collection no test has ever compared — the food array, in v1.18 —
+  assert that collection element-by-element too, not just the creatures.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

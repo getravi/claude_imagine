@@ -46,6 +46,9 @@ export class Chronicle {
     this._recovered = false;
     this._herd = false;
     this._burnout = false;
+    this._peakFood = 0;
+    this._stripped = false;
+    this._regreened = false;
   }
 
   _push(tick, icon, cat, msg) {
@@ -121,6 +124,9 @@ export class Chronicle {
 
     // --- Contagion (only when a pathogen exists in this world) ---
     if (this.config.disease) this._checkDisease(tick, pop, s);
+
+    // --- Regrowth (only when the crop is a population that can be ruined) ---
+    if (this.config.foodRegrowth) this._checkRegrowth(world, tick);
 
     // --- Generation depth ---
     for (const g of [10, 25, 50, 100, 200]) {
@@ -232,6 +238,34 @@ export class Chronicle {
     if (!this._burnout && (s.peakInfected || 0) >= 10 && sick === 0 && pop > 0) {
       this._burnout = true;
       this._push(tick, "🧫", "disease", `The pathogen runs out of hosts and burns out.`);
+    }
+  }
+
+  /**
+   * Overgrazing, in two moments: the pond stripped bare, and the green coming
+   * back. Only meaningful with regrowth on — with it off the crop refills at a
+   * constant rate no matter how hard it is grazed, so a low pellet count is
+   * weather rather than damage. Both one-shot: a heavily grazed world oscillates,
+   * and a bulletin per swing would bury the rest of the feed.
+   */
+  _checkRegrowth(world, tick) {
+    const standing = world.food.items.length;
+    if (standing > this._peakFood) this._peakFood = standing;
+    // Guard: only call it stripped if there was a real crop to strip. The world
+    // opens with foodStart pellets standing, so this is about grazing, not about
+    // a pond that never grew anything.
+    const hadCrop = this._peakFood >= 0.4 * this.config.foodMax;
+    if (!this._stripped && hadCrop && standing < 0.15 * this._peakFood) {
+      this._stripped = true;
+      this._push(
+        tick,
+        "🍂",
+        "regrowth",
+        `The pond is grazed bare — ${standing} pellets left of about ${this._peakFood}.`
+      );
+    } else if (this._stripped && !this._regreened && standing > 0.5 * this._peakFood) {
+      this._regreened = true;
+      this._push(tick, "🌾", "regrowth", `Green returns — the crop regrows to ${standing}.`);
     }
   }
 
