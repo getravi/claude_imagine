@@ -490,6 +490,88 @@ reason the model makes vivid — a signal is only worth making if others respond
 and responding is only worth doing if the signal is informative, so each half of
 the arrangement is useless until the other exists.
 
+## What the pond dies of
+
+Vivarium has counted its dead since v1.0 and never once recorded what of. That
+makes the single most dramatic thing the model produces — a population halving —
+unreadable, because a crash caused by a hard winter and a crash caused by a
+predator boom look identical from the outside. Both are a line going down.
+
+Every death now names its cause at the moment it is decided, so nothing has to be
+inferred afterwards from a body at zero energy:
+
+- **starvation** — energy reached zero, whether spent on metabolism, movement,
+  the upkeep of carnivory, a fever, or a call;
+- **age** — the creature reached `maxAge` with energy to spare;
+- **predation** — a bite emptied it, recorded by the predator that landed it.
+
+The three are exhaustive and exclusive: the causes always sum to the death count,
+and the predation tally is checked against the entirely separate kill counter the
+world has kept since v1.1. The app shows the mix over the last 120 deaths rather
+than the whole run, because a cumulative share stops moving after a few thousand
+ticks and the interesting thing about mortality is that it *changes*.
+
+### Hunger does nearly all the editing
+
+Eight seeds, 12,000 ticks each, default configuration:
+
+| world | starvation | old age | predation | mean lifespan | mean population |
+| --- | --- | --- | --- | --- | --- |
+| default | 78% | 11% | 11% | 2013 | 197 |
+| predation off | 84% | 16% | **0%** | 2247 | 227 |
+| contagion on | 78% | 12% | 10% | 1929 | 192 |
+| scavenging on | 76% | 13% | 11% | 1995 | 200 |
+| regrowth on | 90% | 1% | 9% | 1212 | 79 |
+
+The headline mechanic of this world — the predator/prey arms race that the
+default seed was chosen to display, that the README opens with and that most of
+the rendering code exists to draw — accounts for about a **tenth** of the deaths
+in it. It is wildly seed-dependent (2% to 40% across the eight), and it is never
+the main event. Selection here is done overwhelmingly by hunger. That is worth
+knowing before reading any claim about what evolved and why: the visible drama
+and the actual selection pressure are not the same thing.
+
+The control is the row with predation off, where the predation share reads
+**exactly** 0.000 on all eight seeds — not a small number, zero. A cause that
+cannot happen must report none, or the readout is measuring something other than
+what it says. (This is the same discipline the v1.20 signalling statistics had to
+pass, and for the same reason.)
+
+### Old age is the sensitive indicator
+
+The smallest slice moves the most. Dying of old age means the world let you
+finish: you found enough food, for long enough, to run out of time rather than
+energy. Removing predators raises it from 11% to 16% and adds ~230 ticks to the
+mean life. Switching on **regrowth**, where the crop is a population that a herd
+can strip, all but abolishes it — 11% to 1.4% — while cutting mean lifespan by
+40% and the standing population by 60%. Regrowth is the harshest thing in the
+config file, and the death mix says so much more clearly than the population
+chart does.
+
+### Contagion hides inside starvation, and that is honest
+
+Switching on the disease barely touches the mix (78.1% starvation against 77.9%
+without it) and costs about 4% of mean lifespan. This is not the accounting
+failing; it is the accounting being literal. The pathogen has no lethal step —
+it drains `diseaseMetabolicCost` extra energy per tick, and what actually kills
+its host is running out. "Died of disease" would be an interpretation, and a
+tempting one, so the readout doesn't offer it. The place to read the epidemic is
+the Sick/Immune counters and the chronicle, and the honest summary of its
+mortality effect is that a fever here kills by starving you slightly sooner.
+
+Reproduce any row with a dozen lines:
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+const w = new World(makeConfig({ seed: 314 }));       // add { predation: false } etc.
+for (let i = 0; i < 12000; i++) w.step();
+const b = w.stats.deathsBy;
+const total = b.starvation + b.age + b.predation;
+console.log(b, "of", total, "deaths");
+console.log("mean lifespan", (w.stats.lifespanSum / w.stats.deaths).toFixed(0));
+```
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just

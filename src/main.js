@@ -15,6 +15,7 @@ import { SCENARIOS } from "./scenarios.js";
 import { dayNightPhase } from "./environment.js";
 import { ZOOM_STEP } from "./camera.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
+import { wholePercents } from "./stats.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -436,6 +437,34 @@ function updateHUD() {
   $("stat-brain").textContent = config.evolvableTopology
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
     : "fixed";
+  updateMortality(s);
+}
+
+// The death mix: which of the three ways out of this world the pond is
+// currently taking. Only widths and text change, never structure, so this is
+// safe to run every frame (see the inspector's note about innerHTML).
+function updateMortality(s) {
+  const m = s.mortality();
+  $("stat-life").textContent = m ? Math.round(m.meanLifespan).toLocaleString() : "—";
+  const bar = $("mort-bar");
+  if (!m) {
+    bar.setAttribute("aria-label", "No deaths recorded yet.");
+    return;
+  }
+  const [starve, aged, hunted] = wholePercents([
+    m.shares.starvation,
+    m.shares.age,
+    m.shares.predation,
+  ]);
+  // Bar and caption are drawn from the same integers, so the widths on screen
+  // are exactly the numbers underneath them.
+  $("mort-starve").style.width = `${starve}%`;
+  $("mort-age").style.width = `${aged}%`;
+  $("mort-pred").style.width = `${hunted}%`;
+  const text = `${starve}% starved · ${aged}% aged · ${hunted}% hunted`;
+  $("mort-legend").textContent = text;
+  $("mort-window").textContent = `last ${m.n}`;
+  bar.setAttribute("aria-label", `Of the last ${m.n} deaths, ${text.replace(/ · /g, ", ")}.`);
 }
 
 // ---- Live population chart ----

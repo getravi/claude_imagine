@@ -74,6 +74,12 @@ export class Creature {
     this.generation = generation;
     this.children = 0;
     this.dead = false;
+    // What killed it, once something has: "starvation", "age" or "predation".
+    // Null while alive. Recorded at the moment death is decided rather than
+    // inferred afterwards, because by the time the world sweeps up the body the
+    // difference between starving and being eaten is invisible — both leave a
+    // creature at zero energy.
+    this.deathCause = null;
     // Which species (in phylogeny.js) this creature belongs to. Assigned from
     // outside at birth; -1 means "not yet classified".
     this.speciesId = -1;
@@ -248,7 +254,23 @@ export class Creature {
     this.energy -= base + move + dietCost + illCost + voiceCost;
 
     this.age++;
-    if (this.energy <= 0 || this.age >= cfg.maxAge) this.dead = true;
+    // Starvation is tested first, and `die()` keeps whichever cause arrived
+    // first: a creature bitten to zero energy has already been marked by its
+    // killer earlier in this same tick, so it is not counted as having starved.
+    if (this.energy <= 0) this.die("starvation");
+    else if (this.age >= cfg.maxAge) this.die("age");
+  }
+
+  /**
+   * Mark this creature dead and record what killed it. The first cause wins, so
+   * a body can't be re-attributed by whatever happens to touch it next in the
+   * same tick.
+   * @param {"starvation"|"age"|"predation"} cause
+   */
+  die(cause) {
+    if (this.dead) return;
+    this.dead = true;
+    this.deathCause = cause;
   }
 
   /** True if this creature has enough energy to reproduce. */

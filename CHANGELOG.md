@@ -4,6 +4,60 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.21.0] — 2026-07-26
+
+Mortality: the pond has counted its dead for twenty versions without once asking
+what of.
+
+### Added
+
+- **Cause of death.** Every death now names itself at the moment it is decided —
+  **starvation** (energy hit zero), **age** (reached `maxAge` with energy to
+  spare), or **predation** (a bite emptied it, recorded by the predator that
+  landed it). Nothing is inferred afterwards, because by the time the world
+  sweeps up a body, starving and being eaten look identical: both leave a
+  creature at zero. The first cause recorded wins, so a creature killed mid-tick
+  is never re-filed as having starved when it finishes its own update.
+- **A mortality bar** in the side panel — three segments over the last 120
+  deaths, amber for starved, slate for aged out, orange for hunted — with the
+  percentages beneath it and a new **Lifespan** stat giving the mean age at
+  death. A rolling window rather than a running total, because a cumulative
+  share stops moving after a few thousand ticks and the interesting thing about
+  mortality is that it changes. The three displayed percentages are rounded by
+  largest remainder so they always sum to exactly 100; three independent
+  `Math.round` calls produced captions reading 101%.
+- **A chronicle line** when the leading cause of death changes, guarded twice
+  over: the window must be full, and the leader must hold an outright majority,
+  so three causes hovering near a third each stays silent instead of
+  flip-flopping every time a body lands. Over 20,000 ticks a seed fires this
+  once or twice — in the predator worlds it captures a real handover, hunting
+  giving way to hunger as the prey learn to run.
+- **New tests** (`test/mortality.test.js`, 16 of them), including a fingerprint
+  of four worlds' exact state — every creature's position, energy, age, heading
+  and generation, plus every pellet — captured from the v1.20.0 sources and
+  asserted here, so observation can never start costing the thing observed even
+  a floating-point bit.
+
+### Notes
+
+- **The measurement passes its own control.** With predation switched off the
+  predation share reads exactly 0.000 on all eight seeds swept — not a small
+  number, zero.
+- **What the sweep found** (see `docs/SCIENCE.md#what-the-pond-dies-of`): across
+  eight seeds, ~78% of deaths are starvation and only ~11% are predation. The
+  predator/prey arms race this world is built around, that the default seed was
+  picked to display, does about a tenth of the editing. Old age turns out to be
+  the sensitive indicator — 11% by default, 16% with predators gone, and 1.4%
+  with regrowth on, which also cuts mean lifespan by 40%. And contagion barely
+  shows up at all, correctly: the pathogen has no lethal step, so a fever kills
+  by starving its host slightly sooner, and "died of disease" would be an
+  interpretation rather than a measurement.
+- 187 tests, all green. The UI was driven in headless Chromium against the real
+  `app/index.html`: the readout empty at rest, the bar and legend live once
+  deaths accumulate, the widths matching the printed percentages, the aria-label
+  describing the split for a screen reader, the chronicle line appearing, and a
+  clean console.
+
 ## [1.20.0] — 2026-07-26
 
 Signalling: the brain's third output has broadcast to nobody since v1.0. This

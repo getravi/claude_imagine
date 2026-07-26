@@ -248,6 +248,7 @@ body {
 }
 .controls,
 .stats,
+.mortality,
 .chartwrap,
 .inspector {
   background: var(--bg-panel);
@@ -379,6 +380,65 @@ details .field {
   font-family: var(--mono);
   font-size: 16px;
   color: var(--ink);
+}
+
+/* ---- Mortality ---- */
+.mortality {
+  padding: 12px 14px;
+}
+.mort-head {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.mort-head span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ink-faint);
+}
+/* Three segments in a row; widths are set from the death mix each frame, and a
+   cause with no deaths collapses to nothing rather than leaving a sliver. */
+.mort-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.mort-bar i {
+  display: block;
+  width: 0;
+  transition: width 0.4s ease;
+}
+.mort-bar .starve {
+  background: #d2a13c;
+}
+.mort-bar .aged {
+  background: #8b93a7;
+}
+.mort-bar .pred {
+  background: #ff7a4d;
+}
+.mort-legend {
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+}
+.mort-legend b {
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+/* The bar animates its widths; with reduced motion it just snaps. */
+@media (prefers-reduced-motion: reduce) {
+  .mort-bar i {
+    transition: none;
+  }
 }
 
 /* ---- Chart ---- */

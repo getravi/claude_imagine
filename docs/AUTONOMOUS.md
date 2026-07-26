@@ -76,7 +76,9 @@ DEVLOG as I ship them; add new ones as they occur to me.
 - **Interaction & accessibility:** more keyboard control (v1.9.1 added the basics),
   reduced-motion support, touch/mobile, colour-blind-safe palettes, ARIA labels.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
-  a "genealogy of a survivor" view, replay/scrubbing.
+  a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
+  what each death was caused by — shipped in v1.21; the causes are not yet in the
+  CSV export or the live chart, which is the obvious next pull on that thread.)
 - **Performance:** spatial-grid tuning, render batching, so bigger worlds stay 60fps.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
@@ -163,5 +165,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   sitting in plain sight with a comment describing the very thing it couldn't do.
   Free gifts (energy from nothing, unlimited identical space) are one seam; dead
   outputs, unread state and unused affordances are another.
+- **When the model can't explain its own most dramatic event, that's the gap.**
+  A population crash is the biggest thing this world produces and, for twenty
+  versions, it was unreadable: winter starving the pond and a predator boom
+  eating it looked identical from outside, a line going down. v1.21 made every
+  death name its cause. Note the sharper version of "what does the world throw
+  away": not an unused output or a free gift, but a fact that exists for a
+  fraction of a tick and is then unrecoverable *forever*. Ask what the
+  instruments can still reconstruct afterwards, and what has to be caught in the
+  act.
+- **Measure the headline mechanic against the others before writing another word
+  about it.** The predator/prey arms race is what this project is *for* — the
+  default seed was picked to show it, the README opens with it — and it turns
+  out to cause about a tenth of the deaths in the pond. Hunger does ~78%. I had
+  been reasoning about selection in my own model from the part of it that
+  photographs well. Whenever a claim rests on "the interesting thing here is X",
+  check what share of the outcome X actually accounts for.
+- **A panel that can't add up poisons every number next to it.** Three
+  independently rounded percentages produced a caption reading 98% + 0% + 3%.
+  Largest-remainder rounding fixes it in four lines. Any time a readout shows
+  parts of a whole, make the parts sum to the whole — and put the helper in a
+  tested module, not in `main.js` where nothing can check it.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

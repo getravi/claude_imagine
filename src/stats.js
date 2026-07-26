@@ -5,14 +5,55 @@
 // deep the oldest lineages run, how much genetic diversity remains. A history
 // ring buffer drives the little live chart in the UI.
 
+/**
+ * The ways a creature can die, in the order they are reported. Every death in
+ * the world is attributed to exactly one of these at the moment it happens —
+ * see `Creature.die()`.
+ */
+export const DEATH_CAUSES = Object.freeze(["starvation", "age", "predation"]);
+
+/**
+ * Round a set of shares (which sum to 1) into whole percentages that still sum
+ * to exactly 100: floor them all, then hand the leftover points to the largest
+ * remainders. Rounding each share on its own produces totals of 99 or 101 often
+ * enough to notice, and a caption that adds up to 101% teaches a reader to
+ * distrust every other number on the panel.
+ * @param {number[]} shares
+ * @returns {number[]} whole percentages, in the same order
+ */
+export function wholePercents(shares) {
+  const raw = shares.map((v) => v * 100);
+  const out = raw.map(Math.floor);
+  const left = 100 - out.reduce((a, b) => a + b, 0);
+  // Biggest fractional part first; index breaks ties so the result depends only
+  // on the numbers, not on the sort's stability.
+  const order = raw
+    .map((_, i) => i)
+    .sort((a, b) => raw[b] - out[b] - (raw[a] - out[a]) || a - b);
+  for (let i = 0; i < left; i++) out[order[i % order.length]]++;
+  return out;
+}
+
 export class Stats {
-  constructor(historyLength = 480) {
+  constructor(historyLength = 480, deathWindow = 120) {
     this.historyLength = historyLength;
     this.popHistory = []; // {pop, food, gen}
     this.tick = 0;
     this.births = 0;
     this.deaths = 0;
     this.kills = 0; // deaths specifically caused by predation
+    // Mortality accounting. The pond has counted its dead since v1.0 and never
+    // once asked what of, which makes a crash unreadable: a population halving
+    // because winter starved it and one halving because predators found it look
+    // identical from the outside. `deathsBy` is the whole run; `recentDeaths` is
+    // a ring of the last `deathWindow` deaths, which is what the UI reports —
+    // a cumulative share would be dominated by ancient history and would stop
+    // moving after a few thousand ticks.
+    this.deathWindow = deathWindow;
+    this.deathsBy = { starvation: 0, age: 0, predation: 0 };
+    /** @type {Array<{cause:string, age:number}>} newest last */
+    this.recentDeaths = [];
+    this.lifespanSum = 0; // total ticks lived, over every death so far
     this.scavenged = 0; // total scavenging bites taken from corpses
     this.infections = 0; // cumulative cases of the disease (contagion on)
     this.recoveries = 0; // cumulative recoveries, each one a new immune creature
@@ -148,6 +189,48 @@ export class Stats {
       });
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
     }
+  }
+
+  /**
+   * Record one death and what caused it. Called by the world as it sweeps up
+   * the bodies, which is the last moment the evidence still exists — a creature
+   * is removed from the population immediately afterwards and nothing about it
+   * survives. Draws no randomness and touches no creature, so a world that has
+   * this bookkeeping is bit-for-bit the world that doesn't.
+   * @param {import('./creature.js').Creature} creature
+   */
+  recordDeath(creature) {
+    const cause = creature.deathCause;
+    if (cause in this.deathsBy) this.deathsBy[cause]++;
+    this.lifespanSum += creature.age;
+    this.recentDeaths.push({ cause, age: creature.age });
+    if (this.recentDeaths.length > this.deathWindow) this.recentDeaths.shift();
+  }
+
+  /**
+   * The recent mortality mix: of the last `deathWindow` creatures to die, how
+   * many died of each cause, and how long they lived on average. Returns null
+   * until something has actually died, so callers never have to render a bar
+   * made of three zeroes.
+   */
+  mortality() {
+    const n = this.recentDeaths.length;
+    if (n === 0) return null;
+    const counts = { starvation: 0, age: 0, predation: 0 };
+    let ageSum = 0;
+    for (const d of this.recentDeaths) {
+      counts[d.cause]++;
+      ageSum += d.age;
+    }
+    const shares = {};
+    // Ties resolve to the earlier cause in DEATH_CAUSES, so the answer depends
+    // only on the counts and never on which body happened to be swept up first.
+    let leading = DEATH_CAUSES[0];
+    for (const c of DEATH_CAUSES) {
+      shares[c] = counts[c] / n;
+      if (counts[c] > counts[leading]) leading = c;
+    }
+    return { n, counts, shares, leading, meanLifespan: ageSum / n };
   }
 
   /**

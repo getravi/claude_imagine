@@ -49,6 +49,7 @@ export class Chronicle {
     this._peakFood = 0;
     this._stripped = false;
     this._regreened = false;
+    this._leadingCause = null;
   }
 
   _push(tick, icon, cat, msg) {
@@ -161,6 +162,7 @@ export class Chronicle {
     }
 
     // --- Throttled scans ---
+    if (tick % 32 === 0) this._checkMortality(tick, s);
     if (tick % 32 === 0) this._checkOldest(world, tick);
     if (tick % 64 === 0) this._checkDiversity(world, tick);
     if (tick % 48 === 0) this._checkSpecies(world, tick, pop);
@@ -267,6 +269,31 @@ export class Chronicle {
       this._regreened = true;
       this._push(tick, "🌾", "regrowth", `Green returns — the crop regrows to ${standing}.`);
     }
+  }
+
+  /**
+   * What the pond is dying of, reported only when the answer *changes* — a
+   * standing figure belongs in the stats panel, not the feed.
+   *
+   * Two guards keep this from narrating noise. The window has to be full (a
+   * "leading cause" drawn from nine deaths is a coin toss with extra steps), and
+   * the leader has to hold an outright majority, so three causes sitting at
+   * roughly a third each stays silent rather than flip-flopping between them
+   * every time a body lands.
+   */
+  _checkMortality(tick, s) {
+    const m = s.mortality();
+    if (!m || m.n < s.deathWindow) return;
+    if (m.shares[m.leading] < 0.5 || m.leading === this._leadingCause) return;
+    this._leadingCause = m.leading;
+    const label = { starvation: "Starvation", age: "Old age", predation: "Predation" }[m.leading];
+    const pct = Math.round(m.shares[m.leading] * 100);
+    this._push(
+      tick,
+      "⚰️",
+      "death",
+      `${label} is now the leading cause of death — ${pct}% of the last ${m.n}.`
+    );
   }
 
   _checkOldest(world, tick) {

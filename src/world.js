@@ -235,7 +235,7 @@ export class World {
             );
             c.lastBiteAge = c.age; // for the rendering "flash"
             if (preyTarget.energy <= 0) {
-              preyTarget.dead = true;
+              preyTarget.die("predation");
               this.stats.kills++;
             }
           }
@@ -262,6 +262,7 @@ export class World {
       for (const c of this.creatures) {
         if (c.dead) {
           this.stats.deaths++;
+          this.stats.recordDeath(c);
           if (cfg.scavenging) {
             const meat = cfg.corpseEnergyBase + c.radius * cfg.corpseEnergyPerRadius;
             this.corpses.push(new Corpse(c.x, c.y, meat));

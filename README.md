@@ -57,6 +57,10 @@ pond bare — each a hand-picked doorway into what the simulation can do.
   summer and grows scarce in winter, and the background tints cool or warm to
   match.
 - **Brighter creatures have more energy.** Dim ones are starving.
+- **The mortality bar** (in the side panel) says what the pond is actually dying
+  of — starved, aged out, or hunted — over the last 120 deaths, next to the mean
+  lifespan. Most worlds are ~80% starvation; the predator/prey drama the pond is
+  famous for is usually a tenth of it.
 - **No creature has a goal, a score, or a reward.** They just run inherited
   neural networks. Foraging, fleeing, hunting, and loitering in food-rich
   patches are *emergent* — selection, not code.
@@ -117,7 +121,13 @@ lineage, so you can see where it lives and how far it has spread.
   Hit 🎲 a few times; most worlds stay peaceful herbivores, but some ignite a
   full arms race.
 - **Turn predation off**, reset, and compare: a calmer, more crowded pond of
-  pure grazers.
+  pure grazers. Watch the mortality bar as you do — the orange *hunted* segment
+  goes to exactly nothing, the *aged* slice grows, and mean lifespan climbs by a
+  couple of hundred ticks.
+- **Watch what kills them change.** In a world that grows hunters the bar starts
+  orange and turns amber as the prey learn to run; the chronicle marks the
+  handover. Turn on *Regrowth* for the bleakest version — dying of old age
+  practically stops happening once a herd can strip its own pasture.
 - **Ride the seasons.** Watch the population/food chart pulse with the year —
   crashing in winter, blooming in summer. In a predator world the winters get
   genuinely dangerous. Toggle *Seasons* off to see the difference a constant
@@ -258,7 +268,7 @@ src/
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries
   environment.js    biomes (fertile patches) and seasons
-  stats.js          rolling population/lineage measurements
+  stats.js          rolling population/lineage measurements, and what kills them
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
   world.js          the simulation: steps everything forward

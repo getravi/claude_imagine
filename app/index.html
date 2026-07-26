@@ -208,8 +208,19 @@
           <div class="stat"><label>Brain 🧬</label><b id="stat-brain">fixed</b></div>
           <div class="stat"><label>Births</label><b id="stat-births">0</b></div>
           <div class="stat"><label>Deaths</label><b id="stat-deaths">0</b></div>
+          <div class="stat"><label>Lifespan ⏳</label><b id="stat-life">—</b></div>
           <div class="stat"><label>Tick</label><b id="stat-tick">0</b></div>
           <div class="stat"><label>FPS</label><b id="stat-fps">0</b></div>
+        </div>
+
+        <div class="mortality">
+          <div class="mort-head">⚰️ What they die of <span id="mort-window">rolling window</span></div>
+          <div class="mort-bar" id="mort-bar" role="img" aria-label="No deaths recorded yet.">
+            <i class="starve" id="mort-starve"></i>
+            <i class="aged" id="mort-age"></i>
+            <i class="pred" id="mort-pred"></i>
+          </div>
+          <div class="mort-legend" id="mort-legend">Nothing has died yet.</div>
         </div>
 
         <div class="chartwrap">
