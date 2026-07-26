@@ -49,6 +49,7 @@ function parseHash() {
   if (p.has("night")) o.dayNightCycle = p.get("night") === "1";
   if (p.has("dis")) o.disease = p.get("dis") === "1";
   if (p.has("regrow")) o.foodRegrowth = p.get("regrow") === "1";
+  if (p.has("sig")) o.signalling = p.get("sig") === "1";
   return o;
 }
 
@@ -73,6 +74,7 @@ function syncHash() {
   p.set("night", config.dayNightCycle ? "1" : "0");
   p.set("dis", config.disease ? "1" : "0");
   p.set("regrow", config.foodRegrowth ? "1" : "0");
+  p.set("sig", config.signalling ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -199,6 +201,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-daynight", config.dayNightCycle);
   setToggle("toggle-disease", config.disease);
   setToggle("toggle-regrowth", config.foodRegrowth);
+  setToggle("toggle-signalling", config.signalling);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -427,6 +430,9 @@ function updateHUD() {
     : "off";
   $("stat-immune").textContent = config.disease ? s.immuneCount : "off";
   $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
+  // Traffic on the signalling channel: how strong a call the average creature is
+  // hearing right now. "off" where nobody can hear at all.
+  $("stat-heard").textContent = config.signalling ? s.avgHeard.toFixed(2) : "off";
   $("stat-brain").textContent = config.evolvableTopology
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
     : "fixed";
@@ -852,6 +858,19 @@ function wireControls() {
   $("toggle-regrowth").checked = config.foodRegrowth;
   $("toggle-regrowth").addEventListener("change", (e) => {
     config.foodRegrowth = e.target.checked;
+    syncHash();
+  });
+  $("toggle-signalling").checked = config.signalling;
+  $("toggle-signalling").addEventListener("change", (e) => {
+    config.signalling = e.target.checked;
+    // Rebuild every living brain so the ear is wired in (or unwired) at once —
+    // the same reason the plasticity toggle does it. Newborns pick the flag up
+    // from the config on their own. Switching it off also clears what everyone
+    // was hearing, so no creature is left holding a call nobody can make.
+    for (const c of world.creatures) {
+      c.brain = buildBrainFor(c.genome, config);
+      if (!config.signalling) c.heard = 0;
+    }
     syncHash();
   });
   $("toggle-sexual").checked = config.sexualReproduction;

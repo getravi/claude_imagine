@@ -83,6 +83,20 @@ export const SCENARIOS = [
     over: { seed: 137, foodRegrowth: true, predation: false, seasons: true },
   },
   {
+    id: "earshot",
+    icon: "📣",
+    name: "Earshot",
+    blurb:
+      "Every creature has always flashed a signal; here, for the first time, the others can hear it. Whether the pond ever makes anything of that is an open question — watch and see.",
+    // Seed 23 was earned by a 28-seed sweep scored on what actually makes this
+    // world worth watching: a busy channel (mean heard signal 0.80, the highest
+    // of the field), predators persisting through 59% of the run so there is
+    // something worth calling about, and a pond that holds around 220 creatures
+    // and never drops below 41. 439 kills across 12,000 ticks — a working food
+    // web with a crowd loud enough to hear itself.
+    over: { seed: 23, signalling: true, predation: true, seasons: true },
+  },
+  {
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",

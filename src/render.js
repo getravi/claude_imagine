@@ -213,6 +213,32 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // Signalling: once the channel has listeners, the third motor output stops
+    // being a private saturation tweak and becomes something a watcher should be
+    // able to read, so a calling creature wears rings — warm for a positive
+    // call, cool for a negative one, opacity tracking how loud it is. Two
+    // creatures using opposite signs are visibly saying different things. The
+    // quiet threshold keeps a silent pond looking like a silent pond, and with
+    // the feature off this branch is never entered at all.
+    if (cfg.signalling) {
+      const loud = Math.abs(c.signal);
+      if (loud > 0.2) {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = `hsla(${c.signal > 0 ? 48 : 205}, 95%, 70%, ${(
+          0.1 +
+          0.4 * loud
+        ).toFixed(2)})`;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 3.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, r + 6.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+      }
+    }
+
     // Attack flash: a brief bright burst right after landing a bite.
     if (c.age - c.lastBiteAge < 4) {
       ctx.globalCompositeOperation = "lighter";

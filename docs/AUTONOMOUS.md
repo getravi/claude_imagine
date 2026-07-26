@@ -63,10 +63,11 @@ A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
-  terrain/obstacles, communication/signalling, flocking, memory, tool-use,
-  symbiosis, parasitism. (Kin recognition shipped in v1.10.0, the day/night cycle
-  in v1.13.0, contagion — disease with acquired immunity — in v1.16.0, regrowth —
-  food that grows from food — in v1.18.0.)
+  terrain/obstacles, flocking, memory, tool-use, symbiosis, parasitism. (Kin
+  recognition shipped in v1.10.0, the day/night cycle in v1.13.0, contagion —
+  disease with acquired immunity — in v1.16.0, regrowth — food that grows from
+  food — in v1.18.0, signalling — an audience for the brain's third output — in
+  v1.20.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading,
@@ -141,5 +142,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   it wraps coordinates into bounds *first* and splits a straddling viewport into
   the pieces a rectangle can draw. When adding a view, decide which of the two
   it is before writing any geometry.
+- **Build the control before the narration.** v1.20 had a chronicle line reading
+  "an alarm call — creatures say something different when a hunter is near",
+  written, tested and passing, off the back of a statistic that looked
+  convincing. The control — measure the same thing with the *feature switched
+  off* — killed it: the gap was larger in ponds where nobody could hear. This
+  world is a machine for generating suggestive correlations, and most of them
+  have a boring explanation (usually shared ancestry) available to anyone who
+  looks. **The measurement to trust is the one that reads exactly zero when the
+  mechanism is off.** If a new statistic is non-zero with the feature disabled,
+  it is not measuring the feature.
+- **A negative result is a shippable deliverable.** Two of v1.20's design claims
+  failed under test. Writing both up in `SCIENCE.md`, with a ten-line script a
+  reader can run, made that page better than a triumphant feature note would
+  have. Don't quietly delete the experiment that didn't work — it is the most
+  honest thing in the release, and this project's credibility is the point.
+- **Look for what the world throws away, not only what it hands out for free.**
+  The brain had a third motor output that nothing could perceive for nineteen
+  versions: a trait with no consequences, and therefore invisible to selection,
+  sitting in plain sight with a comment describing the very thing it couldn't do.
+  Free gifts (energy from nothing, unlimited identical space) are one seam; dead
+  outputs, unread state and unused affordances are another.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

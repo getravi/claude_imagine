@@ -171,6 +171,10 @@ normalised to roughly `[-1, 1]`):
 | age | a sense of how far through its lifespan it is |
 | own diet | how carnivorous it is (so behaviour can depend on being predator or prey) |
 | own size | how big it is |
+| heard call | *(signalling only)* the loudest call reaching it, faded by distance |
+
+The last row is the only optional one: with signalling off the sense does not
+exist, and the network is arithmetically the one it has always been.
 
 Splitting "nearest creature" into separate **prey** and **threat** channels is
 what lets the same brain architecture produce both hunting ("turn toward prey")
@@ -372,6 +376,120 @@ pellet), so the answer, if there is one, has to be behavioural and spatial: rang
 further, dispersing rather than herding, or simply dying back to a level the crop
 can sustain. Watching *which* of those the pond finds is the point.
 
+## Signalling: a channel that nobody could hear
+
+From v1.0 to v1.19 every creature's brain had three motor outputs: turn, thrust,
+and a third that the code called a "colour signal". It shifted the body's
+saturation on screen by a few percent and did nothing else. No creature could
+perceive it. That is a strange object to leave in an evolutionary model, because
+selection cannot act on a trait that has no consequence: the third output was
+free to wander wherever mutation took it, and it did, drifting into saturation
+because a `tanh` of a random-walking sum is almost always near ±1. Nineteen
+versions of creatures were flashing at each other in a world with no eyes for it.
+
+**Signalling** (opt-in) gives the channel receivers. A creature now senses the
+loudest call reaching it — the strongest `|signal|` among neighbours within
+`signalRadius`, faded linearly with distance — through a small block of **ear
+genes**, one weight per hidden neuron, that mutate and cross over like any other
+part of the brain. Three details are deliberate:
+
+- **A one-tick delay.** Creatures are updated in sequence, so reading a
+  neighbour's *live* signal would mean the first creature in the array hears
+  yesterday and the last hears today. Each creature therefore broadcasts the
+  signal it emitted on the previous tick, frozen before anything moves. What you
+  hear cannot depend on the update order.
+- **Calling costs energy**, `signalCost` per tick per unit of loudness. A free
+  signal is unphysical, and in signalling theory cost is what keeps a signal
+  honest — a call that anyone can make for nothing can be made by a liar too.
+- **Earshot ignores the dark.** Vision shrinks toward `nightVisionFactor` when
+  the day/night cycle is on; hearing does not. A voice carries at midnight, which
+  is exactly when a creature that cannot see would most want one.
+
+### What actually happened: two negative results
+
+Neither of the things this mechanic was built to produce showed up in the sweeps,
+and both are worth recording.
+
+**Volume does not evolve.** The cost was meant to select for silence, so that any
+noise that survived would be noise worth making. It doesn't: sweeping
+`signalCost` from 0 to 0.25 — five times base metabolism, enough to visibly
+depress the population — moved mean loudness only from about 0.85 to about 0.72
+across seeds. The reason is the `tanh`. Reaching *quiet* means holding the third
+output's pre-activation near zero across every sensory state a creature meets,
+which is a vanishingly thin region of weight space; mutation cannot find it and
+selection is not strong enough to drag anything there. Cost turns out to be a
+lever on *who survives*, not on *how loud they are*.
+
+**A promising signal-meaning statistic turned out to be an artifact.** The
+natural question about a signal is not how loud it is but whether it is *about*
+anything, so the obvious measurement is the gap between what creatures say while
+something that could eat them is in sight and what they say when it isn't. That
+gap is real and often large — in one 12,000-tick run it settled at 0.31 and held
+the same sign for 74% of the second half of the run, which looks a great deal
+like an alarm call.
+
+It is not one. The control is to measure the same gap in worlds where
+**signalling is switched off** — where the signal still exists and still depends
+on the threat sense, but no creature can hear it and no ear gene is ever drawn.
+The gap is just as big:
+
+| hearing | mean \|gap\| across predator-bearing worlds |
+| --- | --- |
+| on | 0.17 |
+| off | 0.35 |
+
+The strongest "alarm call" in the whole experiment (0.58, sign-stable in 88% of
+samples) came from a world where nobody could hear anything at all. The
+explanation is mundane: a pond usually ends up dominated by a few related
+lineages, and if their shared brain happens to couple the threat inputs to the
+third output — which costs nothing, so nothing stops it — then the whole
+population "says" the same thing in danger, having inherited it rather than
+agreed it. A population-level correlation measures common ancestry at least as
+readily as it measures communication.
+
+You can reproduce the control in a few lines:
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { INPUT_THREAT_PROX } from "./src/creature.js";
+
+const gap = (w) => {
+  let d = 0, nd = 0, e = 0, ne = 0;
+  for (const c of w.creatures) {
+    if (c._in[INPUT_THREAT_PROX] > 0) { d += c.signal; nd++; } else { e += c.signal; ne++; }
+  }
+  return nd >= 5 && ne > 0 ? d / nd - e / ne : null;
+};
+
+for (const signalling of [true, false]) {
+  const w = new World(makeConfig({ seed: 888, signalling, predation: true }));
+  const late = [];
+  for (let t = 1; t <= 12000; t++) {
+    w.step();
+    if (t > 7200) { const g = gap(w); if (g !== null) late.push(g); }
+  }
+  const m = late.reduce((a, b) => a + b, 0) / late.length;
+  console.log(signalling ? "hearing on " : "hearing off", m.toFixed(3));
+}
+```
+
+So what the app reports is the honest quantity: **Heard**, the mean strength of
+the call actually reaching a creature. It is exactly zero where nobody can hear,
+and it moves with the ecology rather than with wishful thinking — it swells as
+survivors pack into fertile ground and collapses with the population in a crash.
+
+What is genuinely true is narrower, and still worth having: a channel exists
+where none did, an action can now depend on what a neighbour is doing several
+body-lengths away, and there is a heritable, evolvable, costed pathway from one
+creature's state to another's behaviour. Whether 12,000 ticks of a 40-creature
+founding population is anywhere near enough for a convention to *emerge* on that
+pathway is an open question, and the honest answer from these sweeps is: not yet,
+and not detectably. Communication is thought to be hard to evolve for exactly the
+reason the model makes vivid — a signal is only worth making if others respond,
+and responding is only worth doing if the signal is informative, so each half of
+the arrangement is useless until the other exists.
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just
@@ -436,6 +554,11 @@ Being honest about the boundaries:
   (They *do* concentrate in biomes and wax and wane with the seasons — see the
   heterogeneity section — and predators genuinely co-evolve, per the food-web
   section.)
+- **Nothing communicates by default, and nothing has been shown to communicate
+  yet.** Signalling (above) supplies the channel — an evolvable, costed pathway
+  from one creature's state to another's behaviour — but the sweeps have not
+  found evidence of an evolved convention travelling along it, and the obvious
+  statistic that suggested otherwise failed its control.
 - **Topology is fixed unless you ask otherwise.** By default only weights evolve;
   turn on evolvable topology (the NEAT section above) and structure evolves too.
 

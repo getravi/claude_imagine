@@ -93,6 +93,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
 | **Regrowth** | Toggle food that grows from food: most new pellets are seeded next to an existing one, and the crop grows fastest when there is most of it. A herd can strip a patch bare and then has to wait for it to grow back, so the pond swings through boom-and-bust cycles. Off by default. Watch the *Food* stat. |
 | **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Off by default. Watch the *Sick* and *Immune* stats. |
+| **Signalling** | Toggle whether creatures can *hear* one another. Every brain has always emitted a "colour signal" that nothing could perceive; switch this on and the loudest call within earshot becomes a sense, wired in through evolved ear genes, and calling costs a little energy. Off by default. Watch the *Heard* stat. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
 | **Evolvable brains (NEAT)** | Toggle evolvable topology: brains start minimal and grow their own structure over generations. Off by default; flipping it restarts the world with graph-based brains. |
@@ -139,6 +140,13 @@ lineage, so you can see where it lives and how far it has spread.
   the ground a herd has worked over. The *Food* stat and the population then
   oscillate against each other — every grazer boom is followed by a bare pond and
   a die-back, because the plants were eaten faster than they could breed.
+- **Turn on Signalling** (or hit the *Earshot* scenario) and watch the pond split
+  into warm and cool rings — two different things to say, each lineage settling on
+  its own. The *Heard* stat is the traffic on the channel: it swells as creatures
+  crowd into fertile ground and collapses when the population does. Whether any of
+  it ever comes to *mean* anything is genuinely open — see
+  [the Science page](docs/SCIENCE.md#signalling-a-channel-that-nobody-could-hear)
+  for a control experiment suggesting the pond has not got there yet.
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)

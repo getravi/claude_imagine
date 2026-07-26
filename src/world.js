@@ -75,7 +75,7 @@ export class World {
     // the RNG stream — and thus every existing world — is unchanged.
     const genome = cfg.evolvableTopology
       ? NeatGenome.random(this.rng)
-      : Genome.random(this.rng);
+      : Genome.random(this.rng, cfg.signalling);
     return new Creature(
       genome,
       cfg,
@@ -112,6 +112,16 @@ export class World {
     // sensing is unchanged unless the feature is switched on.
     const visionR2 = cfg.visionRadius * this.visionFactor * (cfg.visionRadius * this.visionFactor);
 
+    // Earshot, when there is anything to hear. Unlike sight it does not shrink
+    // at night — a voice carries in the dark, which is the whole point of having
+    // one. Each creature broadcasts the signal it emitted *last* tick, frozen
+    // here before anything moves, so what a creature hears never depends on
+    // where it sits in the update order below.
+    const earR2 = cfg.signalRadius * cfg.signalRadius;
+    if (cfg.signalling) {
+      for (const c of this.creatures) c.prevSignal = c.signal;
+    }
+
     // 2. Sense, think, act.
     for (const c of this.creatures) {
       // Nearest food within vision.
@@ -134,9 +144,18 @@ export class World {
       let threatD2 = visionR2;
       let mate = null; // nearest potential partner (sexual reproduction)
       let mateD2 = cfg.mateRadius * cfg.mateRadius;
+      let loudest = 0; // strongest voice in earshot (signalling only)
       this.creatureGrid.forEachNear(c.x, c.y, (o) => {
         if (o === c || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
+        // Hearing: a call fades linearly with distance, and the loudest one
+        // wins — a single channel, so a creature has to be worth listening to
+        // over its neighbours. Sign is preserved, so "loudest" means the largest
+        // magnitude, not the most positive.
+        if (cfg.signalling && d2 < earR2 && o.prevSignal !== 0) {
+          const heard = o.prevSignal * (1 - Math.sqrt(d2) / cfg.signalRadius);
+          if (Math.abs(heard) > Math.abs(loudest)) loudest = heard;
+        }
         if (d2 < preyD2 && c.canEat(o)) {
           preyD2 = d2;
           prey = o;
@@ -168,6 +187,7 @@ export class World {
         });
       }
 
+      c.heard = loudest;
       c.sense(
         nf,
         nf ? Math.sqrt(nfD2) : Infinity,

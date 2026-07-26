@@ -35,8 +35,12 @@ export class NeuralNet {
    *   becomes *plastic*: its weights adapt each forward pass (within-lifetime
    *   learning). Omit for a static brain — the v1.0–v1.3 behaviour.
    * @param {{rate:number, decay:number, clamp:number}} [learn] learning params
+   * @param {Float32Array} [auxW] one extra weight per hidden neuron, for a
+   *   single scalar sense supplied at call time (see `forward`). Omit for the
+   *   plain topology — when it is null the forward pass performs exactly the
+   *   arithmetic it always has, in the same order.
    */
-  constructor(nIn, nHidden, nOut, weights, plasticity = null, learn = null) {
+  constructor(nIn, nHidden, nOut, weights, plasticity = null, learn = null, auxW = null) {
     this.nIn = nIn;
     this.nHidden = nHidden;
     this.nOut = nOut;
@@ -69,6 +73,12 @@ export class NeuralNet {
       this.learn = learn;
     }
 
+    // An optional 17th sense with its own weights, kept outside `w` so the main
+    // weight vector — and therefore the genome, and therefore every seed — keeps
+    // the length and layout it has had since v1.0. Null means "no such sense",
+    // and costs one untaken branch per forward pass.
+    this.auxW = auxW;
+
     // Scratch buffers reused every tick to avoid per-frame allocation.
     this._hidden = new Float32Array(nHidden);
     this._out = new Float32Array(nOut);
@@ -84,9 +94,11 @@ export class NeuralNet {
    * Returns the internal output buffer (length nOut) — do not retain it across
    * ticks, it is overwritten in place.
    * @param {ArrayLike<number>} inputs
+   * @param {number} [aux] value of the extra scalar sense. Ignored unless the
+   *   net was built with `auxW`, so callers can always pass it.
    */
-  forward(inputs) {
-    const { w, nIn, nHidden, nOut, _hidden, _out } = this;
+  forward(inputs, aux = 0) {
+    const { w, nIn, nHidden, nOut, auxW, _hidden, _out } = this;
     let p = 0;
 
     // Hidden layer.
@@ -96,6 +108,11 @@ export class NeuralNet {
         sum += w[p++] * inputs[i];
       }
       _hidden[j] = sum; // biases added below after the weight block
+    }
+    // The extra sense, if this net has one, joins the hidden layer here — after
+    // the weight block so `p` still walks the classic layout untouched.
+    if (auxW) {
+      for (let j = 0; j < nHidden; j++) _hidden[j] += auxW[j] * aux;
     }
     for (let j = 0; j < nHidden; j++) {
       _hidden[j] = tanh(_hidden[j] + w[p++]);
@@ -124,7 +141,9 @@ export class NeuralNet {
    * gated by the connection's evolved plasticity coefficient) plus a decay term
    * pulling it back toward its inherited baseline. The decay keeps learning
    * bounded and reversible — a working memory, not runaway growth — and a hard
-   * clamp is a final safety net. Biases are left static.
+   * clamp is a final safety net. Biases are left static, and so is `auxW`: the
+   * extra sense's wiring is innate, evolved across generations rather than
+   * tuned within one life.
    */
   _learn(inputs) {
     const { w, wInit, plast, nIn, nHidden, nOut, _hidden, _out } = this;

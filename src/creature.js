@@ -12,10 +12,15 @@
 // offspring. Everything that looks like purpose is selection in disguise.
 
 import { wrapDelta, wrap, normalizeAngle, clamp, lerp } from "./vec.js";
-import { Genome } from "./genome.js";
+import { Genome, migrateGenomeData } from "./genome.js";
 import { NeatGenome } from "./neat.js";
 
 let NEXT_ID = 1;
+
+// Index of the "how close is the nearest thing that could eat me" sense within
+// the input vector built by sense(). Named because stats.js reads it too, to
+// ask whether a creature's call depends on being in danger.
+export const INPUT_THREAT_PROX = 10;
 
 /**
  * Reconstruct a genome from its serialized form, dispatching on the kind tag so
@@ -23,9 +28,12 @@ let NEXT_ID = 1;
  * pre-v1.5 format (a bare array of numbers) for old saves.
  */
 export function deserializeGenome(g) {
-  if (Array.isArray(g)) return new Genome(Float32Array.from(g)); // legacy format
+  // Fixed-topology vectors are run through the layout migration, so a world
+  // saved before the ear existed loads with a silent one rather than a genome
+  // of the wrong length.
+  if (Array.isArray(g)) return new Genome(migrateGenomeData(Float32Array.from(g))); // legacy format
   if (g && g.k === "neat") return NeatGenome.fromData(g);
-  return new Genome(Float32Array.from(g.d));
+  return new Genome(migrateGenomeData(Float32Array.from(g.d)));
 }
 
 /**
@@ -37,7 +45,7 @@ export function buildBrainFor(genome, config) {
   const learn = config.plasticity
     ? { rate: config.learnRate, decay: config.learnDecay, clamp: config.weightClamp }
     : null;
-  return genome.buildBrain(learn);
+  return genome.buildBrain(learn, !!config.signalling);
 }
 
 export class Creature {
@@ -96,8 +104,14 @@ export class Creature {
     this.immune = false;
     this.infectedAtAge = -1; // age at which the current infection began
 
-    // Transient display value: the "colour signal" output, for rendering.
+    // The "colour signal" output. For seventeen versions this was a display
+    // value and nothing more; with signalling on it is also what neighbours
+    // hear. `prevSignal` is last tick's value — the world reads *that* one, so
+    // what a creature hears cannot depend on where it happens to sit in the
+    // update order. `heard` is the loudest voice reaching it right now.
     this.signal = 0;
+    this.prevSignal = 0;
+    this.heard = 0;
     // Age at which this creature last landed a bite (for a brief attack flash).
     this.lastBiteAge = -1000;
 
@@ -166,7 +180,7 @@ export class Creature {
     inp[7] = preyProx;
     inp[8] = threatSin;
     inp[9] = threatCos;
-    inp[10] = threatProx;
+    inp[INPUT_THREAT_PROX] = threatProx;
     inp[11] = speed;
     inp[12] = Math.sin(this.phase); // internal oscillator
     inp[13] = clamp(this.age / cfg.maxAge, 0, 1) * 2 - 1; // sense of mortality
@@ -177,7 +191,7 @@ export class Creature {
 
   /** Run the brain. Returns [turn, thrust, colourSignal], each in (-1, 1). */
   think() {
-    return this.brain.forward(this._in);
+    return this.brain.forward(this._in, this.heard);
   }
 
   /**
@@ -226,7 +240,12 @@ export class Creature {
     // The price of a fever (contagion). `infected` can only ever be true while
     // that feature is on, so this term is an exact 0 in every other world.
     const illCost = this.infected ? cfg.diseaseMetabolicCost : 0;
-    this.energy -= base + move + dietCost + illCost;
+    // The price of being heard. Without a cost the channel is free chatter and
+    // selection has no opinion about it; with one, a call has to earn its keep.
+    // Exactly 0 in every world where nobody is listening — both because the
+    // branch isn't taken and because adding 0 leaves the sum bit-for-bit.
+    const voiceCost = cfg.signalling ? cfg.signalCost * Math.abs(this.signal) : 0;
+    this.energy -= base + move + dietCost + illCost + voiceCost;
 
     this.age++;
     if (this.energy <= 0 || this.age >= cfg.maxAge) this.dead = true;
@@ -259,7 +278,9 @@ export class Creature {
     // Dispatch crossover to whichever genome kind this creature carries
     // (fixed-topology or NEAT); both expose a static crossover and a
     // config-driven mutateForConfig, so this code is genome-agnostic.
-    const base = mate ? this.genome.constructor.crossover(this.genome, mate, rng) : this.genome;
+    const base = mate
+      ? this.genome.constructor.crossover(this.genome, mate, rng, cfg.signalling)
+      : this.genome;
     const childGenome = base.mutateForConfig(rng, cfg);
     const offset = this.radius + 2;
     const cx = wrap(this.x + Math.cos(this.heading + Math.PI) * offset, cfg.width);

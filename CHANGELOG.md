@@ -4,6 +4,72 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.20.0] — 2026-07-26
+
+Signalling: the brain's third output has broadcast to nobody since v1.0. This
+release gives it listeners.
+
+### Added
+
+- **Signalling** (opt-in, `signalling`). Every creature has always emitted a
+  "colour signal" — a third motor output that nudged its saturation on screen and
+  did nothing else. Nothing could perceive it, which means selection could never
+  do anything with it either way: nineteen versions of creatures flashing at each
+  other in a world with no eyes for it. Switch this on and a creature also
+  *hears* the loudest call within `signalRadius` (120px), faded linearly with
+  distance, through a block of **ear genes** — one weight per hidden neuron —
+  that mutate and cross over like the rest of the brain. Calling costs energy in
+  proportion to its loudness (`signalCost`), because a free signal is unphysical
+  and cost is what is supposed to keep a signal honest. Hearing deliberately does
+  **not** shrink at night the way sight does: a voice carries in the dark, which
+  is exactly when a creature that cannot see would most want one.
+- **Rings you can read.** A calling creature wears two thin rings — warm for a
+  positive call, cool for a negative one, opacity tracking loudness — so two
+  lineages using opposite signs are visibly saying different things. A new
+  **Heard** stat reports the traffic on the channel: the mean strength of the
+  call actually reaching a creature, `off` where nobody can hear.
+- **"Earshot" scenario** on seed 23, earned by a 28-seed sweep scored on a busy
+  channel (mean heard signal 0.80, the highest of the field), predators
+  persisting through 59% of the run so there is something worth calling about,
+  and a pond that holds ~220 creatures and never drops below 41.
+- **New tests** (`test/signalling.test.js`, 14 of them): the feature off being
+  bit-for-bit inert down to each creature's energy; the ear costing zero RNG
+  draws at all three draw sites (genesis, mutation, crossover); mutation and
+  crossover reaching the ear only when it is live; species distance ignoring the
+  ear so the tree of life is unchanged; a deaf net being arithmetically identical
+  whatever it is told; a call fading with distance and the loudest winning; the
+  energy cost; hearing reading last tick's pond rather than a half-updated one;
+  a pre-ear save loading with a silent ear and its body genes intact; earshot
+  surviving nightfall; and reproducibility from a seed.
+
+### Notes
+
+- **Determinism.** The ear is a new gene block, and genes are where the RNG lives,
+  so every function that draws randomness takes a flag saying whether the block is
+  live and skips it entirely when it isn't — the same discipline the v1.4
+  plasticity genes established. Body genes are addressed from the *end* of the
+  vector, so inserting the ear ahead of them moved nothing. Pre-v1.20 saves are
+  migrated on load. Sexual worlds were the sharp edge here: a coin flipped per
+  silent gene during crossover would have shifted the stream for every one of
+  them.
+- **Two negative results, recorded rather than buried** (see
+  `docs/SCIENCE.md#signalling-a-channel-that-nobody-could-hear`). The energy cost
+  does *not* select for silence — sweeping it from 0 to five times base
+  metabolism moves mean loudness only from ~0.85 to ~0.72, because a `tanh`
+  output saturates and quiet is a vanishingly thin region of weight space. And
+  the statistic that looked like an evolved alarm call — creatures saying
+  something measurably different when a hunter is in sight — fails its control:
+  the same gap appears just as strongly in worlds where **nobody can hear**, so
+  it measures shared ancestry, not communication. The strongest "alarm call" in
+  the experiment came from a pond with the feature switched off. No chronicle
+  line claims otherwise, and the app reports only the quantity that survives
+  scrutiny.
+- 171 tests, all green. The UI was driven in headless Chromium against the real
+  `app/index.html`: the readout `off` at rest and live once switched on, the
+  permalink carrying `sig=1`, the rings actually painted, the Earshot chip
+  launching a signalling world, the readout returning to `off` on a scenario
+  without it, and a clean console.
+
 ## [1.19.0] — 2026-07-26
 
 A minimap: the whole pond in the corner, so a zoomed-in view can say *where* it

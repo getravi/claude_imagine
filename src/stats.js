@@ -23,6 +23,8 @@ export class Stats {
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
     this.avgLearning = 0; // mean within-lifetime weight drift (plasticity on)
+    this.avgVoice = 0; // mean |signal| across the pond (signalling on)
+    this.avgHeard = 0; // mean strength of the call reaching each creature
   }
 
   /**
@@ -69,6 +71,32 @@ export class Stats {
       this.avgLearning = n > 0 ? drift / n : 0;
     } else {
       this.avgLearning = 0;
+    }
+
+    // The channel — measured only where there is a channel at all.
+    //
+    // `avgVoice` is how loud the pond is, and it is the duller of the two: the
+    // third output is a tanh, so it saturates near ±1 for almost any weights,
+    // and sweeping the signal cost from zero up to five times base metabolism
+    // barely moves it. Volume is not the interesting variable here.
+    //
+    // `avgHeard` is the traffic on the channel: the mean strength of the loudest
+    // call actually reaching a creature, after distance has worn it down. It is
+    // exactly zero in a world where nobody can hear, and unlike volume it
+    // *moves* — it tracks how crowded the pond is, so it collapses in a crash
+    // and swells as the survivors pack back into the fertile ground.
+    if (world.config.signalling && pop > 0) {
+      let loud = 0;
+      let heard = 0;
+      for (let i = 0; i < pop; i++) {
+        loud += Math.abs(world.creatures[i].signal);
+        heard += Math.abs(world.creatures[i].heard);
+      }
+      this.avgVoice = loud / pop;
+      this.avgHeard = heard / pop;
+    } else {
+      this.avgVoice = 0;
+      this.avgHeard = 0;
     }
 
     // Contagion: the live S/I/R split of the population. Counted only when the

@@ -165,6 +165,24 @@ export const DEFAULT_CONFIG = Object.freeze({
   // which is also how the very first outbreak starts.
   diseaseReintroduce: 900,
 
+  // Signalling (opt-in): give the brain's third output an audience. Every
+  // creature since v1.0 has emitted a "colour signal" — it nudges the body's
+  // saturation and nothing else, a channel broadcasting to nobody, so selection
+  // could never do anything with it either way. Switch this on and a creature
+  // also *hears* the loudest voice within signalRadius, attenuated by distance,
+  // through an ear (a small block of genes wired into its hidden layer) that
+  // evolves like the rest of the brain. Calling costs energy in proportion to
+  // how loud it is, which is what stops the channel being free chatter: a call
+  // only survives selection if what it buys exceeds what it costs. Hearing is
+  // deliberately unaffected by the day/night cycle — a voice carries in the
+  // dark. Off by default; while off the ear genes are undrawn, unmutated and
+  // unread, so default worlds are bit-for-bit unchanged.
+  signalling: false,
+  // Kept under the spatial grid's cell size (visionRadius * 0.75) so the
+  // existing 3x3 neighbour query already covers everything in earshot.
+  signalRadius: 120, // how far a voice carries, in pixels
+  signalCost: 0.022, // energy per tick per unit of |signal| — honesty's price
+
   // --- Body ---
   bodyRadiusMin: 3.5,
   bodyRadiusMax: 8.0,
