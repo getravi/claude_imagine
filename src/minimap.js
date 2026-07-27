@@ -6,6 +6,12 @@
 // that feature — the classic whole-pond view, shrunk into a corner, with a
 // bright rectangle marking where the lens is pointed. Click it to go there.
 //
+// v1.23 then gave the world a landscape and drew it only in the pond, which put
+// the same hole back one level down: you could see the ridge you were in and
+// not where the next basin was. So the ground is drawn here too, quantised into
+// bands — the little map has to agree with the big one about the shape of the
+// world, or it is worse than no map.
+//
 // Like the camera, everything here is read-only with respect to the simulation
 // and draws no random numbers, so where you happen to be looking still cannot
 // change what happens. And like the camera it has an invariant worth naming:
@@ -17,6 +23,28 @@ import { wrap } from "./vec.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
 export const MINIMAP_WIDTH = 180;
+
+/**
+ * Roughness bands the ground is quantised into here. The same count `render.js`
+ * draws contours at, so the two views agree about where a ridge begins: a
+ * minimap that disagreed with the pond about the shape of the landscape would
+ * be worse than one that drew no landscape at all.
+ */
+export const TERRAIN_BANDS = 8;
+
+/**
+ * Target cell size in minimap pixels. Two keeps a band edge looking like a
+ * contour rather than a staircase at a fifth of the pond's scale; the merging
+ * below is what makes sampling that finely affordable.
+ */
+const TERRAIN_CELL = 2;
+
+// The landscape is static for the life of a `TerrainField`, so the band
+// rectangles are built once and reused. Keying the cache on the field itself —
+// rather than on, say, the seed — is what makes the stale case impossible:
+// toggling terrain off drops the field, toggling it back on builds a new one,
+// and a new object cannot find an old landscape's rectangles.
+const bandCache = new WeakMap();
 
 /** Sizing for a minimap of `width` px that keeps the world's aspect ratio exactly. */
 export function minimapLayout(config, width = MINIMAP_WIDTH) {
@@ -73,6 +101,93 @@ function spans(start, len, size) {
 }
 
 /**
+ * The ground, as rectangles the minimap can draw: the roughness field sampled
+ * onto a grid of cells, quantised into `TERRAIN_BANDS` levels, and merged into
+ * the fewest rectangles that cover the map exactly — runs of equal band along
+ * each row, then a row folded into the one above it wherever they agree.
+ *
+ * The quantising is what makes 180 pixels of gradient read as *terrain*: a
+ * smooth ramp at this size is indistinguishable from the several other glows in
+ * the corner, whereas a step between one band and the next is a contour line.
+ * The merging is what makes it affordable — a default landscape comes out at
+ * about a fifth of the five and a half thousand cells it is sampled from —
+ * which is why the cells can be small enough not to look like a mosaic.
+ *
+ * Returns `[]` when the world has no terrain, so the call site needs no branch
+ * and a flat world draws exactly what it has always drawn.
+ *
+ * @param {import('./terrain.js').TerrainField|null|undefined} terrain
+ * @param {{width:number, height:number}} layout from `minimapLayout`
+ * @param {object} config
+ * @returns {Array<{x:number,y:number,w:number,h:number,band:number}>}
+ */
+export function terrainBandRects(terrain, layout, config) {
+  if (!terrain) return [];
+  const cached = bandCache.get(terrain);
+  if (cached && cached.width === layout.width) return cached.rects;
+
+  const cols = Math.max(1, Math.round(layout.width / TERRAIN_CELL));
+  const rows = Math.max(1, Math.round(layout.height / TERRAIN_CELL));
+  const cw = layout.width / cols;
+  const ch = layout.height / rows;
+  const rects = [];
+  let prev = []; // the row above, as the rectangles it ended up in
+  for (let j = 0; j < rows; j++) {
+    const wy = ((j + 0.5) / rows) * config.height;
+    const row = [];
+    let band = -1; // the band of the run being extended; -1 = no run open
+    let start = 0; // and the column it started at
+    // One column past the end closes the last run without repeating its body.
+    for (let i = 0; i <= cols; i++) {
+      const here = i < cols ? bandAt(terrain, ((i + 0.5) / cols) * config.width, wy) : -1;
+      if (here === band) continue;
+      if (band >= 0) row.push(close(rects, prev, start * cw, j * ch, (i - start) * cw, ch, band));
+      band = here;
+      start = i;
+    }
+    prev = row;
+  }
+  bandCache.set(terrain, { width: layout.width, rects });
+  return rects;
+}
+
+// Emit one run, or grow the identical run directly above it downward instead.
+// The coordinates are computed the same way in every row, so the equality test
+// is exact rather than approximate — no epsilon, and no rectangle that is a
+// hair's breadth wider than the one it claims to continue.
+function close(rects, prev, x, y, w, h, band) {
+  for (const p of prev) {
+    if (p.x === x && p.w === w && p.band === band) {
+      p.h += h;
+      return p;
+    }
+  }
+  const r = { x, y, w, h, band };
+  rects.push(r);
+  return r;
+}
+
+/** Which band a point's roughness falls in. The top of the range is inclusive. */
+function bandAt(terrain, x, y) {
+  return Math.min(TERRAIN_BANDS - 1, Math.floor(terrain.at(x, y) * TERRAIN_BANDS));
+}
+
+/**
+ * The fill for a band: the same basin-to-ridge ramp the pond is drawn over,
+ * carried at higher contrast because there is a fifth as much of it here and
+ * nothing else in the corner to compare it against. Still quiet enough that a
+ * pellet or a predator is the brightest thing on the map.
+ * @param {number} band
+ */
+export function terrainBandFill(band) {
+  const t = band / (TERRAIN_BANDS - 1);
+  const r = Math.round(24 + 84 * t);
+  const g = Math.round(42 + 76 * t);
+  const b = Math.round(54 + 84 * t);
+  return `rgba(${r}, ${g}, ${b}, ${(0.22 + 0.4 * t).toFixed(3)})`;
+}
+
+/**
  * Draw the pond into a minimap context, which is expected to be scaled so that
  * one unit is one CSS pixel of the minimap. Returns the layout it drew at.
  *
@@ -88,6 +203,13 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
 
   ctx.fillStyle = "rgb(7, 12, 19)";
   ctx.fillRect(0, 0, W, H);
+
+  // The ground first, under everything, in the same order the pond draws it.
+  // Empty on a flat world, so nothing below here changes for one.
+  for (const r of terrainBandRects(world.terrain, layout, config)) {
+    ctx.fillStyle = terrainBandFill(r.band);
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+  }
 
   // Biomes, so fertile ground is recognisable at this size even when the crop
   // sitting on it has been eaten.

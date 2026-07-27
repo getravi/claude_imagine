@@ -56,7 +56,7 @@ The dependency arrows point from a module to what it imports.
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
-| `minimap.js` | The whole pond in miniature, with the viewport drawn on it (read-only). | canvas |
+| `minimap.js` | The whole pond in miniature — ground, life and the viewport (read-only). | canvas |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
@@ -317,6 +317,16 @@ bounds before they are scaled, and a viewport that straddles a seam is returned
 by `viewportRects()` as the two (or four) pieces a flat rectangle can actually
 draw. Its invariant is the camera's, restated: at zoom 1 the viewport is the
 entire world in one piece, which is exactly why the minimap hides itself there.
+
+The minimap also draws the terrain, when a world has any. `terrainBandRects()`
+samples the roughness field onto a grid of 2px cells, quantises it into the same
+eight bands `render.js` draws contours at, and merges equal cells into as few
+rectangles as will cover the map exactly — sideways along each row, then
+downward wherever a row repeats the one above it. Quantising is what makes a
+fifth-scale landscape read as terrain rather than as one more glow; merging is
+what makes sampling it that finely cheap enough to redraw every frame. The
+rectangles are cached against the `TerrainField` object itself, so a world that
+drops its landscape cannot be shown the one it used to have.
 
 ## Persistence
 

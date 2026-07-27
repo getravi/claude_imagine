@@ -4,6 +4,48 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.24.0] — 2026-07-27
+
+The minimap learns about the ground. v1.23 gave this world a landscape and drew
+it only in the pond, which is the same hole the camera opened in v1.17, one
+feature further down: you could see the ridge you were standing in and nothing
+told you where the next basin was.
+
+### Added
+
+- **Terrain on the minimap** (`src/minimap.js`). `terrainBandRects()` samples
+  the roughness field onto a grid of 2px cells, quantises it into the same eight
+  bands `render.js` contours at, and returns the fewest rectangles that cover
+  the map exactly — runs of equal band merged along each row, then a row folded
+  into the one above wherever the two agree. A default landscape comes out at
+  about a fifth of the 5,580 cells it is sampled from, which is what makes cells
+  small enough to look like contours rather than a mosaic affordable to redraw
+  every frame. Drawn first, under the biomes, exactly as the pond draws it.
+- **Bands rather than a gradient**, deliberately. At a fifth of scale a smooth
+  ramp is indistinguishable from the several other glows already in that corner;
+  a step between one band and the next is a contour line. The band count is
+  shared with the main view so the two can't disagree about where a ridge
+  begins — a test samples the field under every rectangle and asserts the map
+  never invents ground the simulation doesn't have.
+
+### Notes
+
+- The rectangles are cached against the `TerrainField` **object**, not the seed.
+  Toggling terrain off drops the field and toggling it back on builds a new one,
+  so a new object cannot find an old landscape's rectangles — the stale-readout
+  bug this project keeps rediscovering (v1.22's chart buffer, v1.23's Ground
+  stat) is unrepresentable here rather than merely fixed. There is a test that
+  switches seeds and insists the map switches with them.
+- Nothing here is new machinery for the simulation: the minimap remains
+  read-only and draws no random numbers, and a world with terrain off produces
+  byte-for-byte the draw calls it always has (`terrainBandRects` returns `[]`,
+  so the call site needs no branch). The existing count assertion over a flat
+  world's draw ops is unchanged and still exact.
+- 234 tests, all green (8 new). Checked by hand in headless Chromium against the
+  real `app/index.html`: the ground appears with the toggle, disappears with it,
+  and comes back on a re-toggle; no console errors; the basins in the corner are
+  the basins under the pond.
+
 ## [1.23.0] — 2026-07-27
 
 Terrain: space was this world's last unconditional gift — for twenty-two

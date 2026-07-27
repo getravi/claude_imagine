@@ -1,21 +1,26 @@
 // minimap.test.js — the whole-pond view in a corner. Nothing here touches the
-// simulation, but three things are worth locking down: that the viewport at
+// simulation, but four things are worth locking down: that the viewport at
 // zoom 1 is the entire world exactly (the same identity the camera protects),
 // that a view straddling the torus seam comes back as pieces the flat minimap
-// can actually draw, and that drawing draws nothing random.
+// can actually draw, that the ground drawn here is the ground the pond is drawn
+// over, and that drawing draws nothing random.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   MINIMAP_WIDTH,
+  TERRAIN_BANDS,
   minimapLayout,
   worldToMinimap,
   minimapToWorld,
   viewportRects,
+  terrainBandRects,
+  terrainBandFill,
   drawMinimap,
 } from "../src/minimap.js";
 import { Camera } from "../src/camera.js";
 import { World } from "../src/world.js";
+import { TerrainField } from "../src/terrain.js";
 import { makeConfig } from "../src/config.js";
 
 const cfg = { width: 900, height: 620 };
@@ -165,5 +170,172 @@ test("drawing the minimap cannot change the world", () => {
   for (let i = 0; i < watched.creatures.length; i++) {
     assert.equal(watched.creatures[i].x, ignored.creatures[i].x);
     assert.equal(watched.creatures[i].energy, ignored.creatures[i].energy);
+  }
+});
+
+// ---- The ground, in the corner ----
+// v1.23 gave the world a landscape and drew it only in the pond, so the minimap
+// answered "where am I?" and not "what is over there?". These lock down that the
+// little map agrees with the big one, tiles without gaps, and — the failure mode
+// a cache invites — can never show the landscape of a world that is already gone.
+
+const terrainCfg = makeConfig({ seed: 1, terrain: true });
+
+test("the ground covers the minimap exactly once, with no gap and no overlap", () => {
+  const layout = minimapLayout(terrainCfg);
+  const rects = terrainBandRects(new TerrainField(terrainCfg), layout, terrainCfg);
+  assert.ok(rects.length > 0);
+
+  const area = rects.reduce((sum, r) => sum + r.w * r.h, 0);
+  near(area, layout.width * layout.height, 1e-6);
+
+  // Area alone would let a gap pay for an overlap, so walk the cells: one
+  // hairline of background showing through reads as a contour that isn't there,
+  // and a double-covered cell is a band painted over its neighbour.
+  const cols = Math.round(layout.width / 2);
+  const rows = Math.round(layout.height / 2);
+  const cw = layout.width / cols;
+  const ch = layout.height / rows;
+  const cover = new Uint8Array(cols * rows);
+  for (const r of rects) {
+    const i0 = Math.round(r.x / cw);
+    const i1 = Math.round((r.x + r.w) / cw);
+    const j0 = Math.round(r.y / ch);
+    const j1 = Math.round((r.y + r.h) / ch);
+    assert.ok(i1 > i0 && j1 > j0, "a rectangle covers at least one cell");
+    for (let j = j0; j < j1; j++) {
+      for (let i = i0; i < i1; i++) {
+        assert.equal(cover[j * cols + i]++, 0, `cell ${i},${j} covered twice`);
+      }
+    }
+  }
+  assert.ok(cover.every((n) => n === 1), "every cell of the map has ground on it");
+});
+
+test("a band on the minimap is the band the pond would draw there", () => {
+  const layout = minimapLayout(terrainCfg);
+  const terrain = new TerrainField(terrainCfg);
+  const rects = terrainBandRects(terrain, layout, terrainCfg);
+  const seen = new Set();
+  for (const r of rects) {
+    assert.ok(r.band >= 0 && r.band < TERRAIN_BANDS, `band ${r.band} is in range`);
+    seen.add(r.band);
+    // Sample the world under the middle of the rectangle and quantise it the
+    // same way: the map must not invent a ridge the simulation doesn't have.
+    const wx = ((r.x + r.w / 2) / layout.width) * terrainCfg.width;
+    const wy = ((r.y + r.h / 2) / layout.height) * terrainCfg.height;
+    const expect = Math.min(TERRAIN_BANDS - 1, Math.floor(terrain.at(wx, wy) * TERRAIN_BANDS));
+    assert.equal(r.band, expect, `the band at ${wx},${wy}`);
+  }
+  // A landscape normalised to [0, 1] should show most of its range at this size;
+  // a map that came out all one colour would be technically correct and useless.
+  assert.ok(seen.size >= TERRAIN_BANDS - 1, `${seen.size} of ${TERRAIN_BANDS} bands visible`);
+});
+
+test("equal ground is merged as far as it goes, sideways and downward", () => {
+  const layout = minimapLayout(terrainCfg);
+  const rects = terrainBandRects(new TerrainField(terrainCfg), layout, terrainCfg);
+  const cols = Math.round(layout.width / 2);
+  const rows = Math.round(layout.height / 2);
+  const cells = cols * rows;
+  assert.ok(rects.length < cells / 3, `${rects.length} rectangles for ${cells} cells`);
+  assert.ok(
+    rects.some((r) => r.h > layout.height / rows + 1e-9),
+    "a flat stretch spanning two rows is drawn once, not twice",
+  );
+
+  // Maximal sideways: two rectangles of the same band, sharing an edge and a
+  // span, are a merge left on the table — and a seam drawn inside flat ground.
+  for (const a of rects) {
+    for (const b of rects) {
+      if (a === b) continue;
+      const sameRun = a.y === b.y && a.h === b.h && a.band === b.band;
+      assert.ok(!(sameRun && Math.abs(a.x + a.w - b.x) < 1e-9), "adjacent runs differ");
+    }
+  }
+});
+
+test("a world without terrain has no ground to draw", () => {
+  const layout = minimapLayout(cfg);
+  assert.deepEqual(terrainBandRects(null, layout, cfg), []);
+  assert.deepEqual(terrainBandRects(undefined, layout, cfg), []);
+});
+
+test("the cache can never hand back a landscape that has been dropped", () => {
+  const layout = minimapLayout(terrainCfg);
+  const a = new TerrainField(terrainCfg);
+  assert.equal(terrainBandRects(a, layout, terrainCfg), terrainBandRects(a, layout, terrainCfg));
+
+  // Toggling terrain off and on builds a *new* field for the same seed. It must
+  // come back with the same landscape...
+  const again = new TerrainField(terrainCfg);
+  assert.deepEqual(terrainBandRects(again, layout, terrainCfg), terrainBandRects(a, layout, terrainCfg));
+  // ...and a different seed must not inherit the old one. A stale readout that
+  // looks live is this project's most-repeated bug; a cache is where it lives.
+  const other = new TerrainField(makeConfig({ seed: 77, terrain: true }));
+  assert.notDeepEqual(
+    terrainBandRects(other, layout, terrainCfg),
+    terrainBandRects(a, layout, terrainCfg),
+  );
+});
+
+test("band fills ramp from basin to ridge without a NaN in them", () => {
+  let last = -1;
+  for (let b = 0; b < TERRAIN_BANDS; b++) {
+    const fill = terrainBandFill(b);
+    const parts = fill.match(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/);
+    assert.ok(parts, `${fill} is a colour`);
+    const [r, g, blue, alpha] = parts.slice(1).map(Number);
+    for (const v of [r, g, blue, alpha]) assert.ok(Number.isFinite(v));
+    assert.ok(r <= 255 && g <= 255 && blue <= 255 && alpha <= 1, "in range");
+    assert.ok(r > last, "brighter the rougher the ground");
+    last = r;
+  }
+});
+
+test("the minimap draws the ground under the pond, not over it", () => {
+  const world = new World(makeConfig({ seed: 8, terrain: true }));
+  for (let i = 0; i < 200; i++) world.step();
+  const cam = new Camera(world.config);
+  cam.zoom = 4;
+
+  const ctx = stubCtx();
+  const layout = drawMinimap(ctx, world, cam, {});
+  const ground = terrainBandRects(world.terrain, layout, world.config);
+  assert.ok(ground.length > 0);
+
+  const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
+  assert.equal(rects, 1 + ground.length + world.food.items.length + world.creatures.length);
+  for (const op of ctx.ops) {
+    for (let i = 1; i < op.length; i++) {
+      assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);
+    }
+  }
+  // The last band is painted before the first biome — the ground is a backdrop,
+  // and a backdrop drawn late is a blindfold.
+  const lastGround = 1 + ground.length - 1;
+  const firstBiome = ctx.ops.findIndex((o) => o[0] === "arc");
+  assert.ok(firstBiome > lastGround, "the ground goes down first");
+});
+
+test("drawing the ground cannot change a world that has one", () => {
+  const watched = new World(makeConfig({ seed: 12, terrain: true }));
+  const ignored = new World(makeConfig({ seed: 12, terrain: true }));
+  const cam = new Camera(watched.config);
+  cam.zoom = 5;
+  for (let i = 0; i < 400; i++) {
+    watched.step();
+    ignored.step();
+    cam.x = (cam.x + 7) % watched.config.width;
+    drawMinimap(stubCtx(), watched, cam, { selected: watched.creatures[0] });
+  }
+  assert.equal(watched.creatures.length, ignored.creatures.length);
+  for (let i = 0; i < watched.creatures.length; i++) {
+    assert.equal(watched.creatures[i].x, ignored.creatures[i].x);
+    assert.equal(watched.creatures[i].energy, ignored.creatures[i].energy);
+  }
+  assert.equal(watched.food.items.length, ignored.food.items.length);
+  for (let i = 0; i < watched.food.items.length; i++) {
+    assert.equal(watched.food.items[i].x, ignored.food.items[i].x);
   }
 });

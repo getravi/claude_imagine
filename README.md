@@ -108,7 +108,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
 | **Zoom & pan** | Scroll to zoom about the cursor (up to 8×), drag to move around, <kbd>0</kbd> for the whole pond again. The world is a torus, so the view can roam forever without meeting an edge. |
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
-| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: biomes, food, creatures (predators in warm orange) and a bright rectangle showing where you are looking. Click or drag it to move the view. |
+| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, biomes, food, creatures (predators in warm orange) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
 | **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
 | **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
 
