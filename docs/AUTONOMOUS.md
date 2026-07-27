@@ -78,10 +78,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap
   that finishes it in v1.19.0.)
 - **Interaction & accessibility:** more keyboard control (v1.9.1 added the basics),
-  touch/mobile, colour-blind-safe palettes, ARIA labels. (Reduced motion is
-  handled.) Note that the pond's headline distinction — predator vs prey — is
-  carried by a red outline over an inherited hue, which is worth checking under a
-  deuteranope simulation before claiming the palette is safe.
+  touch/mobile, ARIA labels. (Reduced motion is handled.) The colour audit
+  shipped in v1.25 — `src/palette.js` has a dichromat simulation and a ΔE, and
+  every deliberate colour distinction now has to clear `MIN_DELTA_E` in a test.
+  **Use it on anything new that says something with colour.** Still open: the
+  DOM-side colours it didn't reach (the species dots, the Muller plot bands, the
+  inspector swatch, the weight matrices), touch/mobile, and the fact that
+  lineage hue is measurably unreadable for a dichromat with no colour-side fix
+  available — the answer there, if there is one, is a non-colour lineage cue.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21; the causes are not yet in the
@@ -261,5 +265,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   *object* the feature builds, not on the seed or the config: toggling makes a
   new object, and a new object cannot find an old one's entry. Unrepresentable
   beats guarded.
+- **An accessibility audit is a general legibility audit that happens to have a
+  threshold.** v1.25 went looking for a colour-blindness bug in the predator
+  mark and found that the mark was near-invisible to *everyone* — worst-case
+  ΔE 2.8, the just-noticeable difference — because a core drawn additively over
+  a body that pales as it feeds clamps to the white the body was already heading
+  for. I had reasoned about the colour I *picked* and never about the colour it
+  *becomes* after compositing, which is the only one anybody sees. When checking
+  whether a mark reads, measure the composited result against its actual
+  background, across the whole range of states the background can take.
+- **Carry a distinction in luminance when you can, and in two tones when you
+  must.** Luminance is the one channel no colour vision deficiency touches, and
+  a mark holding both a very light and a very dark tone cannot be swallowed by
+  any background, because no background is close to both. Corollary: never
+  express *degree* by fading a mark — that spends exactly the contrast the mark
+  exists for. Size costs nothing and survives every vision model.
+- **Pin the failure, not only the fix.** `test/palette.test.js` asserts the
+  v1.24 predator core scores under ΔE 5 and the old minimap dot collides
+  outright, alongside the assertions about the new marks. A suite that only
+  knows the new numbers stays green while someone restores the old colours. A
+  regression test that doesn't know what the bug looked like can't recognise it
+  coming back.
+- **Some limitations are structural, and saying so is the deliverable.** The
+  blue↔yellow hue remap for lineage colour was built, measured, and was *worse*
+  than doing nothing. A dichromat's colour space is two-dimensional, this
+  project already spends luminance on energy, and one axis does not hold twelve
+  distinguishable values — no remapping creates an axis. Before designing a fix,
+  check whether the thing you need has anywhere to live. (Same shape as the
+  v1.23 terrain lesson: a pressure needs somewhere to accumulate.)
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

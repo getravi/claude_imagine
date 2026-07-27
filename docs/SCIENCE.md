@@ -701,6 +701,142 @@ respond within a lifetime), or restricted movement (so lineages stay put long
 enough for local selection to bite), or a spatially varying *resource* — and the
 third is by far the cheapest to add.
 
+## Reading the pond: a colour audit
+
+Every result on this page reaches a reader through pixels, and for twenty-four
+versions nobody checked whether the pixels worked. Vivarium says two important
+things with colour — *that one hunts* (a warm core inside a chevron) and *that
+one is kin to this one* (an inherited hue) — and both of them ride on the
+red–green axis, which is the axis roughly one man in twelve cannot see.
+
+The audit is in [`src/palette.js`](../src/palette.js). It simulates dichromacy
+with the Viénot, Brettel & Mollon (1999) linear model — take linear RGB into
+LMS cone space, replace the missing cone's response with the best linear
+prediction from the two that remain, come back — and measures how far apart two
+colours are with a CIE76 ΔE in L\*a\*b\*. As calibration, ΔE ≈ 2.3 is the
+just-noticeable difference and ΔE ≈ 10 is "a different colour at a glance". The
+model is an idealisation: a real dichromat is not a matrix, and anomalous
+trichromacy — the commoner condition — sits between it and normal vision. Read
+it as a *lower bound on confusion*. Colours it merges are genuinely hard for
+somebody.
+
+### The predator mark was invisible, and not only to dichromats
+
+The result that started this. Sweeping every creature the pond can contain —
+all 360 hues, seven energy levels, five signalling states, four vision models —
+the worst-case contrast between the predator's core and its own body was:
+
+| | worst-case ΔE |
+|---|---|
+| v1.24 warm additive core | **2.8** |
+| v1.25 two-tone mark | **40.7** |
+
+2.8 is the just-noticeable difference. The mark that says *this one hunts* — the
+headline distinction of the whole project, the thing the README opens with — was
+at the edge of perceptibility in its worst case.
+
+The cause is not colour blindness. Body lightness rises with energy (a starving
+creature visibly dims), so a well-fed creature is a pale pastel, and the core
+was drawn additively — `globalCompositeOperation = "lighter"`. Adding a bright
+orange to a pale pastel clamps at white, which is where the body was already
+heading. **The best-fed predator in the pond, the one most worth spotting, wore
+the faintest mark.** Colour vision deficiency made it worse (the worst cases sit
+under tritanopia and deuteranopia) but a trichromat was being shortchanged too.
+The audit was aimed at one problem and found a larger one behind it.
+
+The fix is the trick used for subtitles burned into film: a mark carrying *both*
+a very light and a very dark tone cannot be swallowed by a background, because
+no background is close to both. An opaque warm disc with a near-black rim.
+Whichever half the body resembles, the other half stands out — and it stands out
+in **luminance**, the one channel no colour vision deficiency touches. The hue
+stays (amber, blood-dark) as flavour for the people who can see it, not as the
+carrier. How carnivorous a creature is now moves the mark's *size* instead of
+its opacity: fading a mark to express degree spends exactly the contrast the
+mark exists for, while geometry is free and survives every vision model.
+
+### The minimap was worse
+
+The same sweep against the minimap, where a creature is a square a few pixels
+across and predators were one warm orange dot among dots of every hue:
+
+| | worst-case ΔE |
+|---|---|
+| v1.24 orange dot | **0.01** |
+| v1.25 two-tone badge | **57.7** |
+
+ΔE 0.01 is not "hard to tell apart". To a tritanope, a predator and a prey
+creature of hue 26° were *the same colour to four decimal places*. The minimap
+is the one view where a whole-pond pattern is visible at a glance, and the
+pattern most worth seeing there was the one it hid. It now draws the same
+two-tone badge the pond does, built from squares.
+
+Both numbers are pinned by tests, in both directions:
+[`test/palette.test.js`](../test/palette.test.js) asserts the new marks clear
+ΔE 25 across the whole sweep **and** that the old colours do not. A test that
+only checked the new numbers would let someone reintroduce the old ones while
+the suite stayed green.
+
+### The finding with no fix: lineage hue
+
+Colour is also how this world says *these two are relatives* — on the canvas, on
+the minimap, in the Muller plot, on every species dot. It spends the entire hue
+wheel doing it. Taking twelve evenly spaced hues and measuring the closest pair:
+
+| vision | min pairwise ΔE | closest pair |
+|---|---|---|
+| normal | 15.6 | 240° / 270° |
+| protanopia | 1.9 | 90° / 120° |
+| deuteranopia | 1.6 | 210° / 300° |
+| tritanopia | 0.0 | 120° / 150° |
+
+For a dichromat, lineage colour carries almost no information at all — two of
+twelve lineages are outright identical.
+
+The obvious fix does not work, and it is worth recording why. Remapping the
+wheel onto the blue↔yellow axis a dichromat retains was implemented and
+measured; it made things *worse* (min pairwise ΔE 1.3 under deuteranopia, 0.0
+under tritanopia) while costing normal vision more than half its separation
+(15.6 → 6.9). The reason is not a bad choice of arc. A dichromat's colour space
+is two-dimensional — luminance and one chromatic axis — and this project has
+already spent luminance on energy, so one axis is left. **One axis does not hold
+twelve distinguishable values, and no remapping creates an axis.** The honest
+ceiling is four or five lineages, which is fewer than the pond routinely has.
+
+So this is a limitation, not a bug, and it is stated here rather than papered
+over. What rescues it in practice is that lineage identity is available without
+colour: click a creature and the inspector names its species, the Tree of Life
+lists them, and highlighting a lineage dims every other creature — a *luminance*
+distinction, which everyone can see. Colour is the convenient index here, not
+the only one. The predator mark had no such fallback, which is why it was the
+one worth fixing.
+
+### The one that turned out fine
+
+Corpses (dim maroon) sit under food (green motes) — textbook red and green, and
+the pair most likely to be a second bug. Measured, they are ΔE 39 apart under
+deuteranopia and 55 under protanopia: comfortably clear, because they differ in
+lightness as well as hue. No change was made. An audit that only reports
+problems is not an audit.
+
+### Running it yourself
+
+Ten lines, no dependencies, reproducing the headline number — the v1.24 core
+against a well-fed creature's body, in the four vision models:
+
+```js
+import { hslToRgb, addOver, deltaE, VISION_MODELS } from "./src/palette.js";
+
+const body = hslToRgb(71, 85, 90);            // hue 71, full energy, signalling
+const marked = addOver(body, hslToRgb(14, 100, 60), 0.72); // the old warm core
+for (const v of VISION_MODELS) {
+  console.log(v.padEnd(13), deltaE(marked, body, v).toFixed(1));
+}
+// normal 17.1 | protanopia 16.4 | deuteranopia 15.6 | tritanopia 2.8
+```
+
+Swap in the v1.25 mark's two tones (`predatorMarkTones`, scored with
+`markContrast`) and the same body scores 85 or better in all four.
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just

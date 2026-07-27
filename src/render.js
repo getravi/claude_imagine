@@ -7,6 +7,7 @@
 
 import { wrapDelta } from "./vec.js";
 import { Camera } from "./camera.js";
+import { predatorMark } from "./palette.js";
 
 export class Renderer {
   /**
@@ -290,14 +291,22 @@ export class Renderer {
       ctx.lineWidth = 1;
       ctx.strokeStyle = `hsla(8, 90%, 60%, ${0.35 + 0.5 * c.carnivory})`;
       ctx.stroke();
-      // ...plus a bright warm core, so predators read at a glance even amid the
-      // bloom. This is the clearest "this one hunts" signal in the pond.
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = `hsla(14, 100%, 60%, ${0.5 + 0.4 * c.carnivory})`;
+      // ...plus the mark that actually carries "this one hunts": an opaque warm
+      // disc with a dark rim. Both tones are opaque and neither is additive,
+      // because the bright core this replaced was drawn with `lighter` over a
+      // body whose lightness rises with energy — so the best-fed predator in the
+      // pond, the one most worth spotting, wore the faintest mark. palette.js
+      // has the measurement and the reasoning.
+      const mark = predatorMark(c.carnivory);
+      ctx.fillStyle = mark.disc;
       ctx.beginPath();
-      ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+      ctx.arc(0, 0, r * mark.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalCompositeOperation = "source-over";
+      // The rim is measured in screen pixels, like every other overlay line
+      // here, so it never thins to nothing at 8× or swallows the disc at 1×.
+      ctx.strokeStyle = mark.rim;
+      ctx.lineWidth = 1 / this.camera.zoom;
+      ctx.stroke();
     }
 
     // Contagion: a sick creature wears a pale sulphur halo that throbs like a

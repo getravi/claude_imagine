@@ -20,6 +20,7 @@
 // default view rather than drawing a frame around everything.
 
 import { wrap } from "./vec.js";
+import { minimapPredatorMark } from "./palette.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
 export const MINIMAP_WIDTH = 180;
@@ -230,14 +231,25 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
   }
 
   const threshold = config.carnivoreThreshold;
+  const mark = minimapPredatorMark();
   for (const c of world.creatures) {
     const p = worldToMinimap(c.x, c.y, layout, config);
-    // Predators are the thing worth spotting from across the pond, so they get
-    // the warm colour and the extra pixel; everyone else keeps their lineage hue.
-    const predator = c.carnivory >= threshold;
-    const d = predator ? 3 : 2;
-    ctx.fillStyle = predator ? "rgba(255, 122, 82, 0.95)" : `hsla(${c.hue}, 65%, 70%, 0.85)`;
-    ctx.fillRect(p.x - d / 2, p.y - d / 2, d, d);
+    // Predators are the thing worth spotting from across the pond. They used to
+    // get one warm square, which to a tritanope was the same colour as a prey
+    // creature of hue 26 — on the one view where a whole-pond pattern is visible
+    // at a glance, the pattern most worth seeing was invisible. Now they get the
+    // same two-tone badge the pond draws: a dark square with a bright one inside
+    // it, so whichever tone a neighbour's lineage hue resembles, the other one
+    // still reads. Everyone else keeps their hue and their single pixel.
+    if (c.carnivory >= threshold) {
+      ctx.fillStyle = mark.rim;
+      ctx.fillRect(p.x - mark.rimSize / 2, p.y - mark.rimSize / 2, mark.rimSize, mark.rimSize);
+      ctx.fillStyle = mark.core;
+      ctx.fillRect(p.x - mark.coreSize / 2, p.y - mark.coreSize / 2, mark.coreSize, mark.coreSize);
+    } else {
+      ctx.fillStyle = `hsla(${c.hue}, 65%, 70%, 0.85)`;
+      ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
   }
 
   // The inspected creature, so a click in the pond tells you where in the pond.

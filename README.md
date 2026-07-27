@@ -47,9 +47,12 @@ pond bare — each a hand-picked doorway into what the simulation can do.
 - **Each glowing chevron is a creature.** Its colour is an inherited trait, so
   a lineage shares a colour family — you can watch one lineage's colour take
   over the pond as it out-competes the others.
-- **Warm, dagger-shaped creatures with a glowing core are carnivores.** They
-  hunt smaller creatures instead of grazing; they flash when they land a bite.
-  Cool-coloured chevrons are herbivores. This is the diet gene, and it *evolves*.
+- **Dagger-shaped creatures with an amber eye are carnivores.** The eye — a
+  bright disc inside a dark rim, growing with how carnivorous they are — is the
+  clearest mark in the pond, and it is a *luminance* mark, so it reads with any
+  colour vision (see the colour audit in [SCIENCE.md](docs/SCIENCE.md)). They
+  hunt smaller creatures instead of grazing, and flash when they land a bite.
+  Plain chevrons are herbivores. This is the diet gene, and it *evolves*.
 - **The green motes are food.** Grazing restores energy; moving and merely
   existing cost energy. Run out and you die. Food concentrates in **biomes**
   (faint fertile glows), so creatures cluster there.
@@ -108,7 +111,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
 | **Zoom & pan** | Scroll to zoom about the cursor (up to 8×), drag to move around, <kbd>0</kbd> for the whole pond again. The world is a torus, so the view can roam forever without meeting an edge. |
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
-| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, biomes, food, creatures (predators in warm orange) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
+| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
 | **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
 | **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
 

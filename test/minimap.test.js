@@ -18,6 +18,7 @@ import {
   terrainBandFill,
   drawMinimap,
 } from "../src/minimap.js";
+import { minimapPredatorMark } from "../src/palette.js";
 import { Camera } from "../src/camera.js";
 import { World } from "../src/world.js";
 import { TerrainField } from "../src/terrain.js";
@@ -26,6 +27,10 @@ import { makeConfig } from "../src/config.js";
 const cfg = { width: 900, height: 620 };
 const near = (a, b, eps = 1e-9) =>
   assert.ok(Math.abs(a - b) < eps, `expected ${a} ≈ ${b}`);
+
+/** How many of a world's creatures the minimap draws a predator badge for. */
+const predatorCount = (w) =>
+  w.creatures.filter((c) => c.carnivory >= w.config.carnivoreThreshold).length;
 
 /** A recording 2D context: enough of the API for drawMinimap, and nothing else. */
 function stubCtx() {
@@ -149,9 +154,35 @@ test("drawing paints the pond and never emits a NaN", () => {
     }
   }
   // The background, every pellet, every creature, and the four viewport pieces.
+  // A predator is two rects rather than one — a dark badge with a bright core —
+  // so the count is stated as what it is rather than fudged with a tolerance.
   const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
-  assert.equal(rects, 1 + world.food.items.length + world.creatures.length);
+  assert.equal(rects, 1 + world.food.items.length + world.creatures.length + predatorCount(world));
   assert.equal(ctx.ops.filter((o) => o[0] === "strokeRect").length, 4 + 1);
+});
+
+test("a predator on the minimap is a badge, not a coloured dot", () => {
+  // The colour alone used to carry it, and to a tritanope a predator and a prey
+  // creature of hue 26 were the same colour. Two tones, one light and one dark,
+  // cannot both be swallowed — palette.test.js measures that; this asserts the
+  // minimap actually draws both, larger tone first.
+  const world = new World(makeConfig({ seed: 8, predation: true }));
+  for (let i = 0; i < 600; i++) world.step();
+  assert.ok(predatorCount(world) > 0, "seed 8 should have evolved some predators by now");
+
+  const ctx = stubCtx();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const mark = minimapPredatorMark();
+  const badges = ctx.ops.filter((o) => o[0] === "fillRect" && o[3] === mark.rimSize);
+  const cores = ctx.ops.filter((o) => o[0] === "fillRect" && o[3] === mark.coreSize);
+  assert.equal(badges.length, predatorCount(world));
+  // Every prey creature is a core-sized square too, so cores outnumber badges by
+  // exactly the prey population.
+  assert.equal(cores.length, world.creatures.length);
+  // The bright core goes on top of the dark rim, or the badge is just a dark dot.
+  const firstBadge = ctx.ops.findIndex((o) => o[0] === "fillRect" && o[3] === mark.rimSize);
+  assert.equal(ctx.ops[firstBadge + 1][0], "fillRect");
+  assert.equal(ctx.ops[firstBadge + 1][3], mark.coreSize);
 });
 
 test("drawing the minimap cannot change the world", () => {
@@ -305,7 +336,10 @@ test("the minimap draws the ground under the pond, not over it", () => {
   assert.ok(ground.length > 0);
 
   const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
-  assert.equal(rects, 1 + ground.length + world.food.items.length + world.creatures.length);
+  assert.equal(
+    rects,
+    1 + ground.length + world.food.items.length + world.creatures.length + predatorCount(world)
+  );
   for (const op of ctx.ops) {
     for (let i = 1; i < op.length; i++) {
       assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);

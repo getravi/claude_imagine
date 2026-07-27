@@ -4,6 +4,66 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.25.0] — 2026-07-27
+
+A colour audit, and the thing it found behind the thing it was looking for. This
+world says *that one hunts* with a warm core inside a chevron, which is a claim
+about the red–green axis, which is the axis roughly one man in twelve cannot
+see. Twenty-four versions went by without anyone measuring it.
+
+### Added
+
+- **`src/palette.js`** — the instrument. A dichromat simulation (Viénot,
+  Brettel & Mollon 1999: into LMS cone space, substitute the missing cone's
+  response, come back) for protanopia, deuteranopia and tritanopia, plus a CIE76
+  ΔE in L\*a\*b\*, so "can these two be told apart?" is a number rather than an
+  opinion. The project's colour decisions live here too, as pure functions, so
+  the tests hold the *rendered* palette to the measurement instead of to a copy
+  of it. Read-only, zero random numbers, no effect on any simulation.
+
+### Changed
+
+- **The predator mark** (`src/render.js`). Sweeping every creature a pond can
+  contain — 360 hues × 7 energy levels × 5 signalling states × 4 vision models —
+  the old warm core scored a worst-case **ΔE 2.8** against its own body. That is
+  the just-noticeable difference, and the cause was not colour blindness: body
+  lightness rises with energy, the core was drawn additively, and adding orange
+  to a pale pastel clamps to the white it was already heading for. The best-fed
+  predator in the pond wore the faintest mark. It is now an opaque amber disc
+  with a near-black rim — the subtitle trick, where a mark carrying both a very
+  light and a very dark tone cannot be swallowed, because no background is close
+  to both. Worst case **ΔE 40.7**, and the distinction is carried by luminance,
+  the one channel no deficiency touches. Carnivory moves the mark's *size* now
+  rather than its opacity: fading a mark to express degree spends exactly the
+  contrast the mark exists for.
+- **The minimap's predator badge** (`src/minimap.js`), which was worse. One warm
+  orange square among squares of every lineage hue scored a worst case of **ΔE
+  0.01** — to a tritanope a predator and a prey creature of hue 26° were the same
+  colour to four decimal places, on the one view where a whole-pond pattern is
+  visible at a glance. Now the same two-tone badge, built from squares: **ΔE
+  57.7**.
+
+### Notes
+
+- **Two findings ship without a fix, which is the point of writing them down.**
+  Lineage hue is unreadable for a dichromat (twelve evenly spaced hues have a
+  closest pair at ΔE 1.6 under deuteranopia, 0.0 under tritanopia) and remapping
+  the wheel onto the blue↔yellow axis was implemented, measured, and found to
+  make it *worse* while costing normal vision half its separation. A dichromat's
+  colour space is two-dimensional and this project already spent luminance on
+  energy, so one axis remains, and one axis does not hold twelve values. And
+  corpses versus food — the pair most likely to be a second bug — measured
+  fine (ΔE 39 under deuteranopia) and was left alone. Both are in
+  `docs/SCIENCE.md` with the numbers.
+- **The old failures are pinned by tests, not just the new successes.** A suite
+  that only asserted the new numbers would stay green while someone restored the
+  old colours, so `test/palette.test.js` asserts the v1.24 core scores under 5
+  and the v1.24 minimap dot collides outright.
+- Rendering only: no config flag, no new RNG draw, no simulation change. Every
+  determinism test is untouched and still exact. 249 tests, all green (15 new).
+  Checked by hand in headless Chromium against the real `app/index.html` at 1×
+  and 3.8× and on the minimap: predators are now the thing you notice first.
+
 ## [1.24.0] — 2026-07-27
 
 The minimap learns about the ground. v1.23 gave this world a landscape and drew
