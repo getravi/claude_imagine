@@ -4,6 +4,64 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.23.0] — 2026-07-27
+
+Terrain: space was this world's last unconditional gift — for twenty-two
+versions, being anywhere cost exactly what being anywhere else cost.
+
+### Added
+
+- **A landscape** (`src/terrain.js`, opt-in). A static roughness field over the
+  torus, derived from the seed by an integer hash and five cosines. Rough ground
+  costs more to cross (up to `terrainRoughCost` on the movement half of the
+  metabolic bill) and grows less (`terrainBarrenness`): a pellet is less likely
+  to take the rougher the ground it lands on. Nothing is blocked, and nothing can
+  perceive it — the pond ends up in its basins because that is where the living
+  can afford to be. Every component fits a whole number of wavelengths across the
+  world, so the landscape meets itself at the seam; a world that has been a torus
+  since v1.0 shouldn't grow an edge now.
+- **Contours you can read.** The landscape is baked once into an offscreen canvas
+  and blitted under everything — a quiet basin-to-ridge ramp with contour lines
+  at fixed roughness intervals, tiled across the wrap so panning off one side of
+  the world finds the ground continuing. A smooth gradient alone would have been
+  one more glow in a scene already full of them; the contours are what make it
+  read as *terrain*.
+- **A Ground stat**, `⛰️`: how much flatter the ground under the living is than
+  the landscape as a whole. It is exactly 0 without terrain, so it shows `off`
+  rather than a suspiciously steady zero — a statistic that is non-zero with its
+  mechanism disabled is not measuring the mechanism.
+- **A chronicle line** when the pond has spent 240 consecutive samples on
+  meaningfully smoother-than-average ground, and a `ter=1` permalink parameter so
+  a landscape is one shared link away.
+
+### Notes
+
+- **A negative result, and the fix it forced.** The mechanic was designed around
+  the movement cost: creatures burning more on ridges should die more on ridges,
+  and the flats should fill up. They don't. A pure movement tax at the full 2.6x
+  cost settles the population by **-0.003**, against -0.005 for the terrain-off
+  control — indistinguishable from nothing. A creature crosses this world in ~350
+  ticks and lives for 4,200, so it samples the whole map a dozen times a lifetime
+  and a spatially varying death rate averages clean away. Making the ridges
+  *barren* as well as expensive is what works, because where the food is does not
+  average away: the same worlds settle by **-0.057**. Both halves shipped, the
+  sweep behind every constant, and the general lesson — in a well-mixed world a
+  spatial cost does not produce spatial structure — are written up in
+  `docs/SCIENCE.md`. The comparison is pinned as a test so it can't quietly stop
+  being true.
+- Terrain moves the crop without shrinking it: a refused pellet looks again, up
+  to four times, and is then placed regardless. Food influx is bit-for-bit the
+  same as a flat world's — the contract the biomes have kept since v1.3.
+- Building the landscape draws **zero** random numbers: it is hashed, not sampled.
+  With terrain off there is no field at all, `terrainCostAt` returns literally
+  `1`, and the four-world fingerprint — every creature's position, energy, age,
+  heading and generation, plus every pellet — is unchanged after 2,500 ticks.
+- 226 tests, all green (25 new). The page was driven in headless Chromium against
+  the real `app/index.html`: the toggle building and dropping the landscape live,
+  the Ground stat tracking it and returning to `off` in the same frame it is
+  switched off, the `ter=1` permalink round-tripping through a reload, the blit
+  crossing the seam under zoom and pan, 60fps, and a clean console.
+
 ## [1.22.0] — 2026-07-27
 
 The whole run: for twenty-one versions this world could remember the last two

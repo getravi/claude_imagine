@@ -51,6 +51,7 @@ function parseHash() {
   if (p.has("dis")) o.disease = p.get("dis") === "1";
   if (p.has("regrow")) o.foodRegrowth = p.get("regrow") === "1";
   if (p.has("sig")) o.signalling = p.get("sig") === "1";
+  if (p.has("ter")) o.terrain = p.get("ter") === "1";
   return o;
 }
 
@@ -76,6 +77,7 @@ function syncHash() {
   p.set("dis", config.disease ? "1" : "0");
   p.set("regrow", config.foodRegrowth ? "1" : "0");
   p.set("sig", config.signalling ? "1" : "0");
+  p.set("ter", config.terrain ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -203,6 +205,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-disease", config.disease);
   setToggle("toggle-regrowth", config.foodRegrowth);
   setToggle("toggle-signalling", config.signalling);
+  setToggle("toggle-terrain", config.terrain);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -434,6 +437,14 @@ function updateHUD() {
   // Traffic on the signalling channel: how strong a call the average creature is
   // hearing right now. "off" where nobody can hear at all.
   $("stat-heard").textContent = config.signalling ? s.avgHeard.toFixed(2) : "off";
+  // Terrain: how much smoother the ground under the living is than the
+  // landscape as a whole. Negative — shown as a "flatter by" percentage — means
+  // the pond has genuinely drifted into its basins rather than spreading evenly
+  // over ground it cannot perceive. Reads exactly 0 without terrain, so it is
+  // shown as "off" rather than as a suspiciously steady zero.
+  $("stat-ground").textContent = config.terrain
+    ? `${s.groundBias <= 0 ? "−" : "+"}${Math.abs(Math.round(s.groundBias * 100))}%`
+    : "off";
   $("stat-brain").textContent = config.evolvableTopology
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
     : "fixed";
@@ -944,6 +955,14 @@ function wireControls() {
   $("toggle-regrowth").checked = config.foodRegrowth;
   $("toggle-regrowth").addEventListener("change", (e) => {
     config.foodRegrowth = e.target.checked;
+    syncHash();
+  });
+  $("toggle-terrain").checked = config.terrain;
+  $("toggle-terrain").addEventListener("change", (e) => {
+    config.terrain = e.target.checked;
+    // Build (or drop) the landscape right away rather than at the next reset,
+    // so the toggle does something you can see in the same frame you flip it.
+    world.syncTerrain();
     syncHash();
   });
   $("toggle-signalling").checked = config.signalling;

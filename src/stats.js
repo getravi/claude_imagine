@@ -8,6 +8,7 @@
 // world is still there to look at hours later.
 
 import { Archive } from "./archive.js";
+import { groundBias } from "./terrain.js";
 
 /**
  * The ways a creature can die, in the order they are reported. Every death in
@@ -74,6 +75,11 @@ export class Stats {
     this.avgLearning = 0; // mean within-lifetime weight drift (plasticity on)
     this.avgVoice = 0; // mean |signal| across the pond (signalling on)
     this.avgHeard = 0; // mean strength of the call reaching each creature
+    // Terrain: how much flatter the ground under the population is than the
+    // landscape average. Negative means the pond has settled into its flats.
+    // Exactly 0 in every world without terrain — a statistic that is non-zero
+    // with its mechanism off is not measuring the mechanism.
+    this.groundBias = 0;
   }
 
   /**
@@ -186,6 +192,13 @@ export class Stats {
       this.avgConns = 0;
       this.maxHidden = 0;
     }
+
+    // Where the pond is standing, relative to where standing anywhere would put
+    // it. Only the scan is throttled: a world with no terrain is zeroed on every
+    // tick, so switching terrain off mid-run clears the readout in the same
+    // frame instead of leaving the last landscape's number sitting there.
+    if (!world.terrain) this.groundBias = 0;
+    else if (this.tick % 4 === 0) this.groundBias = groundBias(world.terrain, world.creatures);
 
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {

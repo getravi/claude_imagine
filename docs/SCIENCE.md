@@ -572,6 +572,135 @@ console.log(b, "of", total, "deaths");
 console.log("mean lifespan", (w.stats.lifespanSum / w.stats.deaths).toFixed(0));
 ```
 
+## Terrain: why a cost is not a landscape
+
+Until v1.23 space was this world's last unconditional gift. Food had biomes and
+time had seasons, but the *ground* was uniform: being anywhere cost exactly what
+being anywhere else cost. Terrain (opt-in) replaces that with a static,
+seed-derived roughness field on the torus. Nothing is blocked, and — importantly
+for what follows — nothing can perceive it. There is no terrain sense, no new
+brain input, no gene for preferring flat ground.
+
+![A pond on a contour map: creatures and food gathered into the dark basins, the pale ridges nearly empty](screenshots/terrain.png)
+
+The design had two halves, and only one of them works. That is the interesting
+part.
+
+### The half that failed
+
+The first version made rough ground **expensive**: roughness multiplies the
+movement half of the metabolic bill, up to 2.6x on the worst ridges. The
+reasoning was straightforward selection. A creature that spends its life
+crossing ridges burns more energy for the same travel, so it reproduces less and
+dies sooner; lineages that happen to live in the basins should therefore come to
+dominate, and the population should gather in the flats without a single
+creature ever knowing why.
+
+The measurement is the **ground bias**: the mean roughness under the living,
+minus the mean roughness of the whole landscape. It is negative when the pond
+sits on flatter-than-average ground, and — the property that makes it worth
+trusting — it is exactly zero when terrain is off, because there is no field to
+measure against. A statistic that is non-zero with its mechanism disabled is not
+measuring the mechanism.
+
+Ground bias for a pure movement tax, at the full 2.6x cost, is **-0.003**. That
+is nothing. Six seeds run for 12,000 ticks scatter either side of zero, and the
+control — the same worlds with terrain off, scored against the landscape they
+*would* have had — sits at -0.005, which is to say the two are
+indistinguishable.
+
+The diagnosis is a timescale mismatch, and it is not subtle once you look for it.
+A creature moves at up to 2.6 px/tick in a world 900 px across, so it crosses the
+map in roughly 350 ticks. It lives for up to 4,200. Every creature therefore
+samples the entire landscape a dozen times over within a single lifetime, and a
+lineage samples it thousands of times. **Mixing is more than an order of
+magnitude faster than selection**, so a spatially varying death rate averages
+clean away before it can leave any spatial structure behind. The energy is really
+being spent — creatures on ridges really do burn more — but it is spent by
+*everyone, everywhere*, which makes it a tax on the population rather than a
+feature of the map.
+
+### The half that works
+
+The fix is to make the ground affect something that does not average away: where
+the food is. Ridges are now **barren** as well as expensive — a new pellet is
+less likely to take the rougher the ground it lands on, up to
+`terrainBarrenness`. Total food influx is unchanged (a pellet that is refused
+looks again, up to four times, and is then placed regardless), so this moves the
+crop rather than shrinking it, exactly the contract the biomes have kept since
+v1.3.
+
+Sweeping both knobs over four seeds at 9,000 ticks:
+
+| movement cost | barrenness | ground bias | mean population |
+| --- | --- | --- | --- |
+| 2.6x | 0 | -0.003 | 171 |
+| 2.6x | 0.5 | -0.011 | 248 |
+| 2.6x | **0.85** | **-0.057** | **209** |
+| 2.6x | 1.0 | -0.060 | 213 |
+| 1.6x | 0.85 | -0.029 | 239 |
+| 2.0x | 0.85 | -0.036 | 243 |
+| 3.4x | 0.85 | -0.053 | 191 |
+| 4.0x | 0.85 | -0.059 | 174 |
+
+Read down the first four rows: at a fixed movement cost, the entire settling
+effect is bought by barrenness. Read the rest and the movement cost does matter —
+but as a *modulator*, roughly doubling the effect from 1.6x to 2.6x, on top of a
+mechanism that only exists because the food moved. On its own it does nothing at
+any level tested.
+
+With the shipped defaults, six seeds at 12,000 ticks give a ground bias of
+**-0.046**, against **-0.005** for the terrain-off control on the same seeds.
+Every seed is negative. One caveat worth stating: on seed 314 the control itself
+reads -0.034, because that seed's fertile biomes happen to sit in ground the
+terrain field also calls flat. The two fields are drawn independently — biomes
+come from the world RNG before terrain exists, terrain from an integer hash of
+the seed — so this is coincidence rather than construction, but it is a reminder
+that a single seed is not an experiment.
+
+### Reproducing it
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { groundBias } from "./src/terrain.js";
+
+for (const barrenness of [0, 0.85]) {
+  let sum = 0;
+  for (const seed of [314, 7, 21, 99]) {
+    const w = new World(makeConfig({ seed, terrain: true, terrainBarrenness: barrenness }));
+    for (let i = 0; i < 9000; i++) w.step();
+    sum += groundBias(w.terrain, w.creatures);
+  }
+  console.log(barrenness, (sum / 4).toFixed(4));
+}
+// 0    ~ -0.003   a movement tax alone: the pond does not move
+// 0.85 ~ -0.057   barren ridges: the pond settles into its basins
+```
+
+Both rows pay the identical movement cost. The only difference is whether the
+ground also refuses to grow anything, and that difference is the whole effect.
+The comparison is pinned as a test (`test/terrain.test.js`) so it cannot quietly
+stop being true.
+
+### What this is and isn't
+
+The pond ending up in its basins is **not** the creatures learning to avoid
+rough ground. They cannot perceive it, and the "half that failed" above is the
+evidence: when the ground was the only thing that differed, they were completely
+indifferent to it. What terrain does is move the resource, and the population
+follows the resource the same way it always followed the biomes. The honest
+one-line summary is that terrain is a second, independently placed fertility
+field with an energy cost attached — and the energy cost, on its own, buys
+almost nothing.
+
+Which is a result worth having. It says something fairly general about this
+class of model: **in a well-mixed world, a spatial cost does not produce spatial
+structure.** To get structure you need either perception (so behaviour can
+respond within a lifetime), or restricted movement (so lineages stay put long
+enough for local selection to bite), or a spatially varying *resource* — and the
+third is by far the cheapest to add.
+
 ## Species, phylogeny, and Muller plots
 
 Vivarium's creatures never have a species assigned to them — they are just

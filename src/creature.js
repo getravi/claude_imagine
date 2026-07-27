@@ -84,6 +84,12 @@ export class Creature {
     // outside at birth; -1 means "not yet classified".
     this.speciesId = -1;
 
+    // The terrain cost multiplier under this creature, refreshed by the world
+    // each tick before it acts (see terrain.js). It is exactly 1 in every world
+    // where terrain is off — and stays 1 for a creature stepped outside a world
+    // at all — so multiplying by it unconditionally is a true no-op.
+    this.ground = 1;
+
     // Body traits decoded from body genes.
     this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
     // Metabolism gene scales base drain from 70%..130% of the world default.
@@ -240,7 +246,12 @@ export class Creature {
     // meaningful rather than free.
     const sizeFactor = 1 + (this.radius - cfg.bodyRadiusMin) * cfg.sizeCostFactor * 0.1;
     const base = cfg.metabolicBase * this.metabolismScale * sizeFactor;
-    const move = cfg.metabolicMove * thrust * sizeFactor;
+    // Only the *movement* half of the bill is scaled by the ground: crossing a
+    // ridge is expensive, sitting on one is not. That asymmetry is what makes
+    // terrain a landscape rather than a second metabolism gene — it prices
+    // travel, so a lineage can pay it deliberately or settle and stop paying.
+    // `ground` is exactly 1 unless terrain is switched on.
+    const move = cfg.metabolicMove * thrust * sizeFactor * this.ground;
     // Upkeep of being a predator — see carnivoreMetabolicCost in config.js.
     const dietCost = cfg.carnivoreMetabolicCost * this.carnivory;
     // The price of a fever (contagion). `infected` can only ever be true while

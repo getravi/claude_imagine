@@ -21,6 +21,7 @@ import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
 import { Chronicle } from "./chronicle.js";
 import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
+import { TerrainField } from "./terrain.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -40,7 +41,16 @@ export class World {
     this.seasonPhase = seasonPhase(0, config);
     this.visionFactor = dayNightVisionFactor(0, config);
 
-    this.food = new FoodField(config, this.rng, this.environment);
+    // The ground itself, when this world has any. Built by hashing the seed
+    // rather than by drawing from `this.rng`, so constructing it costs exactly
+    // zero draws — a world with terrain off is bit-for-bit every earlier
+    // version's. It is built before the food field because the crop follows it:
+    // pellets are less likely to take on a ridge.
+    /** @type {TerrainField|null} */
+    this.terrain = null;
+    this.syncTerrain();
+
+    this.food = new FoodField(config, this.rng, this.environment, this.terrain);
     /** @type {Creature[]} */
     this.creatures = [];
     for (let i = 0; i < config.populationStart; i++) {
@@ -66,6 +76,24 @@ export class World {
     // The chronicle narrates the world's history. Pure observer, like the
     // phylogeny — reads state, never changes it, uses its own RNG.
     this.chronicle = new Chronicle(config);
+  }
+
+  /**
+   * Build or discard the terrain field to match the config. Called at birth and
+   * whenever the toggle moves, so switching terrain off mid-run also puts every
+   * living creature back on flat ground instead of leaving it paying a stale
+   * bill forever.
+   */
+  syncTerrain() {
+    if (this.config.terrain) {
+      if (!this.terrain) this.terrain = new TerrainField(this.config);
+    } else if (this.terrain) {
+      this.terrain = null;
+      for (const c of this.creatures) c.ground = 1;
+    }
+    // The crop follows the ground, so the food field needs to know about it too.
+    // (Absent on the first call, which happens before the field exists.)
+    if (this.food) this.food.terrain = this.terrain;
   }
 
   _randomCreature() {
@@ -188,6 +216,10 @@ export class World {
       }
 
       c.heard = loudest;
+      // The ground it is standing on as it decides to move, read before it
+      // moves so the bill doesn't depend on where in the update order it sits.
+      // Untouched — and therefore exactly 1 — in a world without terrain.
+      if (this.terrain) c.ground = this.terrain.costFactor(c.x, c.y);
       c.sense(
         nf,
         nf ? Math.sqrt(nfD2) : Infinity,

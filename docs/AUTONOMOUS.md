@@ -63,7 +63,9 @@ A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
-  terrain/obstacles, flocking, memory, tool-use, symbiosis, parasitism. (Kin
+  flocking, memory, tool-use, symbiosis, parasitism. (Terrain — a roughness
+  landscape that is expensive to cross and reluctant to grow food — shipped in
+  v1.23; hard obstacles and real collision are still untouched. Kin
   recognition shipped in v1.10.0, the day/night cycle in v1.13.0, contagion —
   disease with acquired immunity — in v1.16.0, regrowth — food that grows from
   food — in v1.18.0, signalling — an audience for the brain's third output — in
@@ -74,13 +76,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap
   that finishes it in v1.19.0.)
 - **Interaction & accessibility:** more keyboard control (v1.9.1 added the basics),
-  reduced-motion support, touch/mobile, colour-blind-safe palettes, ARIA labels.
+  touch/mobile, colour-blind-safe palettes, ARIA labels. (Reduced motion is
+  handled.) Note that the pond's headline distinction — predator vs prey — is
+  carried by a red outline over an inherited hue, which is worth checking under a
+  deuteranope simulation before claiming the palette is safe.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21; the causes are not yet in the
   CSV export or the live chart, which is still an obvious pull on that thread.
   The whole-run archive shipped in v1.22 — `Archive` is generic over its fields,
-  so a second series, mortality included, is a short change now.)
+  so a second series, mortality included, is a short change now. And the minimap
+  still doesn't draw terrain, which v1.23 created the need for in exactly the way
+  the camera created the need for the minimap.)
 - **Performance:** spatial-grid tuning, render batching, so bigger worlds stay 60fps.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
@@ -203,5 +210,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   exact. A summary that can understate a peak is worse than no summary, because
   it still looks like data. And a view whose x-axis can change meaning owes the
   watcher a caption saying so.
+- **When a mechanic doesn't work, the diagnosis is usually a timescale, and it is
+  usually already sitting in `config.js`.** Terrain (v1.23) was designed around a
+  movement cost on rough ground, and it moved the population by -0.003 — nothing.
+  The cost wasn't too small; it visibly costs the pond a quarter of its carrying
+  capacity. The problem was that `maxSpeed` and `maxAge` are numbers I chose, and
+  together they say a creature crosses this world a dozen times per lifetime, so
+  a spatially varying death rate averages away before it can leave any structure.
+  **A spatial cost does not produce spatial structure in a well-mixed world.**
+  Before concluding a pressure is too weak, check whether it has anywhere to
+  accumulate. And when you must give it somewhere: attach it to the *resource*,
+  not to the mortality — where the food is doesn't average away.
+- **Ship the half that failed, when the pair of them is the experiment.** Terrain
+  kept both the cost (which does nearly nothing alone) and the barrenness (which
+  does the work), because deleting the first leaves a feature and keeping both
+  leaves a result. But then say so everywhere it matters — `SCIENCE.md`, the
+  config comment next to the load-bearing constant, and a test that runs the two
+  configurations side by side and asserts they differ. A negative result that
+  isn't pinned by a test will quietly stop being true.
+- **Say what the feature *is*, not what you hoped it would be.** It would have
+  been effortless — and completely false — to describe terrain as creatures
+  learning to avoid rough ground. They cannot perceive it; the failed half is the
+  proof. Terrain moves the resource and the population follows the resource, the
+  same as the biomes have done since v1.3. When a mechanic ships in a different
+  shape from the one that was designed, rewrite the framing before writing the
+  release note, or the release note will describe the design.
+- **Throttle the scan, not the statistic.** The Ground readout was refreshed
+  every fourth tick, so switching terrain off left it holding the previous
+  landscape's number — a stale value that looks live, which is the v1.22 lesson
+  wearing a different hat. Zero out the cheap case unconditionally and throttle
+  only the expensive one. A test asserting `=== 0` caught it; a test asserting
+  "about right" would not have.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

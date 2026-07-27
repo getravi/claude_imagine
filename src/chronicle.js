@@ -13,6 +13,13 @@
 
 import { RNG } from "./rng.js";
 
+/**
+ * Consecutive observations the population must spend on smoother-than-average
+ * ground before the chronicle will call it settled. `observe` runs every tick,
+ * so this is a couple of hundred ticks of holding still.
+ */
+const TERRAIN_SETTLE_TICKS = 240;
+
 export class Chronicle {
   constructor(config) {
     this.config = config;
@@ -50,6 +57,8 @@ export class Chronicle {
     this._stripped = false;
     this._regreened = false;
     this._leadingCause = null;
+    this._settled = false;
+    this._settleStreak = 0;
   }
 
   _push(tick, icon, cat, msg) {
@@ -128,6 +137,9 @@ export class Chronicle {
 
     // --- Regrowth (only when the crop is a population that can be ruined) ---
     if (this.config.foodRegrowth) this._checkRegrowth(world, tick);
+
+    // --- Terrain (only when the ground has an opinion) ---
+    if (this.config.terrain) this._checkTerrain(tick, pop, s);
 
     // --- Generation depth ---
     for (const g of [10, 25, 50, 100, 200]) {
@@ -269,6 +281,37 @@ export class Chronicle {
       this._regreened = true;
       this._push(tick, "🌾", "regrowth", `Green returns — the crop regrows to ${standing}.`);
     }
+  }
+
+  /**
+   * The pond finding its flats: reported once, when the population has spent a
+   * sustained stretch on ground meaningfully smoother than the landscape
+   * average.
+   *
+   * Three guards, in the spirit of "a chronicle line needs a did-this-really-
+   * happen check". The population has to be big enough that the mean isn't
+   * three creatures; the bias has to hold for `TERRAIN_SETTLE_TICKS` of samples
+   * rather than being one lucky frame; and the whole check only runs with
+   * terrain on, where `groundBias` is the only statistic on the panel that can
+   * be non-zero at all. A drifting herd resets the streak, so this narrates a
+   * settlement, not a passing crowd.
+   */
+  _checkTerrain(tick, pop, s) {
+    if (this._settled) return;
+    if (pop < 40 || s.groundBias > -0.06) {
+      this._settleStreak = 0;
+      return;
+    }
+    this._settleStreak++;
+    if (this._settleStreak < TERRAIN_SETTLE_TICKS) return;
+    this._settled = true;
+    const pct = Math.round(-s.groundBias * 100);
+    this._push(
+      tick,
+      "⛰️",
+      "terrain",
+      `The pond has found its flats — the living are on ground ${pct}% smoother than average.`
+    );
   }
 
   /**

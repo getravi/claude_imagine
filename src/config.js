@@ -64,6 +64,34 @@ export const DEFAULT_CONFIG = Object.freeze({
   // leaving the pond a healthy standing population rather than a thin one.
   regrowthFloor: 0.35, // spawn-rate multiplier when the pond is completely bare (0..1)
 
+  // Terrain (v1.23, opt-in): the ground stops being the same everywhere. Food
+  // has had biomes since v1.3 and time has had seasons, but *space* was still
+  // uniform — being anywhere cost exactly what being anywhere else cost. With
+  // terrain on, a static seed-derived roughness landscape does two things:
+  // rough ground costs more to cross (up to terrainRoughCost on the movement
+  // half of the metabolic bill) and grows less (terrainBarrenness). Nothing is
+  // blocked, and nothing can perceive it — the pond ends up in its basins
+  // because that is where the living can afford to be, not because anything
+  // steers there. The landscape comes from an integer hash of the seed rather
+  // than the world RNG, so switching terrain on draws zero random numbers and
+  // every existing world is untouched.
+  terrain: false,
+  // Swept over four seeds at 9,000 ticks: the settling effect climbs from
+  // -0.029 at 1.6x to -0.057 at 2.6x and then flattens, while the population it
+  // supports falls steadily (239 -> 209 -> 174 by 4.0x). 2.6 is the knee — very
+  // nearly the whole effect, for a pond that is still busy.
+  terrainRoughCost: 2.6, // movement-cost multiplier on the roughest ground
+  // Ridges are barren as well as expensive: the chance a new pellet takes falls
+  // by up to this much across the roughness range.
+  //
+  // This is the half of the mechanic that actually works, and the number is
+  // load-bearing rather than cosmetic. At 0 — a pure movement tax, at the full
+  // 2.6x cost — the population settles by -0.003, which is to say not at all;
+  // at 0.5 it is -0.011; at 0.85 it is -0.057. The write-up and the control that
+  // found this are in docs/SCIENCE.md. 1.0 buys almost nothing over 0.85 and
+  // turns the worst ridges into literal bare rock, which reads as a bug.
+  terrainBarrenness: 0.85, // 0 = ground doesn't care, 1 = the worst ridge is bare rock
+
   // --- Population ---
   populationStart: 40,
   populationMax: 650, // safety cap so the sim can't explode

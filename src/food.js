@@ -9,6 +9,13 @@
 // it is also shaped by the food itself: pellets seed from pellets, so the crop is
 // a population too, and one that grazers can drive down.
 
+/**
+ * How many times a pellet may look for ground that will grow it before settling
+ * for wherever it landed. Four is enough that the crop clearly follows the
+ * flats, and small enough that the world's total food influx is unchanged.
+ */
+const TERRAIN_SPAWN_TRIES = 4;
+
 export class Food {
   constructor(x, y) {
     this.x = x;
@@ -36,11 +43,15 @@ export class FoodField {
    * @param {object} config
    * @param {import('./rng.js').RNG} rng
    * @param {import('./environment.js').FertilityField} [fertility] biome field
+   * @param {import('./terrain.js').TerrainField} [terrain] the ground, if any
    */
-  constructor(config, rng, fertility = null) {
+  constructor(config, rng, fertility = null, terrain = null) {
     this.config = config;
     this.rng = rng;
     this.fertility = fertility;
+    // The ground. Null in every world without terrain, which is what makes
+    // `_takes()` below a guaranteed `true` and this whole mechanism invisible.
+    this.terrain = terrain;
     /** @type {Food[]} */
     this.items = [];
     this._spawnAccumulator = 0;
@@ -68,15 +79,41 @@ export class FoodField {
     this.spawnAnywhere();
   }
 
+  /**
+   * Will ground at (x, y) grow anything? Always true without terrain — no field,
+   * no rejection, not a single random number drawn — so this can be called
+   * unconditionally from the spawn paths below.
+   *
+   * With terrain on, the chance a pellet takes falls with roughness: ridges are
+   * barren as well as expensive. This is the half of the mechanic that makes it
+   * a *landscape* rather than a tax. A movement cost alone turned out to move
+   * nothing (see docs/SCIENCE.md) because a creature crosses this world in a
+   * few hundred ticks and lives for thousands — it samples the whole map many
+   * times over, so local mortality differences average clean away. Where the
+   * food is does not average away.
+   */
+  _takes(x, y) {
+    if (!this.terrain) return true;
+    return this.rng.float() >= this.terrain.at(x, y) * this.config.terrainBarrenness;
+  }
+
   /** A pellet appearing from nowhere: uniform, or biased toward the biomes. */
   spawnAnywhere() {
     if (this.items.length >= this.config.foodMax) return;
+    const cfg = this.config;
     let x, y;
-    if (this.config.foodPatches && this.fertility) {
-      ({ x, y } = this.fertility.sample(this.rng)); // concentrate in biomes
-    } else {
-      x = this.rng.range(0, this.config.width);
-      y = this.rng.range(0, this.config.height);
+    // Up to a few attempts to find ground that will have it, then the pellet is
+    // placed regardless. Bounding the retries keeps total food influx exactly
+    // what it always was — terrain moves the crop around, it does not shrink it,
+    // the same contract the biomes have kept since v1.3.
+    for (let attempt = 0; ; attempt++) {
+      if (cfg.foodPatches && this.fertility) {
+        ({ x, y } = this.fertility.sample(this.rng)); // concentrate in biomes
+      } else {
+        x = this.rng.range(0, cfg.width);
+        y = this.rng.range(0, cfg.height);
+      }
+      if (attempt >= TERRAIN_SPAWN_TRIES - 1 || this._takes(x, y)) break;
     }
     this.items.push(new Food(x, y));
   }
@@ -98,6 +135,8 @@ export class FoodField {
     const x = (((parent.x + Math.cos(angle) * dist) % cfg.width) + cfg.width) % cfg.width;
     const y = (((parent.y + Math.sin(angle) * dist) % cfg.height) + cfg.height) % cfg.height;
     if (cfg.foodPatches && this.fertility && this.rng.float() > this.fertility.at(x, y)) return null;
+    // A seed can also simply land on rock. Always takes without terrain.
+    if (!this._takes(x, y)) return null;
     return { x, y };
   }
 

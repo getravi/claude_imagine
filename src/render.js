@@ -29,6 +29,11 @@ export class Renderer {
     // Purely a drawing choice — it never reads or writes simulation state, so
     // it has no bearing on determinism.
     this.reducedMotion = false;
+    // Baked terrain layer: the roughness landscape is static for the life of a
+    // world, so it is painted once into an offscreen canvas and blitted, rather
+    // than being re-evaluated for every pixel of every frame.
+    this._terrainCanvas = null;
+    this._terrainFor = null; // the TerrainField the bake belongs to
     this._resize();
   }
 
@@ -37,6 +42,11 @@ export class Renderer {
     this.config = config;
     this.camera.config = config;
     this.camera.reset();
+    // A new config may be a new world size or a new seed, either of which makes
+    // the baked landscape wrong. Dropping it forces a rebake on the next frame
+    // that actually needs one.
+    this._terrainCanvas = null;
+    this._terrainFor = null;
   }
 
   _resize() {
@@ -73,6 +83,12 @@ export class Renderer {
     // thing is placed at whichever wrapped image of itself is nearest the
     // camera, so the torus seam stays invisible however far the view roams.
     cam.applyTo(ctx, this.dpr);
+
+    // Terrain: the ground, when this world has any. Drawn first, under
+    // everything, because it is the one thing here that isn't *in* the pond —
+    // it is the pond. Nothing is drawn at all when terrain is off, so the
+    // default view is the one every earlier version produced.
+    if (world.terrain) this._drawTerrain(ctx, world.terrain, cam);
 
     // Biomes: faint fertile glows so you can see where food concentrates.
     if (cfg.foodPatches && world.environment) {
@@ -127,6 +143,99 @@ export class Renderer {
 
     // Leave the context in screen space for whoever draws next.
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+  }
+
+  /**
+   * Paint the roughness landscape into an offscreen canvas: a cool basin colour
+   * on the flats warming to a pale slate on the ridges, with contour lines at
+   * fixed roughness intervals. The contours are what make it read as *terrain*
+   * rather than as an unexplained stain — a smooth gradient alone is easy to
+   * mistake for another one of the glows this scene is already full of.
+   * @param {import('./terrain.js').TerrainField} terrain
+   */
+  _bakeTerrain(terrain) {
+    const cfg = this.config;
+    // Half resolution: the field is smooth, and this keeps contours crisp after
+    // the 2x upscale while costing a fraction of the samples.
+    const w = Math.max(1, Math.round(cfg.width / 2));
+    const h = Math.max(1, Math.round(cfg.height / 2));
+    const off = document.createElement("canvas");
+    off.width = w;
+    off.height = h;
+    const octx = off.getContext("2d");
+    const img = octx.createImageData(w, h);
+    const px = img.data;
+    const BANDS = 8; // contour every 1/8th of the roughness range
+    for (let j = 0; j < h; j++) {
+      const wy = (j / h) * cfg.height;
+      for (let i = 0; i < w; i++) {
+        const wx = (i / w) * cfg.width;
+        const r = terrain.at(wx, wy);
+        // Basin (24,42,54) → ridge (108,118,138). Deliberately quiet: this is a
+        // backdrop, and the scene's whole look is a near-black deep with a few
+        // bioluminescent things in it. Terrain that competes with the creatures
+        // for attention would be worse than terrain you have to look for.
+        let cr = 24 + 84 * r;
+        let cg = 42 + 76 * r;
+        let cb = 54 + 84 * r;
+        let a = 0.03 + 0.13 * r;
+        // A contour wherever this sample sits in a different band from the one
+        // to its left or above it. Comparing bands rather than testing distance
+        // to a level keeps the lines one sample wide however steep the slope.
+        const band = Math.floor(r * BANDS);
+        const left = terrain.at(wx - cfg.width / w, wy);
+        const up = terrain.at(wx, wy - cfg.height / h);
+        if (band !== Math.floor(left * BANDS) || band !== Math.floor(up * BANDS)) {
+          cr += 26;
+          cg += 34;
+          cb += 40;
+          a = Math.min(0.34, a + 0.10);
+        }
+        const k = (j * w + i) * 4;
+        px[k] = cr;
+        px[k + 1] = cg;
+        px[k + 2] = cb;
+        px[k + 3] = Math.round(a * 255);
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    this._terrainCanvas = off;
+    this._terrainFor = terrain;
+  }
+
+  /**
+   * Blit the baked landscape under the world, tiled across the seam.
+   *
+   * Everything else in this scene is drawn at whichever wrapped image of itself
+   * is nearest the camera; a full-world backdrop needs the same trick, except
+   * that at any zoom the viewport can straddle up to four copies of the world at
+   * once. So the nearest tile is placed and its eight neighbours are offered,
+   * with the ones that miss the viewport skipped.
+   */
+  _drawTerrain(ctx, terrain, cam) {
+    if (this._terrainFor !== terrain) this._bakeTerrain(terrain);
+    const cfg = this.config;
+    const img = this._terrainCanvas;
+    // The visible world-space rectangle. Zoom is never below 1, so this is at
+    // most exactly the world.
+    const halfW = cfg.width / (2 * cam.zoom);
+    const halfH = cfg.height / (2 * cam.zoom);
+    const vx0 = cam.x - halfW;
+    const vx1 = cam.x + halfW;
+    const vy0 = cam.y - halfH;
+    const vy1 = cam.y + halfH;
+    const centre = cam.nearest(cfg.width / 2, cfg.height / 2);
+    const ox = centre.x - cfg.width / 2;
+    const oy = centre.y - cfg.height / 2;
+    ctx.globalCompositeOperation = "source-over";
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const tx = ox + dx * cfg.width;
+        const ty = oy + dy * cfg.height;
+        if (tx > vx1 || tx + cfg.width < vx0 || ty > vy1 || ty + cfg.height < vy0) continue;
+        ctx.drawImage(img, tx, ty, cfg.width, cfg.height);
+      }
+    }
   }
 
   _drawCreature(ctx, c) {
