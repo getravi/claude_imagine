@@ -86,7 +86,8 @@
           <p class="kbd-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
             <kbd>F</kbd> feed · <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
-            <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond
+            <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond ·
+            <kbd>H</kbd> chart history
           </p>
           <p class="kbd-hint" aria-label="Mouse controls">
             Scroll to zoom · drag to pan · double-click a creature to follow it ·
@@ -227,8 +228,16 @@
           <div class="chart-legend">
             <span class="dot pop"></span> population
             <span class="dot food"></span> food
+            <button
+              id="chart-scope"
+              class="scope-btn"
+              type="button"
+              aria-pressed="false"
+              title="Switch between the recent window and the whole run (H)"
+            >recent</button>
           </div>
           <canvas id="chart" width="300" height="90"></canvas>
+          <div class="chart-range" id="chart-range"></div>
         </div>
 
         <div id="inspector" class="inspector empty">

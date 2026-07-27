@@ -4,6 +4,57 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.22.0] — 2026-07-27
+
+The whole run: for twenty-one versions this world could remember the last two
+minutes of itself and nothing else.
+
+### Added
+
+- **An archive** (`src/archive.js`). The population chart has always been fed by
+  a 480-sample ring — one sample per four ticks, so the last 1,920 ticks — and
+  everything older was dropped. Watch a pond boom to three hundred and crash to
+  forty, keep watching for two more minutes, and the boom is *gone*: not
+  compressed, not summarised, gone. The archive keeps the rest in bounded memory
+  by halving its own resolution each time it fills, so the record always spans
+  the first sample to the newest and grows **coarser** rather than shorter.
+- **Envelopes, so the thinning cannot lie.** The numbers worth having here are
+  the extremes — the peak of the boom, the floor of the crash — and those are
+  exactly what a decimated line loses. So a dropped sample is not discarded: its
+  values widen the `min`/`max` of the representative that absorbs it. The line
+  gets coarser; the envelope stays **exact**, at every capacity, for the whole
+  run. An archive that silently understates a peak would be worse than no
+  archive, because it would still look like data.
+- **A chart you can flip** — the pill in the chart legend, or <kbd>H</kbd> —
+  between *recent* and *whole run*, with a translucent band behind each line in
+  the long view showing the range each thinned point stands for, and a caption
+  naming the tick range and how many ticks a point now covers. The default view
+  is byte-for-byte the chart every earlier version drew; an x-axis that silently
+  changes meaning is worse than no axis at all.
+- **Export CSV follows the chart.** The recent scope exports exactly the four
+  columns it always did. The whole-run scope adds `pop_min,pop_max,food_min,
+  food_max,samples`, so a peak that fell between two retained rows is still in
+  the spreadsheet.
+- **New tests** (`test/archive.test.js`, 14 of them): the capacity bound holds
+  over 5,000 pushes at four capacities, the record always starts at the first
+  sample and ends at now, ticks stay strictly increasing, every sample is
+  accounted for exactly once, the stride stays a power of two — and the headline
+  one, that the reported peak and floor equal the true peak and floor over every
+  sample ever pushed, swept across capacities 4–100 and runs up to 5,000.
+
+### Notes
+
+- Pure bookkeeping: no randomness drawn, no simulation state touched, nothing
+  read back into the world. The v1.21 four-world fingerprint test — every
+  creature's position, energy, age, heading and generation, plus every pellet —
+  passes untouched, so a world that keeps an archive is bit-for-bit the world
+  that doesn't.
+- 201 tests, all green. The UI was driven in headless Chromium against the real
+  `app/index.html`: the pill toggling and reporting `aria-pressed`, <kbd>H</kbd>
+  doing the same from the keyboard, the caption tracking the stride as it
+  doubles (4 → 8 → 16 → 32 ticks per point over a 4,400-tick run), a real
+  download producing the nine-column file, and a clean console.
+
 ## [1.21.0] — 2026-07-26
 
 Mortality: the pond has counted its dead for twenty versions without once asking

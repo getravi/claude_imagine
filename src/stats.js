@@ -3,7 +3,11 @@
 // None of this feeds back into the simulation; it exists purely so a human
 // watching can see what evolution is doing — population booms and crashes, how
 // deep the oldest lineages run, how much genetic diversity remains. A history
-// ring buffer drives the little live chart in the UI.
+// ring buffer drives the little live chart in the UI, and an Archive alongside
+// it keeps the *whole* run at falling resolution, so the early history of a
+// world is still there to look at hours later.
+
+import { Archive } from "./archive.js";
 
 /**
  * The ways a creature can die, in the order they are reported. Every death in
@@ -35,9 +39,13 @@ export function wholePercents(shares) {
 }
 
 export class Stats {
-  constructor(historyLength = 480, deathWindow = 120) {
+  constructor(historyLength = 480, deathWindow = 120, runLength = 240) {
     this.historyLength = historyLength;
-    this.popHistory = []; // {pop, food, gen}
+    this.popHistory = []; // {pop, food, gen} — the recent window, at full detail
+    // The same points, kept for the entire run at whatever resolution fits in
+    // `runLength` rows. `popHistory` answers "what is happening"; this answers
+    // "what has happened", which for twenty-one versions nothing could.
+    this.runHistory = new Archive({ capacity: runLength, fields: ["pop", "food"] });
     this.tick = 0;
     this.births = 0;
     this.deaths = 0;
@@ -181,13 +189,18 @@ export class Stats {
 
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {
-      this.popHistory.push({
+      const point = {
         tick: this.tick,
         pop,
         food: world.food.items.length,
         gen: maxGen,
-      });
+      };
+      this.popHistory.push(point);
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
+      // The same point, into a record that never drops the far end. Nobody
+      // mutates a history point after it is made, so both may hold the one
+      // object.
+      this.runHistory.push(point);
     }
   }
 
@@ -234,12 +247,30 @@ export class Stats {
   }
 
   /**
-   * Render the retained population/food/generation history as CSV text, so a
-   * visitor can pull the chart's raw numbers into a spreadsheet. Pure and
-   * read-only: it never touches the simulation, only formats what sample()
-   * already recorded.
+   * Render the population/food/generation history as CSV text, so a visitor can
+   * pull the chart's raw numbers into a spreadsheet. Pure and read-only: it
+   * never touches the simulation, only formats what sample() already recorded.
+   *
+   * `"recent"` is the full-detail window the live chart draws — one row per
+   * four ticks, most recent 480 rows. `"whole"` is the entire run from tick 0,
+   * thinned to fit, and carries the envelope columns: each row's `pop_min` /
+   * `pop_max` are exact over the `samples` raw points it stands for, so a peak
+   * that fell between two retained rows is still in the file.
+   * @param {"recent"|"whole"} [scope]
    */
-  toCSV() {
+  toCSV(scope = "recent") {
+    if (scope === "whole") {
+      const lines = [
+        "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples",
+      ];
+      for (const r of this.runHistory.series()) {
+        lines.push(
+          `${r.tick},${r.pop},${r.food},${r.gen},` +
+            `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},${r.span}`
+        );
+      }
+      return lines.join("\n") + "\n";
+    }
     const lines = ["tick,population,food,max_generation"];
     for (const h of this.popHistory) {
       lines.push(`${h.tick},${h.pop},${h.food},${h.gen}`);

@@ -78,7 +78,9 @@ DEVLOG as I ship them; add new ones as they occur to me.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21; the causes are not yet in the
-  CSV export or the live chart, which is the obvious next pull on that thread.)
+  CSV export or the live chart, which is still an obvious pull on that thread.
+  The whole-run archive shipped in v1.22 — `Archive` is generic over its fields,
+  so a second series, mortality included, is a short change now.)
 - **Performance:** spatial-grid tuning, render batching, so bigger worlds stay 60fps.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
@@ -186,5 +188,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   Largest-remainder rounding fixes it in four lines. Any time a readout shows
   parts of a whole, make the parts sum to the whole — and put the helper in a
   tested module, not in `main.js` where nothing can check it.
+- **Check what the instruments *forget*, not only what they never measured.**
+  Several cycles of "what does the world throw away?" were all aimed at the
+  simulation; v1.22 aimed it at the observer and found the leakier of the two.
+  The chart's history buffer had been dropping everything older than two minutes
+  since v1.0, and the CSV export was handing over the last 8% of a run as though
+  it were the run. A bounded readout that always *looks* full is a lie with no
+  tell. When a buffer is bounded, ask what falls off the back and whether
+  anything catches it.
+- **When you must throw away resolution, throw away the middle.** Naive
+  decimation loses exactly the peaks and crashes a chart exists to show, and it
+  does so silently — the line stays smooth and plausible. v1.22 keeps a min/max
+  envelope on every thinned point, so resolution degrades and the extremes stay
+  exact. A summary that can understate a peak is worse than no summary, because
+  it still looks like data. And a view whose x-axis can change meaning owes the
+  watcher a caption saying so.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

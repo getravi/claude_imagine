@@ -468,6 +468,15 @@ function updateMortality(s) {
 }
 
 // ---- Live population chart ----
+//
+// Two scopes. "recent" is the 480-point ring the chart has always drawn — the
+// last 1,920 ticks, exactly as every earlier version framed it, so the default
+// panel is unchanged. "whole" draws the archive: the entire run from tick 0,
+// thinned to fit, with a translucent band behind each line showing the range
+// the thinning covered. The band matters — without it a decimated line would
+// smooth away the very peaks and crashes the chart exists to show, and it would
+// do so silently.
+let chartScope = "recent";
 let chartCtx = null;
 function drawChart(world) {
   if (!chartCtx) {
@@ -479,17 +488,61 @@ function drawChart(world) {
   const ctx = chartCtx;
   const W = ctx._w;
   const H = ctx._h;
-  const hist = world.stats.popHistory;
+  const whole = chartScope === "whole";
+  const hist = whole ? world.stats.runHistory.series() : world.stats.popHistory;
   ctx.clearRect(0, 0, W, H);
+  updateChartRange(world, hist);
   if (hist.length < 2) return;
 
   const maxPop = Math.max(10, world.stats.maxPopEver);
   const maxFood = Math.max(10, config.foodMax);
 
+  if (whole) {
+    // Envelopes first, under the lines: what each thinned point stands for.
+    drawBand(ctx, hist, W, H, (h) => h.min.food / maxFood, (h) => h.max.food / maxFood,
+      "rgba(90, 200, 140, 0.16)");
+    drawBand(ctx, hist, W, H, (h) => h.min.pop / maxPop, (h) => h.max.pop / maxPop,
+      "rgba(120, 190, 255, 0.22)");
+  }
   // Food line (dim green).
   drawSeries(ctx, hist, W, H, (h) => h.food / maxFood, "rgba(90, 200, 140, 0.5)");
   // Population line (bright).
   drawSeries(ctx, hist, W, H, (h) => h.pop / maxPop, "rgba(120, 190, 255, 0.95)");
+}
+
+// The caption under the chart: which stretch of time is on screen, and — in
+// whole-run mode — how much each pixel of it is standing in for. A chart whose
+// x-axis silently changes meaning is worse than one with no axis at all.
+function updateChartRange(world, hist) {
+  const el = $("chart-range");
+  let text = "";
+  if (chartScope === "whole") {
+    const span = world.stats.runHistory.span();
+    if (span) {
+      const each = world.stats.runHistory.stride * 4;
+      text = `ticks ${span.from.toLocaleString()}–${span.to.toLocaleString()} · 1 point per ${each} ticks`;
+    }
+  } else if (hist.length > 1) {
+    text = `ticks ${hist[0].tick.toLocaleString()}–${hist[hist.length - 1].tick.toLocaleString()}`;
+  }
+  if (el.textContent !== text) el.textContent = text;
+}
+
+function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {
+  ctx.beginPath();
+  for (let i = 0; i < hist.length; i++) {
+    const x = (i / (hist.length - 1)) * W;
+    const y = H - highOf(hist[i]) * (H - 4) - 2;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  for (let i = hist.length - 1; i >= 0; i--) {
+    const x = (i / (hist.length - 1)) * W;
+    ctx.lineTo(x, H - lowOf(hist[i]) * (H - 4) - 2);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
 }
 
 function drawSeries(ctx, hist, W, H, valueOf, stroke) {
@@ -772,6 +825,10 @@ function wireKeyboard() {
       case "0":
         renderer.camera.reset();
         break;
+      case "h":
+      case "H":
+        toggleChartScope();
+        break;
       default:
         return; // let every other key pass through untouched
     }
@@ -930,6 +987,11 @@ function wireControls() {
   $("btn-load").addEventListener("click", loadWorld);
   $("btn-share").addEventListener("click", shareLink);
   $("btn-export-csv").addEventListener("click", exportCSV);
+
+  // Chart scope. This button lives in the static legend, not inside a panel
+  // that gets rebuilt from innerHTML every frame, so a click that spans several
+  // frames still lands on the element it started on.
+  $("chart-scope").addEventListener("click", toggleChartScope);
 
   // Tree of Life: clear the lineage spotlight.
   $("btn-clear-highlight").addEventListener("click", () => {
@@ -1091,18 +1153,33 @@ function loadWorld() {
   }
 }
 
-// Download the live population/food/generation chart as a CSV file, so a
-// visitor can pull the raw numbers into a spreadsheet of their own.
+// Swap the chart between the recent window and the whole run. The export
+// follows the chart, so what you download is what you are looking at.
+function toggleChartScope() {
+  chartScope = chartScope === "whole" ? "recent" : "whole";
+  const btn = $("chart-scope");
+  const whole = chartScope === "whole";
+  btn.textContent = whole ? "whole run" : "recent";
+  btn.setAttribute("aria-pressed", whole ? "true" : "false");
+  flash(whole ? "Chart showing the whole run." : "Chart showing the recent window.");
+}
+
+// Download the population/food/generation chart as a CSV file, so a visitor can
+// pull the raw numbers into a spreadsheet of their own. It exports whichever
+// scope the chart is showing: the recent window as it always did, or the whole
+// run — which also carries the min/max each thinned row stands for, so nothing
+// in the file understates a peak the archive actually saw.
 function exportCSV() {
-  const csv = world.stats.toCSV();
+  const csv = world.stats.toCSV(chartScope);
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `vivarium-seed${config.seed}-tick${world.tick}.csv`;
+  const scope = chartScope === "whole" ? "run" : "recent";
+  a.download = `vivarium-seed${config.seed}-tick${world.tick}-${scope}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-  flash("Chart data exported.");
+  flash(chartScope === "whole" ? "Whole-run data exported." : "Recent chart data exported.");
 }
 
 let flashTimer = null;
