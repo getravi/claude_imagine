@@ -214,6 +214,101 @@ faster but... there has to be a compensating advantage for that gene to survive,
 and if there isn't, it won't. These trade-offs are what keep the design from
 collapsing into a single optimal strategy.
 
+## The books: where the pond's energy actually comes from, and goes
+
+The section above describes the energy economy as a set of rules. From v1.29 the
+simulation also *adds it up* — [`src/energy.js`](../src/energy.js) is a ledger of
+every unit this world creates and destroys, and the panel reports it live. The
+first thing it establishes is uncomfortable, and was true from v1.0:
+
+**This pond is not a closed system, and never was.** A food pellet is a
+*position*, not a battery. It holds no energy at all; the `foodEnergy` units
+appear at the moment something eats it, sized to the eater's diet. Energy is
+minted at ingestion. With scavenging on, a corpse mints again — its meat is
+computed from body size, not from what the creature had left. So the ledger is
+not a conservation law. It is a record of how much this world creates from
+nothing, and what becomes of it afterwards.
+
+What it *does* enforce is an accounting identity:
+
+```
+created − destroyed === standing in living bodies and corpses
+```
+
+That holds to a relative 1e-9 (floating-point noise, twelve orders of magnitude
+below one pellet) at every tick, in a default world, in a world with every
+mechanic switched on at once, through a pond that starves out and reseeds
+repeatedly, across a save/load round trip, and at the population cap.
+`test/energy.test.js` checks all of them. It is a far stronger invariant than
+any other statistic here keeps, because it fails on the tick a bug happens
+rather than looking slightly wrong later.
+
+### Where it goes
+
+Over 30,000 ticks, default configuration, five seeds:
+
+| seed | metabolism | buried with the dead | leaked | standing | turnover |
+|------|-----------:|---------------------:|-------:|---------:|---------:|
+| 314    | 96.9% | 3.1% | 0.04% | 20,677 | 547 ticks |
+| 7      | 97.0% | 1.9% | 1.09% | 16,699 | 542 ticks |
+| 55     | 96.3% | 3.4% | 0.23% | 14,528 | 490 ticks |
+| 2024   | 94.1% | 4.1% | 1.79% | 15,535 | 545 ticks |
+| 12321  | 98.5% | 1.5% | 0.04% | 27,534 | 715 ticks |
+
+Two things stand out. **Almost everything goes on simply being alive** —
+94–98.5% of every unit the pond has ever spent, against 1.5–4.1% carried into
+the ground by bodies that still had energy in them. And **the standing stock is
+a rounding error**: at seed 314 the pond holds about 20,700 units against
+1.15 million minted over the run, and it turns over its entire energy content
+roughly every 500 ticks — an eighth of a maximum lifespan. This world does not
+store energy. It runs it straight through.
+
+The leak column is the smallest and the most interesting, because it is made of
+three different things that the ledger keeps apart: energy lost converting flesh
+into a predator (`digested`), meat rotting out of a corpse nobody ate
+(`rotted`), and gains discarded because the eater was already full (`spilled`).
+
+### `energyMax` is a parameter that does nothing
+
+`spilled` reads **exactly zero** in a default world. Not "negligible" — zero, to
+the last bit that differencing an energy against itself can produce.
+
+The reason is a two-line interaction nobody had looked at. `energyMax` is 220
+and `reproduceThreshold` is 160, so a creature always splits before it can fill
+up, and the ceiling is unreachable. Every world this project has shipped, every
+screenshot, every scenario, has carried a clamp that has never once fired. You
+could set `energyMax` to 10,000 or delete it and nothing would move.
+
+Unless reproduction is blocked — which is exactly what `populationMax` does. At
+the cap a creature cannot split, its energy climbs to the ceiling, and every
+mouthful afterwards is minted and destroyed in the same instant:
+
+| population cap | final population | of all energy made, spilled at the ceiling |
+|---------------:|-----------------:|-------------------------------------------:|
+| 650 (the default) | 244 | 0.0% |
+| 300 | 230 | 0.0% |
+| 200 | 200 | 4.3% |
+| 120 | 120 | 37.0% |
+
+The cap is documented in `config.js` as "a safety cap so the sim can't explode".
+Nothing said that reaching it converts a third of the pond's entire energy budget
+into nothing, and that a world at its cap is running a wholly different energy
+economy from one below it. Both halves — zero when reproduction is reachable,
+dominant when it is not — are pinned in `test/energy.test.js`, because a negative
+result that isn't held by a test quietly stops being true.
+
+### What scavenging does to the books
+
+Switching scavenging on adds the second mint. Corpse meat accounts for
+8–9% of everything the pond creates — death becomes a *source* of energy
+rather than only a sink — and most of it is never eaten: a quarter to four-fifths, depending heavily on the seed and on how carnivorous that pond's lineages got, of all meat
+minted rots away, which is why the leak column jumps by an order of magnitude the
+moment the feature is on. The nutrient a corpse leaves in the ground (detritus,
+v1.27) is deliberately *not* in these books: it is a different currency. Detritus
+moves where the crop grows, and a pellet grown on enriched ground mints its own
+units like any other. The two recycling loops in this world do not share a unit,
+which is worth knowing before reading either as "energy returning to the system".
+
 ## Predation and the evolution of a food web
 
 The diet gene (0 = pure herbivore, 1 = pure carnivore) turns the energy economy

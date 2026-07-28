@@ -224,6 +224,7 @@
           <div class="stat"><label>Births</label><b id="stat-births">0</b></div>
           <div class="stat"><label>Deaths</label><b id="stat-deaths">0</b></div>
           <div class="stat"><label>Lifespan ⏳</label><b id="stat-life">—</b></div>
+          <div class="stat"><label>Standing ⚡</label><b id="stat-standing">0</b></div>
           <div class="stat"><label>Tick</label><b id="stat-tick">0</b></div>
           <div class="stat"><label>FPS</label><b id="stat-fps">0</b></div>
         </div>
@@ -236,6 +237,20 @@
             <i class="pred" id="mort-pred"></i>
           </div>
           <div class="mort-legend" id="mort-legend">Nothing has died yet.</div>
+        </div>
+
+        <!-- The pond's energy books. Same shape as the mortality bar above it,
+             deliberately: pale, mid, dark, terminal outcome darkest. The colours
+             are measured against that bar's in src/palette.js so the two can be
+             read side by side without one being mistaken for the other. -->
+        <div class="mortality">
+          <div class="mort-head">⚡ Where the energy goes <span id="nrg-made">minted</span></div>
+          <div class="mort-bar" id="nrg-bar" role="img" aria-label="Nothing has been eaten yet.">
+            <i id="nrg-metabolism"></i>
+            <i id="nrg-waste"></i>
+            <i id="nrg-buried"></i>
+          </div>
+          <div class="mort-legend" id="nrg-legend">Nothing has been eaten yet.</div>
         </div>
 
         <div class="chartwrap">

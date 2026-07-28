@@ -30,6 +30,9 @@ import {
   minimapPredatorTones,
   mortalityColours,
   mortalityTones,
+  energyColours,
+  energyTones,
+  barTrack,
   detritusTint,
   DETRITUS_MAX_ALPHA,
   blendOver,
@@ -37,6 +40,7 @@ import {
   VISION_MODELS,
   MIN_DELTA_E,
 } from "../src/palette.js";
+import { ENERGY_SINKS } from "../src/energy.js";
 
 // The body colour render.js paints for a given creature state, reproduced here
 // so the sweep measures what is actually drawn.
@@ -501,4 +505,119 @@ test("enriched ground is the lightest thing under the water, which is why it sur
   const L = (rgb) => toLab(rgb)[0];
   assert.ok(L(soil) > L(ridge) + 10, `soil L* ${L(soil)} vs ridge ${L(ridge)}`);
   assert.ok(L(soil) > L(biome) + 10, `soil L* ${L(soil)} vs biome ${L(biome)}`);
+});
+
+// ---- The energy bar (v1.29) ----
+//
+// A second three-segment strip in the same sidebar as the mortality one. It
+// carries the harder constraint of the two: not only must its own colours be
+// mutually legible and stand off the track, they must not be readable as the
+// cause colours six inches above them.
+
+test("every pair of energy-sink colours is distinguishable under every vision model", () => {
+  const tones = energyTones();
+  const names = Object.keys(tones);
+  let worst = Infinity;
+  let where = null;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(tones[names[i]], tones[names[j]], vision);
+        if (d < worst) {
+          worst = d;
+          where = `${names[i]}/${names[j]}, ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `worst sink pair ΔE ${worst.toFixed(1)} at ${where}`);
+});
+
+test("no energy colour can be read as a cause colour", () => {
+  // The constraint that made this palette a search rather than a choice. Two
+  // bars of the same shape in the same panel invite comparison, so the twelve
+  // cross-pairs are held to the same bar as the within-bar ones.
+  const sinks = energyTones();
+  const causes = mortalityTones();
+  let worst = Infinity;
+  let where = null;
+  for (const [sn, s] of Object.entries(sinks)) {
+    for (const [cn, c] of Object.entries(causes)) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(s, c, vision);
+        if (d < worst) {
+          worst = d;
+          where = `${sn}/${cn}, ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `worst cross pair ΔE ${worst.toFixed(1)} at ${where}`);
+});
+
+test("two triads I picked by eye would have failed, in two different ways", () => {
+  // Pinned because the lesson is the reusable part: at six colours, "these look
+  // different to me" stops being evidence. The first attempt collided with the
+  // cause colours; the second collided with itself.
+  const eyeOne = { metabolism: hslToRgb(188, 85, 82), waste: hslToRgb(318, 55, 55), buried: hslToRgb(28, 60, 26) };
+  const causes = mortalityTones();
+  let crossWorst = Infinity;
+  for (const s of Object.values(eyeOne)) {
+    for (const c of Object.values(causes)) {
+      for (const vision of VISION_MODELS) crossWorst = Math.min(crossWorst, deltaE(s, c, vision));
+    }
+  }
+  assert.ok(crossWorst < 10, `expected a collision with the cause colours, got ${crossWorst.toFixed(1)}`);
+
+  const eyeTwo = [hslToRgb(300, 40, 88), hslToRgb(174, 55, 50), hslToRgb(240, 55, 22)];
+  let selfWorst = Infinity;
+  for (let i = 0; i < eyeTwo.length; i++) {
+    for (let j = i + 1; j < eyeTwo.length; j++) {
+      for (const vision of VISION_MODELS) selfWorst = Math.min(selfWorst, deltaE(eyeTwo[i], eyeTwo[j], vision));
+    }
+  }
+  assert.ok(selfWorst < MIN_DELTA_E, `expected a within-bar failure, got ${selfWorst.toFixed(1)}`);
+});
+
+test("each energy colour stands off the track it is drawn on", () => {
+  // A segment at 0% shows the track. A colour close to it reads as an empty
+  // segment, which is the one thing a bar of shares must never say by accident.
+  const track = barTrack();
+  for (const [name, rgb] of Object.entries(energyTones())) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(rgb, track, vision);
+      assert.ok(d >= MIN_DELTA_E, `${name} on the track is ΔE ${d.toFixed(1)} under ${vision}`);
+    }
+    // And off the panel the strip is inset into. Only `--bg-panel`: unlike the
+    // cause colours, which also appear as legend dots in the chart card, these
+    // three exist in exactly one place, so `--bg-panel-2` is not a surface this
+    // bar is ever drawn on and asserting against it would be measuring fiction.
+    const panel = SURFACES[0];
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(rgb, panel.rgb, vision);
+      assert.ok(d >= MIN_DELTA_E, `${name} on ${panel.name} is ΔE ${d.toFixed(1)} under ${vision}`);
+    }
+  }
+});
+
+test("the energy colours climb the same luminance ladder as the cause colours", () => {
+  // The one thing the two bars share on purpose: pale, mid, dark, terminal
+  // outcome darkest. A grammar rather than a claim — and one no colour vision
+  // deficiency can take away, because luminance is untouched by all of them.
+  const tones = energyTones();
+  const L = (c) => toLab(c)[0];
+  assert.ok(L(tones.metabolism) > L(tones.waste) + 15);
+  assert.ok(L(tones.waste) > L(tones.buried) + 12);
+});
+
+test("the energy colours the DOM is painted with are the ones that were measured", () => {
+  const css = energyColours();
+  const tones = energyTones();
+  assert.deepEqual(Object.keys(css), Object.keys(tones));
+  assert.deepEqual(Object.keys(css), [...ENERGY_SINKS]);
+  for (const [name, text] of Object.entries(css)) {
+    const m = text.match(/^hsl\((\d+), (\d+)%, (\d+)%\)$/);
+    assert.ok(m, `${name} is not a plain hsl() this test can parse: ${text}`);
+    assert.deepEqual(hslToRgb(Number(m[1]), Number(m[2]), Number(m[3])), tones[name]);
+  }
 });

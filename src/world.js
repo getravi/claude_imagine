@@ -23,6 +23,7 @@ import { Chronicle } from "./chronicle.js";
 import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
 import { TerrainField } from "./terrain.js";
 import { DetritusField } from "./detritus.js";
+import { EnergyLedger } from "./energy.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -59,6 +60,13 @@ export class World {
     this.syncDetritus();
 
     this.food = new FoodField(config, this.rng, this.environment, this.terrain, this.detritus);
+
+    // The books. Pure bookkeeping written alongside events that happen anyway —
+    // it draws no randomness and nothing in the simulation reads it, so its
+    // presence cannot move a world by a floating-point bit. Built before the
+    // founders so their starting energy is on the record from tick zero.
+    this.energy = new EnergyLedger();
+
     /** @type {Creature[]} */
     this.creatures = [];
     for (let i = 0; i < config.populationStart; i++) {
@@ -128,7 +136,7 @@ export class World {
     const genome = cfg.evolvableTopology
       ? NeatGenome.random(this.rng)
       : Genome.random(this.rng, cfg.signalling);
-    return new Creature(
+    const c = new Creature(
       genome,
       cfg,
       this.rng.range(0, cfg.width),
@@ -136,6 +144,12 @@ export class World {
       this.rng,
       0
     );
+    // A creature made from scratch arrives with `energyStart` that came from
+    // nowhere. Every path that conjures life — the founding population, the
+    // auto-reseed after a crash, the "seed life" button — goes through here, so
+    // this is the one place that has to say so.
+    this.energy.found(c.energy);
+    return c;
   }
 
   /** Advance the world by exactly one tick. */
@@ -252,7 +266,7 @@ export class World {
         threat,
         threat ? Math.sqrt(threatD2) : Infinity
       );
-      c.act(c.think());
+      this.energy.burn(c.act(c.think()));
 
       // 3a. Grazing: consume the nearest pellet if we're on top of it. Nutrition
       // from plants shrinks as a creature becomes more carnivorous, so pure
@@ -262,7 +276,12 @@ export class World {
         if (nfD2 <= eatR * eatR) {
           nf.eaten = true;
           const plantGain = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * c.carnivory);
+          // A pellet is a place, not a battery: these units exist for the first
+          // time here. What the eater had no room for is minted and lost in the
+          // same instant, which is the only way that waste is ever visible.
+          const before = c.energy;
           c.energy = Math.min(cfg.energyMax, c.energy + plantGain);
+          this.energy.graze(plantGain, c.energy - before);
         }
       }
 
@@ -276,7 +295,12 @@ export class World {
           if (preyTargetD2 <= reach * reach && preyTarget.energy > 0) {
             const chunk = Math.min(preyTarget.energy, cfg.biteEnergy);
             preyTarget.energy -= chunk;
-            c.energy = Math.min(cfg.energyMax, c.energy + chunk * cfg.meatEfficiency * c.carnivory);
+            const meal = chunk * cfg.meatEfficiency * c.carnivory;
+            const before = c.energy;
+            c.energy = Math.min(cfg.energyMax, c.energy + meal);
+            // Flesh moves rather than appears; what the mouthful lost between
+            // the corpse and the scavenger is the only new fact here.
+            this.energy.bite(chunk, meal, c.energy - before);
             c.lastBiteAge = c.age;
             this.stats.scavenged++;
           }
@@ -285,10 +309,10 @@ export class World {
           if (preyTargetD2 <= reach * reach) {
             const amount = Math.min(preyTarget.energy, cfg.biteEnergy);
             preyTarget.energy -= amount;
-            c.energy = Math.min(
-              cfg.energyMax,
-              c.energy + amount * cfg.meatEfficiency * c.carnivory
-            );
+            const meal = amount * cfg.meatEfficiency * c.carnivory;
+            const before = c.energy;
+            c.energy = Math.min(cfg.energyMax, c.energy + meal);
+            this.energy.bite(amount, meal, c.energy - before);
             c.lastBiteAge = c.age; // for the rendering "flash"
             if (preyTarget.energy <= 0) {
               preyTarget.die("predation");
@@ -319,13 +343,22 @@ export class World {
         if (c.dead) {
           this.stats.deaths++;
           this.stats.recordDeath(c);
+          // Whatever it still held goes with it. A creature that starved
+          // finishes a hair below zero — it paid its last bill in full — and
+          // that overdraft belongs here as a small negative, against the
+          // metabolism it was recorded as paying.
+          this.energy.bury(c.energy);
           // What the body is worth to the ground, if this world's ground keeps
           // anything. Computed whether or not detritus is on, because it costs
           // one multiply and it means switching the feature on mid-run doesn't
           // leave the corpses already lying about unable to rot into anything.
           const soil = c.radius * cfg.detritusPerRadius;
           if (cfg.scavenging) {
+            // Meat is minted, not inherited: what a corpse is worth comes from
+            // body size, not from what the creature had left. A scavenging world
+            // therefore creates energy at every death as well as at every meal.
             const meat = cfg.corpseEnergyBase + c.radius * cfg.corpseEnergyPerRadius;
+            this.energy.butcher(meat);
             // The body goes to the ground only as fast as it rots, so a corpse
             // stripped by scavengers reaches the soil with almost nothing left.
             // Spread over a full undisturbed rot this delivers exactly `soil`.
@@ -346,6 +379,13 @@ export class World {
       let w = 0;
       for (let i = 0; i < this.corpses.length; i++) {
         const k = this.corpses[i];
+        // Only what is actually there can rot: the last tick of a corpse takes
+        // it below zero and it is dropped, so the bill for that tick is the
+        // remainder, not the full decay rate. The nutrient it leaves in the
+        // ground is *not* energy leaving by another door — detritus moves where
+        // the crop grows, and a pellet grown there mints its own units like any
+        // other. The two loops are in different currencies.
+        this.energy.rot(Math.min(k.energy, cfg.corpseDecay));
         k.energy -= cfg.corpseDecay;
         // A rotting corpse feeds the ground under it. Note what this means when
         // both features are on: a scavenger eating a corpse is taking it out of
@@ -483,6 +523,12 @@ export class World {
     this.creatures = obj.creatures.map((o) => Creature.fromJSON(o, this.config, this.rng));
     this.food.items = obj.food.map((f) => new Food(f.x, f.y));
     this.corpses = []; // corpses are transient; start the loaded world clean
+    // The books start again with the loaded world. A save carries energy but no
+    // history of where it came from, so the restored population counts as
+    // founded — anything else would leave the identity in `EnergyLedger.audit`
+    // permanently broken by however much the saved bodies happened to hold.
+    this.energy = new EnergyLedger();
+    for (const c of this.creatures) this.energy.found(c.energy);
     // The nutrient field is not serialised either, so a loaded world remembers
     // no deaths — it will start recording the ones it goes on to have.
     this.detritus = null;

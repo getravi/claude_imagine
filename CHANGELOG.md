@@ -4,6 +4,52 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.29.0] — 2026-07-28
+
+The pond's books. Every rule in this world is a statement about energy, and for
+twenty-eight versions nothing added it up — so the first question you would ask
+of any ecology, *where does the power come from and where does it go*, had no
+answer here. It has one now, and it found a bug in its first run: a parameter
+this project has carried since v1.0 does nothing at all.
+
+### Added
+
+- **`src/energy.js`** — a ledger of every unit this world creates and destroys,
+  written alongside events that were happening anyway. It draws no randomness,
+  nothing in the simulation reads it, and `test/energy.test.js` pins that by
+  stepping one world with a ledger that records nothing and comparing every
+  creature, pellet and corpse against a world with the real one.
+- **An accounting identity, enforced.** `created − destroyed === standing`, held
+  to a relative 1e-9 across a default world, a world with every mechanic on at
+  once, a pond that starves out and reseeds repeatedly, a save/load round trip,
+  and a world pressed against its population cap. This is a much stronger check
+  than any other statistic here keeps: a bite that credits more than it debits,
+  or a clamp that swallows a gain, breaks it on the tick it happens.
+- **"Where the energy goes"** in the sidebar — a three-segment bar for the
+  metabolism, the leaks and what is buried with the dead, plus the running total
+  minted and a `Standing ⚡` tile for what is in the pond right now. The two
+  numbers are worth seeing together: the standing stock is under 2% of the run's
+  throughput, because this world does not store energy, it runs it through.
+- **A measured palette for it** (`energyColours()`). Three colours that clear
+  `MIN_DELTA_E` against each other, against the bar's track, *and* against all
+  three cause colours of the mortality bar directly above — twelve constraints
+  under four vision models, worst case 30.2. Two triads picked by eye failed
+  first, in two different ways, and both are pinned as regression tests.
+
+### Discovered
+
+- **`energyMax` has never done anything.** The ceiling on a creature's energy
+  (220) sits above the threshold at which it reproduces (160), so a creature
+  always splits before it can fill up and the clamp is unreachable. A default
+  pond spills exactly zero — not "almost none": zero, to floating-point noise
+  twelve orders of magnitude below one pellet. It starts to bite only when
+  reproduction is blocked, at `populationMax`, and then it is instantly the
+  largest sink in the world. Both halves are now pinned by a test and noted next
+  to the constant in `config.js`.
+- **The pond spends 94–98% of everything it makes on staying alive**, across
+  five seeds, and replaces its entire standing energy about every 500 ticks — an
+  eighth of a maximum lifespan. Written up in `docs/SCIENCE.md`.
+
 ## [1.28.0] — 2026-07-28
 
 The pond in your hands. The camera shipped in v1.17 with a wheel and a keyboard,

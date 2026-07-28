@@ -209,6 +209,11 @@ lineage, so you can see where it lives and how far it has spread.
   but over generations some lineages grow hidden structure (watch the Brain stat
   and look for the extra node in the graph). Most stay simple, because simple is
   enough: complexity only survives where it earns its keep.
+- **Watch where the energy goes.** Under the death toll, the pond keeps books:
+  how much energy it has made from nothing, and what became of it. Between 94%
+  and 98% of it goes on simply being alive, and the amount standing in the pond
+  at any moment is under 2% of what has passed through it — this world doesn't
+  store energy, it runs it through.
 - **Find a great world and Share it.** The link encodes the seed and parameters,
   so whoever opens it watches the very same pond evolve.
 
@@ -294,6 +299,7 @@ src/
   food.js           the world's energy source
   grid.js           spatial hash grid for fast neighbour queries
   environment.js    biomes (fertile patches) and seasons
+  energy.js         the pond's books: every unit made, spent, wasted or buried
   stats.js          rolling population/lineage measurements, and what kills them
   archive.js        the whole run at falling resolution, extremes kept exact
   phylogeny.js      groups creatures into species (observation only)

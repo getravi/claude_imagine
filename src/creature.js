@@ -209,6 +209,8 @@ export class Creature {
   /**
    * Apply motor commands and physics for one tick, then pay metabolism.
    * @param {number[]|Float32Array} out - brain outputs
+   * @returns {number} the metabolic bill paid this tick, for the world's energy
+   *   ledger. Nothing in here reads it, so a caller may ignore it entirely.
    */
   act(out) {
     const cfg = this.config;
@@ -262,7 +264,8 @@ export class Creature {
     // Exactly 0 in every world where nobody is listening — both because the
     // branch isn't taken and because adding 0 leaves the sum bit-for-bit.
     const voiceCost = cfg.signalling ? cfg.signalCost * Math.abs(this.signal) : 0;
-    this.energy -= base + move + dietCost + illCost + voiceCost;
+    const cost = base + move + dietCost + illCost + voiceCost;
+    this.energy -= cost;
 
     this.age++;
     // Starvation is tested first, and `die()` keeps whichever cause arrived
@@ -270,6 +273,11 @@ export class Creature {
     // killer earlier in this same tick, so it is not counted as having starved.
     if (this.energy <= 0) this.die("starvation");
     else if (this.age >= cfg.maxAge) this.die("age");
+    // The bill is returned rather than accumulated on the creature: a creature
+    // that dies this tick is about to be swept up and would take its total with
+    // it, and summing the survivors every tick would count the same lifetime
+    // over and over. The world adds each bill exactly once, as it is paid.
+    return cost;
   }
 
   /**

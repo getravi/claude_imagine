@@ -17,7 +17,8 @@ import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { wholePercents, mortalitySeries, DEATH_CAUSES } from "./stats.js";
-import { mortalityColours } from "./palette.js";
+import { mortalityColours, energyColours } from "./palette.js";
+import { EnergyLedger, ENERGY_SINKS } from "./energy.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -466,6 +467,42 @@ function updateHUD() {
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
     : "fixed";
   updateMortality(s);
+  updateEnergy();
+}
+
+// How much energy is standing in this pond right now — every living body plus
+// every corpse — and what has become of everything it ever made.
+//
+// The two numbers are worth putting next to each other: the standing stock is a
+// rounding error beside the throughput, because this world does not store its
+// energy, it runs it straight through. Nothing here is a config toggle, so
+// unlike Ground or Soil there is no "off" state to report; the books are always
+// open.
+let energyLabel = "";
+function updateEnergy() {
+  const e = world.energy;
+  $("stat-standing").textContent = Math.round(EnergyLedger.standing(world)).toLocaleString();
+  $("nrg-made").textContent = `${Math.round(e.created).toLocaleString()} minted`;
+
+  const shares = e.shares();
+  if (!shares) return;
+  const pct = wholePercents(ENERGY_SINKS.map((k) => shares[k]));
+  // Bar and caption come from the same integers, and the integers sum to 100 —
+  // the v1.26 rule, which matters more here than anywhere else in the panel
+  // because one segment is normally around 90% and the eye has nothing else to
+  // check the arithmetic against.
+  ENERGY_SINKS.forEach((k, i) => {
+    $(`nrg-${k}`).style.width = `${pct[i]}%`;
+  });
+  const [burned, lost, buried] = pct;
+  const text = `${burned}% burned living · ${lost}% lost · ${buried}% buried`;
+  if (energyLabel === text) return;
+  energyLabel = text;
+  $("nrg-legend").textContent = text;
+  $("nrg-bar").setAttribute(
+    "aria-label",
+    `Of all the energy this world has spent: ${text.replace(/ · /g, ", ")}.`
+  );
 }
 
 // The death mix: which of the three ways out of this world the pond is
@@ -656,6 +693,12 @@ function applyMortalityColours() {
   paint("dot-starve", c.starvation);
   paint("dot-age", c.age);
   paint("dot-pred", c.predation);
+  // The energy bar, from the same module and for the same reason. Its colours
+  // were chosen to clear the three above under every vision model — see
+  // `energyColours()` — which is a guarantee that only holds while both bars
+  // are painted from the file the test measures.
+  const n = energyColours();
+  for (const k of ENERGY_SINKS) paint(`nrg-${k}`, n[k]);
 }
 
 function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {

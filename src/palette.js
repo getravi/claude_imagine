@@ -308,6 +308,59 @@ export function mortalityTones() {
 }
 
 /**
+ * Where the pond's energy goes (v1.29): burned staying alive, leaked away, or
+ * buried in the dead.
+ *
+ * This is the second three-segment bar in the same sidebar, six inches below the
+ * mortality one, and that is the whole difficulty. The two bars are not
+ * alternatives — nothing ever asks a reader to tell *buried energy* from *died
+ * hunted* — so by the letter of the audit they need not be separated at all. But
+ * two identically-shaped strips of three colours, stacked, will be compared
+ * whether or not they are meant to be, and a reader who reads one bar's grammar
+ * onto the other learns something false.
+ *
+ * So these three clear `MIN_DELTA_E` against each other, against the bar's own
+ * track, *and* against all three of `mortalityColours()`, under normal vision
+ * and all three dichromacies: twelve constraints, worst case 30.2. My first
+ * hand-picked triad scored 13.4 against the cause colours and my second 17.5
+ * against itself; the third came out of a search over the feasible set, which
+ * is the honest admission that six mutually-legible colours is past the point
+ * where picking by eye works.
+ *
+ * What the two bars *do* share, deliberately, is the luminance ladder: pale,
+ * mid, dark, in the order the segments are drawn, with the terminal outcome
+ * darkest in both. That is the one similarity worth having, because it is a
+ * grammar rather than a claim — bright is the ordinary business of living,
+ * dark is where things end.
+ */
+export function energyColours() {
+  return {
+    metabolism: "hsl(330, 40%, 90%)",
+    waste: "hsl(240, 65%, 52%)",
+    buried: "hsl(272, 65%, 22%)",
+  };
+}
+
+/** The three energy-sink colours as RGB, for the audit. */
+export function energyTones() {
+  return {
+    metabolism: hslToRgb(330, 40, 90),
+    waste: hslToRgb(240, 65, 52),
+    buried: hslToRgb(272, 65, 22),
+  };
+}
+
+/**
+ * The mortality and energy bars sit on this: the panel background with the
+ * track's own translucent white over it. Both bars are drawn as segments on a
+ * strip, so an empty or near-empty segment shows the track, and a colour that
+ * disappears into it is a colour that reads as "none of this".
+ */
+export function barTrack() {
+  return blendOver({ r: 0x0c, g: 0x13, b: 0x1c }, { r: 255, g: 255, b: 255 }, 0.06);
+}
+
+/**
  * Enriched ground — the map of where this pond's dead went (v1.27).
  *
  * This is the fourth thing drawn under the water, and the first that *changes*,

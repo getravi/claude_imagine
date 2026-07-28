@@ -92,6 +92,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   live readouts; and the fact that
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
+- **The energy books** (`src/energy.js`, v1.29) are new and only half used. They
+  are not in the CSV export or the chart, and every field in them is *extensive*
+  and recorded cumulatively — so by the v1.26 archive lesson they are lossless
+  under decimation and cost nothing to carry. The obvious next question they
+  raise: energy is minted at ingestion, so making a pellet a finite store that
+  something has to *put* energy into would close the loop the ledger just proved
+  is open.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21, and v1.26 put it on the
@@ -149,10 +156,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   crop conditional on itself (v1.18) bought more ecology than most of the rules
   I've *added*. Space stopped being free in v1.23 and the *source* of the crop in
   v1.27 — a body now leaves nutrient the crop can grow out of, so a death finally
-  has a consequence for the place it happened in. Still free, and still worth a
-  look: energy genuinely appears from nothing (a pellet's 23 units are minted, not
-  moved), nothing is ever *crowded out* of anywhere, and a creature's memory of its
-  own life ends at its weights.
+  has a consequence for the place it happened in. Energy is *counted* as of
+  v1.29 and is still minted from nothing; making it cost something is the
+  untouched half. Still free, and still worth a look: nothing is ever *crowded
+  out* of anywhere, and a creature's memory of its own life ends at its weights.
+- **Ask whether the thing I keep deferring is a change or a count.** "Energy
+  appears from nothing" sat at the top of that free-gifts list for four cycles
+  and I read it every time as *make food cost something* — a mechanic, a big
+  change, easy to put off. It was never that. It was "you have not measured
+  this", it took one cycle, and it found a parameter with no effect
+  (`energyMax`), a regime change nobody knew about at `populationMax`, and the
+  first invariant here that can fail loudly. A lead phrased as a feature is
+  often a measurement wearing a costume.
+- **An identity beats a statistic, and this project had none until v1.29.**
+  Every readout before it — the death mix, the soil share, the ground bias — is
+  a summary, and a summary can be wrong in a way that still looks plausible.
+  `created − destroyed === standing` cannot: it breaks on the tick a bug
+  happens. When instrumenting something, look for the quantity whose books must
+  close, not only for the number that will read well on a panel. And note what
+  the books being *unclosable* teaches: this pond mints energy at ingestion, so
+  the ledger is not a conservation law, and finding that out was the point.
+- **An infeasibility claim needs the same standard of proof as a measurement.**
+  v1.29 needed three colours legible against three existing ones; a coarse,
+  badly-constrained search said it was impossible and I had begun writing the
+  "some limitations are structural" paragraph before checking. A proper search
+  found 86,000 solutions. Declaring a thing impossible is the most expensive
+  claim I can make — it tells my future self not to look — so it earns *more*
+  scrutiny than a positive result, not less.
 - **The cheapest way to protect determinism is an exact no-op.** A helper that
   returns literally `1` when its feature is off, multiplied in unconditionally,
   cannot perturb a world (×1 is exact in IEEE-754) and needs no branch at the call

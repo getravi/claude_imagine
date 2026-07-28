@@ -52,6 +52,7 @@ The dependency arrows point from a module to what it imports.
 | `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
 | `terrain.js` | Optional static roughness landscape: rough ground costs more to cross and grows less. | — |
 | `detritus.js` | Optional decaying nutrient map: deaths enrich the ground, and part of the crop grows out of it. | — |
+| `energy.js` | The pond's books: every unit created and destroyed, holding `created − destroyed === standing` at every tick. Pure bookkeeping — no randomness, and nothing in the simulation reads it. | — |
 | `palette.js` | Colour decisions as pure functions, plus the dichromat simulation and ΔE that judge them. | — |
 | `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by, carried into both history buffers as cumulative counters so differencing any two samples is exact). | — |
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
