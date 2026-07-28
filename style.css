@@ -235,9 +235,22 @@ body {
 .chronicle-feed li.cat-night { border-left-color: #8a93e8; }
 #world {
   display: block;
-  width: 100%;
+  max-width: 100%;
   height: auto;
   cursor: crosshair;
+  /* Without this the browser owns every touch on the pond and the camera is
+     unreachable on a phone: a pinch zooms the *page*, a drag scrolls it. But
+     `none` everywhere would trap a reader behind a canvas that fills their
+     screen, so the two states are split. At zoom 1 there is nothing to pan
+     anyway, and `pan-y` keeps a one-finger swipe scrolling the page while still
+     handing us anything multi-touch — which is how a pinch can get us out of
+     zoom 1 in the first place. Once zoomed in, main.js swaps this for `none` so
+     a drag pans in both axes. */
+  touch-action: pan-y;
+  /* A press-and-hold on a canvas otherwise raises a text-selection loupe. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* ---- Panel ---- */
@@ -270,6 +283,20 @@ body {
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--ink-faint);
+}
+/* Two hints for the same four affordances, because "scroll to zoom" is not
+   advice a phone can take. `pointer: coarse` is the input, not the screen
+   width: a small window on a laptop still has a wheel. */
+.coarse-only {
+  display: none;
+}
+@media (pointer: coarse) {
+  .fine-only {
+    display: none;
+  }
+  .coarse-only {
+    display: block;
+  }
 }
 .kbd-hint kbd {
   font-family: var(--font);

@@ -60,6 +60,7 @@ The dependency arrows point from a module to what it imports.
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
 | `minimap.js` | The whole pond in miniature — ground, life and the viewport (read-only). | canvas |
+| `gestures.js` | Pointer arithmetic: tap vs drag vs pinch, for a mouse and a hand alike. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
@@ -315,6 +316,18 @@ deliberately the exact identity (zooming back out snaps the centre home), which
 keeps the default view — the one every screenshot and permalink assumes — pixel
 for pixel what it has always been. It holds no simulation state and draws no
 random numbers, so where you happen to be looking can never change what happens.
+The one thing that continuous input adds is a **detent**: the wheel and the
+keyboard step by fixed powers of 1.25 and so always land back on exactly 1, but a
+pinch can stop anywhere, so `ZOOM_SNAP` pulls anything within 2% of the bottom
+home rather than leaving the identity view a rounding error out of reach.
+
+`gestures.js` is how a hand reaches any of that. It is a small state machine over
+pointer coordinates — one finger that barely moves is a tap, one that travels is
+a drag, two are a pinch about their midpoint — with no DOM, no clock of its own
+and no random numbers, so the whole of it is testable. That is the point:
+`main.js` is the only module the suite cannot run, so anything decidable lives
+here and `main.js` keeps just the adapter. A mouse and a finger take the same
+path, double-tap included, which is why there is no `dblclick` listener.
 
 `minimap.js` is the other half of that lens. A camera over an edgeless world can
 show you a fifteenth of the pond with nothing to say *which* fifteenth, so once

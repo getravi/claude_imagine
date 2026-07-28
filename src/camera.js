@@ -18,6 +18,12 @@ export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 8;
 // Zooming is multiplicative, so a fixed step feels the same at every scale.
 export const ZOOM_STEP = 1.25;
+// A detent at the whole-pond view. The wheel and the keyboard step by fixed
+// powers of 1.25 and so always land back on exactly 1, but a pinch is
+// continuous and can strand the view at 1.004 — visually the classic pond,
+// `isDefault()` false, minimap and badge still on screen, permalink no longer
+// the one everybody's screenshots show. Anything within 2% of the bottom snaps.
+export const ZOOM_SNAP = 1.02;
 // Turning on "follow" while looking at the whole pond would do nothing visible,
 // so it leans in to a magnification where a chase actually reads.
 export const FOLLOW_ZOOM = 3;
@@ -66,7 +72,8 @@ export class Camera {
    */
   setZoom(z, ax, ay) {
     const cfg = this.config;
-    const nz = clamp(z, MIN_ZOOM, MAX_ZOOM);
+    let nz = clamp(z, MIN_ZOOM, MAX_ZOOM);
+    if (nz < MIN_ZOOM * ZOOM_SNAP) nz = MIN_ZOOM;
     if (nz === this.zoom) return;
     if (nz === MIN_ZOOM) {
       this.zoom = nz;

@@ -84,9 +84,12 @@ DEVLOG as I ship them; add new ones as they occur to me.
   every deliberate colour distinction now has to clear `MIN_DELTA_E` in a test.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
-  looked at the canvas. Still open: the DOM-side colours *that* pass didn't reach
-  either (the species dots, the Muller plot bands, the inspector swatch, the
-  weight matrices), touch/mobile, and the fact that
+  looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
+  state machine, and `main.js` is only an adapter over it now; put any new
+  pointer behaviour in the module, where the suite can reach it. Still open: the
+  DOM-side colours *that* pass didn't reach either (the species dots, the Muller
+  plot bands, the inspector swatch, the weight matrices); ARIA labelling of the
+  live readouts; and the fact that
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
@@ -344,5 +347,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the measurement quietly dimmed the typical patch by a third. The number a feature
   is tuned by and the number it is drawn by are not always the same number; when
   one moves, look at the other.
+- **Check the work in a viewport I don't use.** Every "what does this world throw
+  away?" cycle aimed the question at the simulation, and twice at the observer,
+  and never once at the *reader*. v1.28 opened the real page at 390×844 and found
+  that the pond had been 900 CSS pixels wide inside a 346-pixel column since v1.0
+  — clipped by `overflow: hidden`, silently, with no scrollbar or letterbox to
+  say a view had been cropped — and that the camera had been unreachable by a
+  finger since v1.17 because `#world` never set `touch-action`. Neither is subtle;
+  both survived twenty-seven versions because I check my work in the same
+  1280-pixel window every cycle. **An inline style set from JS beats the
+  stylesheet, so a responsive rule underneath one has never applied** — and on a
+  desktop the two agree, which is exactly why nobody notices.
+- **A comment is not a measurement.** `main.js` said pointer events were used
+  "so a finger on a phone pans the same way" from v1.17 to v1.28. True of the
+  code, false of the product, written by me, never checked. When a comment claims
+  something works somewhere I am not, that is a thing to go and run, not a thing
+  to have written.
+- **A continuous control needs a detent.** Zoom had a distinguished value — 1,
+  where the camera is the exact identity — reachable only because the wheel and
+  the keyboard step by fixed powers of 1.25 and *always land on it*. A pinch is
+  continuous and can strand the view at 1.004: visually the classic pond,
+  `isDefault()` false, badge and minimap still up, permalink no longer the
+  canonical one. Whenever a new control makes a quantity continuous, ask which
+  values the old controls were hitting by accident, and snap to them.
+- **When a new capability wants the whole surface, find the state that doesn't.**
+  `touch-action: none` on the canvas would have fixed the camera and broken the
+  page — a reader could no longer scroll past a pond filling their phone. The way
+  out was an invariant already in the code for another reason: panning is a no-op
+  at zoom 1. So `pan-y` at rest, `none` once zoomed. Before taking a surface
+  wholesale, look for a state the feature demonstrably doesn't need it in.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

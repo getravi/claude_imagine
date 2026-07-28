@@ -66,8 +66,15 @@ export class Renderer {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = this.config.width * dpr;
     this.canvas.height = this.config.height * dpr;
+    // A *preferred* size, not a fixed one. Pinning both axes here overrode the
+    // stylesheet's responsive rule — inline styles win — so on any viewport
+    // narrower than the world the pond was simply clipped by the stage's
+    // `overflow: hidden`, and a phone saw its top-left third. `height: auto`
+    // hands the aspect ratio back to the intrinsic size of the backing store,
+    // and `max-width: 100%` (in the stylesheet) lets it shrink. Where there is
+    // room for the full width nothing moves by a pixel.
     this.canvas.style.width = this.config.width + "px";
-    this.canvas.style.height = this.config.height + "px";
+    this.canvas.style.height = "auto";
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.dpr = dpr;
   }

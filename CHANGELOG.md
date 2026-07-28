@@ -4,6 +4,72 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.28.0] — 2026-07-28
+
+The pond in your hands. The camera shipped in v1.17 with a wheel and a keyboard,
+and every lens built on it since — the minimap, the terrain layer, the detritus
+stain — inherited exactly that reach. On a phone there is no wheel and no
+keyboard, so all of it was a feature you could read about and not use. Worse,
+the pond itself was 900 CSS pixels wide inside a stage that clips, so a phone saw
+its top-left third and nothing said so.
+
+### Added
+
+- **`src/gestures.js`** — one pointer state machine for tap, drag and pinch, and
+  the first time any of that logic has been reachable by a test. It is
+  arithmetic over pointer coordinates: no DOM, no clock of its own (callers pass
+  timestamps in), no random numbers. `main.js` is left as the adapter it should
+  always have been — browser events in, camera moves out — which matters because
+  `main.js` is the one module the suite cannot open.
+- **Pinch to zoom**, about the midpoint of the two fingers, with the midpoint's
+  own drift applied as a pan. Fingers landing on the same pixel are held
+  `PINCH_MIN_SPAN` apart, so a span ratio can never be `0`, `Infinity` or `NaN` —
+  a zoom that jumps to a limit and cannot be undone.
+- **Double-tap to follow**, replacing the `dblclick` listener entirely. One path
+  now serves a mouse and a hand, because a synthesised `dblclick` is not
+  something a phone can be relied on to send. Verified on both.
+- **`ZOOM_SNAP`** (`src/camera.js`) — a detent at the whole-pond view. The wheel
+  and the keyboard step by fixed powers of 1.25 and so always land back on
+  exactly 1; a pinch is continuous and could strand the view at 1.004 — visually
+  the classic pond, `isDefault()` false, badge and minimap still on screen,
+  permalink no longer the one every screenshot shows. Anything within 2% of the
+  bottom snaps home.
+- **A touch hint** beside the mouse one (`app/index.html`), swapped on
+  `@media (pointer: coarse)` — the input, not the screen width, since a small
+  window on a laptop still has a wheel.
+
+### Fixed
+
+- **The pond was clipped on any narrow viewport.** `Renderer._resize` pinned the
+  canvas to the world's exact pixel size, and an inline style beats a stylesheet,
+  so the responsive rule underneath it had never once applied. The stage's
+  `overflow: hidden` did the rest silently. It is now a *preferred* width with
+  `max-width: 100%` and `height: auto`; where there is room for the full 900px
+  nothing moves by a pixel, and at 390px the whole pond is on screen for the
+  first time.
+- **The browser owned every touch on the pond.** With no `touch-action`, a pinch
+  zoomed the *page* and a drag scrolled it — the pointer handlers wired since
+  v1.17 were never reached by a finger, whatever their comment claimed. The
+  canvas now asks for `pan-y` at rest, so a one-finger swipe still scrolls the
+  page past a canvas that fills a phone screen (and at zoom 1 there is nothing to
+  pan anyway) while multi-touch comes to us — which is how a pinch can get out of
+  zoom 1 in the first place. Once zoomed in, `main.js` swaps it for `none` so a
+  drag pans in both axes. A press-and-hold no longer raises a text-selection
+  loupe either.
+- **Right- and middle-clicks** no longer start a drag.
+
+### Notes
+
+- **Determinism is untouched, by construction.** Nothing here draws a random
+  number or reads world state; `Gestures` is pure arithmetic and the camera has
+  been read-only with respect to the simulation since v1.17. A `(seed, config)`
+  pair reproduces the same world however the viewer happens to be holding it.
+- **Twenty-four new tests**, including the v1.17 invariant re-pinned on the new
+  input: pinch out hard, pinch back in, and the camera is the exact identity
+  again — the assertion that protects every screenshot and permalink. Driven by
+  hand afterwards in headless Chromium with a real touchscreen at 390×844, and
+  with a real mouse at 1280×900 to check that removing `dblclick` cost nothing.
+
 ## [1.27.0] — 2026-07-28
 
 Detritus: the ground remembers its dead. Food has arrived in this world from

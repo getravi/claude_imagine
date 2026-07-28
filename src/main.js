@@ -14,6 +14,7 @@ import { buildBrainFor } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { dayNightPhase } from "./environment.js";
 import { ZOOM_STEP } from "./camera.js";
+import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { wholePercents, mortalitySeries, DEATH_CAUSES } from "./stats.js";
 import { mortalityColours } from "./palette.js";
@@ -284,8 +285,13 @@ function updateViewBadge() {
   if (sig === viewSig) return;
   viewSig = sig;
   // A zoomed-in view is draggable, and the cursor should say so — however the
-  // zoom got there (wheel, keyboard, or following someone).
+  // zoom got there (wheel, keyboard, or following someone). A hand needs more
+  // than a cursor: the canvas has to stop conceding vertical swipes to the page
+  // scroller, or half of every drag goes missing. Back to the stylesheet's
+  // `pan-y` at zoom 1, where there is nothing to pan and the reader wants to
+  // scroll past.
   $("world").style.cursor = cam.zoom > 1 ? "grab" : "";
+  $("world").style.touchAction = cam.zoom > 1 ? "none" : "";
   badge.classList.toggle("hidden", sig === "");
   if (sig === "") return;
   badge.innerHTML =
@@ -1183,15 +1189,15 @@ function shareLink() {
 }
 
 // ---- Canvas interaction: select, pan, zoom, follow ----
-// A press that barely moves is a click and selects a creature; a press that
-// travels drags the view. Telling them apart by distance rather than by a timer
-// keeps a slow, deliberate click on a small creature working. Pointer events
-// (not mouse events) so a finger on a phone pans the same way.
-const DRAG_SLOP = 4; // px of travel a press may make and still count as a click
-
+// All of it goes through `Gestures`, which is where the tap-versus-drag and
+// pinch arithmetic lives and where the suite can reach it. What is left here is
+// the adapter: browser events in, camera moves out. One path serves a mouse and
+// a hand, so a double-tap follows a creature exactly as a double-click does —
+// there is no `dblclick` listener any more, because a synthesised one is not
+// something a phone can be relied on to send.
 function wireCanvas(canvas) {
   const cam = () => renderer.camera;
-  let press = null;
+  const gestures = new Gestures();
 
   // Client pixels → canvas pixels (the canvas is laid out responsively, so the
   // two only coincide at full width).
@@ -1203,46 +1209,53 @@ function wireCanvas(canvas) {
     };
   };
 
-  const pickAt = (e) => {
-    const p = toCanvas(e);
-    const w = cam().screenToWorld(p.x, p.y);
+  const pickAt = (x, y) => {
+    const w = cam().screenToWorld(x, y);
     return renderer.pick(world, w.x, w.y);
   };
 
   canvas.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return; // right/middle: not ours
     const p = toCanvas(e);
-    press = { x: p.x, y: p.y, travel: 0, id: e.pointerId };
+    gestures.down(e.pointerId, p.x, p.y);
     canvas.setPointerCapture(e.pointerId);
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    if (!press || e.pointerId !== press.id) return;
     const p = toCanvas(e);
-    const dx = p.x - press.x;
-    const dy = p.y - press.y;
-    press.travel += Math.abs(dx) + Math.abs(dy);
-    if (press.travel > DRAG_SLOP) {
-      // Taking the view by hand releases the follow lock.
-      cam().setTarget(null);
-      cam().panByScreen(dx, dy);
-    }
-    press.x = p.x;
-    press.y = p.y;
+    const g = gestures.move(e.pointerId, p.x, p.y);
+    if (!g) return;
+    // Taking the view by hand — with one finger or two — releases the follow lock.
+    cam().setTarget(null);
+    // The midpoint drifting is a pan; the fingers separating is a zoom about
+    // wherever that midpoint has just arrived. A one-finger drag is the first
+    // half alone.
+    cam().panByScreen(g.dx, g.dy);
+    if (g.type === "pinch") cam().zoomBy(g.scale, g.x, g.y);
   });
 
-  canvas.addEventListener("pointerup", (e) => {
-    if (!press || e.pointerId !== press.id) return;
-    if (press.travel <= DRAG_SLOP) {
-      renderer.selected = pickAt(e);
-      // Following, then clicking someone else, hands the camera over.
+  const lift = (e, cancelled) => {
+    const g = cancelled ? gestures.cancel(e.pointerId) : gestures.up(e.pointerId, e.timeStamp);
+    if (!g) return;
+    if (g.count === 1) {
+      renderer.selected = pickAt(g.x, g.y);
+      // Following, then picking someone else, hands the camera over.
       if (cam().target) cam().setTarget(renderer.selected);
+      return;
     }
-    press = null;
-  });
-
-  canvas.addEventListener("pointercancel", () => {
-    press = null;
-  });
+    // Twice on a creature rides along with it; twice on open water falls back
+    // to the whole pond.
+    const c = pickAt(g.x, g.y);
+    if (c) {
+      renderer.selected = c;
+      cam().setTarget(c);
+      flash(`Following creature #${c.id} — drag, or press 0, to let go.`);
+    } else {
+      cam().reset();
+    }
+  };
+  canvas.addEventListener("pointerup", (e) => lift(e, false));
+  canvas.addEventListener("pointercancel", (e) => lift(e, true));
 
   // Wheel zooms about the cursor, so you magnify what you were looking at.
   canvas.addEventListener(
@@ -1255,19 +1268,6 @@ function wireCanvas(canvas) {
     },
     { passive: false }
   );
-
-  // Double-click a creature to ride along with it; double-click open water to
-  // fall back to the whole pond.
-  canvas.addEventListener("dblclick", (e) => {
-    const c = pickAt(e);
-    if (c) {
-      renderer.selected = c;
-      cam().setTarget(c);
-      flash(`Following creature #${c.id} — drag, or press 0, to let go.`);
-    } else {
-      cam().reset();
-    }
-  });
 }
 
 // ---- Persistence ----
