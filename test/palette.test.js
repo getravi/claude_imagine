@@ -30,6 +30,9 @@ import {
   minimapPredatorTones,
   mortalityColours,
   mortalityTones,
+  detritusTint,
+  DETRITUS_MAX_ALPHA,
+  blendOver,
   CVD_TYPES,
   VISION_MODELS,
   MIN_DELTA_E,
@@ -334,4 +337,168 @@ test("the colours the DOM is painted with are the colours that were measured", (
     assert.ok(m, `${name} is not a plain hsl() this test can parse: ${text}`);
     assert.deepEqual(hslToRgb(Number(m[1]), Number(m[2]), Number(m[3])), tones[name]);
   }
+});
+
+// ---- Enriched ground (v1.27) ----
+//
+// The fourth thing drawn under the water, and the first that moves. It has to be
+// told apart from the three static ones, and the dangerous confusion is with the
+// biomes: both are claims about where food comes from, and a watcher who mixes
+// them up reads the map backwards.
+//
+// The v1.25 lesson is the method here — measure the *composited* result against
+// its actual background, over the whole range of states that background can
+// take. Enriched ground can be drawn over the seasonal veil at either extreme,
+// over any point of the terrain ramp (with or without a contour line), and over
+// the biome glow, in any combination.
+
+/** The seasonal veil the scene is cleared with, at season phase 0..1. */
+function veil(phase) {
+  return {
+    r: Math.round(6 + 4 * phase),
+    g: Math.round(10 + 4 * phase),
+    b: Math.round(20 - 8 * phase),
+  };
+}
+
+/** The biome glow at its centre: additive, as render.js draws it. */
+function overBiome(bg) {
+  return addOver(bg, { r: 30, g: 78, b: 66 }, 0.16);
+}
+
+/** The terrain ramp at roughness r, with or without a contour line on it. */
+function overTerrain(bg, r, contour) {
+  let cr = 24 + 84 * r;
+  let cg = 42 + 76 * r;
+  let cb = 54 + 84 * r;
+  let a = 0.03 + 0.13 * r;
+  if (contour) {
+    cr += 26;
+    cg += 34;
+    cb += 40;
+    a = Math.min(0.34, a + 0.1);
+  }
+  return blendOver(bg, { r: cr, g: cg, b: cb }, a);
+}
+
+/** Every background enriched ground can appear on, named. */
+function soilBackgrounds() {
+  const out = [];
+  for (const phase of [0, 1]) {
+    const v = veil(phase);
+    for (const r of [0, 0.25, 0.5, 0.75, 1]) {
+      for (const contour of [false, true]) {
+        const ground = overTerrain(v, r, contour);
+        const tag = `season ${phase} terrain ${r}${contour ? "+contour" : ""}`;
+        out.push({ name: tag, rgb: ground });
+        out.push({ name: `${tag} +biome`, rgb: overBiome(ground) });
+      }
+    }
+    out.push({ name: `season ${phase} flat`, rgb: v });
+    out.push({ name: `season ${phase} flat +biome`, rgb: overBiome(v) });
+  }
+  return out;
+}
+
+/** Enriched ground of the given richness, composited onto a background. */
+function soilOver(bg, richness) {
+  const tint = detritusTint(richness);
+  return blendOver(bg, tint, tint.a);
+}
+
+test("enriched ground reads against every background it can be drawn on", () => {
+  let worst = { d: Infinity };
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(soilOver(rgb, 1), rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `full nutrient scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("half-enriched ground reads too, which is where the ground mostly sits", () => {
+  let worst = { d: Infinity };
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(soilOver(rgb, 0.5), rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `half nutrient scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("enriched ground cannot be mistaken for a biome — the confusion that matters", () => {
+  let worst = { d: Infinity };
+  for (const phase of [0, 1]) {
+    for (const r of [0, 0.5, 1]) {
+      const ground = overTerrain(veil(phase), r, false);
+      const soil = soilOver(ground, 1);
+      const fertile = overBiome(ground);
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(soil, fertile, vision);
+        if (d < worst.d) worst = { d, vision, where: `season ${phase} terrain ${r}` };
+      }
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `soil vs biome is only ${worst.d.toFixed(1)} at ${worst.where} (${worst.vision})`
+  );
+});
+
+test("a quieter tint would have failed — the opacity is a measurement, not a taste", () => {
+  // Pins the reason DETRITUS_MAX_ALPHA is what it is. At 0.5 the half-richness
+  // case misses the bar; a suite that only knew the passing number would let
+  // someone dim the layer back down and stay green.
+  const dim = (richness) => {
+    const t = detritusTint(richness);
+    return { ...t, a: (t.a / DETRITUS_MAX_ALPHA) * 0.5 };
+  };
+  let worst = Infinity;
+  for (const { rgb } of soilBackgrounds()) {
+    const t = dim(0.5);
+    for (const vision of VISION_MODELS) {
+      worst = Math.min(worst, deltaE(blendOver(rgb, t, t.a), rgb, vision));
+    }
+  }
+  assert.ok(worst < MIN_DELTA_E, `a 0.5 alpha would have scored ${worst.toFixed(1)}`);
+});
+
+test("nutrient is carried in opacity, and bare ground is drawn not at all", () => {
+  assert.equal(detritusTint(0).a, 0);
+  assert.equal(detritusTint(1).a, DETRITUS_MAX_ALPHA);
+  // Monotone, clamped, and the same hue throughout: richness is a quantity, so
+  // it may not change what colour the ground claims to be.
+  let prev = -1;
+  for (const r of [0, 0.1, 0.3, 0.5, 0.8, 1]) {
+    const t = detritusTint(r);
+    assert.ok(t.a > prev, `alpha must rise with richness (${r})`);
+    prev = t.a;
+    assert.deepEqual(
+      { r: t.r, g: t.g, b: t.b },
+      { r: detritusTint(1).r, g: detritusTint(1).g, b: detritusTint(1).b }
+    );
+  }
+  assert.equal(detritusTint(-3).a, 0);
+  assert.equal(detritusTint(9).a, DETRITUS_MAX_ALPHA);
+});
+
+test("enriched ground is the lightest thing under the water, which is why it survives", () => {
+  // Luminance is the one channel no colour vision deficiency touches, so the
+  // layer is required to carry its distinction there and not only in hue.
+  const t = detritusTint(1);
+  const bg = veil(0.5);
+  const soil = blendOver(bg, t, t.a);
+  const ridge = overTerrain(bg, 1, true);
+  const biome = overBiome(bg);
+  const L = (rgb) => toLab(rgb)[0];
+  assert.ok(L(soil) > L(ridge) + 10, `soil L* ${L(soil)} vs ridge ${L(ridge)}`);
+  assert.ok(L(soil) > L(biome) + 10, `soil L* ${L(soil)} vs biome ${L(biome)}`);
 });

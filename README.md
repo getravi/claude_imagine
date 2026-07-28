@@ -102,6 +102,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Off by default. Watch the *Sick* and *Immune* stats. |
 | **Signalling** | Toggle whether creatures can *hear* one another. Every brain has always emitted a "colour signal" that nothing could perceive; switch this on and the loudest call within earshot becomes a sense, wired in through evolved ear genes, and calling costs a little energy. Off by default. Watch the *Heard* stat. |
 | **Terrain** | Toggle a landscape. The ground stops being uniform: a static, seed-derived roughness field makes rough ground both expensive to cross and reluctant to grow food, so the pond gathers into its basins. Drawn as contour lines under the world. Off by default. Watch the *Ground* stat — how much flatter than average the ground under the living is, and exactly `off` when there is no landscape to measure against. |
+| **Detritus** | Toggle whether the ground remembers its dead. A body leaves nutrient in the ground under it, the nutrient rots away over a few hundred ticks, and about a quarter of the pond's new food grows out of it — so the crop stops being a rate and becomes an inheritance. Drawn as warm ochre stains under the water and on the minimap. Off by default. Watch the *Soil* stat: the share of new food currently growing where something died, and exactly `off` when nothing is being remembered. |
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
 | **Evolvable brains (NEAT)** | Toggle evolvable topology: brains start minimal and grow their own structure over generations. Off by default; flipping it restarts the world with graph-based brains. |
@@ -112,7 +113,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
 | **Zoom & pan** | Scroll to zoom about the cursor (up to 8×), drag to move around, <kbd>0</kbd> for the whole pond again. The world is a torus, so the view can roam forever without meeting an edge. |
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
-| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
+| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, the enriched ground where things have died, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
 | **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
 | **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
 
@@ -171,6 +172,17 @@ lineage, so you can see where it lives and how far it has spread.
   cost alone moves the population by essentially nothing, which is written up
   with the control and the sweep on
   [the Science page](docs/SCIENCE.md#terrain-why-a-cost-is-not-a-landscape).
+- **Turn on Detritus** and watch warm patches bloom under the water wherever the
+  pond has been losing creatures — then watch pellets start appearing in them. It
+  closes the last of this world's unconditional gifts: food used to arrive from
+  nowhere at a fixed rate, and a death used to have no consequence at all for the
+  place it happened in. The *Soil* stat is the share of the crop currently growing
+  out of the dead, and it climbs sharply just after a crash, which is when the
+  ground is richest. With *Scavenging* on as well the two nutrient loops compete:
+  a corpse a carnivore strips never reaches the soil. What it does to the
+  population — and the placement control that says why the obvious explanation is
+  wrong — is on
+  [the Science page](docs/SCIENCE.md#detritus-a-pond-that-feeds-on-its-own-dead).
 - **Starve them.** Drag *Food rate* to zero. Watch the population crash, then
   slowly recover as lean, efficient lineages survive the famine. (Scarcer food
   also makes hunting more attractive — predators often surge in a famine.)

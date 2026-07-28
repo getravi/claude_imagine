@@ -4,6 +4,88 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.27.0] — 2026-07-28
+
+Detritus: the ground remembers its dead. Food has arrived in this world from
+nowhere since v1.0. v1.18 made the crop conditional on itself and v1.23 on the
+ground, but nobody had questioned the *source* — pellets appear at a rate, and a
+creature's death had no consequence at all for the place it happened in. Death
+was the one event in this pond that the pond did not notice.
+
+### Added
+
+- **`src/detritus.js`** — a decaying nutrient map over the torus. A body leaves
+  `radius x detritusPerRadius` units of nutrient in the cell it died in; the
+  ground keeps `detritusDecay` of it per tick (a half-life of about 230 ticks);
+  and `sprout()` picks a cell weighted by nutrient, charges it `detritusUptake`,
+  and returns a point inside it. A cell that cannot pay refuses, and the pellet
+  then appears from nowhere exactly as it always would have — so **total food
+  influx is unchanged**, the same contract the biomes have kept since v1.3.
+  Cells tile the world exactly and wrap; a test walks them and asserts each is
+  covered once.
+- **The crop grows out of it** (`src/food.js`, `src/world.js`). About **24%** of
+  new food sprouts from enriched ground at steady state, and the nutrient it
+  draws down is the *only* thing that decides where. A sprouted pellet skips the
+  terrain barrenness check on purpose: a carcass on a ridge makes rock grow,
+  which is the first rule in this world that pushes back against terrain rather
+  than agreeing with it.
+- **Two nutrient loops, in competition.** With scavenging on, a corpse feeds the
+  ground only as fast as it *rots*, so a carnivore that strips one has taken it
+  out of the soil's mouth — a corpse eaten after five ticks delivers under a
+  fifth of what one left to rot does. Spread over a full undisturbed rot the
+  corpse delivers exactly the body's worth, which is a test.
+- **Somewhere to see it.** Warm ochre stains in the pond (`src/render.js`) and on
+  the minimap (`src/minimap.js`), both painted from `palette.detritusTint()` so
+  they cannot drift apart. The pond writes one pixel per cell into a small
+  offscreen canvas and lets the upscale blur it into a stain — a few hundred
+  pixels a frame rather than a few hundred gradients — with a one-cell wrapped
+  border and a per-tile clip so the torus seam neither fades nor doubles.
+- **A `Soil 🍂` readout** (`src/stats.js`, `app/index.html`): the share of new
+  food currently growing where something died, as an exponential mean over
+  `SOIL_HORIZON` (240) ticks. It climbs sharply after a crash, which is when the
+  ground is richest, and it reads `off` rather than a plausible steady zero when
+  there is no field. Plus a `Detritus` toggle, a `det=` permalink parameter, and
+  one chronicle line, guarded on 60 deaths and a 240-tick streak so it cannot
+  narrate a pond it never watched feed itself.
+- **`Camera.worldTiles()`** — where to place copies of a whole-world backdrop so
+  it covers the viewport, extracted from the terrain blit so the suite can reach
+  the geometry. It also drops the neighbours the viewport only *touches*, which
+  makes the whole-pond view one blit instead of the nine `render.js` had been
+  issuing every frame since v1.23.
+
+### Changed
+
+- **`docs/ARCHITECTURE.md`'s module table** now lists `terrain.js`, `palette.js`
+  and `detritus.js`. The first two had been missing since v1.23 and v1.25 — a
+  table that claims to list the modules should list them.
+
+### Notes
+
+- **The control says it is not the dead that matter.** A detritus pond holds
+  about 8% more creatures than a control pond (+8.2% ± 5.3 sem over eight seeds
+  at 9,000 ticks), and the obvious explanation — the crop now grows where the
+  creatures are — is wrong twice over. The mean distance from a creature to the
+  nearest pellet *rises*. And a third arm that sprouts the same pellets, draws
+  down the same nutrient, and then places each one **uniformly at random** does
+  the same thing (+7.6% ± 11.5; real vs shuffled +6.1% ± 8.3, indistinguishable).
+  Whatever moves the population, it is that a quarter of the crop stopped being
+  crowded into the biomes, not that it follows the dead. Population variability
+  is untouched too (cv 0.220 against 0.229), so the delayed feedback loop this
+  builds does not make the pond swing more, which is what it was designed to do.
+  Written up with the numbers and a runnable script in `docs/SCIENCE.md`.
+- **`detritusFull` is a measurement, not a taste.** At 4 it silently truncated a
+  third of every large carcass and the share of the crop growing from the dead
+  was 17%; at 8 — the smallest round number that holds one whole body, since the
+  largest possible creature is worth 6.4 — it is 24%; at 12 it is 25% and one
+  cell can bank three bodies. Halving `detritusUptake` would reach 46%, at the
+  price of a body funding more pellets than it plausibly ate.
+- **Determinism.** With the feature off the field does not exist, so no branch is
+  taken and no random number drawn: 2,500 ticks of a default world are identical
+  creature-by-creature and pellet-by-pellet, and a scavenging world is identical
+  corpse-by-corpse (the `Corpse` gained a field, not a behaviour). 294 tests, all
+  green (32 new). Checked by hand in headless Chromium on the real
+  `app/index.html`, with and without terrain.
+
 ## [1.26.0] — 2026-07-28
 
 The death toll gets a clock. v1.21 made every death name its cause and v1.22

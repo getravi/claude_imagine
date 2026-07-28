@@ -18,6 +18,16 @@ import { groundBias } from "./terrain.js";
 export const DEATH_CAUSES = Object.freeze(["starvation", "age", "predation"]);
 
 /**
+ * Ticks of history the "Soil" readout averages over. A share of a handful of
+ * pellets per tick is far too noisy to read, and a cumulative share over the
+ * whole run stops moving after a few thousand ticks — the v1.22 complaint about
+ * readouts that look live and are not. An exponential mean with a stated horizon
+ * is honest about being a recent average, and it still reads exactly 0 when
+ * nothing has ever sprouted.
+ */
+export const SOIL_HORIZON = 240;
+
+/**
  * The history-point field carrying the *cumulative* number of deaths of one
  * cause up to that sample — and the CSV column name for it, so the file and the
  * buffer can never drift apart.
@@ -137,6 +147,13 @@ export class Stats {
     // Exactly 0 in every world without terrain — a statistic that is non-zero
     // with its mechanism off is not measuring the mechanism.
     this.groundBias = 0;
+    // Detritus: what share of the crop is currently growing out of the pond's
+    // own dead, smoothed over roughly `SOIL_HORIZON` ticks. Exactly 0 in every
+    // world without detritus, because no pellet can ever sprout from a field
+    // that does not exist.
+    this.soilShare = 0;
+    this._lastSpawned = 0;
+    this._lastSprouted = 0;
   }
 
   /**
@@ -256,6 +273,21 @@ export class Stats {
     // frame instead of leaving the last landscape's number sitting there.
     if (!world.terrain) this.groundBias = 0;
     else if (this.tick % 4 === 0) this.groundBias = groundBias(world.terrain, world.creatures);
+
+    // How much of the crop is growing out of the pond's own dead. Both counters
+    // are cumulative, so differencing them gives exactly this tick's spawns —
+    // and with no field to sprout from, `sprouted` never moves and the mean
+    // stays at the zero it started at. Zeroed outright without a field, so
+    // switching detritus off clears the readout in the same frame rather than
+    // leaving the last pond's number sitting there looking live.
+    const spawned = world.food.spawned - this._lastSpawned;
+    const sprouted = world.food.sprouted - this._lastSprouted;
+    this._lastSpawned = world.food.spawned;
+    this._lastSprouted = world.food.sprouted;
+    if (!world.detritus) this.soilShare = 0;
+    else if (spawned > 0) {
+      this.soilShare += (sprouted / spawned - this.soilShare) / SOIL_HORIZON;
+    }
 
     // Record a history point every 4 ticks.
     if (this.tick % 4 === 0) {

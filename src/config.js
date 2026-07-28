@@ -92,6 +92,39 @@ export const DEFAULT_CONFIG = Object.freeze({
   // turns the worst ridges into literal bare rock, which reads as a bug.
   terrainBarrenness: 0.85, // 0 = ground doesn't care, 1 = the worst ridge is bare rock
 
+  // Detritus (v1.27, opt-in): the ground remembers where things died. Food has
+  // arrived from nowhere since v1.0 — v1.18 made the crop conditional on itself
+  // and v1.23 on the ground, but a death still had no consequence for the pond
+  // it happened in. With detritus on, a body leaves nutrient in the cell under
+  // it, the nutrient rots away, and a share of the pellets that used to appear
+  // from nowhere instead sprout out of it and draw it down. Total influx is
+  // unchanged (a refused seed simply spawns the old way), so this moves the crop
+  // rather than enlarging it — the same contract the biomes have kept since v1.3.
+  // Off by default; with it off the field does not exist, so not one branch is
+  // taken and not one random number is drawn.
+  detritus: false,
+  // Nutrient left per unit of body radius. Bodies run 3.5..8, so a typical death
+  // leaves ~4 units and can therefore feed ~4 pellets — a little under what the
+  // creature ate to grow that big, which is the right side of honest.
+  detritusPerRadius: 0.8,
+  detritusUptake: 1.0, // nutrient a sprouting pellet consumes
+  // What one cell (about 30px square) can hold. The cap is load-bearing — without
+  // it a die-off in one biome would own the whole crop for thousands of ticks
+  // after — and this value is the smallest round number that never truncates a
+  // *single* body, since the largest possible creature is worth 6.4. Set to 4 it
+  // silently threw away a third of every big carcass and the share of the crop
+  // growing from the dead fell from 24% to 17%; 12 buys one further point (25%)
+  // and starts letting one cell bank three bodies.
+  detritusFull: 8.0,
+  // Per-tick nutrient retained — a half-life of about 230 ticks, so the ground
+  // remembers a die-off for roughly a fifth of a season and then forgets it.
+  detritusDecay: 0.997,
+  // Share of the "from nowhere" pellets that try to grow out of the dead first.
+  // Not 1: some of the crop stays unconditional, so a pond that has just been
+  // through a crash is not left waiting on the very deaths it needs to recover
+  // from.
+  detritusSprout: 0.75,
+
   // --- Population ---
   populationStart: 40,
   populationMax: 650, // safety cap so the sim can't explode

@@ -143,6 +143,46 @@ export class Camera {
     };
   }
 
+  /**
+   * Where to place copies of a whole-world backdrop so it covers the viewport.
+   *
+   * Everything else in this scene is one small thing drawn at whichever wrapped
+   * image of itself is nearest the camera. A backdrop is the whole world at once,
+   * and at any zoom the viewport can straddle up to four copies of it, so it
+   * needs the tiles rather than the nearest image: the tile containing the
+   * world's centre, plus whichever of its eight neighbours the viewport actually
+   * reaches.
+   *
+   * At zoom 1 the viewport is exactly the world, so this returns exactly one
+   * tile at the origin — the same invariant the rest of this file protects.
+   *
+   * @returns {Array<{x:number, y:number}>} top-left corners, in world coordinates
+   */
+  worldTiles() {
+    const cfg = this.config;
+    const halfW = cfg.width / (2 * this.zoom);
+    const halfH = cfg.height / (2 * this.zoom);
+    const centre = this.nearest(cfg.width / 2, cfg.height / 2);
+    const ox = centre.x - cfg.width / 2;
+    const oy = centre.y - cfg.height / 2;
+    const tiles = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const tx = ox + dx * cfg.width;
+        const ty = oy + dy * cfg.height;
+        // Skip the tiles the viewport misses, and the ones it merely *touches*:
+        // an overlap of zero width contributes no pixels. That is what makes the
+        // whole-pond view exactly one tile rather than one tile flanked by eight
+        // neighbours meeting it edge-on — which is what the terrain layer had
+        // been blitting every frame since v1.23.
+        if (tx >= this.x + halfW || tx + cfg.width <= this.x - halfW) continue;
+        if (ty >= this.y + halfH || ty + cfg.height <= this.y - halfH) continue;
+        tiles.push({ x: tx, y: ty });
+      }
+    }
+    return tiles;
+  }
+
   /** World point → screen pixel. */
   worldToScreen(wx, wy) {
     const cfg = this.config;

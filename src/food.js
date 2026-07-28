@@ -7,7 +7,9 @@
 // these dots before starving. WHERE and HOW FAST pellets appear is shaped by the
 // environment (biomes and seasons); see environment.js. With regrowth switched on
 // it is also shaped by the food itself: pellets seed from pellets, so the crop is
-// a population too, and one that grazers can drive down.
+// a population too, and one that grazers can drive down. With detritus switched
+// on it is shaped by the pond's own history as well — a share of the crop grows
+// out of whatever died there; see detritus.js.
 
 /**
  * How many times a pellet may look for ground that will grow it before settling
@@ -30,11 +32,15 @@ export class Food {
 // by carnivores (via the same prey channel they hunt with), so scavenging reuses
 // hunting behaviour rather than needing a new sense.
 export class Corpse {
-  constructor(x, y, energy) {
+  constructor(x, y, energy, soilRate = 0) {
     this.x = x;
     this.y = y;
     this.energy = energy;
     this.isCorpse = true; // lets the eating code tell a corpse from live prey
+    // Nutrient this corpse rots into the ground per tick (detritus only). Set so
+    // that a corpse nothing eats delivers the body's whole worth over exactly
+    // the time it takes to rot away — and one that is eaten delivers less.
+    this.soilRate = soilRate;
   }
 }
 
@@ -44,17 +50,26 @@ export class FoodField {
    * @param {import('./rng.js').RNG} rng
    * @param {import('./environment.js').FertilityField} [fertility] biome field
    * @param {import('./terrain.js').TerrainField} [terrain] the ground, if any
+   * @param {import('./detritus.js').DetritusField} [detritus] the nutrient it holds
    */
-  constructor(config, rng, fertility = null, terrain = null) {
+  constructor(config, rng, fertility = null, terrain = null, detritus = null) {
     this.config = config;
     this.rng = rng;
     this.fertility = fertility;
     // The ground. Null in every world without terrain, which is what makes
     // `_takes()` below a guaranteed `true` and this whole mechanism invisible.
     this.terrain = terrain;
+    // What the ground remembers. Null in every world without detritus, which is
+    // what makes the sprouting branch in `spawnOne()` unreachable.
+    this.detritus = detritus;
     /** @type {Food[]} */
     this.items = [];
     this._spawnAccumulator = 0;
+    // Two counters, so "how much of this crop grew out of the dead?" has an
+    // answer. Read by the stats panel and by nothing in the simulation, and
+    // `sprouted` is exactly 0 in every world without detritus.
+    this.spawned = 0;
+    this.sprouted = 0;
     // The world opens with an established standing crop, scattered across the
     // biomes — regrowth governs how the pond *recovers*, not how it was sown, and
     // seeding the first 280 pellets from each other would grow the whole crop out
@@ -64,6 +79,7 @@ export class FoodField {
 
   spawnOne() {
     if (this.items.length >= this.config.foodMax) return;
+    this.spawned++;
     // Regrowth: most new pellets are the offspring of one already standing. The
     // whole branch is skipped when the feature is off (and when nothing is left
     // to seed from), so it draws no randomness and default worlds are unchanged.
@@ -75,6 +91,24 @@ export class FoodField {
       const seed = this._seedNear(this.rng.pick(this.items));
       if (seed) this.items.push(new Food(seed.x, seed.y));
       return; // a seed that fell on barren ground simply didn't take
+    }
+    // Detritus: the rest of the crop used to appear from nowhere, and some of it
+    // now grows out of whatever died here. The field is null without the
+    // feature, so this whole branch is unreachable in a default world.
+    //
+    // A pellet that sprouts skips `_takes()` on purpose: nutrient overrides the
+    // ground. A carcass on a ridge makes rock grow, which is the one thing in
+    // this world that pushes back against terrain's barrenness instead of
+    // agreeing with it.
+    if (this.detritus && this.detritus.total > 0 && this.rng.chance(this.config.detritusSprout)) {
+      const spot = this.detritus.sprout(this.rng);
+      if (spot) {
+        this.items.push(new Food(spot.x, spot.y));
+        this.sprouted++;
+        return;
+      }
+      // Ground too thin to feed a seed: fall through and appear from nowhere,
+      // exactly as this pellet always would have. Influx is preserved.
     }
     this.spawnAnywhere();
   }

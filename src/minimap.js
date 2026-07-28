@@ -20,7 +20,7 @@
 // default view rather than drawing a frame around everything.
 
 import { wrap } from "./vec.js";
-import { minimapPredatorMark } from "./palette.js";
+import { minimapPredatorMark, detritusTint } from "./palette.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
 export const MINIMAP_WIDTH = 180;
@@ -189,6 +189,38 @@ export function terrainBandFill(band) {
 }
 
 /**
+ * Enriched ground, as rectangles the minimap can draw: one per cell holding any
+ * nutrient at all, sized so the cells tile the map exactly.
+ *
+ * No merging, unlike the terrain bands — a cell is thirty world pixels across
+ * and the values are continuous, so there is nothing to merge and, at six
+ * minimap pixels a side, nothing to be gained. Returns `[]` when the world keeps
+ * no such record, so the call site needs no branch.
+ *
+ * v1.23 gave the world terrain and drew it in the pond but not here, and v1.24
+ * had to go back for it. The rule that came out of that: when a feature arrives,
+ * every surface claiming to show the same world updates in the same cycle.
+ *
+ * @param {import('./detritus.js').DetritusField|null|undefined} field
+ * @param {{width:number, height:number}} layout from `minimapLayout`
+ * @returns {Array<{x:number,y:number,w:number,h:number,richness:number}>}
+ */
+export function detritusCellRects(field, layout) {
+  if (!field) return [];
+  const w = layout.width / field.cols;
+  const h = layout.height / field.rows;
+  const rects = [];
+  for (let j = 0; j < field.rows; j++) {
+    for (let i = 0; i < field.cols; i++) {
+      const richness = field.richness(i, j);
+      if (richness <= 0) continue; // bare ground is the map's own background
+      rects.push({ x: i * w, y: j * h, w, h, richness });
+    }
+  }
+  return rects;
+}
+
+/**
  * Draw the pond into a minimap context, which is expected to be scaled so that
  * one unit is one CSS pixel of the minimap. Returns the layout it drew at.
  *
@@ -220,6 +252,14 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
       const p = worldToMinimap(c.x, c.y, layout, config);
       discWrapped(ctx, p.x, p.y, config.patchRadius * s, W, H);
     }
+  }
+
+  // Enriched ground, over both static maps and under the living, in the same
+  // order the pond draws it. Empty in a world that keeps no record of its dead.
+  for (const r of detritusCellRects(world.detritus, layout)) {
+    const t = detritusTint(r.richness);
+    ctx.fillStyle = `rgba(${t.r}, ${t.g}, ${t.b}, ${t.a.toFixed(3)})`;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
   }
 
   // Food and creatures are single pixels here, so they are squares rather than

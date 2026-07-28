@@ -163,3 +163,67 @@ test("a zoom step in and back out returns to the whole pond", () => {
   cam.zoomBy(1 / ZOOM_STEP, 10, 10);
   assert.ok(cam.isDefault());
 });
+
+// ---- Whole-world backdrops (v1.27) ----
+//
+// A backdrop is the one thing in this scene drawn as the *whole* world rather
+// than as a small thing at its nearest wrapped image, and at any zoom the
+// viewport can straddle up to four copies of it. This is the geometry two
+// layers now depend on (the terrain bake and the nutrient field), so it lives
+// here where the suite can reach it rather than inside the renderer.
+
+test("at zoom 1 a backdrop is exactly one tile at the origin", () => {
+  const cam = new Camera(cfg);
+  assert.deepEqual(cam.worldTiles(), [{ x: 0, y: 0 }]);
+});
+
+test("a view inside the world needs one tile; a view over a seam needs more", () => {
+  const cam = new Camera(cfg);
+  cam.zoom = 4;
+  cam.x = cfg.width / 2;
+  cam.y = cfg.height / 2;
+  assert.equal(cam.worldTiles().length, 1, "the middle of the pond straddles nothing");
+  cam.x = 2; // hard against the left seam
+  assert.equal(cam.worldTiles().length, 2);
+  cam.y = 2; // and the top one too: a corner
+  assert.equal(cam.worldTiles().length, 4);
+});
+
+test("the tiles cover the viewport, and are whole worlds apart", () => {
+  const cam = new Camera(cfg);
+  for (const [zoom, x, y] of [
+    [1, 450, 310],
+    [2, 5, 5],
+    [3, 895, 615],
+    [8, 0, 0],
+    [1.7, 450, 3],
+  ]) {
+    cam.zoom = zoom;
+    cam.x = x;
+    cam.y = y;
+    const tiles = cam.worldTiles();
+    const halfW = cfg.width / (2 * zoom);
+    const halfH = cfg.height / (2 * zoom);
+    // Every tile is an exact whole-world offset from every other, so they line
+    // up seamlessly rather than overlapping by a fraction of a pixel.
+    for (const t of tiles) {
+      for (const u of tiles) {
+        near(((t.x - u.x) / cfg.width) % 1, 0);
+        near(((t.y - u.y) / cfg.height) % 1, 0);
+      }
+    }
+    // And the viewport is covered: every corner of it falls inside some tile.
+    for (const px of [x - halfW, x + halfW]) {
+      for (const py of [y - halfH, y + halfH]) {
+        const hit = tiles.some(
+          (t) =>
+            px >= t.x - 1e-9 &&
+            px <= t.x + cfg.width + 1e-9 &&
+            py >= t.y - 1e-9 &&
+            py <= t.y + cfg.height + 1e-9
+        );
+        assert.ok(hit, `zoom ${zoom} at (${x},${y}): corner (${px},${py}) uncovered`);
+      }
+    }
+  }
+});

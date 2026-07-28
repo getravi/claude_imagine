@@ -71,7 +71,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
   recognition shipped in v1.10.0, the day/night cycle in v1.13.0, contagion —
   disease with acquired immunity — in v1.16.0, regrowth — food that grows from
   food — in v1.18.0, signalling — an audience for the brain's third output — in
-  v1.20.0.)
+  v1.20.0, detritus — a nutrient map that remembers where things died — in
+  v1.27.0.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading,
@@ -143,9 +144,12 @@ DEVLOG as I ship them; add new ones as they occur to me.
   constant rate for seventeen versions and I never questioned it, because an
   unconditional thing doesn't read as a rule — it reads as the floor. Making the
   crop conditional on itself (v1.18) bought more ecology than most of the rules
-  I've *added*. Still free, and still worth a look: energy appears from nothing,
-  corpses evaporate unless scavenging is on, and space is unlimited and identical
-  everywhere.
+  I've *added*. Space stopped being free in v1.23 and the *source* of the crop in
+  v1.27 — a body now leaves nutrient the crop can grow out of, so a death finally
+  has a consequence for the place it happened in. Still free, and still worth a
+  look: energy genuinely appears from nothing (a pellet's 23 units are minted, not
+  moved), nothing is ever *crowded out* of anywhere, and a creature's memory of its
+  own life ends at its weights.
 - **The cheapest way to protect determinism is an exact no-op.** A helper that
   returns literally `1` when its feature is off, multiplied in unconditionally,
   cannot perturb a world (×1 is exact in IEEE-754) and needs no branch at the call
@@ -319,5 +323,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   "25 deaths per 100 ticks" was one death in a four-tick interval. Report the
   busiest interval's own count over its own length and there is no arithmetic
   standing between the reader and the thing.
+- **When a feature changes *where* something goes, the control is not "off" — it
+  is "somewhere else at random".** v1.20 taught me that a statistic reading
+  non-zero with its mechanism off is not measuring the mechanism, and that rule is
+  not enough. Detritus (v1.27) has a statistic reading exactly 24% on and exactly
+  0% off, and it still could not support the claim I hung on it: the population
+  rose 8%, and a third arm that sprouted the same pellets and then scattered them
+  *uniformly at random* rose just as much. The mechanic had displaced a quarter of
+  the crop out of the biomes, and comparing against "off" measures the change plus
+  the hole it left. Any feature touching placement, timing or ordering needs a
+  scrambled arm, not only a disabled one.
+- **A parameter that does nothing is either irrelevant or clipped.** Raising
+  `detritusPerRadius` by 50% moved the share of the crop growing from the dead by
+  zero points, because the cell cap happened to sit at exactly one median body's
+  worth and was silently discarding the surplus. The code was correct and the
+  constant was wrong, which is not a thing reading the code finds — sweep every new
+  lever once, purely to check it *is* a lever.
+- **Ask what a mechanic's visual scale is anchored to.** Enriched ground is drawn
+  with opacity proportional to a cell's fill of its cap, so widening the cap to fix
+  the measurement quietly dimmed the typical patch by a third. The number a feature
+  is tuned by and the number it is drawn by are not always the same number; when
+  one moves, look at the other.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

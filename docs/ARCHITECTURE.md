@@ -50,6 +50,9 @@ The dependency arrows point from a module to what it imports.
 | `food.js` | Passive energy pellets (and, when scavenging is on, corpses). | — |
 | `grid.js` | Spatial hash grid for O(1)-ish neighbour queries on a torus. | — |
 | `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
+| `terrain.js` | Optional static roughness landscape: rough ground costs more to cross and grows less. | — |
+| `detritus.js` | Optional decaying nutrient map: deaths enrich the ground, and part of the crop grows out of it. | — |
+| `palette.js` | Colour decisions as pure functions, plus the dichromat simulation and ΔE that judge them. | — |
 | `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by, carried into both history buffers as cumulative counters so differencing any two samples is exact). | — |
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
@@ -70,6 +73,11 @@ A `World` (in `world.js`) owns everything mutable:
 - `creatures` — a flat array of live `Creature`s.
 - `food` — a `FoodField` holding the pellet array.
 - `creatureGrid`, `foodGrid` — spatial hash grids, rebuilt each tick.
+- `terrain` — a `TerrainField`, or `null` in a world without a landscape.
+- `detritus` — a `DetritusField`, or `null` in a world that keeps no record of
+  its dead. Both optional fields are `null` rather than inert when their feature
+  is off, which is what makes their branches unreachable and their randomness
+  undrawn.
 - `stats` — measurements for the HUD and chart.
 - `tick` — the integer clock.
 
@@ -327,6 +335,24 @@ fifth-scale landscape read as terrain rather than as one more glow; merging is
 what makes sampling it that finely cheap enough to redraw every frame. The
 rectangles are cached against the `TerrainField` object itself, so a world that
 drops its landscape cannot be shown the one it used to have.
+
+It draws the nutrient field too, when a world keeps one. `detritusCellRects()`
+returns one rectangle per enriched cell, sized so the cells tile the map exactly;
+there is nothing to merge and nothing to cache, because unlike the landscape this
+map changes every tick. The pond draws the same field a different way —
+`render.js` writes one pixel per cell into a small offscreen canvas and lets the
+upscale blur it into a stain, which costs a few hundred pixels a frame instead of
+a few hundred gradients. That image carries a one-cell border copied from the
+opposite edge of the field, and each tile is clipped to its own world, so the
+seam neither fades out nor doubles up. Both views take their colour from
+`palette.detritusTint()`, so they cannot drift apart and a test can measure what
+is actually drawn.
+
+Whole-world backdrops — the baked landscape and the nutrient field — need the
+world *tiled* rather than drawn at its nearest wrapped image, because at any zoom
+the viewport can straddle up to four copies of it. `Camera.worldTiles()` returns
+the corners to draw at, dropping the neighbours the viewport only touches
+edge-on, so the whole-pond view is exactly one blit.
 
 ## Persistence
 

@@ -7,7 +7,7 @@
 
 import { wrapDelta } from "./vec.js";
 import { Camera } from "./camera.js";
-import { predatorMark } from "./palette.js";
+import { predatorMark, detritusTint } from "./palette.js";
 
 export class Renderer {
   /**
@@ -35,6 +35,15 @@ export class Renderer {
     // than being re-evaluated for every pixel of every frame.
     this._terrainCanvas = null;
     this._terrainFor = null; // the TerrainField the bake belongs to
+    // Enriched ground, which unlike the terrain changes every tick, so it is
+    // repainted each frame — one pixel per cell into a tiny offscreen canvas,
+    // then upscaled, which is how a 30x21 grid becomes a smooth stain for the
+    // price of a few hundred pixels. Keyed on the DetritusField it belongs to, so a
+    // toggled-off field cannot leave a stale map behind: a new object cannot
+    // find an old one's canvas.
+    this._soilCanvas = null;
+    this._soilImage = null;
+    this._soilFor = null;
     this._resize();
   }
 
@@ -48,6 +57,9 @@ export class Renderer {
     // that actually needs one.
     this._terrainCanvas = null;
     this._terrainFor = null;
+    this._soilCanvas = null;
+    this._soilImage = null;
+    this._soilFor = null;
   }
 
   _resize() {
@@ -107,6 +119,12 @@ export class Renderer {
         ctx.fill();
       }
     }
+
+    // Enriched ground: where this pond's dead went. Drawn over the two static
+    // maps and under everything alive, because it is the one backdrop that is a
+    // record of events rather than a property of the place. Nothing at all in a
+    // world without detritus.
+    if (world.detritus) this._drawDetritus(ctx, world.detritus, cam);
 
     // Corpses: dim maroon splotches that fade as they rot. Drawn under the food
     // and creatures. Nothing to draw when scavenging is off (the list is empty).
@@ -205,37 +223,79 @@ export class Renderer {
   }
 
   /**
-   * Blit the baked landscape under the world, tiled across the seam.
-   *
-   * Everything else in this scene is drawn at whichever wrapped image of itself
-   * is nearest the camera; a full-world backdrop needs the same trick, except
-   * that at any zoom the viewport can straddle up to four copies of the world at
-   * once. So the nearest tile is placed and its eight neighbours are offered,
-   * with the ones that miss the viewport skipped.
+   * Blit the baked landscape under the world, tiled across the seam. The tiles
+   * come from the camera (`worldTiles`), which is the one piece of this geometry
+   * the test suite can reach.
    */
   _drawTerrain(ctx, terrain, cam) {
     if (this._terrainFor !== terrain) this._bakeTerrain(terrain);
     const cfg = this.config;
-    const img = this._terrainCanvas;
-    // The visible world-space rectangle. Zoom is never below 1, so this is at
-    // most exactly the world.
-    const halfW = cfg.width / (2 * cam.zoom);
-    const halfH = cfg.height / (2 * cam.zoom);
-    const vx0 = cam.x - halfW;
-    const vx1 = cam.x + halfW;
-    const vy0 = cam.y - halfH;
-    const vy1 = cam.y + halfH;
-    const centre = cam.nearest(cfg.width / 2, cfg.height / 2);
-    const ox = centre.x - cfg.width / 2;
-    const oy = centre.y - cfg.height / 2;
     ctx.globalCompositeOperation = "source-over";
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const tx = ox + dx * cfg.width;
-        const ty = oy + dy * cfg.height;
-        if (tx > vx1 || tx + cfg.width < vx0 || ty > vy1 || ty + cfg.height < vy0) continue;
-        ctx.drawImage(img, tx, ty, cfg.width, cfg.height);
+    for (const t of cam.worldTiles()) {
+      ctx.drawImage(this._terrainCanvas, t.x, t.y, cfg.width, cfg.height);
+    }
+  }
+
+  /**
+   * Paint the nutrient field: one pixel per cell into a tiny offscreen canvas,
+   * blitted up to world size and left to the canvas's own bilinear filtering.
+   * Under a thousand pixels a frame buys a stain that reads as ground rather
+   * than as a mosaic, which is what a per-cell `fillRect` would give at thirty
+   * pixels a side.
+   *
+   * The offscreen image carries a one-cell border copied from the *opposite*
+   * edge of the field, and each tile is clipped to the world it belongs to. That
+   * is the whole seam story: without the border the filtering would fade every
+   * tile's edge toward nothing, drawing a bright cross through a world that has
+   * no edges; without the clip the borders would double up where tiles meet.
+   */
+  _drawDetritus(ctx, field, cam) {
+    const cfg = this.config;
+    const cols = field.cols;
+    const rows = field.rows;
+    if (this._soilFor !== field) {
+      const off = document.createElement("canvas");
+      off.width = cols + 2;
+      off.height = rows + 2;
+      this._soilCanvas = off;
+      this._soilImage = off.getContext("2d").createImageData(cols + 2, rows + 2);
+      this._soilFor = field;
+    }
+    const img = this._soilImage;
+    const px = img.data;
+    for (let j = -1; j <= rows; j++) {
+      // The border rows and columns wrap, so the filter sees the field's real
+      // neighbourhood at the seam.
+      const sj = (j + rows) % rows;
+      for (let i = -1; i <= cols; i++) {
+        const si = (i + cols) % cols;
+        const tint = detritusTint(field.richness(si, sj));
+        const k = ((j + 1) * (cols + 2) + (i + 1)) * 4;
+        px[k] = tint.r;
+        px[k + 1] = tint.g;
+        px[k + 2] = tint.b;
+        px[k + 3] = Math.round(tint.a * 255);
       }
+    }
+    const octx = this._soilCanvas.getContext("2d");
+    octx.putImageData(img, 0, 0);
+
+    ctx.globalCompositeOperation = "source-over";
+    for (const t of cam.worldTiles()) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(t.x, t.y, cfg.width, cfg.height);
+      ctx.clip();
+      // The image covers the world plus one cell of border on every side, so it
+      // is drawn one cell out and two cells wider.
+      ctx.drawImage(
+        this._soilCanvas,
+        t.x - field.cellW,
+        t.y - field.cellH,
+        cfg.width + 2 * field.cellW,
+        cfg.height + 2 * field.cellH
+      );
+      ctx.restore();
     }
   }
 

@@ -53,6 +53,7 @@ function parseHash() {
   if (p.has("regrow")) o.foodRegrowth = p.get("regrow") === "1";
   if (p.has("sig")) o.signalling = p.get("sig") === "1";
   if (p.has("ter")) o.terrain = p.get("ter") === "1";
+  if (p.has("det")) o.detritus = p.get("det") === "1";
   return o;
 }
 
@@ -79,6 +80,7 @@ function syncHash() {
   p.set("regrow", config.foodRegrowth ? "1" : "0");
   p.set("sig", config.signalling ? "1" : "0");
   p.set("ter", config.terrain ? "1" : "0");
+  p.set("det", config.detritus ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -207,6 +209,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-regrowth", config.foodRegrowth);
   setToggle("toggle-signalling", config.signalling);
   setToggle("toggle-terrain", config.terrain);
+  setToggle("toggle-detritus", config.detritus);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -446,6 +449,12 @@ function updateHUD() {
   // shown as "off" rather than as a suspiciously steady zero.
   $("stat-ground").textContent = config.terrain
     ? `${s.groundBias <= 0 ? "−" : "+"}${Math.abs(Math.round(s.groundBias * 100))}%`
+    : "off";
+  // Detritus: what share of the crop is currently growing out of the pond's own
+  // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
+  // field, so it says "off" rather than showing a steady, plausible zero.
+  $("stat-soil").textContent = config.detritus
+    ? `${Math.round(s.soilShare * 100)}%`
     : "off";
   $("stat-brain").textContent = config.evolvableTopology
     ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
@@ -1067,6 +1076,14 @@ function wireControls() {
     // Build (or drop) the landscape right away rather than at the next reset,
     // so the toggle does something you can see in the same frame you flip it.
     world.syncTerrain();
+    syncHash();
+  });
+  $("toggle-detritus").checked = config.detritus;
+  $("toggle-detritus").addEventListener("change", (e) => {
+    config.detritus = e.target.checked;
+    // Build (or drop) the nutrient field at once. Switching it off clears the
+    // pond's memory outright rather than leaving a map nothing is maintaining.
+    world.syncDetritus();
     syncHash();
   });
   $("toggle-signalling").checked = config.signalling;

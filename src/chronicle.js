@@ -19,6 +19,17 @@ import { RNG } from "./rng.js";
  * so this is a couple of hundred ticks of holding still.
  */
 const TERRAIN_SETTLE_TICKS = 240;
+/**
+ * Ticks the crop must keep growing out of the dead before it is worth saying.
+ * The same length as the terrain streak, and for the same reason: the readout it
+ * watches is already a mean over a few hundred ticks, so a streak on top of it
+ * asks for a state of affairs rather than a lucky sample.
+ */
+const DETRITUS_FED_TICKS = 240;
+/** Deaths the pond must have had before any of them can be said to be feeding it. */
+const DETRITUS_MIN_DEATHS = 60;
+/** Share of new pellets sprouting from nutrient that counts as "the crop". */
+const DETRITUS_FED_SHARE = 0.3;
 
 export class Chronicle {
   constructor(config) {
@@ -59,6 +70,8 @@ export class Chronicle {
     this._leadingCause = null;
     this._settled = false;
     this._settleStreak = 0;
+    this._soilFed = false;
+    this._soilStreak = 0;
   }
 
   _push(tick, icon, cat, msg) {
@@ -140,6 +153,9 @@ export class Chronicle {
 
     // --- Terrain (only when the ground has an opinion) ---
     if (this.config.terrain) this._checkTerrain(tick, pop, s);
+
+    // --- Detritus (only when the ground remembers anything) ---
+    if (this.config.detritus) this._checkDetritus(tick, s);
 
     // --- Generation depth ---
     for (const g of [10, 25, 50, 100, 200]) {
@@ -311,6 +327,36 @@ export class Chronicle {
       "⛰️",
       "terrain",
       `The pond has found its flats — the living are on ground ${pct}% smoother than average.`
+    );
+  }
+
+  /**
+   * The pond feeding on itself: reported once, when a sustained share of the
+   * crop has been sprouting out of the dead.
+   *
+   * Three guards, and the middle one is the "did this really happen?" check that
+   * v1.16 taught this project to write. The share is exactly 0 without a
+   * nutrient field, so the line cannot fire in a pond with no such mechanism;
+   * `DETRITUS_MIN_DEATHS` insists the pond has actually buried enough to be fed
+   * by them, so a handful of early deaths in a nearly empty world can't carry a
+   * claim about the crop; and the streak asks for a state of affairs rather than
+   * one favourable sample.
+   */
+  _checkDetritus(tick, s) {
+    if (this._soilFed) return;
+    if (s.deaths < DETRITUS_MIN_DEATHS || s.soilShare < DETRITUS_FED_SHARE) {
+      this._soilStreak = 0;
+      return;
+    }
+    this._soilStreak++;
+    if (this._soilStreak < DETRITUS_FED_TICKS) return;
+    this._soilFed = true;
+    const pct = Math.round(s.soilShare * 100);
+    this._push(
+      tick,
+      "🍂",
+      "detritus",
+      `The pond is feeding on its own dead — ${pct}% of new food now grows where something died.`
     );
   }
 

@@ -22,6 +22,7 @@ import { Phylogeny } from "./phylogeny.js";
 import { Chronicle } from "./chronicle.js";
 import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
 import { TerrainField } from "./terrain.js";
+import { DetritusField } from "./detritus.js";
 import { torusDist2 } from "./vec.js";
 
 export class World {
@@ -50,7 +51,14 @@ export class World {
     this.terrain = null;
     this.syncTerrain();
 
-    this.food = new FoodField(config, this.rng, this.environment, this.terrain);
+    // What the ground remembers of its dead. Like the terrain it costs zero
+    // draws to build (it starts empty — nothing has died yet), and like the
+    // terrain it is null in every world without the feature.
+    /** @type {DetritusField|null} */
+    this.detritus = null;
+    this.syncDetritus();
+
+    this.food = new FoodField(config, this.rng, this.environment, this.terrain, this.detritus);
     /** @type {Creature[]} */
     this.creatures = [];
     for (let i = 0; i < config.populationStart; i++) {
@@ -94,6 +102,22 @@ export class World {
     // The crop follows the ground, so the food field needs to know about it too.
     // (Absent on the first call, which happens before the field exists.)
     if (this.food) this.food.terrain = this.terrain;
+  }
+
+  /**
+   * Build or discard the nutrient field to match the config. Switching detritus
+   * off drops the field outright rather than leaving it in place unread: the
+   * renderers key their caches on the object, so a dropped field cannot leave a
+   * stale map on screen, and switching back on starts the pond's memory from
+   * whatever dies next rather than from a die-off nobody watching remembers.
+   */
+  syncDetritus() {
+    if (this.config.detritus) {
+      if (!this.detritus) this.detritus = new DetritusField(this.config);
+    } else {
+      this.detritus = null;
+    }
+    if (this.food) this.food.detritus = this.detritus;
   }
 
   _randomCreature() {
@@ -295,9 +319,20 @@ export class World {
         if (c.dead) {
           this.stats.deaths++;
           this.stats.recordDeath(c);
+          // What the body is worth to the ground, if this world's ground keeps
+          // anything. Computed whether or not detritus is on, because it costs
+          // one multiply and it means switching the feature on mid-run doesn't
+          // leave the corpses already lying about unable to rot into anything.
+          const soil = c.radius * cfg.detritusPerRadius;
           if (cfg.scavenging) {
             const meat = cfg.corpseEnergyBase + c.radius * cfg.corpseEnergyPerRadius;
-            this.corpses.push(new Corpse(c.x, c.y, meat));
+            // The body goes to the ground only as fast as it rots, so a corpse
+            // stripped by scavengers reaches the soil with almost nothing left.
+            // Spread over a full undisturbed rot this delivers exactly `soil`.
+            this.corpses.push(new Corpse(c.x, c.y, meat, (soil * cfg.corpseDecay) / meat));
+          } else if (this.detritus) {
+            // No scavenging: the whole body goes straight into the ground.
+            this.detritus.deposit(c.x, c.y, soil);
           }
         } else survivors.push(c);
       }
@@ -312,6 +347,11 @@ export class World {
       for (let i = 0; i < this.corpses.length; i++) {
         const k = this.corpses[i];
         k.energy -= cfg.corpseDecay;
+        // A rotting corpse feeds the ground under it. Note what this means when
+        // both features are on: a scavenger eating a corpse is taking it out of
+        // the soil's mouth. The two nutrient loops this project has built are in
+        // competition, which is the most interesting thing about having both.
+        if (this.detritus) this.detritus.deposit(k.x, k.y, k.soilRate);
         if (k.energy > 0) this.corpses[w++] = k;
       }
       this.corpses.length = w;
@@ -323,6 +363,10 @@ export class World {
     this.seasonFactor = seasonalFactor(this.tick, cfg);
     this.seasonPhase = seasonPhase(this.tick, cfg);
     this.visionFactor = dayNightVisionFactor(this.tick, cfg);
+    // The ground forgets, a little, before it is asked to grow anything: this
+    // tick's deaths are already in it, and what is left of older ones has faded
+    // by one step. Nothing to do in a world with no memory.
+    if (this.detritus) this.detritus.decay();
     this.food.compact();
     this.food.step(this.seasonFactor);
 
@@ -439,6 +483,10 @@ export class World {
     this.creatures = obj.creatures.map((o) => Creature.fromJSON(o, this.config, this.rng));
     this.food.items = obj.food.map((f) => new Food(f.x, f.y));
     this.corpses = []; // corpses are transient; start the loaded world clean
+    // The nutrient field is not serialised either, so a loaded world remembers
+    // no deaths — it will start recording the ones it goes on to have.
+    this.detritus = null;
+    this.syncDetritus();
     // Species membership isn't serialised, so rebuild a fresh phylogeny by
     // re-clustering the restored population (each treated as a founder). The
     // deep history before the save is gone, but grouping resumes correctly.

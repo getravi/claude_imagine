@@ -749,6 +749,143 @@ respond within a lifetime), or restricted movement (so lineages stay put long
 enough for local selection to bite), or a spatially varying *resource* — and the
 third is by far the cheapest to add.
 
+## Detritus: a pond that feeds on its own dead
+
+Food has arrived in this world from nowhere since v1.0. v1.18 made the crop
+conditional on itself (pellets seed from pellets) and v1.23 made it conditional
+on the ground (ridges are barren), but nobody had questioned the *source*:
+pellets appear at a rate, and a creature's death had no consequence at all for
+the place it happened in. Death was the one event in this pond that the pond did
+not notice.
+
+Detritus (opt-in) closes that loop. A body leaves nutrient in the cell it died
+in; the nutrient rots with a half-life of about 230 ticks; and a share of the
+pellets that used to appear from nowhere instead sprout out of enriched ground,
+drawing it down as they go. Nothing is created — total food influx is exactly
+what it always was, because a seed the ground cannot feed simply appears the old
+way. Only the *placement* changes.
+
+![Warm ochre stains under the water where creatures have been dying, with pellets appearing in them](screenshots/detritus.png)
+
+### The accounting
+
+A body is worth `radius x 0.8` units of nutrient and a sprouting pellet costs
+one, so a typical creature funds about four pellets and the largest possible one
+about six. A cell holds eight — enough that a whole carcass is never truncated,
+not enough to bank three.
+
+Those constants put a ceiling on the mechanism, and the ceiling is the first
+interesting number here. Six seeds at 9,000 ticks with the shipped defaults:
+
+| | share of new food grown from the dead |
+| --- | --- |
+| detritus off | **0%** — exactly, on every seed, to every decimal place |
+| detritus on | **24%** |
+
+The pond's own dead can pay for roughly a quarter of its crop. That is less a
+tuning choice than a consequence of arithmetic already in `config.js`: at ~0.1
+deaths per tick and four pellets a body, the dead supply about 0.4 pellets a tick
+against a food rate of 1.8. Raising `detritusPerRadius` does not help — the cell
+cap throws the surplus away, which it must, or one bad winter in one biome would
+own the crop for thousands of ticks afterwards. (Setting the cap to 4 instead of 8
+silently truncated a third of every large carcass and cost seven points of that
+share, which is how the constant got measured rather than guessed. Halving
+`detritusUptake` would reach 46%, at the price of a body funding more pellets than
+it plausibly ate.)
+
+The other number worth reporting is how *localised* the ground's memory is: about
+**93% of the nutrient sits in a tenth of the cells** at any moment, with a third
+of cells holding anything at all. It is a genuinely patchy map, not a uniform
+enrichment, which is what makes it worth drawing.
+
+### The control: it is not the dead that move the population
+
+A detritus pond holds more creatures than a control pond. Eight seeds at 9,000
+ticks give **+8.2% ± 5.3 (sem)** — marginal on its own, and the obvious story
+writes itself: the crop now grows where the creatures are, so they spend less of
+their lives travelling to it.
+
+The obvious story is wrong, and two measurements say so.
+
+The first is direct. If food were being delivered closer to its consumers, the
+mean distance from a creature to the nearest pellet would fall. It **rises**, from
+42.9px to 47.4px.
+
+The second is the control this project has learned to build before the narration.
+Detritus does two things at once: it makes a share of the crop follow the dead,
+*and* it takes that same share out of the biome-weighted spawn, where food had
+been concentrated into four fertile patches since v1.3. So run a third arm with
+the mechanism half-disabled — the same pellets sprout, the same nutrient is drawn
+down, but the cell is picked **uniformly at random** instead of by nutrient:
+
+| arm | mean population | vs control |
+| --- | --- | --- |
+| detritus off | 196.3 | — |
+| detritus on | 211.3 | +8.2% ± 5.3 |
+| shuffled placement | 207.3 | +7.6% ± 11.5 |
+| | | *real vs shuffled:* **+6.1% ± 8.3** |
+
+Scrambling the placement does not throw the effect away. The two arms are not
+distinguishable from each other, and neither is cleanly distinguishable from the
+control. Whatever moves the population, it is not that the food follows the dead;
+it is that a quarter of the crop stopped being crowded into the biomes.
+
+Population variability is untouched as well — cv 0.220 with detritus against 0.229
+without — so the delayed feedback loop the mechanic builds (death feeds food feeds
+life feeds death) does **not** make the pond swing more, which is exactly what it
+was designed to do.
+
+So the honest summary is narrower than the design: **detritus is a real,
+measurable mechanism with no demonstrated population consequence.** A quarter of
+the crop grows where things died, none of it does with the feature off, the map of
+it is patchy and legible — and the pond is no more or less stable for it than a
+pond whose food was simply scattered more evenly.
+
+There is a general rule in that, and it is not the one this page already had. The
+old rule was *a statistic that is non-zero with the mechanism off is not measuring
+the mechanism* (see [Signalling](#signalling-a-channel-that-nobody-could-hear)),
+and it does not catch this: the share really is 24% on and 0% off. The sharper
+form is that **when a feature changes *where* something goes, the control is not
+"off" — it is "somewhere else at random".** Comparing against off measures your
+change plus the hole it left.
+
+### Reproducing it
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+
+for (const detritus of [false, true]) {
+  for (const seed of [314, 7, 42, 1009]) {
+    const w = new World(makeConfig({ seed, detritus }));
+    for (let i = 0; i < 9000; i++) w.step();
+    console.log(detritus, seed, w.creatures.length,
+      ((w.food.sprouted / w.food.spawned) * 100).toFixed(1) + "%");
+  }
+}
+// off: 0.0% on every seed. on: ~24%, and the ground under the pond is patchy.
+```
+
+The shuffled arm is a few more lines — override `sprout()` on `world.detritus` to
+keep the accounting and return a uniformly random point — and the population
+comparison takes minutes, which is why it lives here as a script rather than in
+the suite. What *is* pinned as a test (`test/detritus.test.js`) is everything the
+write-up rests on: that no pellet ever sprouts and no soil is ever reported with
+the feature off, that the crop lands in the enriched cell when there is one, that
+influx is unchanged, that the cells tile the world exactly once each, and that a
+body's whole worth reaches the ground.
+
+### Two loops, in competition
+
+With scavenging on as well, the pond has two ways of recycling a corpse and they
+are rivals. A corpse feeds the ground only as fast as it *rots*, so a carnivore
+that strips one has taken it out of the soil's mouth: in the test that measures
+it, a corpse eaten after five ticks delivers under a fifth of what one left to rot
+delivers. Spread over a full undisturbed rot it delivers exactly the body's worth.
+
+This is the first pair of mechanics in this project that genuinely compete for the
+same resource. Every other pair has either ignored one another or agreed.
+
 ## Reading the pond: a colour audit
 
 Every result on this page reaches a reader through pixels, and for twenty-four

@@ -16,8 +16,10 @@ import {
   viewportRects,
   terrainBandRects,
   terrainBandFill,
+  detritusCellRects,
   drawMinimap,
 } from "../src/minimap.js";
+import { DetritusField } from "../src/detritus.js";
 import { minimapPredatorMark } from "../src/palette.js";
 import { Camera } from "../src/camera.js";
 import { World } from "../src/world.js";
@@ -371,5 +373,82 @@ test("drawing the ground cannot change a world that has one", () => {
   assert.equal(watched.food.items.length, ignored.food.items.length);
   for (let i = 0; i < watched.food.items.length; i++) {
     assert.equal(watched.food.items[i].x, ignored.food.items[i].x);
+  }
+});
+
+// ---- Enriched ground (v1.27) ----
+//
+// v1.23 gave the world terrain and drew it in the pond but not here; v1.24 had
+// to go back for it. So the rule is now that a new map of the world lands on
+// every surface that claims to show the world, in the same cycle — and that the
+// little map's geometry is held to the same standard as the big one's.
+
+test("no nutrient field means nothing drawn, and no branch at the call site", () => {
+  const layout = minimapLayout(cfg);
+  assert.deepEqual(detritusCellRects(null, layout), []);
+  assert.deepEqual(detritusCellRects(undefined, layout), []);
+});
+
+test("only enriched cells are drawn, one rectangle each", () => {
+  const config = makeConfig({ detritus: true });
+  const field = new DetritusField(config);
+  const layout = minimapLayout(config);
+  assert.deepEqual(detritusCellRects(field, layout), [], "bare ground draws nothing");
+
+  field.deposit(10, 10, 2);
+  field.deposit(500, 400, 1);
+  const rects = detritusCellRects(field, layout);
+  assert.equal(rects.length, 2);
+  // Each carries the richness of its own cell, so the fill is the field's value
+  // rather than something the drawing code invented.
+  const sorted = [...rects].sort((a, b) => b.richness - a.richness);
+  near(sorted[0].richness, 2 / config.detritusFull);
+  near(sorted[1].richness, 1 / config.detritusFull);
+});
+
+test("the cells tile the minimap exactly, once each", () => {
+  const config = makeConfig({ detritus: true });
+  const field = new DetritusField(config);
+  for (let k = 0; k < field.cells.length; k++) field.cells[k] = 1; // enrich everything
+  field.total = field.cells.length;
+  const layout = minimapLayout(config);
+  const rects = detritusCellRects(field, layout);
+  assert.equal(rects.length, field.cells.length);
+  // Walk the cells rather than trusting the areas to add up: a gap on one side
+  // pays for an overlap on the other in any total.
+  const seen = new Set();
+  for (const r of rects) {
+    const key = `${r.x},${r.y}`;
+    assert.ok(!seen.has(key), `two rectangles at ${key}`);
+    seen.add(key);
+  }
+  const right = Math.max(...rects.map((r) => r.x + r.w));
+  const bottom = Math.max(...rects.map((r) => r.y + r.h));
+  near(right, layout.width);
+  near(bottom, layout.height);
+  assert.equal(Math.min(...rects.map((r) => r.x)), 0);
+  assert.equal(Math.min(...rects.map((r) => r.y)), 0);
+});
+
+test("the minimap draws the same enriched ground the pond does", () => {
+  const world = new World(makeConfig({ seed: 8, detritus: true }));
+  for (let i = 0; i < 900; i++) world.step();
+  assert.ok(world.detritus.total > 0, "something should have died by now");
+  const layout = minimapLayout(world.config);
+  const expected = detritusCellRects(world.detritus, layout).length;
+  assert.ok(expected > 0);
+
+  const ctx = stubCtx();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
+  // Background + soil cells + pellets + creatures (+ a second rect per predator).
+  assert.equal(
+    rects,
+    1 + expected + world.food.items.length + world.creatures.length + predatorCount(world)
+  );
+  for (const op of ctx.ops) {
+    for (let i = 1; i < op.length; i++) {
+      assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);
+    }
   }
 });

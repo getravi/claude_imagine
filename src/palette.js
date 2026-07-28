@@ -308,6 +308,47 @@ export function mortalityTones() {
 }
 
 /**
+ * Enriched ground — the map of where this pond's dead went (v1.27).
+ *
+ * This is the fourth thing drawn under the water, and the first that *changes*,
+ * so it has to be told apart from the three static ones: the seasonal veil the
+ * scene is cleared with, the cool slate of the terrain ramp, and — the hard one —
+ * the biomes' green glow, because both of those are claims about fertility and a
+ * watcher who confuses them learns the opposite of the truth about where food
+ * comes from.
+ *
+ * So it goes warm, and it goes bright: an ochre with a good deal more luminance
+ * than anything else down there. Luminance is the channel no colour vision
+ * deficiency touches, and warm-against-cool survives every dichromacy the a*
+ * axis does not. Measured composited — over the veil at both season extremes,
+ * over the biome glow, and over the whole terrain ramp, which is the set of
+ * backgrounds it can actually appear on — the worst pair clears `MIN_DELTA_E`;
+ * `test/palette.test.js` holds it there.
+ *
+ * Richness is carried in opacity, which the v1.25 note forbids for a *mark* and
+ * which is right for a *field*: this is a quantity spread over an area, the way
+ * terrain's roughness is, and it has no fixed shape whose contrast could be
+ * spent. The square root is there because the interesting thing about a patch of
+ * enriched ground is usually that it exists.
+ *
+ * @param {number} richness 0..1, from `DetritusField`
+ * @returns {{r:number, g:number, b:number, a:number}}
+ */
+export function detritusTint(richness) {
+  const t = Math.max(0, Math.min(1, richness));
+  return { r: 226, g: 156, b: 76, a: DETRITUS_MAX_ALPHA * Math.sqrt(t) };
+}
+
+/**
+ * Opacity of fully enriched ground. Chosen from the measurement rather than by
+ * eye: 0.50 clears the bar at full richness and misses it at half (24.7), and
+ * 0.54 is the first step that puts *half*-enriched ground over the line too —
+ * which is the claim worth holding, since the ground spends most of its time
+ * part-way up.
+ */
+export const DETRITUS_MAX_ALPHA = 0.54;
+
+/**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit
  * and the tests both use, so "the mark is legible" means one thing in this
