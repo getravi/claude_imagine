@@ -415,15 +415,10 @@ details .field {
   width: 0;
   transition: width 0.4s ease;
 }
-.mort-bar .starve {
-  background: #d2a13c;
-}
-.mort-bar .aged {
-  background: #8b93a7;
-}
-.mort-bar .pred {
-  background: #ff7a4d;
-}
+/* The three cause colours are not written here. They live in src/palette.js,
+   where a test can measure them, and main.js paints them onto these segments —
+   the bar and the chart's death strip are then the same three colours by
+   construction rather than by two people remembering to update two files. */
 .mort-legend {
   margin-top: 7px;
   font-size: 11px;
@@ -489,6 +484,37 @@ details .field {
   width: 100%;
   height: 90px;
   display: block;
+}
+/* The death strip: same width and x-axis as the chart above it, sitting on the
+   chart's baseline so the two read as one figure. */
+.deaths-strip {
+  width: 100%;
+  height: 24px;
+  display: block;
+  border-top: 1px solid var(--line);
+}
+.deaths-legend {
+  font-size: 10px;
+  color: var(--ink-faint);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.deaths-legend .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.deaths-legend .dot:not(:first-child) {
+  margin-left: 6px;
+}
+.deaths-legend b {
+  margin-left: auto;
+  font-weight: 500;
+  font-family: var(--mono);
+  color: var(--ink-faint);
 }
 .chart-range {
   font-size: 10px;

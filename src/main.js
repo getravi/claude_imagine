@@ -15,7 +15,8 @@ import { SCENARIOS } from "./scenarios.js";
 import { dayNightPhase } from "./environment.js";
 import { ZOOM_STEP } from "./camera.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
-import { wholePercents } from "./stats.js";
+import { wholePercents, mortalitySeries, DEATH_CAUSES } from "./stats.js";
+import { mortalityColours } from "./palette.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -227,6 +228,7 @@ function loop(now) {
   updateViewBadge();
   updateMinimap();
   drawChart(world);
+  drawDeaths(world);
   drawPhylogeny(world);
   updateHUD();
   updateSeasonBadge(world);
@@ -537,6 +539,108 @@ function updateChartRange(world, hist) {
     text = `ticks ${hist[0].tick.toLocaleString()}–${hist[hist.length - 1].tick.toLocaleString()}`;
   }
   if (el.textContent !== text) el.textContent = text;
+}
+
+// ---- The death strip ----
+//
+// Under the chart, on the same x-axis and following the same recent/whole
+// scope: deaths per tick, stacked by cause. The mortality bar in the panel
+// above answers "what is killing them *now*" over the last 120 bodies, which
+// means that by the time a crash has scrolled far enough back to be visible as
+// a shape on the chart, the explanation for it has long since left the window.
+// This is the same ledger on the chart's clock, so a trough in the population
+// line has a colour underneath it.
+//
+// Heights are normalised to the busiest interval on screen, so this says *when*
+// the dying happened and *of what*, not how it compares to another run. The
+// caption carries the absolute peak, since a normalised strip with no number on
+// it looks the same in a massacre and in a quiet afternoon.
+let deathsCtx = null;
+let deathsLabel = "";
+function drawDeaths(world) {
+  if (!deathsCtx) {
+    const c = $("deaths");
+    deathsCtx = c.getContext("2d");
+    deathsCtx._w = c.width;
+    deathsCtx._h = c.height;
+  }
+  const ctx = deathsCtx;
+  const W = ctx._w;
+  const H = ctx._h;
+  ctx.clearRect(0, 0, W, H);
+
+  const hist = chartScope === "whole" ? world.stats.runHistory.series() : world.stats.popHistory;
+  const { intervals, peak, total } = mortalitySeries(hist);
+  if (total === 0) {
+    setDeathsCaption("", "Deaths over time: nothing has died in this window.");
+    return;
+  }
+
+  const colours = mortalityColours();
+  const totals = { starvation: 0, age: 0, predation: 0 };
+  const span = Math.max(1, hist.length - 1);
+  let busiest = intervals[0];
+  for (const iv of intervals) {
+    if (iv.rate > busiest.rate) busiest = iv;
+  }
+  for (const iv of intervals) {
+    const x0 = ((iv.index - 1) / span) * W;
+    const w = Math.max(1, W / span);
+    let y = H;
+    for (const c of DEATH_CAUSES) {
+      totals[c] += iv.counts[c];
+      if (iv.counts[c] === 0) continue;
+      // Each cause's slice of this interval's bar, the whole bar being that
+      // interval's death rate as a fraction of the busiest one on screen.
+      const h = (iv.counts[c] / iv.dt / peak) * (H - 2);
+      ctx.fillStyle = colours[c];
+      ctx.fillRect(x0, y - h, w, h);
+      y -= h;
+    }
+  }
+
+  const [starve, aged, hunted] = wholePercents([
+    totals.starvation / total,
+    totals.age / total,
+    totals.predation / total,
+  ]);
+  // The peak is given as the busiest interval's own count over its own length,
+  // not extrapolated to a round number of ticks: at the recent scope an
+  // interval is four ticks long, so a single death would extrapolate to "25 per
+  // 100 ticks" and read as a catastrophe.
+  setDeathsCaption(
+    `peak ${busiest.deaths} in ${busiest.dt.toLocaleString()} ticks`,
+    `Deaths over time: ${total} in view — ${starve}% starved, ${aged}% aged, ${hunted}% hunted.`
+  );
+}
+
+/** Both texts under the strip, written only when they actually change. */
+function setDeathsCaption(peakText, label) {
+  const el = $("deaths-peak");
+  if (el.textContent !== peakText) el.textContent = peakText;
+  if (deathsLabel !== label) {
+    deathsLabel = label;
+    $("deaths").setAttribute("aria-label", label);
+  }
+}
+
+/**
+ * Paint the three cause colours onto the mortality bar and the strip's legend.
+ * They come from `src/palette.js` rather than the stylesheet so that the swatch,
+ * the bar and the chart cannot disagree, and so a test can measure the colours
+ * that are actually drawn. Runs once, at startup.
+ */
+function applyMortalityColours() {
+  const c = mortalityColours();
+  const paint = (id, colour) => {
+    $(id).style.background = colour;
+  };
+  paint("mort-starve", c.starvation);
+  paint("mort-age", c.age);
+  paint("mort-pred", c.predation);
+  paint("dot-starve", c.starvation);
+  paint("dot-age", c.age);
+  paint("dot-pred", c.predation);
 }
 
 function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {
@@ -1000,6 +1104,8 @@ function wireControls() {
     resetWorld(config.seed);
     flash(config.evolvableTopology ? "Evolvable brains on — world restarted." : "Fixed brains restored — world restarted.");
   });
+
+  applyMortalityColours();
 
   // Save / load / share.
   $("btn-save").addEventListener("click", saveWorld);

@@ -81,17 +81,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   touch/mobile, ARIA labels. (Reduced motion is handled.) The colour audit
   shipped in v1.25 — `src/palette.js` has a dichromat simulation and a ΔE, and
   every deliberate colour distinction now has to clear `MIN_DELTA_E` in a test.
-  **Use it on anything new that says something with colour.** Still open: the
-  DOM-side colours it didn't reach (the species dots, the Muller plot bands, the
-  inspector swatch, the weight matrices), touch/mobile, and the fact that
+  **Use it on anything new that says something with colour.** v1.26 took it to
+  the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
+  looked at the canvas. Still open: the DOM-side colours *that* pass didn't reach
+  either (the species dots, the Muller plot bands, the inspector swatch, the
+  weight matrices), touch/mobile, and the fact that
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
-  what each death was caused by — shipped in v1.21; the causes are not yet in the
-  CSV export or the live chart, which is still an obvious pull on that thread.
-  The whole-run archive shipped in v1.22 — `Archive` is generic over its fields,
-  so a second series, mortality included, is a short change now. The minimap
+  what each death was caused by — shipped in v1.21, and v1.26 put it on the
+  chart's clock and in both CSV scopes. `Archive` really is generic over its
+  fields: it needed no change to carry them. The counters still open on the same
+  terms are births, kills and scavenging bites — all extensive, so all free.
+  Replay/scrubbing is the big untouched one. The minimap
   learned to draw terrain in v1.24; it still says nothing about the day/night
   state or about disease, and it is the only view where a whole-pond pattern
   is visible at a glance.)
@@ -293,5 +296,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   distinguishable values — no remapping creates an axis. Before designing a fix,
   check whether the thing you need has anywhere to live. (Same shape as the
   v1.23 terrain lesson: a pressure needs somewhere to accumulate.)
+- **The archive is two problems, not one.** Population and food are
+  *instantaneous* — thinning genuinely loses their peaks, which is what v1.22's
+  min/max envelopes are for. Deaths (and births, and kills, and every other
+  counter in `Stats`) are *extensive*, and recorded **cumulatively** they are
+  lossless under any decimation: two surviving samples partition the ticks
+  between them with no gap and no overlap, so their difference is exact however
+  many samples were discarded. Before paying for an envelope, ask which kind of
+  quantity it is. The wrong choice here — deaths-per-interval — looks perfect on
+  a fresh run and under-reports from the first halving onward.
+- **An audit scoped to one rendering surface will pass while the same claim
+  fails on another.** v1.23 gave the world terrain and drew it in the pond but
+  not the minimap. v1.25 measured colour on the canvas and never opened the
+  stylesheet, where the mortality bar had been saying *starved* and *hunted* in
+  two warm tones ΔE 5.5 apart since v1.21 — the exact pair the ledger exists to
+  distinguish. Twice now, one version apart. The first question is not "did I
+  measure it", it is "how many surfaces make this claim, and did I measure all
+  of them". Corollary: a colour a test cannot reach is a colour that will drift,
+  so the value belongs in `src/palette.js` with the DOM painted from it, never
+  in `style.css`.
+- **Don't extrapolate a quantised count to a round number.** A caption reading
+  "25 deaths per 100 ticks" was one death in a four-tick interval. Report the
+  busiest interval's own count over its own length and there is no arithmetic
+  standing between the reader and the thing.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

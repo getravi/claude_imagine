@@ -6,7 +6,10 @@ import { makeConfig } from "../src/config.js";
 
 test("Stats.toCSV: empty history yields header only", () => {
   const stats = new Stats();
-  assert.equal(stats.toCSV(), "tick,population,food,max_generation\n");
+  assert.equal(
+    stats.toCSV(),
+    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation\n"
+  );
 });
 
 test("Stats.toCSV: formats recorded rows in order", () => {
@@ -18,9 +21,9 @@ test("Stats.toCSV: formats recorded rows in order", () => {
   const lines = csv.trimEnd().split("\n");
 
   assert.deepEqual(lines, [
-    "tick,population,food,max_generation",
-    "0,10,100,0",
-    "4,12,96,1",
+    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation",
+    "0,10,100,0,0,0,0",
+    "4,12,96,1,0,0,0",
   ]);
 });
 
@@ -41,6 +44,9 @@ test("Stats.sample records the tick alongside each history point", () => {
 
   const csv = world.stats.toCSV();
   const lines = csv.trimEnd().split("\n");
-  assert.equal(lines[0], "tick,population,food,max_generation");
+  assert.equal(
+    lines[0],
+    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation"
+  );
   assert.equal(lines.length, rows.length + 1);
 });

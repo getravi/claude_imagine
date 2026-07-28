@@ -28,6 +28,8 @@ import {
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
+  mortalityColours,
+  mortalityTones,
   CVD_TYPES,
   VISION_MODELS,
   MIN_DELTA_E,
@@ -240,4 +242,96 @@ test("markContrast reports the better tone, not the average of them", () => {
   const best = Math.max(deltaE(dark, grey), deltaE(light, grey));
   assert.equal(markContrast([dark, light], grey, "normal"), best);
   assert.equal(markContrast([grey], grey, "normal"), 0);
+});
+
+// ---- The three ways out of this world ----
+//
+// The v1.25 audit swept the canvas and never opened the stylesheet, where the
+// mortality bar had been saying *starved* in gold and *hunted* in orange since
+// v1.21. Those are the two causes the whole ledger exists to distinguish — a
+// crash is either winter or predators, and the panel's job is to say which.
+
+/** The panel and chart backgrounds these three are ever drawn on. */
+const SURFACES = [
+  { name: "panel", rgb: { r: 12, g: 19, b: 28 } }, // --bg-panel
+  { name: "panel-2", rgb: { r: 17, g: 26, b: 38 } }, // --bg-panel-2
+];
+
+test("every pair of cause colours is distinguishable under every vision model", () => {
+  const tones = mortalityTones();
+  const names = Object.keys(tones);
+  let worst = Infinity;
+  let where = null;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(tones[names[i]], tones[names[j]], vision);
+        if (d < worst) {
+          worst = d;
+          where = `${names[i]}/${names[j]}, ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `worst cause pair ΔE ${worst.toFixed(1)} at ${where}`);
+});
+
+test("the v1.25 cause colours did not — starved and hunted collided", () => {
+  // The exact pair that shipped in style.css from v1.21 to v1.25.
+  const starve = { r: 0xd2, g: 0xa1, b: 0x3c };
+  const hunted = { r: 0xff, g: 0x7a, b: 0x4d };
+  let worst = Infinity;
+  for (const vision of VISION_MODELS) {
+    worst = Math.min(worst, deltaE(starve, hunted, vision));
+  }
+  assert.ok(worst < 10, `expected a collision, got ΔE ${worst.toFixed(1)}`);
+  // Grey age was never the problem — it is the one nobody has to identify in a
+  // hurry, and it was the only one safely separated.
+  const aged = { r: 0x8b, g: 0x93, b: 0xa7 };
+  let agedWorst = Infinity;
+  for (const vision of VISION_MODELS) {
+    agedWorst = Math.min(agedWorst, deltaE(starve, aged, vision), deltaE(hunted, aged, vision));
+  }
+  assert.ok(agedWorst >= MIN_DELTA_E, `age was fine, but scored ${agedWorst.toFixed(1)}`);
+});
+
+test("each cause colour stands off the surface it is drawn on", () => {
+  // Three colours that are all mutually distinct and all nearly the background
+  // is the fourth way this can fail, and the strip is small enough that it
+  // would fail quietly.
+  const tones = mortalityTones();
+  for (const [name, rgb] of Object.entries(tones)) {
+    for (const surface of SURFACES) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(rgb, surface.rgb, vision);
+        assert.ok(
+          d >= 40,
+          `${name} on ${surface.name} is ΔE ${d.toFixed(1)} under ${vision}`
+        );
+      }
+    }
+  }
+});
+
+test("the cause colours are ordered by luminance, which is the channel that survives", () => {
+  // Starvation pale, age mid, predation deep. Luminance is untouched by any
+  // colour vision deficiency, so an ordering carried in L* is one a dichromat
+  // reads exactly as everyone else does — and the strip stacks in this order.
+  const tones = mortalityTones();
+  const L = (c) => toLab(c)[0];
+  assert.ok(L(tones.starvation) > L(tones.age) + 15);
+  assert.ok(L(tones.age) > L(tones.predation) + 12);
+});
+
+test("the colours the DOM is painted with are the colours that were measured", () => {
+  // mortalityColours() feeds main.js; mortalityTones() feeds these tests. If
+  // they ever drift, every assertion above is measuring a colour nobody sees.
+  const css = mortalityColours();
+  const tones = mortalityTones();
+  assert.deepEqual(Object.keys(css), Object.keys(tones));
+  for (const [name, text] of Object.entries(css)) {
+    const m = text.match(/^hsl\((\d+), (\d+)%, (\d+)%\)$/);
+    assert.ok(m, `${name} is not a plain hsl() this test can parse: ${text}`);
+    assert.deepEqual(hslToRgb(Number(m[1]), Number(m[2]), Number(m[3])), tones[name]);
+  }
 });

@@ -4,6 +4,68 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.26.0] — 2026-07-28
+
+The death toll gets a clock. v1.21 made every death name its cause and v1.22
+gave the run a memory that survives at falling resolution; for four versions
+they never met. The mix on screen is the last 120 bodies, so by the time a crash
+has scrolled far enough back to be a *shape* on the chart, the window that could
+have explained it has turned over several times. The most dramatic thing this
+world produces was legible only while it was happening.
+
+### Added
+
+- **A death strip under the chart** (`src/main.js`, `app/index.html`). Deaths
+  per tick, stacked by cause, on the chart's own x-axis and following its
+  recent/whole scope — so a trough in the population line now has a colour
+  underneath it. Heights are normalised to the busiest interval on screen and
+  the caption carries the absolute peak as a count over its own interval
+  ("peak 4 in 4 ticks"), because a normalised strip with no number on it looks
+  the same in a massacre and in a quiet afternoon.
+- **Cumulative death counters in both history buffers** (`src/stats.js`), and
+  `deaths_starvation` / `deaths_age` / `deaths_predation` columns in **both** CSV
+  scopes. The archive needed no change at all to carry them, which is what
+  "generic over its fields" was supposed to mean.
+- **`mortalitySeries()`** (`src/stats.js`) — a pure, tested function turning a
+  run of samples into per-interval death rates by cause. The drawing code in
+  `main.js` does no arithmetic, because nothing in `main.js` can be tested.
+
+### Changed
+
+- **The three cause colours** (`src/palette.js`, `style.css`). The v1.25 audit
+  swept the canvas exhaustively and never opened the stylesheet. Gold `#d2a13c`
+  (starved) against orange `#ff7a4d` (hunted) scores **ΔE 5.5** under
+  deuteranopia and **7.0** under tritanopia — two warm tones a few degrees of hue
+  apart, a distinction made entirely on the red–green axis, and it is exactly the
+  pair a crash hinges on. Grey old age, the one cause nobody has to identify in a
+  hurry, was the only one safely separated. Re-cut along the axes a dichromat
+  keeps: pale gold (L\* 91), mid slate (L\* 58), deep crimson (L\* 43), worst
+  pair **ΔE 37**, each clearing the panel behind it by more than 40. The values
+  moved out of `style.css` into `src/palette.js` and are painted onto the DOM
+  from there, so the bar, the legend and the strip cannot drift apart and a test
+  can measure what is actually drawn.
+
+### Notes
+
+- **Cumulative, not per-interval, and that is the whole design.** v1.22 paid for
+  min/max envelopes because thinning a history loses exactly the extremes. A
+  running total needs none: it is monotone, and any two surviving samples
+  partition the ticks between them with no gap and no overlap, so their
+  difference is exact however many samples were discarded in between. The
+  general form is worth keeping — *an extensive quantity recorded cumulatively
+  is lossless under decimation, in a way an instantaneous one can never be.*
+  Storing deaths-per-interval would have looked identical on a fresh run and
+  under-reported from the first halving onward.
+- **The control is in the suite.** `test/mortalityHistory.test.js` asserts the
+  cumulative form returns identical totals through archives of capacity 4 and
+  512 — resolutions differing eightfold — and that the naive per-interval form
+  loses more than 80% of the deaths at capacity 4. A suite that only knew the
+  right answer would stay green while someone reintroduced the bug.
+- No config flag, no new RNG draw, no simulation change: the bookkeeping reads
+  state that already existed. The v1.21 determinism fingerprints are untouched
+  and still exact. 262 tests, all green (13 new). Checked by hand in headless
+  Chromium against the real `app/index.html` on both chart scopes.
+
 ## [1.25.0] — 2026-07-27
 
 A colour audit, and the thing it found behind the thing it was looking for. This

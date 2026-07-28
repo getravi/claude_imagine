@@ -158,10 +158,14 @@ test("Stats.toCSV('whole') exports the archive with its envelope columns", () =>
   const lines = stats.toCSV("whole").trimEnd().split("\n");
   assert.equal(
     lines[0],
-    "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples"
+    "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples," +
+      "deaths_starvation,deaths_age,deaths_predation"
   );
   assert.equal(lines.length - 1, stats.runHistory.series().length);
-  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 9);
+  // Nine columns of history plus the three cause counters (v1.26). These rows
+  // were pushed by hand without any, which is the graceful case: absent reads
+  // as zero rather than as "undefined" in a spreadsheet.
+  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 12);
   // The 999 spike is not a retained representative, but it is still in the file.
   const peak = Math.max(...lines.slice(1).map((l) => Number(l.split(",")[5])));
   assert.equal(peak, 999);
@@ -171,7 +175,10 @@ test("Stats.toCSV() still defaults to the recent window, unchanged", () => {
   const stats = new Stats();
   stats.popHistory.push({ tick: 0, pop: 10, food: 100, gen: 0 });
   const lines = stats.toCSV().trimEnd().split("\n");
-  assert.deepEqual(lines, ["tick,population,food,max_generation", "0,10,100,0"]);
+  assert.deepEqual(lines, [
+    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation",
+    "0,10,100,0,0,0,0",
+  ]);
   assert.equal(stats.toCSV("recent"), stats.toCSV());
 });
 

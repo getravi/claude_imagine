@@ -50,7 +50,7 @@ The dependency arrows point from a module to what it imports.
 | `food.js` | Passive energy pellets (and, when scavenging is on, corpses). | — |
 | `grid.js` | Spatial hash grid for O(1)-ish neighbour queries on a torus. | — |
 | `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
-| `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by). | — |
+| `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by, carried into both history buffers as cumulative counters so differencing any two samples is exact). | — |
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |

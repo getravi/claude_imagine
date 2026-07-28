@@ -18,6 +18,63 @@ import { groundBias } from "./terrain.js";
 export const DEATH_CAUSES = Object.freeze(["starvation", "age", "predation"]);
 
 /**
+ * The history-point field carrying the *cumulative* number of deaths of one
+ * cause up to that sample — and the CSV column name for it, so the file and the
+ * buffer can never drift apart.
+ * @param {string} cause one of DEATH_CAUSES
+ */
+export function deathField(cause) {
+  return `deaths_${cause}`;
+}
+
+/**
+ * Turn a run of history points into deaths-per-tick, split by cause: one
+ * interval per adjacent pair of samples.
+ *
+ * The reason the counters in those points are cumulative rather than
+ * per-interval is the whole trick here. v1.22 established that thinning a
+ * history loses the extremes, and paid for an exact min/max envelope to get
+ * them back. A cumulative counter needs no envelope: it is monotone, and
+ * consecutive samples partition the run's ticks with no gap and no overlap, so
+ * differencing any two of them returns *exactly* the deaths between — including
+ * every death in the samples the archive threw away. The line gets coarser and
+ * the arithmetic stays exact, at any capacity, forever. Extensive quantities are
+ * lossless under decimation in a way instantaneous ones can never be.
+ *
+ * Pure and read-only. Returns an empty series for fewer than two points.
+ * @param {Array<object>} hist history points, oldest first
+ * @returns {{intervals: Array<object>, peak: number, total: number}}
+ */
+export function mortalitySeries(hist) {
+  const intervals = [];
+  let peak = 0;
+  let total = 0;
+  for (let i = 1; i < hist.length; i++) {
+    const a = hist[i - 1];
+    const b = hist[i];
+    const dt = b.tick - a.tick;
+    if (dt <= 0) continue;
+    const counts = {};
+    let n = 0;
+    for (const c of DEATH_CAUSES) {
+      // Clamped because a caller may splice two histories together; a negative
+      // difference is a broken input, not a negative number of deaths.
+      const d = Math.max(0, (b[deathField(c)] || 0) - (a[deathField(c)] || 0));
+      counts[c] = d;
+      n += d;
+    }
+    const rate = n / dt;
+    if (rate > peak) peak = rate;
+    total += n;
+    // `index` is the position of the *later* sample, so a caller plotting the
+    // history by index — which is how every chart in this project spaces its
+    // points — can place the interval without assuming none were skipped.
+    intervals.push({ index: i, from: a.tick, to: b.tick, dt, counts, deaths: n, rate });
+  }
+  return { intervals, peak, total };
+}
+
+/**
  * Round a set of shares (which sum to 1) into whole percentages that still sum
  * to exactly 100: floor them all, then hand the leftover points to the largest
  * remainders. Rounding each share on its own produces totals of 99 or 101 often
@@ -208,6 +265,14 @@ export class Stats {
         food: world.food.items.length,
         gen: maxGen,
       };
+      // The death toll as of this sample, cumulative. v1.21 gave every death a
+      // cause and v1.22 gave the run a memory, and for four versions the two
+      // never met: the mix on screen is the last 120 bodies, so by the time a
+      // crash is far enough back to see on the chart, what killed it is already
+      // out of the window. Carried here it is in the chart, the archive and both
+      // CSV scopes at once — the archive needs no change to hold it, which is
+      // what "generic over its fields" was supposed to mean.
+      for (const c of DEATH_CAUSES) point[deathField(c)] = this.deathsBy[c];
       this.popHistory.push(point);
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
       // The same point, into a record that never drops the far end. Nobody
@@ -269,24 +334,34 @@ export class Stats {
    * thinned to fit, and carries the envelope columns: each row's `pop_min` /
    * `pop_max` are exact over the `samples` raw points it stands for, so a peak
    * that fell between two retained rows is still in the file.
+   *
+   * Both scopes carry the `deaths_*` columns, and they are cumulative on
+   * purpose: subtract one row's from the next's and you have the exact number
+   * of deaths of that cause in between, whatever the thinning did to the rows
+   * around it. A per-interval column would have been the more obvious choice
+   * and would have quietly under-reported the whole run.
    * @param {"recent"|"whole"} [scope]
    */
   toCSV(scope = "recent") {
+    const deathCols = DEATH_CAUSES.map(deathField).join(",");
+    const deathVals = (h) => DEATH_CAUSES.map((c) => h[deathField(c)] ?? 0).join(",");
     if (scope === "whole") {
       const lines = [
-        "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples",
+        "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples," +
+          deathCols,
       ];
       for (const r of this.runHistory.series()) {
         lines.push(
           `${r.tick},${r.pop},${r.food},${r.gen},` +
-            `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},${r.span}`
+            `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},${r.span},` +
+            deathVals(r)
         );
       }
       return lines.join("\n") + "\n";
     }
-    const lines = ["tick,population,food,max_generation"];
+    const lines = [`tick,population,food,max_generation,${deathCols}`];
     for (const h of this.popHistory) {
-      lines.push(`${h.tick},${h.pop},${h.food},${h.gen}`);
+      lines.push(`${h.tick},${h.pop},${h.food},${h.gen},${deathVals(h)}`);
     }
     return lines.join("\n") + "\n";
   }

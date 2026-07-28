@@ -572,6 +572,54 @@ console.log(b, "of", total, "deaths");
 console.log("mean lifespan", (w.stats.lifespanSum / w.stats.deaths).toFixed(0));
 ```
 
+### Putting the causes on the clock, without losing any of them
+
+The 120-death window is the right thing to *watch* and the wrong thing to
+*remember*. By the time a crash has scrolled far enough back to be a visible
+shape on the population chart, the window that could have explained it has
+turned over several times. Since v1.26 each history sample carries the death
+toll alongside the population and the food, so the mix is on the chart's own
+axis: a strip under the chart, stacked by cause, on whichever scope the chart
+is showing.
+
+The interesting part is which number gets stored. The archive behind the
+whole-run view keeps a fixed number of rows and halves its resolution every time
+it fills, and v1.22 established what that costs: a thinned series loses exactly
+the peaks and troughs a chart exists to show, which is why every retained point
+carries an exact min/max envelope of the samples it absorbed.
+
+None of that machinery is needed here, because the counters are **cumulative**
+rather than per-interval. A running total is monotone, and any two samples —
+however many were discarded between them — partition the ticks between them with
+no gap and no overlap, so their difference is the exact number of deaths in that
+stretch. The chart's time resolution degrades; its arithmetic does not, at any
+capacity, for any length of run. It is worth stating the general form, because
+the temptation runs the other way: *an extensive quantity recorded cumulatively
+is lossless under decimation, in a way an instantaneous one can never be.*
+
+Storing deaths-per-interval instead would have looked identical on a fresh run
+and silently under-reported from the first halving onward, so
+`test/mortalityHistory.test.js` asserts both halves — that the cumulative form
+gives the same totals through archives of capacity 4 and 512, and that the naive
+form loses more than 80% of the deaths at capacity 4. Seeing it is four lines:
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { mortalitySeries } from "./src/stats.js";
+const w = new World(makeConfig({ seed: 42 }));
+for (let i = 0; i < 20000; i++) w.step();
+const s = mortalitySeries(w.stats.runHistory.series());
+// The archive has halved several times by now; this still equals the ledger.
+console.log(s.total, "deaths in", s.intervals.length, "intervals");
+console.log(w.stats.deathsBy);
+```
+
+Both CSV scopes carry the same three columns, cumulative for the same reason:
+subtract one row from the next and you have the exact toll between them, whatever
+the thinning did to the rows around them.
+
+
 ## Terrain: why a cost is not a landscape
 
 Until v1.23 space was this world's last unconditional gift. Food had biomes and
@@ -817,6 +865,38 @@ the pair most likely to be a second bug. Measured, they are ΔE 39 apart under
 deuteranopia and 55 under protanopia: comfortably clear, because they differ in
 lightness as well as hue. No change was made. An audit that only reports
 problems is not an audit.
+
+### The audit that skipped the DOM
+
+The v1.25 sweep measured the canvas exhaustively and never opened the
+stylesheet, where the mortality bar had been saying *starved* in `#d2a13c` and
+*hunted* in `#ff7a4d` since v1.21. Measured at last:
+
+| pair | normal | protanopia | deuteranopia | tritanopia |
+| --- | --- | --- | --- | --- |
+| starved / hunted | 40.6 | 19.9 | **5.5** | **7.0** |
+| starved / aged | 69.5 | 66.8 | 74.2 | 101.2 |
+| aged / hunted | 75.4 | 48.4 | 68.7 | 106.5 |
+
+Two gold-orange warm tones a few degrees of hue apart, which is a distinction
+made entirely on the red–green axis. Starvation and predation are precisely the
+pair a crash hinges on — the whole reason v1.21 exists is to answer *winter or
+predators?* — and grey old age, the one cause nobody has to identify in a hurry,
+was the only one safely separated. The lesson generalises past colour: an audit
+scoped to one rendering surface will pass while the same claim fails on another,
+and this project has now made that mistake twice (v1.23's terrain, drawn in the
+pond and not the minimap; v1.25's palette, measured on the canvas and not in the
+DOM).
+
+The fix re-cuts the three along the axes a dichromat keeps. Luminance carries the
+ordering — pale gold `L* 91`, mid slate `L* 58`, deep crimson `L* 43` — with
+blue↔yellow taking up the rest; the worst pair now scores **37**, and each colour
+clears the panel it is drawn on by more than 40, because three mutually distinct
+colours that all read as "dark" is a fourth way for a small strip to fail. The
+colours live in `src/palette.js` and are painted onto the DOM from there, so the
+bar, the legend swatches and the chart strip cannot drift apart, and so the test
+measures the colour that is actually drawn.
+
 
 ### Running it yourself
 

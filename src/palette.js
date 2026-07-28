@@ -272,6 +272,42 @@ export function minimapPredatorTones() {
 }
 
 /**
+ * The three ways out of this world, as colours.
+ *
+ * The mortality bar has said *starved / aged / hunted* in gold, grey and orange
+ * since v1.21, and the v1.25 audit swept the canvas without ever looking at the
+ * DOM. Measured, gold `#d2a13c` against orange `#ff7a4d` scores **ΔE 5.5** under
+ * deuteranopia and **7.0** under tritanopia — the two causes that the whole
+ * ledger exists to tell apart, indistinguishable to the readers most likely to
+ * need the distinction. Starvation and predation are exactly the pair a crash
+ * hinges on; grey age, the cause nobody has to identify in a hurry, was the only
+ * one safely separated.
+ *
+ * So the mix is re-cut along the axes a dichromat keeps. Luminance does the
+ * work — pale gold, mid slate, deep crimson, in that order, and the ordering is
+ * itself a mnemonic — with blue↔yellow carrying what is left. Every pair now
+ * clears `MIN_DELTA_E` under all four vision models, and each clears the panel
+ * background it is drawn on by more than 40, because a strip of three colours
+ * that all read as "dark" is a fourth failure mode.
+ */
+export function mortalityColours() {
+  return {
+    starvation: "hsl(46, 95%, 80%)",
+    age: "hsl(212, 14%, 56%)",
+    predation: "hsl(356, 80%, 44%)",
+  };
+}
+
+/** The three cause colours as RGB, for the audit. */
+export function mortalityTones() {
+  return {
+    starvation: hslToRgb(46, 95, 80),
+    age: hslToRgb(212, 14, 56),
+    predation: hslToRgb(356, 80, 44),
+  };
+}
+
+/**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit
  * and the tests both use, so "the mark is legible" means one thing in this

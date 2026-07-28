@@ -242,6 +242,22 @@
             >recent</button>
           </div>
           <canvas id="chart" width="300" height="90"></canvas>
+          <!-- The death mix over the same stretch of time, stacked by cause.
+               Shares the chart's x-axis and its recent/whole scope. -->
+          <canvas
+            id="deaths"
+            class="deaths-strip"
+            width="300"
+            height="24"
+            role="img"
+            aria-label="Deaths over time: nothing has died yet."
+          ></canvas>
+          <div class="deaths-legend">
+            <span class="dot" id="dot-starve"></span> starved
+            <span class="dot" id="dot-age"></span> aged
+            <span class="dot" id="dot-pred"></span> hunted
+            <b id="deaths-peak"></b>
+          </div>
           <div class="chart-range" id="chart-range"></div>
         </div>
 
