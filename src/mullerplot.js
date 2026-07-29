@@ -10,6 +10,14 @@
 // picture stays legible. True Muller plots nest each child band inside its
 // parent; birth-order stacking is a faithful-enough approximation that keeps the
 // layout simple and stable.
+//
+// A snapshot is one column here, but not necessarily one instant: once the
+// phylogeny's record fills it halves its own resolution, and a stored snapshot
+// then carries the summed counts and summed totals of a window of samples (see
+// phylogeny.js#_record). `count / total` is the share of the pond that belonged
+// to a species over that window either way, so nothing below needs to know
+// which it is — and because every window is the same width, spacing columns
+// evenly by index still spaces them evenly in time.
 
 /**
  * @param {CanvasRenderingContext2D} ctx

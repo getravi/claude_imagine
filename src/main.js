@@ -387,6 +387,17 @@ function drawPhylogeny(world) {
     `${ph.livingCount()} species alive · ${ph.species.length} ever · ` +
     `${ph.species.filter((s) => s.extinctTick >= 0).length} extinct`;
 
+  // The plot's x-axis changes meaning as the record coarsens, so it says so —
+  // the same caption the whole-run chart carries, for the same reason.
+  const span = ph.snapshotSpan();
+  const each = ph.snapshotResolution();
+  const range = span
+    ? `ticks ${span.from.toLocaleString()}–${span.to.toLocaleString()} · ` +
+      `1 band per ${each.toLocaleString()} tick${each === 1 ? "" : "s"}`
+    : "";
+  const rangeEl = $("phylo-range");
+  if (rangeEl.textContent !== range) rangeEl.textContent = range;
+
   // Rebuild the legend only when the set of shown species (or highlight) changes.
   const living = shown.filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
   const sig = living.map((s) => s.id).join(",") + "|" + renderer.highlightSpeciesId;

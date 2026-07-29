@@ -299,7 +299,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   // simulation, only how lineages are grouped for the "tree of life" view.
   speciationDistance: 0.15,
   phylogenySampleInterval: 6, // ticks between abundance snapshots
-  phylogenyHistory: 520, // snapshots kept for the Muller plot
+  // Snapshots kept for the Muller plot. This is a resolution, not a horizon:
+  // the record covers the whole run and halves its own resolution whenever it
+  // fills, so raising this buys a finer plot rather than a longer one.
+  phylogenyHistory: 520,
 
   // --- Simulation ---
   stepsPerFrame: 1, // increased by the speed control

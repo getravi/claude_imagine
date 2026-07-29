@@ -4,6 +4,42 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.30.0] — 2026-07-29
+
+The Tree of Life gets a memory. v1.22 caught the population chart quietly
+dropping everything older than two minutes and gave it a record of the whole
+run. The other time-series view on the same page — the one whose entire subject
+is *history* — kept its sliding window for eight more versions: 520 snapshots at
+one every six ticks, so the phylogeny remembered the last 3,120 ticks, under a
+minute of watching, and dropped the founding of the pond with no tell.
+
+### Changed
+
+- **The abundance record now covers the whole run**, in the same bounded memory.
+  When it fills, every second snapshot folds into the one before it and the
+  stride doubles: the plot gets *coarser* as the run grows rather than shorter,
+  and index 0 survives every halving, so it always starts where the run started.
+  Watching for two and a half minutes, the plot reads `ticks 0–8,718 · 1 band
+  per 24 ticks`; the old ring would have begun at tick 5,598, with the forty
+  founders and the sweep that displaced them already gone.
+- **A caption under the plot** — span and resolution — because an x-axis that
+  changes meaning owes the watcher a note saying so. Same treatment, same
+  wording, as the whole-run chart above it.
+
+### Notes
+
+- The merge is a **sum**, not `archive.js`'s min/max envelope, and that is the
+  interesting part. Population is *instantaneous*, so thinning loses its peaks
+  and needs an envelope. A death toll is *extensive and cumulative*, so thinning
+  is lossless. A species count is a third thing: extensive *within* its window,
+  so summing the counts and summing the totals gives the population-weighted
+  mean share over that window. Bands still sum to at most the whole, and a
+  lineage that lived for a single sample is *attenuated* to its true share of
+  the window rather than deleted — which is exactly what dropping every second
+  sample would have done to it. `test/phylogeny.test.js` pins that mayfly.
+- Observation only, as the whole phylogeny has been since v1.2: no randomness,
+  nothing read back into the world, every seed reproduces exactly as before.
+
 ## [1.29.0] — 2026-07-28
 
 The pond's books. Every rule in this world is a statement about energy, and for

@@ -1182,6 +1182,13 @@ Reading it, you can spot:
 - **clonal interference** — several lineages jockeying, none fixing, because
   competing beneficial variants get in each other's way.
 
+The plot spans the whole run, at a resolution that halves each time its record
+fills — the caption underneath states both. So the left edge is always the pond
+being founded, and a band far to the left is a coarser average than one at the
+right: a lineage that rose and fell inside a single late-run column shows up
+attenuated to its share of that column rather than at its true peak. Short
+excursions read as small there, not as absent.
+
 A caveat worth stating: because classification is by overall genetic distance to
 a fixed representative, it is a *phenetic* grouping, not a perfect record of
 ancestry — convergent drift could in principle place two unrelated creatures in

@@ -543,7 +543,8 @@ details .field {
   font-family: var(--mono);
   color: var(--ink-faint);
 }
-.chart-range {
+.chart-range,
+.phylo-range {
   font-size: 10px;
   color: var(--ink-faint);
   font-family: var(--mono);

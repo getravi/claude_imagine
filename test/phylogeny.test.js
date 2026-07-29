@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
+import { Phylogeny } from "../src/phylogeny.js";
 import { makeConfig } from "../src/config.js";
 
 test("every founder is classified into a species", () => {
@@ -122,4 +123,96 @@ test("snapshot history is bounded", () => {
   const world = new World(cfg);
   for (let i = 0; i < 6000; i++) world.step();
   assert.ok(world.phylogeny.snapshots.length <= cfg.phylogenyHistory);
+});
+
+// ---- The abundance record covers the whole run (v1.30) ----
+//
+// It used to be a ring of `phylogenyHistory` snapshots, so the Tree of Life
+// showed the last ~3,120 ticks and dropped the rest with no tell. These pin
+// both halves: that the record now reaches back to the first sample, and that
+// coarsening it cannot lose a lineage or invent one.
+
+/** Drive a Phylogeny directly with fake populations — no simulation needed. */
+function feed(ph, samples) {
+  samples.forEach((ids, i) => {
+    ph.sample({ creatures: ids.map((id) => ({ speciesId: id })) }, i * ph.sampleInterval);
+  });
+}
+
+test("the abundance record still starts where the run started", () => {
+  const cfg = makeConfig({ seed: 11 });
+  const world = new World(cfg);
+  // Long enough to overflow the record several times over.
+  for (let i = 0; i < 12000; i++) world.step();
+  const ph = world.phylogeny;
+
+  const span = ph.snapshotSpan();
+  assert.equal(span.from, 0, "the oldest snapshot is the run's first sample");
+  assert.equal(span.to, world.tick - (world.tick % cfg.phylogenySampleInterval));
+  assert.ok(ph.snapshotStride > 1, "the record must have coarsened by now");
+  // The old ring would have covered only this much of the run at the far end.
+  const ringSpan = cfg.phylogenyHistory * cfg.phylogenySampleInterval;
+  assert.ok(span.to - span.from > 3 * ringSpan, "far more history than the old ring held");
+});
+
+test("coarsening partitions the run exactly — no gap, no overlap", () => {
+  const ph = new Phylogeny(makeConfig({ phylogenyHistory: 8 }));
+  feed(
+    ph,
+    Array.from({ length: 500 }, () => [0, 0, 1]),
+  );
+  // Every raw sample is inside exactly one window: the spans must sum to the
+  // number of samples taken. An aggregate two cancelling errors can satisfy is
+  // no test, so also check the windows tile the tick axis end to end.
+  const totalSpan = ph.snapshots.reduce((a, s) => a + s.span, 0);
+  assert.equal(totalSpan, ph.snapshotsSeen);
+  assert.equal(ph.snapshotsSeen, 500);
+  for (let i = 1; i < ph.snapshots.length; i++) {
+    const prev = ph.snapshots[i - 1];
+    assert.equal(
+      ph.snapshots[i].tick,
+      prev.tick + prev.span * ph.sampleInterval,
+      "window " + i + " begins exactly where the one before it ends",
+    );
+  }
+});
+
+test("a lineage that lived for one sample survives every halving", () => {
+  const ph = new Phylogeny(makeConfig({ phylogenyHistory: 8 }));
+  const samples = Array.from({ length: 500 }, () => [0, 0, 0, 0]);
+  samples[3] = [0, 0, 0, 42]; // a mayfly species, alive for one sample only
+  feed(ph, samples);
+
+  assert.ok(ph.snapshotStride >= 32, "sanity: the record halved repeatedly");
+  const seen = ph.snapshots.filter((s) => (s.counts.get(42) || 0) > 0);
+  assert.equal(seen.length, 1, "it appears in exactly the window it lived in");
+  // Attenuated to its true share of that window — one creature in four, for one
+  // sample out of `span` — rather than dropped, which is what discarding every
+  // second sample would have done to it.
+  const w = seen[0];
+  assert.ok(Math.abs(w.counts.get(42) / w.total - 1 / (4 * w.span)) < 1e-12);
+});
+
+test("bands never sum to more than the whole, at any resolution", () => {
+  const ph = new Phylogeny(makeConfig({ phylogenyHistory: 8 }));
+  feed(
+    ph,
+    // A ragged population so windows merge unequal totals.
+    Array.from({ length: 400 }, (_, i) => Array.from({ length: 1 + (i % 7) }, (_, k) => k % 3)),
+  );
+  for (const s of ph.snapshots) {
+    let sum = 0;
+    for (const n of s.counts.values()) sum += n;
+    assert.equal(sum, s.total, "counts account for the whole population of the window");
+  }
+});
+
+test("the record stays bounded however long the run is", () => {
+  const cap = 16;
+  const ph = new Phylogeny(makeConfig({ phylogenyHistory: cap }));
+  for (let i = 0; i < 4000; i++) {
+    ph.sample({ creatures: [{ speciesId: 0 }] }, i * ph.sampleInterval);
+    assert.ok(ph.snapshots.length <= cap, "never exceeds its capacity");
+  }
+  assert.equal(ph.snapshots[0].tick, 0, "and index 0 is never the one evicted");
 });

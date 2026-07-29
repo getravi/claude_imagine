@@ -276,6 +276,15 @@ records a snapshot, and marks newly-extinct species. `mullerplot.js` turns those
 snapshots into the stacked-area "Tree of Life" chart, and the renderer can dim
 every creature outside a chosen species to spotlight one lineage in the pond.
 
+That snapshot record covers the **whole run** in bounded memory, the same
+promise `archive.js` makes for the population chart: when it fills, every second
+snapshot folds into the one before it and the stride doubles, so the plot gets
+coarser rather than shorter and always starts where the run started. The merge
+is a *sum* of counts and totals rather than `archive.js`'s min/max envelope,
+because a species count is extensive within its window — summing gives the
+population-weighted mean share, keeps the bands summing to at most the whole,
+and cannot erase a lineage that only ever lived inside a merged window.
+
 Because every branched species records the species of its founder's parent,
 the tree can also be read *upward*: `Phylogeny.ancestry(id)` walks those parent
 links back to the founding species, returning the chain oldest-first. That is

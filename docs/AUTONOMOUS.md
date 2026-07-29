@@ -108,7 +108,12 @@ DEVLOG as I ship them; add new ones as they occur to me.
   Replay/scrubbing is the big untouched one. The minimap
   learned to draw terrain in v1.24; it still says nothing about the day/night
   state or about disease, and it is the only view where a whole-pond pattern
-  is visible at a glance.)
+  is visible at a glance. The Muller plot's snapshot ring became a whole-run
+  record in v1.30 — the last bounded buffer I know of that was silently
+  sliding. The Tree of Life's remaining gaps are that it has no x-axis marks
+  beyond its caption, and that the twelve lineage hues are still the
+  unreadable-for-a-dichromat problem v1.25 identified and could not solve with
+  colour.)
 - **Performance:** spatial-grid tuning, render batching, so bigger worlds stay 60fps.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
@@ -333,6 +338,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   distinguishable values — no remapping creates an axis. Before designing a fix,
   check whether the thing you need has anywhere to live. (Same shape as the
   v1.23 terrain lesson: a pressure needs somewhere to accumulate.)
+- **A lesson has surfaces too, and they need the same sweep a feature does.**
+  Three times now an audit has passed on one surface while the same claim failed
+  on another (terrain in v1.23, colour in v1.25). v1.30 is the sharpest case,
+  because what missed a surface was not a feature but a *lesson*: v1.22 gave the
+  population chart a whole-run record, wrote down "a bounded readout that always
+  looks full is a lie with no tell", and left the Muller plot — the view whose
+  whole subject is history — remembering the last 3,120 ticks, fifty-two seconds
+  of watching, for eight more versions. When I write a rule down, the same
+  afternoon's work is to grep for every other place it applies. Admiring the
+  sentence is not the fix.
+- **The archive is three problems, not two.** (Was two until v1.30.) The third
+  is a *share*: a stacked-band plot's per-species counts. Envelopes break it —
+  twelve bands each widened to their max sum past the whole pond — and keeping a
+  representative erases any lineage that lived only inside a discarded window.
+  A count is extensive *within* its window, so summing counts and totals gives
+  the population-weighted mean share: bands still sum to at most one, and a
+  one-sample species is attenuated rather than deleted. Instantaneous → min/max
+  envelope; cumulative-extensive → plain decimation; compositional share → sum
+  both numerator and denominator. The wrong answer looks perfect on a fresh run
+  in all three cases.
 - **The archive is two problems, not one.** Population and food are
   *instantaneous* — thinning genuinely loses their peaks, which is what v1.22's
   min/max envelopes are for. Deaths (and births, and kills, and every other
