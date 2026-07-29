@@ -844,6 +844,162 @@ respond within a lifetime), or restricted movement (so lineages stay put long
 enough for local selection to bite), or a spatially varying *resource* — and the
 third is by far the cheapest to add.
 
+## The ground sense: perception is not a pressure
+
+The section above ends with a list of three ways to get spatial structure out of
+a well-mixed world — perception, restricted movement, or a spatially varying
+resource — and a note that the third is the cheapest. v1.23 shipped the third.
+v1.33 went back and built the first, because "they cannot perceive it" had been
+sitting in this document for ten versions as the obvious unfinished business.
+
+The **ground sense** (opt-in, `groundSense`) gives every creature one more
+scalar: the roughness of the ground it is standing on, 0 on the flattest and 1
+on the roughest the config prices. Like the ear, it has its own gene block
+outside the brain's weight vector, so switching it on costs zero random draws in
+any world that leaves it off.
+
+It is deliberately a *local* sense. A creature is told what is under it, never
+which direction is smoother. That is not a limitation to apologise for — it is
+the information a bacterium has, and run-and-tumble chemotaxis (move on while
+conditions are bad, linger once they are good) concentrates a population in the
+good places with nothing more. Whether evolution here finds that was the
+experiment.
+
+It does not.
+
+### The wire is real
+
+First, the sanity check: does the input reach the motor commands at all? For
+each living creature, hold every other sense at what it actually perceived this
+tick and swing the foot from 0 to 1; the mean absolute change in turn and thrust
+is how much of its steering the ground decides. On the motor scale of (-1, 1):
+
+| | founders | after 9,000 ticks |
+|---|---|---|
+| ground sense on | 0.257 ± 0.039 | 0.367 ± 0.109 |
+| ground sense off | **0.000** | **0.000** |
+
+Founders are born with a random foot, so 0.257 is what an unselected wire is
+worth: the ground is already deciding about an eighth of the full range of both
+motor commands. And the off arm is an exact zero, not a small number — the
+property that makes the statistic worth quoting at all.
+
+### But selection is indifferent to it
+
+The climb from 0.257 to 0.367 is exactly what selection wiring up a useful sense
+looks like. It is also exactly what a random walk looks like: foot genes mutate
+at the same rate as everything else, and |w| grows under a random walk whether
+or not anything is grading it.
+
+So — the v1.27 rule, that a feature touching what a creature perceives needs a
+*scrambled* arm and not only a disabled one — a third arm was run in which each
+creature is handed the roughness of a **different, random patch of the same
+landscape** every tick. Identical distribution of values, zero information about
+where it actually is.
+
+| after 9,000 ticks | sensitivity |
+|---|---|
+| true foot | 0.367 ± 0.109 |
+| scrambled foot | 0.383 ± 0.156 |
+
+The scrambled arm ends up marginally *higher*. The growth is drift. Nothing in
+this pond is selecting on the ground sense.
+
+### And the pond does not settle
+
+The behavioural question, measured with the same **ground bias** as v1.23 (mean
+roughness under the living, minus the mean roughness of the landscape; exactly 0
+without terrain). To isolate behaviour, `terrainBarrenness` is set to 0, so the
+crop does not care about the ground and any settling has to be something the
+creatures did. Twelve seeds, 9,000 ticks, mean over the last 3,000:
+
+| roughest ground costs | bias, sense off | bias, sense on | paired difference | seeds in the predicted direction |
+|---|---|---|---|---|
+| 2.6× (the shipped cost) | -0.0074 | -0.0032 | **+0.0042 ± 0.0164** | 2 / 12 |
+| 6× | -0.0162 | -0.0218 | -0.0056 ± 0.0116 | 9 / 12 |
+| 12× | -0.0153 | -0.0350 | -0.0197 ± 0.0413 | 8 / 12 |
+
+At the cost this world actually ships, the sign is *wrong* and two seeds out of
+twelve go the predicted way — which is a coin. Turn the cost up and the sign
+flips to the predicted direction and stays there in eight or nine seeds out of
+twelve, but the spread between seeds is two to three times the effect, and by
+12× the pond is a different world anyway (37 creatures against 60, the arms
+having fallen into different regimes — the v1.32 warning about seed-matched
+pairs applies at full strength). The honest reading of the bottom two rows is
+*a hint, in the direction the design predicted, that does not clear the noise*.
+
+### Why: a sense is only worth what the thing it senses costs
+
+The diagnosis was in this document before the experiment was run, one section
+up, and I read past it for ten versions.
+
+v1.23 measured the movement tax on its own at a ground bias of -0.003 — nothing
+— and concluded a spatial cost cannot produce spatial structure in a well-mixed
+world. I then wrote down perception as one of the three remedies, and I have
+been reading that list ever since as a to-do with perception at the top. But the
+same paragraph had already established that **rough ground barely costs
+anything**: at 2.6× it prices only the movement half of the bill, of a creature
+that thrusts intermittently, on ground it crosses in a few hundred ticks. There
+was never a fitness gradient for the foot to climb.
+
+Perception does not create a pressure. It can only exploit one. Giving a
+creature a sense for a variable that hardly affects its survival buys exactly
+what the theory says it should: a wire that carries a real signal into behaviour,
+that behaves indistinguishably from a wire carrying noise, and a population that
+sits where it always sat. The remedies on that list are not interchangeable, and
+the two I have not tried — restricted movement, and a resource that varies in
+space — are the two that change the *timescale* rather than the information.
+
+That is also the shape of the standing lesson here: a proposed fix has to
+address the diagnosis you already wrote down. Mine addressed a different one.
+
+### Reproducing it
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { groundBias } from "./src/terrain.js";
+
+for (const groundSense of [false, true]) {
+  let sum = 0;
+  const seeds = [1, 2, 3, 5, 7, 8, 9, 11, 13, 17, 19, 23];
+  for (const seed of seeds) {
+    // barrenness 0 leaves the movement cost as the only thing terrain does,
+    // so the crop cannot do the settling on the creatures' behalf.
+    const w = new World(makeConfig({ seed, terrain: true, terrainBarrenness: 0, groundSense }));
+    for (let i = 0; i < 9000; i++) w.step();
+    sum += groundBias(w.terrain, w.creatures);
+  }
+  console.log(groundSense, (sum / seeds.length).toFixed(4));
+}
+// false ~ -0.007
+// true  ~ -0.003   the sense does not move the pond
+```
+
+The sensitivity measurement is `groundSway()` in `src/creature.js` — the same
+quantity the inspector shows for the selected creature, so a reader can watch
+the number this section is about. `test/groundSense.test.js` pins the parts that
+must not drift: the sense reads exactly 0 without terrain, adds exactly nothing
+to a brain on flat ground, and costs no random draws while it is off.
+
+The null itself is **not** pinned by the suite, and that is a deliberate choice
+rather than an oversight. A single world's ground bias at 2,500 ticks ranges
+from +0.065 to -0.041 across five seeds in either arm — a pond of five survivors
+produces a number as confidently as a pond of two hundred. Any assertion cheap
+enough to run in the suite would be measuring the noise, and a flaky test that
+fails on an unlucky seed teaches a future reader that the result is fragile when
+it is the *test* that is. Twelve seeds and 9,000 ticks is the smallest honest
+version, and it lives in the script above.
+
+### What shipped, and why it shipped at all
+
+A null result, kept rather than deleted, on the same terms as v1.23's failed
+half: the pair of arms is the experiment, and a mechanism that is present,
+correct and demonstrably unselected says something a missing mechanism does not.
+The sense is off by default and does nothing to any existing world. What it
+leaves behind is a working perception channel for the next person — including
+the next me — who wants to test it against a cost worth avoiding.
+
 ## Detritus: a pond that feeds on its own dead
 
 Food has arrived in this world from nowhere since v1.0. v1.18 made the crop

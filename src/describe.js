@@ -129,6 +129,21 @@ export function describePond(world, config, camera = null) {
   if (config.disease && (s.infectedCount > 0 || s.immuneCount > 0)) {
     out.push(`${s.infectedCount} sick, ${s.immuneCount} immune.`);
   }
+  // The ground, where the ground has an opinion. `groundBias` is exactly 0
+  // without terrain — the same guard the Ground tile uses — and it is the one
+  // number on the panel that says whether the pond has settled into its flats.
+  // Until v1.33 that number was visible only to an eye, which is the v1.31
+  // lesson repeating itself one surface down.
+  if (config.terrain && pop > 0) {
+    const pct = Math.round(Math.abs(s.groundBias) * 100);
+    out.push(
+      pct === 0
+        ? "The living are spread evenly across rough ground and smooth."
+        : `The living are on ground ${pct}% ${
+            s.groundBias < 0 ? "smoother" : "rougher"
+          } than the landscape average.`
+    );
+  }
   if (camera) out.push(describeView(camera, config));
 
   return out.filter(Boolean).join(" ");

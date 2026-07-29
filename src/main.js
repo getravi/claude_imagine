@@ -10,7 +10,7 @@ import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
 import { drawMuller } from "./mullerplot.js";
-import { buildBrainFor } from "./creature.js";
+import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
@@ -57,6 +57,7 @@ function parseHash() {
   if (p.has("ter")) o.terrain = p.get("ter") === "1";
   if (p.has("det")) o.detritus = p.get("det") === "1";
   if (p.has("eye")) o.exactVision = p.get("eye") === "1";
+  if (p.has("feel")) o.groundSense = p.get("feel") === "1";
   return o;
 }
 
@@ -85,6 +86,7 @@ function syncHash() {
   p.set("ter", config.terrain ? "1" : "0");
   p.set("det", config.detritus ? "1" : "0");
   p.set("eye", config.exactVision ? "1" : "0");
+  p.set("feel", config.groundSense ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -191,6 +193,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-terrain", config.terrain);
   setToggle("toggle-detritus", config.detritus);
   setToggle("toggle-exactvision", config.exactVision);
+  setToggle("toggle-groundsense", config.groundSense);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -801,7 +804,10 @@ function updateInspector() {
   }
 
   const chain = world.phylogeny.ancestry(c.speciesId);
-  const key = c.id + "|" + chain.map((s) => s.id).join(",");
+  // The key decides when the panel's *structure* is rebuilt, so anything that
+  // adds or removes a row belongs in it — otherwise flipping the toggle leaves
+  // a panel with no Underfoot row to patch, or one nothing updates.
+  const key = c.id + "|" + chain.map((s) => s.id).join(",") + "|" + (config.groundSense ? "f" : "");
   if (key !== inspKey) {
     inspKey = key;
     panel.classList.remove("empty");
@@ -822,6 +828,16 @@ function updateInspector() {
   $("insp-age").textContent = c.age;
   $("insp-energy").textContent = Math.round((c.energy / config.energyMax) * 100) + "%";
   $("insp-children").textContent = c.children;
+  const foot = document.getElementById("insp-foot");
+  if (foot) {
+    // "roughness here — how much of its turn and thrust that is worth". The
+    // second number is a hypothetical put to this creature's own brain, not a
+    // claim that the ground is steering the pond; docs/SCIENCE.md measures what
+    // selection does with it, which is nothing.
+    foot.textContent = `${Math.round(c.groundFeel * 100)}% rough — sways steering ${groundSway(
+      c
+    ).toFixed(2)}`;
+  }
   const learned = document.getElementById("insp-learned");
   if (learned) learned.innerHTML = sparkFromWeights(c.brain.w);
   // An ancestor can die out while you watch: toggle the class rather than
@@ -850,6 +866,14 @@ function inspectorHTML(c, chain) {
       <div><label>Size</label><b>${c.radius.toFixed(1)}</b></div>
       <div><label>Metabolism</label><b>${c.metabolismScale.toFixed(2)}×</b></div>
       <div class="insp-wide"><label>Diet</label><b>${dietLabel}</b></div>
+      ${
+        // The ground sense, per creature: what it is standing on, and how much
+        // of its steering that fact is deciding right now. Both are live, so
+        // they are patched rather than rebuilt (see the v1.15 lesson).
+        config.groundSense
+          ? `<div class="insp-wide"><label>Underfoot 👣</label><b id="insp-foot">—</b></div>`
+          : ""
+      }
       <div class="insp-wide"><label>Species</label>
         <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
       ${ancestryRow(c, chain)}
@@ -1184,6 +1208,18 @@ function wireControls() {
   $("toggle-exactvision").checked = config.exactVision;
   $("toggle-exactvision").addEventListener("change", (e) => {
     config.exactVision = e.target.checked;
+    syncHash();
+  });
+  $("toggle-groundsense").checked = config.groundSense;
+  $("toggle-groundsense").addEventListener("change", (e) => {
+    config.groundSense = e.target.checked;
+    // Rebuild every living brain so the foot is wired in (or unwired) at once,
+    // the same as the ear and the plasticity toggles do. What a living creature
+    // cannot do is *acquire* a foot worth having: its foot genes were only ever
+    // drawn if it was born into a world with the sense on, so switching it on
+    // mid-run gives most of the pond a silent one and leaves the work to their
+    // descendants' mutations.
+    for (const c of world.creatures) c.brain = buildBrainFor(c.genome, config);
     syncHash();
   });
   $("toggle-signalling").checked = config.signalling;

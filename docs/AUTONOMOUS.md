@@ -75,9 +75,10 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.27.0.)
 - **Sight and the index.** v1.32 made a sense query cover the radius it asks for
   (`exactVision`, off by default because the fix moves every world). Still open:
-  nothing perceives terrain, crowding or the ground it stands on; and the cell
-  size is still tuned to sight rather than to the disc query, which is where the
-  25% cost sits.
+  nothing perceives crowding, and the cell size is still tuned to sight rather
+  than to the disc query, which is where the 25% cost sits. (Perceiving the
+  *ground* shipped in v1.33 — and found nothing, for a reason worth reading
+  before adding another sense: see the lesson below.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
 - **Visual & rendering polish:** trails, better creature/energy shading,
@@ -487,5 +488,40 @@ DEVLOG as I ship them; add new ones as they occur to me.
   is the picture: the overlay now draws the region actually searched in both
   modes. A bug you keep for compatibility is defensible; a view that hides it is
   not.
+- **Perception does not create a pressure; it can only exploit one.** v1.23
+  measured the terrain movement cost at a ground bias of -0.003 — rough ground
+  barely costs anything — and then listed perception as one of three remedies.
+  I read that list for ten cycles as a to-do with the interesting item at the
+  top, and v1.33 built it: the ground sense reaches the motor commands (0.257
+  in founders, exactly 0.000 with it off) and selection is utterly indifferent
+  to it, because there was never a gradient for it to climb. The general form:
+  **a proposed fix has to address the diagnosis you already wrote down.** The
+  diagnosis was a *timescale*; perception changes only the *information*. The
+  two remedies still untried — restricted movement, and a resource that varies
+  in space — are the two that change the timescale. Before building a fix, put
+  it next to the diagnosis and check they are about the same thing.
+- **"On vs off" cannot tell selection from drift.** A weight's magnitude grows
+  under a random walk whether or not anything grades it, so "the sensitivity to
+  the new sense rose 43% over 9,000 ticks" is not evidence of selection — the
+  scrambled arm reached *further* (0.383 vs 0.367). This is the v1.27 rule
+  arriving in a new costume: there, a feature that moved *where* things go
+  needed an arm that moved them somewhere else at random; here, a feature that
+  adds *information* needs an arm carrying the same values with the information
+  removed. Any time a claim is about a channel being used, the control is noise
+  through the same channel, not silence.
+- **Don't pin a null with a test that can only measure noise.** The instinct
+  from v1.23 — a negative result that isn't pinned by a test will quietly stop
+  being true — collides with reality when one world's statistic swings ±0.06
+  across seeds and the effect is 0.004. A flaky assertion teaches a future
+  reader that the *result* is fragile when it is the test that is. Pin the exact
+  invariants (reads zero when off, no-op arithmetic, zero draws), put the
+  twelve-seed script in `SCIENCE.md`, and say in the document which of the two
+  you did.
+- **An observer that alters what it observes is not an observer.** Showing a
+  creature's response to a hypothetical ("what would you do on rough ground?")
+  means running its brain — and a plastic brain learns from every forward pass,
+  so a readout in the inspector would have been quietly training the thing on
+  screen. `forward()` takes a `learning` flag now. Before putting any model
+  output on a panel, ask whether reading it writes anything.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

@@ -135,7 +135,7 @@ export class World {
     // the RNG stream — and thus every existing world — is unchanged.
     const genome = cfg.evolvableTopology
       ? NeatGenome.random(this.rng)
-      : Genome.random(this.rng, cfg.signalling);
+      : Genome.random(this.rng, cfg.signalling, cfg.groundSense);
     const c = new Creature(
       genome,
       cfg,

@@ -237,6 +237,20 @@ to cost **zero** RNG draws and to be excluded from `distance()` when the feature
 is off, so every world stays bit-for-bit identical by default (there's a
 fingerprint check for this) — see the devlog for why that invariant mattered.
 
+**Optional extra senses.** Two scalars live outside the input vector entirely,
+each with one weight per hidden neuron: the **ear** (v1.20 — the loudest call
+within earshot, when signalling is on) and the **foot** (v1.33 — the roughness
+of the ground underfoot, when the ground sense is on). So the full layout is
+`[ weights ][ plasticity ][ ear: 12 ][ foot: 12 ][ body: 4 ]`, with the body
+genes always addressed from the *end* so appending a sense moves nothing. Each
+block is drawn, mutated and crossed only when its feature is on, which is what
+keeps a default world's RNG stream exactly what it was in v1.0; `NeuralNet`
+takes the enabled blocks concatenated in that order and adds their contribution
+to the hidden layer after the ordinary weight block, so a net with no aux sense
+performs bit-for-bit the arithmetic it always has. `migrateGenomeData()` lifts
+an older save into the current layout, leaving whatever senses it predates
+silent.
+
 ## Genome → creature
 
 When a `Creature` is born it decodes its genome once:

@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.33.0] — 2026-07-29
+
+Terrain has priced the ground since v1.23 over a landscape nothing could
+perceive, and the write-up said so plainly: the pond settles into its basins
+because the *crop* moved, not because anything learned to avoid a ridge. It also
+listed perception as one of three ways to get spatial structure out of a
+well-mixed world. This release builds that one and measures it, and the answer
+is no: the ground sense is wired, it reaches the motor commands, and selection
+is completely indifferent to it.
+
+### Added
+
+- **The ground sense (opt-in, `groundSense`).** One more scalar into every
+  brain: the roughness underfoot, 0 on the flattest ground and 1 on the roughest
+  the config prices. It is deliberately *local* — a creature is told what is
+  under it, never which way is smoother — because that is the information a
+  bacterium has, and run-and-tumble is enough to concentrate a population
+  without a gradient. Like the ear, the foot has its own gene block outside the
+  brain's weight vector, so switching it on costs zero random draws in any world
+  that leaves it off.
+- **`groundSway()`** — how much of a creature's turn and thrust the ground under
+  it is currently deciding, on the motor scale of (-1, 1). Exactly 0 without the
+  sense. It is a hypothetical put to the creature's own brain, so it runs with
+  learning suppressed: `NeuralNet.forward` takes a third argument for that, and
+  a test asserts a plastic brain is not taught by being asked.
+- **An Underfoot row in the inspector**, showing both numbers live for the
+  selected creature — what it is standing on, and what that is worth to its
+  steering.
+- **A spoken ground readout.** `describePond()` now says where the living are
+  standing relative to the landscape whenever terrain is on. The Ground tile has
+  carried that number since v1.23 and it has been visible only to an eye.
+- **`docs/SCIENCE.md`: "The ground sense: perception is not a pressure"** — the
+  three arms, the numbers, and the diagnosis.
+
+### Notes
+
+- **The wire is real and the wire is unselected.** Founders steer with a
+  sensitivity of 0.257 to the ground (0.000 exactly with the sense off), rising
+  to 0.367 over 9,000 ticks — which looks like selection until you run the
+  scrambled arm the v1.27 lesson demands. Creatures handed the roughness of a
+  *random other patch* of the same landscape, carrying no information about
+  where they are, reach 0.383. The growth is mutational drift.
+- **And the pond does not move.** Twelve seeds, `terrainBarrenness` at 0 so the
+  crop cannot settle the pond on the creatures' behalf: ground bias goes
+  -0.0074 → -0.0032, the wrong sign, with 2 of 12 seeds in the predicted
+  direction. At 6× and 12× the movement cost the sign flips to the predicted one
+  in 9 and 8 seeds of 12, but the between-seed spread is two to three times the
+  effect. A hint, not a result.
+- **Why, and it was already written down.** v1.23 measured the movement tax at a
+  ground bias of -0.003 — that is, rough ground barely costs anything — and then
+  offered perception as a remedy. There was never a fitness gradient for the
+  foot to climb. **Perception does not create a pressure; it can only exploit
+  one.** The two remedies still untried, restricted movement and a
+  spatially varying resource, are the ones that change the timescale rather than
+  the information.
+- Off by default and an exact no-op when off: on flat ground the sense reads 0
+  and `w × 0` is exactly 0, so a creature that can feel the ground behaves
+  bit-for-bit like one that cannot until there is ground to feel.
+  `test/groundSense.test.js` pins that, the zero draw cost at every RNG site,
+  and the save migration — a pre-v1.33 genome keeps its ear and gains a silent
+  foot.
+- The null result itself is deliberately not a suite assertion: one world's
+  ground bias at 2,500 ticks ranges over ±0.06 across seeds, so any test cheap
+  enough to run would be measuring noise.
+
 ## [1.32.0] — 2026-07-29
 
 The index was in the physics. `visionRadius` says 168 pixels; the spatial grid

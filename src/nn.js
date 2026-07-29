@@ -35,10 +35,11 @@ export class NeuralNet {
    *   becomes *plastic*: its weights adapt each forward pass (within-lifetime
    *   learning). Omit for a static brain — the v1.0–v1.3 behaviour.
    * @param {{rate:number, decay:number, clamp:number}} [learn] learning params
-   * @param {Float32Array} [auxW] one extra weight per hidden neuron, for a
-   *   single scalar sense supplied at call time (see `forward`). Omit for the
-   *   plain topology — when it is null the forward pass performs exactly the
-   *   arithmetic it always has, in the same order.
+   * @param {Float32Array} [auxW] one extra weight per hidden neuron per extra
+   *   scalar sense supplied at call time (see `forward`), the senses laid out
+   *   one after another. Omit for the plain topology — when it is null the
+   *   forward pass performs exactly the arithmetic it always has, in the same
+   *   order.
    */
   constructor(nIn, nHidden, nOut, weights, plasticity = null, learn = null, auxW = null) {
     this.nIn = nIn;
@@ -73,11 +74,15 @@ export class NeuralNet {
       this.learn = learn;
     }
 
-    // An optional 17th sense with its own weights, kept outside `w` so the main
+    // Optional extra senses with their own weights, kept outside `w` so the main
     // weight vector — and therefore the genome, and therefore every seed — keeps
     // the length and layout it has had since v1.0. Null means "no such sense",
     // and costs one untaken branch per forward pass.
     this.auxW = auxW;
+    this.nAux = auxW ? auxW.length / nHidden : 0;
+    if (auxW && !Number.isInteger(this.nAux)) {
+      throw new Error(`aux weight length ${auxW.length} is not a multiple of ${nHidden}`);
+    }
 
     // Scratch buffers reused every tick to avoid per-frame allocation.
     this._hidden = new Float32Array(nHidden);
@@ -94,10 +99,17 @@ export class NeuralNet {
    * Returns the internal output buffer (length nOut) — do not retain it across
    * ticks, it is overwritten in place.
    * @param {ArrayLike<number>} inputs
-   * @param {number} [aux] value of the extra scalar sense. Ignored unless the
-   *   net was built with `auxW`, so callers can always pass it.
+   * @param {number|ArrayLike<number>} [aux] value(s) of the extra scalar senses,
+   *   in the same order as the blocks of `auxW`. A bare number is accepted for
+   *   the single-sense case. Ignored unless the net was built with `auxW`, so
+   *   callers can always pass it.
+   * @param {boolean} [learning] set false to run the pass without letting a
+   *   plastic brain learn from it. The simulation never passes it; it exists so
+   *   an *observer* can ask a brain a hypothetical question — "what would you do
+   *   on rough ground?" — without that question becoming part of the creature's
+   *   experience. A view that alters what it is looking at is not a view.
    */
-  forward(inputs, aux = 0) {
+  forward(inputs, aux = 0, learning = true) {
     const { w, nIn, nHidden, nOut, auxW, _hidden, _out } = this;
     let p = 0;
 
@@ -109,10 +121,21 @@ export class NeuralNet {
       }
       _hidden[j] = sum; // biases added below after the weight block
     }
-    // The extra sense, if this net has one, joins the hidden layer here — after
-    // the weight block so `p` still walks the classic layout untouched.
+    // The extra senses, if this net has any, join the hidden layer here — after
+    // the weight block so `p` still walks the classic layout untouched. The
+    // single-sense case keeps its own loop so that a net built before there was
+    // more than one performs bit-for-bit the arithmetic it did then.
     if (auxW) {
-      for (let j = 0; j < nHidden; j++) _hidden[j] += auxW[j] * aux;
+      if (this.nAux === 1) {
+        const a = typeof aux === "number" ? aux : aux[0];
+        for (let j = 0; j < nHidden; j++) _hidden[j] += auxW[j] * a;
+      } else {
+        for (let s = 0; s < this.nAux; s++) {
+          const a = aux[s];
+          const off = s * nHidden;
+          for (let j = 0; j < nHidden; j++) _hidden[j] += auxW[off + j] * a;
+        }
+      }
     }
     for (let j = 0; j < nHidden; j++) {
       _hidden[j] = tanh(_hidden[j] + w[p++]);
@@ -130,7 +153,7 @@ export class NeuralNet {
       _out[k] = tanh(_out[k] + w[p++]);
     }
 
-    if (this.plastic) this._learn(inputs);
+    if (this.plastic && learning) this._learn(inputs);
 
     return _out;
   }

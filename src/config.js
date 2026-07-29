@@ -92,6 +92,24 @@ export const DEFAULT_CONFIG = Object.freeze({
   // turns the worst ridges into literal bare rock, which reads as a bug.
   terrainBarrenness: 0.85, // 0 = ground doesn't care, 1 = the worst ridge is bare rock
 
+  // The ground sense (v1.33, opt-in): creatures can feel the roughness of the
+  // ground they are standing on. Terrain has priced movement since v1.23 over a
+  // landscape nothing could perceive, which is why the honest description of it
+  // was "the crop moved and the population followed" rather than anything about
+  // creatures avoiding rough ground.
+  //
+  // A creature still cannot tell which *direction* is smoother — it gets one
+  // scalar about where it already is. That is deliberate: it is the information
+  // a bacterium has, and run-and-tumble (move on when conditions are bad, linger
+  // when they are good) concentrates a population in the good places using
+  // nothing more. Whether evolution here finds that is the experiment; the
+  // measurement is in docs/SCIENCE.md.
+  //
+  // Like the ear, the sense has its own gene block outside the brain's weight
+  // vector, so switching it on costs zero random draws in any world that leaves
+  // it off, and the input reads exactly 0 in a world with no terrain at all.
+  groundSense: false,
+
   // Detritus (v1.27, opt-in): the ground remembers where things died. Food has
   // arrived from nowhere since v1.0 — v1.18 made the crop conditional on itself
   // and v1.23 on the ground, but a death still had no consequence for the pond
