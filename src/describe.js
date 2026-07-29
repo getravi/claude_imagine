@@ -1,0 +1,203 @@
+// describe.js — the pond, said out loud.
+//
+// Thirty versions of this project went into things to look at. The whole
+// headline experience is a canvas: `<canvas id="world">`, with no accessible
+// name, no role, and no text anywhere on the page that says what is happening
+// inside it. A visitor using a screen reader arrives at the most-linked page in
+// this repo and is told, in full: "world". Everything the pond has ever done —
+// the forty founders, the first hunter, a crash and a recovery — has been
+// legible only to an eye.
+//
+// This module is the text half of that world. It is a PURE OBSERVER in the same
+// sense as `phylogeny.js`, `chronicle.js` and `energy.js`: it reads world state,
+// draws no random numbers, and nothing in the simulation reads it back, so a
+// world that is being described is bit-for-bit the world that is not.
+// `test/describe.test.js` pins that the same way `test/energy.test.js` does.
+//
+// Two surfaces, because a listener needs two different things:
+//
+//   `describePond()` is a *state* — what is true right now, for the canvas's
+//   `aria-label`, read on demand when someone puts their cursor on the pond.
+//
+//   `pendingSpeech()` is an *event* — what has just changed, for a polite live
+//   region. It says nothing at all unless the Chronicle has written a new line,
+//   which is the point: a live region that talks every second cannot be listened
+//   to, and this project already owns a narrator whose whole job is deciding
+//   when something is worth reporting. The Chronicle has been writing for a
+//   sighted reader since v1.5; this gives it an audience that cannot see the
+//   feed it writes into.
+//
+// Both follow the rule the rest of the HUD follows: a mechanic that is switched
+// off is not mentioned. A description that says "0 sick" in a world with no
+// pathogen is the spoken form of a readout showing a steady, plausible zero.
+
+/** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
+export const MAX_SPOKEN = 3;
+
+/**
+ * The season badge's text, as data. Lives here rather than in `main.js` so that
+ * the badge a visitor sees and the sentence a listener hears cannot drift apart,
+ * and so a test can reach either. Reports "No seasons" with the cycle off, which
+ * is what the badge has always shown.
+ * @param {number} tick
+ * @param {object} config
+ */
+export function seasonLabel(tick, config) {
+  if (!config.seasons) return { icon: "◷", name: "No seasons", year: null };
+  const angle = (2 * Math.PI * tick) / config.seasonLength;
+  const s = Math.sin(angle);
+  const rising = Math.cos(angle) > 0; // heading toward summer
+  let icon, name;
+  if (s > 0.5) [icon, name] = ["☀️", "Summer"];
+  else if (s < -0.5) [icon, name] = ["❄️", "Winter"];
+  else if (rising) [icon, name] = ["🌱", "Spring"];
+  else [icon, name] = ["🍂", "Autumn"];
+  const year = Math.floor(tick / config.seasonLength) + 1;
+  return { icon, name, year };
+}
+
+/**
+ * The time-of-day badge's text. Only ever shown while the day/night cycle is
+ * running — with it off the pond is permanently at noon, which is not worth
+ * saying — but like `seasonPhase` it reports the shape of the cycle either way
+ * and lets the caller decide.
+ * @param {number} tick
+ * @param {object} config
+ */
+export function timeOfDayLabel(tick, config) {
+  const light = (Math.cos((2 * Math.PI * tick) / config.dayLength) + 1) / 2;
+  // Daylight is a cosine, so it is climbing back toward noon while sin is negative.
+  const rising = Math.sin((2 * Math.PI * tick) / config.dayLength) < 0;
+  if (light > 0.75) return { icon: "🌞", name: "Day" };
+  if (light < 0.25) return { icon: "🌙", name: "Night" };
+  return rising ? { icon: "🌅", name: "Dawn" } : { icon: "🌆", name: "Dusk" };
+}
+
+/**
+ * Everything the canvas would tell you if it could talk: the accessible name for
+ * `#world`.
+ *
+ * Scope is deliberately *what is in the pond*, not what is in the sidebar. The
+ * mortality and energy bars carry their own labels, the stats are already text,
+ * and a paragraph that repeats them would bury the six numbers that matter under
+ * twenty that a listener can go and read. What has no text form anywhere else is
+ * the picture: how many creatures, how many hunt, how much food, how old the
+ * deepest lineage is, what time of year and of day it is, and — since v1.17 made
+ * it possible to be looking at a corner of the pond without knowing it — where
+ * the camera is pointed.
+ *
+ * @param {import('./world.js').World} world
+ * @param {object} config
+ * @param {import('./camera.js').Camera} [camera] optional; the view, if any
+ * @returns {string}
+ */
+export function describePond(world, config, camera = null) {
+  const pop = world.creatures.length;
+  const food = world.food.items.length;
+  const s = world.stats;
+  const out = [];
+
+  const at = `The pond at tick ${world.tick.toLocaleString()}`;
+  if (pop === 0) {
+    // An empty pond is the one state where the headline number says nothing on
+    // its own: "0 creatures" is a fact, "nothing is alive" is the news.
+    out.push(`${at}: nothing is alive.`);
+  } else {
+    out.push(`${at}: ${count(pop, "creature")}, ${count(food, "food pellet")}.`);
+    // Carnivores only where they can actually hunt. The diet gene exists in
+    // every world, but with predation off it decides nothing, so a hunter count
+    // would be describing a trait rather than a behaviour.
+    if (config.predation) {
+      const carn = s.carnivoreCount || 0;
+      out.push(
+        carn === 0
+          ? "None of them hunt."
+          : `${count(carn, "of them hunts", "of them hunt")}, at ${percent(carn / pop)} of the pond.`
+      );
+    }
+    out.push(`The deepest lineage has reached generation ${s.currentMaxGeneration}.`);
+  }
+
+  if (config.seasons) {
+    const season = seasonLabel(world.tick, config);
+    out.push(`${season.name} of year ${season.year}.`);
+  }
+  if (config.dayNightCycle) out.push(`${timeOfDayLabel(world.tick, config).name}.`);
+  // Contagion, and only once there is a contagion to report: a pathogen that has
+  // not appeared yet is not news, and this is the shape of the v1.16 burnout bug
+  // — never narrate the state of a thing that has not started.
+  if (config.disease && (s.infectedCount > 0 || s.immuneCount > 0)) {
+    out.push(`${s.infectedCount} sick, ${s.immuneCount} immune.`);
+  }
+  if (camera) out.push(describeView(camera, config));
+
+  return out.filter(Boolean).join(" ");
+}
+
+/**
+ * Where the camera is looking, in words. Silent at the default view, which is
+ * the whole pond and needs no explanation — and which is exactly the state
+ * `isDefault()` protects, so the sentence appears at the same moment the zoom
+ * badge and the minimap do.
+ */
+function describeView(camera, config) {
+  if (camera.isDefault()) return "";
+  return (
+    `Zoomed to ${camera.zoom.toFixed(1)}×, centred at x ${Math.round(camera.x)}, ` +
+    `y ${Math.round(camera.y)} of a ${config.width} by ${config.height} pond.`
+  );
+}
+
+/**
+ * What a live region should be told, given the Chronicle so far and the last
+ * line the listener has already heard.
+ *
+ * The caller keeps the returned `spoken` and hands it back next frame. Three
+ * things make this safe to call every frame:
+ *
+ *  - Nothing new, nothing said. `text` is `""` and a caller that only writes
+ *    non-empty text never re-announces anything.
+ *  - The first call is silent. Arriving on the page mid-run must not read out
+ *    the entire natural history of the pond, so the first call marks the feed
+ *    as heard and says nothing. (Priming is why this returns `spoken` even when
+ *    it says nothing.)
+ *  - At most `MAX_SPOKEN` lines per utterance. At 20× speed a pond can produce
+ *    a run of events between two frames, and a paragraph that takes a minute to
+ *    read out is a paragraph that is out of date before it ends. The count of
+ *    what was skipped is spoken instead, so the listener knows there is more in
+ *    the feed rather than silently losing it — the v1.22 rule about a readout
+ *    that quietly drops what does not fit.
+ *
+ * @param {Array<{tick:number,msg:string}>} events `world.chronicle.events`
+ * @param {object|null} spoken the last event announced, or null on the first call
+ * @returns {{text: string, spoken: object|null}}
+ */
+export function pendingSpeech(events, spoken) {
+  const newest = events.length ? events[events.length - 1] : null;
+  if (!newest || spoken == null) return { text: "", spoken: newest };
+
+  // The Chronicle's buffer is bounded and shifts from the front, so the event a
+  // listener last heard can leave the array entirely. Not finding it means
+  // everything still here is newer than it, which the cap below then trims.
+  const i = events.indexOf(spoken);
+  const fresh = i >= 0 ? events.slice(i + 1) : events.slice();
+  if (fresh.length === 0) return { text: "", spoken };
+
+  const shown = fresh.slice(-MAX_SPOKEN);
+  const skipped = fresh.length - shown.length;
+  const parts = shown.map((e) => e.msg);
+  if (skipped > 0) parts.unshift(`${count(skipped, "earlier event")} not read out.`);
+  return { text: parts.join(" "), spoken: newest };
+}
+
+/** "1 creature" / "2 creatures", with the thousands separators a reader wants. */
+function count(n, one, many = null) {
+  const word = n === 1 ? one : many || one + "s";
+  return `${n.toLocaleString()} ${word}`;
+}
+
+/** A whole-number percentage, floored at 1% so a real hunter is never "0%". */
+function percent(fraction) {
+  const p = Math.round(fraction * 100);
+  return `${p === 0 && fraction > 0 ? "<1" : p}%`;
+}

@@ -86,10 +86,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
   looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
   state machine, and `main.js` is only an adapter over it now; put any new
-  pointer behaviour in the module, where the suite can reach it. Still open: the
-  DOM-side colours *that* pass didn't reach either (the species dots, the Muller
-  plot bands, the inspector swatch, the weight matrices); ARIA labelling of the
-  live readouts; and the fact that
+  pointer behaviour in the module, where the suite can reach it. The canvas got
+  a voice in v1.31 — `src/describe.js` is its `aria-label` plus a live region
+  that speaks the Chronicle; put any new wording there, not in `main.js`. Still
+  open: the DOM-side colours *that* pass didn't reach either (the species dots,
+  the Muller plot bands, the inspector swatch, the weight matrices); the live
+  stat tiles are labelled by adjacency rather than programmatically, and the
+  controls panel has never been walked with a keyboard alone; and the fact that
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
 - **The energy books** (`src/energy.js`, v1.29) are new and only half used. They
@@ -431,5 +434,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   out was an invariant already in the code for another reason: panning is a no-op
   at zoom 1. So `pan-y` at rest, `none` once zoomed. Before taking a surface
   wholesale, look for a state the feature demonstrably doesn't need it in.
+- **Every "what does this world throw away?" pass has assumed a reader who
+  looks.** v1.28 checked the work in a viewport I don't use and found two bugs
+  that had survived twenty-seven versions. v1.31 checked it with an *interface*
+  I don't use — a screen reader — and found that the canvas the whole project is
+  about had no accessible name at all: thirty versions of things to look at, and
+  the page said one word. The axis isn't only "which surface renders this?", it
+  is "which sense is this claim available to?". Corollary, and the reason the
+  fix was small: when a new audience needs narration, look for the narrator the
+  project already has. The Chronicle had been writing well-guarded prose into a
+  feed you have to see since v1.5; it needed an audience, not a rewrite.
+- **Speech is not a panel, and the cost of saying something is the listener's
+  time.** A readout you can ignore at a glance is an interruption when spoken,
+  so a live region earns its keep by staying quiet: silent on arrival, silent
+  when nothing changed, capped when a fast-forward produces a burst — and it
+  must say what it skipped, or it is v1.22's always-full buffer with a voice.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

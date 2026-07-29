@@ -4,6 +4,55 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.31.0] — 2026-07-29
+
+The pond, said out loud. Thirty versions went into things to look at, and the
+whole headline experience is a `<canvas>` with no accessible name: a visitor
+using a screen reader arrives at the most-linked page in this repo and is told,
+in full, "world". Everything this world has ever done has been legible only to
+an eye.
+
+### Added
+
+- **`src/describe.js`** — the text half of the pond. `describePond()` is the
+  canvas's `aria-label`: population, hunters, food, the deepest generation, the
+  season and the time of day, the sick and the immune, and — since v1.17 made it
+  possible to be looking at a corner of the world without knowing it — where the
+  camera is pointed. A pure observer like `phylogeny.js` and `energy.js`: it
+  draws no randomness and nothing reads it back, and `test/describe.test.js`
+  pins that by describing one world on every tick for 1,200 ticks and comparing
+  every creature, pellet and corpse against a world left alone.
+- **A spoken channel for the Chronicle.** A polite live region announces each
+  new Chronicle line as it is written. The narrator is the one this project
+  already had — writing since v1.5, and only ever into a feed you have to see.
+  Watching a default pond at 20×, a listener now hears "Night falls for the
+  first time — sight shrinks to 35% until dawn", "First blood after dark", "An
+  epidemic — 58 creatures are sick", in the order they happened.
+- **`role="img"` on the pond**, so the description is announced as a picture's
+  alternative text rather than being skipped as an empty graphic.
+
+### Notes
+
+- **A live region that talks constantly cannot be listened to**, so this one is
+  event-gated rather than periodic: arriving mid-run is silent (it does not read
+  out a pond's entire natural history), an unchanged feed says nothing, and a
+  burst — 20× speed can produce several events between two frames — is capped at
+  three lines with the number skipped spoken rather than silently dropped.
+  Announcements go out as blank-then-text over two frames, because rewriting a
+  live region to the same string may not fire at all, and the Chronicle can
+  legitimately say the same sentence twice.
+- **A mechanic that is off is not mentioned.** The spoken form of the rule the
+  HUD already follows: no "0 sick" in a world with no pathogen, no hunter count
+  where nothing can hunt, no time of day where it is permanently noon. Six tests
+  assert absence rather than presence.
+- **The season and time-of-day badges moved into the same module.** They were
+  private to `main.js`, which the suite cannot reach, so the badge a visitor
+  reads and the sentence a listener hears now come from one tested place — the
+  v1.26 rule about a colour a test cannot reach, applied to a label.
+- Verified in a real browser, not only by reading the code: the page driven at
+  20× speed, with a mutation observer on the live region standing in for a
+  screen reader.
+
 ## [1.30.0] — 2026-07-29
 
 The Tree of Life gets a memory. v1.22 caught the population chart quietly

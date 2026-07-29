@@ -48,7 +48,13 @@
     <main class="layout">
       <div class="left-col">
         <section class="stage">
-          <canvas id="world" width="900" height="620"></canvas>
+          <canvas
+            id="world"
+            width="900"
+            height="620"
+            role="img"
+            aria-label="The pond. Its contents are described here as they change."
+          ></canvas>
           <div id="season-badge" class="season-badge"></div>
           <div id="zoom-badge" class="zoom-badge hidden"></div>
           <canvas
@@ -60,6 +66,10 @@
             aria-label="Minimap of the whole pond; click to move the view"
           ></canvas>
           <div id="flash" class="flash"></div>
+          <!-- The pond's spoken channel: the Chronicle's newest line, announced
+               politely to a screen reader. Hidden from sight because the feed
+               below already shows the same lines. -->
+          <p id="pond-say" class="sr-only" role="status"></p>
         </section>
 
         <section class="chronicle">

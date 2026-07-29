@@ -12,13 +12,13 @@ import { RNG } from "./rng.js";
 import { drawMuller } from "./mullerplot.js";
 import { buildBrainFor } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
-import { dayNightPhase } from "./environment.js";
 import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { wholePercents, mortalitySeries, DEATH_CAUSES } from "./stats.js";
 import { mortalityColours, energyColours } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS } from "./energy.js";
+import { describePond, pendingSpeech, seasonLabel, timeOfDayLabel } from "./describe.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -86,34 +86,10 @@ function syncHash() {
   history.replaceState(null, "", "#" + p.toString());
 }
 
-// Turn the world's season phase into a label + icon for the badge.
-function seasonLabel(world) {
-  if (!config.seasons) return { icon: "◷", name: "No seasons", year: null };
-  const angle = (2 * Math.PI * world.tick) / config.seasonLength;
-  const s = Math.sin(angle);
-  const rising = Math.cos(angle) > 0; // heading toward summer
-  let icon, name;
-  if (s > 0.5) [icon, name] = ["☀️", "Summer"];
-  else if (s < -0.5) [icon, name] = ["❄️", "Winter"];
-  else if (rising) [icon, name] = ["🌱", "Spring"];
-  else [icon, name] = ["🍂", "Autumn"];
-  const year = Math.floor(world.tick / config.seasonLength) + 1;
-  return { icon, name, year };
-}
-
-// Turn the world's day/night phase into a label + icon for the badge. Only ever
-// shown while the cycle is switched on — with it off it is permanently noon,
-// which isn't worth a readout. Nothing else on screen says what time it is, so
-// without this a visitor sees creatures go strangely short-sighted for no
-// visible reason.
-function timeOfDayLabel(world) {
-  const light = dayNightPhase(world.tick, config);
-  // Daylight is a cosine, so it's climbing back toward noon while sin is negative.
-  const rising = Math.sin((2 * Math.PI * world.tick) / config.dayLength) < 0;
-  if (light > 0.75) return { icon: "🌞", name: "Day" };
-  if (light < 0.25) return { icon: "🌙", name: "Night" };
-  return rising ? { icon: "🌅", name: "Dawn" } : { icon: "🌆", name: "Dusk" };
-}
+// The season and time-of-day badges' text now lives in `describe.js`, so that
+// the badge a visitor reads and the sentence a listener hears come from one
+// place — and so a test can reach either. A label this file computes privately
+// is a label nothing can check.
 
 // ---- State ----
 let config = makeConfig(parseHash());
@@ -239,8 +215,64 @@ function loop(now) {
   updateSeasonBadge(world);
   updateInspector();
   updateChronicle(world);
+  updateNarration(world);
 
   requestAnimationFrame(loop);
+}
+
+// ---- The spoken pond ----
+//
+// The canvas gets a description of what is in it, and a polite live region gets
+// the Chronicle's newest line. Both come from `describe.js`, which is where the
+// wording and the "should this be said at all?" rules are tested; this function
+// is only the adapter onto the DOM, the same division `gestures.js` uses.
+const DESCRIBE_EVERY = 15; // frames between rewrites of the canvas description
+let narratedWorld = null;
+let spokenLine = null;
+let pendingSay = "";
+let pondLabel = "";
+let describeIn = 0;
+
+function updateNarration(world) {
+  // Keyed on the world *object*, not on a seed or a tick: a reset, a scenario
+  // and a load all build a new World, and a new object cannot find the old
+  // one's state — so an arriving world always primes silently instead of
+  // reading out the chronicle it inherited. Unrepresentable beats guarded.
+  if (world !== narratedWorld) {
+    narratedWorld = world;
+    spokenLine = null;
+    pendingSay = "";
+    describeIn = 0;
+  }
+
+  // Announcements go out over two frames — blank, then text — because a live
+  // region whose content is rewritten to the same string may not fire at all,
+  // and the Chronicle can legitimately say the same sentence twice (two dawns
+  // are two events). A real mutation every time costs one frame and removes the
+  // question.
+  const say = $("pond-say");
+  if (pendingSay) {
+    say.textContent = pendingSay;
+    pendingSay = "";
+  } else {
+    const said = pendingSpeech(world.chronicle.events, spokenLine);
+    spokenLine = said.spoken;
+    if (said.text) {
+      say.textContent = "";
+      pendingSay = said.text;
+    }
+  }
+
+  // The description is a state, not an event: nothing announces it, a listener
+  // reads it when their cursor lands on the pond. Rebuilding it every frame
+  // would be wasted work, and writing it unchanged would be a DOM write for
+  // nothing.
+  if (describeIn-- > 0) return;
+  describeIn = DESCRIBE_EVERY;
+  const label = describePond(world, config, renderer.camera);
+  if (label === pondLabel) return;
+  pondLabel = label;
+  $("world").setAttribute("aria-label", label);
 }
 
 // ---- Chronicle feed (natural-history timeline) ----
@@ -354,12 +386,12 @@ function wireMinimap(canvas) {
 }
 
 function updateSeasonBadge(world) {
-  const { icon, name, year } = seasonLabel(world);
+  const { icon, name, year } = seasonLabel(world.tick, config);
   let html =
     `<span class="icon">${icon}</span> ${name}` +
     (year ? ` <span class="yr">· year ${year}</span>` : "");
   if (config.dayNightCycle) {
-    const t = timeOfDayLabel(world);
+    const t = timeOfDayLabel(world.tick, config);
     html += ` <span class="tod"><span class="icon">${t.icon}</span> ${t.name}</span>`;
   }
   $("season-badge").innerHTML = html;

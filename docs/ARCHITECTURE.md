@@ -58,6 +58,7 @@ The dependency arrows point from a module to what it imports.
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |
+| `describe.js` | The pond in words: the canvas's `aria-label`, the badges' labels, and what a live region should be told (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
 | `minimap.js` | The whole pond in miniature — ground, life and the viewport (read-only). | canvas |

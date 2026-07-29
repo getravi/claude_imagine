@@ -137,6 +137,23 @@ body {
   gap: 20px;
   min-width: 0;
 }
+/* Present to a screen reader, absent to everything else. The pond's spoken
+   channel (see src/describe.js) has no visual form — the Chronicle feed below
+   the canvas already shows a sighted reader the same lines. Clipped rather than
+   `display: none`, which would remove it from the accessibility tree too. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .stage {
   position: relative;
   border-radius: var(--radius);
