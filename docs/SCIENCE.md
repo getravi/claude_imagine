@@ -1196,6 +1196,149 @@ the same cluster. It's a faithful, legible approximation of the tree of life, no
 a ground-truth genealogy. (A true ancestry-tracked genealogy is a natural future
 refinement — see the roadmap.)
 
+## The index was in the physics: what a creature could actually see
+
+`visionRadius` is 168 pixels. It is quoted in the config, drawn as a circle by
+the vision overlay, and used as the denominator of every proximity input a brain
+receives. For thirty-one versions it was also, quietly, not true.
+
+Sense queries go through a spatial hash grid ([grid.js](../src/grid.js)) — the
+standard trick that keeps "what is near me?" from being O(n²). Entities are
+bucketed into cells, and a query scans the asker's own cell plus the eight
+around it. That 3x3 block covers a disc of one **cell** around the asker, and
+the cells are `visionRadius * 0.75` = 126 px across. Everything between 126 and
+168 px away was therefore visible or invisible depending on where in its cell
+the creature happened to be standing.
+
+### The shape of it
+
+![A lattice: pale tiles where a creature can search its whole vision disc, dark seams between them, and a very dark band down one edge of the world](screenshots/sight-map.svg)
+
+Each pale tile is a region where the block happens to contain the whole vision
+disc; the dark lattice between them is where it doesn't. Measured over the whole
+default pond:
+
+| Over every standing position in the pond | |
+| --- | --- |
+| Mean share of the vision disc actually searched | **90.0%** |
+| Worst standing spot | **51.1%** |
+| Sight guaranteed in *every* direction | **19 – 189 px**, of a configured 168 |
+
+The dark band down one side is the second half of the problem. `cellSize` does
+not divide the world — 900 px in cells of 126 gives seven full columns and an
+18-px stub — so the grid's wrap (modulo *cells*) and the world's wrap (modulo
+*pixels*) do not agree at the seam. A creature standing a pixel past x=0 has the
+18-px stub column as its left neighbour, and can see 19 px to its left.
+
+That last part matters more than the arithmetic suggests. The world is a torus
+[for a stated reason](DEVLOG.md): walls and corners are exactly what evolution
+loves to exploit in boring ways, and a torus has no privileged spots. It turns
+out this one did. It just kept them in the index instead of in the physics.
+
+### How often it bites
+
+Over a default world (seed 314), comparing the grid's answer against an
+exhaustive scan of every pellet, at every 50th tick from tick 600 to 3,000:
+
+| Glances at food | Rate |
+| --- | --- |
+| Nearest pellet in sight reported wrongly | 1.30% |
+| Nothing seen although something was in range | 0.21% |
+| **Wrong in the 20-px band just past the seam** | **6.52%** |
+| Wrong everywhere else | 1.05% |
+
+Threat queries are cleaner (0.16% blind) simply because a predator is a much
+rarer thing to have inside 168 px than a pellet is.
+
+### The fix, and what it costs
+
+`SpatialGrid.forEachWithin(x, y, radius, fn)` walks the cells that overlap the
+disc it was asked for — computing the ranges in world coordinates rather than in
+cell indices, so the stub cells at the seam are handled properly — and skips
+corner cells whose nearest point is out of reach. With `exactVision` on, the
+same 10,000-glance census returns **0 wrong and 0 blind**.
+
+It costs about a quarter of the simulation's throughput: 787 → 612 ticks/second
+at a population of 180, in Node on this machine. The disc of radius 168 is
+88,600 px² against the block's ~143,000, but the disc needs cells from a wider
+span, and the per-cell reach test is not free.
+
+The flag is **off by default**, and that is a considered choice rather than
+caution: this is a correction, not a new rule, and turning it on moves every
+world onto a different trajectory from the one thirty-one versions of
+screenshots, permalinks and curated seeds were recorded on. With it off, the
+queries are the ones v1.0 made — the code takes the same branch, in the same
+order, and a default world is bit-for-bit what it was.
+
+### The control: does clearer sight change the pond?
+
+Barely, and not in any direction. Twelve seeds, 9,000 ticks each, both arms:
+
+| | sight clipped | exact sight |
+| --- | --- | --- |
+| Mean population, 12 seeds | 211.8 | 214.8 (+1.4%) |
+| Predation's share of deaths, the six predator worlds | 39.5% | 43.9% |
+| Predation's share, the six herbivore worlds | 4.0% | 13.6% |
+
+Individual worlds move enormously — seed 11 goes from 7.5% to 62.6% predation,
+seed 7 from 40.4% down to 18.6%, seed 9 from a pond of six survivors to one of
+124 — but they move both ways, and the aggregate barely stirs. That is what a
+*trajectory* change looks like as opposed to a *pressure* change: better sight
+does not push the pond anywhere, it just deals a different hand, and this world
+has regimes it can fall into either side of.
+
+There is a lesson here I nearly failed. A first pass over six seeds showed the
+standing crop falling 24% under exact vision, with a tidy mechanism ready to
+explain it — creatures find food sooner, so the crop is grazed harder. Twelve
+seeds says the effect was two worlds flipping regime, and the sign of it is not
+even stable. **In a world with attractors, a seed-matched pair is not a
+replicate.** Anything short of a dozen seeds here is an anecdote about a
+trajectory.
+
+### Reproducing it
+
+```js
+// node this from the repo root: how often the index answers wrongly.
+import { World } from "./src/world.js";
+import { DEFAULT_CONFIG } from "./src/config.js";
+import { torusDist2 } from "./src/vec.js";
+
+for (const exactVision of [false, true]) {
+  const cfg = { ...DEFAULT_CONFIG, exactVision };
+  const w = new World(cfg), R2 = cfg.visionRadius ** 2;
+  let q = 0, wrong = 0;
+  for (let i = 0; i < 3000; i++) {
+    w.step();
+    if (i < 600 || i % 50) continue;
+    w.foodGrid.clear();
+    for (const f of w.food.items) w.foodGrid.insert(f);
+    for (const c of w.creatures) {
+      q++;
+      let g = null, gd = R2, b = null, bd = R2;
+      const near = (f) => {
+        if (f.eaten) return;
+        const d = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
+        if (d < gd) { gd = d; g = f; }
+      };
+      if (exactVision) w.foodGrid.forEachWithin(c.x, c.y, cfg.visionRadius, near);
+      else w.foodGrid.forEachNear(c.x, c.y, near);
+      for (const f of w.food.items) {
+        if (f.eaten) continue;
+        const d = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
+        if (d < bd) { bd = d; b = f; }
+      }
+      if (b !== g) wrong++;
+    }
+  }
+  console.log(exactVision, (100 * wrong / q).toFixed(2) + "% of glances wrong");
+}
+```
+
+The map above comes from the same public API: `grid.nearBounds(x, y)` returns
+the block a query will search, as offsets from the point, and the fraction of
+the disc inside it is a ray-cast away. Its colour ramp is ordered by luminance,
+so it reads the same under every vision model — see the colour audit above.
+
 ## Determinism and reproducibility
 
 Vivarium is fully **deterministic**: a given `(seed, parameters)` pair produces

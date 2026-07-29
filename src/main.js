@@ -56,6 +56,7 @@ function parseHash() {
   if (p.has("sig")) o.signalling = p.get("sig") === "1";
   if (p.has("ter")) o.terrain = p.get("ter") === "1";
   if (p.has("det")) o.detritus = p.get("det") === "1";
+  if (p.has("eye")) o.exactVision = p.get("eye") === "1";
   return o;
 }
 
@@ -83,6 +84,7 @@ function syncHash() {
   p.set("sig", config.signalling ? "1" : "0");
   p.set("ter", config.terrain ? "1" : "0");
   p.set("det", config.detritus ? "1" : "0");
+  p.set("eye", config.exactVision ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -188,6 +190,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-signalling", config.signalling);
   setToggle("toggle-terrain", config.terrain);
   setToggle("toggle-detritus", config.detritus);
+  setToggle("toggle-exactvision", config.exactVision);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -1176,6 +1179,11 @@ function wireControls() {
     // Build (or drop) the nutrient field at once. Switching it off clears the
     // pond's memory outright rather than leaving a map nothing is maintaining.
     world.syncDetritus();
+    syncHash();
+  });
+  $("toggle-exactvision").checked = config.exactVision;
+  $("toggle-exactvision").addEventListener("change", (e) => {
+    config.exactVision = e.target.checked;
     syncHash();
   });
   $("toggle-signalling").checked = config.signalling;

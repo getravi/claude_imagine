@@ -164,6 +164,25 @@ export const DEFAULT_CONFIG = Object.freeze({
   visionRadius: 168, // how far a creature can see food/others
   eatRadius: 8, // contact distance to consume food
 
+  // Exact vision (v1.32, opt-in). `visionRadius` is what this world *intends* a
+  // creature to see. What it has actually seen since v1.0 is whatever the
+  // spatial index handed over: the 3x3 block of grid cells around it, which
+  // covers a guaranteed 126 px (one cell) of the configured 168 and reaches
+  // farther only in whichever directions the creature's position inside its
+  // cell happens to favour. Sight was therefore grid-aligned and anisotropic —
+  // on average 96% of the intended disc, 86% from the worst standing spot, and
+  // 1.5% of glances at food landed on the wrong nearest pellet. Switch this on
+  // and every sense query covers the radius it asks for, so `visionRadius`
+  // means what it says and the overlay circle is the truth.
+  //
+  // Off by default because it is not a *new* rule, it is a correction to an old
+  // one: turning it on moves every world off the trajectory thirty-one versions
+  // of screenshots, permalinks and curated seeds were recorded on. With it off
+  // the queries are byte-for-byte the ones v1.0 made — no branch taken, no
+  // random number drawn. See docs/SCIENCE.md for the measurement and for what
+  // it does (and doesn't do) to the pond.
+  exactVision: false,
+
   // --- Predation (v1.1) ---
   // Creatures with a diet gene at/above the threshold are carnivores and can
   // attack smaller creatures on contact. Nutrition from plants scales with how

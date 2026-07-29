@@ -4,6 +4,59 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.32.0] — 2026-07-29
+
+The index was in the physics. `visionRadius` says 168 pixels; the spatial grid
+that answers "what can I see?" hands back the 3x3 block of cells around the
+asker, and a cell is 126. Sight has therefore been grid-aligned since v1.0 —
+90% of the intended disc on average, 51% from the worst standing spot, and
+guaranteed in every direction only out to somewhere between 19 and 189 pixels
+depending on where a creature happens to stand. An optimisation had been quietly
+serving as a rule of the world, and the overlay drew a clean circle over it.
+
+### Added
+
+- **Exact vision (opt-in).** `SpatialGrid.forEachWithin(x, y, radius, fn)` walks
+  every cell that overlaps the disc it was asked for — ranges worked out in world
+  coordinates, not cell indices, so the stub column and row at the seam are
+  handled properly — and skips corner cells that are out of reach. With the flag
+  on, a 10,000-glance census against an exhaustive scan returns **0 wrong and 0
+  blind**, against 1.5% wrong with it off. It costs about a quarter of the tick
+  rate (787 → 612 ticks/s at a population of 180).
+- **An overlay that stops flattering the model.** *Show vision* used to draw the
+  configured radius as a circle. It now draws the region the creature can
+  actually search — the disc with grid-aligned bites out of it — with the
+  intended radius behind it as a faint ghost. When exact vision is on, the two
+  coincide and the circle is simply true.
+- **`docs/SCIENCE.md`: "The index was in the physics"** — the geometry, the
+  error rates, the cost, and the ecological control.
+
+### Notes
+
+- **Off by default, because it is a correction and not a rule.** Turning it on
+  moves every world onto a different trajectory from the one thirty-one versions
+  of screenshots, permalinks and curated seeds were recorded on. With it off the
+  code takes the same branch in the same order and a world is bit-for-bit what it
+  was, which `test/vision.test.js` pins creature-by-creature and pellet-by-pellet
+  over 1,500 ticks.
+- **The torus had a seam after all.** `cellSize` doesn't divide the world (900px
+  in cells of 126 leaves an 18px stub), so the grid wraps modulo *cells* while
+  the world wraps modulo *pixels*. In the 20-pixel band just past x=0, 6.5% of
+  glances at food find the wrong nearest pellet, against 1.05% everywhere else.
+  The torus was chosen in v1.0 precisely so that no spot in the world would be
+  special. One was.
+- **Clearer sight does not move the pond.** Twelve seeds, 9,000 ticks, both arms:
+  mean population 211.8 → 214.8. Individual worlds swing wildly and in both
+  directions — one goes from 7.5% to 62.6% predation, another the other way —
+  because a different trajectory can fall into a different regime. A first pass
+  over six seeds showed a tidy 24% drop in the standing crop, with a mechanism
+  ready to explain it; twelve seeds says that was two worlds flipping. In a world
+  with attractors, a seed-matched pair is not a replicate.
+- The new tests check `forEachWithin` against brute force across six awkward grid
+  geometries — cell sizes that don't divide the world, a world narrower than one
+  cell, a single-column grid — asserting that nothing in range is missed and
+  nothing is offered twice.
+
 ## [1.31.0] — 2026-07-29
 
 The pond, said out loud. Thirty versions went into things to look at, and the

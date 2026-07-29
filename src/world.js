@@ -152,6 +152,21 @@ export class World {
     return c;
   }
 
+  /**
+   * Offer `fn` the neighbours of (x, y) that a sense reaching `radius` may find.
+   *
+   * The two arms are the whole of the `exactVision` feature. Off (the default),
+   * this is the 3x3 block of grid cells v1.0 asked for and `radius` is ignored
+   * — the same candidates, in the same order, so a world is unchanged down to
+   * the last bit. On, the query covers the disc it was given, and a creature
+   * sees everything inside its vision radius rather than everything inside the
+   * part of it the index happened to index.
+   */
+  _scan(grid, x, y, radius, fn) {
+    if (this.config.exactVision) grid.forEachWithin(x, y, radius, fn);
+    else grid.forEachNear(x, y, fn);
+  }
+
   /** Advance the world by exactly one tick. */
   step() {
     const cfg = this.config;
@@ -188,12 +203,28 @@ export class World {
       for (const c of this.creatures) c.prevSignal = c.signal;
     }
 
+    // How far the sense queries below have to reach, for a world that has asked
+    // for the whole of what it configured (see `exactVision` in config.js).
+    // Sight this tick, which the day/night cycle may have shrunk...
+    const sightR = cfg.visionRadius * this.visionFactor;
+    // ...and, for the creature scan, the widest of the three questions it
+    // answers in one pass: sight, earshot — which deliberately does not shrink
+    // at night, so on a dark tick it is the longest reach in the world — and a
+    // mate search. Contact tests elsewhere (eating at 8px, biting, infection at
+    // 22px) are far inside one cell, so the plain 3x3 block covers them exactly
+    // and they are left alone.
+    const nearbyR = Math.max(
+      sightR,
+      cfg.signalling ? cfg.signalRadius : 0,
+      cfg.sexualReproduction ? cfg.mateRadius : 0
+    );
+
     // 2. Sense, think, act.
     for (const c of this.creatures) {
       // Nearest food within vision.
       let nf = null;
       let nfD2 = visionR2;
-      this.foodGrid.forEachNear(c.x, c.y, (f) => {
+      this._scan(this.foodGrid, c.x, c.y, sightR, (f) => {
         if (f.eaten) return;
         const d2 = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
         if (d2 < nfD2) {
@@ -211,7 +242,7 @@ export class World {
       let mate = null; // nearest potential partner (sexual reproduction)
       let mateD2 = cfg.mateRadius * cfg.mateRadius;
       let loudest = 0; // strongest voice in earshot (signalling only)
-      this.creatureGrid.forEachNear(c.x, c.y, (o) => {
+      this._scan(this.creatureGrid, c.x, c.y, nearbyR, (o) => {
         if (o === c || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
         // Hearing: a call fades linearly with distance, and the loudest one
@@ -243,7 +274,7 @@ export class World {
       let preyTarget = prey;
       let preyTargetD2 = preyD2;
       if (cfg.scavenging && c.carnivory >= cfg.carnivoreThreshold) {
-        this.corpseGrid.forEachNear(c.x, c.y, (k) => {
+        this._scan(this.corpseGrid, c.x, c.y, sightR, (k) => {
           if (k.energy <= 0) return;
           const d2 = torusDist2(c.x, c.y, k.x, k.y, cfg.width, cfg.height);
           if (d2 < preyTargetD2) {

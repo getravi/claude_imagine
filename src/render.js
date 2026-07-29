@@ -451,14 +451,54 @@ export class Renderer {
     ctx.stroke();
 
     if (this.showVision) {
-      ctx.strokeStyle = "rgba(120, 180, 255, 0.15)";
-      ctx.lineWidth = hair;
-      ctx.beginPath();
       // Shrinks with the day/night cycle (visionFactor is a constant 1 when
       // that's off), so the overlay always matches what the world actually lets
       // creatures sense.
-      ctx.arc(p.x, p.y, cfg.visionRadius * (world.visionFactor ?? 1), 0, Math.PI * 2);
-      ctx.stroke();
+      const r = cfg.visionRadius * (world.visionFactor ?? 1);
+      ctx.lineWidth = hair;
+      if (cfg.exactVision || !world.creatureGrid) {
+        ctx.strokeStyle = "rgba(120, 180, 255, 0.15)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        // Without exact vision this circle is an aspiration: the spatial index
+        // only offers up the 3x3 block of cells around the creature, so what it
+        // can find is that disc with grid-aligned bites out of it (config.js,
+        // `exactVision`). Drawing the circle alone would be the thirty-one
+        // versions of quiet fiction this overlay has already told, so draw both
+        // — the intended radius faintly, and the region actually searched at
+        // full strength.
+        const b = world.creatureGrid.nearBounds(c.x, c.y);
+        const bx = p.x + b.left;
+        const by = p.y + b.top;
+        const bw = b.right - b.left;
+        const bh = b.bottom - b.top;
+        ctx.strokeStyle = "rgba(120, 180, 255, 0.06)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(120, 180, 255, 0.18)";
+        // The curved part of the boundary: the disc, clipped to the block.
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bx, by, bw, bh);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        // ...and the flat part: the block, clipped to the disc.
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.rect(bx, by, bw, bh);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
