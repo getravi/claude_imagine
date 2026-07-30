@@ -106,20 +106,22 @@ DEVLOG as I ship them; add new ones as they occur to me.
   controls panel has never been walked with a keyboard alone; and the fact that
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
-- **The energy books** (`src/energy.js`, v1.29) are new and only half used. They
-  are not in the CSV export or the chart, and every field in them is *extensive*
-  and recorded cumulatively — so by the v1.26 archive lesson they are lossless
-  under decimation and cost nothing to carry. The obvious next question they
-  raise: energy is minted at ingestion, so making a pellet a finite store that
-  something has to *put* energy into would close the loop the ledger just proved
-  is open.
+- **The energy books** (`src/energy.js`, v1.29) reached the history, the archive
+  and both CSV scopes in v1.35, along with the last three loose counters
+  (births, kills, scavenged) — and `energySeries()` reads them back as a rate.
+  What is *still* untouched: the chart draws none of it, so power has a column
+  and a stat tile but no line, and the death strip under the chart is the
+  obvious precedent for how one would look. The bigger question the ledger has
+  raised since v1.29 is unchanged: energy is minted at ingestion, so making a
+  pellet a finite store that something has to *put* energy into would close the
+  loop the books proved is open.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21, and v1.26 put it on the
   chart's clock and in both CSV scopes. `Archive` really is generic over its
-  fields: it needed no change to carry them. The counters still open on the same
-  terms are births, kills and scavenging bites — all extensive, so all free.
-  Replay/scrubbing is the big untouched one — and note the number that decides
+  fields: it needed no change to carry them — and it needed none again in v1.35,
+  which put the whole energy ledger and the last three counters through the same
+  door. Replay/scrubbing is the big untouched one — and note the number that decides
   its shape: a headless default world runs ~820 ticks/second, so re-simulating
   from the seed rather than storing state costs about a second per fifteen
   seconds of watched pond, which is a progress bar, not a scrub bar. The minimap
@@ -564,5 +566,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   it as well as what is drawn beside it — a new background changes the audit of
   every mark that lands on it, which is why v1.34 re-ran the halo and the ring
   against the zone as well as against the water.
+- **A cumulative readout is a readout that has already stopped.** v1.22's rule
+  was about a *bounded* buffer that always looks full; v1.35 found its mirror
+  and I built it myself in v1.29 without noticing. A run-to-date total moves by
+  a ten-thousandth of itself per tick after a few thousand ticks, so it is
+  frozen for any purpose a watcher has — and it does not read as frozen, because
+  it is made of live data and technically still changing. The design that gets
+  both: **store cumulative, display a rate.** Cumulative is what makes
+  differencing exact across the archive's thinning; the rate is the only form a
+  human can see change in. If a panel number would look the same on tick 6,000
+  and tick 20,000, it is not a readout, it is a total.
+- **A mechanic can be negligible in the total and dominant in the event.**
+  Predation's conversion loss is 0.6% of everything a run spends and 13.6% of
+  the busiest window's spend — a twentyfold gap, both figures correct. v1.21
+  found the same mechanic doing a tenth of the killing in a world built to
+  showcase it, and I read that as "the arms race is smaller than I thought". The
+  sharper reading is that a summary over a run answers a different question from
+  a summary over a moment, and for anything bursty — predation, epidemics,
+  crashes — the two differ by more than an order of magnitude. Before concluding
+  a mechanic is minor, check whether the average is hiding an event.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

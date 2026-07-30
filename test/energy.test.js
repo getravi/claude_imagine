@@ -134,6 +134,11 @@ test("the ledger cannot move the world it measures", () => {
     burn() {},
     bury() {},
     rot() {},
+    // v1.35 put the books into every history point, which means `Stats.sample`
+    // now asks the ledger for a snapshot four times a second. A ledger that
+    // hands back nothing at all must still leave the world identical: the
+    // recording path reads, and only reads.
+    snapshot: () => ({}),
   };
   const a = new World(makeConfig({ seed: 2024, scavenging: true, detritus: true }));
   const b = new World(makeConfig({ seed: 2024, scavenging: true, detritus: true }));

@@ -10,6 +10,7 @@
 import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
 import { hazardShare } from "./contagion.js";
+import { ENERGY_SOURCES, LEDGER_FIELDS, energyField } from "./energy.js";
 
 /**
  * The ways a creature can die, in the order they are reported. Every death in
@@ -27,6 +28,14 @@ export const DEATH_CAUSES = Object.freeze(["starvation", "age", "predation"]);
  * nothing has ever sprouted.
  */
 export const SOIL_HORIZON = 240;
+
+/**
+ * How many history samples back the live `power` readout differences the books
+ * over — 30 samples, so 120 ticks. Short enough that a crash moves it while you
+ * are watching, long enough that it is not reporting the four ticks since the
+ * last sample, where a single pellet is worth six energy per tick.
+ */
+export const POWER_WINDOW = 30;
 
 /**
  * The history-point field carrying the *cumulative* number of deaths of one
@@ -107,6 +116,33 @@ export function wholePercents(shares) {
   return out;
 }
 
+/**
+ * Total energy created as of one history point — the three sources summed. Not
+ * a recorded column: a stored total is a number that can disagree with its own
+ * parts, and these three are cheap to add up.
+ * @param {object} row
+ */
+function created(row) {
+  return ENERGY_SOURCES.reduce((s, k) => s + (row[energyField(k)] ?? 0), 0);
+}
+
+/**
+ * One energy quantity, for the file. Rounded before formatting so a sink that
+ * has never been touched — `spilled` sits at −2e−16 in most worlds — reads as
+ * `0.000` and not as `-0.000`, which looks like a broken ledger and is only a
+ * sum of nothing arriving at a signed zero.
+ * @param {number} [x]
+ */
+function nrg(x) {
+  const v = Math.round((x ?? 0) * 1000) / 1000;
+  return (v === 0 ? 0 : v).toFixed(3);
+}
+
+/** The residual, which needs a scale rather than a number of decimals. */
+function res(x) {
+  return (x ?? 0).toExponential(3);
+}
+
 export class Stats {
   constructor(historyLength = 480, deathWindow = 120, runLength = 240) {
     this.historyLength = historyLength;
@@ -114,7 +150,16 @@ export class Stats {
     // The same points, kept for the entire run at whatever resolution fits in
     // `runLength` rows. `popHistory` answers "what is happening"; this answers
     // "what has happened", which for twenty-one versions nothing could.
-    this.runHistory = new Archive({ capacity: runLength, fields: ["pop", "food"] });
+    // Two of the archive's four envelope fields are energy, and both for the
+    // reason v1.30 wrote down: an *instantaneous* quantity loses its extremes to
+    // decimation and needs a min/max, while a cumulative one is lossless without
+    // it. The eight ledger fields are cumulative, so they ride along as plain
+    // representative values; the standing stock and the residual are stocks
+    // measured at an instant, so they do not.
+    this.runHistory = new Archive({
+      capacity: runLength,
+      fields: ["pop", "food", energyField("standing"), energyField("residual")],
+    });
     this.tick = 0;
     this.births = 0;
     this.deaths = 0;
@@ -141,6 +186,12 @@ export class Stats {
     // sick — the size of the thing the two views now draw. A caseload says how
     // many are ill; this says how much of the water it costs you to be well.
     this.hazardShare = 0;
+    // The pond's power: energy created per tick over the trailing
+    // `POWER_WINDOW` samples. The energy panel has shown the run-to-date totals
+    // since v1.29 and they are, by construction, numbers that stop moving; this
+    // is the same books read as a rate, and it swings by most of an order of
+    // magnitude across a single run.
+    this.power = 0;
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
@@ -319,12 +370,31 @@ export class Stats {
       // CSV scopes at once — the archive needs no change to hold it, which is
       // what "generic over its fields" was supposed to mean.
       for (const c of DEATH_CAUSES) point[deathField(c)] = this.deathsBy[c];
+      // The other three extensive counters this class keeps. They cost a column
+      // each and, being cumulative, they are exact under any amount of thinning
+      // — there was never a reason for them not to be here except that nobody
+      // wrote them down.
+      point.births = this.births;
+      point.kills = this.kills;
+      point.scavenged = this.scavenged;
+      // And the books. Eight cumulative fields plus the standing stock and the
+      // residual of the identity, at this tick. `snapshot()` reads the world and
+      // writes nothing to it, and the ledger exists in every world, so there is
+      // no toggle here and no branch — the books are always open.
+      Object.assign(point, world.energy.snapshot(world));
       this.popHistory.push(point);
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
       // The same point, into a record that never drops the far end. Nobody
       // mutates a history point after it is made, so both may hold the one
       // object.
       this.runHistory.push(point);
+      // The live rate, from the ring the chart draws. Differencing two
+      // cumulative samples is exact, so this is the pond's real throughput over
+      // the window and not a smoothed estimate of it.
+      const h = this.popHistory;
+      const back = h[Math.max(0, h.length - 1 - POWER_WINDOW)];
+      const dt = point.tick - back.tick;
+      this.power = dt > 0 ? (created(point) - created(back)) / dt : 0;
     }
   }
 
@@ -381,33 +451,60 @@ export class Stats {
    * `pop_max` are exact over the `samples` raw points it stands for, so a peak
    * that fell between two retained rows is still in the file.
    *
-   * Both scopes carry the `deaths_*` columns, and they are cumulative on
-   * purpose: subtract one row's from the next's and you have the exact number
-   * of deaths of that cause in between, whatever the thinning did to the rows
-   * around it. A per-interval column would have been the more obvious choice
-   * and would have quietly under-reported the whole run.
+   * Both scopes carry the `deaths_*` columns, the three other counters, and the
+   * energy books, and every one of them is cumulative on purpose: subtract one
+   * row's from the next's and you have exactly what happened in between,
+   * whatever the thinning did to the rows around it. A per-interval column
+   * would have been the more obvious choice and would have quietly
+   * under-reported the whole run.
+   *
+   * Energy is written to three decimals, which is four parts in a hundred
+   * thousand of a single pellet — enough that differences stay honest and
+   * little enough that a spreadsheet is readable. The residual is the exception
+   * and goes out in exponential form, because it is the one column whose
+   * interesting values span from 1e−9 (floating-point drift, the books fine) to
+   * whole units (the books broken), and no fixed number of decimals shows both.
    * @param {"recent"|"whole"} [scope]
    */
   toCSV(scope = "recent") {
     const deathCols = DEATH_CAUSES.map(deathField).join(",");
     const deathVals = (h) => DEATH_CAUSES.map((c) => h[deathField(c)] ?? 0).join(",");
+    const tallyCols = "births,kills,scavenged";
+    const tallyVals = (h) => [h.births ?? 0, h.kills ?? 0, h.scavenged ?? 0].join(",");
+    const nrgCols = [...LEDGER_FIELDS, "standing", "residual"].map(energyField).join(",");
+    const nrgVals = (h) =>
+      [...LEDGER_FIELDS, "standing"]
+        .map((f) => nrg(h[energyField(f)]))
+        .concat(res(h[energyField("residual")]))
+        .join(",");
     if (scope === "whole") {
       const lines = [
-        "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples," +
-          deathCols,
+        "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max," +
+          "energy_standing_min,energy_standing_max,energy_residual_min,energy_residual_max," +
+          `samples,${deathCols},${tallyCols},${nrgCols}`,
       ];
+      // Rows pushed by hand carry no envelope for a field they never had, so an
+      // absent bound reads as zero — the same graceful case as an absent
+      // counter, rather than the word "undefined" landing in a spreadsheet.
+      const band = (r, f, fmt) => `${fmt(r.min[f] ?? 0)},${fmt(r.max[f] ?? 0)}`;
       for (const r of this.runHistory.series()) {
         lines.push(
           `${r.tick},${r.pop},${r.food},${r.gen},` +
-            `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},${r.span},` +
-            deathVals(r)
+            `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},` +
+            `${band(r, energyField("standing"), nrg)},` +
+            `${band(r, energyField("residual"), res)},` +
+            `${r.span},${deathVals(r)},${tallyVals(r)},${nrgVals(r)}`
         );
       }
       return lines.join("\n") + "\n";
     }
-    const lines = [`tick,population,food,max_generation,${deathCols}`];
+    const lines = [
+      `tick,population,food,max_generation,${deathCols},${tallyCols},${nrgCols}`,
+    ];
     for (const h of this.popHistory) {
-      lines.push(`${h.tick},${h.pop},${h.food},${h.gen},${deathVals(h)}`);
+      lines.push(
+        `${h.tick},${h.pop},${h.food},${h.gen},${deathVals(h)},${tallyVals(h)},${nrgVals(h)}`
+      );
     }
     return lines.join("\n") + "\n";
   }

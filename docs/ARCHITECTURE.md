@@ -52,10 +52,10 @@ The dependency arrows point from a module to what it imports.
 | `environment.js` | Biomes (a fertility field) and seasons (a food-rate cycle). | — |
 | `terrain.js` | Optional static roughness landscape: rough ground costs more to cross and grows less. | — |
 | `detritus.js` | Optional decaying nutrient map: deaths enrich the ground, and part of the crop grows out of it. | — |
-| `energy.js` | The pond's books: every unit created and destroyed, holding `created − destroyed === standing` at every tick. Pure bookkeeping — no randomness, and nothing in the simulation reads it. | — |
+| `energy.js` | The pond's books: every unit created and destroyed, holding `created − destroyed === standing` at every tick. `snapshot()` writes them into a history point and `energySeries()` reads a run of those back as a *rate*, which is the only way the panel's run-to-date totals can be made to move. Pure bookkeeping — no randomness, and nothing in the simulation reads it. | — |
 | `contagion.js` | The reach of the pathogen: the risk arithmetic both views draw with, and the share of the water inside somebody's catching distance (observation only). | — |
 | `palette.js` | Colour decisions as pure functions, plus the dichromat simulation and ΔE that judge them. | — |
-| `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by, carried into both history buffers as cumulative counters so differencing any two samples is exact). | — |
+| `stats.js` | Rolling population/lineage/diversity measurements, the mortality ledger (what each death was caused by), and the energy books — all carried into both history buffers as cumulative counters, so differencing any two samples is exact however far the archive has thinned. The two quantities that are *not* cumulative, the standing stock and the residual of the energy identity, get min/max envelopes instead. | — |
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
 | `phylogeny.js` | Groups creatures into species by genetic similarity (observation only). | — |
 | `chronicle.js` | Records notable events into a natural-history timeline (observation only). | — |

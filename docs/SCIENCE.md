@@ -1650,6 +1650,120 @@ for (const seed of [1, 7, 64, 88, 101, 137, 314, 512, 777, 2024, 4242]) {
 }
 ```
 
+## The books get a clock: what a run-to-date total hides
+
+v1.29 gave this pond an energy ledger and an identity that has to hold —
+`created − destroyed === standing` — and then only ever asked it about *now*.
+The panel reported that 94–98% of everything the world had ever spent went on
+simply being alive, and it was true, and it was a number that had stopped
+moving: after a few thousand ticks each new tick is a ten-thousandth of the
+total, so the bar is frozen by construction. That is the v1.22 complaint about
+readouts that look live and are not, wearing the opposite costume — not a
+bounded buffer that always looks full, but an unbounded total that always looks
+current.
+
+v1.35 writes the eight fields the ledger stores into every history sample, so
+they reach the whole-run archive and both CSV scopes. Nothing needed inventing
+for that: every one of them is cumulative and extensive, so by the argument in
+[the mortality section](#putting-the-causes-on-the-clock-without-losing-any-of-them)
+differencing two samples returns exactly what happened between them however many
+samples the archive threw away in the middle. The books needed a clock, not a
+redesign.
+
+### The pond's power swings by more than tenfold
+
+Difference the three sources between adjacent archived samples and you get the
+pond's **power**: energy minted per tick, at whatever resolution the archive is
+currently holding. Twelve seeds, 20,000 ticks each, read back at the archive's
+own 128-tick resolution:
+
+| | across the twelve runs |
+|---|---|
+| busiest 128-tick window | 40.9 – 81.4 energy/tick |
+| quietest 128-tick window | 0.0 – 6.8 energy/tick |
+| ratio *within* one run | 7.9× – 22.6×, **median 15.4×** |
+
+Eleven of the twelve give a finite ratio between 7.9× and 22.6×. The twelfth
+(seed 23) had a 128-tick window in which the pond minted nothing whatsoever, so
+its ratio is unbounded; saying that is cheaper than quietly dropping it or
+pretending twelve seeds agreed on a number.
+
+None of this is visible on the cumulative bar, and none of it is *contradicted*
+by it either — which is the honest shape of the finding. The composition barely
+moves in a default world (metabolism holds 89–100% of spend in almost every
+window). What the run-to-date total hid was not the mix. It was the **scale**.
+
+### Where the arms race actually shows up
+
+Except in one place, and it is the mechanic this whole project is named for.
+
+`digested` is the energy that leaves a prey creature and never arrives in the
+predator — the gap between what a bite takes and what it delivers. Over a whole
+20,000-tick run it is **0.6%** of everything the pond spends (mean over twelve
+seeds), which is the sort of number that gets a mechanic filed under "rounding
+error". In each run's busiest single window it is **13.6%** on average across
+the twelve, and **25.4%** in the worst of them.
+
+So a predation burst spends a quarter of the pond's entire energy budget on
+trophic inefficiency, for a couple of hundred ticks, and the run-to-date bar
+reports six parts in a thousand. This is the
+[v1.21 lesson](#hunger-does-nearly-all-the-editing) in its second costume:
+there, the arms race turned out to cause a tenth of the
+deaths in a world built to showcase it. Here it is six tenths of a percent of
+the energy — *on average* — and a quarter of it in the moment. A mechanic can be
+negligible in the total and dominant in the event, and only one of those two
+facts fits on a cumulative readout.
+
+### Dating a break in the books
+
+`audit()` could always ask whether the books balance. It could never ask *when*
+they stopped. Each sample now carries the residual of the identity at its own
+tick, which turns a yes/no into a time series with a zero line in it — and
+because a break in the books is a transient, and decimation eats transients, the
+residual is one of only two energy fields in the archive that carries a min/max
+envelope. `test/energyHistory.test.js` pins exactly that: a single 42-unit
+excursion at one sample out of 200 survives every halving in the envelope, and
+is simply gone without it.
+
+With nothing broken, the residual measures floating-point drift, and the comment
+in `energy.js` claiming it "stays far below one pellet" had never actually been
+run out to a long horizon. It does. On seed 314:
+
+| ticks | energy minted | residual |
+|---|---|---|
+| 1,000 | 3.9 × 10⁴ | 9.8 × 10⁻¹⁰ |
+| 8,000 | 3.0 × 10⁵ | 4.2 × 10⁻⁸ |
+| 64,000 | 2.4 × 10⁶ | 4.9 × 10⁻⁶ |
+
+After 64,000 ticks — eighteen minutes of watching at 60fps, and 2.4 million units
+of energy through the books — the two sides of the identity disagree by two parts
+in ten million of a *single pellet*. No extrapolation offered: that is the
+horizon that was measured.
+
+### Reproducing it
+
+```js
+// node this from the repo root: how much does the pond's power move?
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { energySeries } from "./src/energy.js";
+
+for (const seed of [314, 7, 23, 99, 555, 1234, 2024, 8181, 42, 77, 101, 3141]) {
+  const w = new World(makeConfig({ seed }));
+  for (let t = 0; t < 20000; t++) w.step();
+  // The whole run, at whatever resolution the archive has thinned itself to.
+  const live = energySeries(w.stats.runHistory.series()).intervals.filter((i) => i.spend > 0);
+  const power = live.map((i) => i.power);
+  const digested = live.map((i) => i.rates.digested / i.spend);
+  console.log(
+    seed,
+    `power ${Math.min(...power).toFixed(1)}..${Math.max(...power).toFixed(1)}`,
+    `digested ${(w.energy.digested / w.energy.destroyed * 100).toFixed(1)}% run-to-date,`,
+    `${(Math.max(...digested) * 100).toFixed(1)}% at worst`
+  );
+}
+```
+
 ## Determinism and reproducibility
 
 Vivarium is fully **deterministic**: a given `(seed, parameters)` pair produces

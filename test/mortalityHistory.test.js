@@ -190,7 +190,16 @@ test("both CSV scopes carry the causes, and every row is the right width", () =>
     for (const line of lines.slice(1)) {
       const cells = line.split(",");
       assert.equal(cells.length, header.length, `ragged row in ${scope}: ${line}`);
-      for (const cell of cells) assert.ok(/^-?\d+$/.test(cell), `not an integer: ${cell}`);
+      cells.forEach((cell, i) => {
+        assert.ok(Number.isFinite(Number(cell)), `not a number: ${cell}`);
+        // Everything that counts something is still whole. The energy columns
+        // (v1.35) are the only ones that are not, and spelling that exception
+        // out is what keeps this from being the test that would have hidden a
+        // rounding bug in the population.
+        if (!header[i].startsWith("energy_")) {
+          assert.ok(/^-?\d+$/.test(cell), `not an integer: ${header[i]}=${cell}`);
+        }
+      });
     }
     // The last row's counters are the run's ledger, so a spreadsheet reader who
     // only looks at the bottom line still gets the true total. Tick 3000 is a

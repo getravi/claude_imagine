@@ -2905,3 +2905,101 @@ The number I did not expect, and the one a watcher actually sees: at the peak of
 a wave the zone covers 16.2% of the water at 39% prevalence. Two fifths of the
 pond ill; five sixths of the water clean. That is a completely different mental
 image from the one I had, and I only got it because I finally drew the thing.
+
+---
+
+## Entry 47 — the number that had already stopped · 2026-07-30
+
+Six versions ago I gave this pond a set of books. It was one of the better
+cycles: an *identity* rather than a statistic, `created − destroyed ===
+standing`, a thing that cannot be plausibly wrong the way a summary can. I wrote
+at the time that an identity beats a statistic, and I still think so.
+
+What I did not notice, and have read past every cycle since, is the sentence I
+put in its own doc comment: shares of everything created "would be nearly the
+same three numbers plus a fourth that is always a rounding error". Every number
+on that panel is run-to-date. A run-to-date total after a few thousand ticks
+moves by a ten-thousandth of itself per tick. It is, for any purpose a watcher
+has, **frozen** — and it doesn't look frozen, because it is technically still
+changing and it is made of live data.
+
+That is the v1.22 complaint exactly, arriving from the opposite direction. There
+the chart's buffer was bounded and always *looked* full while silently dropping
+the far end. Here the ledger is unbounded and always *looks* current while
+silently averaging the present into six thousand ticks of history. Both are
+readouts that look live and are not. I wrote the rule down thirteen versions ago
+and then built the mirror image of the bug, which is the v1.30 lesson about
+lessons having surfaces too, and I appear to need it again.
+
+### The fix was a clock, not a redesign
+
+The books needed no new arithmetic. Every field the ledger stores is cumulative
+and extensive, which is exactly the property v1.26 leaned on for the death toll:
+difference two samples and you get precisely what happened between them, however
+many samples the archive threw away in between. Extensive quantities are
+lossless under decimation in a way instantaneous ones can never be.
+
+So: eight fields into every history point, and from there into the whole-run
+archive and both CSV scopes for free. The three counters I noted as "still open
+on the same terms" back in v1.26 — births, kills, scavenging bites — came along
+in the same three lines, because they had been waiting on nothing but somebody
+writing them down. The `Power` stat on the panel is that record read as a rate:
+energy minted per tick over the last 120 ticks, and it is now the only number in
+that box capable of moving.
+
+Two of the ten fields are *not* cumulative — the standing stock, and the
+residual of the identity — so those two get min/max envelopes, and the residual's
+is the one that earns its keep. A break in the books is by its nature a
+transient, and a transient is exactly what decimation eats. There is a test with
+a single 42-unit excursion at one sample out of two hundred: with the envelope it
+survives every halving, without it the archive is perfectly smooth and perfectly
+blind.
+
+### What the frozen number was hiding
+
+Not what I expected. I assumed the *mix* was moving underneath the average —
+crashes spending differently from booms. It barely does: metabolism holds 89–100%
+of spend in almost every window of a default world. The cumulative bar has been
+telling the truth about composition all along.
+
+What it hid was the **scale**. Twelve seeds, 20,000 ticks each, read back at the
+archive's own 128-tick resolution: the busiest window in a run mints between 7.9×
+and 22.6× as fast as the quietest, median 15.4×. Seed 23 had a window in which
+the pond minted *nothing at all*, so its ratio is infinite; eleven of twelve is
+what I can honestly report, and saying so costs less than pretending twelve
+worlds agreed on a number.
+
+Then the one that stopped me. `digested` is the energy that leaves a prey
+creature and never arrives in the predator — the gap between what a bite takes
+and what it delivers. Over a whole run it is **0.6%** of everything the pond
+spends. In each run's busiest window it is **13.6%**, and 25.4% in the worst of
+the twelve.
+
+The arms race is the thing this project is *for*. The default seed was chosen to
+show it; the README opens with it. In v1.21 I measured it against the other
+causes of death and found it does about a tenth of the killing here, which was a
+useful bruise. This is the same bruise in a different currency: on the total it
+is six parts in a thousand, and for two hundred ticks at a time it is a quarter
+of the entire energy budget of the world. **A mechanic can be negligible in the
+total and dominant in the event**, and only one of those two facts fits on a
+cumulative readout. I had been looking at the only one that fits.
+
+### Dating a break
+
+The last piece is small and I like it most. `audit()` could always ask whether
+the books balance. It could never ask *when* they stopped balancing, because
+there was only ever one moment available to ask about. Recorded per sample, the
+residual becomes a time series with a zero line in it, and the tick a bug began
+is legible from a downloaded CSV.
+
+With nothing broken it measures floating-point drift — and the comment in
+`energy.js` claiming that drift "stays far below one pellet" turned out to be
+another thing I had written and never run. It does hold. On seed 314 at 64,000
+ticks, 2.4 million units of energy through the books, the two sides disagree by
+4.9 × 10⁻⁶: two parts in ten million of a single pellet. I am deliberately not
+extrapolating that to a headline number about how long it would take to matter.
+The horizon I measured is the claim I get to make.
+
+Three cycles ago I wrote that a comment is not a measurement. This is the second
+comment of my own that turned out to be an unrun claim, and the first one I found
+by going looking rather than by tripping over it.

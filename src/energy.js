@@ -39,6 +39,114 @@ export const ENERGY_SOURCES = Object.freeze(["crop", "carrion", "founders"]);
  */
 export const ENERGY_SINKS = Object.freeze(["metabolism", "waste", "buried"]);
 
+/**
+ * The eight fields the ledger actually *stores* — the ones carried into every
+ * history point, the archive and both CSV scopes. `created`, `destroyed` and
+ * `waste` are getters over these and are never recorded: a derived total is a
+ * column that can disagree with its own inputs.
+ *
+ * Every one of them is cumulative and extensive, which is the whole reason this
+ * is cheap. By the v1.26 rule, differencing two samples of a cumulative counter
+ * returns exactly what happened between them however many samples the archive
+ * threw away in the middle, so the books need no min/max envelope and no
+ * per-interval column — they need only to be written down.
+ */
+export const LEDGER_FIELDS = Object.freeze([
+  "crop",
+  "carrion",
+  "founders",
+  "metabolism",
+  "digested",
+  "spilled",
+  "rotted",
+  "buried",
+]);
+
+/**
+ * The history-point field and CSV column name for one ledger quantity, so the
+ * buffer and the file can never drift apart — the same trick `deathField()`
+ * plays for the mortality counters.
+ * @param {string} name a `LEDGER_FIELDS` entry, or `"standing"` / `"residual"`
+ */
+export function energyField(name) {
+  return `energy_${name}`;
+}
+
+/**
+ * The three sinks as fractions of everything spent, from any object carrying
+ * `metabolism`, `waste` and `buried` — a ledger, or one interval's flows.
+ *
+ * `buried` can be very slightly negative before anything has died of old age,
+ * because a starving creature pays its final bill in full and finishes below
+ * zero. Clamping and renormalising keeps a bar from inverting over an amount
+ * smaller than a single pellet; the raw fields are still there for anyone who
+ * wants the signed truth. Returns null until something has been spent, so
+ * nothing has to render a bar of three zeroes.
+ * @param {Record<string, number>} spent
+ */
+export function spendShares(spent) {
+  const parts = ENERGY_SINKS.map((k) => Math.max(0, spent[k] ?? 0));
+  const sum = parts.reduce((a, b) => a + b, 0);
+  if (sum <= 0) return null;
+  /** @type {Record<string, number>} */
+  const out = {};
+  ENERGY_SINKS.forEach((k, i) => (out[k] = parts[i] / sum));
+  return out;
+}
+
+/**
+ * Read the books as a *rate*: one interval per adjacent pair of history points,
+ * carrying energy per tick for every ledger field and for the three totals.
+ *
+ * This is the reason for recording the ledger at all. The panel has shown the
+ * run-to-date shares since v1.29, and a run-to-date anything stops moving after
+ * a few thousand ticks — the v1.22 complaint about readouts that look live and
+ * are not. The same books differenced between two samples say what the pond was
+ * doing *then*, which turns out to swing by most of an order of magnitude over
+ * a single run while the cumulative bar sits still.
+ *
+ * Differences are signed and unclamped, unlike `mortalitySeries()`. A death
+ * count going backwards is a broken input; `buried` going backwards is the
+ * world working correctly, and `spilled` arrives at −2e−16 often enough that
+ * clamping it would be pretending to a precision the sum does not have.
+ *
+ * Pure and read-only. Returns an empty series for fewer than two points.
+ * @param {Array<object>} hist history points, oldest first
+ * @returns {{intervals: Array<object>, peak: number}}
+ */
+export function energySeries(hist) {
+  const intervals = [];
+  let peak = 0;
+  for (let i = 1; i < hist.length; i++) {
+    const a = hist[i - 1];
+    const b = hist[i];
+    const dt = b.tick - a.tick;
+    if (dt <= 0) continue;
+    /** @type {Record<string, number>} */
+    const rates = {};
+    for (const f of LEDGER_FIELDS) {
+      rates[f] = ((b[energyField(f)] ?? 0) - (a[energyField(f)] ?? 0)) / dt;
+    }
+    rates.waste = rates.digested + rates.spilled + rates.rotted;
+    const power = ENERGY_SOURCES.reduce((s, k) => s + rates[k], 0);
+    const spend = ENERGY_SINKS.reduce((s, k) => s + rates[k], 0);
+    if (power > peak) peak = power;
+    // `index` is the position of the *later* sample, matching `mortalitySeries`
+    // so the two can be plotted against the same x positions.
+    intervals.push({
+      index: i,
+      from: a.tick,
+      to: b.tick,
+      dt,
+      rates,
+      power,
+      spend,
+      shares: spendShares(rates),
+    });
+  }
+  return { intervals, peak };
+}
+
 export class EnergyLedger {
   constructor() {
     // --- created ---
@@ -161,6 +269,31 @@ export class EnergyLedger {
   }
 
   /**
+   * The books as one flat history point: the eight stored fields, the standing
+   * stock, and the residual of the identity at this exact tick.
+   *
+   * The residual is here because of what it makes possible for the first time.
+   * `audit()` can only ever ask "do the books balance *now*", so a bug that
+   * broke them at tick 4,000 is indistinguishable from one that broke them a
+   * moment ago — the identity could be checked but never *dated*. Recorded per
+   * sample it becomes a time series with a zero line in it, and the tick a
+   * break began is legible from the exported file. It is instantaneous rather
+   * than cumulative, so it is one of the two fields here that earns a min/max
+   * envelope in the archive: a break in the books is a transient, and a
+   * transient is exactly what decimation eats.
+   * @param {import('./world.js').World} world
+   */
+  snapshot(world) {
+    /** @type {Record<string, number>} */
+    const out = {};
+    for (const f of LEDGER_FIELDS) out[energyField(f)] = this[f];
+    const standing = EnergyLedger.standing(world);
+    out[energyField("standing")] = standing;
+    out[energyField("residual")] = this.created - this.destroyed - standing;
+    return out;
+  }
+
+  /**
    * The three sinks as fractions of everything that has *left* the pond — the
    * question the panel asks, which is "of the energy this world has spent, what
    * did it go on?" Shares of everything created would be the more obvious
@@ -169,22 +302,12 @@ export class EnergyLedger {
    * of the run's throughput, which is itself worth knowing and is a separate
    * readout rather than a segment too thin to see.
    *
-   * `buried` can be very slightly negative before anything has died of old age,
-   * because a starving creature pays its final bill in full and finishes below
-   * zero. Clamping and renormalising keeps the bar from inverting over an
-   * amount smaller than a single pellet; the raw fields are still there for
-   * anyone who wants the signed truth.
-   *
-   * Returns null until something has actually been spent, so nothing has to
-   * render a bar of three zeroes on tick 0.
+   * Run-to-date, and so motionless after a few thousand ticks. For the same
+   * three shares over a *window* — which do move, and which is where the cost
+   * of a predation burst hides — difference two history points and hand the
+   * result to `spendShares()`, as `energySeries()` does.
    */
   shares() {
-    const parts = ENERGY_SINKS.map((k) => Math.max(0, this[k]));
-    const sum = parts.reduce((a, b) => a + b, 0);
-    if (sum <= 0) return null;
-    /** @type {Record<string, number>} */
-    const out = {};
-    ENERGY_SINKS.forEach((k, i) => (out[k] = parts[i] / sum));
-    return out;
+    return spendShares(this);
   }
 }

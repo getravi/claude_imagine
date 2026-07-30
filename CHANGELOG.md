@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.35.0] — 2026-07-30
+
+The pond has kept books since v1.29 and has only ever been able to say what it
+did *in total*. Every number on that panel is run-to-date, which means every
+number on that panel stopped moving a few thousand ticks in — the v1.22
+complaint about readouts that look live and are not, arriving from the other
+direction. This release puts the ledger on the chart's clock: into every history
+sample, the whole-run archive and both CSV files, cumulatively, so differencing
+two rows gives exactly what happened between them. Then it asks the books the
+question they could never answer before, which is *when*.
+
+### Added
+
+- **The energy books in the record and the export.** All eight stored ledger
+  fields, plus the standing stock and the residual of the accounting identity, in
+  every history point and both CSV scopes. They cost nothing to carry: every one
+  is cumulative and extensive, so — by the v1.26 rule — they are exact under any
+  amount of the archive's thinning, with no envelope and no per-interval column.
+  The three counters left over from that release (`births`, `kills`,
+  `scavenged`) came along on the same terms.
+- **A `Power` stat**, and it is the only number on the energy panel that moves:
+  energy minted per tick over the last 120 ticks, differenced out of the
+  cumulative books. On the default seed a run passes through everything from
+  about 5 to about 78.
+- **`energySeries()` and `spendShares()`** in [`src/energy.js`](src/energy.js),
+  which read a run of history points back as a *rate* — the mirror of
+  `mortalitySeries()`, and the reason recording the totals was worth doing.
+  `EnergyLedger.snapshot()` writes one sample; `test/energyHistory.test.js`
+  pins the arithmetic, the monotonicity, the zero-draw guarantee and the
+  decimation behaviour.
+- **docs/SCIENCE.md: "The books get a clock: what a run-to-date total hides."**
+
+### Changed
+
+- **The archive keeps two more envelopes**, on the standing stock and on the
+  residual, because those two are the only *instantaneous* quantities among the
+  ten and instantaneous is what decimation eats. The residual's is load-bearing:
+  a break in the books is by nature a transient, and the test shows a single
+  42-unit excursion at one sample in 200 surviving every halving with the
+  envelope and vanishing without it.
+- `EnergyLedger.shares()` is now a call to the shared `spendShares()`, so the
+  panel's run-to-date bar and a windowed one are the same arithmetic including
+  the negative-overdraft clamp.
+
+### Notes
+
+- **The pond's power swings by more than tenfold and nothing had ever shown it.**
+  Twelve seeds, 20,000 ticks, read at the archive's own 128-tick resolution: the
+  busiest window mints 7.9× to 22.6× as fast as the quietest (median 15.4×). One
+  seed had a window that minted nothing at all, so its ratio is unbounded and is
+  reported that way rather than dropped. What the cumulative bar hid was not the
+  *mix* — metabolism holds 89–100% of spend in nearly every window, so the bar
+  was honest about composition — it was the **scale**.
+- **The arms race is a rounding error on the total and a quarter of the budget in
+  the moment.** `digested` — energy that leaves the prey and never reaches the
+  predator — is **0.6%** of everything a run spends, and **13.6%** of spend in
+  each run's busiest window (25.4% at worst). That is the v1.21 finding in a
+  second costume: the mechanic this project is named for accounts for a tenth of
+  its deaths and, on average, six parts in a thousand of its energy. A mechanic
+  can be negligible in the total and dominant in the event.
+- **The residual is now datable, and was never measured out to a long horizon.**
+  The comment in `energy.js` said drift "stays far below one pellet" and had
+  never been run past a few thousand ticks. On seed 314 at 64,000 ticks, with 2.4
+  million units through the books, it reaches 4.9 × 10⁻⁶ — two parts in ten
+  million of one pellet. No extrapolation offered beyond the horizon measured.
+- Nothing here draws a random number or writes to the world: `snapshot()` reads
+  state that already exists, and there is a test that wraps the generator and
+  asserts zero draws. A world with these records is bit-for-bit the world
+  without them, which the v1.29 silent-ledger test still holds down.
+
 ## [1.34.0] — 2026-07-30
 
 The pond has had an epidemic since v1.16 and has never once shown you where it

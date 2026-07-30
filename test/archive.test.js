@@ -158,14 +158,20 @@ test("Stats.toCSV('whole') exports the archive with its envelope columns", () =>
   const lines = stats.toCSV("whole").trimEnd().split("\n");
   assert.equal(
     lines[0],
-    "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max,samples," +
-      "deaths_starvation,deaths_age,deaths_predation"
+    "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max," +
+      "energy_standing_min,energy_standing_max,energy_residual_min,energy_residual_max," +
+      "samples,deaths_starvation,deaths_age,deaths_predation,births,kills,scavenged," +
+      "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
+      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual"
   );
   assert.equal(lines.length - 1, stats.runHistory.series().length);
-  // Nine columns of history plus the three cause counters (v1.26). These rows
-  // were pushed by hand without any, which is the graceful case: absent reads
-  // as zero rather than as "undefined" in a spreadsheet.
-  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 12);
+  // Thirteen columns of history — four of them the envelopes on the two
+  // instantaneous energy fields (v1.35) — plus the three cause counters
+  // (v1.26), the three other tallies and the ten energy columns. These rows
+  // were pushed by hand without any of them, which is the graceful case:
+  // absent reads as zero rather than as "undefined" in a spreadsheet.
+  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 29);
+  assert.equal(lines.slice(1).some((l) => l.includes("undefined")), false);
   // The 999 spike is not a retained representative, but it is still in the file.
   const peak = Math.max(...lines.slice(1).map((l) => Number(l.split(",")[5])));
   assert.equal(peak, 999);
@@ -176,8 +182,11 @@ test("Stats.toCSV() still defaults to the recent window, unchanged", () => {
   stats.popHistory.push({ tick: 0, pop: 10, food: 100, gen: 0 });
   const lines = stats.toCSV().trimEnd().split("\n");
   assert.deepEqual(lines, [
-    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation",
-    "0,10,100,0,0,0,0",
+    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation," +
+      "births,kills,scavenged," +
+      "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
+      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual",
+    "0,10,100,0,0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0",
   ]);
   assert.equal(stats.toCSV("recent"), stats.toCSV());
 });

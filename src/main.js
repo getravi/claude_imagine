@@ -533,10 +533,19 @@ function updateHUD() {
 // energy, it runs it straight through. Nothing here is a config toggle, so
 // unlike Ground or Soil there is no "off" state to report; the books are always
 // open.
+//
+// Power is the third, and the only one on this panel that moves: energy minted
+// per tick over the last 120 ticks, differenced out of the cumulative books the
+// history now carries. Everything else here is run-to-date and therefore
+// settles into a number that cannot change, which is the v1.22 complaint about
+// readouts that look live and are not. On the default seed this runs between
+// about 5 and 78 over a single run — a fifteenfold swing no previous version of
+// this panel could have shown you.
 let energyLabel = "";
 function updateEnergy() {
   const e = world.energy;
   $("stat-standing").textContent = Math.round(EnergyLedger.standing(world)).toLocaleString();
+  $("stat-power").textContent = `${world.stats.power.toFixed(1)}/t`;
   $("nrg-made").textContent = `${Math.round(e.created).toLocaleString()} minted`;
 
   const shares = e.shares();

@@ -108,7 +108,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Sexual reproduction** | Toggle crossover: reproducing creatures mix genomes with a nearby partner instead of cloning. Off by default. |
 | **Neural plasticity** | Toggle within-lifetime learning: brains adapt as they live, and lineages can *evolve to learn*. Off by default (turning it on steps into a different regime — see below). |
 | **Evolvable brains (NEAT)** | Toggle evolvable topology: brains start minimal and grow their own structure over generations. Off by default; flipping it restarts the world with graph-based brains. |
-| **Chart history** (<kbd>H</kbd>, or the pill on the chart) | Flip the population chart between the **recent** window — the last 1,920 ticks, as it has always shown — and the **whole run** from tick 0. The long view halves its own resolution as it fills, but a translucent band behind each line carries the exact range each thinned point stands for, so no boom or crash is ever quietly smoothed flat. **Export CSV** follows the chart, and the whole-run file carries those min/max columns. |
+| **Chart history** (<kbd>H</kbd>, or the pill on the chart) | Flip the population chart between the **recent** window — the last 1,920 ticks, as it has always shown — and the **whole run** from tick 0. The long view halves its own resolution as it fills, but a translucent band behind each line carries the exact range each thinned point stands for, so no boom or crash is ever quietly smoothed flat. **Export CSV** follows the chart, and the whole-run file carries those min/max columns. Both files also carry the pond's **energy books** and every counter it keeps — births, kills, scavenging bites, deaths by cause — cumulatively, so subtracting one row from the next gives exactly what happened in between however far the archive has thinned. |
 | **Death strip** (under the chart) | The same stretch of time as the chart above it, stacked by cause: pale gold starved, slate aged, crimson hunted. The mortality bar answers what is killing them *now*; this one keeps its shape, so a trough in the population line has a colour underneath it — and on the whole-run scope the totals stay exact however far the archive has thinned. |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
@@ -218,6 +218,11 @@ lineage, so you can see where it lives and how far it has spread.
   and 98% of it goes on simply being alive, and the amount standing in the pond
   at any moment is under 2% of what has passed through it — this world doesn't
   store energy, it runs it through.
+- **Watch the *Power* stat, which is the only number on that panel that moves.**
+  Everything else there is run-to-date and settles; Power is energy minted per
+  tick over the last 120 ticks, and across a single run the busiest stretch
+  mints eight to twenty times as fast as the quietest. The books are in the CSV
+  export too, so the whole history of the pond's throughput is a column away.
 - **Find a great world and Share it.** The link encodes the seed and parameters,
   so whoever opens it watches the very same pond evolve.
 

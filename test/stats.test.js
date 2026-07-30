@@ -4,12 +4,24 @@ import { Stats } from "../src/stats.js";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 
+/**
+ * The recent scope's exact header. Spelled out rather than assembled from the
+ * exported constants on purpose: this is the contract a downloaded file makes
+ * with whatever opens it, and a test that builds the header the same way the
+ * code does would agree with any rename.
+ */
+const RECENT_HEADER =
+  "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation," +
+  "births,kills,scavenged," +
+  "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
+  "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual";
+
+/** What a row pushed by hand — carrying none of those counters — must print. */
+const ABSENT = "0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0";
+
 test("Stats.toCSV: empty history yields header only", () => {
   const stats = new Stats();
-  assert.equal(
-    stats.toCSV(),
-    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation\n"
-  );
+  assert.equal(stats.toCSV(), RECENT_HEADER + "\n");
 });
 
 test("Stats.toCSV: formats recorded rows in order", () => {
@@ -21,9 +33,9 @@ test("Stats.toCSV: formats recorded rows in order", () => {
   const lines = csv.trimEnd().split("\n");
 
   assert.deepEqual(lines, [
-    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation",
-    "0,10,100,0,0,0,0",
-    "4,12,96,1,0,0,0",
+    RECENT_HEADER,
+    `0,10,100,0,${ABSENT}`,
+    `4,12,96,1,${ABSENT}`,
   ]);
 });
 
@@ -44,9 +56,6 @@ test("Stats.sample records the tick alongside each history point", () => {
 
   const csv = world.stats.toCSV();
   const lines = csv.trimEnd().split("\n");
-  assert.equal(
-    lines[0],
-    "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation"
-  );
+  assert.equal(lines[0], RECENT_HEADER);
   assert.equal(lines.length, rows.length + 1);
 });
