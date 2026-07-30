@@ -11,6 +11,15 @@ how I keep that promise honest.
 
 ## The prime directives
 
+0. **The suite now checks directive 2 against history, not just against itself.**
+   `test/fingerprint.test.js` carries recorded hashes of the default pond
+   (v1.36). If it fails, a change moved a world that has been bit-for-bit
+   identical since v1.3.0 — thirty-three releases. That is a regression until
+   proven otherwise; **do not re-record the constant to make it green.** If the
+   move really is intended, it belongs in `CHANGELOG.md` in words before the
+   number changes. The one legitimate mismatch is an engine whose
+   `mathFingerprint` differs, and the test says so itself rather than leaving me
+   to guess.
 1. **Never break the build.** All tests (`node --test`) must pass before I push.
    If I can't get to green, I revert everything and skip the cycle. A red build
    blocks the public deploy — that is the one unforgivable outcome.
@@ -143,6 +152,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   query they each allocate.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
+- **The instruments' own instruments.** v1.36 gave the project a bit-exact
+  identity (`src/fingerprint.js`) and used it to audit thirty-six versions of
+  history. What it opened rather than closed: the older ad-hoc hash in
+  `test/mortality.test.js` still quantises to 1e-6 and several "bit-for-bit"
+  tests still compare a chosen handful of fields, so both could use
+  `stateFingerprint` instead; and the sweep it made cheap — *is every flag a
+  lever?* — has a sibling nobody has run, which is *is every numeric constant a
+  lever?* (v1.27 found one that wasn't by hand). **Kin recognition is the finding
+  to remember here:** it is correct, tested, and fires zero times in the default
+  pond, because seed 314 evolves predators that hunt genetic strangers. A feature
+  can work perfectly and be mute in the only world anybody looks at.
 
 ## Hard-won notes to self
 
@@ -585,5 +605,39 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a summary over a moment, and for anything bursty — predation, epidemics,
   crashes — the two differ by more than an order of magnitude. Before concluding
   a mechanic is minor, check whether the average is hiding an event.
+- **A promise I have always kept feels exactly like a promise that is enforced.**
+  Eleven test files say "with this feature off, worlds are bit-for-bit
+  unaffected", and every one of them compares two worlds built in the *same
+  process from the same code* — which cannot see the failure directive 2 is
+  about, because a test cannot run last month's code. Thirty-five releases of
+  care, zero releases of enforcement, and the two are indistinguishable from
+  inside. **Ask of any invariant I am proud of: what would fail, and when, if it
+  stopped being true?** If the answer is "I would notice", it is not enforced.
+- **A more sensitive instrument is not automatically a better test.** The first
+  fingerprint hashed genomes and per-creature fields too, and the historical
+  replay showed it would have needed re-recording at v1.4, v1.20, v1.23 and
+  v1.33 — four releases that added *representation* while the pond's future
+  stayed identical. A constant that gets re-recorded whenever a release adds a
+  field is a note about the last re-recording, not a test, and the next
+  re-recording is where a real regression hides. Decide what the instrument must
+  be *blind* to, and then write a test asserting the blindness.
+- **Reproducibility was never a property of this project alone.** `Math.sin`,
+  `tanh`, `exp`, `pow` are implementation-approximated in ECMAScript, and the
+  pond calls them ~4,900 times a tick, so "bit-for-bit" always meant "given
+  V8's libm". The fix is not to give up the claim but to *name its
+  precondition*: `mathFingerprint()` identifies the engine's arithmetic, and a
+  failure can say which of the two moved. Then measure what the caveat costs
+  rather than worrying about it — flipping the last bit of every such call left
+  five seeds with identical populations for 20,000 ticks, and the reason is
+  arithmetic I could have worked out from `config.js` alone: a velocity's
+  ULP is 256× finer than the grid the position it is added to gets rounded onto,
+  so almost every one-bit error is simply absorbed. When a dependency is
+  unspecified, pin the dependency's fingerprint, not just your own.
+- **Chaos here has a fuse on it.** Bit-level noise does not blow up immediately —
+  it accumulates diffusively for tens of thousands of ticks and then flips one
+  discrete decision (a bite that lands or doesn't), after which the two worlds
+  are unrelated. So a divergence measurement needs a *long* horizon and needs to
+  report the tick, not a yes/no: 20,000 ticks said "identical", 40,000 said
+  "different pond", and only reporting both is honest.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

@@ -248,6 +248,14 @@ no test framework to install:
 node --test        # or: npm test
 ```
 
+One of them is unusual and worth knowing about if you share links: the suite
+carries **recorded hashes of the default pond**, so a change that would quietly
+move a world you have already shared fails the build. That trajectory has been
+bit-for-bit identical since v1.3.0 — thirty-three releases — and
+[docs/SCIENCE.md](docs/SCIENCE.md) shows the replay across every version, plus
+how much of it survives running on an engine whose `Math.sin` returns different
+bits (nearly all of it, for about twenty thousand ticks).
+
 ## How it works (the short version)
 
 Every creature carries a **genome**: a flat vector of numbers that are the

@@ -1773,6 +1773,192 @@ is a real scientific virtue — reproducibility — and it's implemented by rout
 ([mulberry32](../src/rng.js)). It's why you can share an interesting world just
 by sharing its seed, and why the test suite can assert exact outcomes.
 
+That paragraph has been in this document since v1.0 and, until v1.36, nothing
+checked the half of it that matters most. See below.
+
+## How reproducible is "reproducible"? (v1.36)
+
+The claim above has two halves. **Within one build**, a seed reproduces a world —
+that is what every determinism test in the suite asserts, by building two worlds
+in the same process and comparing them. **Across builds** — the half that a
+shared permalink, a screenshot, or an "earned seed" in a curated scenario
+actually rests on — nothing asserted anything, because a test cannot run last
+month's code. Thirty-five releases of "with this feature off, worlds are
+bit-for-bit unaffected" all compared the present against the present.
+
+So v1.36 went and measured it, by replaying the default pond under every tagged
+version in the repository.
+
+### The default pond has moved twice in its life
+
+Each historical tree is extracted, handed today's
+[`fingerprint.js`](../src/fingerprint.js), and asked for the hash of the default
+world at ticks 0, 64 and 512:
+
+| Releases | Trajectory hash at t512 | What moved it |
+| --- | --- | --- |
+| v1.0.0 | `87a4391e` | — |
+| v1.1.0 – v1.2.0 | `b7c65b36` | Predators: extra genes drawn per founder |
+| v1.3.0 – v1.35.0 | `94f52b66` | Seasons & biomes: the fertility field draws before the founders do |
+
+**Thirty-three consecutive releases, bit-for-bit identical.** Both moves are
+construction-time changes to the random stream — a founder drawing a different
+number of values, or a field drawing before the founders — and both are declared
+feature releases from the first fortnight of the project, before the promise was
+written down in [AUTONOMOUS.md](AUTONOMOUS.md) at v1.9.2. The promise has never
+been broken since it was made. It just also had no way of noticing if it were.
+
+Now it does: `test/fingerprint.test.js` carries those hashes as recorded
+constants for two seeds and four checkpoints.
+
+### Why there are two hashes
+
+The first version of this instrument hashed *everything* — positions, genomes,
+brain weights, every per-creature field. That hash is a worse test, and the
+history says so precisely: it moves at v1.4, v1.20, v1.23 and v1.33, four
+releases that added a plasticity block, a `signal`, a `ground` and a set of foot
+genes, while leaving the pond's future bit-for-bit untouched (an unused gene
+slot draws no random numbers). A golden constant that has to be re-recorded
+every time a release adds a field is not evidence of anything; it is a note
+about the last time somebody re-recorded it.
+
+So `trajectoryFingerprint` hashes where things *are* — position, motion, energy,
+age, lineage counters, pellets, corpses — and is deliberately blind to how a
+build represents them. `stateFingerprint` keeps everything, and is used for
+comparisons inside one process, where representation should match too. Six
+re-recordings avoided; the strict hash kept where it is strictly better.
+
+### A different engine's arithmetic (the caveat that matters)
+
+`Math.sin`, `Math.cos`, `Math.tanh`, `Math.exp`, `Math.pow` and friends are
+**implementation-approximated** in ECMAScript: nothing in the standard requires
+two engines, or two versions of one engine, to return the same bits. The pond
+calls them about **4,900 times per tick**. (`Math.sqrt` is exempt — IEEE-754
+requires it to be correctly rounded.) So a recorded hash is a statement about
+this project *given* an engine's math library, which is why
+`mathFingerprint()` exists and why the golden test checks the counts
+unconditionally and the bit-exact hash only when the engine's math matches.
+
+What is that caveat worth? Simulate the worst honest case — flip the last bit of
+**every** implementation-defined `Math` result, which is the scale two faithful
+libm implementations can disagree at — and run two ponds side by side:
+
+| Seed | Populations at t20,000 | Worst per-creature drift | First 1-unit divergence | Populations part ways |
+| --- | --- | --- | --- | --- |
+| 314 | 217 / 217 | 3.0 × 10⁻¹² | t36,763 | t37,002 |
+| 23 | 226 / 226 | 1.8 × 10⁻¹² | t22,785 | t22,881 |
+| 7 | 152 / 152 | 3.0 × 10⁻¹² | none by t60,000 | none |
+| 777 | 151 / 151 | 2.7 × 10⁻¹² | none by t60,000 | none |
+| 991 | 225 / 225 | 2.3 × 10⁻¹² | none by t60,000 | none |
+
+For the first twenty thousand ticks — five and a half minutes of watching at
+60fps, longer than almost anybody looks — a pond with a different libm is the
+*same pond*: identical population, identical food, creatures displaced by a few
+picometres. Then, on two of five seeds, it stops being: the drift crosses the
+threshold of some discrete decision (a bite that lands or doesn't, a birth that
+happens a tick later) and from that moment the two worlds are merely
+statistically similar. Three of five seeds had not crossed it by 60,000 ticks,
+and no claim is offered past the horizon measured.
+
+The reason the noise takes so long to matter is arithmetic, not luck. A creature
+sits at x ≈ 450, where one ULP is 5.7 × 10⁻¹⁴; it moves by up to 2.6 per tick,
+where one ULP is 2.2 × 10⁻¹⁶ — **256 times finer than the grid its position is
+rounded onto**. Perturbing a velocity by one bit therefore changes the resulting
+position only when the sum happens to straddle a rounding boundary. Flipping one
+single `Math.sin` call, once, in a 20,000-tick run changes *nothing at all*,
+measurably: the two worlds stay bit-identical to the end. It takes millions of
+perturbed calls for a few to survive the rounding, and the survivors then
+accumulate diffusively rather than exponentially — 4.5 × 10⁻¹³ at t100 growing
+to 3 × 10⁻¹² at t20,000 — until one of them flips a decision.
+
+### The flag sweep: kin recognition almost never happens
+
+Recording a hash for every configuration is not possible, but two claims about
+*all* of them are, and both are now tests. With every opt-in flag explicitly
+switched off, the full state hash is identical to the default world's — for all
+thirteen flags, read out of `DEFAULT_CONFIG` so a future feature is covered the
+day its flag lands. And with each switched on, the world must actually change
+(the v1.27 rule: sweep every lever once purely to check it *is* a lever).
+
+Twelve of thirteen change the pond within 1,000 ticks; the slowest is disease,
+whose first case arrives at t901. The thirteenth is **kin recognition**, and it
+is the interesting one:
+
+| Seed | `canEat` pairs eligible by size and diet | Spared as kin | Closest eligible pair, genetically |
+| --- | --- | --- | --- |
+| 314 (the default pond) | 106,580 | **0** | 0.227 |
+| 5 | 84,653 | **0** | 1.013 |
+| 23 | 8,151,864 | 39,616 | 0.011 |
+
+Kin recognition (v1.10) spares a target within `kinRecognitionDistance` = 0.05.
+In the default pond it has fired **zero times in 20,000 ticks**, and not because
+of a bug: the closest predator/prey pair the rule was ever offered there was
+0.227 apart, more than four times the threshold. Seed 314 evolves a *separate*
+predator lineage that hunts genetic strangers, so there is nothing for the rule
+to spare. Seed 23 evolves the other thing — a largely clonal population eating
+itself, where 8.2 million eligible pairs come up and half a percent of them are
+family — and there the flag fires forty thousand times and changes the world at
+t4,910.
+
+So the flag is not dead; it is *ecologically conditional*, and which world you
+get is decided by whether the pond splits into predator and prey lineages or
+turns cannibal. One seed in five (23, 11, 42, 101, 777 tested) shows any effect
+at all within 6,000 ticks. The mechanism has always had a direct unit test in
+`test/kinRecognition.test.js`; what nobody had checked is how often the
+mechanism gets to speak, and in the pond on the landing page the answer is
+never.
+
+### Reproducing it
+
+Replay history (needs a git checkout, no dependencies):
+
+```bash
+# The default pond's trajectory hash under every tagged version.
+cat > /tmp/probe.mjs <<'EOF'
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { trajectoryFingerprint } from "./src/fingerprint.js";
+const w = new World(makeConfig({}));
+for (let i = 0; i < 512; i++) w.step();
+console.log(trajectoryFingerprint(w), w.creatures.length, w.food.items.length);
+EOF
+for sha in $(git log --oneline --reverse | grep -E ' (Vivarium 1|v1\.)' | cut -d' ' -f1); do
+  d=$(mktemp -d); git archive "$sha" | tar -x -C "$d"
+  cp src/fingerprint.js "$d/src/fingerprint.js"; cp /tmp/probe.mjs "$d/"
+  printf '%-40s ' "$(git show -s --format=%s "$sha" | cut -c1-38)"
+  (cd "$d" && node probe.mjs); rm -rf "$d"
+done
+```
+
+A pond with a different math library:
+
+```js
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+
+const b = new ArrayBuffer(8), f = new Float64Array(b), u = new BigUint64Array(b);
+const flip = (x) => (Number.isFinite(x) && x !== 0 ? ((f[0] = x), (u[0] ^= 1n), f[0]) : x);
+let perturb = false;
+for (const n of ["sin", "cos", "tan", "tanh", "exp", "log", "pow", "atan2", "hypot", "cbrt", "asin", "acos", "atan"]) {
+  const real = Math[n];
+  Math[n] = (...a) => (perturb ? flip(real(...a)) : real(...a)); // sqrt is IEEE-exact: left alone
+}
+const A = new World(makeConfig({ seed: 314 })), B = new World(makeConfig({ seed: 314 }));
+for (let i = 0; i < 40000; i++) {
+  A.step();
+  perturb = true; B.step(); perturb = false;
+  let worst = 0;
+  for (let k = 0; k < Math.min(A.creatures.length, B.creatures.length); k++) {
+    const p = A.creatures[k], q = B.creatures[k];
+    worst = Math.max(worst, Math.abs(p.x - q.x) + Math.abs(p.y - q.y) + Math.abs(p.energy - q.energy));
+  }
+  if (worst >= 1 || A.creatures.length !== B.creatures.length) {
+    console.log(`tick ${i + 1}: drift ${worst.toExponential(2)}, pop ${A.creatures.length}/${B.creatures.length}`);
+    break;
+  }
+}
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

@@ -4,6 +4,79 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.36.0] — 2026-07-30
+
+This project's second prime directive is that a `(seed, config)` pair reproduces
+a world exactly, and that a default world stays bit-for-bit identical to every
+version before it. Thirty-five releases of tests have asserted the first half —
+two worlds built in the same process agree — and *nothing had ever asserted the
+second*, because a test cannot run last month's code. This release records the
+number, checks it against every version in the repository's history, and
+measures the one thing that could still move it: the engine's own arithmetic.
+
+### Added
+
+- **`src/fingerprint.js`** — a bit-exact identity for a world. Two hashes, and
+  the difference between them is the design: `trajectoryFingerprint` covers
+  *where everything is* (position, motion, energy, age, lineage counters,
+  pellets, corpses) and is deliberately blind to how a build represents it;
+  `stateFingerprint` adds genomes, brain weights and feature state, for
+  comparisons inside one process. Both hash the raw 64 bits of every double, so
+  one ULP in one creature's position moves them — unlike the ad-hoc `(v * 1e6) |
+  0` helpers already in the suite, which are blind to exactly the drift a
+  recorded constant exists to catch.
+- **`mathFingerprint()`**, because `Math.sin`, `Math.tanh` and `Math.exp` are
+  *implementation-approximated* in ECMAScript and the pond calls them ~4,900
+  times a tick. A golden world hash is only a claim about this project *given* an
+  engine's libm, so the test asserts population and food counts unconditionally
+  and the bit-exact hash only when the engine's math matches the recorded one.
+  `Math.sqrt` is excluded on purpose: IEEE-754 pins it.
+- **`test/fingerprint.test.js`** — the recorded constants for two seeds at four
+  checkpoints, plus the instrument's own guarantees: it can see one ULP of every
+  field it covers, it is blind to representation on purpose, it draws no random
+  numbers, and it cannot alter the world it reads.
+- **Two claims about every configuration, not just one.** With each of the
+  thirteen opt-in flags explicitly off, the full state hash equals the default
+  world's; with each on, the world must actually change. The flag list is read
+  out of `DEFAULT_CONFIG`, so a feature added in a later release is covered the
+  day its flag lands.
+- **docs/SCIENCE.md: "How reproducible is 'reproducible'?"**
+
+### Notes
+
+- **The default pond has moved twice in its life, and not once since the promise
+  was made.** Replaying it under all 36 tagged versions: the trajectory hash
+  changed at v1.1.0 (founders drawing extra genes) and v1.3.0 (the fertility
+  field drawing before the founders), then stayed **bit-for-bit identical for
+  thirty-three consecutive releases**. Both moves are from the project's first
+  fortnight, before the directive was written down at v1.9.2.
+- **Why two hashes, measured rather than assumed.** The strict hash moves at
+  v1.4, v1.20, v1.23 and v1.33 — four releases that added a plasticity block, a
+  `signal`, a `ground` and foot genes while leaving the pond's future untouched,
+  because an unused gene slot draws no random numbers. A golden constant that
+  gets re-recorded whenever a release adds a field is not a test.
+- **A pond with a different math library is the same pond for about twenty
+  thousand ticks.** Flip the last bit of every implementation-defined `Math`
+  result — the scale two faithful libm implementations disagree at — and five
+  seeds run 20,000 ticks with *identical populations* and a worst per-creature
+  drift of 3 × 10⁻¹². Then two of the five part ways (t22,785 and t36,763); three
+  had not by t60,000. Flipping one single `Math.sin` call in a whole run changes
+  nothing at all: a velocity's ULP is 256× finer than the grid the position it is
+  added to gets rounded onto, so almost every perturbation is absorbed, and the
+  survivors accumulate diffusively until one flips a discrete decision.
+- **Kin recognition has never once fired in the default pond.** Not a bug — an
+  ecology. The rule spares a target within 0.05 genetic distance; seed 314 put
+  106,580 size-and-diet-eligible predator/prey pairs in front of it over 20,000
+  ticks and the *closest* was 0.227, because that world evolves a separate
+  predator lineage that hunts genetic strangers. Seed 23 evolves the other thing
+  — a near-clonal population eating itself — and there the flag fires 39,616
+  times and changes the world at t4,910. One seed in five shows any effect within
+  6,000 ticks. It is the one flag excluded from the "every flag is a lever"
+  sweep, with the measurement written down next to the exclusion.
+- Nothing here touches the simulation: one new module that only reads, and tests.
+  A world with these instruments is bit-for-bit the world without them — which is
+  now, for the first time, a claim this project can check against its own past.
+
 ## [1.35.0] — 2026-07-30
 
 The pond has kept books since v1.29 and has only ever been able to say what it

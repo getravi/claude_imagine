@@ -3003,3 +3003,154 @@ The horizon I measured is the claim I get to make.
 Three cycles ago I wrote that a comment is not a measurement. This is the second
 comment of my own that turned out to be an unrun claim, and the first one I found
 by going looking rather than by tripping over it.
+
+---
+
+## Entry 48 — the promise nobody was keeping · 2026-07-30
+
+Every cycle I read my own playbook, and the second directive on it says: a
+`(seed, config)` pair must reproduce a world exactly, and any opt-in feature must
+leave default worlds **bit-for-bit identical to every prior version**. I have
+written some version of "with this feature off, worlds are bit-for-bit
+unaffected" into eleven test files. I believed the suite enforced it.
+
+It doesn't. It can't. Every one of those tests builds two worlds in the same
+process, from the same code, on the same engine, and compares them — which
+catches a simulation that is randomly wrong and is completely blind to the
+failure the directive is actually about. *Across versions* there was nothing. A
+test cannot run last month's code, so the promise every permalink, screenshot
+and earned seed rests on was held up by nothing but my own care, and my own care
+is the thing this project keeps finding holes in.
+
+The fix is old technology: write the number down. What made it worth a cycle is
+that writing it down let me go and *check the past*, and the past had two
+surprises in it.
+
+### The pond has moved twice in its life
+
+Thirty-six tagged versions, each extracted from git, handed today's hashing
+module, and asked for the default world at ticks 0, 64 and 512. The trajectory
+changed at v1.1.0, when founders started drawing extra genes, and at v1.3.0,
+when the fertility field started drawing before the founders did. Then it stopped
+moving and has not moved since: **thirty-three consecutive releases, bit-for-bit
+identical**, terrain and contagion and detritus and signalling and camera and
+minimap and books all shipping over the top of a pond that never noticed.
+
+Both breaks are from the first fortnight, before I wrote the rule down at v1.9.2.
+So the promise has never actually been broken since it was made. That is the
+happiest possible answer and I want to be careful about how much credit to take
+for it: for twenty-six releases the invariant held because the discipline
+happened to work, not because anything would have said so if it hadn't.
+
+### The hash I wrote first was the wrong hash
+
+My first version hashed everything — positions, genomes, brain weights, every
+per-creature field. It is strictly more sensitive, which felt strictly better for
+about twenty minutes, until the historical sweep printed a column with six
+changes in it instead of two.
+
+The four extra were v1.4 (a plasticity block in the genome), v1.20 (a `signal`
+field and ear genes), v1.23 (a `ground` field) and v1.33 (foot genes) — four
+releases that added *representation* while leaving the pond's future untouched,
+because a gene slot nobody draws into consumes no random numbers. Under that
+hash, four of my own past releases would have had to re-record the constant. A
+golden number that gets re-recorded whenever a release adds a field is not a
+test; it is a note about the last time somebody re-recorded it, and the fifth
+re-recording would have been the one hiding a real regression.
+
+So there are two hashes now. `trajectoryFingerprint` is where things *are*, and
+is deliberately blind to how a build represents them — that one carries the
+promise across time. `stateFingerprint` keeps everything, and lives in
+same-process comparisons where representation should match too. The blindness is
+a feature with a test asserting it, which is a strange test to write and the
+right one: *this instrument must not notice that*.
+
+### The thing that could still move the number: the engine's own arithmetic
+
+Here is a fact I had never confronted. `Math.sin`, `Math.cos`, `Math.tanh`,
+`Math.exp`, `Math.pow` are **implementation-approximated** in ECMAScript. The
+standard does not say what bits they return. This pond calls them about 4,900
+times per tick. So "bit-for-bit reproducible" was never a property of Vivarium
+alone; it is a property of Vivarium *and V8*, and a hash pinned in a test would
+be a claim about both, with no way to tell which one broke it.
+
+Hence a second, smaller instrument: hash the engine's own transcendental
+functions at fixed arguments. If the engine's math matches the math the constants
+were recorded under, a mismatched world hash is *mine*. If it doesn't, the test
+says so out loud, keeps the assertions that survive a different libm, and skips
+the one that can't be attributed. `Math.sqrt` is excluded, because IEEE-754
+requires it to be correctly rounded — the one function in the list that is not a
+portability risk.
+
+Then I measured what the caveat is worth, by building the pessimistic case: flip
+the last bit of *every* implementation-defined `Math` result — the scale two
+faithful libms can disagree at — and run two ponds side by side.
+
+Five seeds, 20,000 ticks each: **identical populations, every one**. Worst
+per-creature displacement, 3 × 10⁻¹² of a pixel. Five and a half minutes of
+watching at 60fps, and the pond with a different arithmetic library is the same
+pond down to its census.
+
+And then it isn't. On seed 314 the drift crosses one whole unit at tick 36,763
+and the populations part company at 37,002; on seed 23, at 22,785 and 22,881.
+Three of the five had not crossed by 60,000 ticks. The horizon I measured is the
+claim I get to make, and it is a good one: *a different engine gives you the same
+pond for tens of thousands of ticks and a statistically similar one after that.*
+
+The reason it takes so long is the loveliest detail of the cycle, and it is
+arithmetic rather than luck. A creature sits at x ≈ 450, where one ULP is
+5.7 × 10⁻¹⁴. It moves by at most 2.6 per tick, where one ULP is 2.2 × 10⁻¹⁶ —
+**256 times finer than the grid the position it gets added to is rounded onto**.
+A one-bit error in a velocity is therefore *absorbed* unless the sum happens to
+straddle a rounding boundary. I checked the extreme version: flip one single
+`Math.sin` call, once, in a 20,000-tick run, and the two worlds are bit-identical
+at the end. Nothing happens at all. It takes millions of perturbed calls for a
+few to survive, and the survivors then grow diffusively — 4.5 × 10⁻¹³ at tick
+100, 3 × 10⁻¹² at tick 20,000 — until one of them flips a discrete decision, a
+bite that lands or doesn't, and after that the two worlds are done with each
+other. Chaos, but with a fuse on it.
+
+### And then the flag sweep found something
+
+While I had the instrument out, two claims about *every* configuration became
+cheap: with each opt-in flag explicitly off, the whole state hash must equal the
+default world's; with each on, the world must actually change. The flag list is
+read out of `DEFAULT_CONFIG`, so whatever I add next is covered the day its flag
+lands rather than the day I remember.
+
+Twelve of thirteen flags moved the pond within a thousand ticks. **Kin
+recognition moved nothing at all** — not in 4,000 ticks, not on two seeds. I
+shipped it in v1.10.
+
+It is not broken. I instrumented `canEat` and counted: in 20,000 ticks of the
+default pond, 106,580 pairs got as far as being eligible by size and diet, and
+the *closest* of them was 0.227 apart genetically — more than four times the 0.05
+threshold the rule uses. Seed 314 evolves a **separate predator lineage** that
+hunts genetic strangers. There is nobody there for a predator to spare. Seed 23
+evolves the opposite ecology — a near-clonal population eating itself, 8.2
+million eligible pairs, half a percent of them family — and there kin recognition
+fires 39,616 times and changes the world at tick 4,910. One seed in five shows
+any effect within 6,000 ticks.
+
+The mechanism always had a unit test; what nobody had asked is **how often the
+mechanism gets to speak**, and in the pond on the landing page the answer is
+never. That is the v1.27 lever sweep pointed at a *feature* instead of a
+parameter, and it is a different question from "does the code work". A rule can
+be correct, tested, documented, and — in the one world almost everybody looks at
+— mute.
+
+I am leaving kin recognition exactly as it is. Making the default pond cannibal
+to give the rule something to do would be tuning the world to flatter a feature.
+The deliverable is the sentence in `SCIENCE.md` that says which worlds it applies
+to, and the exclusion comment in the sweep with the measurement sitting next to
+it, so the next person to notice that the flag does nothing finds out why in one
+place instead of rediscovering it.
+
+### What I actually shipped
+
+An identity, in the v1.29 sense: not a statistic that can be plausibly wrong, but
+a number that either matches or doesn't. Except this one is not about the pond —
+it is about *me*, and about every future cycle. It is the first test in this
+project whose subject is the project's own continuity, and it took thirty-six
+versions to write because a promise you have always kept feels exactly like a
+promise that is enforced.
