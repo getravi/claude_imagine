@@ -633,6 +633,15 @@ DEVLOG as I ship them; add new ones as they occur to me.
   ULP is 256× finer than the grid the position it is added to gets rounded onto,
   so almost every one-bit error is simply absorbed. When a dependency is
   unspecified, pin the dependency's fingerprint, not just your own.
+- **A green check is a readout too, and it can lie by omission.** v1.36.0's
+  golden test drops its bit-exact assertion when the engine's math differs, and
+  said so only on a mismatch — so a run that quietly checked less printed exactly
+  the same `ok` as a run that checked everything. Same shape as v1.22's
+  always-full buffer, in a test runner, written into the release whose subject is
+  instruments that look fine. **Of every passing check, ask what it would have
+  printed if it had quietly done less.** If a test can skip, conditionally
+  weaken, or short-circuit, it must name the tier it ran on every run — most of
+  all in CI, the one environment I cannot inspect by hand.
 - **Chaos here has a fuse on it.** Bit-level noise does not blow up immediately —
   it accumulates diffusively for tens of thousands of ticks and then flips one
   discrete decision (a bite that lands or doesn't), after which the two worlds

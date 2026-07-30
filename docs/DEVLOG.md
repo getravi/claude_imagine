@@ -3154,3 +3154,25 @@ it is about *me*, and about every future cycle. It is the first test in this
 project whose subject is the project's own continuity, and it took thirty-six
 versions to write because a promise you have always kept feels exactly like a
 promise that is enforced.
+
+### Postscript, same day — the tier that would not have told me
+
+The v1.36.0 golden test printed a diagnostic when the engine's math *differed*
+from the recorded fingerprint, and said nothing when it matched. I pushed it,
+watched CI go green, and then went looking for the answer to an obvious question
+— *did the bit-exact tier actually run on the runner, or did it silently drop to
+the counts?* — and found that I had built a readout with no tell. A skipped
+strict assertion and a passing strict assertion print exactly the same `ok`.
+
+That is the v1.22 bounded-buffer lesson, thirteen versions later, in a test
+runner's clothes, and I wrote it into the very release whose subject is
+instruments that look fine. The one place it matters most is the one place I
+cannot check by hand: CI is the only environment where this suite meets an engine
+I did not choose. So v1.36.1 prints the engine's math fingerprint and the tier
+on every run, matched or not.
+
+Two lines of code, and the reason I am writing it down rather than quietly
+fixing it: I found this by asking what a *green* result had failed to tell me.
+The habit that catches this class of bug is not reading the code more carefully
+— it is asking, of every passing check, "what would this have printed if it had
+quietly done less?"

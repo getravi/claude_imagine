@@ -76,14 +76,19 @@ test("the default pond's trajectory is the one it has had since v1.3.0", (t) => 
   // counts are asserted always, and the bit-exact hash only when the engine's
   // math is the math the constants were recorded under.
   const sameMath = mathFingerprint() === GOLDEN_MATH;
-  if (!sameMath) {
-    t.diagnostic(
-      `engine math fingerprint is ${mathFingerprint()}, not the recorded ${GOLDEN_MATH}: ` +
-        "this engine's Math.sin/tanh/exp differ from the ones the golden hashes were " +
-        "recorded under, so the bit-exact check cannot attribute a mismatch and is " +
-        "skipped. The population and food counts below are still checked."
-    );
-  }
+  // Say which tier ran, on *every* run and not only on a mismatch. A test that
+  // quietly drops its strongest assertion and still prints `ok` is this
+  // project's favourite bug (v1.22, v1.23) wearing a test runner's clothes —
+  // and the place I would least be able to check it by hand is CI, which is the
+  // only place it runs on an engine I did not choose.
+  t.diagnostic(
+    sameMath
+      ? `engine math ${GOLDEN_MATH} as recorded — checking the bit-exact hashes`
+      : `engine math is ${mathFingerprint()}, not the recorded ${GOLDEN_MATH}: this ` +
+        "engine's Math.sin/tanh/exp differ from the ones the golden hashes were " +
+        "recorded under, so a mismatch could not be attributed and the bit-exact " +
+        "check is SKIPPED. The population and food counts are still checked."
+  );
 
   for (const scenario of GOLDEN) {
     const w = new World(makeConfig(scenario.overrides));

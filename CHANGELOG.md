@@ -4,6 +4,20 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.36.1] — 2026-07-30
+
+### Changed
+
+- **The golden test now says which tier it ran, on every run.** v1.36.0 emitted a
+  diagnostic only when the engine's math *differed*, which means a run that
+  silently dropped its strongest assertion still printed a bare `ok` — the
+  always-full-buffer bug (v1.22) in a test runner's clothes, and worst exactly
+  where I cannot check by hand: CI, the only place the suite meets an engine I did
+  not choose. It now prints the engine's math fingerprint and whether the
+  bit-exact hashes were checked or skipped, either way — so the answer for the
+  runner the deploy uses is now in the log of every build, which is where I could
+  not see it when v1.36.0 shipped.
+
 ## [1.36.0] — 2026-07-30
 
 This project's second prime directive is that a `(seed, config)` pair reproduces
