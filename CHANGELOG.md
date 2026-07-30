@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.34.0] — 2026-07-30
+
+The pond has had an epidemic since v1.16 and has never once shown you where it
+is dangerous to be. Transmission happens inside `infectionRadius` — 22 pixels,
+five times a creature's own body — and no surface has ever drawn that distance:
+a plague looked like scattered glowing dots rather than like weather. This
+release draws it, in both views, and then asks the whole-pond question the
+picture makes askable. It also measures the two marks of the disease for the
+first time, and finds that neither of them worked.
+
+### Added
+
+- **The contagious zone.** One translucent disc of `infectionRadius` per sick
+  creature, drawn over the ground and under everything alive, in the pond *and*
+  on the minimap — the only surface where a whole-pond pattern is visible at a
+  glance. Where discs overlap the layers compound, and they compound at exactly
+  the rate the risk does: n discs of opacity a come out at 1 − (1 − a)^n, n
+  infectious neighbours give a risk of 1 − (1 − p)^n. The same function in the
+  new [`src/contagion.js`](src/contagion.js) serves both, so the field's opacity
+  is the real per-tick risk under a monotone remap rather than a ramp that
+  resembles one.
+- **A `Contagious` stat**, the share of the water inside somebody's reach, and
+  the same claim in `describePond()` for a listener: *"The sickness reaches 23%
+  of the water."* Measured on a six-pixel grid — chosen by sweeping it, since a
+  coarser one misjudged a lone case's area by 40%.
+- **`hazardShare()` / `hazardSources()` / `independentAny()`** in `contagion.js`,
+  with `test/contagion.test.js` pinning the arithmetic, the torus wrap, the
+  monotonicity, and — the v1.32 lesson — that the fast cell walk covers exactly
+  the cells an exhaustive one would.
+- **docs/SCIENCE.md: "The contagious zone: is an epidemic a front or a haze?"**
+
+### Changed
+
+- **Both epidemiological marks, because both were invisible.** Measured as they
+  were actually drawn — a translucent tone over the creature's own additive glow,
+  which can be any hue at any lightness and brighter still where two bodies
+  overlap — the immune ring's worst case is **ΔE 0.2** and the sick halo's is
+  **11.0**. That is the v1.25 predator-core failure exactly, one ring over, never
+  checked. Both are opaque and two-toned now, a bright ring with a dark hairline
+  outside it: worst case **45.5** for the halo and **41.8** for the ring, over
+  every background either can appear on including the new zone.
+- **The immune ring is dashed**, and that is load-bearing rather than decorative.
+  Colour cannot separate the two states: an additive halo reaches almost any
+  bright colour, under tritanopia bright sulphur and pale blue are the same thing
+  (ΔE 0.0), both marks need a dark tone, and every dark tone resembles every
+  other. So the distinction lives in geometry, which no vision model touches.
+
+### Notes
+
+- **Clustered by a fifth — a haze with structure in it, not a front.** The zone's
+  area per case is 0.804 ± 0.032 (sd across seeds) of what the same number of
+  cases scattered at random over the same living population would cover, below 1
+  in 11 of 11 seeds that produced an epidemic; a sharper arm that scrambles among
+  the *susceptible* only moves it by half a percent, so this is transmission and
+  not the shape of the susceptible pool. The effect is six times the between-seed
+  spread — and it is a fifth, not a wave, for the reason v1.23 wrote down about
+  terrain: a creature crosses this world a dozen times per lifetime, so a local
+  rule leaves a fingerprint and cannot hold a line.
+- **The zone is blue because of the food.** It wanted to be sulphur, to match the
+  halo it belongs to. A hue sweep against every ground this pond can draw
+  demanded three things at once — visible, not mistakable for either fertility
+  claim, and *still leaving the food motes legible on top of it* — and everything
+  that clears all three is hue 210–250. Sulphur clears the first two and fails
+  the third at every opacity. `test/palette.test.js` sweeps the opacity to pin
+  that squeeze, so nobody can "unify" the palette and quietly hide the crop.
+- Nothing here draws a random number or touches simulation state: a pond with
+  nobody sick — which is every world with contagion off — draws exactly what it
+  drew before, and `hazardShare` reads exactly 0 there. The readout is zeroed
+  unconditionally and only the *scan* is throttled, so curing the pond clears it
+  in the same frame (the v1.23 stale-readout lesson).
+- At peak, the zone covers 16.2% of the water at 39% prevalence: two fifths of
+  the pond ill and five sixths of the water still clean, which is obvious only
+  once there is a picture of it.
+
 ## [1.33.0] — 2026-07-29
 
 Terrain has priced the ground since v1.23 over a landscape nothing could

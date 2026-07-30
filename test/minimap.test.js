@@ -452,3 +452,63 @@ test("the minimap draws the same enriched ground the pond does", () => {
     }
   }
 });
+
+// ---- the contagious zone (v1.34) ----
+//
+// The minimap is the only surface where a whole-pond pattern is visible at a
+// glance, which is exactly the shape of the question an epidemic raises: is this
+// a front crossing the water, or a haze over all of it? So the hazard field is
+// drawn here as well as in the pond — the v1.23 mistake was shipping terrain
+// into one of two views, and this is the same test written a decade of versions
+// later.
+
+/** The discs drawMinimap drew for the contagious zone, by their radius. */
+function hazardArcs(ctx, world, layout) {
+  const r = world.config.infectionRadius * layout.scale;
+  return ctx.ops.filter((o) => o[0] === "arc" && Math.abs(o[3] - r) < 1e-9);
+}
+
+test("a pond with nobody sick draws no contagious water at all", () => {
+  const world = new World(makeConfig({ seed: 8 }));
+  for (let i = 0; i < 200; i++) world.step();
+  const ctx = stubCtx();
+  const layout = drawMinimap(ctx, world, new Camera(world.config), {});
+  assert.equal(hazardArcs(ctx, world, layout).length, 0);
+});
+
+test("each case draws its own reach, under the living", () => {
+  const world = new World(makeConfig({ seed: 8 }));
+  for (let i = 0; i < 200; i++) world.step();
+  // Placed away from the seams, so each disc is one image and the count is exact.
+  const cases = world.creatures.slice(0, 3);
+  assert.equal(cases.length, 3, "seed 8 should have a few creatures to make ill");
+  cases.forEach((c, i) => {
+    c.infected = true;
+    c.x = 200 + i * 200;
+    c.y = 300;
+  });
+  const ctx = stubCtx();
+  const layout = drawMinimap(ctx, world, new Camera(world.config), {});
+  assert.equal(hazardArcs(ctx, world, layout).length, 3);
+  // Under the living: the last hazard disc is drawn before the first creature.
+  const lastZone = ctx.ops.map((o) => o[0]).lastIndexOf("arc");
+  const firstCreature = ctx.ops.findIndex((o) => o[0] === "fillRect" && o[3] === 2);
+  assert.ok(lastZone < firstCreature, "the zone belongs to the water, not to the creatures");
+});
+
+test("a case on the seam is contagious on both sides of it", () => {
+  const world = new World(makeConfig({ seed: 8 }));
+  for (let i = 0; i < 200; i++) world.step();
+  const one = world.creatures[0];
+  one.infected = true;
+  one.x = 1;
+  one.y = 300;
+  const ctx = stubCtx();
+  const layout = drawMinimap(ctx, world, new Camera(world.config), {});
+  const arcs = hazardArcs(ctx, world, layout);
+  assert.equal(arcs.length, 2, "a disc over the left edge is drawn twice, once past each side");
+  const xs = arcs.map((a) => a[1]).sort((a, b) => a - b);
+  const r = world.config.infectionRadius * layout.scale;
+  assert.ok(xs[0] < r, "one image sits on the left edge, half of it off the map");
+  assert.ok(xs[1] > layout.width - r, "and the half that fell off comes back on the right");
+});

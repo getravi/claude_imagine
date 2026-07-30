@@ -494,6 +494,12 @@ function updateHUD() {
     ? `${s.infectedCount} (${pop > 0 ? Math.round((s.infectedCount / pop) * 100) : 0}%)`
     : "off";
   $("stat-immune").textContent = config.disease ? s.immuneCount : "off";
+  // How much of the water is inside catching distance of somebody sick — the
+  // number the blue field in the pond and the minimap draws. Zero on its own
+  // whenever nobody is ill, which is every world with no pathogen in it.
+  $("stat-reach").textContent = config.disease
+    ? `${Math.round(s.hazardShare * 100)}%`
+    : "off";
   $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
   // Traffic on the signalling channel: how strong a call the average creature is
   // hearing right now. "off" where nobody can hear at all.

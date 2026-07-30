@@ -9,6 +9,7 @@
 
 import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
+import { hazardShare } from "./contagion.js";
 
 /**
  * The ways a creature can die, in the order they are reported. Every death in
@@ -136,6 +137,10 @@ export class Stats {
     this.infectedCount = 0; // currently sick
     this.immuneCount = 0; // currently alive and immune
     this.peakInfected = 0; // worst simultaneous caseload ever seen
+    // How much of the pond is currently within catching distance of somebody
+    // sick — the size of the thing the two views now draw. A caseload says how
+    // many are ill; this says how much of the water it costs you to be well.
+    this.hazardShare = 0;
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
@@ -246,6 +251,15 @@ export class Stats {
       this.infectedCount = 0;
       this.immuneCount = 0;
     }
+
+    // The size of the contagious zone. Only the *scan* is throttled — a pond
+    // with nobody sick is zeroed on every tick, so curing the pond (or switching
+    // the pathogen off) clears the readout in the same frame instead of leaving
+    // the last epidemic's number sitting there looking live. That mistake has
+    // been made twice here already, in v1.22's chart buffer and v1.23's ground
+    // readout.
+    if (this.infectedCount === 0) this.hazardShare = 0;
+    else if (this.tick % 4 === 0) this.hazardShare = hazardShare(world.creatures, world.config);
 
     // Brain complexity: average evolved structure, when topology can evolve.
     if (world.config.evolvableTopology && pop > 0) {

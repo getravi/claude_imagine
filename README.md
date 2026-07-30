@@ -99,7 +99,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. |
 | **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
 | **Regrowth** | Toggle food that grows from food: most new pellets are seeded next to an existing one, and the crop grows fastest when there is most of it. A herd can strip a patch bare and then has to wait for it to grow back, so the pond swings through boom-and-bust cycles. Off by default. Watch the *Food* stat. |
-| **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Off by default. Watch the *Sick* and *Immune* stats. |
+| **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Every case draws its *reach* — a blue disc of `infectionRadius`, in the pond and on the minimap, which stacks where cases overlap at exactly the rate the per-tick risk does. Off by default. Watch the *Sick*, *Immune* and *Contagious* stats — the last being the share of the water inside somebody's catching distance. |
 | **Signalling** | Toggle whether creatures can *hear* one another. Every brain has always emitted a "colour signal" that nothing could perceive; switch this on and the loudest call within earshot becomes a sense, wired in through evolved ear genes, and calling costs a little energy. Off by default. Watch the *Heard* stat. |
 | **Terrain** | Toggle a landscape. The ground stops being uniform: a static, seed-derived roughness field makes rough ground both expensive to cross and reluctant to grow food, so the pond gathers into its basins. Drawn as contour lines under the world. Off by default. Watch the *Ground* stat — how much flatter than average the ground under the living is, and exactly `off` when there is no landscape to measure against. |
 | **Detritus** | Toggle whether the ground remembers its dead. A body leaves nutrient in the ground under it, the nutrient rots away over a few hundred ticks, and about a quarter of the pond's new food grows out of it — so the crop stops being a rate and becomes an inheritance. Drawn as warm ochre stains under the water and on the minimap. Off by default. Watch the *Soil* stat: the share of new food currently growing where something died, and exactly `off` when nothing is being remembered. |
@@ -150,8 +150,10 @@ lineage, so you can see where it lives and how far it has spread.
   glut of corpses (dim maroon marks) appears — and carnivores converge to feed on
   the dead. Death feeds life.
 - **Turn on Contagion** (or hit the *Plague* scenario) and watch the pond wear its
-  epidemic: sick creatures pulse with a sulphur halo, survivors keep a thin blue
-  ring for the immunity they earned. The *Sick* count climbs, crests, and collapses
+  epidemic: sick creatures pulse with a sulphur halo, survivors keep a dashed blue
+  ring for the immunity they earned, and the water inside catching distance of a
+  case goes blue — at the peak of a wave, about a sixth of the pond. The *Sick*
+  count climbs, crests, and collapses
   as the pathogen runs out of hosts — then climbs again once enough susceptible
   newborns have accumulated. Immunity is never inherited, so the waves never stop.
 - **Turn on Regrowth** (or hit the *Commons* scenario) and watch the food become a

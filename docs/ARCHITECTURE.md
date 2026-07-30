@@ -53,6 +53,7 @@ The dependency arrows point from a module to what it imports.
 | `terrain.js` | Optional static roughness landscape: rough ground costs more to cross and grows less. | — |
 | `detritus.js` | Optional decaying nutrient map: deaths enrich the ground, and part of the crop grows out of it. | — |
 | `energy.js` | The pond's books: every unit created and destroyed, holding `created − destroyed === standing` at every tick. Pure bookkeeping — no randomness, and nothing in the simulation reads it. | — |
+| `contagion.js` | The reach of the pathogen: the risk arithmetic both views draw with, and the share of the water inside somebody's catching distance (observation only). | — |
 | `palette.js` | Colour decisions as pure functions, plus the dichromat simulation and ΔE that judge them. | — |
 | `stats.js` | Rolling population/lineage/diversity measurements, and the mortality ledger (what each death was caused by, carried into both history buffers as cumulative counters so differencing any two samples is exact). | — |
 | `archive.js` | A bounded record of the *whole* run: halves its own resolution as it fills, keeping exact min/max envelopes so no peak is ever silently smoothed away. | — |
@@ -189,7 +190,10 @@ creatures directly.
 
 Both are read by `FoodField.step()` (which takes the seasonal multiplier) and
 `spawnOne()` (which consults the fertility field), and both are drawn as ambient
-cues by the renderer — faint biome glows and a season-tinted trail veil.
+cues by the renderer — faint biome glows and a season-tinted trail veil. The one
+piece of the *water* that is drawn from live state is the contagious zone: a disc
+of `infectionRadius` per sick creature, stacked, whose opacity compounds at
+exactly the rate the per-tick infection risk does (`contagion.js`).
 
 **Regrowth** (`foodRegrowth`, opt-in) lives in `food.js` rather than
 `environment.js`, because it makes the crop depend on *itself* rather than on the

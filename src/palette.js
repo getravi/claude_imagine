@@ -402,6 +402,104 @@ export function detritusTint(richness) {
 export const DETRITUS_MAX_ALPHA = 0.54;
 
 /**
+ * The contagious zone (v1.34) — the water within `infectionRadius` of somebody
+ * infected, which is the only question a watcher of an epidemic actually has.
+ *
+ * This is a *field*, like enriched ground, so opacity may carry degree: one disc
+ * per case, and where cases overlap the layers compound. What it may not be is
+ * any of the colours already down there, and that constraint turned out to
+ * decide the hue by itself. A search over the hue wheel against every ground
+ * this pond can produce — both seasons, the whole terrain ramp with and without
+ * contours, the biome glow, enriched ground at half and full, in the pond and in
+ * the minimap — asked for three things at once: visible against all of them,
+ * unmistakable for either fertility claim (biome, soil), and *still leaving the
+ * food motes legible on top of it*, since a mote is a mark drawn over this
+ * field. Every colour that clears all three is blue: hue 210–250, nothing else.
+ *
+ * Which means the zone cannot be sulphur — the colour of the halo on the sick
+ * creature it belongs to, and my first choice for exactly that reason. Sulphur
+ * clears the first two constraints and fails the third, because it is next door
+ * to the green of the food. A mark and the field it belongs to could not share a
+ * hue here, and the thing standing between them was the crop.
+ */
+export function hazardTint() {
+  const rgb = hslToRgb(220, 100, 55);
+  return { r: rgb.r, g: rgb.g, b: rgb.b, a: HAZARD_SOURCE_ALPHA };
+}
+
+/**
+ * Opacity of one case's disc. The compounding is the point: n overlapping discs
+ * come out at 1 − (1 − a)^n, the same arithmetic as the risk of catching it from
+ * n independent neighbours, so the field's opacity is a monotone function of the
+ * real per-tick risk (`contagion.js` has the algebra).
+ *
+ * Chosen from the measurement, like `DETRITUS_MAX_ALPHA`: 0.10 puts the
+ * `HAZARD_AUDIT_SOURCES` level at 0.41 opaque, whose worst case over every
+ * ground either view can draw is ΔE 35.0, and which still leaves a food mote on
+ * top of it at 34.8. Sulphur has no opacity that clears both at once — faint
+ * enough for the crop it vanishes into the ground, strong enough to see it
+ * swallows the crop — and `test/palette.test.js` sweeps the opacity to say so.
+ */
+export const HAZARD_SOURCE_ALPHA = 0.1;
+
+/**
+ * The overlap the field is audited at: five cases in range, a 20.6% chance per
+ * tick of catching it at the default `infectionChance`. A single case is drawn
+ * fainter than the bar on purpose — one disc is a hint that something is nearby,
+ * five is water you should not be standing in, and the audit is about the level
+ * that means something rather than the faintest one drawable.
+ */
+export const HAZARD_AUDIT_SOURCES = 5;
+
+/**
+ * The mark on a sick creature, and the mark on one that has survived — the two
+ * halves of the epidemiological state, and until v1.34 the two least legible
+ * things in this project.
+ *
+ * Both were single translucent tones drawn over a creature's own additive glow,
+ * which is the v1.25 predator-core failure exactly: the glow can be any hue at
+ * any lightness, and two or three overlapping bodies push it brighter still, so
+ * a pale mark over it is measured against a background it does not control.
+ * Composited over the range the glow can really take, the immune ring's worst
+ * case is **ΔE 0.2** and the sick halo's is **11.0** — the ring is invisible and
+ * the halo is under the "different colour at a glance" line, both of them for
+ * everyone, worse for a dichromat.
+ *
+ * So both go opaque and two-tone, the subtitle trick: a mark carrying a very
+ * light *and* a very dark tone cannot be swallowed, because no background is
+ * close to both. Worst case over every background either can appear on,
+ * including the new hazard field: 45.5 for the halo, 41.8 for the ring.
+ *
+ * What colour cannot do here is tell the two of them *apart*. An additive halo
+ * can reach almost any bright colour, and under tritanopia bright sulphur and
+ * pale blue are the same thing — measured, ΔE 0.0, against 37.2 for the ring's
+ * dark half, which nothing additive can imitate because adding light can only
+ * brighten. Both marks need a dark tone and every dark tone resembles every
+ * other, so what is left over for the distinction is carried
+ * by geometry, which no vision model touches: **the halo is continuous and the
+ * immune ring is dashed.** That is why `immuneRing().dash` exists, and a test
+ * asserts it is non-empty for this reason.
+ */
+export function sickHalo() {
+  return { ring: "hsl(68, 85%, 62%)", rim: "hsl(66, 60%, 7%)", width: 1.4 };
+}
+
+/** The sick halo's two tones as RGB, for the audit. */
+export function sickHaloTones() {
+  return { ring: hslToRgb(68, 85, 62), rim: hslToRgb(66, 60, 7) };
+}
+
+/** Acquired immunity: the same two-tone treatment, dashed so it reads as itself. */
+export function immuneRing() {
+  return { ring: "hsl(205, 85%, 88%)", rim: "hsl(210, 40%, 6%)", width: 0.9, dash: [2, 2.4] };
+}
+
+/** The immune ring's two tones as RGB, for the audit. */
+export function immuneRingTones() {
+  return { ring: hslToRgb(205, 85, 88), rim: hslToRgb(210, 40, 6) };
+}
+
+/**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit
  * and the tests both use, so "the mark is legible" means one thing in this

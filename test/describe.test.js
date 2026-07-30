@@ -91,6 +91,24 @@ test("contagion is only described once there is a contagion", () => {
   assert.match(describePond(world, world.config), /3 sick, 11 immune\./);
 });
 
+test("the reach of the sickness is spoken, and only while there is one", () => {
+  // v1.34 drew the contagious zone in two views, both of which are available
+  // only to an eye. This is the same claim in words: a listener gets the size of
+  // the thing, not just the caseload.
+  const world = new World(makeConfig({ seed: 7, disease: true }));
+  world.step();
+  world.stats.infectedCount = 4;
+  world.stats.immuneCount = 2;
+  world.stats.hazardShare = 0.23;
+  assert.match(describePond(world, world.config), /The sickness reaches 23% of the water\./);
+
+  // A pond of survivors with nobody currently ill has no zone to report, and
+  // saying "0% of the water" to a listener is noise.
+  world.stats.infectedCount = 0;
+  world.stats.hazardShare = 0;
+  assert.doesNotMatch(describePond(world, world.config), /reaches/);
+});
+
 test("an empty pond says so, rather than saying zero", () => {
   const world = new World(makeConfig({ seed: 314 }));
   world.creatures = [];

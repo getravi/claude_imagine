@@ -128,6 +128,12 @@ export function describePond(world, config, camera = null) {
   // — never narrate the state of a thing that has not started.
   if (config.disease && (s.infectedCount > 0 || s.immuneCount > 0)) {
     out.push(`${s.infectedCount} sick, ${s.immuneCount} immune.`);
+    // How much of the water is inside catching distance — the same claim the two
+    // views make in blue, which until v1.34 no surface made at all. Exactly zero
+    // with nobody sick, so a pond of survivors says nothing about a hazard.
+    if (s.hazardShare > 0) {
+      out.push(`The sickness reaches ${percent(s.hazardShare)} of the water.`);
+    }
   }
   // The ground, where the ground has an opinion. `groundBias` is exactly 0
   // without terrain — the same guard the Ground tile uses — and it is the one

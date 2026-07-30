@@ -39,8 +39,17 @@ import {
   CVD_TYPES,
   VISION_MODELS,
   MIN_DELTA_E,
+  hazardTint,
+  HAZARD_SOURCE_ALPHA,
+  HAZARD_AUDIT_SOURCES,
+  sickHalo,
+  sickHaloTones,
+  immuneRing,
+  immuneRingTones,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
+import { independentAny } from "../src/contagion.js";
+import { terrainBandFill, TERRAIN_BANDS } from "../src/minimap.js";
 
 // The body colour render.js paints for a given creature state, reproduced here
 // so the sweep measures what is actually drawn.
@@ -620,4 +629,258 @@ test("the energy colours the DOM is painted with are the ones that were measured
     assert.ok(m, `${name} is not a plain hsl() this test can parse: ${text}`);
     assert.deepEqual(hslToRgb(Number(m[1]), Number(m[2]), Number(m[3])), tones[name]);
   }
+});
+
+// ---- the epidemic: the zone, and the two marks (v1.34) ----
+//
+// Contagion has been drawn one creature at a time since v1.16 and never
+// measured. Three claims get audited here: the new hazard field (visible over
+// every ground, not mistakable for either fertility claim, and *leaving the food
+// motes legible on top of it* — the constraint that decided its hue), and the
+// two marks of the epidemiological state, both of which failed outright.
+
+/** The minimap's own grounds, which the field is drawn on too. */
+function minimapGrounds() {
+  const bg = { r: 7, g: 12, b: 19 };
+  const out = [{ name: "mini bare", rgb: bg }];
+  for (let band = 0; band < TERRAIN_BANDS; band++) {
+    const m = terrainBandFill(band).match(/rgba?\(([^)]+)\)/)[1].split(",").map(Number);
+    const g = blendOver(bg, { r: m[0], g: m[1], b: m[2] }, m[3]);
+    out.push({ name: `mini band ${band}`, rgb: g });
+    // The minimap paints biomes as a flat wash rather than an additive glow.
+    out.push({ name: `mini band ${band} +biome`, rgb: blendOver(g, { r: 32, g: 82, b: 70 }, 0.5) });
+    for (const rich of [0.5, 1]) {
+      const t = detritusTint(rich);
+      out.push({ name: `mini band ${band} +soil ${rich}`, rgb: blendOver(g, t, t.a) });
+    }
+  }
+  return out;
+}
+
+/** Every ground the contagious zone can be drawn over, in either view. */
+function hazardBackgrounds() {
+  const out = [...soilBackgrounds(), ...minimapGrounds()];
+  // soilBackgrounds() covers bare and biome ground; the field can also sit on
+  // enriched ground, which is the brightest thing under the water.
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const rich of [0.5, 1]) out.push({ name: `${name} +soil ${rich}`, rgb: soilOver(rgb, rich) });
+  }
+  return out;
+}
+
+/** The field at `sources` overlapping cases, composited onto a background. */
+function hazardOver(bg, sources) {
+  const t = hazardTint();
+  return blendOver(bg, t, independentAny(t.a, sources));
+}
+
+test("the contagious zone reads against every ground either view can draw it on", () => {
+  let worst = { d: Infinity };
+  for (const { name, rgb } of hazardBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(hazardOver(rgb, HAZARD_AUDIT_SOURCES), rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `the zone scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("the zone is neither of the two things this pond already says with a wash", () => {
+  // Biome glow and enriched ground are both claims about *fertility*. A watcher
+  // who reads the zone as either of them learns the opposite of the truth about
+  // where it is safe to feed.
+  let worst = { d: Infinity };
+  for (const phase of [0, 1]) {
+    for (const r of [0, 0.5, 1]) {
+      const ground = overTerrain(veil(phase), r, false);
+      const zone = hazardOver(ground, HAZARD_AUDIT_SOURCES);
+      const rivals = { biome: overBiome(ground), soil: soilOver(ground, 1), halfSoil: soilOver(ground, 0.5) };
+      for (const [rival, rgb] of Object.entries(rivals)) {
+        for (const vision of VISION_MODELS) {
+          const d = deltaE(zone, rgb, vision);
+          if (d < worst.d) worst = { d, vision, rival, where: `season ${phase} terrain ${r}` };
+        }
+      }
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `zone vs ${worst.rival} is only ${worst.d.toFixed(1)} at ${worst.where} (${worst.vision})`
+  );
+});
+
+test("food is still findable inside a plague zone — the constraint that picked the hue", () => {
+  // A mote is a mark drawn *over* this field, so the field is one of its
+  // backgrounds. This is the test that rules out sulphur, and with it the idea
+  // that the zone could wear the same colour as the halo it belongs to.
+  const mote = { r: 90, g: 220, b: 150 }; // rgba(90, 220, 150, 0.55), additive
+  let worst = { d: Infinity };
+  for (const { name, rgb } of hazardBackgrounds()) {
+    const field = hazardOver(rgb, HAZARD_AUDIT_SOURCES);
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(addOver(field, mote, 0.55), field, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a mote on the zone scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("a sulphur zone cannot be made to work, which is why the zone is blue", () => {
+  // Pins the reason, as a squeeze rather than as a single number: at *no*
+  // opacity does sulphur clear both constraints at once. Faint enough to leave
+  // the crop legible, it disappears into the ground; strong enough to be seen,
+  // it swallows the food. The blue that shipped clears both at the audited
+  // level, which the two tests above assert. A suite that only knew the passing
+  // colour would let someone "unify" the palette with the halo and quietly hide
+  // the crop.
+  const sulphur = hslToRgb(70, 100, 55);
+  const mote = { r: 90, g: 220, b: 150 };
+  const grounds = hazardBackgrounds();
+  const score = (rgb, opacity) => {
+    let visible = Infinity;
+    let motes = Infinity;
+    for (const { rgb: bg } of grounds) {
+      const field = blendOver(bg, rgb, opacity);
+      for (const vision of VISION_MODELS) {
+        visible = Math.min(visible, deltaE(field, bg, vision));
+        motes = Math.min(motes, deltaE(addOver(field, mote, 0.55), field, vision));
+      }
+    }
+    return { visible, motes };
+  };
+  for (const opacity of [0.2, 0.3, 0.41, 0.5, 0.55, 0.6, 0.7]) {
+    const s = score(sulphur, opacity);
+    assert.ok(
+      s.visible < MIN_DELTA_E || s.motes < MIN_DELTA_E,
+      `sulphur at ${opacity} cleared both: visible ${s.visible.toFixed(1)}, motes ${s.motes.toFixed(1)}`
+    );
+  }
+});
+
+test("the zone's opacity is the risk arithmetic, not a ramp that resembles it", () => {
+  // n discs at alpha a composite to 1-(1-a)^n; n infectious neighbours at
+  // chance p give a risk of 1-(1-p)^n. Same function, so the drawn opacity is a
+  // strictly increasing function of the real per-tick risk.
+  assert.equal(hazardTint().a, HAZARD_SOURCE_ALPHA);
+  assert.ok(independentAny(HAZARD_SOURCE_ALPHA, HAZARD_AUDIT_SOURCES) >= 0.4);
+  let prev = -1;
+  for (const n of [1, 2, 5, 20]) {
+    const o = independentAny(HAZARD_SOURCE_ALPHA, n);
+    assert.ok(o > prev && o < 1);
+    prev = o;
+  }
+});
+
+// The background either epidemiological mark actually sits on: the water, plus
+// the creature's own additive glow (any hue, any energy, and brighter still
+// where bodies overlap), plus the new hazard field, which a sick creature is by
+// definition standing in.
+function ringBackgrounds() {
+  const out = [];
+  for (const phase of [0, 1]) {
+    for (const sources of [0, 1, HAZARD_AUDIT_SOURCES, 20]) {
+      const water = sources ? hazardOver(veil(phase), sources) : veil(phase);
+      for (const light of [30, 50, 65, 75]) {
+        for (const hue of [0, 40, 68, 120, 200, 260, 320]) {
+          // The glow is a radial gradient from 0.5 at the body's centre to 0 at
+          // three radii out; the marks sit inside that, and overlapping bodies
+          // stack it further.
+          for (const k of [0.1, 0.21, 0.4, 0.6]) {
+            out.push({
+              name: `season ${phase} zone ${sources} body ${hue}/${light} glow ${k}`,
+              rgb: addOver(water, hslToRgb(hue, 80, light), k),
+            });
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Every appearance the sick halo can take on a background, over its throb. */
+function haloAppearances(bg) {
+  const t = sickHaloTones();
+  return [0, 0.5, 1].map((throb) => addOver(bg, t.ring, 0.35 + 0.45 * throb));
+}
+
+test("both epidemiological marks read, on every background either can appear on", () => {
+  const marks = {
+    "sick halo": Object.values(sickHaloTones()),
+    "immune ring": Object.values(immuneRingTones()),
+  };
+  for (const [name, tones] of Object.entries(marks)) {
+    let worst = { d: Infinity };
+    for (const bg of ringBackgrounds()) {
+      for (const vision of VISION_MODELS) {
+        const d = markContrast(tones, bg.rgb, vision);
+        if (d < worst.d) worst = { d, where: bg.name, vision };
+      }
+    }
+    assert.ok(
+      worst.d >= MIN_DELTA_E,
+      `${name} scores only ${worst.d.toFixed(1)} on ${worst.where} (${worst.vision})`
+    );
+  }
+});
+
+test("the marks they replace were invisible — the failure, pinned", () => {
+  // The immune ring was one translucent pale blue at 0.32; the halo was one
+  // additive sulphur at 0.35–0.80. Both were measured against a glow they do not
+  // control, which is the v1.25 predator-core failure exactly. Without these two
+  // assertions the suite would stay green if someone restored either.
+  let worstRing = Infinity;
+  let worstHalo = Infinity;
+  const sulphur = sickHaloTones().ring;
+  for (const bg of ringBackgrounds()) {
+    const ring = blendOver(bg.rgb, { r: 150, g: 205, b: 255 }, 0.32);
+    for (const vision of VISION_MODELS) {
+      worstRing = Math.min(worstRing, deltaE(ring, bg.rgb, vision));
+      for (const throb of [0, 0.5, 1]) {
+        const halo = addOver(bg.rgb, sulphur, 0.35 + 0.45 * throb);
+        worstHalo = Math.min(worstHalo, deltaE(halo, bg.rgb, vision));
+      }
+    }
+  }
+  assert.ok(worstRing < MIN_DELTA_E, `the old immune ring scored ${worstRing.toFixed(1)}`);
+  assert.ok(worstHalo < MIN_DELTA_E, `the old sulphur halo scored ${worstHalo.toFixed(1)}`);
+});
+
+test("the dark tone is the half an additive halo cannot imitate", () => {
+  // Why two tones is the fix and not just a brighter one: everything additive
+  // can only *brighten*, so a mark carrying a dark tone can never be produced by
+  // a glow or a halo, whatever colour it is.
+  const dark = immuneRingTones().rim;
+  let worst = Infinity;
+  for (const bg of ringBackgrounds()) {
+    for (const halo of haloAppearances(bg.rgb)) {
+      for (const vision of VISION_MODELS) worst = Math.min(worst, deltaE(dark, halo, vision));
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `the immune ring's dark tone scores ${worst.toFixed(1)} against a halo`);
+});
+
+test("colour cannot tell sick from immune, which is why the ring is dashed", () => {
+  // The structural finding. An additive halo over a bright body can reach almost
+  // any light colour, and under tritanopia bright sulphur and pale blue are the
+  // same thing. So the bright halves of the two marks collide, both marks need a
+  // dark half, and every dark half resembles every other: the distinction has to
+  // live somewhere colour is not. Geometry is that somewhere, and no vision model
+  // touches it.
+  const pale = immuneRingTones().ring;
+  let worst = Infinity;
+  for (const bg of ringBackgrounds()) {
+    for (const halo of haloAppearances(bg.rgb)) {
+      for (const vision of VISION_MODELS) worst = Math.min(worst, deltaE(pale, halo, vision));
+    }
+  }
+  assert.ok(worst < MIN_DELTA_E, `expected a collision; the closest pair was ${worst.toFixed(1)}`);
+  assert.ok(immuneRing().dash.length > 0, "the immune ring must carry a non-colour cue");
+  assert.ok(sickHalo().dash === undefined, "and the halo must not, or the pair is symmetrical again");
 });

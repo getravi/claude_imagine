@@ -1495,6 +1495,161 @@ the block a query will search, as offsets from the point, and the fraction of
 the disc inside it is a ray-cast away. Its colour ramp is ordered by luminance,
 so it reads the same under every vision model — see the colour audit above.
 
+## The contagious zone: is an epidemic a front or a haze?
+
+Contagion (v1.16) has been drawn one creature at a time since the day it shipped:
+a halo means *this one is sick*. What no surface has ever drawn is the distance
+that actually matters, `infectionRadius` — 22 pixels, five times a creature's own
+body — inside which a susceptible neighbour can catch it. So the pond has shown
+you *who* is ill for eighteen versions and never *where it is dangerous to be*.
+
+v1.34 draws it: one translucent disc per case, in the pond and on the minimap,
+plus the same claim as a number (`Contagious`, the share of the water inside
+somebody's reach) and as a sentence for the screen reader.
+
+### The opacity is the risk
+
+Alpha compositing and independent infection are the same arithmetic. Stack n
+discs of opacity a and the result is 1 − (1 − a)^n opaque; stand in range of n
+infected neighbours, each of which infects you with probability p per tick, and
+your risk is 1 − (1 − p)^n. So the field's opacity is not a ramp that resembles
+the risk, it *is* the risk under a monotone remap, and one function in
+[`src/contagion.js`](../src/contagion.js) serves both.
+
+The audited level is five overlapping cases — a 20.6% chance per tick at the
+default `infectionChance`, which is water you should not be standing in. A single
+case is drawn fainter than the audit bar on purpose: one disc is a hint that
+something is nearby.
+
+### The colour was decided by the food
+
+The zone wanted to be sulphur, to match the halo on the sick creature it belongs
+to. It cannot be. A sweep of the hue wheel against every ground this pond can
+produce — both seasons, the whole terrain ramp with and without contour lines,
+the biome glow, enriched ground at half and full richness, in the pond and in the
+minimap — asked for three things at once:
+
+1. **Visible** against all of them (ΔE ≥ 25, the project's bar).
+2. **Not mistakable** for either of the two fertility claims already down there,
+   the biome glow and enriched ground. A watcher who reads a plague zone as
+   fertile ground learns the opposite of the truth about where to feed.
+3. **Still leaving the food motes legible on top of it** — a mote is a mark drawn
+   *over* this field, so the field is one of its backgrounds.
+
+Every colour that clears all three is blue: hue 210–250, and nothing else in the
+wheel. Sulphur clears the first two and fails the third at every opacity — faint
+enough to leave the crop legible it disappears into the ground, strong enough to
+see it swallows the crop. A mark and the field it belongs to could not share a
+hue here, and the thing standing between them was the crop.
+
+### The two marks of the epidemic had never been measured
+
+The v1.25 audit swept the canvas, v1.26 the stylesheet. Neither looked at the
+sick halo or the immune ring, and both fail:
+
+| mark, as drawn before v1.34 | worst ΔE | where |
+| --- | --- | --- |
+| Immune: pale blue ring, 32% alpha | **0.2** | protanopia, over a bright glow |
+| Sick: sulphur halo, additive, 35–80% | **11.0** | protanopia, over a bright glow |
+
+This is the predator-core failure of v1.25 repeated exactly: a translucent mark
+drawn over the creature's own additive glow is measured against a background it
+does not control, and the glow can be any hue at any lightness — brighter still
+where two bodies overlap. The immune ring was invisible. The halo was under the
+"different colour at a glance" line.
+
+Both are opaque and two-toned now — a bright ring with a dark hairline outside
+it, the trick subtitles burned into film use — because a mark carrying a very
+light *and* a very dark tone cannot be swallowed by any background, since no
+background is close to both. Worst case over every background either can appear
+on, including the new zone: **45.5** for the halo, **41.8** for the ring.
+
+And then the finding with no colour in it. Colour cannot tell the two states
+apart. An additive halo can reach almost any bright colour, and under tritanopia
+bright sulphur and pale blue are the same thing — measured, **ΔE 0.0**. Both
+marks need a dark tone, and every dark tone resembles every other. So the
+distinction is carried by geometry, which no vision model touches: **the halo is
+continuous and the immune ring is dashed.** What the dark half *does* buy is a
+guarantee of a different kind — nothing additive can imitate it, because adding
+light can only brighten (37.2 at worst against any halo appearance).
+
+### Front or haze? The measurement
+
+With the zone drawn, the whole-pond question becomes askable: does an epidemic
+sweep across the water as a front, or does it hang over all of it at once?
+
+The zone's **area per case** answers it. If transmission is local, cases sit
+beside the cases that produced them, their discs overlap, and the zone is *small*
+for the number of cases in it. The control is not "no disease" — by the v1.27
+rule, a feature that changes *where* things are needs an arm that puts them
+somewhere else at random. So: the same number of cases, sprinkled over the same
+living population at random. That holds prevalence and the crowd's own clumping
+fixed and removes only what transmission adds. A second arm scrambles among the
+*susceptible* only, in case the pond's susceptibles are themselves clustered
+(newborns do appear beside their parents).
+
+Twelve seeds, 9,000 ticks, sampled every 100 ticks whenever at least five cases
+were live:
+
+| | area per case |
+| --- | --- |
+| Real epidemic | 2.02 × 10⁻³ of the pond |
+| Scrambled among all the living | 2.51 × 10⁻³ |
+| Scrambled among the susceptible only | 2.50 × 10⁻³ |
+
+**Ratio 0.804 ± 0.032 (sd across seeds), below 1 in 11 of 11 seeds that produced
+an epidemic.** The effect is six times the between-seed spread, and the sharper
+control moves it by half a percent, so this is transmission and not the shape of
+the susceptible pool. Eleven of twelve: seed 23 never reached five simultaneous
+cases in 9,000 ticks, and reporting that is cheaper than pretending twelve worlds
+answered.
+
+So: **clustered, but only by a fifth — a haze with structure in it, not a front.**
+And the reason is the diagnosis v1.23 already wrote down for terrain. `maxSpeed`
+and `maxAge` together say a creature crosses this world about a dozen times in
+its life, so nothing spatial has long to accumulate before mixing erases it. A
+pathogen with a 22-pixel reach in a 900-pixel pond is a local rule in a
+well-mixed world: it leaves a measurable fingerprint on where the cases are and
+it cannot hold a line.
+
+The other number worth having, because it is the one a watcher sees: at peak the
+zone covers **16.2% of the water at 39% prevalence** (mean over the eleven). Two
+fifths of the pond ill, and five sixths of the water still clean — which is what
+the picture looks like, and is only obvious once there is a picture.
+
+### Reproducing it
+
+```js
+// node this from the repo root: is the epidemic clustered, or is that the crowd?
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { hazardShare } from "./src/contagion.js";
+import { RNG } from "./src/rng.js";
+
+for (const seed of [1, 7, 64, 88, 101, 137, 314, 512, 777, 2024, 4242]) {
+  const w = new World(makeConfig({ seed, disease: true, predation: true, seasons: true }));
+  const shuffle = new RNG(seed ^ 0x5f3759df); // a stream of its own: measuring must not perturb
+  let real = 0, scrambled = 0, n = 0;
+  for (let t = 0; t < 9000; t++) {
+    w.step();
+    if (t % 100) continue;
+    const cases = w.creatures.filter((c) => c.infected).length;
+    if (cases < 5) continue;
+    const idx = w.creatures.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(shuffle.next() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    const fake = w.creatures.map((c) => ({ x: c.x, y: c.y, infected: false }));
+    for (let i = 0; i < cases; i++) fake[idx[i]].infected = true;
+    real += hazardShare(w.creatures, w.config) / cases;
+    scrambled += hazardShare(fake, w.config) / cases;
+    n++;
+  }
+  console.log(seed, (real / scrambled).toFixed(3));
+}
+```
+
 ## Determinism and reproducibility
 
 Vivarium is fully **deterministic**: a given `(seed, parameters)` pair produces

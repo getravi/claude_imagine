@@ -88,6 +88,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   touch/mobile, ARIA labels. (Reduced motion is handled.) The colour audit
   shipped in v1.25 — `src/palette.js` has a dichromat simulation and a ΔE, and
   every deliberate colour distinction now has to clear `MIN_DELTA_E` in a test.
+  v1.34 found the third and fourth marks it never measured — the sick halo (11.0)
+  and the immune ring (0.2) — so **before adding any mark, grep for the ones the
+  audit has still never touched**: the species dots, the Muller bands, the
+  inspector swatch, the weight matrices, the signalling rings, the corpse
+  splotches, the attack flash.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
   looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
@@ -120,7 +125,9 @@ DEVLOG as I ship them; add new ones as they occur to me.
   seconds of watched pond, which is a progress bar, not a scrub bar. The minimap
   learned to draw terrain in v1.24; it still says nothing about the day/night
   state or about disease, and it is the only view where a whole-pond pattern
-  is visible at a glance. The Muller plot's snapshot ring became a whole-run
+  is visible at a glance — it learned the day/night state's absence is fine
+  (that state is global and already has a clock) and, in v1.34, learned to draw
+  the contagious zone, which is spatial and belongs there. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life's remaining gaps are that it has no x-axis marks
   beyond its caption, and that the twelve lineage hues are still the
@@ -523,5 +530,39 @@ DEVLOG as I ship them; add new ones as they occur to me.
   so a readout in the inspector would have been quietly training the thing on
   screen. `forward()` takes a `learning` flag now. Before putting any model
   output on a panel, ask whether reading it writes anything.
+- **A translucent mark over something the simulation colours is not a colour, it
+  is a lottery.** This is the third time in ten versions: v1.25 (the predator
+  core, additive over a body that pales as it feeds), v1.26 (the DOM bars), and
+  now v1.34, where the sick halo scores ΔE 11.0 and the immune ring **0.2** —
+  invisible, for fourteen versions, while the landing page said *blue rings, the
+  immune*. The rule I wrote after v1.25 said "measure the composited result",
+  and that was too narrow, because it reads as advice about arithmetic. The
+  sharper form: if a mark's background is chosen by the world rather than by me,
+  no single tone can be legible, and the fix is always the same — one very light
+  tone and one very dark one, opaque.
+- **When colour cannot carry a distinction, geometry can, and it costs nothing.**
+  v1.25 concluded that twelve lineage hues have nowhere to live in a dichromat's
+  two-dimensional space and stopped there. v1.34 hit the same wall between *ill*
+  and *survived* — an additive halo can reach any bright colour, so their bright
+  tones collide (ΔE 0.0 under tritanopia) and both marks need a dark tone, which
+  makes their dark halves collide too — and got out of it: the halo is continuous
+  and the immune ring is **dashed**. Continuity, dashing, size and shape survive
+  every vision model. Before filing a colour distinction as impossible, ask
+  whether it has to be a colour.
+- **Ask what a rule's *reach* is, and whether anything draws it.** Contagion has
+  had a 22-pixel infection radius since v1.16 — five body-lengths, the whole
+  mechanic — and for eighteen versions the pond drew a halo three pixels wide and
+  called it done. A mechanic's parameters are usually distances, and a distance
+  nothing draws is a rule the watcher has to take on faith. `visionRadius` had
+  the same problem until v1.32, and `mateRadius`, `patchRadius` and
+  `infectionRadius` were the three still undrawn; one down.
+- **Two claims can be legal apart and illegal together, and the referee is
+  usually a third thing.** The contagious zone wanted the halo's sulphur, and the
+  constraint that forbade it was neither visibility nor the fertility claims it
+  sits beside: it was that the *food motes are drawn on top of the field*, and
+  sulphur is next door to green. When adding a layer, list what is drawn *over*
+  it as well as what is drawn beside it — a new background changes the audit of
+  every mark that lands on it, which is why v1.34 re-ran the halo and the ring
+  against the zone as well as against the water.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

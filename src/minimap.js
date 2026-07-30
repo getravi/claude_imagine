@@ -20,7 +20,8 @@
 // default view rather than drawing a frame around everything.
 
 import { wrap } from "./vec.js";
-import { minimapPredatorMark, detritusTint } from "./palette.js";
+import { minimapPredatorMark, detritusTint, hazardTint } from "./palette.js";
+import { hazardSources } from "./contagion.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
 export const MINIMAP_WIDTH = 180;
@@ -260,6 +261,23 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
     const t = detritusTint(r.richness);
     ctx.fillStyle = `rgba(${t.r}, ${t.g}, ${t.b}, ${t.a.toFixed(3)})`;
     ctx.fillRect(r.x, r.y, r.w, r.h);
+  }
+
+  // The contagious zone, over the ground and under the living, exactly as the
+  // pond draws it. This is the view the field was worth adding for: whether an
+  // epidemic is a front crossing the water or a haze over all of it is a
+  // whole-pond question, and this is the only surface where a whole-pond pattern
+  // is visible at a glance. Wrapped, because the minimap has four real edges and
+  // a zone straddling a seam covers ground on both sides of it.
+  const sources = hazardSources(world.creatures);
+  if (sources.length) {
+    const t = hazardTint();
+    ctx.fillStyle = `rgba(${t.r}, ${t.g}, ${t.b}, ${t.a})`;
+    const hazardRadius = config.infectionRadius * s;
+    for (const src of sources) {
+      const p = worldToMinimap(src.x, src.y, layout, config);
+      discWrapped(ctx, p.x, p.y, hazardRadius, W, H);
+    }
   }
 
   // Food and creatures are single pixels here, so they are squares rather than

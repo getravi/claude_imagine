@@ -7,7 +7,8 @@
 
 import { wrapDelta } from "./vec.js";
 import { Camera } from "./camera.js";
-import { predatorMark, detritusTint } from "./palette.js";
+import { predatorMark, detritusTint, hazardTint, sickHalo, immuneRing } from "./palette.js";
+import { hazardSources } from "./contagion.js";
 
 export class Renderer {
   /**
@@ -132,6 +133,27 @@ export class Renderer {
     // record of events rather than a property of the place. Nothing at all in a
     // world without detritus.
     if (world.detritus) this._drawDetritus(ctx, world.detritus, cam);
+
+    // The contagious zone: one disc of `infectionRadius` per sick creature, so
+    // the reach of the pathogen is drawn rather than implied. Where discs
+    // overlap the layers compound, and they compound at exactly the rate the
+    // risk does (see contagion.js), so the brightest water is the water it is
+    // most dangerous to stand in. Drawn over the ground and under everything
+    // alive, because it is a property of the water rather than of anything in
+    // it. The source list is empty whenever nothing is sick — which is every
+    // world with contagion off — so a healthy pond draws what it always did.
+    const sources = hazardSources(world.creatures);
+    if (sources.length) {
+      const t = hazardTint();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = `rgba(${t.r}, ${t.g}, ${t.b}, ${t.a})`;
+      for (const s of sources) {
+        const p = cam.nearest(s.x, s.y);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, cfg.infectionRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     // Corpses: dim maroon splotches that fade as they rot. Drawn under the food
     // and creatures. Nothing to draw when scavenging is off (the list is empty).
@@ -376,26 +398,29 @@ export class Renderer {
       ctx.stroke();
     }
 
-    // Contagion: a sick creature wears a pale sulphur halo that throbs like a
-    // fever, and a survivor keeps a thin cool ring for the immunity it earned.
-    // Both flags are permanently false unless contagion is switched on, so this
-    // costs an untaken branch in every other world. The throb is motion, so it
-    // holds still when reduced motion is asked for.
+    // Contagion: a sick creature wears a sulphur halo that throbs like a fever,
+    // and a survivor keeps a cool ring for the immunity it earned. Both flags
+    // are permanently false unless contagion is switched on, so this costs an
+    // untaken branch in every other world. The throb is motion, so it holds
+    // still when reduced motion is asked for.
+    //
+    // Both marks used to be single translucent tones drawn additively over the
+    // creature's own glow, and both were near-invisible for it (ΔE 11.0 and 0.2
+    // in their worst cases — palette.js has the audit). They are opaque and
+    // two-toned now, a bright ring with a dark hairline outside it, so no
+    // background can swallow either. Colour cannot separate the two states from
+    // each other under every vision model, so the *geometry* does: the halo is
+    // continuous and the immune ring is dashed.
+    ctx.globalCompositeOperation = "source-over";
     if (c.infected) {
       const throb = this.reducedMotion ? 0.5 : (Math.sin(c.age * 0.18) + 1) / 2;
-      ctx.globalCompositeOperation = "lighter";
-      ctx.strokeStyle = `hsla(68, 85%, 62%, ${(0.35 + 0.45 * throb).toFixed(2)})`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(0, 0, r + 3 + throb, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalCompositeOperation = "source-over";
+      const mark = sickHalo();
+      this._twoToneRing(ctx, r + 3 + throb, mark);
     } else if (c.immune) {
-      ctx.strokeStyle = "rgba(150, 205, 255, 0.32)";
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.arc(0, 0, r + 2.4, 0, Math.PI * 2);
-      ctx.stroke();
+      const mark = immuneRing();
+      ctx.setLineDash(mark.dash);
+      this._twoToneRing(ctx, r + 2.4, mark);
+      ctx.setLineDash([]);
     }
 
     // Signalling: once the channel has listeners, the third motor output stops
@@ -434,6 +459,28 @@ export class Renderer {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * A ring in two tones: a dark hairline laid down slightly wider, then the
+   * bright tone over it. One stroke of each, so whichever tone the background
+   * happens to resemble, the other is still there — the reason both
+   * epidemiological marks survive a glow of any colour. Honours whatever line
+   * dash is set, which is what makes the immune ring tell itself from the halo.
+   *
+   * @param {{ring:string, rim:string, width:number}} mark
+   */
+  _twoToneRing(ctx, radius, mark) {
+    ctx.strokeStyle = mark.rim;
+    ctx.lineWidth = mark.width + 1.1;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = mark.ring;
+    ctx.lineWidth = mark.width;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   _drawSelection(ctx, c, world) {
