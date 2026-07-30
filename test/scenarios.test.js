@@ -80,3 +80,53 @@ test("each scenario delivers the character it advertises", () => {
   for (const c of augment.creatures) if (c.genome.complexity && c.genome.complexity.nodes > 0) grew = true;
   assert.ok(grew, "Augmented Minds should grow hidden neurons");
 });
+
+// The Lay of the Land makes a claim about *why* its pond ends up where it does:
+// not because anything avoids rough ground (nothing can perceive it) but because
+// the ridges grow nothing. v1.23 established that in general over four seeds
+// (docs/SCIENCE.md, "Terrain: why a cost is not a landscape"); this pins it on
+// the one seed the scenario ships, where the control happens to be clean. On the
+// default seed 314 the terrain-off arm already reads -0.034, because that world's
+// biomes sit in ground the roughness field also calls flat — settling you would
+// get with the mechanic switched off. Here there is no such coincidence to lean on.
+test("The Lay of the Land settles into its basins, and barrenness is why", () => {
+  const lay = SCENARIOS.find((s) => s.id === "lay");
+  assert.ok(lay, "the ground scenario should exist");
+
+  // Time-averaged: the instantaneous bias over a few dozen creatures swings a
+  // lot, and what the blurb promises is the run's tendency, not any one tick.
+  const settling = (over) => {
+    const world = new World(makeConfig(over));
+    let sum = 0;
+    let n = 0;
+    for (let i = 1; i <= 4000; i++) {
+      world.step();
+      if (i > 400 && i % 20 === 0) {
+        sum += world.stats.groundBias;
+        n++;
+      }
+    }
+    return { world, bias: sum / n };
+  };
+
+  const shipped = settling(lay.over);
+  assert.ok(
+    shipped.bias < -0.04,
+    `The Lay of the Land should settle into the flats (bias ${shipped.bias.toFixed(4)})`
+  );
+  assert.ok(
+    shipped.world.stats.soilShare > 0.05,
+    `its dead should be feeding its crop (soil share ${shipped.world.stats.soilShare.toFixed(3)})`
+  );
+  assert.ok(shipped.world.stats.kills > 0, "The Lay of the Land should evolve hunting");
+
+  // The control arm: ridges still cost 2.6x to cross, but they grow food like
+  // anywhere else. Measured -0.013 against the shipped arm's -0.062 at 4,000
+  // ticks, and -0.003 against -0.111 at 20,000.
+  const taxOnly = settling({ ...lay.over, terrainBarrenness: 0 });
+  assert.ok(
+    Math.abs(shipped.bias) > 3 * Math.abs(taxOnly.bias),
+    `barrenness should do the settling, not the movement cost ` +
+      `(shipped ${shipped.bias.toFixed(4)}, tax-only ${taxOnly.bias.toFixed(4)})`
+  );
+});

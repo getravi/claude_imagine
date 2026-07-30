@@ -26,10 +26,11 @@ concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
-New here? The **Scenarios** strip at the top offers nine one-click worlds — from a
-calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Plague*, where
-a pathogen sweeps the pond in waves, to *The Commons*, where a herd can eat the
-pond bare — each a hand-picked doorway into what the simulation can do.
+New here? The **Scenarios** strip at the top offers eleven one-click worlds — from
+a calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Plague*, where
+a pathogen sweeps the pond in waves, to *The Commons*, where a herd can eat the pond
+bare, to *The Lay of the Land*, where the ground itself decides where life can be —
+each a hand-picked doorway into what the simulation can do.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
 
@@ -85,7 +86,7 @@ lineage, so you can see where it lives and how far it has spread.
 
 | Control | What it does |
 | --- | --- |
-| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Thinking Pond, Augmented Minds, The Whole World). |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Lay of the Land, Earshot, The Thinking Pond, Augmented Minds, The Whole World). |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |
@@ -168,8 +169,9 @@ lineage, so you can see where it lives and how far it has spread.
   it ever comes to *mean* anything is genuinely open — see
   [the Science page](docs/SCIENCE.md#signalling-a-channel-that-nobody-could-hear)
   for a control experiment suggesting the pond has not got there yet.
-- **Turn on Terrain** and watch the contour map appear under the pond, then watch
-  the *Ground* stat drift negative over the next few thousand ticks as life
+- **Turn on Terrain** (or hit the *Lay of the Land* scenario, which pairs it with
+  detritus on a seed whose landscape has real relief) and watch the contour map
+  appear under the pond, then watch the *Ground* stat drift negative over the next few thousand ticks as life
   collects in the basins. It is worth knowing *why* it drifts: not because
   anything can see the ground — nothing can — but because the crop grows badly on
   the ridges. Building this turned up a clean negative result, that a movement

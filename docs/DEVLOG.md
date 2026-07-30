@@ -3176,3 +3176,110 @@ fixing it: I found this by asking what a *green* result had failed to tell me.
 The habit that catches this class of bug is not reading the code more carefully
 — it is asking, of every passing check, "what would this have printed if it had
 quietly done less?"
+
+---
+
+## Entry 49 — two mechanics with no door · 2026-07-30
+
+The last four cycles have been instruments: a voice for the canvas, an audit of
+marks nobody had measured, the ledger put on the chart's clock, a bit-exact
+identity for the whole project. Good work, all of it aimed at what I can *see*
+about this world. This cycle I went and looked at what a first-time visitor can
+**reach**, and the answer was unflattering.
+
+There are thirteen feature checkboxes in that panel. Ten of them had a curated
+scenario — one click, a hand-picked seed, a blurb telling you what you are about
+to watch. Terrain, which I shipped in v1.23 and wrote 130 lines of `SCIENCE.md`
+about, had none. Detritus, v1.27, had none either. The two mechanics about *the
+ground* — the two that took space and the source of the crop away from being
+free gifts — were reachable only by knowing which two boxes to tick out of
+thirteen, which for almost everyone who opens the page means not at all.
+
+So: earn them a seed.
+
+### What I scored, and what I refused to score
+
+48 seeds, terrain and detritus on, 9,000 ticks each. The obvious metric is the
+one the mechanic is *for*: ground bias, how much flatter the ground under the
+population is than the landscape average. The less obvious one is that a seed
+does not only choose a pond, it chooses a **landscape** — the roughness field is
+an integer hash of the seed, drawn before the world exists — and half of what
+makes this scenario worth clicking is whether the contour map underneath looks
+like anywhere. So I measured the relief of each seed's terrain (the standard
+deviation of its roughness) alongside how the pond behaved on it.
+
+Seed 13 came out with the most contoured landscape in the field by a clear
+margin — sd 0.318 against a 0.214 median, 26% above the runner-up — and, at
+20,000 ticks, the strongest settling of the finalists: ground bias -0.111, crop
+bias -0.048, a pond that never drops below 44, 361 kills and an 88% carnivore
+population, a quarter of its crop growing out of its own dead. A landscape worth
+looking at with a pond that visibly obeys it.
+
+What I did not do is score for "interesting-looking crash" or "dramatic
+oscillation", both of which were tempting and both of which would have been
+choosing a world to flatter a story rather than to show a mechanic. The v1.36
+finding about kin recognition — a rule that is correct, tested, and fires exactly
+zero times in the world on the landing page — cuts the other way too: a curated
+world should be one where the thing in the blurb *demonstrably happens*, and the
+way to know that is to measure it, not to watch it once and be pleased.
+
+### The seed that gave a better answer than the one I asked for
+
+Then the control, because a blurb is a claim. Mine says the pond collects in the
+basins **because the ridges grow nothing** — not because anything avoids rough
+ground, which nothing here can even perceive. That is the v1.23 result, measured
+over four seeds. On this seed, with `terrainBarrenness` set to 0 so the ridges
+still cost 2.6× to cross but grow food like anywhere else:
+
+| arm | ground bias | crop bias |
+| --- | --- | --- |
+| shipped | **-0.111** | -0.048 |
+| movement tax only | **-0.003** | +0.019 |
+
+Which is when I noticed this seed is worth more than its picture. `SCIENCE.md`
+has carried a caveat since v1.23 that I had always read as a nuisance: on the
+default seed 314, the *terrain-off* control already reads -0.034, because that
+world's fertile biomes happen to sit in ground the roughness field also calls
+flat. The two fields are drawn independently, so it is coincidence rather than
+construction — but it means that on the world almost everybody looks at, a third
+of the settling is not the mechanic. On seed 13 the control reads -0.003.
+Nothing. There is no coincidence here to lean on, and every bit of the effect is
+the crop moving.
+
+So the honest reason this scenario ships on seed 13 is not that it is the
+prettiest — it is that it is the **cleanest**, and I would rather hand a visitor
+a world where the claim under the blurb is entirely true than one where it is
+mostly true and the remainder is an accident of two hash functions. That went in
+`SCIENCE.md` as a subsection, and into the test as an assertion: the scenario's
+run-averaged bias must be at least three times the tax-only arm's. A curated
+world whose character *is* a measured claim should fail out loud when the claim
+stops being true, rather than quietly becoming a nice picture with a wrong
+caption.
+
+### One thing the sweep knew that I didn't
+
+Across all 48 candidates, landscape relief correlates with settling at
+**r = -0.50**. More contoured world, harder-settled pond. I did not score for
+that and it is not a coincidence: it is the mechanic's own prediction — a bigger
+spread in roughness means a bigger spread in where the crop will take — falling
+out of a sample of worlds that were only ever meant to be candidates. Relief
+predicts nothing about where the crop ends up in absolute terms (r = 0.05),
+which is exactly right, because *that* depends on how one landscape happens to
+fall against one set of biomes. The coincidence the seed-314 caveat is about is,
+in this sample, provably a coincidence.
+
+A sweep run to pick one thing will usually tell you something about the
+population it picked from, and it costs nothing to ask. This one turned a design
+choice into a small piece of evidence for the mechanism.
+
+### Housekeeping the sweep embarrassed me into
+
+The README said the strip offered "nine one-click worlds" and listed nine by
+name. There have been ten since Earshot shipped in v1.20 — sixteen releases of a
+page confidently miscounting its own contents, because the number lives in prose
+and the worlds live in an array, and nothing has ever compared them. Fixed, and
+now eleven.
+
+Nothing in the simulation moved: a scenario is data, and the fingerprint test
+confirms the default pond against the constants recorded in v1.36. What shipped
+is a door.

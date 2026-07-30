@@ -826,6 +826,39 @@ ground also refuses to grow anything, and that difference is the whole effect.
 The comparison is pinned as a test (`test/terrain.test.js`) so it cannot quietly
 stop being true.
 
+### A seed where the control reads nothing at all
+
+The caveat above — that seed 314's terrain-off arm already reads -0.034, because
+its biomes happen to sit where the roughness field is flat — is the reason a
+single seed cannot carry this claim. It also raises an obvious question: is there
+a seed where the coincidence is *absent*, so that the whole of the settling is
+the mechanic's doing?
+
+A 48-seed sweep (terrain and detritus on, 9,000 ticks, scored on relief,
+settling and a pond that survives) says yes, and picked the world that ships as
+the **Lay of the Land** scenario. On seed 13, over 20,000 ticks:
+
+| arm | ground bias | crop bias | mean population |
+| --- | --- | --- | --- |
+| shipped (2.6x cost, 0.85 barrenness) | **-0.111** | -0.048 | 131 |
+| movement tax only (barrenness 0) | **-0.003** | +0.019 | 158 |
+
+The tax-only arm is the same number the four-seed sweep produced, and here it is
+not competing with any accidental alignment: this world settles because the
+ridges grow nothing, full stop. It is the cleanest single-seed demonstration of
+the result in the repository, which is why the scenario ships on it rather than
+on a prettier world with a muddier control.
+
+The sweep turned up one thing worth recording beyond the choice. A seed fixes
+the landscape — the field is an integer hash of it, drawn before the world
+exists — and across the 48, the landscape's **relief** (the standard deviation of
+roughness, 0.214 median) correlates with settling at **r = -0.50**. A more
+contoured world settles its pond harder, which is what the mechanic predicts and
+is not something the seed choice was scored to produce. Relief does not predict
+where the *crop* ends up (r = 0.05): that is set by how a particular landscape
+lands against a particular set of biomes, and there the coincidence really is a
+coincidence.
+
 ### What this is and isn't
 
 The pond ending up in its basins is **not** the creatures learning to avoid

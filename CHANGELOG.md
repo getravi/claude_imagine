@@ -4,6 +4,54 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.37.0] — 2026-07-30
+
+Terrain shipped in v1.23 and detritus in v1.27, and neither ever got a door. Ten
+curated worlds, and the two mechanics about *the ground* were reachable only by
+finding two checkboxes — which, on a page with thirteen of them, means most
+visitors have never seen either. This release earns a seed for them.
+
+### Added
+
+- **🏔️ The Lay of the Land**, an eleventh curated scenario: rough ground that is
+  expensive to cross and nearly barren, plus a pond whose dead enrich the hollows
+  they fall in. Seed 13 was earned by a 48-seed sweep scored on the two things
+  such a world needs — a landscape with visible relief and a pond that
+  demonstrably settles into it. Its terrain is the most contoured of the field
+  (roughness sd 0.318 against a 0.214 median, 26% above the runner-up); over
+  20,000 ticks it holds a ground bias of -0.111 and a crop bias of -0.048, never
+  drops below 44 creatures, evolves a working predator lineage (361 kills, 88%
+  carnivore), and grows a quarter of its crop out of its own dead.
+- **docs/SCIENCE.md: "A seed where the control reads nothing at all"** — why this
+  seed rather than a prettier one. The terrain write-up has carried a caveat
+  since v1.23: on the default seed 314 the *terrain-off* control already reads
+  -0.034, because that world's biomes happen to sit in ground the roughness field
+  also calls flat, so some of its settling is coincidence rather than mechanism.
+  On seed 13 the movement-tax-only arm reads **-0.003** — nothing — against the
+  shipped arm's -0.111. Every bit of the settling in this world is the barren
+  ridges moving the crop, which makes it the cleanest single-seed demonstration
+  of the v1.23 result in the repository.
+- **A test that pins the claim the blurb makes**, not just the world's existence:
+  the scenario's run-averaged ground bias must be at least three times the
+  tax-only arm's on the same seed. A curated world whose *character* is a
+  measured claim should fail out loud if the claim stops being true.
+
+### Notes
+
+- **The seed chooses how strong the mechanic is, not only how it looks.** Across
+  the 48 sweep candidates, a landscape's relief correlates with settling at
+  **r = -0.50** — a more contoured world settles its pond harder. The sweep was
+  not scored for that, and it is the mechanic's own prediction falling out of a
+  sample of worlds. Relief does not predict where the crop lands (r = 0.05);
+  that depends on how one landscape falls against one set of biomes, which is
+  exactly the coincidence the paragraph above is about.
+- Nothing in the simulation changed. A scenario is data — a seed and a set of
+  overrides — so every existing world is bit-for-bit what it was, and
+  `test/fingerprint.test.js` says so against the recorded v1.36 constants.
+- README's scenario count had been stale since Earshot shipped in v1.20: it said
+  nine worlds when there were ten, and the table listed nine names with Earshot
+  missing. Both fixed.
+
 ## [1.36.1] — 2026-07-30
 
 ### Changed

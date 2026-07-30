@@ -89,7 +89,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   *ground* shipped in v1.33 — and found nothing, for a reason worth reading
   before adding another sense: see the lesson below.)
 - New **curated scenarios** on hand-picked, *earned* seeds (score candidates, like
-  the v1.9 scenario sweep — never slap `seed: 1` on a blurb).
+  the v1.9 scenario sweep — never slap `seed: 1` on a blurb). v1.37 gave terrain
+  and detritus their first door on seed 13, chosen because its *control* arm
+  reads -0.003 where the default seed's reads -0.034 — **score a candidate on
+  whether its control is clean, not only on how the shipped arm looks.** Still
+  doorless: `groundSense`, `exactVision`, `kinRecognition` (which v1.36 measured
+  as mute on most seeds — its doorway would have to be seed 23 or nothing), and
+  `dayNightCycle` × `disease` together. And the count of scenarios lives in
+  README prose while the scenarios live in an array; it was wrong for sixteen
+  releases. Anything stated as a number in prose about a collection in code will
+  drift.
 - **Visual & rendering polish:** trails, better creature/energy shading,
   prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap
   that finishes it in v1.19.0.)

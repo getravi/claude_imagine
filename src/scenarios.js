@@ -83,6 +83,31 @@ export const SCENARIOS = [
     over: { seed: 137, foodRegrowth: true, predation: false, seasons: true },
   },
   {
+    id: "lay",
+    icon: "🏔️",
+    name: "The Lay of the Land",
+    blurb:
+      "Ridges cost more to cross and grow almost nothing; the dead enrich the hollows they fall in. Nothing can see the landscape — the pond collects in the basins because that is where the crop is.",
+    // Seed 13 was earned by a 48-seed sweep scored on the two things this world
+    // is for: a landscape with visible relief, and a pond that demonstrably
+    // settles into it. Its terrain is the most contoured of the field
+    // (roughness sd 0.318 against a 0.214 median, 26% above the runner-up), and
+    // over 20,000 ticks it holds the strongest settling of the finalists —
+    // ground bias -0.111, crop bias -0.048 — while never dropping below 44
+    // creatures and evolving a working predator lineage (361 kills, 88%
+    // carnivore) with a quarter of its crop growing out of its own dead.
+    //
+    // What makes it the *honest* demonstration rather than merely the prettiest
+    // one is the control. SCIENCE.md notes that on the default seed 314 the
+    // terrain-off arm already reads -0.034, because that world's biomes happen
+    // to sit in ground the terrain field also calls flat — settling you would
+    // see with the mechanic switched off. On seed 13 the movement-tax-only arm
+    // (`terrainBarrenness: 0`) reads **-0.003**: nothing. Every bit of the
+    // settling here is the barren ridges moving the crop, which is exactly what
+    // the blurb claims and what v1.23 measured.
+    over: { seed: 13, terrain: true, detritus: true, predation: true, seasons: true },
+  },
+  {
     id: "earshot",
     icon: "📣",
     name: "Earshot",
