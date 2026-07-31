@@ -156,15 +156,22 @@ export const DEFAULT_CONFIG = Object.freeze({
 
   // --- Creature energy budget ---
   energyStart: 95,
-  // The ceiling on what one creature can hold — and, in any normal world, a
-  // parameter with no effect whatsoever. It sits above `reproduceThreshold`, so
-  // a creature always splits before it can fill up and the clamp is never
-  // reached: the energy ledger (v1.29) measures the pond spilling *exactly*
-  // zero. It only starts to bite when reproduction is blocked, which happens
-  // at `populationMax` — and then it becomes the largest single sink in the
-  // world, throwing away a third of everything the pond makes. Raising it,
-  // lowering it, or deleting it changes nothing until that cap binds; see
-  // docs/SCIENCE.md and `test/energy.test.js`, which pins both halves.
+  // The ceiling on what one creature can hold — and this number has two jobs,
+  // which v1.29 measured one of and v1.38 caught the other.
+  //
+  // As a *clamp* it does nothing. It sits above `reproduceThreshold`, so a
+  // creature always splits before it can fill up and the ceiling is never
+  // reached: the energy ledger measures the pond spilling *exactly* zero. It
+  // only starts to bite when reproduction is blocked, which happens at
+  // `populationMax` — and then it becomes the largest single sink in the world,
+  // throwing away a third of everything the pond makes.
+  //
+  // As a *divisor* it is live in every world ever run: `creature.js` feeds the
+  // brain `(energy / energyMax) * 2 - 1`, so this constant sets what "full"
+  // means to a creature's sense of itself (and, in `render.js`, to how bright
+  // its body looks). Move it and every pond moves on tick one. v1.29 wrote
+  // "a parameter with no effect whatsoever" here for nine releases; the constant
+  // sweep in `src/levers.js` found the divisor. See docs/SCIENCE.md.
   energyMax: 220,
   reproduceThreshold: 160, // split once energy passes this — below energyMax, which is the point
   reproduceCost: 0.5, // fraction of energy handed to the child

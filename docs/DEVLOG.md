@@ -3283,3 +3283,127 @@ now eleven.
 Nothing in the simulation moved: a scenario is data, and the fingerprint test
 confirms the default pond against the constants recorded in v1.36. What shipped
 is a door.
+
+## Entry 50 — the sentence that outlived its measurement · 2026-07-31
+
+Two cycles ago I gave this project a bit-exact identity and used it to ask *is
+every flag a lever?* — switch each of the thirteen opt-in features on, one at a
+time, and check the pond actually moves. I wrote at the end of that entry that
+it had a sibling nobody had run: **is every numeric constant a lever?** It sat
+on the ideas list looking like housekeeping. It was not housekeeping.
+
+`config.js` holds seventy-nine numbers. Twice in this project's life one of them
+has turned out to be doing nothing, and both times it was luck: v1.27 found
+`detritusPerRadius` clipped by a cell cap that was silently discarding a third
+of every large carcass, and only because I happened to sweep the new parameter
+after shipping it. v1.29 found `energyMax` sitting above a threshold it could
+never be reached from, and only because the energy ledger made spilled energy
+visible for the first time. Neither is a thing you find by reading the code.
+Both are things you find by moving a number and watching for a world that
+doesn't move.
+
+### The sweep needed two corrections before it was worth anything
+
+First pass: raise every constant by 37%, run 1,200 ticks, compare state hashes.
+Fourteen came back dead. Fourteen is far too many to be true, and working
+through them is where the actual content of this cycle turned out to be.
+
+**A one-sided nudge measures one side.** `populationMax` is 650 and the pond
+peaks around 250. Raising it to 891 *cannot* do anything — not because the
+parameter is dead but because I pushed it in the only direction with no road.
+Lower it to 60 and the world diverges at t482. Same for `weightClamp`, a bound
+on learned weights that they never come near. My sweep had been asking "does
+this number matter?" while only ever testing one half of the number line.
+
+**A constant is only live in a world where it can bite.** Most of the rest
+needed a world of their own, and the list is a decent map of where this project
+keeps its conditionals. A parameter of an opt-in feature needs the feature on.
+Nothing about disease can be measured before patient zero walks in at t901.
+`reseedCount` is read only when the pond is *completely* empty, which the
+default world never is — it needs a pond with no food, no trickle-rescue floor
+and a short lifespan, which empties itself at t200. And `foodRadius`, which I
+had filed as a drawing constant that had wandered into the physics file, turns
+out to set how close a scavenger has to get to a corpse. It is inert with
+scavenging off and load-bearing with it on.
+
+The extreme case extends what v1.36 found. That release showed the kin
+recognition *flag* never fires on seed 314 — the pond on the landing page
+evolves predators that hunt genetic strangers, so there is never a relative to
+spare. The threshold constant is worse off than the flag: at **ten times** its
+default value it still changes nothing there in 9,000 ticks. It is live only on
+seed 23. A number can be correct, tested, load-bearing, and completely mute in
+the world everybody looks at.
+
+### Four constants aren't about the pond at all
+
+`speciationDistance`, `neatCompatThreshold`, `phylogenySampleInterval` and
+`phylogenyHistory` belong to the Tree of Life, and `phylogeny.js` has said since
+v1.2 that "nothing here feeds back into the simulation." Which means a sweep
+holding a state hash calls all four dead — correctly, and uselessly.
+
+So there is a third fingerprint now, over the species tree and the abundance
+record. And the nice part is what it makes assertable: an observation-only
+constant has to move the view **and** leave the pond bit-for-bit identical. Both
+halves, together, in one test. That claim has been in a header comment for
+thirty-six releases with nothing checking it; a lever sweep is what finally
+needed it to be true. `stepsPerFrame` gets the mirror image — it must move
+neither, because how often a caller steps a world is not a property of the
+world.
+
+### Then it found the thing
+
+`energyMax` came back as a lever, diverging on **tick one**. Which contradicted
+`config.js`, `docs/SCIENCE.md` and a comment in `test/energy.test.js`, all three
+of which said — in my words, from v1.29 — that it was *"a parameter with no
+effect whatsoever… you could set it to 10,000 or delete it and nothing would
+move."*
+
+The measurement behind that sentence is correct and still passes. The ceiling on
+a creature's energy sits at 220 and reproduction fires at 160, so nothing ever
+fills up and the pond spills exactly zero. What I did not do was ask whether the
+clamp was the only thing the constant was *for*. It is not. `creature.js` builds
+the brain's input vector with:
+
+```js
+inp[1] = (this.energy / cfg.energyMax) * 2 - 1; // energy, centred
+```
+
+`energyMax` is the divisor of a creature's sense of its own energy. It is what
+"full" means to the thing making the decisions, and `render.js` shades every
+body by the same fraction. Far from being deletable, it is one of the most
+connected numbers in the file — and I had written it off in three places,
+because the instrument that found the dead clamp was an energy ledger, and an
+energy ledger has no way to see a sense.
+
+**A measurement of one of a constant's jobs is not a measurement of the
+constant.** That is the lesson, and the reason it took nine releases to catch is
+that the wrong sentence was *downstream of a correct measurement*, which is the
+most credible place a wrong sentence can be. The sweep doesn't have this problem
+because it doesn't have a theory: it moves the number and asks whether anything
+at all changed.
+
+I measured what the live half is worth before writing any of it up, on twelve
+seeds, because a seed-matched pair in a world with attractors is one coin toss
+(v1.32). Mean population 212 at the default and 242 at 301 — and a between-seed
+sd of 61 against a paired difference of 29, with seed 23 reading 224 / **16** /
+224 across three arms of a monotone parameter. So: not a dose-response curve, a
+different hand dealt, which is exactly what a tick-one divergence should look
+like. One thing *is* monotone and real — set `energyMax` to 160, where the
+ceiling meets the reproduction threshold, and the pond finally starts spilling,
+up to 6% of everything it makes. The clamp was reachable all along; it just
+needed the ceiling brought down rather than the population pushed up.
+
+### One more thing the sweep noticed on its way past
+
+To decide which direction to push `speciationDistance`, I swept it properly, and
+the default pond records five speciation events in 6,000 ticks at 0.15 and
+**zero** at 0.20. Above that the Tree of Life is a flat comb of the forty
+founders — and it stays that way across a twentyfold range of the parameter. The
+view is not broken and the number is not wrong, but the pond on the landing page
+is being observed from very close to the edge of where its instrument says
+anything at all, and nobody had written that down. That is a lead for a future
+cycle rather than something to fix in this one.
+
+Seventy-nine constants, seventy-four levers on the simulation, four on the view,
+one on the animation loop, and one sentence I have been repeating for nine
+releases that was never true.

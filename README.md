@@ -258,6 +258,12 @@ bit-for-bit identical since v1.3.0 — thirty-three releases — and
 how much of it survives running on an engine whose `Math.sin` returns different
 bits (nearly all of it, for about twenty thousand ticks).
 
+A second one is unusual in the other direction: the suite **moves every number
+in `config.js`** — all seventy-nine — and requires each to change something, so
+a constant that has quietly stopped mattering fails the build rather than
+sitting in the file looking load-bearing. It has already caught one, and the
+write-up is in [docs/SCIENCE.md](docs/SCIENCE.md).
+
 ## How it works (the short version)
 
 Every creature carries a **genome**: a flat vector of numbers that are the

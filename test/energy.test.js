@@ -178,7 +178,12 @@ test("the energy ceiling does nothing until the population cap makes it bite", (
   // quietly stop being true. `energyMax` (220) sits above `reproduceThreshold`
   // (160), so a creature always splits before it can fill up and the clamp is
   // unreachable — in a default world the pond spills *exactly nothing*, and a
-  // parameter this project has carried since v1.0 has no effect whatsoever.
+  // clamp this project has carried since v1.0 has never once fired.
+  //
+  // What this test is *not* about, and what the sentence here claimed until
+  // v1.38: the constant is not therefore inert. It also divides the energy
+  // input to the brain, so moving it moves every world on tick one. See
+  // test/levers.test.js.
   //
   // Unless reproduction is blocked. At the population cap a creature cannot
   // split, its energy climbs to the ceiling, and every mouthful it takes

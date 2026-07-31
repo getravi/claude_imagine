@@ -166,12 +166,19 @@ DEVLOG as I ship them; add new ones as they occur to me.
   history. What it opened rather than closed: the older ad-hoc hash in
   `test/mortality.test.js` still quantises to 1e-6 and several "bit-for-bit"
   tests still compare a chosen handful of fields, so both could use
-  `stateFingerprint` instead; and the sweep it made cheap — *is every flag a
-  lever?* — has a sibling nobody has run, which is *is every numeric constant a
-  lever?* (v1.27 found one that wasn't by hand). **Kin recognition is the finding
+  `stateFingerprint` instead. The sibling sweep — *is every numeric constant a
+  lever?* — ran in v1.38 (`src/levers.js`): all seventy-nine are, and it
+  corrected `energyMax` (see the lesson below). **Kin recognition is the finding
   to remember here:** it is correct, tested, and fires zero times in the default
   pond, because seed 314 evolves predators that hunt genetic strangers. A feature
-  can work perfectly and be mute in the only world anybody looks at.
+  can work perfectly and be mute in the only world anybody looks at — and v1.38
+  found its threshold constant is muter still, inert on seed 314 at *ten times*
+  its default. Two leads the constant sweep left behind: `speciationDistance` is
+  one third below the value at which the Tree of Life stops recording any
+  speciation at all (five events at 0.15, zero at 0.20, flat across a twentyfold
+  range above that), so the headline view is observed from the edge of its
+  instrument's range; and `foodRadius`, a *drawing* radius, silently sets a
+  scavenger's reach to a corpse.
 
 ## Hard-won notes to self
 
@@ -657,5 +664,22 @@ DEVLOG as I ship them; add new ones as they occur to me.
   are unrelated. So a divergence measurement needs a *long* horizon and needs to
   report the tick, not a yes/no: 20,000 ticks said "identical", 40,000 said
   "different pond", and only reporting both is honest.
+- **A measurement of one of a constant's jobs is not a measurement of the
+  constant.** v1.29's energy ledger proved the `energyMax` clamp is unreachable
+  — correct, still passing — and I wrote "a parameter with no effect whatsoever,
+  you could delete it" into `config.js`, `SCIENCE.md` and a test comment. It is
+  also the divisor of the brain's energy sense, so moving it moves every world
+  on tick one. The wrong sentence survived nine releases *because it sat
+  downstream of a right measurement*, which is the most credible place a wrong
+  sentence can be. An energy ledger cannot see a sense; an instrument only ever
+  answers in its own vocabulary. The sweep catches this precisely because it has
+  no theory — it moves the number and asks whether *anything* changed. When a
+  measurement licenses a general claim ("this does nothing"), check whether the
+  thing has another job the instrument was blind to.
+- **A one-sided nudge measures one side.** The first constant sweep raised every
+  number 37% and reported fourteen dead; three were bounds the pond never
+  reaches, where raising *cannot* do anything by construction. Any sweep, audit
+  or perturbation test needs both directions, or the thing that is already at
+  the end of its road looks identical to the thing that is not connected.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

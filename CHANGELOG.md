@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.38.0] — 2026-07-31
+
+v1.36 asked whether every opt-in *flag* in this project does anything, and left
+the obvious sibling unasked: `config.js` holds seventy-nine *numbers*, and both
+times one of them has turned out to be doing nothing — `detritusPerRadius`
+clipped by a cell cap (v1.27), `energyMax` above an unreachable threshold
+(v1.29) — it was found by accident. This release sweeps all seventy-nine, and
+the sweep immediately corrected one of the two findings that motivated it.
+
+### Added
+
+- **`src/levers.js`**, the constant sweep: every numeric key in `DEFAULT_CONFIG`
+  is moved once, in a world where it is live, and the pond must move. The key
+  list is read out of the config rather than written down, so a constant added
+  in a later release is swept the day it lands — and fails loudly if it needs a
+  world of its own, which is the intended way to discover that.
+- **A third fingerprint, `observationFingerprint`** — the species tree and the
+  abundance record behind the Muller plot. Four constants (`speciationDistance`,
+  `neatCompatThreshold`, `phylogenySampleInterval`, `phylogenyHistory`) are
+  levers on the view and on nothing else, and a sweep watching only the state
+  hash calls all four dead. They are now asserted on both channels at once: each
+  must move the tree, and each must leave the pond bit-for-bit identical — the
+  first test this project has had of `phylogeny.js`'s oldest claim, that
+  observation never feeds back into the simulation. `stepsPerFrame` gets the
+  mirror image: it must move neither.
+- **`test/levers.test.js`**, and in it the exceptions pinned as claims in their
+  own right: the two bounds that never bind, the clamp that fires only when the
+  ceiling is brought down to the reproduction threshold, and the constant with
+  no reach in the default pond at any value.
+- **docs/SCIENCE.md: "Is every number in `config.js` a lever?"**
+
+### Fixed
+
+- **`energyMax` was never only a clamp, and three places said it was.** v1.29
+  measured the energy ceiling and found it unreachable — a creature splits at
+  `reproduceThreshold` (160) before it can fill to 220, so the pond spills
+  exactly zero — and wrote the conclusion up as "a parameter with no effect
+  whatsoever… you could set it to 10,000 or delete it and nothing would move."
+  The sweep moved it and the pond moved on **tick one**: `creature.js` feeds the
+  brain `(energy / energyMax) * 2 - 1`, so the constant is also the divisor of a
+  creature's sense of its own energy, and `render.js` shades a body by the same
+  fraction. The measurement was right and the sentence around it was wrong.
+  Corrected in `config.js`, `docs/SCIENCE.md` and `test/energy.test.js`, and
+  both halves are now pinned by a test that fails if either changes.
+
+### Notes
+
+- **A one-sided nudge measures one side.** The first pass raised every constant
+  by 37% and reported fourteen dead. `populationMax` and `weightClamp` are
+  bounds the pond never reaches, so raising them *cannot* do anything; lowering
+  them bites at t482 and t1. The sweep pushes both ways now.
+- **What the live half of `energyMax` is worth**: twelve seeds, 6,000 ticks —
+  mean population 212 at the default and 242 at 301, but with a between-seed sd
+  of 61 against a paired difference of 29, and seed 23 reading 224 / **16** /
+  224 across the three arms. That is a different hand dealt, not a
+  dose-response curve. One thing is monotone and real: at `energyMax` = 160 the
+  ceiling meets the reproduction threshold and the pond finally spills, up to 6%
+  of everything it makes.
+- **`speciationDistance` is nearly out of road.** The default pond records five
+  speciation events in 6,000 ticks at 0.15 and **zero** at 0.20 — above which
+  the Tree of Life is a flat comb of the forty founders across a twentyfold
+  range of the parameter. The view everybody looks at is being observed from
+  close to the edge of its instrument's useful range.
+- **`foodRadius` is load-bearing.** A drawing radius that also sets how close a
+  scavenger must get to a corpse, which is why it looks dead in any world with
+  scavenging off.
+- Nothing in the simulation changed. `src/levers.js` and the new fingerprint are
+  instruments — nothing in the tick loop calls them — and the only edits to
+  simulation code are comments. `test/fingerprint.test.js` confirms the default
+  pond against the constants recorded in v1.36.
+
 ## [1.37.0] — 2026-07-30
 
 Terrain shipped in v1.23 and detritus in v1.27, and neither ever got a door. Ten

@@ -38,6 +38,13 @@
 // So the strict hash belongs in same-process comparisons, where representation
 // *should* match, and the blind one carries the promise across time.
 //
+// **And a third that is not about the world at all.** `observationFingerprint`
+// hashes the tree of life — what the observer made of the pond. It was added in
+// v1.38 for the constant sweep (`levers.js`), which found that three of this
+// project's numbers move the view and nothing else; a sweep holding only a state
+// hash calls those three dead. It doubles as the test of `phylogeny.js`'s oldest
+// claim, that observation never feeds back.
+//
 // docs/SCIENCE.md measures what caveat (3) is worth: with the last bit of every
 // implementation-defined Math result flipped, four seeds run 20,000 ticks with
 // *identical populations* and a worst per-creature drift of 3e-12. The bits are
@@ -157,6 +164,57 @@ export function stateFingerprint(world) {
   for (const f of world.food.items) h.num(f.x).num(f.y).flag(f.eaten);
   for (const k of world.corpses || []) h.num(k.x).num(k.y).num(k.energy);
   h.array(world.detritus && world.detritus.cells);
+  return h.digest();
+}
+
+/**
+ * What the *observer* made of the world: the tree of life. Every species'
+ * identity, parentage, birth, extinction, standing count and peak, plus the
+ * abundance record the Muller plot draws from — its samples, the windows they
+ * cover, and the resolution it has thinned itself down to.
+ *
+ * This is a third channel, not a stronger hash, and the reason it exists is
+ * that some of this project's constants are levers on the view and on nothing
+ * else. `speciationDistance`, `phylogenySampleInterval` and `phylogenyHistory`
+ * decide what the Tree of Life *says* while leaving the pond bit-for-bit
+ * identical — a sweep with only a state hash calls all three dead. It also
+ * gives the header comment in `phylogeny.js` ("nothing here feeds back into the
+ * simulation") a test: a change that moves this hash and not the state hash is
+ * exactly what pure observation looks like.
+ *
+ * Deliberately excludes each species' representative genome, for the same
+ * reason `trajectoryFingerprint` excludes genomes: it is representation, and it
+ * would move whenever a release adds a gene.
+ *
+ * Read-only, like the other two.
+ *
+ * @param {import('./world.js').World} world
+ * @returns {string} eight hex digits
+ */
+export function observationFingerprint(world) {
+  const h = new Hash();
+  h.word(0x54524545); // domain separator: "TREE"
+  const p = world.phylogeny;
+  if (!p) return h.word(0xdeadbeef).digest();
+  h.num(p.threshold).num(p.sampleInterval).word(p.maxSnapshots);
+  h.word(p.snapshotStride).word(p.snapshotsSeen).num(p.latestTick === null ? -1 : p.latestTick);
+  h.word(p.species.length);
+  for (const s of p.species) {
+    h.word(s.id).word(s.parentId === null ? -1 : s.parentId);
+    h.num(s.hue).num(s.birthTick).num(s.extinctTick);
+    h.word(s.count).word(s.peak);
+  }
+  h.word(p.snapshots.length);
+  for (const snap of p.snapshots) {
+    h.num(snap.tick).num(snap.total).word(snap.span);
+    h.word(snap.counts.size);
+    // A Map iterates in insertion order, which is deterministic here (species
+    // are counted in population order) — but sort anyway, so the hash is a
+    // statement about the abundances rather than about the tallying loop.
+    for (const id of [...snap.counts.keys()].sort((a, b) => a - b)) {
+      h.word(id).num(snap.counts.get(id));
+    }
+  }
   return h.digest();
 }
 

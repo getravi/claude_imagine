@@ -268,7 +268,7 @@ three different things that the ledger keeps apart: energy lost converting flesh
 into a predator (`digested`), meat rotting out of a corpse nobody ate
 (`rotted`), and gains discarded because the eater was already full (`spilled`).
 
-### `energyMax` is a parameter that does nothing
+### `energyMax` is a clamp that never fires
 
 `spilled` reads **exactly zero** in a default world. Not "negligible" — zero, to
 the last bit that differencing an energy against itself can produce.
@@ -276,8 +276,18 @@ the last bit that differencing an energy against itself can produce.
 The reason is a two-line interaction nobody had looked at. `energyMax` is 220
 and `reproduceThreshold` is 160, so a creature always splits before it can fill
 up, and the ceiling is unreachable. Every world this project has shipped, every
-screenshot, every scenario, has carried a clamp that has never once fired. You
-could set `energyMax` to 10,000 or delete it and nothing would move.
+screenshot, every scenario, has carried a clamp that has never once fired.
+
+> **Correction (v1.38).** This section used to be headed "a parameter that does
+> nothing" and ended "you could set `energyMax` to 10,000 or delete it and
+> nothing would move." The first half is true of the clamp and the second half
+> is false of the constant, which the [constant sweep](#is-every-number-in-configjs-a-lever)
+> caught by moving it and watching the pond move on tick one. `creature.js`
+> feeds the brain `(energy / energyMax) * 2 - 1`: the number is also the
+> *divisor of a creature's sense of its own energy*, and `render.js` shades a
+> body by the same fraction. Delete it and every brain in the pond reads a
+> different world. What that is worth is measured
+> [below](#what-the-live-half-of-energymax-is-worth).
 
 Unless reproduction is blocked — which is exactly what `populationMax` does. At
 the cap a creature cannot split, its energy climbs to the ceiling, and every
@@ -1991,6 +2001,166 @@ for (let i = 0; i < 40000; i++) {
   }
 }
 ```
+
+## Is every number in `config.js` a lever?
+
+v1.36 asked this of the thirteen opt-in **flags** and left the seventy-nine
+**numbers** unasked — which is where both of this project's known dead
+parameters came from. v1.27 found `detritusPerRadius` clipped by a cell cap that
+silently discarded a third of every large carcass. v1.29 found `energyMax`
+sitting above a threshold it could never be reached from. Neither was visible in
+the code; both were found by moving a number and watching for a world that
+didn't. So `src/levers.js` moves all seventy-nine, and `test/levers.test.js`
+keeps doing it.
+
+The answer is **yes, all seventy-nine** — but getting there took two corrections
+to the sweep, and both are more interesting than the answer.
+
+### A one-sided nudge measures one side
+
+The first pass moved every constant *up* by 37% and reported fourteen dead.
+Three of those are ceilings the pond never reaches, so raising them is by
+definition a no-op:
+
+| Constant | Raised | Lowered | Why |
+| --- | --- | --- | --- |
+| `populationMax` (650) | nothing in 700 ticks | bites at t482 | the pond peaks around 250 |
+| `weightClamp` (8) | nothing in 600 ticks | bites at t1 | learned weights never approach ±8 |
+| `energyMax` (220) | **bites at t1** | bites at t1 | not a ceiling problem at all — see below |
+
+A sweep that only pushes one way will file a bound that never binds as dead. It
+must push both.
+
+### A constant is only live in a world where it can bite
+
+The rest of the fourteen needed a world of their own, and the list is a decent
+map of where this project keeps its conditionals: a parameter of an opt-in
+feature needs that feature on; the disease constants cannot be measured before
+patient zero arrives at t901; `reseedCount` is read only when the pond is
+*completely* empty, which needs a world with no food, no trickle-rescue floor
+and a short lifespan (it empties at t200); and `foodRadius` — a *drawing* radius
+— turns out to set how close a scavenger must get to a corpse, so it is inert
+with scavenging off and otherwise seen only by `render.js`.
+
+`kinRecognitionDistance` is the extreme case and it extends the v1.36 finding.
+That release showed the kin recognition *flag* never fires on seed 314. The
+constant is worse off: at **0.5, ten times its default**, it still changes
+nothing on seed 314 in 9,000 ticks, because no predator there ever meets a close
+enough relative for the threshold to matter at any value. It is only live on
+seed 23, where it bites at t4,910 in either direction. A number can be correct,
+load-bearing and completely mute in the world everybody looks at.
+
+### Three channels, because two of them aren't the simulation
+
+Four constants move nothing in the pond *by design*: `speciationDistance`,
+`neatCompatThreshold`, `phylogenySampleInterval` and `phylogenyHistory` are the
+Tree of Life's, and `phylogeny.js` has said since v1.2 that "nothing here feeds
+back into the simulation". A sweep holding only a state hash calls all four
+dead. So there is a third hash — `observationFingerprint`, over the species
+tree and the abundance record — and the observation-only constants are asserted
+on **both** channels at once: each must move the view, and each must leave the
+state bit-for-bit identical. That second half is the first test this project has
+ever had of the pure-observer claim. `stepsPerFrame` gets the mirror-image
+assertion: it must move neither, because how often a caller steps a world is not
+a property of the world.
+
+| Channel | Constants | The claim |
+| --- | ---: | --- |
+| world | 74 | moving it moves the state hash |
+| observer | 4 | moves the tree of life and *not* the state hash |
+| ui | 1 | moves neither |
+
+### The finding: `energyMax` was never only a clamp
+
+v1.29 measured the ceiling on a creature's energy and found it unreachable — a
+creature splits at `reproduceThreshold` (160) long before it can fill to 220, so
+the pond spills exactly zero. That much is true, still true, and still pinned in
+`test/energy.test.js`. The conclusion written on top of it was not: *"you could
+set `energyMax` to 10,000 or delete it and nothing would move."*
+
+Move it and the pond moves on tick one. `creature.js` builds the brain's input
+vector with
+
+```js
+inp[1] = (this.energy / cfg.energyMax) * 2 - 1; // energy, centred
+```
+
+so `energyMax` is also the divisor of a creature's sense of its own energy — it
+sets what *full* means to the thing making the decisions — and `render.js`
+shades a body by the same fraction. The clamp is dead. The constant is one of
+the most connected numbers in the file, and it had a comment in three places
+saying it did nothing.
+
+The general shape, and the reason this took nine releases to notice: **a
+measurement of one of a constant's jobs is not a measurement of the constant.**
+v1.29 went looking for the energy books to balance, found the ceiling never
+fired, and wrote up the finding in the vocabulary of the instrument that found
+it. The sweep has no vocabulary. It moves the number and asks whether *anything*
+changed.
+
+### What the live half of `energyMax` is worth
+
+Twelve seeds, 6,000 ticks, population averaged over the last 2,000 — because a
+seed-matched pair is one coin toss (v1.32), and this world has attractors.
+
+| `energyMax` | mean population | sd across seeds |
+| ---: | ---: | ---: |
+| 160 (= `reproduceThreshold`) | 204.9 | 42.7 |
+| 220 (default) | 212.3 | 77.5 |
+| 301 | 241.5 | 60.3 |
+
+Paired, 301 against 220: mean +29.2, sd **61.0**, 9 of 12 positive. The
+between-seed spread is twice the effect, so this is *not* a demonstrated
+direction — it is a different hand dealt, which is exactly what the tick-one
+divergence says it is. Seed 23 makes the point on its own: 224 creatures at 160,
+**16** at 220, 224 again at 301. That is a world falling into a different
+attractor, not a dose-response curve.
+
+One thing does change monotonically and is real: at `energyMax` = 160 the
+ceiling finally coincides with the reproduction threshold, and the pond starts
+spilling — up to 6% of everything it makes, against a floating-point zero at the
+default. The clamp is reachable after all; it just needs the ceiling brought
+down to the threshold rather than the population pushed up to the cap.
+
+### `speciationDistance` is nearly out of road
+
+The sweep lowers this one, and the reason is worth recording. Species counts on
+the default pond after 6,000 ticks:
+
+| `speciationDistance` | species | founded after the first tick |
+| ---: | ---: | ---: |
+| 0.05 | 201 | 161 |
+| 0.10 | 73 | 33 |
+| **0.15 (default)** | **45** | **5** |
+| 0.20 | 40 | **0** |
+| 0.40 | 40 | 0 |
+| 1.00 | 37 | 0 |
+| 1.20 | 1 | 0 |
+
+The Tree of Life records five speciation events in 6,000 ticks of the default
+pond, and the parameter that governs them sits one third below the value at
+which it records **none at all** — above 0.20 the "tree" is a flat comb of the
+forty founders, and stays that way across a twentyfold range. The view is not
+broken and the constant is not dead, but the pond everybody looks at is being
+observed from very close to the edge of the instrument's useful range, and that
+was not written down anywhere.
+
+### Reproducing it
+
+```bash
+node -e '
+import("./src/levers.js").then(({ sweepLevers }) => {
+  for (const r of sweepLevers()) {
+    console.log(r.channel.padEnd(8), r.key.padEnd(24), `${r.from} -> ${r.to}`.padEnd(22),
+                `world=${r.worldAt} observer=${r.observerAt} /${r.ticks}`);
+  }
+});'
+```
+
+`worldAt` / `observerAt` are the first tick at which that channel disagreed with
+the control, or `-1` for a channel that never did. Every exception's reason —
+which world a constant needs, which direction it has to be pushed, and why — is
+in the `SPECIAL` table at the top of `src/levers.js`.
 
 ## What this model deliberately leaves out
 
