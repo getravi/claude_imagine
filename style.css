@@ -12,6 +12,10 @@
   --accent-2: #5adc96;
   --line: #1b2836;
   --radius: 12px;
+  /* The chart's y-axis gutter (v1.41). The three stacked figures share an
+     x-axis, so they share this indent too — an axis that moved one of them
+     would have split a figure the whole column reads as one. */
+  --axis-gutter: 22px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -529,10 +533,44 @@ details .field {
   height: 90px;
   display: block;
 }
+/* The y-axis numbers (v1.41). They live in a gutter beside the plot rather than
+   over it: a label on top of the figure covers whatever the pond was doing
+   underneath, and this project's own rule is that nothing the pond did is
+   hidden under a piece of furniture. They are DOM text, not canvas text (the
+   backing store is stretched to the column's width, three times over on a
+   phone), and they are positioned as a percentage of the plot's own height, so
+   a label stays level with its gridline at any size. The colour is set from
+   src/palette.js — the population line's, since these are its numbers. */
+.chart-plot {
+  position: relative;
+  padding-left: var(--axis-gutter);
+}
+.chart-ticks {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--axis-gutter);
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1;
+}
+.chart-ticks span {
+  position: absolute;
+  right: 4px;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+.chart-legend .scale {
+  font-family: var(--mono);
+  margin-left: 3px;
+}
 /* The death strip: same width and x-axis as the chart above it, sitting on the
    chart's baseline so the two read as one figure. */
 .deaths-strip {
-  width: 100%;
+  width: calc(100% - var(--axis-gutter));
+  margin-left: var(--axis-gutter);
   height: 24px;
   display: block;
   border-top: 1px solid var(--line);
@@ -559,7 +597,8 @@ details .field {
    being continuous and dashed, so the swatches have to as well. Both are painted
    from src/palette.js at startup. */
 .power-strip {
-  width: 100%;
+  width: calc(100% - var(--axis-gutter));
+  margin-left: var(--axis-gutter);
   height: 28px;
   display: block;
   border-top: 1px solid var(--line);
@@ -577,6 +616,9 @@ details .field {
   font-weight: 500;
   font-family: var(--mono);
   color: var(--ink-faint);
+}
+.chart-range {
+  margin-left: var(--axis-gutter);
 }
 .chart-range,
 .phylo-range {

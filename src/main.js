@@ -15,10 +15,12 @@ import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
+import { drawChart, popAxis, axisLabels } from "./chart.js";
 import { wholePercents, mortalitySeries, DEATH_CAUSES, POWER_WINDOW } from "./stats.js";
 import { mortalityColours, energyColours, chartLines, powerLine } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import {
+  describeChart,
   describePond,
   describePower,
   pendingSpeech,
@@ -220,7 +222,7 @@ function loop(now) {
   renderer.draw(world);
   updateViewBadge();
   updateMinimap();
-  drawChart(world);
+  updateChart(world);
   drawDeaths(world);
   drawPower(world);
   drawPhylogeny(world);
@@ -612,9 +614,15 @@ function updateMortality(s) {
 // the thinning covered. The band matters — without it a decimated line would
 // smooth away the very peaks and crashes the chart exists to show, and it would
 // do so silently.
+//
+// The figure itself lives in `src/chart.js` — the drawing, the scale, and the
+// y-axis it gained in v1.41 — so that the suite can reach all three. What is
+// left here is the adapter: find the canvas, choose the scope, and put the axis
+// numbers into the DOM, which is where text belongs on a canvas that gets
+// stretched to three times its backing width on a phone.
 let chartScope = "recent";
 let chartCtx = null;
-function drawChart(world) {
+function updateChart(world) {
   if (!chartCtx) {
     const c = $("chart");
     chartCtx = c.getContext("2d");
@@ -626,26 +634,44 @@ function drawChart(world) {
   const H = ctx._h;
   const whole = chartScope === "whole";
   const hist = whole ? world.stats.runHistory.series() : world.stats.popHistory;
-  ctx.clearRect(0, 0, W, H);
+  const axis = popAxis(world.stats.maxPopEver);
+  const foodMax = Math.max(10, config.foodMax);
+
+  drawChart(ctx, W, H, hist, { axis, foodMax, whole });
+  updateChartAxis(axis, H, foodMax);
   updateChartRange(world, hist);
-  if (hist.length < 2) return;
+  setChartLabel(describeChart(hist, axis, foodMax));
+}
 
-  const maxPop = Math.max(10, world.stats.maxPopEver);
-  const maxFood = Math.max(10, config.foodMax);
-
-  if (whole) {
-    // Envelopes first, under the lines: what each thinned point stands for.
-    drawBand(ctx, hist, W, H, (h) => h.min.food / maxFood, (h) => h.max.food / maxFood,
-      "rgba(90, 200, 140, 0.16)");
-    drawBand(ctx, hist, W, H, (h) => h.min.pop / maxPop, (h) => h.max.pop / maxPop,
-      "rgba(120, 190, 255, 0.22)");
+// The axis numbers, as DOM text in the gutter beside the canvas. Rebuilt only
+// when the ceiling actually moves — which is the point of a round ceiling, and the v1.15 rule
+// about not replacing elements inside the animation loop.
+let chartAxisKey = "";
+function updateChartAxis(axis, H, foodMax) {
+  const key = `${axis.ticks.join(",")}|${foodMax}`;
+  if (key === chartAxisKey) return;
+  chartAxisKey = key;
+  const box = $("chart-ticks");
+  box.innerHTML = "";
+  for (const label of axisLabels(axis, H)) {
+    const el = document.createElement("span");
+    el.textContent = label.text;
+    el.style.top = `${(label.frac * 100).toFixed(3)}%`;
+    // The population line's own colour: the only thing that says which of this
+    // figure's two scales the numbers belong to.
+    el.style.color = chartLines().pop;
+    box.appendChild(el);
   }
-  // Food line (dim green), then population (bright), both from `palette.js` so
-  // the audit can reach the colours everything else in this column is measured
-  // against.
-  const line = chartLines();
-  drawSeries(ctx, hist, W, H, (h) => h.food / maxFood, line.food);
-  drawSeries(ctx, hist, W, H, (h) => h.pop / maxPop, line.pop);
+  // Food's scale never moves, so it is stated once in words instead of marked.
+  $("food-scale").textContent = `0–${foodMax.toLocaleString()}`;
+}
+
+/** The chart's spoken form, written only when it changes. */
+let chartLabel = "";
+function setChartLabel(text) {
+  if (text === chartLabel) return;
+  chartLabel = text;
+  $("chart").setAttribute("aria-label", text);
 }
 
 // The caption under the chart: which stretch of time is on screen, and — in
@@ -877,36 +903,6 @@ function applyMortalityColours() {
   paint("line-made", p.line);
   $("line-spent").style.background =
     `repeating-linear-gradient(to right, ${p.line} 0 ${on}px, transparent ${on}px ${on + off}px)`;
-}
-
-function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {
-  ctx.beginPath();
-  for (let i = 0; i < hist.length; i++) {
-    const x = (i / (hist.length - 1)) * W;
-    const y = H - highOf(hist[i]) * (H - 4) - 2;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  for (let i = hist.length - 1; i >= 0; i--) {
-    const x = (i / (hist.length - 1)) * W;
-    ctx.lineTo(x, H - lowOf(hist[i]) * (H - 4) - 2);
-  }
-  ctx.closePath();
-  ctx.fillStyle = fill;
-  ctx.fill();
-}
-
-function drawSeries(ctx, hist, W, H, valueOf, stroke) {
-  ctx.beginPath();
-  for (let i = 0; i < hist.length; i++) {
-    const x = (i / (hist.length - 1)) * W;
-    const y = H - valueOf(hist[i]) * (H - 4) - 2;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
 }
 
 // ---- Inspector (selected creature) ----

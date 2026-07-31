@@ -277,6 +277,9 @@
           <div class="chart-legend">
             <span class="dot pop"></span> population
             <span class="dot food"></span> food
+            <!-- Food is drawn against a constant ceiling, so its scale is a
+                 word rather than a mark on the axis. See src/chart.js. -->
+            <span class="scale" id="food-scale"></span>
             <button
               id="chart-scope"
               class="scope-btn"
@@ -285,7 +288,20 @@
               title="Switch between the recent window and the whole run (H)"
             >recent</button>
           </div>
-          <canvas id="chart" width="300" height="90"></canvas>
+          <!-- The chart, and the y-axis numbers in the gutter beside it — beside
+               rather than over, so no label covers what the pond was doing. They
+               are DOM text, not canvas text: this backing store is stretched to
+               the width of the column, three times over on a phone. -->
+          <div class="chart-plot">
+            <canvas
+              id="chart"
+              width="300"
+              height="90"
+              role="img"
+              aria-label="Population and food over time: not enough history yet."
+            ></canvas>
+            <div class="chart-ticks" id="chart-ticks" aria-hidden="true"></div>
+          </div>
           <!-- The death mix over the same stretch of time, stacked by cause.
                Shares the chart's x-axis and its recent/whole scope. -->
           <canvas

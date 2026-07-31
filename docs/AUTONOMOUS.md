@@ -130,11 +130,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   bigger question the ledger has raised since v1.29 is unchanged: energy is
   minted at ingestion, so making a pellet a finite store that something has to
   *put* energy into would close the loop the books proved is open. What v1.39
-  left behind: the strip is the third figure stacked on one x-axis and none of
-  the three has a y-axis mark of any kind — every one of them is normalised to
-  something a caption states in words. And the mortality bar, the energy bar and
-  now the strip all show the same pond spending itself; nothing has ever asked
-  whether the death mix and the spend mix agree.
+  left behind was that none of the three stacked figures had a y-axis mark of any
+  kind; v1.41 gave the chart one and deliberately left the two strips alone,
+  because their normaliser is the peak *on screen* and both captions already
+  carry it — a scale that is stated exactly does not need marks, a scale that
+  moves does. Still open, and now the oldest thing on this list: the mortality
+  bar, the energy bar and the strip all show the same pond spending itself, and
+  nothing has ever asked whether the death mix and the spend mix agree.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21, and v1.26 put it on the
@@ -189,7 +191,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   stub since v1.19 and `mullerplot.js` still has none, so the recorder has two
   more surfaces to reach; and **`main.js` remains the last module with no test of
   any kind** — `describe.js` and `gestures.js` were carved out of it precisely so
-  the suite could reach them, and the panels are what is left.
+  the suite could reach them, and the panels are what is left. v1.41 took the
+  third panel out (`chart.js`) and used the recorder to do it, which is the
+  pattern worth repeating: carve the figure out, record what it draws, assert the
+  drawing against the numbers it claims. The Muller plot is the next one and the
+  one with a claim worth checking — twelve bands that must sum to at most one.
 
 ## Hard-won notes to self
 
@@ -727,5 +733,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   recording context is a hundred lines. Before accepting that something is
   untestable, separate what the code needs to *run* from what my question needs
   to be *answered*.
+- **A lesson can miss the surface it was written on.** v1.30 taught me that a
+  rule needs a sweep of every place it applies, and I have been running that
+  sweep across *modules*. v1.41 found the population chart carrying a caption
+  that exists because "a chart whose x-axis silently changes meaning is worse
+  than one with no axis at all" — while its y-axis, three lines away in the same
+  function, was being rescaled retroactively by every new population record, and
+  had been since v1.0. The nearest surface is the one the sweep skips, because
+  writing the rule *there* feels like having applied it there. When a lesson is
+  about an axis, a buffer, a cache or a scale, check the other axis, the other
+  buffer, the other scale — starting with the ones in the same file.
+- **A scale that never moves needs a word; a scale that moves needs marks.** The
+  chart draws two series on two different normalisers. Food's is a config
+  constant, so one phrase in the legend describes it completely and forever.
+  Population's is the run's own record, and no sentence can pin a number that
+  changes — it needs an axis. Before labelling a readout, ask which of the two
+  each of its quantities is; half the work usually disappears. And when a scale
+  must move, move it in *round steps*: a ceiling that only changes at 100, 200,
+  300 leaves the picture alone most of the time and announces itself when it
+  doesn't, where a continuous one redraws the past on every new record.
+- **A colour can fail for being too loud.** Every audit here since v1.25 has been
+  a floor, because every mark carried a distinction. A gridline carries none: it
+  is furniture behind the data, and one that clears `MIN_DELTA_E` is a third
+  series in a figure that has two. `MIN_RULE_DELTA_E`/`MAX_RULE_DELTA_E` are the
+  first two-sided bar in this project. Anything drawn *behind* something else —
+  a rule, a track, a backdrop, a band — wants the pair, not the floor.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

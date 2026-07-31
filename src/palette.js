@@ -389,6 +389,44 @@ export function chartLineTones() {
 }
 
 /**
+ * The population chart's grid (v1.41) — the first colour here whose job is to
+ * be *quiet*.
+ *
+ * Every other mark in this project is audited against `MIN_DELTA_E`, a floor,
+ * because every other mark carries a distinction and a mark that vanishes has
+ * lost its argument. A gridline carries none: it is a ruler behind the data,
+ * and one loud enough to clear that bar would be a third line in a figure that
+ * has two. So it is checked from both sides — see `MIN_RULE_DELTA_E` — and it
+ * is a neutral, because a hue here would read as belonging to one of the two
+ * series.
+ *
+ * The labels are not in this function. They are the population's numbers, so
+ * they are drawn in the population line's own colour, which is the only way a
+ * two-scale figure can say which of its scales the marks belong to — and it
+ * spends no new colour, so the audit that already covers `chartLines()` covers
+ * them too.
+ */
+export function axisRule() {
+  return { line: "rgba(255, 255, 255, 0.07)" };
+}
+
+/** The grid as it is actually composited over the panel. */
+export function axisRuleTone() {
+  return blendOver(panelBackground(), { r: 255, g: 255, b: 255 }, 0.07);
+}
+
+/**
+ * The window a *rule* has to land in, as opposed to a mark. Both ends come from
+ * the calibration on `deltaE`: ~2.3 is the just-noticeable difference, so a
+ * rule at twice that is present without being looked for, and ~10 is "a
+ * different colour at a glance", which is precisely what a gridline must not
+ * be. The pair is the point — a one-sided threshold cannot express "visible and
+ * subordinate", and this is the first thing here that needs to be both.
+ */
+export const MIN_RULE_DELTA_E = 5;
+export const MAX_RULE_DELTA_E = 10;
+
+/**
  * The power strip (v1.39): what the pond mints per tick, and what it spends.
  *
  * Two lines that must be told apart, in a column that already spends eight

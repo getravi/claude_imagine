@@ -4,6 +4,66 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.41.0] — 2026-07-31
+
+v1.22 gave the population chart an x-axis caption and wrote down why: *a chart
+whose x-axis silently changes meaning is worse than one with no axis at all.*
+One axis over, unmentioned, the y-axis had been doing exactly that since v1.0.
+The population line is normalised to the run's own record, and the record grows
+— so the moment the pond sets a new high, every point already on screen drops,
+retroactively, and nothing says so. A line at half height means 100 creatures
+early and 150 later, and the two pictures are identical. This release gives the
+figure a scale.
+
+### Added
+
+- **A y-axis on the population chart.** The line is drawn against a *round
+  ceiling* at or just above the run's peak rather than the peak itself, with a
+  labelled gridline at each step. Two things follow: the axis can be labelled
+  with numbers a reader can hold, and it now moves in visible steps — a run
+  climbing from 240 to 260 no longer redraws its own history, and when the
+  ceiling does go 300 → 400 the labels say so.
+- **`src/chart.js`**, and with it the third panel carved out of `main.js` (after
+  `describe.js` and `gestures.js`) so the suite can reach it: the scale, the
+  grid, the two lines and the whole-run envelopes, all pure. `test/chart.test.js`
+  puts the recorder from v1.40 on a second surface and checks that the y a
+  gridline is stroked at is the y its label's value maps to — the claim the whole
+  release rests on — plus that drawing the figure moves neither the world nor the
+  RNG.
+- **An `aria-label` on the chart**, via `describeChart()`. The two strips under
+  it have been spoken since the releases that built them; the figure they hang
+  off — the oldest view in the project — said nothing, so a listener got the
+  commentary and not the picture. It carries both current values *and* both
+  scales, because "214 creatures" without a ceiling is precisely the number the
+  drawing failed to give.
+- **A both-sided colour bar.** `MIN_RULE_DELTA_E`/`MAX_RULE_DELTA_E`: a gridline
+  is furniture, not a mark, and this is the first colour here that can fail for
+  being too **loud**. It is checked as visible (above two just-noticeable
+  differences from the panel), as subordinate (below "a different colour at a
+  glance"), and as quieter than both lines it sits under, under every vision
+  model. The axis numbers spend no new colour at all — they are the population
+  line's own, which is what tells a reader which of this figure's two scales the
+  marks belong to.
+
+### Changed
+
+- The three stacked figures share a 22-pixel **axis gutter**, so the labels sit
+  beside the plot rather than over it — nothing the pond did is hidden under a
+  piece of furniture — and the chart, death strip and power strip still share
+  one x-axis to the pixel.
+- The food line's scale is stated in the legend (`0–520`) instead of marked. It
+  is `config.foodMax`, a constant: a scale that never moves needs a word, and a
+  scale that moves needs marks.
+- The axis labels are DOM text, not canvas text. This backing store is 300 px
+  wide and stretched to the column, which on a phone is three times that —
+  v1.28's lesson, paid before rather than after.
+
+### Notes
+
+- Zero new dependencies, no simulation behaviour changed, no new random numbers:
+  `test/fingerprint.test.js` still holds the v1.36 hashes for the default pond.
+- Checked at 1280 px and at 390 px.
+
 ## [1.40.0] — 2026-07-31
 
 v1.38's constant sweep found `foodRadius` — the size of a food mote — alive in a

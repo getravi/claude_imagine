@@ -91,6 +91,7 @@ class RecordingContext {
   stroke() { this.op("stroke"); }
   clip() { this.op("clip"); }
   fillRect(x, y, w, h) { this.op("fillRect", x, y, w, h); }
+  clearRect(x, y, w, h) { this.op("clearRect", x, y, w, h); }
   setLineDash(d) { this.op("setLineDash", ...d); }
 
   // --- State & transform ---
@@ -127,6 +128,19 @@ class RecordingContext {
   drawImage(src, ...args) {
     this.op("drawImage", src && src.id, ...args);
   }
+}
+
+/**
+ * A recording context on its own, for the figures that are handed a context
+ * rather than a canvas — the chart, and eventually the minimap (which has
+ * hand-rolled its own stub since v1.19) and the Muller plot (which has none).
+ *
+ * @param {string} [id] the surface's name in the log
+ * @returns {{ctx: object, ops: Array}}
+ */
+export function recordingContext(id = "figure") {
+  const ops = [];
+  return { ctx: new RecordingContext(id, ops), ops };
 }
 
 /** A canvas that exists only to hand out a recording context. */

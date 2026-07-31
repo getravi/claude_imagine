@@ -52,6 +52,10 @@ import {
   powerLine,
   powerLineTones,
   POWER_BAND_ALPHA,
+  axisRule,
+  axisRuleTone,
+  MIN_RULE_DELTA_E,
+  MAX_RULE_DELTA_E,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -707,6 +711,53 @@ test("the chart lines the canvas is painted with are the ones that were measured
     assert.ok(m, `${name} is not a plain rgba() this test can parse: ${text}`);
     const rgb = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
     assert.deepEqual(blendOver(panelBackground(), rgb, Number(m[4])), tones[name]);
+  }
+});
+
+// ---- the chart's grid (v1.41) ----
+//
+// The first colour in this project that can fail for being too *loud*. A
+// gridline is a ruler behind two lines of data: invisible and it is not an
+// axis, prominent and it is a third series. So it is measured from both sides,
+// and its labels — which are numbers a reader has to actually read — are held
+// to the ordinary bar for a mark.
+
+test("the grid is visible without competing with the data", () => {
+  const tone = axisRuleTone();
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(tone, panelBackground(), vision);
+    assert.ok(d >= MIN_RULE_DELTA_E, `the grid is ΔE ${d.toFixed(1)} from the panel under ${vision}`);
+    assert.ok(d <= MAX_RULE_DELTA_E, `the grid is ΔE ${d.toFixed(1)} from the panel — that is data, not furniture`);
+  }
+  // And quieter than both lines it sits under, under every vision model: a rule
+  // that out-shouts the quieter series has changed what the figure is about.
+  for (const [name, line] of Object.entries(chartLineTones())) {
+    for (const vision of VISION_MODELS) {
+      const rule = deltaE(tone, panelBackground(), vision);
+      const data = deltaE(line, panelBackground(), vision);
+      assert.ok(rule < data, `the grid is louder than the ${name} line under ${vision}`);
+    }
+  }
+});
+
+test("the grid the canvas strokes is the grid that was measured", () => {
+  const m = axisRule().line.match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/);
+  assert.ok(m, `the grid is not a plain rgba() this test can parse: ${axisRule().line}`);
+  const rgb = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+  assert.deepEqual(blendOver(panelBackground(), rgb, Number(m[4])), axisRuleTone());
+  // A neutral on purpose: a tinted rule reads as belonging to one of the series.
+  assert.equal(rgb.r, rgb.g);
+  assert.equal(rgb.g, rgb.b);
+});
+
+test("the axis numbers are legible, and are the population's own colour", () => {
+  // The labels spend no new colour — they are the population line's, which is
+  // what says which of this figure's two scales they belong to. So the claim is
+  // an identity plus the ordinary bar for something a reader must read.
+  const label = chartLineTones().pop;
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(label, panelBackground(), vision);
+    assert.ok(d >= MIN_DELTA_E, `the axis numbers are ΔE ${d.toFixed(1)} from the panel under ${vision}`);
   }
 });
 

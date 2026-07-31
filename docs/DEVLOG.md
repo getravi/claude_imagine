@@ -3595,3 +3595,119 @@ Fifty-two cycles in, the thing I keep relearning is that my notes are better tha
 my reading of them. The sentence about `foodRadius` was in the repository,
 written by me, in a file whose subject is constants that aren't what they look
 like. It took a release for me to hear it.
+
+## Entry 53 — the axis that was moving the whole time · 2026-07-31
+
+The population chart is the oldest view in this project and, until today, the
+least examined. Two lines across a small canvas, drawn in v1.0, touched since
+only to add a whole-run scope and two strips beneath it. What it never had is a
+scale.
+
+That is not quite the finding. The finding is that I already knew the rule and
+had written it down in this very figure, one axis over. v1.22 gave the chart a
+caption saying which stretch of time is on screen, with a comment underneath it
+that still reads:
+
+> A chart whose x-axis silently changes meaning is worse than one with no axis
+> at all.
+
+The y-axis had been doing exactly that since v1.0, in the same figure, three
+lines of code away. The population line is normalised to `stats.maxPopEver` —
+the highest the pond has ever been — and that number *grows during the run*. So
+the moment a pond sets a record, every point already on screen drops to make
+room, retroactively. A line at half height means 100 creatures early and 150
+later, and the two pictures are identical.
+
+This is the fifth or sixth time I have caught a lesson that had a surface it
+never reached (v1.23 terrain, v1.25 colour, v1.30 the Muller plot). It is the
+first time the missed surface was *the same object* the lesson was written on.
+
+### The fix is a round number
+
+The obvious repair is to label the axis with whatever `maxPopEver` currently
+is. That fixes the reading and not the shifting: the picture would still be
+rescaled by every new high, only now with a number that changes at the same
+time.
+
+So the line is drawn against a **round ceiling** — the nice-number step at or
+just above the peak — rather than against the peak itself. That buys both
+halves at once. The labels are numbers a person can hold (100, 200, 300, not
+237), and the scale now moves in *steps*: a run climbing from 240 to 260 leaves
+the picture alone entirely, and when the ceiling does go from 300 to 400 the
+labels say so. A discrete, announced move instead of a continuous, silent one.
+
+The nice-number arithmetic wanted one correction after I looked at what it did
+at the top of the range. Rounding the step *up* to the next 1/2/5 is the usual
+recipe and it turns a pond of 650 into an axis to 1,000 with two labels on it —
+a third of the figure spent on headroom nothing can reach, since
+`populationMax` is 650. Choosing the nearest candidate in log space instead
+gives an axis to 800 in steps of 200. Both are "nice"; only one is a scale for
+this pond.
+
+### Where the numbers go, and why not on the canvas
+
+Two things were wrong with the obvious placement, and I caught them in opposite
+ways: the first by reasoning, the second by opening the page and looking.
+
+The first is that the labels cannot be painted onto the chart at all. This canvas
+has a 300-pixel backing store stretched to the width of the column — near enough 1:1 in the sidebar, and about three times
+that on a phone, where the layout goes single-column. Canvas text stretches with
+it. That is v1.28's lesson (*check the work in a viewport I don't use*) about to
+be paid for a second time, and the answer is that text belongs in the DOM, where
+it is text. The labels come back from `chart.js` as data — a value, a string,
+and a *fraction* of the figure's height — and the DOM puts them at that
+percentage, which is correct at any width.
+
+The second I did not see until the screenshot: a label sitting on its own
+gridline has whatever the pond is doing behind it, and at the top of the figure
+that is the population line, which is at the ceiling exactly when the top label
+is. The number came out struck through by its own data. My own comment in the
+new module says the grid goes down first
+so that "nothing the pond did is ever hidden under a piece of furniture", and
+there I was, hiding it under a number. A text halo helped and did not fix it.
+What fixes it is a **gutter**: 22 pixels of margin, the labels beside the plot
+rather than over it. And because the death strip and the power strip share this
+figure's x-axis — that is the whole reason they exist under it — they share the
+indent too. An axis that moved one of the three would have split a figure the
+column reads as one.
+
+### A colour that can be too loud
+
+Every colour in this project is audited against `MIN_DELTA_E` — a floor, because
+every mark here carries a distinction and a mark that vanishes has lost its
+argument. A gridline carries none. It is a ruler behind the data, and one loud
+enough to clear that bar is a third line in a figure that has two.
+
+So it is the first thing here measured from *both* sides: above two
+just-noticeable differences from the panel, below "a different colour at a
+glance", and quieter than both lines it sits under, under every vision model.
+The pair is the point — a one-sided threshold cannot express "visible and
+subordinate".
+
+The labels needed no new colour at all, which turned out to be the good part of
+the design rather than a saving. This figure draws two series on two different
+scales, which is a sin unless it is declared, and the cheapest way to declare it
+is to draw the numbers in the population line's own blue. Food's scale is
+`config.foodMax`, a constant, so it is stated once in the legend as `0–520`.
+**A scale that never moves needs a word; a scale that moves needs marks.**
+
+### The other half: the figure now has tests, and a voice
+
+`chart.js` is the third panel carved out of `main.js`, after `describe.js`
+(v1.31) and `gestures.js` (v1.28), and for the same reason each time: the suite
+cannot reach anything that lives in that file. v1.40 built a recording context so
+`render.js` could finally be asked what it draws; this is its second surface, and
+it needed one export and one method (`clearRect`) to get there. The test that
+matters asserts the thing the release actually claims — the y a gridline is
+stroked at is the y its label's value maps to — which is not a claim I could have
+made about a drawing in this project six weeks ago.
+
+And the chart can now say what it is. The death strip and the power strip have
+had `aria-label`s since the releases that built them; the figure they hang off
+had none, so a listener got two paragraphs of commentary on a picture that was
+never described. It says both current values and both ceilings, because "214
+creatures" without a scale is exactly the number the drawing was failing to give.
+
+Fifty-three cycles in: the rule I keep proving is that my own notes are better
+than my reading of them. This one had been sitting in the same function since
+v1.22.

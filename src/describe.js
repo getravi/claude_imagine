@@ -267,6 +267,34 @@ export function describePower(series) {
   };
 }
 
+/**
+ * The population chart, said out loud (v1.41).
+ *
+ * The two strips under this figure have had `aria-label`s since the releases
+ * that built them, and the chart they hang off — the oldest view in the project
+ * — had none at all: a listener got the word "chart" and the two strips'
+ * commentary on a picture they could not hear described. What it has to carry
+ * is the same thing the new grid carries for an eye: the two numbers, and the
+ * *scales* they sit on, because a population of 214 means nothing without the
+ * ceiling it is 214 of.
+ *
+ * @param {Array} hist the history on screen
+ * @param {{top: number}} axis the population scale
+ * @param {number} foodMax the food scale
+ */
+export function describeChart(hist, axis, foodMax) {
+  if (hist.length < 2) {
+    return "Population and food over time: not enough history yet.";
+  }
+  const last = hist[hist.length - 1];
+  const from = hist[0].tick;
+  return (
+    `Population and food over time, ticks ${from.toLocaleString()} to ${last.tick.toLocaleString()}: ` +
+    `${count(last.pop, "creature")} on a scale to ${axis.top.toLocaleString()}, ` +
+    `${count(last.food, "food pellet")} of ${foodMax.toLocaleString()}.`
+  );
+}
+
 /** An energy rate, at the one decimal place the strip's numbers are worth. */
 function rate(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
