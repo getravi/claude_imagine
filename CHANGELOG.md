@@ -4,6 +4,69 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.39.0] — 2026-07-31
+
+The energy books have been kept since v1.29 and readable as a rate since v1.35,
+and in ten releases nothing ever drew them. Power had a stat tile, eight CSV
+columns and a bar of run-to-date shares; the chart, the one surface in this
+project where a quantity can be seen *changing*, had no line for it. This
+release draws it — and then measures whether the drawing supports the claim it
+invites, which it does not.
+
+### Added
+
+- **The power strip**, under the death strip and on the same x-axis and
+  recent/whole scope: what the pond mints per tick as a continuous line, what it
+  spends as a dashed one, with the band between them filled. The band is the
+  point. `created − destroyed = standing` is an identity, so the gap is not a
+  comparison of two statistics — over any interval it *is* the change in the
+  energy standing in the pond, and `test/energyHistory.test.js` now holds that
+  at both the per-sample rate and the 120-tick mean the strip is drawn from.
+- **`energySeries(hist, window)`** — a trailing mean rather than a per-sample
+  rate, at the default of 1 exactly the old behaviour. The strip uses
+  `POWER_WINDOW`, the same 30 samples the live Power readout differences over,
+  so the right-hand end of the line is that readout rather than a cousin of it.
+  Also `overall`, the flat rate across the whole window on screen, which is what
+  a caption needs and what overlapping intervals cannot be summed into.
+- **`describePower()` in `src/describe.js`**, with tests: the peak, the window
+  it is a mean over, and the sentence a screen reader gets. Three states that a
+  warming-up readout usually conflates — nothing has moved, the first window has
+  not filled, and here is the rate — say three different things.
+- **`panelBackground()`, `chartLines()`, `powerLine()` in `src/palette.js`.**
+  The new colour is measured against everything it shares a figure with — the
+  panel, both chart lines composited, the three cause colours, the three sink
+  colours — under all four vision models: worst case **40.0** against a bar of
+  25. The two lines are *one* colour separated by dashing, the v1.34 rule
+  applied before it costs anything rather than after fourteen versions of an
+  invisible ring, and a test refuses a second hue.
+- **docs/SCIENCE.md: "The power strip: an exact quantity that forecasts
+  nothing".**
+
+### Notes
+
+- **The gap does not predict the population, and the control is what says so.**
+  Twelve seeds, 20,000 ticks: the sign of the gap agrees with the pond's next
+  move 60% of the time — better than a coin, and far worse than the free
+  information already on the chart above it, since the population's own previous
+  move agrees 86% of the time. The stock moves by about 6% of throughput; the
+  momentum swamps it. So nothing narrates the band, and the strip is labelled as
+  what it is. The Chronicle line that would have written itself here — *the pond
+  is running down* — is the v1.20 alarm-call mistake waiting to be made again.
+- **A mean is not free even when the arithmetic is exact.** At four ticks a
+  single pellet is worth six energy per tick, so the per-sample line is a
+  picture of pellet arrivals and one spike sets the scale for the whole strip.
+  Widening the window costs nothing in accuracy — differencing a cumulative
+  counter over any span is exact — but it damps peaks, so the caption carries
+  the window with the number, and intervals shorter than a full window are not
+  drawn at all rather than drawn at a different resolution from their
+  neighbours.
+- The two chart lines that have been drawn since v1.0 moved into `palette.js`
+  unchanged, with a test that rebuilds the measured tone from the string the
+  canvas actually strokes. They were the last colours in the sidebar that no
+  test could reach.
+- Nothing in the simulation changed: the strip reads history the world was
+  already recording. All 440 tests pass, `test/fingerprint.test.js` included.
+
 ## [1.38.0] — 2026-07-31
 
 v1.36 asked whether every opt-in *flag* in this project does anything, and left

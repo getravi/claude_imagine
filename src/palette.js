@@ -351,14 +351,79 @@ export function energyTones() {
 }
 
 /**
+ * The sidebar panel's own background — `--bg-panel` in `style.css`, and the
+ * background every chart, strip and bar in that column is finally drawn on.
+ * Here rather than inline so the audit and the stylesheet cannot drift.
+ */
+export function panelBackground() {
+  return { r: 0x0c, g: 0x13, b: 0x1c };
+}
+
+/**
  * The mortality and energy bars sit on this: the panel background with the
  * track's own translucent white over it. Both bars are drawn as segments on a
  * strip, so an empty or near-empty segment shows the track, and a colour that
  * disappears into it is a colour that reads as "none of this".
  */
 export function barTrack() {
-  return blendOver({ r: 0x0c, g: 0x13, b: 0x1c }, { r: 255, g: 255, b: 255 }, 0.06);
+  return blendOver(panelBackground(), { r: 255, g: 255, b: 255 }, 0.06);
 }
+
+/**
+ * The population and food lines, as the chart has drawn them since v1.0. They
+ * move here for the reason the mortality colours did in v1.25: a colour a test
+ * cannot reach is a colour that will drift, and these two are the backdrop
+ * every later mark in this column has to be legible against. The values are
+ * unchanged — `test/palette.test.js` pins the composited results.
+ */
+export function chartLines() {
+  return { pop: "rgba(120, 190, 255, 0.95)", food: "rgba(90, 200, 140, 0.5)" };
+}
+
+/** The two chart lines as they are actually composited over the panel. */
+export function chartLineTones() {
+  return {
+    pop: blendOver(panelBackground(), { r: 120, g: 190, b: 255 }, 0.95),
+    food: blendOver(panelBackground(), { r: 90, g: 200, b: 140 }, 0.5),
+  };
+}
+
+/**
+ * The power strip (v1.39): what the pond mints per tick, and what it spends.
+ *
+ * Two lines that must be told apart, in a column that already spends eight
+ * colours — the two chart lines above, the three causes in the death strip
+ * between, the three sinks in the energy bar. A ninth and a tenth hue would be
+ * a search over a feasible set that is nearly empty, and there is no need for
+ * one: this is the v1.34 lesson arriving somewhere it costs nothing. **Both
+ * lines are the same colour and the spend line is dashed.** Continuity is not a
+ * channel any vision model touches, and a distinction that never depended on
+ * hue cannot be lost to one.
+ *
+ * So the audit has a single subject, and it is the one that actually matters
+ * for a 1.5-pixel line: does this read against everything it shares a figure
+ * with? The colour came out of a sweep of the hue/saturation/lightness grid
+ * scored against the panel, both chart lines composited, all three cause
+ * colours and all three sink colours, under normal vision and every
+ * dichromacy — worst case **40.0**, against a bar of 25.
+ *
+ * `band` is the fill between the two lines, which is the strip's real subject:
+ * where it shows, the pond's standing stock is moving. An area is a field, not
+ * a mark, so opacity is the right carrier here (the same argument as
+ * `detritusTint`) — and the alpha is chosen so the band itself clears
+ * `MIN_DELTA_E` against the panel rather than by eye.
+ */
+export function powerLine() {
+  return { line: "hsl(70, 92%, 58%)", band: "hsla(70, 92%, 58%, 0.26)", dash: [3, 2.5] };
+}
+
+/** The power strip's one tone as RGB, for the audit. */
+export function powerLineTones() {
+  return { line: hslToRgb(70, 92, 58) };
+}
+
+/** The opacity of the band between the lines — see `powerLine()`. */
+export const POWER_BAND_ALPHA = 0.26;
 
 /**
  * Enriched ground — the map of where this pond's dead went (v1.27).

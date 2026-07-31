@@ -46,6 +46,12 @@ import {
   sickHaloTones,
   immuneRing,
   immuneRingTones,
+  panelBackground,
+  chartLines,
+  chartLineTones,
+  powerLine,
+  powerLineTones,
+  POWER_BAND_ALPHA,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -628,6 +634,79 @@ test("the energy colours the DOM is painted with are the ones that were measured
     const m = text.match(/^hsl\((\d+), (\d+)%, (\d+)%\)$/);
     assert.ok(m, `${name} is not a plain hsl() this test can parse: ${text}`);
     assert.deepEqual(hslToRgb(Number(m[1]), Number(m[2]), Number(m[3])), tones[name]);
+  }
+});
+
+// ---- the power strip (v1.39) ----
+//
+// A ninth colour in a column that already spends eight, drawn as a 1.5-pixel
+// line. Two claims: it reads against every one of the eight and against the
+// panel under every vision model, and the distinction it does *not* ask colour
+// to carry — minted against spent — is carried by dashing instead.
+
+/** Everything the power line shares its figure with, as it is actually drawn. */
+function chartColumn() {
+  const out = [{ name: "panel", rgb: panelBackground() }];
+  for (const [name, rgb] of Object.entries(chartLineTones())) out.push({ name: `${name} line`, rgb });
+  for (const [name, rgb] of Object.entries(mortalityTones())) out.push({ name, rgb });
+  for (const [name, rgb] of Object.entries(energyTones())) out.push({ name, rgb });
+  return out;
+}
+
+test("the power line reads against everything in the chart column", () => {
+  const tone = powerLineTones().line;
+  let worst = Infinity;
+  let where = null;
+  for (const s of chartColumn()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(tone, s.rgb, vision);
+      if (d < worst) {
+        worst = d;
+        where = `${s.name} under ${vision}`;
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `power line is ΔE ${worst.toFixed(1)} from ${where}`);
+});
+
+test("the power strip's two lines are separated by geometry, not by colour", () => {
+  // The v1.34 rule, applied before it costs anything rather than after a mark
+  // has been invisible for fourteen versions: there is one colour here, and the
+  // spend line is dashed. A future edit that gives the two lines two hues has to
+  // delete this test to do it.
+  const p = powerLine();
+  assert.ok(Array.isArray(p.dash) && p.dash.length >= 2, "the spend line must be dashed");
+  assert.ok(p.dash.every((n) => n > 0));
+  assert.equal(Object.keys(powerLineTones()).length, 1, "the strip owns exactly one colour");
+});
+
+test("the band between the lines is visible on the panel it is drawn on", () => {
+  // The band is the only part of this figure the energy identity makes exact —
+  // where it shows, the standing stock is moving — so a fill that vanishes into
+  // the panel loses the one thing the strip knows for certain.
+  const fill = blendOver(panelBackground(), powerLineTones().line, POWER_BAND_ALPHA);
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(fill, panelBackground(), vision);
+    assert.ok(d >= MIN_DELTA_E, `the band is ΔE ${d.toFixed(1)} from the panel under ${vision}`);
+  }
+  // And the alpha the canvas actually paints is the one that was measured.
+  const m = powerLine().band.match(/^hsla\(\d+, \d+%, \d+%, ([\d.]+)\)$/);
+  assert.ok(m, `the band is not a plain hsla() this test can parse: ${powerLine().band}`);
+  assert.equal(Number(m[1]), POWER_BAND_ALPHA);
+});
+
+test("the chart lines the canvas is painted with are the ones that were measured", () => {
+  // The same guard the energy bar has had since v1.29, for the two colours that
+  // predate the audit entirely: parse what `drawChart` strokes and rebuild the
+  // tone from it, so the measured value cannot drift from the drawn one.
+  const css = chartLines();
+  const tones = chartLineTones();
+  assert.deepEqual(Object.keys(css), Object.keys(tones));
+  for (const [name, text] of Object.entries(css)) {
+    const m = text.match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/);
+    assert.ok(m, `${name} is not a plain rgba() this test can parse: ${text}`);
+    const rgb = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+    assert.deepEqual(blendOver(panelBackground(), rgb, Number(m[4])), tones[name]);
   }
 });
 

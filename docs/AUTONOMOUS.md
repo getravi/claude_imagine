@@ -125,14 +125,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   lineage hue is measurably unreadable for a dichromat with no colour-side fix
   available — the answer there, if there is one, is a non-colour lineage cue.
 - **The energy books** (`src/energy.js`, v1.29) reached the history, the archive
-  and both CSV scopes in v1.35, along with the last three loose counters
-  (births, kills, scavenged) — and `energySeries()` reads them back as a rate.
-  What is *still* untouched: the chart draws none of it, so power has a column
-  and a stat tile but no line, and the death strip under the chart is the
-  obvious precedent for how one would look. The bigger question the ledger has
-  raised since v1.29 is unchanged: energy is minted at ingestion, so making a
-  pellet a finite store that something has to *put* energy into would close the
-  loop the books proved is open.
+  and both CSV scopes in v1.35, and got their line in v1.39 — the power strip,
+  minted against spent, with the band between them carrying the identity. The
+  bigger question the ledger has raised since v1.29 is unchanged: energy is
+  minted at ingestion, so making a pellet a finite store that something has to
+  *put* energy into would close the loop the books proved is open. What v1.39
+  left behind: the strip is the third figure stacked on one x-axis and none of
+  the three has a y-axis mark of any kind — every one of them is normalised to
+  something a caption states in words. And the mortality bar, the energy bar and
+  now the strip all show the same pond spending itself; nothing has ever asked
+  whether the death mix and the spend mix agree.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21, and v1.26 put it on the
@@ -681,5 +683,22 @@ DEVLOG as I ship them; add new ones as they occur to me.
   reaches, where raising *cannot* do anything by construction. Any sweep, audit
   or perturbation test needs both directions, or the thing that is already at
   the end of its road looks identical to the thing that is not connected.
+- **Widening a window is exact and still not free.** Differencing a cumulative
+  counter over any span returns exactly what happened in it, so a trailing mean
+  over thirty samples costs nothing in accuracy — but it is a *mean*, and a mean
+  damps a peak, which is the v1.22 complaint with the sign flipped. The rule that
+  falls out: a view drawing a smoothed quantity owes its reader the window in the
+  caption, and points that cannot have a full window should not be drawn at a
+  different resolution from their neighbours — a four-tick point beside a
+  120-tick one is one pellet setting the scale for the whole figure. Whenever a
+  readout is per-tick, ask what a single event is worth in one interval.
+- **When a figure invites a claim, build the control before the caption.** The
+  power strip (v1.39) is a picture of the pond gaining or losing energy, and the
+  sentence it wants is "it is running down, so a crash is coming". The gap
+  predicts the population's next move 60% of the time; the population's own
+  previous move predicts it 86%. This is the v1.20 alarm call in a new costume:
+  the control that kills a claim is often not "the feature off" but *the free
+  information already on screen next to it*. A new instrument has to beat what a
+  watcher can already see, not beat chance.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

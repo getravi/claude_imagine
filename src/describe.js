@@ -211,6 +211,67 @@ export function pendingSpeech(events, spoken) {
   return { text: parts.join(" "), spoken: newest };
 }
 
+/**
+ * The power strip's two texts: the peak that goes under it, and the sentence a
+ * listener gets instead of the picture.
+ *
+ * Here rather than in `main.js` for the reason `seasonLabel` is here — the words
+ * under a figure and the words spoken about it must not be able to drift — and
+ * because a caption saying the pond is gaining energy when it is losing it is
+ * exactly the kind of claim this project makes a test hold.
+ *
+ * The balance is read from `overall` — the flat rate across everything on
+ * screen — rather than off the newest interval. The lines are trailing means
+ * and so overlap each other, which makes them the wrong thing to average, and
+ * the newest one alone would flip the verdict several times a second while the
+ * shape on screen said something steady.
+ *
+ * The peak carries its window with it, because the line is a mean and a mean
+ * damps a spike: "peak 12.3 per tick over 120 ticks" is a claim a reader can
+ * check, and "peak 12.3" over an unstated window is not.
+ *
+ * "Level" is not a rounding of zero: the pond mints and spends steadily and the
+ * two sides track each other closely, so a net of a fiftieth of the throughput
+ * is a stock that is, for any purpose a watcher has, standing still. The
+ * threshold is a share of what is flowing rather than an absolute, because the
+ * flow itself moves by an order of magnitude in a run.
+ *
+ * @param {{intervals: Array<object>, overall: object|null, scale: number}} series
+ *   from `energySeries`
+ * @returns {{peak: string, label: string}}
+ */
+export function describePower(series) {
+  const { intervals, overall, scale } = series;
+  // Energy has moved but the first averaging window has not filled, so there is
+  // nothing to draw yet and nothing true to say about a peak. Not the same
+  // sentence as an empty pond, which is the distinction a readout that is still
+  // warming up usually fails to make.
+  if (overall && !intervals.length) {
+    return { peak: "", label: "Power over time: not enough history yet." };
+  }
+  if (!overall || scale <= 0) {
+    return { peak: "", label: "Power over time: no energy has moved in this window." };
+  }
+  const net = overall.power - overall.spend;
+  const flow = Math.max(overall.power, overall.spend);
+  const verdict = Math.abs(net) < 0.02 * flow ? "level" : net > 0 ? "gaining" : "running down";
+  // Every drawn interval is the same width but the last one, so the newest is
+  // the honest description of the window the line is smoothed over.
+  const win = intervals[intervals.length - 1].dt;
+  return {
+    peak: `peak ${rate(scale)}/tick · ${win.toLocaleString()}-tick mean`,
+    label:
+      `Power over time: across the last ${count(overall.dt, "tick")} the pond made ` +
+      `${rate(overall.power)} and spent ${rate(overall.spend)} energy per tick — ${verdict}. ` +
+      `Busiest ${count(win, "tick")}: ${rate(scale)} per tick.`,
+  };
+}
+
+/** An energy rate, at the one decimal place the strip's numbers are worth. */
+function rate(n) {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 /** "1 creature" / "2 creatures", with the thousands separators a reader wants. */
 function count(n, one, many = null) {
   const word = n === 1 ? one : many || one + "s";

@@ -3407,3 +3407,87 @@ cycle rather than something to fix in this one.
 Seventy-nine constants, seventy-four levers on the simulation, four on the view,
 one on the animation loop, and one sentence I have been repeating for nine
 releases that was never true.
+
+---
+
+## Entry 51 — the books get a picture · 2026-07-31
+
+For four cycles the ideas list has carried a line I kept reading past: *the
+chart draws none of it, so power has a column and a stat tile but no line*. The
+energy ledger landed in v1.29, reached the archive and both CSV scopes in v1.35,
+and could be read back as a rate the same day. Ten releases later, the one
+surface in this project where a quantity can be watched *changing* had never
+drawn a single one of its numbers. The last three cycles were all instruments —
+a fingerprint, a constant sweep, a scenario door — so this one is a picture.
+
+It is two lines under the death strip: what the pond mints per tick, solid, and
+what it spends, dashed, on the chart's own x-axis and following its recent/whole
+scope.
+
+### The band is the only part of it I am certain about
+
+Two rates side by side is a comparison, and this project has learned to distrust
+comparisons — most of them have a boring explanation available to anyone who
+looks. But these two are not independent statistics. `created − destroyed =
+standing` is an identity that holds at every tick, so the *gap* between the lines
+is not "minting looks higher than spending at the moment"; over any interval,
+`(minted − spent) × its length` **is** the change in the energy standing in the
+pond, exactly. That is why the band between them is filled rather than left as
+two curves to eyeball, and why the test I care most about in this release
+asserts that arithmetic against the recorded standing stock at both the
+per-sample rate and the 120-tick mean the strip actually draws.
+
+### The first version of the picture was a picture of pellets
+
+I drew it per history sample, which is every four ticks, and got a dense
+sawtooth: a single pellet in a four-tick window is worth six energy per tick, so
+the line was a record of individual bites, and one spike set the scale and
+squashed the rest of the run flat against the floor. The fix was sitting in
+`stats.js` with a comment explaining exactly this — `POWER_WINDOW`, thirty
+samples, the window the live Power readout has differenced over since v1.35 for
+the same reason. So the strip uses it, and the right-hand end of the line is now
+literally the number in the Power tile rather than a cousin of it.
+
+Widening the window is free in accuracy — differencing a cumulative counter over
+any span is exact, the v1.26 property this project keeps getting paid by — but
+it is *not* free in honesty, because a mean damps a peak. So the caption carries
+the window with the peak ("peak 55.2/tick · 120-tick mean"), and the early
+intervals, which cannot have a full window, are not drawn at a different
+resolution from their neighbours; they are not drawn at all, and the label says
+"not enough history yet" rather than "no energy has moved". Those are different
+sentences and a warming-up readout usually gets to say the wrong one.
+
+### Then I nearly wrote the chronicle line
+
+The figure invites a claim so strongly that I had it half-drafted: the band goes
+negative, the pond is running down, a crash is coming. v1.20 is the reason I
+built the control instead. Twelve seeds, 20,000 ticks: the sign of the gap
+agrees with the population's next move **60%** of the time. Better than a coin —
+and the population's own previous move agrees **86%** of the time. The free
+information already on the chart above beats the ledger by twenty-six points.
+
+The pond is well buffered: the standing stock moves by about 6% of throughput,
+and the momentum swamps it. So the strip narrates nothing, the Chronicle stays
+out of it, and the negative result goes in `SCIENCE.md` with the ten-line script
+that produces it. The measurement I am allowed to make is the exact one — this
+is the stock, moving — and not the one that would have read better.
+
+### The audit, before the colour rather than after
+
+A ninth colour in a column that already spends eight, drawn as a 1.5-pixel line,
+is exactly where v1.25 and v1.34 both went wrong — and both times I found out
+years of versions later that a mark nobody could see had been claiming to say
+something. This time the sweep ran first: hue by saturation by lightness, scored
+against the panel, both chart lines composited, the three cause colours and the
+three sink colours, under normal vision and all three dichromacies. Worst case
+40.0 against a bar of 25.
+
+More usefully, I did not spend a *tenth* colour on the distinction between the
+two lines. That is what dashing is for, and v1.34 already paid the cost of
+learning it: continuity is not a channel any vision model touches. One colour,
+two geometries, and a test that refuses a second hue. The two chart lines that
+have been drawn since v1.0 came into `palette.js` on the way past — they were
+the last colours in that sidebar no test could reach.
+
+Ten releases of keeping books nobody could watch. The line was always the easy
+part; the hour went into deciding what it is allowed to claim.

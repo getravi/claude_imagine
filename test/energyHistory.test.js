@@ -217,7 +217,7 @@ test("energySeries reads the books as a rate", () => {
     { tick: 0, [energyField("crop")]: 100, [energyField("metabolism")]: 40 },
     { tick: 100, [energyField("crop")]: 400, [energyField("metabolism")]: 240 },
   ];
-  const { intervals, peak } = energySeries(hist);
+  const { intervals, peak, spendPeak, scale } = energySeries(hist);
   assert.equal(intervals.length, 1);
   const iv = intervals[0];
   assert.equal(iv.dt, 100);
@@ -230,16 +230,64 @@ test("energySeries reads the books as a rate", () => {
   assert.equal(iv.power, 3);
   assert.equal(iv.spend, 2);
   assert.equal(peak, 3);
+  assert.equal(spendPeak, 2);
+  // The two lines of the power strip share one axis, so they share one scale.
+  assert.equal(scale, 3);
   assert.equal(iv.shares.metabolism, 1);
   assert.equal(iv.index, 1, "intervals are indexed by their later sample, as mortality is");
 
-  assert.deepEqual(energySeries([]), { intervals: [], peak: 0 });
-  assert.deepEqual(energySeries([hist[0]]), { intervals: [], peak: 0 });
+  const empty = { intervals: [], overall: null, peak: 0, spendPeak: 0, scale: 0 };
+  assert.deepEqual(energySeries([]), empty);
+  assert.deepEqual(energySeries([hist[0]]), empty);
   // A history with no energy columns at all: every rate zero, no shares to draw.
   const bare = energySeries([{ tick: 0 }, { tick: 4 }]);
   assert.equal(bare.intervals[0].power, 0);
   assert.equal(bare.intervals[0].shares, null);
 });
+
+test("the gap between the two power lines is the standing stock moving", () => {
+  // What the strip drawn in v1.39 claims, and the only quantity in that figure
+  // the identity makes exact: over any interval, (minted − spent) × its length
+  // is precisely the change in the energy standing in the pond. The band is
+  // filled between the lines because of this — where it shows, the stock moved
+  // — so if the arithmetic ever stopped holding, the picture would be asserting
+  // something false about a conservation law rather than merely looking odd.
+  const world = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 1200; i++) world.step();
+  const hist = world.stats.popHistory;
+  // Both the per-sample rate and the trailing mean the strip is actually drawn
+  // from: widening the window must not cost the identity anything, which is the
+  // v1.26 property that makes the wider window free in the first place.
+  for (const window of [1, POWER_WINDOW]) checkGap(hist, window);
+});
+
+function checkGap(hist, window) {
+  const { intervals, scale } = energySeries(hist, window);
+  assert.ok(intervals.length > 100, "not enough intervals to be a test of anything");
+  assert.ok(scale > 0, "a pond that mints nothing is not a test of power");
+
+  let worst = 0;
+  let crossings = 0;
+  for (const iv of intervals) {
+    const a = hist[Math.max(0, iv.index - window)];
+    const b = hist[iv.index];
+    const moved = b[energyField("standing")] - a[energyField("standing")];
+    const gap = (iv.power - iv.spend) * iv.dt;
+    // The residual of the identity at each end is the tolerance this can be
+    // held to — it is drift in the sum, not a fault in the differencing.
+    const slack =
+      Math.abs(a[energyField("residual")]) + Math.abs(b[energyField("residual")]) + 1e-6;
+    worst = Math.max(worst, Math.abs(gap - moved) - slack);
+    if (Math.sign(iv.power - iv.spend) !== Math.sign(intervals[0].power - intervals[0].spend)) {
+      crossings++;
+    }
+  }
+  assert.ok(worst <= 0, `at window ${window} the gap misses the stock by ${worst}`);
+  // And the lines really do cross, which is the only reason drawing both to one
+  // shared scale matters. A strip where minting is always above spending would
+  // be a figure with one line in it.
+  assert.ok(crossings > 0, `at window ${window} the pond never spent more than it minted`);
+}
 
 test("spendShares and the ledger's own shares are the same function", () => {
   const world = new World(makeConfig({ seed: 314 }));

@@ -15,10 +15,16 @@ import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
-import { wholePercents, mortalitySeries, DEATH_CAUSES } from "./stats.js";
-import { mortalityColours, energyColours } from "./palette.js";
-import { EnergyLedger, ENERGY_SINKS } from "./energy.js";
-import { describePond, pendingSpeech, seasonLabel, timeOfDayLabel } from "./describe.js";
+import { wholePercents, mortalitySeries, DEATH_CAUSES, POWER_WINDOW } from "./stats.js";
+import { mortalityColours, energyColours, chartLines, powerLine } from "./palette.js";
+import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
+import {
+  describePond,
+  describePower,
+  pendingSpeech,
+  seasonLabel,
+  timeOfDayLabel,
+} from "./describe.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -216,6 +222,7 @@ function loop(now) {
   updateMinimap();
   drawChart(world);
   drawDeaths(world);
+  drawPower(world);
   drawPhylogeny(world);
   updateHUD();
   updateSeasonBadge(world);
@@ -633,10 +640,12 @@ function drawChart(world) {
     drawBand(ctx, hist, W, H, (h) => h.min.pop / maxPop, (h) => h.max.pop / maxPop,
       "rgba(120, 190, 255, 0.22)");
   }
-  // Food line (dim green).
-  drawSeries(ctx, hist, W, H, (h) => h.food / maxFood, "rgba(90, 200, 140, 0.5)");
-  // Population line (bright).
-  drawSeries(ctx, hist, W, H, (h) => h.pop / maxPop, "rgba(120, 190, 255, 0.95)");
+  // Food line (dim green), then population (bright), both from `palette.js` so
+  // the audit can reach the colours everything else in this column is measured
+  // against.
+  const line = chartLines();
+  drawSeries(ctx, hist, W, H, (h) => h.food / maxFood, line.food);
+  drawSeries(ctx, hist, W, H, (h) => h.pop / maxPop, line.pop);
 }
 
 // The caption under the chart: which stretch of time is on screen, and — in
@@ -740,6 +749,103 @@ function setDeathsCaption(peakText, label) {
   }
 }
 
+// ---- The power strip ----
+//
+// Under the death strip, on the same x-axis and the same recent/whole scope:
+// what the pond mints per tick, and what it spends. The books have been kept
+// since v1.29 and read as a rate since v1.35, and until now the only place that
+// rate appeared was a stat tile and a CSV column — a chart with no line, in a
+// project whose whole argument is that a number nobody can see is a number
+// nobody checks.
+//
+// The two lines are drawn to one shared scale, because the thing worth seeing
+// is not either curve but the gap: `created − destroyed === standing`, so the
+// pond's stock of energy rises exactly where the minting line is above the
+// spending one. Scaling the two independently would put those crossings
+// wherever the arithmetic felt like it. The band between them is filled for the
+// same reason — it is the only quantity in this figure that the identity makes
+// exact.
+//
+// Heights are normalised to the busiest interval on screen, like the death
+// strip, and for the same reason: this says *when* the pond was working hard,
+// not how it compares to another run. The caption carries the absolute peak.
+let powerCtx = null;
+let powerLabel = "";
+function drawPower(world) {
+  if (!powerCtx) {
+    const c = $("power");
+    powerCtx = c.getContext("2d");
+    powerCtx._w = c.width;
+    powerCtx._h = c.height;
+  }
+  const ctx = powerCtx;
+  const W = ctx._w;
+  const H = ctx._h;
+  ctx.clearRect(0, 0, W, H);
+
+  const hist = chartScope === "whole" ? world.stats.runHistory.series() : world.stats.popHistory;
+  // The same window the live Power tile differences over, so the right-hand
+  // end of this line is the number in that tile rather than a cousin of it.
+  const series = energySeries(hist, POWER_WINDOW);
+  const { intervals, scale } = series;
+  const caption = describePower(series);
+  setPowerCaption(caption.peak, caption.label);
+  if (!intervals.length || scale <= 0) return;
+
+  // A trailing mean belongs at the *end* of the window it covers — the same x
+  // position the chart above puts that history point at, so a dip in the line
+  // sits under the moment the population chart shows it happening.
+  const span = Math.max(1, hist.length - 1);
+  const xOf = (iv) => (iv.index / span) * W;
+  const yOf = (v) => H - Math.max(0, v / scale) * (H - 3) - 1.5;
+  const c = powerLine();
+
+  // The band first, under both lines: the standing stock moving.
+  ctx.beginPath();
+  for (let i = 0; i < intervals.length; i++) {
+    const x = xOf(intervals[i]);
+    const y = yOf(intervals[i].power);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  for (let i = intervals.length - 1; i >= 0; i--) {
+    ctx.lineTo(xOf(intervals[i]), yOf(intervals[i].spend));
+  }
+  ctx.closePath();
+  ctx.fillStyle = c.band;
+  ctx.fill();
+
+  // Spend under minting, so the solid line reads as the top of the figure.
+  strokeIntervals(ctx, intervals, xOf, yOf, (iv) => iv.spend, c.line, c.dash);
+  strokeIntervals(ctx, intervals, xOf, yOf, (iv) => iv.power, c.line, []);
+}
+
+/** One rate as a line across the strip. `dash` is what tells the two apart. */
+function strokeIntervals(ctx, intervals, xOf, yOf, valueOf, stroke, dash) {
+  ctx.beginPath();
+  for (let i = 0; i < intervals.length; i++) {
+    const x = xOf(intervals[i]);
+    const y = yOf(valueOf(intervals[i]));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.setLineDash(dash);
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+/** Both texts under the power strip, written only when they change. */
+function setPowerCaption(peakText, label) {
+  const el = $("power-peak");
+  if (el.textContent !== peakText) el.textContent = peakText;
+  if (powerLabel !== label) {
+    powerLabel = label;
+    $("power").setAttribute("aria-label", label);
+  }
+}
+
 /**
  * Paint the three cause colours onto the mortality bar and the strip's legend.
  * They come from `src/palette.js` rather than the stylesheet so that the swatch,
@@ -763,6 +869,14 @@ function applyMortalityColours() {
   // are painted from the file the test measures.
   const n = energyColours();
   for (const k of ENERGY_SINKS) paint(`nrg-${k}`, n[k]);
+  // The power strip's two swatches. They are the same colour on purpose — what
+  // separates the lines is that one of them is dashed — so the legend has to be
+  // dashed too, or it teaches the wrong key to the figure below it.
+  const p = powerLine();
+  const [on, off] = p.dash;
+  paint("line-made", p.line);
+  $("line-spent").style.background =
+    `repeating-linear-gradient(to right, ${p.line} 0 ${on}px, transparent ${on}px ${on + off}px)`;
 }
 
 function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {

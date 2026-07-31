@@ -1807,6 +1807,77 @@ for (const seed of [314, 7, 23, 99, 555, 1234, 2024, 8181, 42, 77, 101, 3141]) {
 }
 ```
 
+## The power strip: an exact quantity that forecasts nothing (v1.39)
+
+The books have been on the chart's clock since v1.35 and had never been *drawn*.
+v1.39 puts them under the death strip as two lines on the same x-axis — energy
+minted per tick, and energy spent — and the interesting thing about that figure
+is not either line. It is the band between them, because the identity
+`created − destroyed = standing` means the gap is not a comparison of two
+statistics: over any interval, `(minted − spent) × its length` **is** the change
+in the energy standing in the pond, exactly, to the residual measured above.
+`test/energyHistory.test.js` holds that at both the per-sample rate and the
+120-tick mean the strip is actually drawn from.
+
+Two things had to be decided by measurement rather than by eye.
+
+**The window.** At the chart's native resolution an interval is four ticks, in
+which a single pellet is worth six energy per tick — so a line drawn per-sample
+is a picture of pellet arrivals, spiky enough that one spike sets the scale and
+flattens everything else. The strip uses the same 30-sample (120-tick) trailing
+mean as the live *Power* readout, which makes the right-hand end of the line
+that readout's own value. Differencing a cumulative counter over a wider span is
+exact, so widening costs nothing in accuracy — but it *is* a mean, and a mean
+damps a peak, so the caption carries the window with the peak.
+
+**Whether the gap says anything about what happens next.** It is tempting, and
+it would have been easy to write into the Chronicle: the pond is running down,
+therefore the population is about to fall. Twelve seeds, 20,000 ticks:
+
+| | |
+|---|---|
+| windows where spending exceeded minting | **44%** (29–48% across seeds) |
+| size of the gap, as a share of the flow | **6%** (5% on eleven seeds, 14% on seed 23) |
+| sign of the gap agrees with the *next* change in population | **60%** (57–65%) |
+| control: the population's own previous move agrees with the next | **86%** (78–90%) |
+
+So the gap is a genuine leading signal in the trivial sense — 60% beats a coin —
+and it is far *worse* than the free information already on the chart above it,
+which is that a population that was rising a moment ago is usually still rising.
+This pond is well-buffered: the standing stock moves by a few per cent of
+throughput, and the population's own momentum swamps it. The strip is therefore
+labelled as what it is — a stock, not a forecast — and nothing narrates it.
+
+```js
+// node this from the repo root: does the gap between the lines predict anything?
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { energySeries } from "./src/energy.js";
+import { POWER_WINDOW } from "./src/stats.js";
+
+for (const seed of [314, 7, 23, 99, 555, 1234, 2024, 8181, 42, 77, 101, 3141]) {
+  const w = new World(makeConfig({ seed }));
+  for (let t = 0; t < 20000; t++) w.step();
+  const hist = w.stats.runHistory.series();
+  const { intervals } = energySeries(hist, POWER_WINDOW);
+  let down = 0, gap = 0, agree = 0, persist = 0, n = 0;
+  for (let i = 1; i + 1 < intervals.length; i++) {
+    const net = intervals[i].power - intervals[i].spend;
+    if (net < 0) down++;
+    gap += Math.abs(net) / Math.max(intervals[i].power, intervals[i].spend);
+    const next = hist[intervals[i + 1].index].pop - hist[intervals[i].index].pop;
+    const prev = hist[intervals[i].index].pop - hist[intervals[i - 1].index].pop;
+    if (next === 0) continue;
+    n++;
+    if (Math.sign(next) === Math.sign(net)) agree++;
+    if (Math.sign(next) === Math.sign(prev)) persist++;
+  }
+  const pct = (x) => `${(x * 100).toFixed(0)}%`;
+  console.log(seed, `down ${pct(down / intervals.length)}`, `gap ${pct(gap / intervals.length)}`,
+    `ledger predicts ${pct(agree / n)}`, `momentum predicts ${pct(persist / n)}`);
+}
+```
+
 ## Determinism and reproducibility
 
 Vivarium is fully **deterministic**: a given `(seed, parameters)` pair produces

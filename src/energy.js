@@ -110,41 +110,81 @@ export function spendShares(spent) {
  * world working correctly, and `spilled` arrives at −2e−16 often enough that
  * clamping it would be pretending to a precision the sum does not have.
  *
+ * `peak` and `spendPeak` are the two rates' own maxima; `scale` is the larger
+ * of them, which is the number a drawing of both on one axis has to normalise
+ * by. Keeping the three separate matters because the gap between the lines is
+ * the point of drawing them: the pond's standing stock rises exactly when power
+ * is above spend, so two lines scaled independently would put the crossings in
+ * the wrong places.
+ *
+ * `window` widens each interval to the sample that many places back, giving a
+ * *trailing* mean rather than a per-sample rate. At the default of 1 this is
+ * the adjacent-pair behaviour above and every existing caller is unchanged; at
+ * `POWER_WINDOW` it is exactly the arithmetic behind the live Power readout, so
+ * a line drawn from it is that readout plotted over its own history and the two
+ * cannot disagree. There is nothing lossy about the widening — differencing a
+ * cumulative counter over any span is exact, which is the whole v1.26 property —
+ * but it *is* a mean, and a mean damps a spike, so a view drawing one owes its
+ * reader the window length. At four ticks a single pellet is worth six energy
+ * per tick and the line is a picture of pellet arrivals rather than of the pond.
+ *
+ * `overall` is the same arithmetic over the entire history in one interval —
+ * the flat rate for the whole window on screen, which is what a caption wants
+ * and what overlapping intervals cannot be summed into.
+ *
  * Pure and read-only. Returns an empty series for fewer than two points.
  * @param {Array<object>} hist history points, oldest first
- * @returns {{intervals: Array<object>, peak: number}}
+ * @param {number} [window] samples per interval; 1 is one adjacent pair
+ * @returns {{intervals: Array<object>, overall: object|null, peak: number,
+ *   spendPeak: number, scale: number}}
  */
-export function energySeries(hist) {
-  const intervals = [];
-  let peak = 0;
-  for (let i = 1; i < hist.length; i++) {
-    const a = hist[i - 1];
-    const b = hist[i];
+export function energySeries(hist, window = 1) {
+  /** One interval, from history point `a` to history point `b`. */
+  const between = (a, b, index) => {
     const dt = b.tick - a.tick;
-    if (dt <= 0) continue;
+    if (dt <= 0) return null;
     /** @type {Record<string, number>} */
     const rates = {};
     for (const f of LEDGER_FIELDS) {
       rates[f] = ((b[energyField(f)] ?? 0) - (a[energyField(f)] ?? 0)) / dt;
     }
     rates.waste = rates.digested + rates.spilled + rates.rotted;
-    const power = ENERGY_SOURCES.reduce((s, k) => s + rates[k], 0);
-    const spend = ENERGY_SINKS.reduce((s, k) => s + rates[k], 0);
-    if (power > peak) peak = power;
     // `index` is the position of the *later* sample, matching `mortalitySeries`
-    // so the two can be plotted against the same x positions.
-    intervals.push({
-      index: i,
+    // so the two can be plotted against the same x positions. With a window
+    // wider than one sample that is also the right place for a trailing mean:
+    // the value is what the books said as of that sample.
+    return {
+      index,
       from: a.tick,
       to: b.tick,
       dt,
       rates,
-      power,
-      spend,
+      power: ENERGY_SOURCES.reduce((s, k) => s + rates[k], 0),
+      spend: ENERGY_SINKS.reduce((s, k) => s + rates[k], 0),
       shares: spendShares(rates),
-    });
+    };
+  };
+
+  const intervals = [];
+  let peak = 0;
+  let spendPeak = 0;
+  const back = Math.max(1, Math.floor(window));
+  // Every interval covers a *full* window, so the series is empty until there is
+  // one. The tempting alternative — let the early intervals reach back as far as
+  // there is history — puts a handful of points on a much shorter window at the
+  // left edge, and a four-tick window is where a single pellet is a spike. One
+  // of those is enough to become the maximum and squash the rest of the line
+  // flat, which is a picture of the arrival of a pellet drawn at the scale of
+  // the whole run.
+  for (let i = back; i < hist.length; i++) {
+    const iv = between(hist[i - back], hist[i], i);
+    if (!iv) continue;
+    if (iv.power > peak) peak = iv.power;
+    if (iv.spend > spendPeak) spendPeak = iv.spend;
+    intervals.push(iv);
   }
-  return { intervals, peak };
+  const overall = hist.length > 1 ? between(hist[0], hist[hist.length - 1], hist.length - 1) : null;
+  return { intervals, overall, peak, spendPeak, scale: Math.max(peak, spendPeak) };
 }
 
 export class EnergyLedger {

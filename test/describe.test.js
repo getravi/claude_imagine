@@ -14,11 +14,13 @@ import { makeConfig } from "../src/config.js";
 import { Camera } from "../src/camera.js";
 import {
   describePond,
+  describePower,
   pendingSpeech,
   seasonLabel,
   timeOfDayLabel,
   MAX_SPOKEN,
 } from "../src/describe.js";
+import { energySeries, energyField } from "../src/energy.js";
 
 const ev = (tick, msg) => ({ tick, year: 0, icon: "•", cat: "test", msg });
 
@@ -264,4 +266,73 @@ test("describing a world does not change it", () => {
   assert.deepEqual(described.food.items, quiet.food.items);
   assert.deepEqual(described.corpses, quiet.corpses);
   assert.equal(described.rng.next(), quiet.rng.next());
+});
+
+// ---- the power strip's caption (v1.39) ----
+//
+// The strip draws two rates and then says, in words, which way the pond's
+// energy is going. That sentence is the part a listener gets instead of the
+// picture and the part a sighted reader will believe without checking, so it is
+// held to the arithmetic here rather than trusted to `main.js`.
+
+test("the power caption reads the whole window, not the newest interval", () => {
+  const row = (tick, crop, metabolism) => ({
+    tick,
+    [energyField("crop")]: crop,
+    [energyField("metabolism")]: metabolism,
+  });
+  // Four hundred ticks of minting twice what it spends, then four ticks the
+  // other way — the shape that would flip a verdict read off the last point.
+  const gaining = describePower(
+    energySeries([row(0, 0, 0), row(400, 800, 400), row(404, 800, 420)])
+  );
+  assert.match(gaining.label, /gaining/);
+  assert.match(gaining.label, /across the last 404 ticks/);
+  assert.match(gaining.label, /made 2\.0 and spent 1\.0 energy per tick/);
+  // The peak is the busiest interval on *either* line — here the four ticks of
+  // spending, which is exactly why the two are drawn to one shared scale.
+  assert.equal(gaining.peak, "peak 5.0/tick · 4-tick mean");
+
+  const losing = describePower(energySeries([row(0, 0, 0), row(100, 100, 400)]));
+  assert.match(losing.label, /running down/);
+
+  // Level is a claim about the *share* of the flow, not a rounding of zero: a
+  // pond minting 300 a tick and spending 299.9 is standing still for any
+  // purpose a watcher has.
+  const level = describePower(energySeries([row(0, 0, 0), row(100, 30000, 29990)]));
+  assert.match(level.label, /level/);
+});
+
+test("the power caption says nothing it cannot support", () => {
+  // The v1.16 rule: a narration of a thing happening must first check the thing
+  // happened. An empty window gets a sentence saying so and no peak at all.
+  const empty = describePower(energySeries([]));
+  assert.equal(empty.peak, "");
+  assert.match(empty.label, /no energy has moved/);
+  const flat = describePower(
+    energySeries([{ tick: 0 }, { tick: 4 }].map((r) => ({ ...r })))
+  );
+  assert.equal(flat.peak, "", "a window in which nothing was minted has no peak to report");
+  assert.match(flat.label, /no energy has moved/);
+
+  // And the case in between, which is not the same sentence: energy has moved,
+  // but the averaging window has not filled, so there is nothing to draw and no
+  // peak that would mean anything. Saying "no energy has moved" here would be
+  // the spoken form of a readout that is quietly still warming up.
+  const young = [0, 4, 8].map((tick) => ({ tick, [energyField("crop")]: tick * 3 }));
+  const filling = describePower(energySeries(young, 30));
+  assert.equal(filling.peak, "");
+  assert.match(filling.label, /not enough history yet/);
+});
+
+test("the caption describes the same rates the strip is drawn from", () => {
+  const world = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 800; i++) world.step();
+  const series = energySeries(world.stats.popHistory);
+  const { peak, label } = describePower(series);
+  // The peak in the caption is the scale the lines are normalised to — the
+  // number that makes a normalised strip mean something.
+  assert.ok(series.scale > 0);
+  assert.match(peak, new RegExp(`^peak ${series.scale.toFixed(1)}/tick · \\d+-tick mean$`));
+  assert.match(label, /^Power over time: /);
 });
