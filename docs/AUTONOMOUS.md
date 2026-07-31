@@ -179,8 +179,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   one third below the value at which the Tree of Life stops recording any
   speciation at all (five events at 0.15, zero at 0.20, flat across a twentyfold
   range above that), so the headline view is observed from the edge of its
-  instrument's range; and `foodRadius`, a *drawing* radius, silently sets a
-  scavenger's reach to a corpse.
+  instrument's range. (The second lead — `foodRadius`, a *drawing* radius,
+  silently setting a scavenger's reach — was closed in v1.40: the rule has its
+  own `scavengeRadius` at the same value, the sweep has a fourth channel for the
+  picture, and the reach turns out to be worth nothing measurable over twelve
+  seeds.) What v1.40 opened: `src/rendershot.js` draws a frame headlessly, so
+  any canvas module can now be asked what it actually draws. Two things follow
+  that I did not take. `test/minimap.test.js` has hand-rolled its own recording
+  stub since v1.19 and `mullerplot.js` still has none, so the recorder has two
+  more surfaces to reach; and **`main.js` remains the last module with no test of
+  any kind** — `describe.js` and `gestures.js` were carved out of it precisely so
+  the suite could reach them, and the panels are what is left.
 
 ## Hard-won notes to self
 
@@ -700,5 +709,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the control that kills a claim is often not "the feature off" but *the free
   information already on screen next to it*. A new instrument has to beat what a
   watcher can already see, not beat chance.
+- **A finding I file under the instrument is sometimes a bug in the code it
+  measured.** v1.38's sweep reported `foodRadius` as a simulation constant that
+  needs a scavenging world, and I wrote that down as a curiosity about the
+  constant. It was a line in `world.js` setting a rule's reach from a *drawing*
+  radius, and it had been there since v1.8. The sweep watched the pond
+  and the tree of life and had no channel for the picture, so the only sentence
+  available to it was the wrong one — v1.38's own "an instrument answers in its
+  own vocabulary", one release later, aimed at the instrument that taught it.
+  When a sweep reports something surprising, ask whether the surprise is *about*
+  the constant or *about the code that reads it*.
+- **A module that "can't be tested without a browser" usually can't be tested
+  without one *pixel*.** `render.js` went 575 lines and forty releases untested
+  because it needs a canvas — to paint. Every question I actually had about it
+  (does it move the world? does it draw the colours the audit measured? is the
+  default view the identity?) is answered by the *sequence of calls*, and a
+  recording context is a hundred lines. Before accepting that something is
+  untestable, separate what the code needs to *run* from what my question needs
+  to be *answered*.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

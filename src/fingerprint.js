@@ -54,8 +54,11 @@
  * FNV-1a over 32-bit words, fed the exact bit pattern of every double. Not a
  * cryptographic hash and not trying to be — it needs to be stable, order-
  * sensitive, and incapable of ignoring a low bit.
+ *
+ * Exported so the fourth channel — `rendershot.js`, which hashes what the
+ * renderer draws — mixes its numbers exactly the way these three do.
  */
-class Hash {
+export class Hash {
   constructor() {
     this.h = 0x811c9dc5 | 0;
     this.buf = new ArrayBuffer(8);

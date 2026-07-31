@@ -18,11 +18,16 @@
 //     Muller plot says while leaving the pond bit-for-bit identical, which is
 //     the *point* of a pure observer and reads as "dead" to a sweep that only
 //     watches the state.
+//   - `draw`     — the picture and nothing else. `foodRadius` is the whole
+//     category: it is the size of a food mote and of a corpse splotch, read by
+//     `render.js` and by nothing in `World.step`. A sweep watching the pond and
+//     the tree calls it dead, which is how v1.38 came to record it as a
+//     *simulation* constant — see below.
 //   - `ui`       — read by the animation loop and not by `World.step`.
 //     `stepsPerFrame` is the only one, and its claim is a negative: stepping is
 //     the caller's business, so it must move neither channel.
 //
-// Two things this sweep learned the hard way, both in `SPECIAL` below:
+// Three things this sweep learned the hard way, all three in `SPECIAL` below:
 //
 //  1. **A one-sided nudge measures one side.** The first pass moved every
 //     constant up by 37% and reported fourteen dead. `populationMax` is not
@@ -30,14 +35,27 @@
 //     no-op and *lowering* it bites within 500 ticks. Same for `weightClamp`.
 //  2. **A constant is only live in a world where it can bite.** A parameter of
 //     an opt-in feature needs that feature on; `reseedCount` needs a world that
-//     actually goes extinct; `foodRadius` — a *drawing* radius — turns out to
-//     set a scavenger's reach to a corpse, so it needs `scavenging`. This is
-//     the v1.36 kin-recognition lesson generalised: a number can be correct,
-//     load-bearing and completely mute in the world anybody looks at.
+//     actually goes extinct. This is the v1.36 kin-recognition lesson
+//     generalised: a number can be correct, load-bearing and completely mute in
+//     the world anybody looks at.
+//  3. **A sweep with no channel for a thing calls that thing something else.**
+//     v1.38 found `foodRadius` alive in a scavenging world and filed it as an
+//     unusual simulation constant. It was: `world.js` set a scavenger's reach to
+//     it, because a corpse-sized distance was needed and a corpse-sized number
+//     happened to exist. The sweep could see the coupling and had no vocabulary
+//     for what the constant *is*, so it wrote down the coupling. v1.40 gave the
+//     rule its own `scavengeRadius` (same value, so no world moved) and gave the
+//     sweep a fourth channel to say the rest.
+//
+// The extra channel is not free — a render fingerprint means drawing a frame —
+// so it is taken only for the constants that ask for it, and the two claims a
+// `draw` constant makes are checked in opposite directions: it must move the
+// picture, and it must leave the pond alone for the whole budget.
 
 import { World } from "./world.js";
 import { makeConfig, DEFAULT_CONFIG } from "./config.js";
 import { stateFingerprint, observationFingerprint } from "./fingerprint.js";
+import { renderFingerprint } from "./rendershot.js";
 
 /** Ticks a constant gets to show itself before the sweep calls it dead. */
 export const DEFAULT_BUDGET = 600;
@@ -75,6 +93,7 @@ export const SPECIAL = {
   corpseEnergyBase: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and needs a corpse" },
   corpseEnergyPerRadius: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and needs a corpse" },
   corpseDecay: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and needs a corpse" },
+  scavengeRadius: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and a reach needs a corpse to reach for" },
   dayLength: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   nightVisionFactor: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   signalRadius: { world: { signalling: true }, why: "signalling is opt-in" },
@@ -101,13 +120,6 @@ export const SPECIAL = {
   },
 
   // --- Constants that are only reachable somewhere unusual. ---
-  foodRadius: {
-    world: { scavenging: true },
-    ticks: 700,
-    why:
-      "a drawing radius that is load-bearing: it sets how close a scavenger must get to a corpse " +
-      "(world.js), so it is inert in a world with scavenging off and is otherwise only seen by render.js",
-  },
   populationMax: {
     to: 60,
     ticks: 700,
@@ -153,6 +165,15 @@ export const SPECIAL = {
       "the one constant with no reach in the default pond at all: on seed 314 even ten times the " +
       "default threshold changes nothing in 9,000 ticks, because no predator ever meets a close " +
       "relative there (v1.36 found the same of the flag). Seed 23 is the world where kin meet",
+  },
+
+  // --- Levers on the picture, not on the world. ---
+  foodRadius: {
+    channel: "draw",
+    why:
+      "a drawing radius, and now only that: the size of a food mote and (+1.2) of a corpse " +
+      "splotch. It set a scavenger's reach as well until v1.40 split `scavengeRadius` out, which " +
+      "is why the v1.38 sweep recorded it as a simulation constant with an unusual world",
   },
 
   // --- Levers on the view, not on the world. ---
@@ -216,30 +237,43 @@ export function leverSpec(key) {
  * each channel disagrees, or -1 for a channel that never did.
  *
  * The world channel short-circuits, because "it is a lever" is settled the
- * moment it moves. The observer channel cannot: half of its claim is that the
- * *state* never moved, and that is only earned by running the whole budget.
+ * moment it moves. The observer and draw channels cannot: half of each claim is
+ * that the *state* never moved, and that is only earned by running the whole
+ * budget.
+ *
+ * The picture is only fingerprinted for a constant that claims that channel, and
+ * only until it moves — drawing a frame costs a few thousand recorded operations
+ * per world, so a `draw` constant that turned out to be dead would pay for its
+ * own diagnosis by drawing the whole budget. That is the right way round.
  *
  * @param {string} key
- * @returns {{key: string, channel: string, from: number, to: number, ticks: number, worldAt: number, observerAt: number}}
+ * @returns {{key: string, channel: string, from: number, to: number, ticks: number, worldAt: number, observerAt: number, drawAt: number}}
  */
 export function sweepLever(key) {
   const spec = leverSpec(key);
   const base = { seed: 314, ...spec.world };
-  const control = new World(makeConfig(base));
-  const moved = new World(makeConfig({ ...base, [key]: spec.to }));
+  const controlCfg = makeConfig(base);
+  const movedCfg = makeConfig({ ...base, [key]: spec.to });
+  const control = new World(controlCfg);
+  const moved = new World(movedCfg);
 
   let worldAt = -1;
   let observerAt = -1;
+  let drawAt = -1;
   const needsFullRun = spec.channel !== "world";
+  const needsDraw = spec.channel === "draw";
   for (let i = 0; i < spec.ticks; i++) {
     control.step();
     moved.step();
     const t = i + 1;
     if (worldAt < 0 && stateFingerprint(moved) !== stateFingerprint(control)) worldAt = t;
     if (observerAt < 0 && observationFingerprint(moved) !== observationFingerprint(control)) observerAt = t;
+    if (needsDraw && drawAt < 0 && renderFingerprint(moved, movedCfg) !== renderFingerprint(control, controlCfg)) {
+      drawAt = t;
+    }
     if (!needsFullRun && worldAt > 0) break;
   }
-  return { ...spec, worldAt, observerAt };
+  return { ...spec, worldAt, observerAt, drawAt };
 }
 
 /** Sweep every numeric constant (or a named subset). */

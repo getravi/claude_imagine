@@ -4,6 +4,68 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.40.0] — 2026-07-31
+
+v1.38's constant sweep found `foodRadius` — the size of a food mote — alive in a
+scavenging world, and filed it as a simulation constant that needed an unusual
+world to bite in. It was telling the truth about a coupling and had no
+vocabulary for what the constant *is*: `world.js` had borrowed a drawing radius
+for the one rule in the pond that needed a corpse-sized distance. This release
+gives the rule its own constant, gives the sweep a channel for the picture, and
+in building that channel gives `render.js` — 575 lines, the whole look of the
+thing — the first tests it has had since v1.0.
+
+### Added
+
+- **`src/rendershot.js`**: a 2D context that records instead of painting. Every
+  method `render.js` calls, in order, with its arguments — including the pixels
+  pushed into the offscreen terrain and soil layers, which are blitted with
+  identical arguments whatever they contain. From that stream, `renderFingerprint`:
+  a fourth channel next to the state, the trajectory and the observation.
+  Deliberately **not** a golden constant — a render hash moves when a colour is
+  nudged or a mark grows a pixel, which is v1.36's over-sensitive-instrument
+  lesson, so it is for comparisons inside one run.
+- **`test/render.test.js`**, and the claim it opens with is the one `render.js`
+  has made in prose since v1.0: *rendering is entirely read-only.* Hash the
+  world, draw it, hash it again — all three channels, plus a count of the random
+  numbers drawing draws (zero). Also: the same world twice is the same picture,
+  the default view is drawn through the exact identity, and — the audit that had
+  never crossed the gap between `palette.js` and the canvas — **the tones the
+  colour audit measures are the tones the renderer actually strokes**, the sick
+  halo, the immune ring and its dashes, the predator mark, the contagious zone.
+- **A `draw` channel in the constant sweep.** `foodRadius` is the whole
+  category, and it is asserted in both directions: it must move the picture, and
+  it must leave the pond bit-for-bit identical for the whole budget. A drawing
+  number steering the simulation again is now a test failure.
+
+### Fixed
+
+- **A scavenger's reach was a drawing radius.** From v1.8 to v1.39,
+  `world.js` set how close a scavenger must get to a corpse with
+  `c.radius + cfg.foodRadius + 6` — so making the food motes prettier would have
+  quietly changed what a scavenger could reach, and the constant sweep would have
+  reported the visual tweak as a simulation change with no way to say why. The
+  reach is `cfg.scavengeRadius` now, at the same value 3, so **every scavenging
+  world is bit-for-bit what it was**. The trailing `+ 6` is deliberately not
+  folded into the new constant: `(r + 3) + 6` and `r + 9` disagree in the last
+  bit for 1.1% of body radii (measured, 5M samples), and this sum feeds the
+  comparison that decides whether a bite lands.
+- `docs/SCIENCE.md`'s account of the sweep, which described the coupling as a
+  property of `foodRadius` rather than as a bug in `world.js`.
+
+### Notes
+
+- **A sweep with no channel for a thing calls that thing something else.** This
+  is v1.38's own lesson — an instrument only ever answers in its own vocabulary —
+  arriving one release later against the instrument that taught it. The sweep
+  could see that `foodRadius` reached the pond and could not see that it had no
+  business doing so.
+- The reach is a genuine lever and a weak one: over twelve seeds at 6,000 ticks,
+  tripling it changes the pond less than the spread between seeds. The
+  measurement is in `docs/SCIENCE.md`.
+- Zero new dependencies, no simulation behaviour changed, and the default pond is
+  untouched: `test/fingerprint.test.js` still holds the v1.36 hashes.
+
 ## [1.39.0] — 2026-07-31
 
 The energy books have been kept since v1.29 and readable as a rate since v1.35,

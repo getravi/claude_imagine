@@ -322,7 +322,7 @@ export class World {
       // living creature, so this is exactly the predation path as before.
       if (preyTarget && c.age - c.lastBiteAge >= cfg.biteCooldown) {
         if (preyTarget.isCorpse) {
-          const reach = c.radius + cfg.foodRadius + 6;
+          const reach = c.radius + cfg.scavengeRadius + 6;
           if (preyTargetD2 <= reach * reach && preyTarget.energy > 0) {
             const chunk = Math.min(preyTarget.energy, cfg.biteEnergy);
             preyTarget.energy -= chunk;

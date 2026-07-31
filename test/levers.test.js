@@ -6,10 +6,13 @@
 // `energyMax` sitting above a threshold it could never be reached from (v1.29).
 // Neither was visible in the code. Both would have been caught here.
 //
-// The answer the sweep gives is yes, all seventy-nine — but only once each is
-// given a world where it can bite, and only once the sweep can watch more than
-// the simulation. See src/levers.js for the three channels and for every
-// exception's reason.
+// The answer the sweep gives is yes, all eighty — but only once each is given a
+// world where it can bite, and only once the sweep can watch more than the
+// simulation. See src/levers.js for the four channels and for every exception's
+// reason. The fourth arrived in v1.40 with a lesson of its own: a sweep with no
+// channel for *drawing* found `foodRadius` alive in a scavenging world and filed
+// it as a simulation constant, which it was — `world.js` had borrowed a mote's
+// radius for a scavenger's reach. It has its own constant now.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -26,7 +29,7 @@ test("the sweep covers every number in the config, and every entry moves it", ()
   // constant added in a later release is swept the day it lands. If it needs a
   // world of its own to be live, the sweep below will fail and say so, which is
   // the intended way to find that out.
-  assert.ok(KEYS.length >= 79, `only found ${KEYS.length} numeric constants`);
+  assert.ok(KEYS.length >= 80, `only found ${KEYS.length} numeric constants`);
   for (const key of KEYS) {
     const spec = leverSpec(key);
     assert.notEqual(spec.to, spec.from, `${key}: the sweep would not move it`);
@@ -84,6 +87,52 @@ test("the tree of life's constants move the view and never the pond", () => {
         "the tree of life is meant to watch the pond, not steer it"
     );
   }
+});
+
+test("the drawing radius draws, and does nothing else", () => {
+  // The v1.40 correction, in both directions at once. `foodRadius` is the size
+  // of a food mote and of a corpse splotch; from v1.8 to v1.39 it was also how
+  // close a scavenger had to get to a corpse, because `world.js` needed a
+  // corpse-sized distance and this was the corpse-sized number in the config.
+  // The sweep could see that coupling — it is why v1.38 filed the constant under
+  // the simulation — and had no way to say what the constant *is*.
+  //
+  // Now it does, and the claim has two halves that fail differently: a picture
+  // that stops moving means the mote stopped being drawn from the config, and a
+  // pond that starts moving means a rule has borrowed a drawing number again.
+  const keys = byChannel("draw");
+  assert.deepEqual(keys, ["foodRadius"]);
+  const r = sweepLever("foodRadius");
+  assert.ok(r.drawAt > 0, "moving foodRadius changed nothing about the picture");
+  assert.equal(
+    r.worldAt,
+    -1,
+    `foodRadius reached the simulation at tick ${r.worldAt} — a drawing radius is steering the pond again`
+  );
+  assert.equal(r.observerAt, -1, "a drawing radius reached the tree of life");
+});
+
+test("the scavenging reach is the same distance it always was", () => {
+  // Splitting `scavengeRadius` out of `foodRadius` must not have moved a single
+  // scavenging world: the value is identical and so is the order the sum is
+  // performed in. That second half is not pedantry — `(r + 3) + 6` and `r + 9`
+  // disagree in the last bit for about 1.1% of body radii, and this sum feeds
+  // the comparison that decides whether a bite lands, so folding the trailing
+  // slack into the constant would have been a silent world change.
+  //
+  // What is asserted here is the reach *arithmetic* itself, for a body of a
+  // known size. A world hash cannot stand in for it: comparing two worlds built
+  // from the same code would agree whatever this sum evaluated to.
+  const cfg = makeConfig({ seed: 314, scavenging: true });
+  assert.equal(cfg.scavengeRadius, 3, "the reach moved when it was given its own name");
+  assert.equal(cfg.scavengeRadius, DEFAULT_CONFIG.foodRadius, "the value it inherited from foodRadius");
+  const eater = 4.5;
+  assert.equal(eater + cfg.scavengeRadius + 6, 13.5);
+
+  // And it is a lever: a scavenger that can reach further feeds differently.
+  const r = sweepLever("scavengeRadius");
+  assert.equal(r.channel, "world");
+  assert.ok(r.worldAt > 0, `moving the scavenging reach changed nothing in ${r.ticks} ticks`);
 });
 
 test("how often a caller steps the world is not a property of the world", () => {

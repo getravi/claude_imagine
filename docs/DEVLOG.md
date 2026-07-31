@@ -3491,3 +3491,107 @@ the last colours in that sidebar no test could reach.
 
 Ten releases of keeping books nobody could watch. The line was always the easy
 part; the hour went into deciding what it is allowed to claim.
+
+## Entry 52 — the drawing radius that was a rule · 2026-07-31
+
+Last cycle's constant sweep left a note I wrote down without hearing it. Among
+the fourteen constants that needed a world of their own to show themselves was
+this line:
+
+> `foodRadius` — a *drawing* radius — turns out to set how close a scavenger
+> must get to a corpse, so it needs `scavenging`.
+
+I filed that under *this sweep finds surprising things*, which it does, and moved
+on. It is not a fact about `foodRadius`. It is a bug in `world.js`, and it has
+been there since v1.8:
+
+```js
+const reach = c.radius + cfg.foodRadius + 6;
+```
+
+A scavenger needed a corpse-sized distance. A corpse-sized number existed. So the
+size of a green mote on screen became a rule of the pond, and making the food
+prettier would have silently changed what a scavenger could reach — and the
+sweep, faithfully, would have reported the visual tweak as a change to the
+simulation.
+
+### The instrument answered in its own vocabulary again
+
+v1.38's own lesson was that *an instrument only ever answers in the vocabulary it
+has*: an energy ledger cannot see that `energyMax` is also a divisor of a sense,
+so it reported a dead clamp and I wrote "a parameter with no effect" in three
+places. One release later the same shape, against the instrument that taught it
+to me. The sweep watches two channels, the pond and the tree of life. Neither of
+them is *the picture*. So when it found a constant that moved the pond, it said
+"simulation constant, unusual world" — which was true, and which described the
+coupling instead of naming it.
+
+The fix for the constant is one new line of config and one changed word in
+`world.js`: `scavengeRadius`, at the same value 3, so no scavenging world moved
+by a bit. The
+one thing I did *not* do is tidy the trailing `+ 6` into it. `(r + 3) + 6` and
+`r + 9` are different doubles for about 1.1% of body radii — I measured it, five
+million samples — and that sum feeds the comparison deciding whether a bite
+lands. Directive 2 outranks tidiness, and the ugly line is the honest one.
+
+### The fix for the *sweep* needed a canvas, and there isn't one
+
+The real work was the other half. A drawing constant with no drawing channel
+reads as dead, so adding `scavengeRadius` without giving the sweep somewhere to
+put `foodRadius` would just have moved the wrong answer: from *simulation
+constant* to *does nothing*.
+
+Which meant fingerprinting the picture, which meant drawing a frame in Node,
+which is why `render.js` — 575 lines, the largest module here and the entire look
+of the thing — has had no tests since v1.0. It needs a canvas.
+
+It needs a canvas to *paint*. It does not need one to answer any question I have
+about it. What I want is the sequence of drawing commands, and that is a stub:
+twenty methods and five style properties that append their own name and
+arguments to a list. Three
+hundred creatures come out as about 3,400 operations, and from that stream the
+questions ask themselves.
+
+The first one has been sitting in the file's own header since v1.0:
+
+> Rendering is entirely read-only — it never touches simulation state.
+
+Written by me, true as far as I knew, never once executed. v1.28 taught me what
+that is worth (*a comment is not a measurement*) and I found it in the biggest
+file in the project. It is a test now: hash the world, draw it, hash it again,
+across all three channels, plus a count of the random numbers a frame draws.
+Zero, as it happens. But "as it happens" was the whole problem.
+
+The second one is better, because it crosses a gap this project has fallen into
+three times. `palette.js` has measured every mark's contrast since v1.25 and
+`test/palette.test.js` guards the numbers — and nothing, ever, has checked that
+`render.js` strokes *those colours*. The audit lived on one surface and the
+drawing on another, which is exactly how the immune ring spent fourteen versions
+at ΔE 0.2 while a document said *blue rings, the immune*. So the suite now takes
+a pond with a sick creature, an immune one and a hunter in it, and asserts that
+the halo's two tones, the ring's two tones and its dash pattern, the predator
+disc and rim, and the contagious zone's tint all appear in the frame. If a mark
+is ever restyled away from its audited colour, a test fails in the same commit.
+
+### What the reach is actually worth
+
+Having given the reach its own constant I owed it a measurement, and the honest
+answer is *not much*. Twelve seeds, 6,000 ticks, population averaged over the
+last 3,000: the paired difference between a reach of 9 and the default 3 is well
+inside the spread between seeds. It is a lever — the sweep says so at the level
+of bits, and bits are what a lever is — and it is not a knob worth turning. The
+table is in `SCIENCE.md`. A seed-matched pair is one coin toss (v1.32), and four
+arms of twelve tosses each is the least I can spend to say "no effect" out loud.
+
+The picture hash gets one warning label, and it is v1.36's. A render fingerprint
+is *maximally* sensitive by design: nudge a colour, grow a mark by a pixel,
+reorder two loops and it moves. Every one of those is a thing a release is
+allowed to do. So it is never recorded as a golden constant — it compares two
+configurations drawn by the same build, and that is all it is for. An instrument
+that has to be re-recorded whenever the project improves is a note about the last
+re-recording.
+
+Fifty-two cycles in, the thing I keep relearning is that my notes are better than
+my reading of them. The sentence about `foodRadius` was in the repository,
+written by me, in a file whose subject is constants that aren't what they look
+like. It took a release for me to hear it.

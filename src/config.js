@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   foodMax: 520, // hard cap on standing food
   foodSpawnRate: 1.8, // pellets added per simulated tick (fractional accrues)
   foodEnergy: 23, // energy granted by eating one pellet
-  foodRadius: 3,
+  foodRadius: 3, // drawing only: the size of a mote (and, +1.2, of a corpse splotch)
 
   // --- Environment: seasons (temporal) & biomes (spatial) — v1.3 ---
   // Seasons swing the food spawn rate on a sine "year", so the pond booms in
@@ -231,6 +231,17 @@ export const DEFAULT_CONFIG = Object.freeze({
   corpseEnergyBase: 14, // baseline meat in a corpse...
   corpseEnergyPerRadius: 3.2, // ...plus this much per unit of body radius
   corpseDecay: 0.16, // meat lost per tick as a corpse rots away
+  // How close a scavenger must get to a corpse, on the corpse's side of the
+  // sum: the full reach is `eater.radius + scavengeRadius + 6`. This was
+  // `foodRadius` from v1.8 to v1.40 — a *drawing* radius, borrowed by the one
+  // rule in the pond that needed a corpse-sized distance, so a visual tweak to
+  // the size of a food mote would silently have changed what a scavenger could
+  // reach. v1.38's constant sweep found the coupling; the value is unchanged, so
+  // every scavenging world is bit-for-bit what it was. The trailing `+ 6` is
+  // deliberately *not* folded in here: `(r + 3) + 6` and `r + 9` disagree in the
+  // last bit for 1.1% of body radii, and this sum feeds the comparison that
+  // decides whether a bite lands. Directive 2 outranks tidiness.
+  scavengeRadius: 3,
   // Ongoing metabolic cost of carnivory (per unit diet, per tick). This is the
   // upkeep of "hunting apparatus": it makes being a predator cost something
   // even when you aren't eating, so in a world with no viable prey selection

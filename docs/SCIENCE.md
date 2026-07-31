@@ -2110,8 +2110,11 @@ feature needs that feature on; the disease constants cannot be measured before
 patient zero arrives at t901; `reseedCount` is read only when the pond is
 *completely* empty, which needs a world with no food, no trickle-rescue floor
 and a short lifespan (it empties at t200); and `foodRadius` — a *drawing* radius
-— turns out to set how close a scavenger must get to a corpse, so it is inert
-with scavenging off and otherwise seen only by `render.js`.
+— turned out to set how close a scavenger must get to a corpse, so it was inert
+with scavenging off. (That last one was a finding about `world.js`, not about
+the constant, and the sweep had no way to say so. v1.40 gave the rule its own
+`scavengeRadius` and the sweep a fourth channel — see "A sweep with no channel
+for a thing calls that thing something else" below.)
 
 `kinRecognitionDistance` is the extreme case and it extends the v1.36 finding.
 That release showed the kin recognition *flag* never fires on seed 314. The
@@ -2121,7 +2124,7 @@ enough relative for the threshold to matter at any value. It is only live on
 seed 23, where it bites at t4,910 in either direction. A number can be correct,
 load-bearing and completely mute in the world everybody looks at.
 
-### Three channels, because two of them aren't the simulation
+### Four channels, because three of them aren't the simulation
 
 Four constants move nothing in the pond *by design*: `speciationDistance`,
 `neatCompatThreshold`, `phylogenySampleInterval` and `phylogenyHistory` are the
@@ -2139,6 +2142,7 @@ a property of the world.
 | --- | ---: | --- |
 | world | 74 | moving it moves the state hash |
 | observer | 4 | moves the tree of life and *not* the state hash |
+| draw | 1 | moves the picture and *not* the state hash (v1.40) |
 | ui | 1 | moves neither |
 
 ### The finding: `energyMax` was never only a clamp
@@ -2223,15 +2227,133 @@ node -e '
 import("./src/levers.js").then(({ sweepLevers }) => {
   for (const r of sweepLevers()) {
     console.log(r.channel.padEnd(8), r.key.padEnd(24), `${r.from} -> ${r.to}`.padEnd(22),
-                `world=${r.worldAt} observer=${r.observerAt} /${r.ticks}`);
+                `world=${r.worldAt} observer=${r.observerAt} draw=${r.drawAt} /${r.ticks}`);
   }
 });'
 ```
 
-`worldAt` / `observerAt` are the first tick at which that channel disagreed with
-the control, or `-1` for a channel that never did. Every exception's reason —
+`worldAt` / `observerAt` / `drawAt` are the first tick at which that channel
+disagreed with the control, or `-1` for a channel that never did (the picture is
+only drawn for a constant that claims the `draw` channel, so `drawAt` is `-1` for
+everything else). Every exception's reason —
 which world a constant needs, which direction it has to be pushed, and why — is
 in the `SPECIAL` table at the top of `src/levers.js`.
+
+## A sweep with no channel for a thing calls that thing something else (v1.40)
+
+The sweep above reported `foodRadius` — the radius a food mote is *drawn* at —
+as a constant of the simulation that needs a scavenging world to show itself.
+That was not a quirk of the constant. It was this line, in `world.js`, since
+v1.8:
+
+```js
+const reach = c.radius + cfg.foodRadius + 6;  // how close a scavenger must get
+```
+
+A rule needed a corpse-sized distance; a corpse-sized number was already in the
+config; so the size of a green dot on screen became a rule of the pond. Making
+the motes prettier would have changed what a scavenger could reach, and the
+sweep would have reported the visual tweak as a simulation change.
+
+This is v1.38's own finding one release later, aimed at the instrument that
+produced it. **An instrument only ever answers in its own vocabulary.** The
+sweep watched the state and the tree of life, so when a constant moved the
+state it said *simulation constant* — correctly, and without any way to say that
+the constant had no business being one.
+
+The correction is in two parts. The rule now has `scavengeRadius`, at the same
+value 3 and in the same order of operations, so no scavenging world moved by a
+bit. And the sweep has a fourth channel: `renderFingerprint`, over the stream of
+drawing commands a frame produces. `foodRadius` is asserted on both halves of
+what it now claims to be —
+
+| Constant | world | observer | draw |
+| --- | ---: | ---: | ---: |
+| `foodRadius` (3 → 4) | never | never | **tick 1** |
+| `scavengeRadius` (3 → 4) | **tick 396** | never | — |
+
+— and a drawing number that starts steering the pond again is a test failure in
+`test/levers.test.js`, rather than something a sweep stumbles over thirty
+releases later.
+
+The trailing `+ 6` was deliberately left out of the new constant. `(r + 3) + 6`
+and `r + 9` are different doubles for **1.1%** of body radii (5M samples), and
+that sum feeds the comparison deciding whether a bite lands, so folding it in
+would have been a silent world change dressed as tidying up.
+
+### Drawing is read-only, and now it is checked
+
+`render.js` is the largest module in this project and had no tests from v1.0 to
+v1.40, because it needs a canvas. It needs one to *paint*; it does not need one
+to answer any question worth asking of it. `src/rendershot.js` supplies a 2D
+context that records every call instead — about 3,400 operations for a pond of
+300 creatures — which makes four things testable for the first time:
+
+1. **Drawing changes nothing.** The header comment has claimed this since v1.0.
+   Hash the world, draw it, hash it again, on all three world channels, and count
+   the random numbers a frame draws (zero).
+2. **The default view is the exact identity.** The camera's v1.17 invariant,
+   asserted on an actual frame rather than on the camera's arithmetic.
+3. **The audited colours are the drawn colours.** `palette.js` has measured every
+   mark's contrast since v1.25 and nothing checked that the renderer strokes
+   *those* tones — one surface measured, another assumed, which is how the immune
+   ring spent fourteen versions at ΔE 0.2. The sick halo, the immune ring and its
+   dash pattern, the predator disc and rim, and the contagious zone's tint are now
+   asserted to appear in a real frame.
+4. **The offscreen layers count.** Terrain and enriched ground are painted into
+   offscreen canvases and blitted with identical arguments whatever they contain,
+   so the recording hashes their pixels too.
+
+The picture hash is **not** a golden constant, and that is a design decision
+rather than an oversight: it moves when a colour is nudged or a mark grows a
+pixel, all of which a release is allowed to do. v1.36's lesson is that an
+instrument needing to be re-recorded whenever the project improves is a note
+about its last re-recording. It compares two configurations drawn by the same
+build.
+
+### What a scavenger's reach is worth: nothing measurable
+
+Having given the reach its own constant, it owed a measurement. Twelve seeds,
+6,000 ticks, scavenging on, population averaged over the last 3,000.
+
+| `scavengeRadius` | mean population | sd across seeds | paired vs. default | scavenging bites |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 228.5 | 77.8 | +0.6 (sd 29.5, 6/12 up) | 317 |
+| 3 (default) | 227.9 | 60.7 | — | 290 |
+| 9 | 232.2 | 70.1 | +4.3 (sd 27.9, 7/12 up) | 306 |
+| 21 | 224.0 | 88.2 | −3.9 (sd 39.0, 7/12 up) | 302 |
+
+A twentyfold range, and the paired differences are a seventh of their own
+spread. The reach is a lever in the only sense the sweep claims — the pond
+diverges at tick 396 — and it is not a knob with a direction.
+
+The interesting part is the last column: even the *count of scavenging bites*
+does not order itself by reach. Seed 5 takes 677 bites at a reach of 1 and 18 at
+a reach of 3; seed 314 takes 184 at 3 and 506 at 9. Those are worlds falling
+into different attractors, the same thing v1.32 found when six seed-matched
+pairs disagreed with twelve. And it points at a mechanism: a scavenger reaches a
+corpse by *homing in* on it through the same channel it hunts with, so it closes
+the last few pixels either way. What limits scavenging is the approach and the
+bite cooldown, not the distance at which the mouth opens. A reach is a
+threshold on a journey that was going to end at the corpse anyway.
+
+### Reproducing the reach measurement
+
+```bash
+node -e '
+Promise.all([import("./src/world.js"), import("./src/config.js")]).then(([W, C]) => {
+  for (const reach of [1, 3, 9, 21]) {
+    let pop = 0;
+    for (const seed of [314, 1, 2, 3, 5, 8, 13, 21, 23, 42, 2024, 777]) {
+      const w = new W.World(C.makeConfig({ seed, scavenging: true, scavengeRadius: reach }));
+      let s = 0;
+      for (let i = 0; i < 6000; i++) { w.step(); if (i >= 3000) s += w.creatures.length; }
+      pop += s / 3000;
+    }
+    console.log(reach, (pop / 12).toFixed(1));
+  }
+});'
+```
 
 ## What this model deliberately leaves out
 

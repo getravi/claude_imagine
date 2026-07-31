@@ -334,6 +334,7 @@ src/
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it
   render.js         canvas drawing
+  rendershot.js     a canvas that records instead of painting, so drawing is testable
   mullerplot.js     the "Tree of Life" stacked-area chart
   config.js         every tunable "physics constant" in one place
   scenarios.js      curated one-click world presets

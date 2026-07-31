@@ -14,7 +14,9 @@ the [devlog](DEVLOG.md); if you want the *what* of the science, read
 2. **The simulation is separable from the rendering.** Everything in `src/`
    except `render.js` and `main.js` is pure logic with no DOM or canvas
    dependency. That's what lets the exact same code run headless in the test
-   suite under `node --test`.
+   suite under `node --test`. `rendershot.js` is the exception that proves it:
+   it fabricates just enough canvas to run the renderer under Node, which is how
+   `render.js` came to be tested at all.
 3. **Determinism.** All randomness flows through one seeded generator, so a
    `(seed, config)` pair fully determines the future.
 4. **Legibility over cleverness.** Fixed-topology brains, asexual reproduction,
@@ -66,6 +68,8 @@ The dependency arrows point from a module to what it imports.
 | `minimap.js` | The whole pond in miniature — ground, life and the viewport (read-only). | canvas |
 | `gestures.js` | Pointer arithmetic: tap vs drag vs pinch, for a mouse and a hand alike. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
+| `rendershot.js` | A canvas that records instead of painting, so the renderer can be tested headlessly: the stream of drawing commands a frame produces, and `renderFingerprint` over it. The fourth channel — what the pond *looks like* — which is how `levers.js` tells a drawing constant from a dead one, and how "rendering is read-only" finally became a test rather than a comment. Comparisons within one run only; a golden render hash would move on every deliberate visual change. | — |
+| `levers.js` | The constant sweep: move every number in `config.js`, in a world where it can bite, and check something moves. Reads the key list out of the config, so a constant added later is swept the day it lands. | — |
 | `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
 | `main.js` | Boot, the requestAnimationFrame loop, all UI wiring. | yes |
@@ -332,10 +336,16 @@ bit-for-bit identical (fingerprint-verified).
 ## Rendering is read-only
 
 `render.js` never touches simulation state — it only reads it — so you can pause
-the sim and still pan, inspect, and toggle overlays. The look leans on two cheap
-tricks: a translucent dark veil each frame instead of a hard clear (so movement
-leaves comet trails), and additive (`lighter`) compositing for the glow (so
-dense clusters bloom). Creature lightness tracks energy, so a starving pond
+the sim and still pan, inspect, and toggle overlays. That sentence was a comment
+and nothing else from v1.0 to v1.40; it is now a test. `rendershot.js` supplies a
+2D context that records every drawing command instead of painting it, so a frame
+can be drawn under `node --test`, and the assertion is the direct one: hash the
+world, draw it, hash it again. The same recording gives the picture a
+fingerprint of its own, which is what lets a *drawing* constant prove it is one.
+
+The look leans on two cheap tricks: a translucent dark veil each frame instead
+of a hard clear (so movement leaves comet trails), and additive (`lighter`)
+compositing for the glow (so dense clusters bloom). Creature lightness tracks energy, so a starving pond
 visibly dims.
 
 The view itself lives in `camera.js` — a centre, a zoom, and an optional
