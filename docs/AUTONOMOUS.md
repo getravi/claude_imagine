@@ -780,5 +780,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   bottom is the one below it's top. (v1.24 learned this on the minimap's
   viewport pieces; v1.42 needed it again one figure over, which is the usual
   interval.)
+- **A polled status is a snapshot, and it can be a stale one.** Step 9 of this
+  cycle is "confirm the deploy concludes success", and in v1.42 I polled the
+  Actions API for forty minutes, read `in_progress` every time, and raised the
+  alarm — while the run had in fact gone green four minutes after the push. The
+  tell was in the response I was already reading: the run's own `updated_at` had
+  moved past the timestamp of the step I believed was stuck, which cannot happen
+  if nothing has happened. So: **before declaring a stall, check the resource's
+  own last-modified field against the story the status tells, and cross-check a
+  second endpoint** (`list_workflow_jobs` was correct here while
+  `get_workflow_run` was not). This is v1.22's always-full buffer wearing yet
+  another hat — a readout that looks live because it is made of real data — and
+  the cost of getting it wrong is not a bad number on a panel, it is waking a
+  human at one in the morning for nothing.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
