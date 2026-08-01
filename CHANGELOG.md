@@ -68,6 +68,15 @@ comment explaining why the halo stopped.
 - Rendering only: no simulation behaviour changed, no new random numbers, no new
   dependencies. `test/fingerprint.test.js` still holds the v1.36 hashes for the
   default pond.
+- **The deploy workflow's own readout was lying, and one release paid for it.**
+  Verifying the deploy turned up six consecutive releases where the mirror push
+  to `main` produced a failed run — the `github-pages` environment only accepts
+  the default branch, so that job could never succeed — and one release,
+  a47f58b, where the run that *would* have deployed was cancelled two seconds
+  after creation because both pushes shared a workflow-level `pages` concurrency
+  group and the newer run superseded the queued one. The deploy job now skips on
+  any branch that is not the default, and the concurrency group sits on the job
+  instead of the workflow, so only runs that can deploy contend for it.
 
 ## [1.42.0] — 2026-08-01
 

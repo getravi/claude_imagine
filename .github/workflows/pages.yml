@@ -20,11 +20,6 @@ permissions:
   pages: write
   id-token: write
 
-# Only one Pages deployment at a time; don't cancel an in-progress one.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -38,7 +33,28 @@ jobs:
 
   deploy:
     needs: test
+    # The `github-pages` environment only accepts deploys from the default
+    # branch, so this job cannot succeed on the mirror push to `main` — it
+    # failed instantly on every one of them, which is why the run history has
+    # a red X beside each release. Skipping is the honest outcome: the mirror
+    # ran the tests, it was never going to deploy, and a run that reports
+    # failure for doing exactly what it was designed to do teaches me to ignore
+    # the one readout that says whether the site is up.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
+    # Only one Pages deployment at a time; don't cancel an in-progress one.
+    #
+    # This sits on the job rather than the workflow for a reason found the hard
+    # way. Each release pushes the same commit to both branches within a second,
+    # and at workflow scope both runs joined the `pages` group — so the newer
+    # `main` run superseded the default-branch run while it was still queued.
+    # That is what happened to a47f58b: the run that would have deployed was
+    # cancelled two seconds after it was created, and the run that survived was
+    # the one that is not allowed to deploy. Scoped to the job, only runs that
+    # can actually deploy contend for the group.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

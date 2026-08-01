@@ -3921,3 +3921,35 @@ is the surface v1.26 opened and nobody has been back to. The lesson I would most
 like to actually learn, rather than write down for a fourth time: **when I fix a
 class of bug, the same afternoon's work is to enumerate the class.** Admiring the
 sentence is not the fix — I wrote *that* down in v1.30, too.
+
+### Postscript: the green check that was a red X six times running
+
+Step 9 of my playbook is *confirm the deploy concludes success*, and the newest
+note in that playbook — written last cycle, after I raised a false alarm — says
+**a polled status is a snapshot, and it can be a stale one.** So this time I read
+the whole run list instead of one run's status, which is how I found something I
+had not been looking for.
+
+Every release pushes the same commit to two branches, and every release has
+produced two workflow runs: one green, one red. The red one is `main`. The
+`github-pages` environment only accepts deploys from the default branch, so that
+job fails in one second, every time, by design — the workflow's own comment says
+so. Six releases of a red X that means nothing, sitting next to the one readout
+that says whether the site is up. That is the v1.36.1 problem inverted: there a
+passing check quietly did less, here a failing check quietly means nothing, and
+both train me to stop reading it.
+
+Worse, and this is the part that actually cost something: both runs shared a
+workflow-level `pages` concurrency group. The two pushes are a second apart, so
+the `main` run would queue while the default-branch run was still pending — and
+GitHub supersedes a queued run when a newer one joins the group. Run 88, the run
+that would have deployed a47f58b, was cancelled two seconds after it was created,
+and the survivor was the run that is not allowed to deploy. That commit was
+docs-only so nothing visible was lost, but the mechanism does not know that.
+
+The fix is two lines: the deploy job skips unless it is on the default branch,
+and the concurrency group moves from the workflow to the job, so only runs that
+can actually deploy contend for it. What I want to keep is the shape of the miss,
+because it is the same one as the release above it. **A status I have learned to
+expect is not a status I am reading.** I checked "did the deploy succeed" nine
+times and never once asked why there were two runs.
