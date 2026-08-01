@@ -4,6 +4,73 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.45.0] — 2026-08-01
+
+v1.44 found, by accident, that the update loop has no `dead` guard on the
+creature it is updating: death is marked at the top of a creature's turn and the
+body is not swept until the end of the tick, so grazing, biting and reproduction
+all happen in between. It measured that and deliberately left it alone, because
+correcting it deals every world a different hand. This release corrects it, as an
+opt-in flag with the measurement attached — the `exactVision` shape from v1.32.
+
+### Added
+
+- **`deathIsFinal` (opt-in, off by default): a dead creature takes no further
+  turn.** One guard at the top of the per-creature loop, catching a body bitten
+  to zero by a predator that updated earlier in the same tick, and one straight
+  after `act()`, catching a creature that has just starved or aged out paying its
+  own last bill. Note what this *isn't*: every other `dead` check in `world.js`
+  already existed — a corpse is skipped as prey, as a neighbour, as a mate and as
+  an infection source. The pond has treated a body as gone since v1.0. The only
+  one who disagreed was the body.
+- **A "Death is final" toggle**, a `fin=1` permalink parameter, a README row and
+  a twelve-seed write-up in `docs/SCIENCE.md`.
+- **`test/deathIsFinal.test.js`.** The first three tests *stage* the bug in an
+  empty pond — a creature starving on top of a pellet, a creature ageing out
+  holding enough to split, a body marked dead before its turn — so each arm is
+  one tick and neither can flake. Waiting for the real thing takes 20,000 ticks.
+
+### Measured
+
+- **What the dead were actually doing**, twelve seeds × 20,000 ticks, flag off:
+  they ate **7–13** pellets per run, took **7–302** turns while already dead, and
+  reproduced **once across all twelve runs**. They bit something **zero** times —
+  the most plausible-sounding item on the list never happened once, because a
+  posthumous bite needs a dead carnivore with a target in reach *and* its
+  cooldown expired. The +6.4 predated burial v1.44 reported on seed 512 was a
+  body that had been bitten to zero and then grazed.
+- **The books close differently, and exactly.** With the flag on,
+  `energy_buried_predation` is **0.00 on every one of twelve seeds** — a theorem,
+  not a coincidence: a bite takes `min(prey.energy, biteEnergy)` and only kills
+  when that minimum was the whole of it, so a killed body sits at precisely zero
+  and nothing can touch it afterwards. Starvation goes from positive on nine of
+  twelve seeds (up to +61.5, energy eaten after death) to negative on all twelve
+  (−31 to −162), which is the overdraft it should be.
+- **What it does to the pond: nothing measurable.** Mean population is +5.8%
+  with the flag on, ten of twelve seeds positive — and the between-seed standard
+  deviation is 28.0 against a mean difference of 12.3, with one seed carrying a
+  third of it. Twelve pairs is enough to say the effect is not large and not
+  enough to say which way it points (the v1.32 rule about seed-matched pairs).
+- **The correction is rare, not subtle.** The two arms run bit-for-bit identical
+  for *thousands* of ticks and then part at the first posthumous act — tick 2,963
+  on seed 77, 3,587 on seed 314, and four of eight seeds tried were still
+  identical at 4,000.
+
+### Changed
+
+- **`test/fingerprint.test.js`'s "every opt-in feature is a lever when it is on"
+  sweep skips `deathIsFinal`**, alongside `kinRecognition`, for the honest
+  reason: its 1,000-tick budget cannot see a difference that has not happened
+  yet. The comment says so and points at the test that stages it in one tick.
+
+### Notes
+
+- Off by default and free when off: no branch taken, not one random draw moved,
+  and `test/fingerprint.test.js` still holds the default pond to its v1.36
+  hashes. The suite's whole-config sweep — "no opt-in feature costs anything
+  while it is off" — picked the new flag up on its own, which is what reading the
+  flag list out of the config was for.
+
 ## [1.44.0] — 2026-08-01
 
 Two stacked bars have sat six lines apart in the control panel since v1.29 —

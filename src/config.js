@@ -313,6 +313,26 @@ export const DEFAULT_CONFIG = Object.freeze({
   bodyRadiusMax: 8.0,
   maxAge: 4200, // ticks; nothing lives forever
 
+  // Death is final (v1.45, opt-in). Since v1.0 the update loop has had no
+  // `dead` guard on the creature it is updating. `act()` pays the metabolic
+  // bill and marks the death at the *top* of a creature's turn; grazing, biting
+  // and reproduction all happen further down that same turn, and the sweep that
+  // removes bodies is not until step 5. So a creature that starves eats the
+  // pellet it is lying on, a body bitten to zero earlier in the tick still
+  // steers, spends and breeds, and roughly one birth in two thousand is
+  // posthumous. Every other `dead` check in `world.js` is on some *other*
+  // creature — as prey, as a neighbour, as an infection source — so the pond
+  // already treats a corpse as gone. The only one who doesn't know is the
+  // corpse. Switch this on and a dead creature takes no further turn.
+  //
+  // Off by default because it is not a new rule, it is a correction to an old
+  // one, and correcting it deals every world a different hand: a birth that no
+  // longer happens is a random draw that no longer happens, and every world
+  // downstream of it is a different world. Same shape as `exactVision` (v1.32).
+  // With it off no branch is taken and no draw moves. See docs/SCIENCE.md for
+  // the twelve-seed measurement.
+  deathIsFinal: false,
+
   // --- Neural plasticity / within-lifetime learning (v1.4) ---
   // OFF by default: when off, brains are static from birth and every world is
   // bit-for-bit identical to earlier versions. Switch it on and each connection

@@ -228,7 +228,15 @@ test("every opt-in feature is a lever when it is on", () => {
   // in 20,000 ticks). test/kinRecognition.test.js pins the mechanism directly;
   // asserting it here would mean a 5,000-tick single-seed test. See
   // docs/SCIENCE.md.
-  const skip = new Set(["kinRecognition"]);
+  //
+  // deathIsFinal (v1.45) is the second exception and it is the same kind: the
+  // correction is real but *rare*. A default pond stages about a dozen
+  // posthumous meals and one posthumous birth in 20,000 ticks, so the two arms
+  // run bit-identical for thousands of ticks and then part at the first one —
+  // tick 3,587 on seed 314, 2,963 on seed 77, and four of eight seeds tried
+  // were still identical at 4,000. test/deathIsFinal.test.js stages the
+  // mechanism directly in one tick and pins the divergence on seed 77.
+  const skip = new Set(["kinRecognition", "deathIsFinal"]);
   for (const flag of OPT_IN_FLAGS) {
     if (skip.has(flag)) continue;
     const off = new World(makeConfig({ seed: 314 }));

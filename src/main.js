@@ -73,6 +73,7 @@ function parseHash() {
   if (p.has("det")) o.detritus = p.get("det") === "1";
   if (p.has("eye")) o.exactVision = p.get("eye") === "1";
   if (p.has("feel")) o.groundSense = p.get("feel") === "1";
+  if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   return o;
 }
 
@@ -102,6 +103,7 @@ function syncHash() {
   p.set("det", config.detritus ? "1" : "0");
   p.set("eye", config.exactVision ? "1" : "0");
   p.set("feel", config.groundSense ? "1" : "0");
+  p.set("fin", config.deathIsFinal ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -209,6 +211,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-detritus", config.detritus);
   setToggle("toggle-exactvision", config.exactVision);
   setToggle("toggle-groundsense", config.groundSense);
+  setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -1369,6 +1372,14 @@ function wireControls() {
   $("toggle-exactvision").checked = config.exactVision;
   $("toggle-exactvision").addEventListener("change", (e) => {
     config.exactVision = e.target.checked;
+    syncHash();
+  });
+  $("toggle-deathfinal").checked = config.deathIsFinal;
+  $("toggle-deathfinal").addEventListener("change", (e) => {
+    // Nothing to rebuild: the flag is read fresh at the top of every turn, so
+    // switching it mid-run takes effect on the very next tick. A body already
+    // lying in the pond is swept this tick either way.
+    config.deathIsFinal = e.target.checked;
     syncHash();
   });
   $("toggle-groundsense").checked = config.groundSense;

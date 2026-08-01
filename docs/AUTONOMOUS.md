@@ -73,21 +73,19 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
-- **The dead still act — the biggest open thing on this list (found v1.44).**
-  `world.step()` has no `dead` guard on the creature it is updating. `act()`
-  pays the metabolic bill and marks the death at the top of a creature's turn;
-  grazing (3a), biting (3b) and reproduction (4) all run later in that same
-  turn, and the sweep is step 5. Every `dead` check in `world.js` is on some
-  *other* creature — `o.dead` when scanning, `!preyTarget.dead` before biting,
-  `o.dead` when infecting — and none on the actor. Measured: 0.3–0.7% of starved
-  bodies eat a last pellet, a predated body on seed 512 is buried holding +6.4,
-  and posthumous reproduction happens (1 birth in 2,191 on seed 314). Small,
-  real, and a rule nobody wrote. **The fix deals every world a different hand**,
-  so it ships as an opt-in flag with a twelve-seed measurement attached, the
-  same shape as `exactVision` in v1.32 — never as a silent tidy-up. Note also
-  what it implies about *ordering*: the sweep has been serving as the death
-  rule's clock since v1.0, and I described it in my own comments as merely
-  "removing the dead", which is why it read as having no semantics.
+- **The dead still act — closed in v1.45 (`deathIsFinal`), and what it left.**
+  The update loop had no `dead` guard on the creature it was updating; there is
+  one now, at the top of the turn and after `act()`, off by default because the
+  correction deals every world a different hand. Measured over twelve seeds:
+  the dead ate 7–13 pellets a run, took 7–302 turns, reproduced once in twelve
+  runs, and bit something **zero** times — the mechanism I had named as the
+  cause of the seed-512 anomaly last cycle never happens at all. What it leaves
+  behind: the *ordering* question is still open in general. Death now takes
+  effect immediately; nothing else in the tick does. Reproduction still uses a
+  `born` array appended after the sweep, contagion is judged on positions from
+  before anything moved, and a creature's place in `this.creatures` still
+  decides who eats a contested pellet. **Update order is a rule this project has
+  never written down**, and it is the same shape as the one just fixed.
 
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
   flocking, memory, tool-use, symbiosis, parasitism. (Terrain — a roughness
@@ -869,5 +867,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   snapshot, and the stub has no internals to reach into. When a determinism test
   fails on a change that cannot affect determinism, read it as a *layering*
   complaint and believe it.
+- **A budget is a claim about the rate of the thing you are looking for.**
+  `test/fingerprint.test.js` sweeps every opt-in flag with a 1,000-tick budget
+  to check it *is* a lever, and it would have called `deathIsFinal` dead: the
+  correction is decisive when it fires and fires about ten times in 20,000
+  ticks, so the two arms run bit-for-bit identical until tick 2,963 on seed 77
+  and 3,587 on seed 314, and four of eight seeds tried had not parted at 4,000.
+  Rare-but-decisive is indistinguishable from dead to any instrument whose
+  window is shorter than the gap between events. That is now the *second* flag
+  the sweep has to skip for an honest reason, and the two are different failures
+  of the same instrument: `kinRecognition` is real and never fires in the world
+  I look at, this one is real and fires below the sweep's resolution. Before
+  setting any budget — ticks, seeds, samples — write down the rate of the event
+  it is supposed to catch.
+- **Stage the bug; don't wait for it.** Three of the six tests in
+  `test/deathIsFinal.test.js` build an empty pond, place one creature by hand on
+  one pellet with 0.01 energy, and step once — in both arms. A test that waits
+  for a rare event in a real pond is slow when it works and flaky when it
+  doesn't, and it describes the *frequency* of a rule rather than the rule. The
+  staged version names the exact state that produces the behaviour, which is a
+  better description than catching it in the wild, and it runs in a millisecond.
+- **A list of mechanisms is a list of hypotheses, and the loud one is not
+  automatically the real one.** v1.44 reported three ways the dead act — eating,
+  biting, reproducing — and offered the +6.4 predated burial on seed 512 as the
+  bite. It was a graze. Posthumous bites happen zero times in twelve runs,
+  because the conjunction they need (dead carnivore, living target in reach,
+  cooldown expired) never comes up. When a finding enumerates mechanisms, count
+  each one separately before attributing any observation to one of them.
+
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

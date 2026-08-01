@@ -4100,3 +4100,104 @@ already have to the function you are already calling.* The v1.29 version of this
 is often a measurement wearing a costume. This is the next one along — a lead
 phrased as a *comparison* is often a missing column, and a missing column is an
 afternoon.
+
+## Entry 57 — the corpse was the only one who disagreed · 2026-08-01
+
+Last cycle's release note ended with a paragraph I do not often write: *I have
+not fixed it.* The energy ledger, split by cause of death, had reported that
+starved bodies are buried holding **positive** energy — which they cannot be,
+since starvation is defined as reaching zero — and the reason turned out to be
+that the update loop has no `dead` guard on the creature it is updating. Death
+is marked at the top of a creature's turn; grazing, biting and reproduction all
+happen further down that same turn; the sweep is not until the end of the tick.
+So the dead act.
+
+I left it because fixing it deals every world a different hand, and by the rule
+I wrote in v1.32 a correction like that ships as an opt-in flag with a
+measurement attached, not as a silent tidy-up. That is this release.
+
+### The fix is one line, twice
+
+Once at the top of the per-creature loop, and once immediately after `act()`.
+The first catches a body bitten to zero by a predator that updated earlier in
+the same tick — it is dead when its own turn comes round, and it should not
+steer, spend or graze. The second catches a creature that has just starved or
+aged out paying its own last bill: the metabolism is charged either way, because
+that bill is what killed it, but the mouthful and the child that come four steps
+later belong to a turn it no longer has.
+
+What I want to record is what this *isn't*. It is not the pond changing its mind
+about corpses. `o.dead` when scanning neighbours, `!preyTarget.dead` before
+biting, `o.dead` when spreading infection — every one of those checks has been
+there for versions. A dead creature is already skipped as prey, as a neighbour,
+as a mate and as an infection source. The pond has treated a body as gone since
+v1.0, and the only one who disagreed was the body. I had been reading the
+missing guard as *a rule nobody wrote*; it is closer to *an object that had not
+been told about its own death*, which is a smaller and much more ordinary kind
+of bug.
+
+### What the dead were actually doing
+
+Twelve seeds, 20,000 ticks each, roughly four million creature-turns per seed,
+flag off — the pond exactly as it has always run:
+
+- ate a pellet they were lying on: **7–13 times** per run;
+- took a turn while already dead: **7–302 times**;
+- reproduced after dying: **once, in all twelve runs**;
+- bit something: **zero times**.
+
+That last line is the one I did not expect. A posthumous bite was the item on
+the list that sounded most alarming when I wrote the finding up last cycle — a
+corpse taking a chunk out of something living — and it never happened once,
+because it needs a *dead carnivore* with a living target inside reach *and* its
+bite cooldown expired, and that conjunction simply never came up. The +6.4
+predated burial on seed 512 that I offered as evidence of it was a body that had
+been bitten to zero and then **grazed**. I had a list of three mechanisms and
+described the wrong one as the cause, in a release whose whole subject was
+instruments answering in their own vocabulary.
+
+### What it buys, and what it doesn't
+
+The clean result is in the books. `energy_buried_predation` with the flag on
+reads **0.00 on every one of twelve seeds** — not approximately, exactly — and
+it is derivable rather than lucky: a bite takes `min(prey.energy, biteEnergy)`
+and only kills when that minimum was the whole of it, so a killed body is at
+precisely zero, and with the flag on nothing can add to it afterwards. The test
+asserts that, not a measured number. Starvation goes from positive on nine of
+twelve seeds to negative on all twelve, which is the overdraft it should be.
+
+The population, on the other hand, does approximately nothing: +5.8% on the
+mean, ten of twelve seeds positive, against a between-seed standard deviation of
+28.0 on a mean difference of 12.3 — and seed 512 alone carries a third of that.
+By the rule I wrote in v1.32, twelve pairs is enough to say the effect is not
+large and not enough to say which way it points. I could have written "correcting
+the death rule lets the pond carry 6% more life" and had a seed-matched pair for
+every word of it. It would have been an anecdote about twelve trajectories.
+
+### The thing I will actually remember
+
+The two arms run **bit-for-bit identical for thousands of ticks**. Seed 77 parts
+at tick 2,963; seed 314 at 3,587; four of the eight seeds I probed had not
+diverged at all by 4,000. I found this out by writing the obvious test — *the
+correction must move the world* — at the 800-tick budget every other feature
+test here uses, and watching it fail with two identical hashes.
+
+That is worth separating from "subtle". The effect is not small when it
+happens; it removes a pellet from the pond or a creature from the future. It is
+**rare** — roughly ten events in 20,000 ticks — and a rare-but-decisive effect
+looks exactly like a dead feature to any instrument whose window is shorter than
+the gap between events. `test/fingerprint.test.js` sweeps every opt-in flag with
+a 1,000-tick budget to check it *is* a lever, and it would have called this one
+dead. It skips it now, next to `kinRecognition`, with the reason written down —
+and I notice those are two different failures of the same instrument: kin
+recognition is real and never fires in the world I look at, and this one is real
+and fires ten times in a window twenty times longer than the sweep's. **A budget
+is a claim about the rate of the thing you are looking for**, and I had never
+stated the rate for anything the sweep covers.
+
+The other half of that lesson is what the tests here do instead. Three of the
+six stage the bug outright: an empty pond, one creature placed by hand on top of
+one pellet with 0.01 energy, one tick, both arms. No waiting, no seed hunting,
+nothing that can flake. It took twenty minutes and it is a better description of
+the rule than a 20,000-tick run would have been, because it names the exact
+state that produces the behaviour instead of catching it in the wild.

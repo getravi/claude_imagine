@@ -5,7 +5,8 @@
 //   2. for each creature: find nearest food + neighbour, sense, think, act
 //   3. resolve eating (creature over a pellet consumes it)
 //   4. resolve reproduction (energetic creatures split)
-//   5. remove the dead, compact eaten food, spawn new food
+//   5. remove the dead, compact eaten food, spawn new food (and note that step
+//      5 is what has always given a death its moment — see `deathIsFinal`)
 //   6. safety valves: population cap, auto-reseed if life dies out
 //
 // The world owns its own RNG, so a (seed, config) pair fully determines the
@@ -221,6 +222,14 @@ export class World {
 
     // 2. Sense, think, act.
     for (const c of this.creatures) {
+      // A body killed earlier in this same tick — bitten to zero by a predator
+      // that updated before it — takes no turn at all. The scans below already
+      // skip `o.dead`, so the rest of the pond has treated it as gone since
+      // v1.0; this is the actor finally agreeing. Exactly the sweep's job, done
+      // at the moment of death instead of at the end of the tick. Skipped
+      // entirely, and therefore free, in a world without the flag.
+      if (cfg.deathIsFinal && c.dead) continue;
+
       // Nearest food within vision.
       let nf = null;
       let nfD2 = visionR2;
@@ -298,6 +307,13 @@ export class World {
         threat ? Math.sqrt(threatD2) : Infinity
       );
       this.energy.burn(c.act(c.think()));
+
+      // ...and the other half of the same rule: `act()` has just paid this
+      // creature's last bill and may have marked it starved or aged out. What
+      // follows — a mouthful, a bite, a child — is the rest of a turn it no
+      // longer has. The metabolism above is charged either way: it is the bill
+      // that killed it.
+      if (cfg.deathIsFinal && c.dead) continue;
 
       // 3a. Grazing: consume the nearest pellet if we're on top of it. Nutrition
       // from plants shrinks as a creature becomes more carnivorous, so pure

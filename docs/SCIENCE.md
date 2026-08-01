@@ -2427,7 +2427,9 @@ the sweep is a *bookkeeping* step that has been quietly acting as the death
 rule's clock. Fixing it would change every world on the first tick a creature
 dies with a pellet under it, so by the project's own rule (v1.32, `exactVision`)
 the fix would have to arrive as an opt-in flag with the measurement attached,
-not as a silent correction. It has not been made.
+not as a silent correction. It arrived in v1.45 as `deathIsFinal` — see *Death
+is final: what the sweep had been deciding*, below, for what the dead were
+actually doing and what stopping them costs.
 
 ### Reproducing it
 
@@ -2475,6 +2477,135 @@ Both figures are in the CSV export too: every row of both scopes now carries
 `energy_buried_starvation`, `energy_buried_age` and `energy_buried_predation`,
 cumulative like the rest of the books, so differencing any two rows gives
 exactly what each cause buried in between.
+
+## Death is final: what the sweep had been deciding (v1.45)
+
+v1.44 found the bug in the previous section by accident: starved bodies were
+being buried holding energy they could not have had, because the update loop has
+no `dead` guard on the creature it is updating. That release measured it and
+deliberately did not fix it. `deathIsFinal` (off by default) is the fix, and —
+as with `exactVision` in v1.32 — the measurement is the deliverable, because a
+correction that deals every world a different hand is not something to apply
+silently to thirty-eight releases of screenshots, permalinks and earned seeds.
+
+The rule is one line, twice: **a creature that is dead takes no further turn.**
+Once at the top of the per-creature loop, which catches a body bitten to zero by
+a predator that updated earlier in the same tick, and once immediately after
+`act()`, which catches a creature that has just starved or aged out paying its
+own last bill. Everything downstream in that turn — grazing, biting,
+reproduction — belongs to a turn it no longer has.
+
+What is worth noticing is that this is not the pond changing its mind about
+corpses. Every *other* `dead` check in `world.js` already existed: a dead
+creature is skipped as prey, as a neighbour, as a mate and as an infection
+source. The pond has treated a body as gone since v1.0. The only one who
+disagreed was the body.
+
+### What the dead were actually doing
+
+Twelve seeds, 20,000 ticks each, with the flag **off** — i.e. the pond as it has
+always run. Roughly four million creature-turns per seed:
+
+| posthumous act | per run (12 seeds) |
+| --- | --- |
+| ate a pellet it was lying on | 7–13 (mean 8.7) |
+| took a turn while already dead (steered, paid metabolism) | 7–302 (mean 88) |
+| reproduced after dying | 1 across all twelve runs (seed 314) |
+| bit something | **0** |
+
+The bite never happened once in twelve runs, which is a reminder that the
+plausible-sounding member of a list is not automatically the real one: a
+posthumous bite needs a dead carnivore with a living target inside reach *and*
+its bite cooldown expired, and that conjunction simply never came up. The
++6.4 predated burial v1.44 reported on seed 512 was a body that had been bitten
+to zero and then **grazed**.
+
+### The books close differently
+
+The clean result is in the ledger, not in the population. `energy_buried_predation`
+over 20,000 ticks, by seed:
+
+```
+off:  -2.17  -7.35  -9.65  -1.04  +6.38  -2.37  -6.49  -0.79  +29.39  -14.02  +1.55  -1.53
+on:    0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00    0.00    0.00   0.00   0.00
+```
+
+Exactly zero, on every seed, and it is a theorem rather than a coincidence: a
+bite takes `min(prey.energy, biteEnergy)` and only kills when that minimum was
+the whole of it, so a body the pond killed is at *precisely* zero. With the flag
+on, nothing can touch it afterwards. `test/deathIsFinal.test.js` asserts it.
+
+Starvation is the same story one step less sharp. With the flag off, the
+starvation column comes out **positive** on nine of twelve seeds (up to +61.5) —
+bodies buried holding what they ate after dying. With it on, every seed is
+negative (−31 to −162), which is the overdraft it should be: a starved creature
+finishes a hair below zero because it paid its last bill in full.
+
+### What it does to the pond: not much, and not measurably
+
+Mean population over the last 5,000 ticks of each run, off vs on:
+
+```
+off:  206.9  240.5  181.1  263.6  189.6  249.2  209.6  244.2  232.8  169.7  235.6  144.2
+on:   207.2  249.8  218.6  238.9  278.2  250.6  218.2  254.4  235.7  183.3  228.2  152.2
+Δ:     +0.3   +9.2  +37.5  -24.7  +88.7   +1.4   +8.6  +10.1   +2.9  +13.6   -7.4   +8.0
+```
+
+Ten of twelve are positive and the mean is +12.3 (+5.8%), which sounds like a
+result and is not one: the standard deviation across seeds is 28.0, so the
+standard error on that mean is 8.1 and one seed (512, +88.7) carries a third of
+it. This is exactly the v1.32 lesson — *a seed-matched pair is not a replicate
+in a world with attractors* — and twelve pairs is enough to say the effect is
+not large, not enough to say which way it points. Correcting the rule does not
+obviously cost or buy the pond anything. What it changes for certain is that the
+books stop recording things that cannot happen.
+
+### The correction is rare, not subtle
+
+The most surprising number here is how long it takes to matter. Because a
+posthumous act happens roughly ten times in 20,000 ticks, the two arms run
+**bit-for-bit identical** for thousands of ticks and then part company at the
+first one:
+
+```
+seed:      77    314      7     42     21     13     23     99
+diverges: 2963   3587   2970    —      —      —      —      —      (— = still identical at tick 4000)
+```
+
+Half the seeds tried had not diverged at all after 4,000 ticks. This is why
+`test/fingerprint.test.js`'s "every opt-in feature is a lever when it is on"
+check skips this flag alongside `kinRecognition`: its 1,000-tick budget cannot
+see a difference that has not happened yet, and stretching the budget for one
+flag would make the whole sweep four times slower. The mechanism is staged
+directly instead, in one tick, in `test/deathIsFinal.test.js`.
+
+### Reproducing it
+
+```bash
+node -e '
+Promise.all([import("./src/world.js"), import("./src/config.js"), import("./src/creature.js")])
+  .then(([W, C, Cr]) => {
+    for (const deathIsFinal of [false, true]) {
+      let actor = null, graze = 0, birth = 0, turnsDead = 0;
+      const act = Cr.Creature.prototype.act;
+      Cr.Creature.prototype.act = function (o) {
+        actor = this; if (this.dead) turnsDead++; return act.call(this, o);
+      };
+      const rep = Cr.Creature.prototype.reproduce;
+      Cr.Creature.prototype.reproduce = function (...a) {
+        if (this.dead) birth++; return rep.call(this, ...a);
+      };
+      const w = new W.World(C.makeConfig({ seed: 314, deathIsFinal }));
+      const g = w.energy.graze.bind(w.energy);
+      w.energy.graze = (m, k) => { if (actor && actor.dead) graze++; g(m, k); };
+      for (let i = 0; i < 20000; i++) w.step();
+      Cr.Creature.prototype.act = act; Cr.Creature.prototype.reproduce = rep;
+      console.log("deathIsFinal=" + deathIsFinal, { graze, birth, turnsDead,
+        buriedPredation: +w.energy.buriedBy.predation.toFixed(2),
+        buriedStarvation: +w.energy.buriedBy.starvation.toFixed(2) });
+    }
+  });'
+```
 
 ## What this model deliberately leaves out
 
