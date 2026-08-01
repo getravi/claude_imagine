@@ -31,6 +31,11 @@
 // off is not mentioned. A description that says "0 sick" in a world with no
 // pathogen is the spoken form of a readout showing a steady, plausible zero.
 
+// The one thing this module borrows: shares that are spoken as percentages get
+// the same largest-remainder rounding the mortality caption uses, so a listener
+// and a reader are never told two different totals.
+import { wholePercents } from "./stats.js";
+
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
 
@@ -292,6 +297,73 @@ export function describeChart(hist, axis, foodMax) {
     `Population and food over time, ticks ${from.toLocaleString()} to ${last.tick.toLocaleString()}: ` +
     `${count(last.pop, "creature")} on a scale to ${axis.top.toLocaleString()}, ` +
     `${count(last.food, "food pellet")} of ${foodMax.toLocaleString()}.`
+  );
+}
+
+/**
+ * The Tree of Life, said out loud (v1.42).
+ *
+ * The last unnarrated canvas on the page, and the one the landing copy leads
+ * with. v1.31 gave the pond a name and v1.41 the chart; the Muller plot kept
+ * saying the single word "muller", while the two text lines beside it — the
+ * species tally and the tick range — described everything about the record
+ * *except* what is in it. So the scope here is the same as `describePond`'s:
+ * only the part with no text form anywhere else, which is the shape of the
+ * stack. Who holds the pond now, in shares that add to a whole, and what the
+ * largest lineage was worth when the record began — the one comparison a
+ * whole-run plot exists to support and an eye makes for free.
+ *
+ * @param {ReturnType<typeof import('./mullerplot.js').mullerShares>} shares
+ * @param {{from:number, to:number}|null} [span] the ticks the record covers
+ */
+export function describeMuller(shares, span = null) {
+  const { shown, frac, other, live, n } = shares;
+  if (n < 2) return "Species over time: not enough history yet.";
+  const when = span
+    ? `, ticks ${span.from.toLocaleString()} to ${span.to.toLocaleString()}`
+    : "";
+  const i = n - 1; // the newest column: what the right-hand edge shows
+  // An empty window draws no bands at all since v1.42, and saying "0% of
+  // nothing" would be the spoken form of the picture that release removed.
+  if (!live[i]) return `Species over time${when}: nothing is alive in the newest window.`;
+
+  const named = shown
+    .map((s, k) => ({ id: s.id, now: frac[k][i], then: frac[k][0] }))
+    .filter((e) => e.now > 0)
+    .sort((a, b) => b.now - a.now || a.id - b.id);
+  if (!named.length) {
+    return (
+      `Species over time${when}: no lineage has yet reached the size that earns ` +
+      `a band, so the whole plot is the grey churn of small ones.`
+    );
+  }
+
+  // Parts of a whole get largest-remainder rounding, so the shares a listener
+  // hears add to 100 — the v1.21 caption rule, which is about arithmetic a
+  // reader can check rather than about pixels.
+  const pct = wholePercents([...named.map((e) => e.now), other[i]]);
+  const unnamed = pct[pct.length - 1];
+  const bits = named.slice(0, 3).map((e, k) => `species ${e.id} at ${pct[k]}%`);
+  const rest = named.slice(3);
+  if (rest.length) {
+    const restPct = rest.reduce((s, _, k) => s + pct[3 + k], 0);
+    bits.push(
+      restPct > 0
+        ? `${count(rest.length, "smaller lineage")} at ${restPct}%`
+        : `${count(rest.length, "smaller lineage")} under 1% between them`
+    );
+  }
+  if (unnamed > 0) bits.push(`${unnamed}% too small to name`);
+
+  const lead = named[0];
+  const start =
+    lead.then > 0
+      ? `held ${percent(lead.then)} when the record began`
+      : `did not exist when the record began`;
+  return (
+    `Species over time${when}: ${count(shown.length, "lineage")} drawn as stacked bands, ` +
+    `oldest at the bottom. Now ${bits.join(", ")}. ` +
+    `The largest, species ${lead.id}, ${start}.`
   );
 }
 

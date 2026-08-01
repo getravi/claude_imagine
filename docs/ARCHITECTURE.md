@@ -71,7 +71,7 @@ The dependency arrows point from a module to what it imports.
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |
 | `rendershot.js` | A canvas that records instead of painting, so the renderer can be tested headlessly: the stream of drawing commands a frame produces, and `renderFingerprint` over it. The fourth channel — what the pond *looks like* — which is how `levers.js` tells a drawing constant from a dead one, and how "rendering is read-only" finally became a test rather than a comment. Comparisons within one run only; a golden render hash would move on every deliberate visual change. | — |
 | `levers.js` | The constant sweep: move every number in `config.js`, in a world where it can bite, and check something moves. Reads the key list out of the config, so a constant added later is swept the day it lands. | — |
-| `mullerplot.js` | Draws the "Tree of Life" stacked-area chart (read-only). | canvas |
+| `mullerplot.js` | The "Tree of Life": `mullerShares()` turns snapshots into stacked shares (pure), `drawMuller()` paints them (read-only). | canvas |
 | `scenarios.js` | Curated one-click world presets (data only). | — |
 | `main.js` | Boot, the requestAnimationFrame loop, all UI wiring. | yes |
 
@@ -300,6 +300,10 @@ live population (correcting the incremental counts, which don't see deaths),
 records a snapshot, and marks newly-extinct species. `mullerplot.js` turns those
 snapshots into the stacked-area "Tree of Life" chart, and the renderer can dim
 every creature outside a chosen species to spotlight one lineage in the pond.
+The shares are computed once (`mullerShares()`) and used twice — by the drawing
+and by the canvas's `aria-label` — so the picture and its spoken form cannot
+disagree. A window in which nothing was alive contributes no share to any band,
+so an extinction pinches the stack shut instead of filling it (v1.42).
 
 That snapshot record covers the **whole run** in bounded memory, the same
 promise `archive.js` makes for the population chart: when it fills, every second

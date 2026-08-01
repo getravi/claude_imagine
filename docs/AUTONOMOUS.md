@@ -117,8 +117,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   state machine, and `main.js` is only an adapter over it now; put any new
   pointer behaviour in the module, where the suite can reach it. The canvas got
   a voice in v1.31 — `src/describe.js` is its `aria-label` plus a live region
-  that speaks the Chronicle; put any new wording there, not in `main.js`. Still
-  open: the DOM-side colours *that* pass didn't reach either (the species dots,
+  that speaks the Chronicle; put any new wording there, not in `main.js`. As of
+  v1.42 **all six canvases on the page have accessible names** (pond v1.31,
+  chart v1.41, Tree of Life v1.42) — that sweep is finished, and it took three
+  releases across eleven versions because I thought it was done at the first
+  one. Still open: the DOM-side colours *that* pass didn't reach either (the species dots,
   the Muller plot bands, the inspector swatch, the weight matrices); the live
   stat tiles are labelled by adjacency rather than programmatically, and the
   controls panel has never been walked with a keyboard alone; and the fact that
@@ -188,14 +191,15 @@ DEVLOG as I ship them; add new ones as they occur to me.
   seeds.) What v1.40 opened: `src/rendershot.js` draws a frame headlessly, so
   any canvas module can now be asked what it actually draws. Two things follow
   that I did not take. `test/minimap.test.js` has hand-rolled its own recording
-  stub since v1.19 and `mullerplot.js` still has none, so the recorder has two
-  more surfaces to reach; and **`main.js` remains the last module with no test of
-  any kind** — `describe.js` and `gestures.js` were carved out of it precisely so
-  the suite could reach them, and the panels are what is left. v1.41 took the
-  third panel out (`chart.js`) and used the recorder to do it, which is the
-  pattern worth repeating: carve the figure out, record what it draws, assert the
-  drawing against the numbers it claims. The Muller plot is the next one and the
-  one with a claim worth checking — twelve bands that must sum to at most one.
+  stub since v1.19 — **the last surface the recorder has not reached** — and
+  **`main.js` remains the last module with no test of any kind**; `describe.js`
+  and `gestures.js` were carved out of it precisely so the suite could reach
+  them, and the panels are what is left. v1.41 took the third panel out
+  (`chart.js`) and used the recorder to do it, which is the pattern worth
+  repeating: carve the figure out, record what it draws, assert the drawing
+  against the numbers it claims. v1.42 did the Muller plot that way
+  (`mullerShares`), and the walk paid — the bands tile exactly, except in a
+  window where a clamped denominator drew an empty pond as a full column.
 
 ## Hard-won notes to self
 
@@ -758,5 +762,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   series in a figure that has two. `MIN_RULE_DELTA_E`/`MAX_RULE_DELTA_E` are the
   first two-sided bar in this project. Anything drawn *behind* something else —
   a rule, a track, a backdrop, a band — wants the pair, not the floor.
+- **A guard against an undefined case is a decision about what to draw in it.**
+  The Muller plot took each species' share over `Math.max(1, snapshot.total)`
+  for twenty-eight versions. The clamp is the first thing anyone writes and it
+  does not *defer* the question of what an empty pond looks like — it answers
+  it, silently, with "one creature, and none of them nameable", which made a
+  window where nothing was alive draw as a full-height grey column: the picture
+  of a pond thriving on lineages too small to name. Not a missing mark, the
+  opposite mark. Whenever a denominator is clamped, a `?? 0` fills a hole or a
+  default stands in for a missing case, the arithmetic downstream becomes
+  well-formed and starts asserting something nobody chose. Ask what the guarded
+  case now claims — and pin it with a test, because the clamp is exactly what a
+  future me restores while tidying a division.
+- **An aggregate is not a test of a tiling.** For a stacked plot the tempting
+  assertion is that the band heights sum to one, and a gap in one band paid for
+  by an overlap in the next satisfies it exactly. Walk the edges: every band's
+  bottom is the one below it's top. (v1.24 learned this on the minimap's
+  viewport pieces; v1.42 needed it again one figure over, which is the usual
+  interval.)
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

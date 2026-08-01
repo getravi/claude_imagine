@@ -4,6 +4,56 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.42.0] — 2026-08-01
+
+The Tree of Life is the view this project leads with — the landing page's third
+promise, the thing a Muller plot is *for* — and it was the last figure here with
+no test of any kind and the last canvas on the page with no accessible name. It
+makes one claim an eye cannot check: the bands tile each column exactly and sum
+to at most the whole pond. Walking the drawing found where that stops being true.
+
+### Fixed
+
+- **An extinction is no longer drawn as a thriving pond.** The shares were taken
+  over `Math.max(1, snapshot.total)` — a guard against dividing by zero — so a
+  window in which nothing was alive produced `1 − 0` for the grey "other" band
+  and filled the column floor to ceiling, which is the picture of a pond made
+  entirely of lineages too small to name. A window with no pond now draws no
+  band, and the stack pinches shut where the world did. Reachable with
+  `autoReseed` off, which is how the headless experiments in `SCIENCE.md` run.
+
+### Added
+
+- **`test/mullerplot.test.js`**, the recorder from v1.40 on its third surface.
+  It walks the recorded path and checks each band's own edges against the share
+  its species held, column by column — the per-element form, because an
+  aggregate ("the heights add up") is satisfied by a gap on one side paying for
+  an overlap on the other. Plus: even spacing across the full width, that
+  highlighting repaints without moving one coordinate, and that drawing the
+  figure moves neither the world nor the RNG.
+- **An `aria-label` on the Tree of Life**, via `describeMuller()`. The pond got
+  a voice in v1.31 and the chart in v1.41; this canvas still said the word
+  "muller" to a listener, while the two text lines beside it described
+  everything about the record except what is in it. It names who holds the pond
+  now, in shares that add to 100 by largest-remainder rounding, and what the
+  largest lineage was worth when the record began — the whole-run comparison an
+  eye makes for free. It says "did not exist when the record began" rather than
+  "0%", and an empty window is spoken as empty.
+
+### Changed
+
+- **`mullerShares()`** carves the plot's arithmetic out of its drawing, the way
+  `chart.js` was carved out of `main.js` one release earlier: the shares are the
+  claim, and a claim wants a test. The picture and the sentence are now built
+  from the same numbers, so they cannot drift apart. Shares are `Float64Array`
+  rather than `Float32Array`, which is what lets the tiling be asserted exactly
+  rather than to a tolerance.
+
+### Notes
+
+- Zero new dependencies, no simulation behaviour changed, no new random numbers:
+  `test/fingerprint.test.js` still holds the v1.36 hashes for the default pond.
+
 ## [1.41.0] — 2026-07-31
 
 v1.22 gave the population chart an x-axis caption and wrote down why: *a chart

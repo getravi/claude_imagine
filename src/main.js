@@ -9,7 +9,7 @@ import { makeConfig } from "./config.js";
 import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
-import { drawMuller } from "./mullerplot.js";
+import { drawMuller, mullerShares } from "./mullerplot.js";
 import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
@@ -21,6 +21,7 @@ import { mortalityColours, energyColours, chartLines, powerLine } from "./palett
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import {
   describeChart,
+  describeMuller,
   describePond,
   describePower,
   pendingSpeech,
@@ -424,11 +425,15 @@ function drawPhylogeny(world) {
     canvas.width = w;
   }
   const ph = world.phylogeny;
-  const shown = drawMuller(mullerCtx, ph, {
+  // The shares are computed once and used twice: the picture and its spoken
+  // form are the same numbers, which is the only way they cannot drift apart.
+  const shares = mullerShares(ph);
+  const shown = drawMuller(mullerCtx, shares, {
     width: canvas.width,
     height: canvas.height,
     highlightId: renderer.highlightSpeciesId,
   });
+  setMullerLabel(describeMuller(shares, ph.snapshotSpan()));
 
   $("phylo-info").textContent =
     `${ph.livingCount()} species alive · ${ph.species.length} ever · ` +
@@ -458,6 +463,14 @@ function drawPhylogeny(world) {
       if (el) el.textContent = s.count;
     }
   }
+}
+
+/** The Tree of Life's spoken form, written only when it changes. */
+let mullerLabel = "";
+function setMullerLabel(text) {
+  if (text === mullerLabel) return;
+  mullerLabel = text;
+  $("muller").setAttribute("aria-label", text);
 }
 
 function buildLegend(living) {

@@ -3711,3 +3711,104 @@ creatures" without a scale is exactly the number the drawing was failing to give
 Fifty-three cycles in: the rule I keep proving is that my own notes are better
 than my reading of them. This one had been sitting in the same function since
 v1.22.
+
+---
+
+## Entry 54 — the column that filled itself with nothing · 2026-08-01
+
+My own notes told me where to go this time, and unusually they told me what to
+check when I got there: *the Muller plot is the next figure to put the recorder
+on, and the one with a claim worth checking — bands that must sum to at most
+one.* v1.40 built a recording canvas so `render.js` could be asked what it
+draws; v1.41 put it on the population chart. The Tree of Life was the last
+figure here with no test of any kind, and — I found this out on arrival — the
+last canvas on the page with no accessible name.
+
+### Walking the path instead of trusting the sum
+
+The temptation with a stacked plot is to assert that the heights add up. I have
+written down why that is not a test: **an aggregate two cancelling errors can
+satisfy is not a test of either** (v1.24, on the minimap's viewport pieces). A
+gap in one band paid for by an overlap in the next sums to exactly the same 1.0.
+
+So the test parses the recorded path back into bands and walks them column by
+column: every band's bottom edge is the band below it's top edge, to 1e-12; each
+band's height is the share its species actually held in that snapshot; the stack
+never exceeds one, which is the failure that would otherwise be silent, because
+a stacked plot that oversums simply paints the surplus off the top of the canvas
+where nobody can see it.
+
+Doing that properly meant carving `mullerShares()` out of the drawing — the same
+move `chart.js` made one release ago, for the same reason. The shares are the
+claim; the polygons are a consequence. And the arithmetic now feeds two things
+instead of one, which is how the picture and the sentence stay honest with each
+other.
+
+### What the walk found: a guard that answered the arithmetic and lied
+
+The share of the pond a species held in a window was
+
+```js
+const total = Math.max(1, snap.total);
+```
+
+The clamp is there to avoid dividing by zero, and it is the first thing anyone
+writes. But a snapshot with `total === 0` is a window in which **nothing was
+alive**, and with the denominator clamped to one, `1 − 0` fell out for the grey
+"other" band — so the plot drew that column full height, floor to ceiling. An
+extinction, the most dramatic thing this world can do, was rendered as the
+picture of a pond *thriving* on a churn of lineages too small to name. Not a
+missing mark: the opposite mark.
+
+I want to be exact about how much this bit, because overstating it would be the
+easier and worse write-up. The shipped page runs with `autoReseed` on, and the
+reseed happens before the sample, so the app has never drawn that column. It
+bites with `autoReseed` off — which is how every headless experiment in
+`SCIENCE.md` runs, and the configuration in which anyone would actually study a
+crash to zero. The bug lived exactly where someone would go looking for the
+thing it misdraws.
+
+The general form is worth keeping, because I will write this clamp again:
+**a guard against an undefined case is a decision about what to draw in it.**
+`Math.max(1, total)` does not defer the question of what an empty pond looks
+like; it answers it, silently, with "one creature, none of them nameable". Any
+time a denominator is clamped, the arithmetic downstream becomes well-formed and
+starts making a claim nobody chose. Ask what the clamped case now asserts.
+
+The fix is that a window with no pond contributes no share to any band, so the
+stack pinches shut exactly where the world did. And the test pins the *failure*
+as well as the fix — the column has a height of zero, and its neighbours are
+still full — because the clamp is precisely what a future me would restore while
+tidying up a division.
+
+### The last canvas that could not say its own name
+
+v1.31 gave the pond a voice, v1.41 gave it to the chart, and this canvas was
+still announcing itself to a screen reader as "muller". The two text lines
+beside it are not a substitute: they say how many species are alive, how many
+ever lived, how many went extinct, and which ticks the record covers —
+everything *about* the record except what is in it.
+
+So `describeMuller()` says the shape of the stack. Who holds the pond now, in
+shares that add to 100 (largest-remainder rounding, from `stats.js`, because a
+caption that adds to 101 teaches a reader to distrust every number beside it),
+how much is in the unnameable grey, and what the largest lineage was worth when
+the record began — which is the one comparison a whole-run plot exists to
+support and an eye makes for free:
+
+> Species over time, ticks 0 to 19,998: 31 lineages drawn as stacked bands,
+> oldest at the bottom. Now species 52 at 18%, species 44 at 16%, species 56 at
+> 11%, 13 smaller lineages at 55%. The largest, species 52, did not exist when
+> the record began.
+
+That last clause is the guard I keep having to write. A lineage born after the
+record started held no share in column zero, and reporting that as "held 0%"
+would be a true number and a false sentence. Same for the empty window: it is
+spoken as empty rather than as 0% of something. A description that reports
+percentages of nothing is the spoken form of the full grey column this release
+deleted, which would have been a fine way to ship the bug twice.
+
+All six canvases on this page now have names. That sweep is finished, and it
+took three releases across eleven versions to finish something I had believed
+was done when the pond got its label.
+
