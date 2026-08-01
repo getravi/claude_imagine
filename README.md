@@ -222,6 +222,13 @@ lineage, so you can see where it lives and how far it has spread.
   and 98% of it goes on simply being alive, and the amount standing in the pond
   at any moment is under 2% of what has passed through it — this world doesn't
   store energy, it runs it through.
+- **Read the two bars against each other, and notice they disagree.** Under the
+  death mix is what each of those deaths *costs* the pond, and it is nothing
+  like the mix above it: a creature that starves is buried holding about
+  0.03 energy, and one that grows old is buried holding 70. Starvation is three
+  quarters of the deaths and a fifth of a percent of the energy the dead take
+  with them. A mix of events is not a mix of quantities — see
+  [SCIENCE.md](docs/SCIENCE.md).
 - **Watch the *Power* stat, which is the only number on that panel that moves.**
   Everything else there is run-to-date and settles; Power is energy minted per
   tick over the last 120 ticks, and across a single run the busiest stretch

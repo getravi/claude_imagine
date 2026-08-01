@@ -374,11 +374,13 @@ export class World {
         if (c.dead) {
           this.stats.deaths++;
           this.stats.recordDeath(c);
-          // Whatever it still held goes with it. A creature that starved
-          // finishes a hair below zero — it paid its last bill in full — and
-          // that overdraft belongs here as a small negative, against the
-          // metabolism it was recorded as paying.
-          this.energy.bury(c.energy);
+          // Whatever it still held goes with it, charged to what killed it —
+          // the same label `recordDeath` just counted, so the two ledgers are
+          // reading the same body. A creature that starved finishes a hair
+          // below zero — it paid its last bill in full — and that overdraft
+          // belongs here as a small negative, against the metabolism it was
+          // recorded as paying.
+          this.energy.bury(c.energy, c.deathCause);
           // What the body is worth to the ground, if this world's ground keeps
           // anything. Computed whether or not detritus is on, because it costs
           // one multiply and it means switching the feature on mid-run doesn't

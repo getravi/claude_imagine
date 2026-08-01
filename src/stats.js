@@ -10,7 +10,7 @@
 import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
 import { hazardShare } from "./contagion.js";
-import { ENERGY_SOURCES, LEDGER_FIELDS, energyField } from "./energy.js";
+import { ENERGY_SOURCES, LEDGER_FIELDS, energyField, buriedField } from "./energy.js";
 
 /**
  * The ways a creature can die, in the order they are reported. Every death in
@@ -45,6 +45,51 @@ export const POWER_WINDOW = 30;
  */
 export function deathField(cause) {
   return `deaths_${cause}`;
+}
+
+/**
+ * What each way out of this world costs the pond: the energy buried with the
+ * dead of one cause, and what that comes to per body.
+ *
+ * The panel has drawn two bars side by side since v1.29 — what they die of, and
+ * where the energy goes — and nobody has ever asked whether they agree. They do
+ * not, and they cannot, because the two ways to leave this world are not the
+ * same kind of event. Starvation and predation both end at `energy <= 0` by
+ * definition, so those bodies are empty and take nothing with them; the pond
+ * had already spent them, tick by tick, under `metabolism`. Only old age kills
+ * a creature that still has something, so the rarest death is very nearly all
+ * of the `buried` column. A death mix is not a spend mix and reading it as one
+ * is a mistake this readout exists to make impossible.
+ *
+ * Run-to-date and signed: `energy` for a cause can be a small negative, because
+ * a starving creature pays its last tick's bill in full and finishes below
+ * zero. That is the pond's overdraft and it is the honest number, so nothing is
+ * clamped here — unlike `spendShares()`, which clamps because it feeds a bar
+ * that must not invert.
+ *
+ * Pure. Returns null before anything has died, so nothing has to render a row
+ * of dashes.
+ * @param {Record<string, number>} deathsBy cumulative deaths per cause
+ * @param {Record<string, number>} buriedBy cumulative energy buried per cause
+ * @returns {{deaths:number, energy:number,
+ *   causes:Record<string,{deaths:number, energy:number, perDeath:number}>}|null}
+ */
+export function deathCosts(deathsBy, buriedBy) {
+  /** @type {Record<string, {deaths:number, energy:number, perDeath:number}>} */
+  const causes = {};
+  let deaths = 0;
+  let energy = 0;
+  for (const c of DEATH_CAUSES) {
+    const n = deathsBy[c] ?? 0;
+    const e = buriedBy[c] ?? 0;
+    // A cause nobody has died of reads 0 per body, not NaN and not a dash: it
+    // is a true statement about an empty set here, and it keeps the caller from
+    // having to special-case a column that will fill in later.
+    causes[c] = { deaths: n, energy: e, perDeath: n > 0 ? e / n : 0 };
+    deaths += n;
+    energy += e;
+  }
+  return deaths > 0 ? { deaths, energy, causes } : null;
 }
 
 /**
@@ -381,6 +426,9 @@ export class Stats {
       // residual of the identity, at this tick. `snapshot()` reads the world and
       // writes nothing to it, and the ledger exists in every world, so there is
       // no toggle here and no branch — the books are always open.
+      // The books carry `energy_buried` split by what killed the body as of
+      // v1.44 — cumulative and extensive like everything else in them, so it is
+      // exact under any amount of the archive's thinning.
       Object.assign(point, world.energy.snapshot(world));
       this.popHistory.push(point);
       if (this.popHistory.length > this.historyLength) this.popHistory.shift();
@@ -451,8 +499,10 @@ export class Stats {
    * `pop_max` are exact over the `samples` raw points it stands for, so a peak
    * that fell between two retained rows is still in the file.
    *
-   * Both scopes carry the `deaths_*` columns, the three other counters, and the
-   * energy books, and every one of them is cumulative on purpose: subtract one
+   * Both scopes carry the `deaths_*` columns, the three other counters, the
+   * energy books and the `energy_buried_*` split — the one column the two
+   * ledgers share, taken apart by what killed the body — and every one of them
+   * is cumulative on purpose: subtract one
    * row's from the next's and you have exactly what happened in between,
    * whatever the thinning did to the rows around it. A per-interval column
    * would have been the more obvious choice and would have quietly
@@ -477,11 +527,17 @@ export class Stats {
         .map((f) => nrg(h[energyField(f)]))
         .concat(res(h[energyField("residual")]))
         .join(",");
+    // `energy_buried` split by what killed the body. Written last, after the
+    // whole of the books, because it is a subdivision of a column already in
+    // the file rather than a new quantity: the three of them sum to
+    // `energy_buried` and a reader who does not want them can stop before them.
+    const burialCols = DEATH_CAUSES.map(buriedField).join(",");
+    const burialVals = (h) => DEATH_CAUSES.map((c) => nrg(h[buriedField(c)])).join(",");
     if (scope === "whole") {
       const lines = [
         "tick,population,food,max_generation,pop_min,pop_max,food_min,food_max," +
           "energy_standing_min,energy_standing_max,energy_residual_min,energy_residual_max," +
-          `samples,${deathCols},${tallyCols},${nrgCols}`,
+          `samples,${deathCols},${tallyCols},${nrgCols},${burialCols}`,
       ];
       // Rows pushed by hand carry no envelope for a field they never had, so an
       // absent bound reads as zero — the same graceful case as an absent
@@ -493,17 +549,18 @@ export class Stats {
             `${r.min.pop},${r.max.pop},${r.min.food},${r.max.food},` +
             `${band(r, energyField("standing"), nrg)},` +
             `${band(r, energyField("residual"), res)},` +
-            `${r.span},${deathVals(r)},${tallyVals(r)},${nrgVals(r)}`
+            `${r.span},${deathVals(r)},${tallyVals(r)},${nrgVals(r)},${burialVals(r)}`
         );
       }
       return lines.join("\n") + "\n";
     }
     const lines = [
-      `tick,population,food,max_generation,${deathCols},${tallyCols},${nrgCols}`,
+      `tick,population,food,max_generation,${deathCols},${tallyCols},${nrgCols},${burialCols}`,
     ];
     for (const h of this.popHistory) {
       lines.push(
-        `${h.tick},${h.pop},${h.food},${h.gen},${deathVals(h)},${tallyVals(h)},${nrgVals(h)}`
+        `${h.tick},${h.pop},${h.food},${h.gen},${deathVals(h)},${tallyVals(h)},` +
+          `${nrgVals(h)},${burialVals(h)}`
       );
     }
     return lines.join("\n") + "\n";

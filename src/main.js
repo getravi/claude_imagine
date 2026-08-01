@@ -16,7 +16,13 @@ import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { drawChart, popAxis, axisLabels } from "./chart.js";
-import { wholePercents, mortalitySeries, DEATH_CAUSES, POWER_WINDOW } from "./stats.js";
+import {
+  wholePercents,
+  mortalitySeries,
+  deathCosts,
+  DEATH_CAUSES,
+  POWER_WINDOW,
+} from "./stats.js";
 import { mortalityColours, energyColours, chartLines, powerLine } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import {
@@ -616,6 +622,23 @@ function updateMortality(s) {
   $("mort-legend").textContent = text;
   $("mort-window").textContent = `last ${m.n}`;
   bar.setAttribute("aria-label", `Of the last ${m.n} deaths, ${text.replace(/ · /g, ", ")}.`);
+
+  // And what each of them costs, which the bar above cannot say and the energy
+  // bar below it cannot either. Run-to-date rather than over the death window,
+  // because this is a per-body figure and not a mix: it is what one death of
+  // each kind takes out of the pond, and averaging it over more bodies makes it
+  // truer rather than staler. Old age is normally two to three thousand times
+  // the other two — see docs/SCIENCE.md.
+  const cost = deathCosts(s.deathsBy, world.energy.buriedBy);
+  if (cost) {
+    // Named rather than indexed, like the shares above it, so the words and the
+    // causes cannot drift apart. Whole units: the interesting thing about the
+    // first and third is that they round to nothing.
+    const per = (c) => Math.round(cost.causes[c].perDeath);
+    $("mort-cost").textContent =
+      `buried with each: ${per("starvation")}⚡ starved · ` +
+      `${per("age")}⚡ aged · ${per("predation")}⚡ hunted`;
+  }
 }
 
 // ---- Live population chart ----

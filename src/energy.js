@@ -40,6 +40,14 @@ export const ENERGY_SOURCES = Object.freeze(["crop", "carrion", "founders"]);
 export const ENERGY_SINKS = Object.freeze(["metabolism", "waste", "buried"]);
 
 /**
+ * Where a burial goes when nobody said what killed the creature. Never used by
+ * this world — every death here names its cause — and kept as a real bucket so
+ * that if one ever stops, the energy lands somewhere a test can see it rather
+ * than inside a cause that did not earn it.
+ */
+export const UNATTRIBUTED = "unattributed";
+
+/**
  * The eight fields the ledger actually *stores* — the ones carried into every
  * history point, the archive and both CSV scopes. `created`, `destroyed` and
  * `waste` are getters over these and are never recorded: a derived total is a
@@ -70,6 +78,20 @@ export const LEDGER_FIELDS = Object.freeze([
  */
 export function energyField(name) {
   return `energy_${name}`;
+}
+
+/**
+ * The column carrying the *cumulative* energy this world has buried with the
+ * dead of one cause — a subdivision of `energy_buried`, named so that a reader
+ * opening the file can see which column it is part of.
+ *
+ * It lives here rather than beside `deathField()` in `stats.js` because it is
+ * an energy quantity: the ledger writes it, and the ledger knows nothing about
+ * causes of death beyond the labels it is handed.
+ * @param {string} cause a cause of death
+ */
+export function buriedField(cause) {
+  return energyField(`buried_${cause}`);
 }
 
 /**
@@ -215,16 +237,35 @@ export class EnergyLedger {
     this.digested = 0; // the share of a bite that never reaches the biter
     this.spilled = 0; // a gain discarded because the eater was already full
     this.rotted = 0; // meat that rotted out of a corpse nothing ate
-    // What a body still held when it died. Slightly negative contributions are
-    // normal and correct: a creature pays its last tick's bill in full and can
-    // finish a hair below zero, and that overdraft belongs here, against the
-    // metabolism it was counted as paying.
-    this.buried = 0;
+    // What a body still held when it died, charged to whatever killed it. This
+    // is the one event both of this project's ledgers watch: the mortality
+    // counters say how *many* died of each cause, and this says what the pond
+    // lost when they did. Nothing had ever put the two next to each other, and
+    // they disagree almost completely — see docs/SCIENCE.md.
+    //
+    // Split rather than totalled because the total is then unable to disagree
+    // with its own parts: `buried` is a getter over this map, so there is no
+    // second accumulator to drift, and no cause can be added to the world
+    // without appearing here. Slightly negative contributions are normal and
+    // correct — a creature pays its last tick's bill in full and can finish a
+    // hair below zero, and that overdraft belongs here against the metabolism
+    // it was counted as paying. Splitting is what makes that legible: the
+    // overdraft is *all* of what starvation and predation bury, so a sign this
+    // comment used to apologise for is now an invariant a test can hold.
+    /** @type {Record<string, number>} cause of death → energy buried with it */
+    this.buriedBy = Object.create(null);
   }
 
   /** Total energy this world has created from nothing. */
   get created() {
     return this.crop + this.carrion + this.founders;
+  }
+
+  /** What the dead took with them, over every cause. */
+  get buried() {
+    let total = 0;
+    for (const k in this.buriedBy) total += this.buriedBy[k];
+    return total;
   }
 
   /** The three leaks, together — the segment the panel draws. */
@@ -272,9 +313,22 @@ export class EnergyLedger {
     this.metabolism += cost;
   }
 
-  /** What a creature still held as it died. May be a small negative. */
-  bury(energy) {
-    this.buried += energy;
+  /**
+   * What a creature still held as it died, charged to the cause of death. May
+   * be a small negative — see the constructor.
+   *
+   * An unlabelled burial goes to its own bucket rather than quietly joining a
+   * real cause's, so a death path that forgets to say why is visible *in* the
+   * books instead of hidden inside one of their columns. `buried` and
+   * `snapshot()` both still count it, because the identity is about energy and
+   * does not care what the label says; the CSV's columns are taken over
+   * `DEATH_CAUSES`, so an unattributed amount shows up there as the parts
+   * failing to sum to `energy_buried`.
+   * @param {number} energy
+   * @param {string} [cause] one of `DEATH_CAUSES`
+   */
+  bury(energy, cause = UNATTRIBUTED) {
+    this.buriedBy[cause] = (this.buriedBy[cause] ?? 0) + energy;
   }
 
   /** Meat lost from a corpse to rot, never eaten. */
@@ -327,6 +381,12 @@ export class EnergyLedger {
     /** @type {Record<string, number>} */
     const out = {};
     for (const f of LEDGER_FIELDS) out[energyField(f)] = this[f];
+    // `buried`, taken apart by what killed the body — the one column both of
+    // this project's ledgers watch. Written from the map's own keys rather than
+    // from a list of causes, so the books report what they were actually told
+    // and a burial that arrived unlabelled appears as its own column instead of
+    // vanishing into a named one.
+    for (const cause in this.buriedBy) out[buriedField(cause)] = this.buriedBy[cause];
     const standing = EnergyLedger.standing(world);
     out[energyField("standing")] = standing;
     out[energyField("residual")] = this.created - this.destroyed - standing;

@@ -162,15 +162,17 @@ test("Stats.toCSV('whole') exports the archive with its envelope columns", () =>
       "energy_standing_min,energy_standing_max,energy_residual_min,energy_residual_max," +
       "samples,deaths_starvation,deaths_age,deaths_predation,births,kills,scavenged," +
       "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
-      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual"
+      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual," +
+      "energy_buried_starvation,energy_buried_age,energy_buried_predation"
   );
   assert.equal(lines.length - 1, stats.runHistory.series().length);
   // Thirteen columns of history — four of them the envelopes on the two
   // instantaneous energy fields (v1.35) — plus the three cause counters
-  // (v1.26), the three other tallies and the ten energy columns. These rows
+  // (v1.26), the three other tallies, the ten energy columns and the three
+  // (v1.44) that take `energy_buried` apart by cause. These rows
   // were pushed by hand without any of them, which is the graceful case:
   // absent reads as zero rather than as "undefined" in a spreadsheet.
-  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 29);
+  for (const line of lines.slice(1)) assert.equal(line.split(",").length, 32);
   assert.equal(lines.slice(1).some((l) => l.includes("undefined")), false);
   // The 999 spike is not a retained representative, but it is still in the file.
   const peak = Math.max(...lines.slice(1).map((l) => Number(l.split(",")[5])));
@@ -185,8 +187,9 @@ test("Stats.toCSV() still defaults to the recent window, unchanged", () => {
     "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation," +
       "births,kills,scavenged," +
       "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
-      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual",
-    "0,10,100,0,0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0",
+      "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual," +
+      "energy_buried_starvation,energy_buried_age,energy_buried_predation",
+    "0,10,100,0,0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0," + "0.000,0.000,0.000",
   ]);
   assert.equal(stats.toCSV("recent"), stats.toCSV());
 });

@@ -14,10 +14,11 @@ const RECENT_HEADER =
   "tick,population,food,max_generation,deaths_starvation,deaths_age,deaths_predation," +
   "births,kills,scavenged," +
   "energy_crop,energy_carrion,energy_founders,energy_metabolism,energy_digested," +
-  "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual";
+  "energy_spilled,energy_rotted,energy_buried,energy_standing,energy_residual," +
+  "energy_buried_starvation,energy_buried_age,energy_buried_predation";
 
 /** What a row pushed by hand — carrying none of those counters — must print. */
-const ABSENT = "0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0";
+const ABSENT = "0,0,0,0,0,0," + "0.000,".repeat(9) + "0.000e+0," + "0.000,0.000,0.000";
 
 test("Stats.toCSV: empty history yields header only", () => {
   const stats = new Stats();

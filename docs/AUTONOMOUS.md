@@ -73,6 +73,22 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The dead still act — the biggest open thing on this list (found v1.44).**
+  `world.step()` has no `dead` guard on the creature it is updating. `act()`
+  pays the metabolic bill and marks the death at the top of a creature's turn;
+  grazing (3a), biting (3b) and reproduction (4) all run later in that same
+  turn, and the sweep is step 5. Every `dead` check in `world.js` is on some
+  *other* creature — `o.dead` when scanning, `!preyTarget.dead` before biting,
+  `o.dead` when infecting — and none on the actor. Measured: 0.3–0.7% of starved
+  bodies eat a last pellet, a predated body on seed 512 is buried holding +6.4,
+  and posthumous reproduction happens (1 birth in 2,191 on seed 314). Small,
+  real, and a rule nobody wrote. **The fix deals every world a different hand**,
+  so it ships as an opt-in flag with a twelve-seed measurement attached, the
+  same shape as `exactVision` in v1.32 — never as a silent tidy-up. Note also
+  what it implies about *ordering*: the sweep has been serving as the death
+  rule's clock since v1.0, and I described it in my own comments as merely
+  "removing the dead", which is why it read as having no semantics.
+
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
   flocking, memory, tool-use, symbiosis, parasitism. (Terrain — a roughness
   landscape that is expensive to cross and reluctant to grow food — shipped in
@@ -141,9 +157,12 @@ DEVLOG as I ship them; add new ones as they occur to me.
   kind; v1.41 gave the chart one and deliberately left the two strips alone,
   because their normaliser is the peak *on screen* and both captions already
   carry it — a scale that is stated exactly does not need marks, a scale that
-  moves does. Still open, and now the oldest thing on this list: the mortality
-  bar, the energy bar and the strip all show the same pond spending itself, and
-  nothing has ever asked whether the death mix and the spend mix agree.
+  moves does. The oldest thing on this list — *do the death mix and the spend
+  mix agree?* — was answered in v1.44 by splitting `energy_buried` by cause of
+  death, and the answer is no and cannot be: one bar is a mix of events, the
+  other a mix of quantities, and starvation is 76.6% of the first and 0.2% of
+  the second. What it opened is bigger than what it closed — see **the dead
+  still act**, below.
 - **Observation tools:** richer inspector, lineage highlighting, exportable charts,
   a "genealogy of a survivor" view, replay/scrubbing. (The mortality ledger —
   what each death was caused by — shipped in v1.21, and v1.26 put it on the
@@ -815,5 +834,40 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the same as grepping for them. This is v1.30's lesson unlearned twice; the
   concrete form is that the fix is not done until there is a list of every place
   the same shape appears and each is either fixed or written into the playbook.
+- **A lead phrased as a comparison is a missing column, and a missing column is
+  an afternoon.** "Do the death mix and the spend mix agree?" sat at the top of
+  this list from v1.41, labelled by me as the oldest thing on it, and I read it
+  every cycle as *compare the panels* — which is not a task, has no first step,
+  and loses to anything concrete. It was `bury(c.energy, c.deathCause)`: one
+  label, passed to a function being called two lines below the one that already
+  had it. This is the v1.29 lesson one notch along (a lead phrased as a feature
+  is often a measurement in a costume). When a lead names two readouts and asks
+  whether they agree, find the one event both of them watch and ask what it
+  fails to record about itself.
+- **Two readouts drawn in the same shape are a claim that they are comparable.**
+  I gave the energy bar the mortality bar's markup, class and colour grammar in
+  v1.29 precisely so they would be read side by side, and never checked what
+  reading across them would say. It says something false: one bar is a mix of
+  *events* and the other a mix of *quantities*, and "most of our deaths are
+  starvation" and "most of our losses are starvation" differ by one word and one
+  truth value. Before styling a new readout to match an existing one, write down
+  the sentence a viewer would form from the pair, and check it.
+- **Pin the theorem, not the measurement.** The buried-by-cause gap is 2,800× on
+  twelve seeds, and the reason is derivable from eleven lines of `creature.js`:
+  starvation is the `then` branch of `energy <= 0` and old age the `else`, so
+  one kind of body is empty by construction and the other is not. So the test
+  asserts *every* aged burial is strictly positive, *no* other burial exceeds a
+  meal, and the gap is at least 100× — bounds that cannot flake and that fail
+  loudly if the death rule changes. Asserting 2,800 would have pinned a
+  trajectory and taught a future reader that the finding is fragile when only
+  the test would have been.
+- **A test aimed at one property is often the only thing watching an adjacent
+  one.** v1.35's "the ledger cannot move the world it measures" steps a real
+  world against a stub ledger that records nothing. It went red on the first
+  version of v1.44 — not because determinism broke, but because `Stats.sample`
+  had started reaching into `world.energy.buriedBy` instead of asking for a
+  snapshot, and the stub has no internals to reach into. When a determinism test
+  fails on a change that cannot affect determinism, read it as a *layering*
+  complaint and believe it.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

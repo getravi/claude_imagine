@@ -2355,6 +2355,127 @@ Promise.all([import("./src/world.js"), import("./src/config.js")]).then(([W, C])
 });'
 ```
 
+## Two bars that were never about the same thing (v1.44)
+
+The control panel has carried two stacked bars since v1.29, six lines apart in
+the markup. One says **what they die of** — starvation, old age, predation. The
+other says **where the energy goes** — metabolism, waste, buried. They are two
+pictures of the same pond spending itself, they use deliberately related
+colours, and for fifteen versions nobody asked whether they agree.
+
+They do not, and the reason is structural rather than statistical.
+
+The two ledgers touch at exactly one event: a body being swept up. The mortality
+counters record *how many* died of each cause; the energy books record what the
+pond lost when they did, under `buried`. Until v1.44 `buried` was a single
+running total, so the question could not be asked at all. Splitting it by cause
+costs one label passed to a function that was already being called one line
+away — and the answer arrives immediately.
+
+### The rarest death is nearly the whole column
+
+Twelve seeds, 20,000 ticks each, default configuration:
+
+| cause | share of deaths | share of buried energy | buried per body |
+|---|---|---|---|
+| starvation | 76.6% | 0.2% | **+0.025** |
+| old age | 15.8% | **99.8%** | **+70.164** |
+| predation | 7.6% | −0.0% | **−0.025** |
+
+A creature that starves takes about **one three-thousandth** of what a creature
+that grows old takes. That is not a property of this seed or this parameter set;
+it is what the two deaths *are*. `die("starvation")` is the `then` branch of
+`if (this.energy <= 0)` and predation kills by driving energy to zero, so both
+of those bodies are empty by construction. `die("age")` is the `else` branch, so
+an aged creature has something left by construction. The pond had already spent
+the starved ones, tick by tick, under `metabolism` — which is 94–98% of all
+spend across the twelve seeds, against `buried`'s 2.9%.
+
+So the mortality bar is a mix of *events* and the energy bar is a mix of
+*quantities*, and reading across from one to the other is a mistake. "Most of
+our deaths are starvation" and "most of our losses are starvation" look like the
+same sentence and only the first one is true.
+
+### The dead still eat
+
+The split also found something nobody was looking for, which is the usual way
+round here (v1.38: *when a sweep reports something surprising, ask whether the
+surprise is about the constant or about the code that reads it*).
+
+Starvation's per-body figure is **positive**. It should not be able to be: a
+starved body is at or below zero when it is marked. Between six and twelve
+starved bodies per run — 0.3–0.7% of them — are buried holding a whole pellet's
+worth of energy.
+
+The mechanism is that **the update loop has no `dead` guard on the creature it
+is updating**. `act()` pays the metabolic bill and marks the death at the top of
+a creature's turn; grazing, biting and reproduction all happen *later in that
+same turn*, and the corpse is not swept until step 5. The only `dead` checks in
+`world.js` are on *other* creatures — as prey, as a neighbour, as an infection
+source. Nothing checks the actor. So in the tick it dies, a creature can still:
+
+- **eat the pellet it is standing on** (6–12 times per run), removing it from
+  the pond;
+- **take a bite of prey**, which is how a *predated* body comes to be buried
+  holding +6.4 energy on seed 512;
+- **reproduce**, if it died of old age holding more than `reproduceThreshold`.
+  This is genuinely rare — 1 posthumous birth in 2,191 on seed 314, 0 in 2,015
+  on seed 42 — but it is not zero.
+
+None of this is large. All of it is real, and all of it is a rule nobody wrote:
+the sweep is a *bookkeeping* step that has been quietly acting as the death
+rule's clock. Fixing it would change every world on the first tick a creature
+dies with a pellet under it, so by the project's own rule (v1.32, `exactVision`)
+the fix would have to arrive as an opt-in flag with the measurement attached,
+not as a silent correction. It has not been made.
+
+### Reproducing it
+
+```bash
+node -e '
+Promise.all([import("./src/world.js"), import("./src/config.js"), import("./src/stats.js")])
+  .then(([W, C, S]) => {
+    const agg = {starvation:[0,0], age:[0,0], predation:[0,0]};
+    for (const seed of [314, 7, 13, 23, 42, 99, 101, 256, 512, 777, 1234, 8181]) {
+      const w = new W.World(C.makeConfig({ seed }));
+      for (let i = 0; i < 20000; i++) w.step();
+      const c = S.deathCosts(w.stats.deathsBy, w.energy.buriedBy);
+      for (const k in agg) { agg[k][0] += c.causes[k].deaths; agg[k][1] += c.causes[k].energy; }
+    }
+    const n = Object.values(agg).reduce((s, a) => s + a[0], 0);
+    const e = Object.values(agg).reduce((s, a) => s + a[1], 0);
+    for (const k in agg)
+      console.log(k.padEnd(11), (100*agg[k][0]/n).toFixed(1)+"% of deaths",
+                  (100*agg[k][1]/e).toFixed(1)+"% of buried",
+                  (agg[k][1]/agg[k][0]).toFixed(3)+"/body");
+  });'
+```
+
+Counting the burials that should not be positive — the dead-still-eat finding —
+needs only a wrapper around the ledger's own method:
+
+```bash
+node -e '
+Promise.all([import("./src/world.js"), import("./src/config.js"), import("./src/energy.js")])
+  .then(([W, C, E]) => {
+    const tally = {};
+    const orig = E.EnergyLedger.prototype.bury;
+    E.EnergyLedger.prototype.bury = function (x, cause) {
+      const t = (tally[cause] ??= { n: 0, positive: 0 });
+      t.n++; if (x > 0) t.positive++;
+      return orig.call(this, x, cause);
+    };
+    const w = new W.World(C.makeConfig({ seed: 314 }));
+    for (let i = 0; i < 20000; i++) w.step();
+    console.log(tally);
+  });'
+```
+
+Both figures are in the CSV export too: every row of both scopes now carries
+`energy_buried_starvation`, `energy_buried_age` and `energy_buried_predation`,
+cumulative like the rest of the books, so differencing any two rows gives
+exactly what each cause buried in between.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

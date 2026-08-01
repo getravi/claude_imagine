@@ -24,6 +24,7 @@ import {
   ENERGY_SOURCES,
   LEDGER_FIELDS,
   energyField,
+  buriedField,
   energySeries,
   spendShares,
 } from "../src/energy.js";
@@ -340,7 +341,15 @@ test("recording the books draws no random numbers and moves nothing", () => {
   world.rng.next = real;
 
   assert.equal(draws, 0, "the books are written from state that already exists");
-  assert.equal(Object.keys(snap).length, LEDGER_FIELDS.length + 2);
+  // The eight stored fields, the standing stock, the residual — and, as of
+  // v1.44, one column per cause of death the pond has actually seen, taking
+  // `energy_buried` apart. A cause nothing has died of yet has no column,
+  // because the books report what they were told rather than a list of what
+  // they might be told; absent reads as zero everywhere downstream.
+  const causes = Object.keys(world.energy.buriedBy);
+  assert.ok(causes.length > 0, "nothing has died in 200 ticks, so this checks nothing");
+  assert.equal(Object.keys(snap).length, LEDGER_FIELDS.length + 2 + causes.length);
+  for (const c of causes) assert.ok(buriedField(c) in snap, `no column for ${c}`);
   world.creatures.forEach((c, i) => {
     assert.equal(c.x, before[i].x);
     assert.equal(c.y, before[i].y);

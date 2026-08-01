@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.44.0] — 2026-08-01
+
+Two stacked bars have sat six lines apart in the control panel since v1.29 —
+*what they die of*, and *where the energy goes*. They are drawn in deliberately
+related colours, they are two pictures of the same pond spending itself, and
+nothing had ever asked whether they agree. They cannot: one is a mix of events
+and the other a mix of quantities. The column where they touch was a single
+number, so the question had nowhere to be asked.
+
+### Added
+
+- **`energy_buried` is split by what killed the body.** The ledger's `bury()`
+  takes the cause the mortality counters were just handed one line above it, so
+  the two books are demonstrably reading the same corpse. Over twelve seeds and
+  20,000 ticks each: starvation is **76.6% of deaths and 0.2% of the energy the
+  dead take with them**; old age is **15.8% and 99.8%**. Per body that is
+  **+0.025 against +70.164**, a factor of nearly three thousand. It is
+  structural, not statistical — starvation and predation both end at
+  `energy <= 0` by definition, so those bodies are empty and the pond had
+  already spent them under `metabolism`.
+- **A third line under the mortality bar**, saying what one death of each kind
+  buries. The first and third round to zero, which is the finding.
+- **`energy_buried_starvation`, `_age` and `_predation` in both CSV scopes**,
+  cumulative like the rest of the books, so differencing any two rows gives
+  exactly what each cause buried in between however far the archive has thinned.
+- **`deathCosts()` in `src/stats.js`** and **`buriedField()` in
+  `src/energy.js`** — the arithmetic and the column name, both pure and both
+  reachable by a test, rather than a calculation living in `main.js`.
+- **`test/deathCost.test.js`**, which pins the structural claim rather than the
+  numbers: every burial charged to old age is strictly positive, no burial
+  charged to the other two exceeds a single meal, and the per-body gap is at
+  least a hundredfold. A test that can only measure noise teaches a future
+  reader the wrong lesson about which of the two is fragile.
+
+### Fixed
+
+- **A total that could disagree with its parts is now unrepresentable.**
+  `buried` is a getter over the per-cause map rather than a second running sum,
+  so there is no accumulator left to drift — the v1.29 rule about derived
+  columns, finally applied to the one stored field that had parts. An
+  unlabelled burial lands in its own `unattributed` bucket instead of quietly
+  joining a cause that did not earn it.
+- **`Stats.sample` no longer reaches into the ledger's internals.** The books
+  write their own columns in `snapshot()`; the recording path reads, and only
+  reads. The v1.35 test that steps a world against a ledger recording nothing
+  caught the first version of this, which is exactly what it is for.
+
+### Notes
+
+- **The dead still eat.** Starvation's per-body figure came out *positive*,
+  which a body that died at zero should not be able to manage. The update loop
+  has no `dead` guard on the creature it is updating: `act()` marks the death at
+  the top of a creature's turn and grazing, biting and reproduction all happen
+  later in that same turn, with the sweep not until step 5. So 0.3–0.7% of
+  starved bodies eat the pellet they are lying on; a predated body on seed 512
+  is buried holding +6.4; and a creature can reproduce posthumously (1 birth in
+  2,191 on seed 314, 0 in 2,015 on seed 42). Every `dead` check in `world.js` is
+  on some *other* creature — as prey, as a neighbour, as an infection source.
+  Nothing checks the actor. Measured and written up in `docs/SCIENCE.md`, and
+  **not fixed**: correcting it deals every world a different hand, so by the
+  v1.32 rule it would have to arrive as an opt-in flag with its own measurement.
+- Bookkeeping only: no new random numbers, no new dependencies, no simulation
+  behaviour changed. `test/fingerprint.test.js` still holds the v1.36 hashes for
+  the default pond.
+
 ## [1.43.0] — 2026-08-01
 
 Three times now this project has found a mark drawn additively over a creature's
