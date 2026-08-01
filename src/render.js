@@ -7,7 +7,16 @@
 
 import { wrapDelta } from "./vec.js";
 import { Camera } from "./camera.js";
-import { predatorMark, detritusTint, hazardTint, sickHalo, immuneRing } from "./palette.js";
+import {
+  predatorMark,
+  detritusTint,
+  hazardTint,
+  sickHalo,
+  immuneRing,
+  signalRing,
+  SIGNAL_QUIET,
+  attackFlash,
+} from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
 export class Renderer {
@@ -426,36 +435,42 @@ export class Renderer {
     // Signalling: once the channel has listeners, the third motor output stops
     // being a private saturation tweak and becomes something a watcher should be
     // able to read, so a calling creature wears rings — warm for a positive
-    // call, cool for a negative one, opacity tracking how loud it is. Two
-    // creatures using opposite signs are visibly saying different things. The
-    // quiet threshold keeps a silent pond looking like a silent pond, and with
-    // the feature off this branch is never entered at all.
+    // call, cool for a negative one. Two creatures using opposite signs are
+    // visibly saying different things. The quiet threshold keeps a silent pond
+    // looking like a silent pond, and with the feature off this branch is never
+    // entered at all.
+    //
+    // Both rings were single additive tones until v1.43, which is the failure
+    // the two marks above were fixed for one release earlier and nine lines up:
+    // over a body they scored ΔE 8.1, and over a body with a neighbour's glow
+    // on it, 0.0. Loudness lived in the opacity, so the quietest audible call
+    // paid for saying so with the contrast it needed to be seen at all. It is
+    // in the geometry now — the outer ring steps outward as the call gets
+    // louder, and both rings are opaque and two-toned. Two rings rather than
+    // one is what tells a call from an epidemiological mark, which colour
+    // cannot: palette.js has the numbers.
     if (cfg.signalling) {
       const loud = Math.abs(c.signal);
-      if (loud > 0.2) {
-        ctx.globalCompositeOperation = "lighter";
-        ctx.strokeStyle = `hsla(${c.signal > 0 ? 48 : 205}, 95%, 70%, ${(
-          0.1 +
-          0.4 * loud
-        ).toFixed(2)})`;
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.arc(0, 0, r + 3.5, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(0, 0, r + 6.5, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalCompositeOperation = "source-over";
+      if (loud > SIGNAL_QUIET) {
+        const mark = signalRing(c.signal);
+        this._twoToneRing(ctx, r + mark.inner, mark);
+        this._twoToneRing(ctx, r + mark.outer, mark);
       }
     }
 
-    // Attack flash: a brief bright burst right after landing a bite.
+    // Attack flash: a brief burst at the nose right after landing a bite. Opaque
+    // and two-toned since v1.43 — it was additive over the body, and a predator
+    // that has just fed has the brightest body in the pond, so the mark was
+    // faintest exactly when it had something to say.
     if (c.age - c.lastBiteAge < 4) {
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = "rgba(255, 120, 90, 0.6)";
+      const flash = attackFlash();
+      ctx.fillStyle = flash.disc;
       ctx.beginPath();
       ctx.arc(r * nose, 0, r * 0.9, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = flash.rim;
+      ctx.lineWidth = 1 / this.camera.zoom;
+      ctx.stroke();
     }
 
     ctx.restore();

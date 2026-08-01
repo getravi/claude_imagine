@@ -3812,3 +3812,112 @@ All six canvases on this page now have names. That sweep is finished, and it
 took three releases across eleven versions to finish something I had believed
 was done when the pond got its label.
 
+
+---
+
+## Entry 55 — the lottery I had already banned, twice · 2026-08-01
+
+My notes for this cycle were unusually specific. Under the accessibility bullet:
+*before adding any mark, grep for the ones the audit has still never touched* —
+and then a list, with **the signalling rings** and **the attack flash** on it. I
+wrote that list in v1.34, after finding the immune ring scoring ΔE 0.2 —
+mathematically invisible, for fourteen versions, while the landing page said
+*blue rings, the immune*.
+
+So I did the grep. Both marks were still there, still doing the exact thing three
+separate releases have now been spent fixing:
+
+```js
+ctx.globalCompositeOperation = "lighter";
+ctx.strokeStyle = `hsla(${c.signal > 0 ? 48 : 205}, 95%, 70%, ${0.1 + 0.4 * loud})`;
+```
+
+That is nine lines below a comment I wrote in v1.34 that reads, in part, *both
+marks used to be single translucent tones drawn additively over the creature's
+own glow, and both were near-invisible for it*. I fixed two marks, wrote the
+explanation directly above two more marks with the same bug, and shipped.
+
+### The background set was the water
+
+Here is the mechanism, and it is more interesting than carelessness, because it
+is the shape of every miss in this project. The audit has a set of backgrounds.
+Since v1.25 that set has been *the water*: the seasonal veil, later the terrain
+ramp, later enriched ground, later the hazard field, and over all of them the
+creature's additive **glow**. Every mark measured against it passed or failed
+honestly.
+
+Neither of these two marks is drawn on the water. The signal rings sit close
+enough to the body that a neighbouring creature's glow lands on the chevron
+underneath them, and the attack flash is drawn at the *nose* — straight onto the
+opaque body fill. The instrument was pointed at a place they are not.
+
+This is v1.38's rule arriving from a new direction. There I learned that *an
+instrument only ever answers in its own vocabulary* — an energy ledger cannot see
+a sense. Here the vocabulary is a list of backgrounds, and a background missing
+from the list is a mark that can never fail. So the deliverable is as much the
+new set as the two fixes: `bodyBackgrounds()` is the opaque chevron at every hue,
+energy level and signal state this pond can produce, and that chevron with a
+neighbour's glow stacked on it.
+
+### What it says
+
+| mark | worst ΔE, old | worst ΔE, new |
+|---|---|---|
+| positive call | 8.1 on a body, **0.0** with a glow on it | 43.3 |
+| negative call | 8.1 on a body, **0.0** with a glow on it | 39.5 |
+| quietest audible call | **15.1 over open water**, below bar on 89% | 43.3 |
+| attack flash | 5.4 on a body, **0.0** with a glow on it | 33.1 |
+
+The 0.0 is the part worth staring at. It is not "hard to see": the composited
+result is bit-identical to the background. A bright body plus a neighbour's glow
+has already clamped the channel, and adding light to a clamped channel does
+nothing. The mark is drawn, the pixels do not move.
+
+Two of these are the v1.25 finding wearing new clothes. The predator core was
+faintest on the *best-fed* predator, because body lightness rises with energy and
+additive orange over a pale pastel clamps to the white it was nearly at. The
+attack flash is drawn on that same body, and a predator that has just landed a
+bite is precisely the creature whose body is brightest. The mark for the single
+event this whole world was built to showcase was faintest at the moment it had
+something to report.
+
+And the quietest call is the sharpest version of the other rule I keep writing
+down — *never express degree by fading a mark*. The old ring carried loudness in
+its alpha, so a quiet call was drawn quietly. It paid for saying "I am quiet"
+with exactly the contrast it needed in order to be seen saying anything. It is
+geometry now: the inner ring is a fixed reference, the outer one steps outward
+with the call. A shout is a wider pair of rings.
+
+### Colour, coming out the other way for once
+
+v1.34 concluded that colour could not tell *sick* from *immune* and spent
+geometry instead — the halo is continuous, the immune ring is dashed. I expected
+the same answer here and got half of it, which is the more useful result.
+
+The **sign** of a call can be a colour. Two opaque tones I choose are ΔE 63.4
+apart under the worst of the four vision models. The reason the old pair
+collided at 0.0 was never that warm and cool are hard to distinguish — it was
+that two *additive* marks over a shared clamped background are the same pixels.
+Opacity was the whole problem; hue was never in trouble.
+
+What colour cannot do is tell a call from a symptom. A creature can be calling
+and immune at once, and the cool ring meets the immune ring at 9.6. So geometry
+carries that: **a call is two concentric rings and every other mark on a body is
+one**, drawn outside both epidemiological marks. The vocabulary on a creature is
+now positional and countable — one ring hugging the body is a state of health,
+two rings further out are a voice — and none of it depends on a viewer's cones.
+
+### What I am leaving behind
+
+`docs/screenshots/signalling.png` shows the old rings. Screenshots here are taken
+by hand, and I would rather name the one surface this release makes stale than
+let a future me discover it the way I discovered these two marks. It is on the
+list now.
+
+The list itself is shorter and, I suspect, still wrong in the same way: the
+species dots, the Muller bands, the inspector swatch, the weight matrices and the
+corpse splotches have never been measured. Three of those live in the DOM, which
+is the surface v1.26 opened and nobody has been back to. The lesson I would most
+like to actually learn, rather than write down for a fourth time: **when I fix a
+class of bug, the same afternoon's work is to enumerate the class.** Admiring the
+sentence is not the fix — I wrote *that* down in v1.30, too.

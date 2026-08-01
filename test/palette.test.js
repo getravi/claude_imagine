@@ -56,6 +56,10 @@ import {
   axisRuleTone,
   MIN_RULE_DELTA_E,
   MAX_RULE_DELTA_E,
+  signalRing,
+  signalRingTones,
+  SIGNAL_QUIET,
+  attackFlashTones,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -1013,4 +1017,168 @@ test("colour cannot tell sick from immune, which is why the ring is dashed", () 
   assert.ok(worst < MIN_DELTA_E, `expected a collision; the closest pair was ${worst.toFixed(1)}`);
   assert.ok(immuneRing().dash.length > 0, "the immune ring must carry a non-colour cue");
   assert.ok(sickHalo().dash === undefined, "and the halo must not, or the pair is symmetrical again");
+});
+
+// ---------------------------------------------------------------------------
+// The background the audit never had (v1.43).
+//
+// `ringBackgrounds()` above is the water: the seasonal veil, the hazard field,
+// and the creature's additive *glow* over them. Every audit since v1.25 has
+// measured against some version of that set, and two marks in `render.js` are
+// not drawn on it. The signal rings sit close enough to the body that a
+// neighbour's glow lands on the chevron underneath them, and the attack flash
+// is drawn at the nose, straight onto the opaque body.
+//
+// So this set is the creature: the chevron at every hue, saturation and energy
+// level it can take, and the chevron with another creature's glow added on top,
+// which is where an additive mark runs out of headroom entirely.
+
+/**
+ * Every background a mark drawn *on* a creature can appear over: the opaque
+ * chevron `bodyColour()` already reproduces, and that chevron with a
+ * neighbour's glow added over it, which is where an additive mark runs out of
+ * headroom entirely. Coarser in hue than `sweepBodies()` because each entry is
+ * measured against several marks under every vision model.
+ */
+function bodyBackgrounds() {
+  const out = [];
+  for (let hue = 0; hue < 360; hue += 15) {
+    for (const e of ENERGIES) {
+      for (const s of SIGNALS) {
+        const body = bodyColour(hue, e, s);
+        const tag = `body hue ${hue} energy ${e} signal ${s}`;
+        out.push({ name: tag, rgb: body });
+        for (const k of [0.25, 0.5, 0.9]) {
+          out.push({ name: `${tag} + neighbour glow ${k}`, rgb: addOver(body, body, k) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Both background sets: a mark on a creature can be over either. */
+function creatureBackgrounds() {
+  return [...ringBackgrounds(), ...bodyBackgrounds()];
+}
+
+test("the call and the bite read, on every background either can appear on", () => {
+  const tones = signalRingTones();
+  const flash = attackFlashTones();
+  const marks = {
+    "a positive call": [tones.positive, tones.rim],
+    "a negative call": [tones.negative, tones.rim],
+    "the attack flash": [flash.disc, flash.rim],
+  };
+  for (const [name, pair] of Object.entries(marks)) {
+    let worst = { d: Infinity };
+    for (const bg of creatureBackgrounds()) {
+      for (const vision of VISION_MODELS) {
+        const d = markContrast(pair, bg.rgb, vision);
+        if (d < worst.d) worst = { d, where: bg.name, vision };
+      }
+    }
+    assert.ok(
+      worst.d >= MIN_DELTA_E,
+      `${name} scores only ${worst.d.toFixed(1)} on ${worst.where} (${worst.vision})`
+    );
+  }
+});
+
+test("the additive marks they replace were invisible — the failure, pinned", () => {
+  // Both were `globalCompositeOperation = "lighter"`, which is the v1.25
+  // predator-core failure and the v1.34 halo failure for a third and fourth
+  // time. Without these assertions the suite stays green if someone puts either
+  // back, and the reason they were wrong is nowhere in the code.
+  const call = (bg, hue, loud) => addOver(bg, hslToRgb(hue, 95, 70), 0.1 + 0.4 * loud);
+  let worstCall = Infinity;
+  let worstQuiet = Infinity;
+  let worstFlash = Infinity;
+  for (const bg of creatureBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      for (const hue of [48, 205]) {
+        for (const loud of [SIGNAL_QUIET, 0.5, 1]) {
+          const d = deltaE(call(bg.rgb, hue, loud), bg.rgb, vision);
+          worstCall = Math.min(worstCall, d);
+          if (loud === SIGNAL_QUIET) worstQuiet = Math.min(worstQuiet, d);
+        }
+      }
+      const burst = addOver(bg.rgb, { r: 255, g: 120, b: 90 }, 0.6);
+      worstFlash = Math.min(worstFlash, deltaE(burst, bg.rgb, vision));
+    }
+  }
+  assert.ok(worstCall < MIN_DELTA_E, `the old signal ring scored ${worstCall.toFixed(1)}`);
+  assert.ok(worstFlash < MIN_DELTA_E, `the old attack flash scored ${worstFlash.toFixed(1)}`);
+  // The quietest audible call is the sharpest form of the loudness-in-opacity
+  // mistake: it was the *faintest* thing drawn, and it was drawn faint on
+  // purpose, to report that it was quiet.
+  assert.ok(worstQuiet < MIN_DELTA_E, `the quietest old call scored ${worstQuiet.toFixed(1)}`);
+});
+
+test("loudness is carried in geometry, never in opacity", () => {
+  // The v1.25 rule, which the signal ring broke for twenty-three versions:
+  // fading a mark to express degree spends exactly the contrast it exists for.
+  // Every tone the ring can take is one of two opaque constants, and the only
+  // thing a louder call changes is where the outer ring is.
+  const quiet = signalRing(SIGNAL_QUIET);
+  const shout = signalRing(1);
+  assert.equal(quiet.ring, shout.ring, "loudness must not change the colour");
+  assert.equal(quiet.rim, shout.rim);
+  assert.equal(quiet.inner, shout.inner, "the inner ring is the fixed reference");
+  assert.ok(shout.outer > quiet.outer, "a louder call must be a wider pair of rings");
+  for (const style of [quiet.ring, quiet.rim, shout.ring, shout.rim]) {
+    assert.ok(!/hsla|rgba/.test(style), `${style} is translucent; the mark must be opaque`);
+  }
+  // Monotone, so the ring is a readable scale rather than two states.
+  let prev = -Infinity;
+  for (const s of [SIGNAL_QUIET, 0.4, 0.6, 0.8, 1]) {
+    const o = signalRing(s).outer;
+    assert.ok(o > prev, "the outer radius must rise with loudness");
+    prev = o;
+  }
+  // ...and a call of −1 is exactly as loud as a call of +1: the sign picks the
+  // colour, the magnitude picks the geometry, and neither reaches the other.
+  assert.equal(signalRing(-1).outer, signalRing(1).outer);
+  assert.notEqual(signalRing(-1).ring, signalRing(1).ring);
+});
+
+test("colour tells the two calls apart, and geometry tells a call from a symptom", () => {
+  // The mirror of the v1.34 finding, and worth stating because it comes out the
+  // other way. Two *opaque* tones I choose are far apart under every vision
+  // model, so the sign of a call can be a colour — where two *additive* ones
+  // over a shared background collided at ΔE 0.0, since a clamped channel is a
+  // clamped channel whatever you add to it.
+  const t = signalRingTones();
+  let worstSign = Infinity;
+  let worstAdditive = Infinity;
+  for (const vision of VISION_MODELS) {
+    worstSign = Math.min(worstSign, deltaE(t.positive, t.negative, vision));
+    for (const bg of creatureBackgrounds()) {
+      const a = addOver(bg.rgb, hslToRgb(48, 95, 70), 0.5);
+      const b = addOver(bg.rgb, hslToRgb(205, 95, 70), 0.5);
+      worstAdditive = Math.min(worstAdditive, deltaE(a, b, vision));
+    }
+  }
+  assert.ok(worstSign >= MIN_DELTA_E, `the two calls collide at ${worstSign.toFixed(1)}`);
+  assert.ok(worstAdditive < MIN_DELTA_E, `expected the old pair to collide; got ${worstAdditive.toFixed(1)}`);
+
+  // What colour cannot do: a creature can be calling *and* infected, or calling
+  // and immune, and the cool call meets the immune ring well under the bar. So
+  // the distinction lives where v1.34 put the sick/immune one — in geometry.
+  // A call is two concentric rings and every other mark on a creature is one,
+  // and the inner of the two is drawn outside both epidemiological marks.
+  let worstAgainstSymptom = Infinity;
+  for (const vision of VISION_MODELS) {
+    for (const mark of [sickHaloTones().ring, immuneRingTones().ring]) {
+      for (const call of [t.positive, t.negative]) {
+        worstAgainstSymptom = Math.min(worstAgainstSymptom, deltaE(call, mark, vision));
+      }
+    }
+  }
+  assert.ok(
+    worstAgainstSymptom < MIN_DELTA_E,
+    `expected a collision that geometry has to solve; got ${worstAgainstSymptom.toFixed(1)}`
+  );
+  assert.ok(signalRing(SIGNAL_QUIET).inner > 3 + 1, "a call's inner ring must clear the sick halo");
+  assert.ok(signalRing(SIGNAL_QUIET).inner > 2.4, "and the immune ring");
 });

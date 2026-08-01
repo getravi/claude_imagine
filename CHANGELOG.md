@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.43.0] — 2026-08-01
+
+Three times now this project has found a mark drawn additively over a creature's
+own body and discovered it was invisible: the predator core in v1.25 (ΔE 2.8),
+the sick halo and the immune ring in v1.34 (11.0 and **0.2**). Each time I wrote
+the rule down — *a translucent mark over something the simulation colours is not
+a colour, it is a lottery* — and each time I measured the mark I had come for and
+stopped. Two marks were still doing it, and one of them sits nine lines below the
+comment explaining why the halo stopped.
+
+### Fixed
+
+- **The signalling rings are legible now.** Warm for a positive call, cool for a
+  negative one, both single translucent tones drawn with `lighter` since v1.20.
+  Over open water they were fine; on a creature's own chevron the worst case is
+  **ΔE 8.1**, and where a neighbour's glow lands on that chevron the channel is
+  already clamped — adding light to it changes nothing at all, **ΔE 0.0**, the
+  mark bit-identical to its background. They are opaque and two-toned now, a
+  bright ring over a dark hairline, worst case **43.3** and **39.5**.
+- **Loudness moved from the opacity to the geometry.** The old alpha was
+  `0.1 + 0.4 × loudness`, so the quietest audible call scored **15.1 even over
+  open water** and missed the bar on 89% of backgrounds there: the mark spent
+  exactly the contrast it needed in order to report that it was quiet. The inner
+  ring is fixed and the outer one steps outward with the call, which no vision
+  model can take away.
+- **The attack flash is legible now.** `rgba(255, 120, 90, 0.6)`, additive, drawn
+  at the nose — which is to say drawn on the *body*, not the water. Worst case
+  **ΔE 5.4**, below the bar on half the bodies this pond can produce and 0.0 with
+  a neighbour's glow over it. Body lightness rises with energy, so the mark for
+  the single event the predator/prey story is made of was faintest on the
+  predator that had just fed. Opaque and two-toned, worst case **33.1**, same
+  size and same four ticks.
+
+### Added
+
+- **`signalRing()`, `attackFlash()` and `SIGNAL_QUIET` in `src/palette.js`**, so
+  both marks are constants a test can reach rather than string literals in
+  `render.js` — the v1.26 rule about colours the suite cannot see.
+- **A background set the audit never had.** Every sweep since v1.25 has measured
+  against the water: the seasonal veil, the hazard field, and the creature's
+  additive *glow* over them. Neither of these marks is drawn there. The new set
+  is the creature — the opaque chevron at every hue, energy and signal state, and
+  that chevron with a neighbour's glow added over it, which is where an additive
+  mark runs out of headroom. Both failures are pinned as tests, so restoring
+  either colour turns the suite red.
+- **`test/render.test.js` checks the drawing, not only the constants**: that both
+  tones of each mark reach the canvas, that the old translucent styles do not,
+  and that a louder call moves an arc rather than a colour.
+
+### Notes
+
+- Colour comes out the *other* way from v1.34 here, and both halves are worth
+  stating. Two opaque tones I choose separate the sign of a call by **ΔE 63.4**
+  under the worst vision model, where two additive ones over a shared background
+  collided at 0.0 — so the sign can be a colour. Telling a call from a symptom
+  cannot: the cool ring meets the immune ring at 9.6 and a creature can wear
+  both. That distinction is geometry, as in v1.34 — a call is two concentric
+  rings, drawn outside every other mark on the body, and every other mark is one.
+- `docs/screenshots/signalling.png` still shows the pre-v1.43 rings. Screenshots
+  here are captured by hand, and naming the one surface this release makes stale
+  beats leaving it to be noticed.
+- Rendering only: no simulation behaviour changed, no new random numbers, no new
+  dependencies. `test/fingerprint.test.js` still holds the v1.36 hashes for the
+  default pond.
+
 ## [1.42.0] — 2026-08-01
 
 The Tree of Life is the view this project leads with — the landing page's third

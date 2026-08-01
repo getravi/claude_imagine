@@ -603,6 +603,100 @@ export function immuneRingTones() {
 }
 
 /**
+ * The quietest call this pond draws. Below it a creature is treated as silent,
+ * so a pond where nothing is saying anything looks like one — and it is the
+ * level the signal ring is audited at, the way `HAZARD_AUDIT_SOURCES` is the
+ * level the contagious zone is audited at. The faintest drawable state is the
+ * one an audit has to survive, because the old mark's opacity started there.
+ */
+export const SIGNAL_QUIET = 0.2;
+
+/**
+ * A creature calling — the mark the v1.34 sweep did not reach.
+ *
+ * v1.25 found the predator core invisible, v1.34 found the immune ring
+ * invisible, and each time I wrote the same rule down: *a translucent mark over
+ * something the simulation colours is not a colour, it is a lottery.* Both
+ * sweeps then measured the marks they had come for and stopped. The signal
+ * rings (v1.20) and the attack flash (v1.8) were still `globalCompositeOperation
+ * = "lighter"` over the same body, three lines below the comment explaining why
+ * the halo had stopped doing that.
+ *
+ * Measured, the rings are fine over open water and fail everywhere a body is:
+ * on the opaque chevron the worst case is **ΔE 8.1**, and where a neighbour's
+ * glow lands on that chevron the channel is already clamped and adding light to
+ * it does *nothing* — **ΔE 0.0**, the mark and its background bit-identical.
+ * The quietest audible call scores **15.1 even over open water**, below the bar
+ * on 89% of the backgrounds there, because loudness was carried in opacity: the
+ * mark spent exactly the contrast it exists for to say how loud it was.
+ *
+ * So the same two fixes as every time before. Opaque and two-tone, a bright
+ * ring over a dark hairline, which no additive glow can imitate because adding
+ * light can only brighten. And loudness moves to **geometry**: the inner ring
+ * is fixed and the outer one steps outward with the call, so a shout is a wider
+ * pair of rings rather than a brighter one.
+ *
+ * Colour does carry the *sign* here, unlike the sick/immune pair — two opaque
+ * tones I choose are separated by ΔE 63.4 at worst across every vision model,
+ * where two additive ones over a shared background collided at 0.0. What colour
+ * cannot do is tell a call from an epidemiological mark: the cool ring and the
+ * immune ring meet at 9.6, and a creature can wear both at once. Geometry does
+ * that too, as it did in v1.34 — **a call is two concentric rings, and every
+ * other mark on a creature is one**, drawn further out than either of them.
+ *
+ * @param {number} signal the brain's third motor output, −1..1
+ */
+export function signalRing(signal) {
+  const loud = Math.min(1, Math.abs(signal));
+  return {
+    ring: signal > 0 ? "hsl(30, 100%, 72%)" : "hsl(200, 90%, 78%)",
+    rim: "hsl(210, 40%, 6%)",
+    width: 1.1,
+    // Offsets from the body radius. The inner ring clears the sick halo
+    // (r + 3 + throb) and the immune ring (r + 2.4) so the three never sit on
+    // top of each other; the outer one is the volume knob.
+    inner: 4.5,
+    outer: 7 + 4 * loud,
+  };
+}
+
+/** The signal ring's tones as RGB, for the audit — both signs and the shared rim. */
+export function signalRingTones() {
+  return {
+    positive: hslToRgb(30, 100, 72),
+    negative: hslToRgb(200, 90, 78),
+    rim: hslToRgb(210, 40, 6),
+  };
+}
+
+/**
+ * A bite landing — the shortest-lived mark in this world and, until now, the
+ * least visible one, which is a poor combination for the event the whole
+ * predator/prey story is made of.
+ *
+ * It was `rgba(255, 120, 90, 0.6)` drawn additively at the nose, which is to
+ * say drawn over the *body*: not the water, not the glow, but the opaque chevron
+ * whose lightness rises with energy. Worst case there, **ΔE 5.4**, below the bar
+ * on half of the bodies this pond can produce; with a neighbour's glow over it,
+ * **0.0**. A predator that has just fed is exactly the creature whose body is
+ * brightest, so — the v1.25 finding again, one mark over — the flash was
+ * faintest at the moment it had most to report.
+ *
+ * Opaque, two-tone, unchanged in size and duration. It stays warm, and so does
+ * the predator's eye it appears beside; the two meet at ΔE 15.1, and what tells
+ * them apart is not colour but that one is at the nose for four ticks and the
+ * other is at the centre for a lifetime.
+ */
+export function attackFlash() {
+  return { disc: "hsl(14, 100%, 70%)", rim: "hsl(350, 70%, 10%)" };
+}
+
+/** The attack flash's two tones as RGB, for the audit. */
+export function attackFlashTones() {
+  return { disc: hslToRgb(14, 100, 70), rim: hslToRgb(350, 70, 10) };
+}
+
+/**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit
  * and the tests both use, so "the mark is legible" means one thing in this

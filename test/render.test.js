@@ -26,7 +26,14 @@ import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 import { renderOps, renderFingerprint, hashOps } from "../src/rendershot.js";
 import { stateFingerprint, trajectoryFingerprint, observationFingerprint } from "../src/fingerprint.js";
-import { sickHalo, immuneRing, predatorMark, hazardTint } from "../src/palette.js";
+import {
+  sickHalo,
+  immuneRing,
+  predatorMark,
+  hazardTint,
+  signalRing,
+  attackFlash,
+} from "../src/palette.js";
 
 /** A world with some history in it, so there is something to draw. */
 function pond(over = {}, ticks = 300) {
@@ -169,6 +176,55 @@ test("the marks the palette audit measured are the marks the canvas draws", () =
   // silently stopped being applied would restore the collision.
   const dashes = opsNamed(renderOps(w), "setLineDash").filter((o) => o.length > 2);
   assert.deepEqual(dashes[0].slice(2), ring.dash, "the immune ring is no longer dashed");
+});
+
+test("the call and the bite are drawn opaque, in the tones the audit measured", () => {
+  // v1.43's half of the same claim, for the two marks the v1.34 sweep skipped.
+  // Both were additive over the body — which is not a background either mark
+  // controls — and both are now two opaque tones out of palette.js.
+  const w = pond({ signalling: true }, 400);
+  const [shouter, mutterer, biter] = w.creatures;
+  shouter.signal = 0.9;
+  mutterer.signal = -0.9;
+  biter.carnivory = 0.9;
+  biter.lastBiteAge = biter.age;
+  const ops = renderOps(w);
+  const painted = new Set(styles(ops));
+
+  const tones = signalRing(1);
+  const flash = attackFlash();
+  for (const [what, colour] of [
+    ["a positive call's bright ring", signalRing(0.9).ring],
+    ["a negative call's bright ring", signalRing(-0.9).ring],
+    ["the call's dark rim", tones.rim],
+    ["the attack flash's disc", flash.disc],
+    ["the attack flash's rim", flash.rim],
+  ]) {
+    assert.ok(painted.has(colour), `${what} (${colour}) never reached the canvas`);
+  }
+  // The exact styles that were wrong, kept out. A suite that only knows the new
+  // constants stays green while someone restores the old ones — the v1.24
+  // lesson, and the reason `test/palette.test.js` still measures both.
+  assert.ok(!painted.has("rgba(255, 120, 90, 0.6)"), "the additive attack flash is back");
+  for (const s of painted) {
+    assert.ok(
+      !/^hsla\((48|205), 95%, 70%,/.test(s),
+      `a signal ring is a translucent additive tone again: ${s}`
+    );
+  }
+
+  // Loudness is geometry: the same creature calling twice as loud must move an
+  // arc, not a colour. Drawn through the recorder rather than asserted on the
+  // palette, because the palette cannot know whether render.js used the number.
+  const radii = (signal) => {
+    mutterer.signal = signal;
+    return opsNamed(renderOps(w), "arc").map((o) => o[4]);
+  };
+  const quiet = radii(-0.25);
+  const loud = radii(-1);
+  assert.notDeepEqual(loud, quiet, "a louder call drew exactly the same rings");
+  const grew = loud.filter((r, i) => r > (quiet[i] ?? Infinity)).length;
+  assert.ok(grew > 0, "no arc got bigger when the call got louder");
 });
 
 test("the picture hash sees a restyled mark", () => {

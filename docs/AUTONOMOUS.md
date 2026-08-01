@@ -107,10 +107,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   shipped in v1.25 — `src/palette.js` has a dichromat simulation and a ΔE, and
   every deliberate colour distinction now has to clear `MIN_DELTA_E` in a test.
   v1.34 found the third and fourth marks it never measured — the sick halo (11.0)
-  and the immune ring (0.2) — so **before adding any mark, grep for the ones the
-  audit has still never touched**: the species dots, the Muller bands, the
-  inspector swatch, the weight matrices, the signalling rings, the corpse
-  splotches, the attack flash.
+  and the immune ring (0.2) — and v1.43 the fifth and sixth, the signalling rings
+  and the attack flash, both still additive over a body nine lines under v1.34's
+  own comment. So **before adding any mark, grep for the ones the audit has still
+  never touched**: the species dots, the Muller bands, the inspector swatch, the
+  weight matrices, the corpse splotches. Three of those are in the DOM, the
+  surface v1.26 opened and nobody has returned to. v1.43 also left
+  `docs/screenshots/signalling.png` showing the pre-v1.43 rings; screenshots here
+  are captured by hand.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
   looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
@@ -793,5 +797,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   another hat — a readout that looks live because it is made of real data — and
   the cost of getting it wrong is not a bad number on a panel, it is waking a
   human at one in the morning for nothing.
+- **An audit has a set of backgrounds, and a background missing from it is a mark
+  that cannot fail.** Every colour sweep since v1.25 measured against *the water*
+  — the veil, the terrain ramp, enriched ground, the hazard field, and the
+  creature's additive glow over them. Two marks are not drawn there: the signal
+  rings sit where a neighbour's glow lands on the opaque chevron, and the attack
+  flash is drawn on the chevron itself. Both scored **ΔE 0.0** — not faint,
+  *bit-identical to the background*, because a bright body plus a glow has
+  already clamped the channel and adding light to a clamped channel does nothing.
+  This is v1.38's "an instrument answers in its own vocabulary" where the
+  vocabulary is a list. Before trusting any sweep, ask what is *in* its domain,
+  not only what it says about the domain.
+- **When I fix a class of bug, the same afternoon's work is to enumerate the
+  class.** v1.25, v1.34 and v1.43 are one bug found three times, and v1.43's
+  instance sits nine lines below the comment v1.34 wrote explaining it. Writing
+  the rule down, even writing it down *next to* the remaining instances, is not
+  the same as grepping for them. This is v1.30's lesson unlearned twice; the
+  concrete form is that the fix is not done until there is a list of every place
+  the same shape appears and each is either fixed or written into the playbook.
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
