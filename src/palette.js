@@ -803,6 +803,165 @@ export function bandHatch() {
 /** How hard the hatch is drawn over its band — see `bandHatch()`. */
 export const HATCH_ALPHA = 0.7;
 
+// ---- The inspector (v1.49) ----
+//
+// The panel where a creature's brain is drawn, and the last surface the audit
+// had never opened. Every sweep since v1.25 has been about the canvas or about
+// the DOM readouts *beside* the canvas; the inspector draws two figures of its
+// own — a weight strip and, with `evolvableTopology` on, a network diagram —
+// and both of them chose their colours inline in `main.js`, which is the v1.26
+// complaint (a colour a test cannot reach is a colour that will drift) on the
+// two figures nobody had thought to name.
+
+/**
+ * The weight strip's own track: the cell a weight is drawn in when the weight is
+ * nothing. `#142130` in `style.css` since v1.0, here now for the same reason
+ * `panelBackground()` is — the audit and the stylesheet cannot both be the
+ * source of truth.
+ */
+export function inspectorTrack() {
+  return { r: 0x14, g: 0x21, b: 0x30 };
+}
+
+/** The brain diagram's plate — `.braingraph`'s background, near-black. */
+export function brainGraphBackground() {
+  return { r: 0x05, g: 0x08, b: 0x0d };
+}
+
+/** `{r,g,b}` → a CSS colour, for the places the DOM is painted from this file. */
+export function rgbCss({ r, g, b }) {
+  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+}
+
+/** Where the weight strip's bar reaches full height. Weights beyond it clamp. */
+export const WEIGHT_FULL_SCALE = 2;
+
+/**
+ * The floor under a bar's height, as a fraction of the cell. A weight is
+ * essentially never exactly zero, so the smallest ones still have a sign, and a
+ * sign the strip declines to draw is information the figure had and threw away.
+ */
+export const WEIGHT_MIN_FILL = 0.14;
+
+/**
+ * One cell of the weight strip: **sign by colour and by direction, magnitude by
+ * height**, and nothing by opacity.
+ *
+ * What it replaces, and why it is the same bug the project has now found four
+ * times. The strip drew `hsla(hue, 80%, 55%, |w| / 2)` — degree expressed by
+ * fading a mark, which v1.34 wrote down as the one thing never to do, because
+ * fading spends exactly the contrast the mark exists for. Measured against this
+ * cell's own track: a weight of 0.1 scores **ΔE 3.7**, under the just-noticeable
+ * difference; 0.25 scores 9.0, and its *sign* — the only thing the colour was
+ * carrying — scores 10.7 to a protanope against a bar of 25. And this is not a
+ * tail. Over three seeds at 6,000 ticks the median |w| is **0.71**, a fifth of
+ * every strip is under 0.25 and **a third is under 0.5**, so a third of the
+ * fingerprint was being drawn in tones its own background could swallow.
+ *
+ * Height cannot do that: a bar is either there or it is not, at any magnitude.
+ * And direction is free — positive bars stand on the floor, negative ones hang
+ * from the ceiling — so the sign survives even a viewer for whom the two hues
+ * are one hue. That is v1.34's escape (geometry survives every vision model)
+ * applied to a figure that had no geometry at all.
+ *
+ * The two tones are the same blue and red the network diagram uses for the same
+ * claim, opaque: `hsl(205, 85%, 60%)` and `hsl(8, 85%, 60%)`, ΔE **76.1**
+ * apart at worst and 54.9 at worst from the track.
+ *
+ * @param {number} w a brain weight
+ * @returns {{colour:string, fill:number, sign:number}}
+ */
+export function weightMark(w) {
+  const mag = Math.min(Math.abs(w), WEIGHT_FULL_SCALE) / WEIGHT_FULL_SCALE;
+  return {
+    colour: w >= 0 ? "hsl(205, 85%, 60%)" : "hsl(8, 85%, 60%)",
+    fill: WEIGHT_MIN_FILL + (1 - WEIGHT_MIN_FILL) * mag,
+    sign: w >= 0 ? 1 : -1,
+  };
+}
+
+/** The strip's two tones as RGB, for the audit. Opaque, so no compositing. */
+export function weightMarkTones() {
+  return { positive: hslToRgb(205, 85, 60), negative: hslToRgb(8, 85, 60) };
+}
+
+/**
+ * How hard a connection is drawn in the network diagram. Constant, on purpose.
+ *
+ * The edges had the weight strip's bug in the strip's own words — opacity
+ * `0.15 + |w| / 3` — so a weak connection's sign read ΔE 17.3 to a protanope
+ * and the connection itself 9.0 against the plate. Width was *already* carrying
+ * the magnitude alongside the fade; removing the fade loses nothing the figure
+ * was saying and gives every line back its colour.
+ */
+export const BRAIN_EDGE_ALPHA = 0.7;
+
+/** A connection's colour and width: sign by hue, magnitude by width alone. */
+export function brainEdge(w) {
+  const hue = w >= 0 ? 205 : 8;
+  return {
+    colour: `hsla(${hue}, 85%, 60%, ${BRAIN_EDGE_ALPHA})`,
+    width: Math.min(2.4, 0.5 + Math.abs(w) / 2.2),
+  };
+}
+
+/** The two edge tones as they are actually composited over the plate. */
+export function brainEdgeTones() {
+  const bg = brainGraphBackground();
+  return {
+    positive: blendOver(bg, hslToRgb(205, 85, 60), BRAIN_EDGE_ALPHA),
+    negative: blendOver(bg, hslToRgb(8, 85, 60), BRAIN_EDGE_ALPHA),
+  };
+}
+
+/**
+ * The three kinds of neuron in the diagram: sense, evolved hidden, motor.
+ *
+ * The shipped set was `#5adc96` green, `#e0e6f0` near-white and `#ffb060`
+ * orange, and green-against-orange is the pair one man in twelve cannot see:
+ * **ΔE 17.7 under protanopia** (35.6 deuteranopia, 77.9 normal), against a bar
+ * of 25. Inputs and outputs are the two ends of the picture, so that was the
+ * one pair a reader most needs.
+ *
+ * The reason it failed is one number: the two were the *same lightness*, L*
+ * 79.4 and 78.0, so the entire distinction rode on the red-green axis and a
+ * protanope had nothing left to read it with. So the near-white is kept — it
+ * scores 89 against the plate on every model and is the only one of the three
+ * that could not be confused with an edge — and the two that failed are pulled
+ * apart in **luminance**, the channel no deficiency touches, from ΔL* 1.4 to
+ * **15.1**: a deep leaf green at 48% lightness and a pale gold at 78%. Worst
+ * case over every constraint is **30.2**: the three roles pairwise, each
+ * against the plate, and each against both composited edge tones, since a node
+ * is a disc sitting on the lines it terminates and a node that reads as a
+ * thickening of its own wire is not a node.
+ *
+ * The search had 419 single-role candidates clearing the fixed backgrounds
+ * alone, so this was taste inside a large feasible set, not a rescue — worth
+ * saying, because v1.48 caught me writing the impossibility paragraph first for
+ * the third time.
+ *
+ * Also removed here rather than kept: `#7fd0ff`, a fourth colour initialised as
+ * the "hidden default" and overwritten on every branch of the conditional
+ * beneath it. It has been dead since v1.5 and it is the reason the audit's own
+ * to-do list said the diagram had a blue in it.
+ */
+export function brainNodeColours() {
+  return {
+    input: "hsl(105, 70%, 48%)", // senses — deep leaf
+    hidden: "#e0e6f0", // evolved interneurons — unchanged since v1.5
+    output: "hsl(45, 85%, 78%)", // motors — pale gold
+  };
+}
+
+/** The three neuron tones as RGB, for the audit. */
+export function brainNodeTones() {
+  return {
+    input: hslToRgb(105, 70, 48),
+    hidden: { r: 0xe0, g: 0xe6, b: 0xf0 },
+    output: hslToRgb(45, 85, 78),
+  };
+}
+
 /**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit

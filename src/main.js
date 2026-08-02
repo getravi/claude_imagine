@@ -23,7 +23,20 @@ import {
   DEATH_CAUSES,
   POWER_WINDOW,
 } from "./stats.js";
-import { mortalityColours, energyColours, chartLines, powerLine, lineageFill } from "./palette.js";
+import {
+  mortalityColours,
+  energyColours,
+  chartLines,
+  powerLine,
+  lineageFill,
+  rgbCss,
+  inspectorTrack,
+  brainGraphBackground,
+  weightMark,
+  weightMarkTones,
+  brainEdge,
+  brainNodeColours,
+} from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import {
   describeChart,
@@ -964,6 +977,23 @@ function applyMortalityColours() {
     `repeating-linear-gradient(to right, ${p.line} 0 ${on}px, transparent ${on}px ${on + off}px)`;
 }
 
+/**
+ * The inspector's two plates — the weight strip's cell track and the brain
+ * diagram's background — painted from `src/palette.js` onto custom properties
+ * the stylesheet reads. Both were literals in `style.css` until v1.49, which is
+ * v1.26's rule exactly: a colour a test cannot reach is a colour that will
+ * drift, and these two are the backgrounds every mark in the panel is measured
+ * against. Runs once, at startup.
+ */
+function applyInspectorColours() {
+  const root = document.documentElement.style;
+  root.setProperty("--insp-track", rgbCss(inspectorTrack()));
+  root.setProperty("--braingraph-bg", rgbCss(brainGraphBackground()));
+  const t = weightMarkTones();
+  root.setProperty("--weight-pos", rgbCss(t.positive));
+  root.setProperty("--weight-neg", rgbCss(t.negative));
+}
+
 // ---- Inspector (selected creature) ----
 // The panel used to be rebuilt from innerHTML on every frame. That was fine
 // while everything in it was text, but a *button* replaced 60× a second can't
@@ -1109,18 +1139,23 @@ function ancestryRow(c, chain) {
     }${pips}</div></div>`;
 }
 
-// Render a weight vector as a tiny colour strip — a visual "fingerprint" of the
-// brain. Positive weights read blue, negative red, intensity by magnitude. With
+// Render a weight vector as a tiny bar strip — a visual "fingerprint" of the
+// brain. Positive weights are blue bars standing on the floor of their cell,
+// negative ones red bars hanging from the ceiling, and the height is the
+// magnitude. Colours and heights both come from `weightMark()`; see the note
+// there for why the magnitude stopped being an opacity in v1.49. With
 // plasticity on, showing this for both the inherited and current weights makes
 // within-lifetime learning visible as the strip shifts.
 function sparkFromWeights(w) {
   const n = Math.min(w.length, 120);
+  const track = rgbCss(inspectorTrack());
   let html = '<div class="genome">';
   for (let i = 0; i < n; i++) {
-    const v = Math.max(-2, Math.min(2, w[i]));
-    const hue = v >= 0 ? 200 : 10; // positive blue, negative red
-    const a = Math.min(1, Math.abs(v) / 2);
-    html += `<span style="background:hsla(${hue},80%,55%,${a.toFixed(2)})"></span>`;
+    const m = weightMark(w[i]);
+    const pct = (m.fill * 100).toFixed(0);
+    // A bar and its track in one background, so a cell is still one element.
+    const dir = m.sign > 0 ? "to top" : "to bottom";
+    html += `<span style="background:linear-gradient(${dir},${m.colour} 0 ${pct}%,${track} ${pct}% 100%)"></span>`;
   }
   html += "</div>";
   return html;
@@ -1156,30 +1191,37 @@ function brainGraphSVG(genome) {
     const a = pos.get(c.from);
     const b = pos.get(c.to);
     if (!a || !b) continue;
-    const hue = c.w >= 0 ? 205 : 8;
-    const op = Math.min(0.85, 0.15 + Math.abs(c.w) / 3);
-    const wdt = Math.min(2.4, 0.4 + Math.abs(c.w) / 2.5);
+    // Sign by hue, magnitude by width. The opacity is constant — see
+    // `BRAIN_EDGE_ALPHA` for what it used to be and what that cost.
+    const e = brainEdge(c.w);
     edges += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(
       1
-    )}" y2="${b[1].toFixed(1)}" stroke="hsla(${hue},85%,60%,${op.toFixed(
-      2
-    )})" stroke-width="${wdt.toFixed(2)}"/>`;
+    )}" y2="${b[1].toFixed(1)}" stroke="${e.colour}" stroke-width="${e.width.toFixed(2)}"/>`;
   }
+  const role = brainNodeColours();
   let nodes = "";
   for (const [id, [x, y]] of pos) {
-    let fill = "#7fd0ff"; // hidden default
-    let r = 3;
-    if (id < nIn) fill = "#5adc96"; // inputs (green)
-    else if (id < nIn + nOut) {
-      fill = "#ffb060"; // outputs (orange)
-      r = 4;
-    } else {
-      fill = "#e0e6f0"; // evolved hidden (bright)
-      r = 4;
+    let fill = role.hidden;
+    let r = 4;
+    if (id < nIn) {
+      fill = role.input; // senses
+      r = 3;
+    } else if (id < nIn + nOut) {
+      fill = role.output; // motors
     }
     nodes += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}"/>`;
   }
-  return `<svg class="braingraph" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg>`;
+  // The diagram has said green, white and orange since v1.5 without ever saying
+  // what any of them meant; the colours are load-bearing here, so they get a key.
+  const key = ["input", "hidden", "output"]
+    .map(
+      (k) =>
+        `<span class="bg-chip"><i style="background:${role[k]}"></i>${
+          { input: "senses", hidden: "hidden", output: "motors" }[k]
+        }</span>`
+    )
+    .join("");
+  return `<svg class="braingraph" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg><div class="bg-key">${key}<span class="bg-chip"><i class="bg-pos"></i>+ weight</span><span class="bg-chip"><i class="bg-neg"></i>− weight</span></div>`;
 }
 
 // Toggle the simulation between running and paused, keeping the button label in
@@ -1468,6 +1510,7 @@ function wireControls() {
   });
 
   applyMortalityColours();
+  applyInspectorColours();
 
   // Save / load / share.
   $("btn-save").addEventListener("click", saveWorld);

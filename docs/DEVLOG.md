@@ -4567,3 +4567,116 @@ that cannot fail. A test written *after* the design tends to confirm the design.
 **Routes, not aperture.** Two narrow doors beat one wide one. I want to remember
 this the next time I am tempted to fix a constriction by making the constriction
 bigger.
+
+## Entry 61 — a third of the fingerprint was already gone · 2026-08-02
+
+The colour audit in this project is twenty-four releases old. It has swept the
+canvas, the minimap, the mortality bar, the energy bar, the chart, the power
+strip, the Muller plot and the Tree of Life. It had never once opened the
+**inspector** — the panel that appears when you click a creature, and the only
+place in the whole page where a *brain* is drawn.
+
+That is not an oversight I can blame on the panel being obscure. It is the
+reward for the click. I wrote "before adding any mark, grep for the ones the
+audit has still never touched" into my own playbook after v1.43, listed the
+inspector's marks by name, and then read that list every cycle for six releases
+as a chore. v1.46 already taught me what that costs: the item I skimmed was the
+Tree of Life, and it had four of eleven bands in the same colour. I wrote down
+the lesson — *treat an unswept surface as an open question with an unknown
+answer* — and skimmed the rest of the same list three more times.
+
+### What was there
+
+Two figures, both of them saying the same thing wrong.
+
+The **weight strip** is the little block of 120 cells under "Brain — inherited":
+one cell per connection, blue for a positive weight, red for a negative one. The
+magnitude was the cell's **opacity** — `hsla(hue, 80%, 55%, |w| / 2)`. Which is
+the precise thing v1.34 forbade in this file: *never express degree by fading a
+mark, because fading spends exactly the contrast the mark exists for.*
+
+I could have stopped at "that violates a rule I wrote". The rule is not the
+finding; the number is. Against the cell's own track, a weight of 0.1 scores
+**ΔE 3.7** — under the just-noticeable difference, a cell drawn in its own
+background. At 0.25 the cell is 9.0 and its *sign*, the only thing the colour
+was ever carrying, is **10.7** to a protanope against a bar of 25.
+
+Then the question that decides whether any of that matters: how big is a weight,
+actually? Three seeds, 6,000 ticks, every weight in every living brain. Median
+|w| **0.71**. A fifth of every strip under 0.25. **A third under 0.5.** So this
+is not a claim about a tail. A third of the fingerprint was being drawn in tones
+its own background could swallow, on the default seed, for every visitor who has
+ever clicked a creature.
+
+The **brain diagram** — the network graph you get with evolvable topology on —
+had the same construction on its edges (`0.15 + |w| / 3`) and one more problem
+of its own. Sense neurons were green `#5adc96`, motor neurons orange `#ffb060`:
+**ΔE 17.7 under protanopia**. The two ends of the picture, for one man in twelve.
+
+### The fix, and the number underneath it
+
+For the strip: magnitude becomes a **bar height**, and sign becomes the colour
+*and* the direction — positive bars stand on the floor of their cell, negative
+ones hang from the ceiling. A bar is either there or it is not, at any
+magnitude, which is the whole point; and the direction means the sign survives a
+viewer for whom blue and red are one colour. That is v1.34's own escape hatch —
+geometry survives every vision model and costs nothing — applied to a figure
+that had no geometry in it at all.
+
+For the neurons, the interesting part was diagnosing *why* green-and-orange
+failed rather than just replacing it. They are the same lightness: L* 79.4 and
+78.0. The entire distinction rode on the red–green axis, so a protanope had
+nothing left. The replacement pulls them apart in luminance, the one channel no
+deficiency touches — a deep leaf green at 48% and a pale gold at 78%, ΔL* from
+1.4 to **15.1**. The near-white hidden neuron I kept: it scores 89 against the
+plate on every model, and it is the only one of the three that could never be
+confused with an edge.
+
+Which brings me to the constraint I nearly missed. My first candidate set was
+mint, indigo and amber, and it looked beautiful: pairwise floor 55.1, plate
+floor 82.6, comfortably the best set I found. Then I asked what a node is
+actually drawn *on*, and it is not the plate — a node is a disc sitting on the
+lines it terminates. Indigo against a positive connection: **12.1**. That is
+v1.34's lesson about listing what is drawn *over* a layer as well as beside it,
+arriving one release after I re-read it. The shipped set clears 30.2 against
+everything at once: three roles pairwise, each against the plate, each against
+both composited edge tones.
+
+And the diagram has a **key** now. It has drawn three colours of neuron and two
+colours of connection since v1.5 and never once said what any of them meant.
+
+### Two smaller things
+
+`#7fd0ff` — a fourth colour, initialised as the diagram's "hidden default" and
+overwritten on every branch of the conditional three lines beneath it. Dead
+since v1.5. It is also, I notice, why my own audit to-do list said the diagram
+had a blue in it: I had read the constant, not the code.
+
+And both plates — `#142130` behind a weight cell, `#05080d` behind the diagram —
+were literals in `style.css`. That is v1.26 exactly (*a colour a test cannot
+reach is a colour that will drift*), and these two are the backgrounds every
+number above is measured against. They live in `src/palette.js` now, painted
+onto custom properties at startup, with a test asserting the two agree.
+
+### What I am taking from it
+
+**An audit's domain is a decision, and mine had a hole in it shaped like a
+panel.** v1.43 said "before trusting any sweep, ask what is *in* its domain".
+The inspector was never in it, and the reason is embarrassingly ordinary: the
+sweep grew one figure at a time, each release adding the surface it happened to
+touch, and nobody ever asked for the list of surfaces the page has.
+
+**The rule was not the finding.** I knew "degree by fade" was forbidden the
+moment I read the code. What made this a cycle rather than a tidy-up was going
+and measuring the weight distribution — because if the median weight had been
+1.8, the fade would have been a theoretical complaint about the bottom 2% of
+cells and not worth a release. It was 0.71. Before fixing a rule violation, find
+out how much of the real data lands in the part that violates it.
+
+**I checked it in a browser.** `main.js` is the one module the suite cannot
+reach, and every previous release has said "sanity-checked by hand" and meant
+"read it twice". This one I actually opened — headless Chromium, clicked a
+creature, read back the computed styles and took a picture of the panel. Both
+figures render, the custom properties resolve, the key reads, no console errors.
+That took ten minutes and is the first time this project has ever verified a
+`main.js` change by running it.

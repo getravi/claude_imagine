@@ -65,6 +65,18 @@ import {
   lineageBandRgb,
   bandHatch,
   HATCH_ALPHA,
+  rgbCss,
+  inspectorTrack,
+  brainGraphBackground,
+  weightMark,
+  weightMarkTones,
+  WEIGHT_FULL_SCALE,
+  WEIGHT_MIN_FILL,
+  brainEdge,
+  brainEdgeTones,
+  BRAIN_EDGE_ALPHA,
+  brainNodeColours,
+  brainNodeTones,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -1343,4 +1355,168 @@ test("the band and its key are one colour, not two that agree", () => {
   assert.equal(lineageFill(210, "dot"), "hsl(210, 68%, 55%)");
   assert.ok(lineageFill(210).includes("68%, 55%"), "the band and the dot must share a hue and a tone");
   assert.ok(lineageFill(210, "dot").includes("68%, 55%"));
+});
+
+// ---- The inspector (v1.49) ----
+//
+// The last DOM surface the audit had never opened. Three tests assert the new
+// marks and three pin the failures they replace, because a suite that only
+// knows the new numbers stays green while someone restores the old ones.
+
+test("a weight's sign reads at every magnitude, and its size is not its opacity", () => {
+  const track = inspectorTrack();
+  const t = weightMarkTones();
+  // The tones themselves, opaque, against the cell they are drawn in.
+  for (const [name, rgb] of Object.entries(t)) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(rgb, track, vision);
+      assert.ok(d >= MIN_DELTA_E, `the ${name} bar is ΔE ${d.toFixed(1)} on its track under ${vision}`);
+    }
+  }
+  // And from each other: the sign is what the colour is for.
+  let worst = Infinity;
+  let where = null;
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(t.positive, t.negative, vision);
+    if (d < worst) {
+      worst = d;
+      where = vision;
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `the two signs are ΔE ${worst.toFixed(1)} apart under ${where}`);
+
+  // The magnitude is a height, so it is the same colour all the way down. A
+  // vanishing weight still draws a bar, and its sign still has a direction.
+  const tiny = weightMark(0.001);
+  assert.equal(tiny.colour, weightMark(2).colour, "a weak positive weight is the same blue as a strong one");
+  assert.ok(tiny.fill >= WEIGHT_MIN_FILL, "a bar never shrinks past the floor that keeps its sign readable");
+  assert.equal(weightMark(-0.001).sign, -1, "a weak negative weight still hangs downward");
+  assert.equal(weightMark(0.5).sign, 1);
+  // Monotone in magnitude, and clamped at full scale rather than overflowing.
+  assert.ok(weightMark(1.5).fill > weightMark(0.5).fill);
+  assert.equal(weightMark(WEIGHT_FULL_SCALE).fill, 1);
+  assert.equal(weightMark(9).fill, 1, "a runaway learned weight fills the cell, it does not exceed it");
+  assert.equal(weightMark(-9).fill, 1);
+});
+
+test("the strip's old fade is pinned as the failure it was", () => {
+  // `hsla(hue, 80%, 55%, |w| / 2)` over the same track, v1.0 to v1.48. The
+  // median weight in a 6,000-tick pond is 0.71 and a fifth of every strip is
+  // under 0.25, so this is the typical cell, not the tail of one.
+  const track = inspectorTrack();
+  for (const [sign, hue] of [["positive", 200], ["negative", 10]]) {
+    const faded = blendOver(track, hslToRgb(hue, 80, 55), 0.1 / WEIGHT_FULL_SCALE);
+    let best = 0;
+    for (const vision of VISION_MODELS) best = Math.max(best, deltaE(faded, track, vision));
+    assert.ok(
+      best < MIN_DELTA_E,
+      `a ${sign} weight of 0.1 used to score ${best.toFixed(1)} — expected it to fail`
+    );
+  }
+  // And the sign itself was unreadable to a protanope at a quarter of full scale.
+  const a = blendOver(track, hslToRgb(200, 80, 55), 0.125);
+  const b = blendOver(track, hslToRgb(10, 80, 55), 0.125);
+  assert.ok(
+    deltaE(a, b, "protanopia") < MIN_DELTA_E,
+    "the faded sign used to fail under protanopia — expected the failure to still be measurable"
+  );
+});
+
+test("every neuron role in the brain diagram is legible, and so is every connection", () => {
+  const plate = brainGraphBackground();
+  const nodes = brainNodeTones();
+  const edges = brainEdgeTones();
+  // Everything drawn on the plate has to clear the plate.
+  for (const [name, rgb] of [...Object.entries(nodes), ...Object.entries(edges)]) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(rgb, plate, vision);
+      assert.ok(d >= MIN_DELTA_E, `${name} is ΔE ${d.toFixed(1)} on the plate under ${vision}`);
+    }
+  }
+  // The three roles from each other, the two signs from each other, and — the
+  // constraint v1.49 nearly missed — every node from every edge, because a node
+  // is a disc sitting on the lines it terminates.
+  const marks = { ...nodes, "edge+": edges.positive, "edge-": edges.negative };
+  const names = Object.keys(marks);
+  let worst = Infinity;
+  let where = null;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(marks[names[i]], marks[names[j]], vision);
+        if (d < worst) {
+          worst = d;
+          where = `${names[i]}/${names[j]} under ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `the diagram's worst pair is ΔE ${worst.toFixed(1)} — ${where}`);
+});
+
+test("the diagram's old green-against-orange is pinned as the failure it was", () => {
+  // `#5adc96` inputs and `#ffb060` outputs, v1.5 to v1.48: the two ends of the
+  // picture, ΔE 17.7 apart for one man in twelve. Both passed against the plate
+  // and against the near-white hidden node, which is why nothing caught it —
+  // the audit had simply never been pointed at this figure.
+  const green = { r: 0x5a, g: 0xdc, b: 0x96 };
+  const orange = { r: 0xff, g: 0xb0, b: 0x60 };
+  assert.ok(
+    deltaE(green, orange, "protanopia") < MIN_DELTA_E,
+    "expected the shipped input/output pair to fail under protanopia"
+  );
+  assert.ok(
+    deltaE(green, orange, "normal") >= MIN_DELTA_E,
+    "and to pass under normal vision — that is what made it invisible to me"
+  );
+  // Why the old pair failed, in one number: they are the *same lightness*
+  // (79.4 and 78.0, ΔL* 1.4), so the whole distinction rode on the red-green
+  // axis and a protanope has nothing left. The replacement separates them in
+  // lightness too — the one channel no deficiency touches — which is what turns
+  // 17.7 into 30.2.
+  const green0 = toLab(green)[0];
+  const orange0 = toLab(orange)[0];
+  assert.ok(Math.abs(green0 - orange0) < 5, `the old pair shared a lightness (ΔL* ${Math.abs(green0 - orange0).toFixed(1)})`);
+  const now = brainNodeTones();
+  const dL = Math.abs(toLab(now.input)[0] - toLab(now.output)[0]);
+  assert.ok(dL > 12, `the replacement pair is only ΔL* ${dL.toFixed(1)} apart — hue is doing all the work again`);
+});
+
+test("a connection's magnitude is its width, and its opacity is a constant", () => {
+  const weak = brainEdge(0.1);
+  const strong = brainEdge(3);
+  assert.ok(strong.width > weak.width, "width carries the magnitude");
+  assert.ok(weak.colour.includes(String(BRAIN_EDGE_ALPHA)), "and opacity carries nothing");
+  assert.equal(
+    weak.colour,
+    brainEdge(2).colour,
+    "two positive connections of different strength are the same colour"
+  );
+  assert.notEqual(weak.colour, brainEdge(-0.1).colour, "sign still changes the colour");
+  assert.ok(brainEdge(99).width <= 2.4, "width is clamped so a runaway weight is not a bar");
+
+  // The pre-v1.49 fade, pinned: a weak connection's sign under protanopia.
+  const plate = brainGraphBackground();
+  const op = 0.15 + 0.1 / 3;
+  const a = blendOver(plate, hslToRgb(205, 85, 60), op);
+  const b = blendOver(plate, hslToRgb(8, 85, 60), op);
+  assert.ok(
+    deltaE(a, b, "protanopia") < MIN_DELTA_E,
+    "expected the old faded edge sign to fail under protanopia"
+  );
+});
+
+test("the inspector's plates come from the palette, not from the stylesheet", () => {
+  // v1.26's rule on the two backgrounds every mark above is measured against.
+  // If someone edits style.css instead of this file, these stop agreeing and
+  // the whole audit above is measuring a colour nobody sees.
+  assert.equal(rgbCss(inspectorTrack()), "rgb(20, 33, 48)", "--insp-track / .genome span");
+  assert.equal(rgbCss(brainGraphBackground()), "rgb(5, 8, 13)", "--braingraph-bg / .braingraph");
+  const role = brainNodeColours();
+  assert.equal(Object.keys(role).length, 3, "three roles, and no fourth dead default");
+  for (const k of ["input", "hidden", "output"]) assert.ok(role[k], `${k} has a colour`);
+  assert.ok(
+    !Object.values(role).includes("#7fd0ff"),
+    "the dead `hidden default` from v1.5 is gone, not merely unreachable"
+  );
 });

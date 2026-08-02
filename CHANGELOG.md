@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.49.0] — 2026-08-02
+
+The colour audit has run for twenty-four releases and never once opened the
+inspector — the panel where a creature's **brain** is drawn. Both figures in it
+chose their colours inline in `main.js`, and both encoded a magnitude by fading
+a mark, which v1.34 wrote down as the one thing never to do.
+
+### Fixed
+
+- **The weight strip is a bar chart now, not a fade.** Each of the 120 cells
+  drew `hsla(hue, 80%, 55%, |w| / 2)`: sign by hue, magnitude by *opacity*.
+  Measured against the cell's own track, a weight of 0.1 scores **ΔE 3.7** —
+  under the just-noticeable difference — and at 0.25 its sign scores **10.7** to
+  a protanope, against a bar of 25. That is not the tail of the distribution: on
+  three seeds at 6,000 ticks the median |w| is **0.71**, a fifth of every strip
+  is under 0.25 and **a third is under 0.5**, so a third of the fingerprint was
+  being drawn in tones its background could swallow. Magnitude is now a **bar
+  height** and sign is **both** the colour and the direction — positive bars
+  stand on the floor, negative ones hang from the ceiling — so the sign survives
+  a viewer for whom the two hues are one hue. The tones are opaque and ΔE 76.1
+  apart, 54.9 at worst from the track.
+- **Green against orange, the two ends of the brain diagram.** Sense neurons
+  were `#5adc96` and motor neurons `#ffb060`: **ΔE 17.7 under protanopia** (35.6
+  deuteranopia, 77.9 normal). The reason is one number — they are the same
+  lightness, L* 79.4 and 78.0 — so the whole distinction rode on the red–green
+  axis. Senses are now a deep leaf green at 48% lightness and motors a pale gold
+  at 78%, pulled apart in the channel no deficiency touches (ΔL* 1.4 → **15.1**).
+  The near-white hidden neuron is unchanged.
+- **Connections stopped fading too.** `0.15 + |w| / 3` made a weak connection
+  score 9.0 against the plate and its sign 17.3 to a protanope — while *width*
+  was already carrying the magnitude alongside the fade. The opacity is now the
+  constant `BRAIN_EDGE_ALPHA`, and nothing the figure was saying is lost.
+- **A dead colour.** `#7fd0ff`, initialised as the diagram's "hidden default"
+  and overwritten on every branch of the conditional below it, has been
+  unreachable since v1.5 — and is the reason this project's own audit to-do list
+  said the diagram had a blue in it.
+
+### Added
+
+- **`src/palette.js` reaches the inspector**: `inspectorTrack()`,
+  `brainGraphBackground()`, `weightMark()`, `brainEdge()`, `brainNodeColours()`
+  and their `*Tones()` twins, plus `rgbCss()`. The two plates were literals in
+  `style.css` (`#142130`, `#05080d`) and are now custom properties painted from
+  the palette at startup — v1.26's rule on the two backgrounds every mark above
+  is measured against.
+- **A key under the brain diagram.** It has drawn three colours of neuron and
+  two colours of connection since v1.5 without ever saying what any of them
+  meant. Five chips, in the colours the figure actually draws.
+- **Six tests in `test/palette.test.js`**, three of which pin the *failures* —
+  the faded cell, the faded edge sign, and green-against-orange — because a
+  suite that only knows the new numbers stays green while someone restores the
+  old ones.
+
+### Measured
+
+- The diagram's worst pair over every constraint is **ΔE 30.2**: the three
+  neuron roles against each other, each against the plate, and each against both
+  composited edge tones. That last set is the one this cycle nearly missed — a
+  node is a disc sitting on the lines it terminates, and an earlier candidate
+  put an indigo hidden neuron **12.1** from a positive connection.
+- The search had **419** single-role candidates clearing the fixed backgrounds
+  before any pairing, so this was taste inside a large feasible set. Worth
+  stating, because v1.48 caught the infeasibility reflex writing its paragraph
+  first for the third time.
+
 ## [1.48.0] — 2026-08-02
 
 Twenty-five releases since this world last got a new *rule*. v1.23 built terrain

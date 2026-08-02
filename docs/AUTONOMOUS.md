@@ -153,11 +153,15 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the immune ring (0.2) — and v1.43 the fifth and sixth, the signalling rings
   and the attack flash, both still additive over a body nine lines under v1.34's
   own comment. So **before adding any mark, grep for the ones the audit has still
-  never touched**: the inspector swatch, the weight matrices, the corpse
-  splotches. (The Muller bands and the species dots came off that list in v1.46,
-  and what they were hiding is the reason to distrust the rest of it — see the
-  lesson below. All three that remain are in the DOM, the surface v1.26 opened
-  and nobody has returned to.) v1.43 also left
+  never touched**: the **inspector swatch** and the **corpse splotches** are what
+  is left. (The Muller bands and the species dots came off that list in v1.46 and
+  the weight matrices in v1.49 — every item struck off this list so far has been
+  hiding something, which is the reason to distrust the two that remain; see the
+  lessons below. Both are in the DOM, the surface v1.26 opened.) The swatch is
+  `hsl(c.hue, 70%, 55%)` beside "Creature #n" and the ancestry pips are
+  `hsl(--anc-hue, 70%, 62%)` in `style.css` — the *same inherited hue* v1.46
+  proved cannot be an identifier, on a second surface, still unmeasured and still
+  painted from the stylesheet rather than the palette. v1.43 also left
   `docs/screenshots/signalling.png` showing the pre-v1.43 rings, and v1.46
   `docs/screenshots/phylogeny.png` showing the pre-hatch plot; screenshots here
   are captured by hand.
@@ -172,8 +176,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
   chart v1.41, Tree of Life v1.42) — that sweep is finished, and it took three
   releases across eleven versions because I thought it was done at the first
   one. Still open: the DOM-side colours *that* pass didn't reach either (the
-  inspector swatch and the weight matrices — the species dots and the Muller
-  plot bands were done in v1.46); the live
+  inspector swatch — the species dots and the Muller plot bands were done in
+  v1.46, the weight strip and the brain diagram in v1.49); the live
   stat tiles are labelled by adjacency rather than programmatically, and the
   controls panel has never been walked with a keyboard alone. (Lineage hue was
   on this list as "unreadable for a dichromat, no colour-side fix available".
@@ -1048,3 +1052,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
+
+- **A rule violation is a lead, not a finding; the finding is how much data
+  lands in it.** v1.49 found the weight strip encoding magnitude as opacity —
+  the one thing v1.34 forbids by name — and the tempting move was to fix it on
+  sight and write "violates the rule" in the note. What made it a release was
+  measuring the *weights*: median |w| 0.71 over three seeds, a fifth of every
+  strip under 0.25, a third under 0.5, against a cell that scores ΔE 3.7 at
+  |w| = 0.1. Had the median been 1.8 the same violation would have been a
+  complaint about the bottom 2% of cells and not worth a cycle. Before fixing a
+  broken rule, find out what share of the real data lands in the broken part —
+  it is the difference between a tidy-up and a finding.
+- **Ask why a pair failed, not only that it did.** Green-against-orange scored
+  17.7 under protanopia and the obvious fix is "pick two other colours". The
+  useful sentence is one level down: they were the **same lightness** (L* 79.4
+  and 78.0), so the entire distinction rode on the one axis a protanope has
+  lost. That diagnosis picks the replacement for you — separate them in
+  luminance, which no deficiency touches — and it generalises, where a new pair
+  of hex codes does not. Every colour failure in this project has had a
+  one-number explanation available; find it before choosing the fix.
+- **`main.js` can be run, and running it is ten minutes.** Every release since
+  v1.0 has said pure-UI changes there are "sanity-checked by hand", which has
+  always meant *read twice*. v1.49 opened the real page in headless Chromium,
+  clicked until the inspector opened, read back the computed custom properties
+  and the generated markup, and photographed the panel. It confirmed things
+  reading could not: that the gradients resolve, that the CSS variables are
+  actually set before first paint, that no console error fires. The module is
+  still not in `node --test` — but "untested" and "unrun" are different words,
+  and I had been treating them as one. v1.39 said a module that can't be tested
+  without a browser usually can't be tested without a *pixel*; the other half is
+  that a browser is available.

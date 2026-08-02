@@ -734,7 +734,10 @@ details .field {
 .braingraph {
   display: block;
   margin-top: 6px;
-  background: #05080d;
+  /* Painted from src/palette.js at startup — see applyInspectorColours(). The
+     literal here is the same colour, kept only so the plate is never white
+     before the script runs. */
+  background: var(--braingraph-bg, #05080d);
   border: 1px solid var(--line);
   border-radius: 8px;
 }
@@ -748,7 +751,45 @@ details .field {
   width: 6px;
   height: 10px;
   border-radius: 1px;
-  background: #142130;
+  /* Each cell's bar and track arrive together as one gradient (v1.49) — this
+     is only what an empty strip looks like. See src/palette.js weightMark(). */
+  background: var(--insp-track, #142130);
+}
+
+/* The brain diagram's key. Three neuron roles and two connection signs, in the
+   colours the diagram actually draws — v1.14's rule that a mechanic isn't
+   finished until a watcher can tell what it is saying, applied to a figure
+   that had been unlabelled since v1.5. */
+.bg-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+.bg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bg-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.bg-chip i.bg-pos,
+.bg-chip i.bg-neg {
+  width: 12px;
+  height: 2px;
+  border-radius: 0;
+}
+.bg-chip i.bg-pos {
+  background: var(--weight-pos);
+}
+.bg-chip i.bg-neg {
+  background: var(--weight-neg);
 }
 
 /* ---- Season badge ---- */
