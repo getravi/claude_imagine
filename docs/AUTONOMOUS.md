@@ -73,6 +73,20 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Update order — closed in v1.47 (`shuffleTurnOrder`), and what it left.**
+  The sweep is sequential and its order is birth order, so seniority settled
+  every contest inside a tick. Exactly two events depend on it, both counted
+  now: a contested pellet (**4.5% of all meals**, one every 7–28 ticks) and a
+  refused split at `populationMax` (**zero, on every seed** — the pond peaks at
+  300 against a cap of 650). What it is worth in aggregate is nothing: a control
+  arm that burned the same draws and reordered *nothing* moved the population
+  further than the shuffle did. What it leaves behind: the tick still has no
+  *simultaneous* mode — sensing everyone's pre-move state and applying every
+  consequence at once is a real alternative this project has never built, and it
+  is a bigger change than a permutation. And `populationMax` is now known to be
+  a rule that is switched off by circumstance; anything that makes the pond
+  richer switches it on.
+
 - **The dead still act — closed in v1.45 (`deathIsFinal`), and what it left.**
   The update loop had no `dead` guard on the creature it was updating; there is
   one now, at the top of the turn and after `act()`, off by default because the
@@ -932,6 +946,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   would have failed the same way. Before drawing anything *as* a name, ask where
   the value came from; if it came from the thing's ancestor, it is a statement
   about family and will be read as a statement about identity.
+
+- **A control that shares its baseline with the treatment is not independent
+  evidence.** v1.47's shuffle raised the mean population 3.2% with **ten of
+  twelve seeds up** — a sign test at p≈0.02, and I had the mechanism written
+  before I checked. The arm that reordered *nothing* and only burned the same
+  draws moved it +11.8%. Three arms compared against one shared baseline run are
+  three correlated tests, not thirty-six coin flips: a seed whose default
+  trajectory sits low reads as a rise in every arm at once. A sign count across
+  seeds is the cheapest convincing-looking summary available and it inherits
+  every correlation in the design. The null arm has to be *as expensive* as the
+  treatment — same draws, same cost, effect removed — or it is not a null.
+- **A safety valve is a rule in every world that reaches it.** `populationMax`
+  has sat in `config.js` since v1.0 described as a guard so the toy cannot
+  explode, and it is also the arbiter of who reproduces in a full pond, deciding
+  by array index. It has never come up, so it has never read as a rule. Sweep
+  the *guards* — caps, clamps, floors, cooldowns — and ask what each of them
+  decides on the day it binds, because the code says nothing about which
+  regime it is in.
+- **The code that implements no decision is where the undocumented decisions
+  live.** Everything here that looks like a rule got a constant, a comment, a
+  test and a SCIENCE.md section. The sequential sweep got a `for` loop, and it
+  had been handing out 4.5% of every meal in the pond on the basis of who was
+  born first for forty-six versions. When looking for what this project has
+  never questioned, read the plumbing rather than the features: a loop, an array
+  order, an append, a compaction. v1.32 found this in `grid.js` and called it
+  "an optimisation is a claim"; the more general form is that **structure is
+  policy**, and structure is invisible precisely because nobody argued for it.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

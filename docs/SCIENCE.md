@@ -2711,6 +2711,129 @@ node --input-type=module -e '
   }'
 ```
 
+## Who goes first: the rule that was never written down (v1.47)
+
+Every version of this simulation has updated its population **sequentially**.
+`world.step()` walks `this.creatures` one creature at a time: each senses the
+pond as the creatures before it have already left it, moves, eats, and may
+breed, all before the next one is reached. That is not the only way to write a
+tick — a simultaneous update, where everybody senses the same frozen world and
+all the consequences land at once, is the obvious alternative — and this project
+has never stated which it does, let alone what the choice costs.
+
+It costs something, because **the array is birth order**. Step 5 removes the
+dead in place and appends the newborns, so a founder sits near the front of the
+sweep for its entire life. Nothing here was ever designed to reward seniority.
+It falls out of a `for` loop.
+
+### The two things the order decides
+
+Only two events in the tick are genuinely settled by it, and as of v1.47 both
+are counted (`stats.contested`, `stats.crowdedOut` — free, exact, and read by
+nothing in the simulation):
+
+1. **A contested pellet.** Two creatures standing within eating reach of the
+   same pellet: the earlier index takes it, and the later one arrives to find
+   the pellet flagged `eaten` and goes hungry. Only a creature that ends its
+   turn having eaten *nothing* is counted — losing one of two pellets you were
+   standing on costs nothing, because a creature eats at most one per tick.
+2. **The last place in a full pond.** Reproduction is refused once the
+   population reaches `populationMax`, and which creatures get the last places
+   is decided by index alone. This is the sharper of the two: a lost pellet is
+   one meal, a refused split is a lineage that does not start.
+
+Over twelve seeds at 9,000 ticks:
+
+| | fixed order (default) |
+|---|---|
+| meals taken | 178,354 |
+| meals lost to the order | **8,021 — 4.50%** |
+| per-seed range | 2.45% (seed 512) – 8.04% (seed 1234) |
+| how often | one lost meal every 7–28 ticks |
+| reproductions refused | **0, on every seed** |
+
+The second row is the finding I did not expect: one meal in twenty-two is taken
+out from under somebody who was standing on it. The last row is the one worth
+remembering — `populationMax` is 650, a default pond peaks around 300, and so
+the *sharper* of the two mechanisms **never fires in the world anybody looks
+at**. It is `kinRecognition` again (v1.36): correct, tested, and mute.
+
+### What the order is worth: nothing measurable, and the control says so
+
+`shuffleTurnOrder` (opt-in) draws a fresh Fisher–Yates permutation each tick.
+It is not a fairness *fix* — somebody still goes first — it is the scrambled arm
+the v1.27 rule demands: a feature that decides *who goes first* has no "off"
+position, so its control is choosing at random instead.
+
+Twelve seeds, 9,000 ticks, mean population over the last 3,000:
+
+| arm | mean | median | seeds up | range |
+|---|---|---|---|---|
+| shuffled order | +3.2% | +4.1% | 10/12 | −47.1 … +31.3% |
+| **same draws, same order** | +11.8% | +2.8% | 9/12 | −2.3 … +46.2% |
+| **one wasted draw per tick** | +4.6% | +2.0% | 7/12 | −4.4 … +19.1% |
+
+Ten seeds out of twelve rising looks like a result, and it is not one. The
+second arm reorders **nothing** — it burns exactly the *n−1* draws the shuffle
+would have burned and then hands back the population array untouched — and it
+moved further in the same direction. The third burns a single draw per tick, an
+intervention with no mechanism of any kind, and lands in the same place. All
+three arms are doing one thing: dealing the pond a different hand.
+
+(The "10/12 up" is also less than it looks. All three arms are compared against
+the *same* baseline run, so the comparisons are correlated: a seed whose default
+trajectory happens to sit low reads as a rise in every arm at once. This is
+v1.32's rule — a seed-matched pair is exactly as clean as one coin toss — with
+the pairing shared across three tests instead of one.)
+
+The honest summary: **the turn order decides 4.5% of all meals, one at a time,
+and has no aggregate consequence this instrument can see.** Both halves matter.
+The mechanism is real, staged in `test/turnOrder.test.js` in one tick with two
+creatures and one pellet; the effect is invisible at twelve seeds against a null
+that changes nothing at all.
+
+### What stays fixed, and why
+
+Three things in the tick deliberately step out of the sweep's order, each
+because reading *stale* state is the fairer answer:
+
+- **Contagion** is resolved before anything moves, on the positions everyone
+  held at the top of the tick, and new cases are applied only after the whole
+  pass — so an infection cannot chain through three hosts in one tick.
+- **A call is heard as it was emitted last tick** (`prevSignal`, frozen before
+  the sweep), so what a creature hears never depends on where its speaker sits
+  in the array.
+- **Newborns land in `born`** and take no turn until the following tick.
+
+Those were the three places where somebody noticed the ordering question and
+answered it locally. Grazing, biting and the population cap are the places where
+nobody did.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  // Arm 3: fixed order, but burning the draws the shuffle would have used.
+  class Burn extends W.World {
+    _turnOrder() {
+      for (let i = this.creatures.length - 1; i > 0; i--) this.rng.int(0, i);
+      return this.creatures;
+    }
+  }
+  const run = (Cls, seed, shuffleTurnOrder) => {
+    const w = new Cls(C.makeConfig({ seed, shuffleTurnOrder }));
+    let s = 0;
+    for (let i = 0; i < 9000; i++) { w.step(); if (i >= 6000) s += w.creatures.length; }
+    return { pop: s / 3000, lost: w.stats.contested, refused: w.stats.crowdedOut };
+  };
+  for (const seed of [314,7,13,21,42,77,88,101,256,512,999,1234]) {
+    const a = run(W.World, seed, false), b = run(W.World, seed, true), c = run(Burn, seed, false);
+    console.log(seed, a, "shuffled", (100*(b.pop-a.pop)/a.pop).toFixed(1)+"%",
+                          "burned",   (100*(c.pop-a.pop)/a.pop).toFixed(1)+"%");
+  }'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

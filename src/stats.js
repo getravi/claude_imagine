@@ -222,6 +222,18 @@ export class Stats {
     this.recentDeaths = [];
     this.lifespanSum = 0; // total ticks lived, over every death so far
     this.scavenged = 0; // total scavenging bites taken from corpses
+    // What the turn order costs, in the two places it decides anything (v1.47).
+    // `world.step()` sweeps `this.creatures` in array order and that array is
+    // birth order, so both of these are settled by seniority and nothing else.
+    // `contested`: turns in which a creature had a pellet inside its own eating
+    // reach, found it already eaten by someone earlier in the same tick, and
+    // ate nothing. `crowdedOut`: turns in which a creature was full enough to
+    // split and was refused because the pond had already reached
+    // `populationMax` — the same tick, a lower index, and it would have bred.
+    // Both are cumulative and free (no scan and no draw exists for either), and
+    // nothing in the simulation reads them.
+    this.contested = 0;
+    this.crowdedOut = 0;
     this.infections = 0; // cumulative cases of the disease (contagion on)
     this.recoveries = 0; // cumulative recoveries, each one a new immune creature
     this.infectedCount = 0; // currently sick

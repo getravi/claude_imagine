@@ -4,6 +4,63 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.47.0] — 2026-08-02
+
+`world.step()` sweeps its population one creature at a time, and the array it
+sweeps is birth order — survivors keep their places, newborns are appended. So a
+founder sits near the front of the queue for its whole life, and **every contest
+inside a tick is settled by seniority**. Nothing here was designed that way; it
+falls out of a `for` loop, and forty-six versions of this file never said so.
+v1.45 fixed one bug living inside that loop and named the general shape as the
+open question. This is that question, measured.
+
+### Added
+
+- **`stats.contested`** — turns in which a creature had a pellet inside its own
+  eating reach, found it already eaten by somebody earlier in the same tick, and
+  ate nothing. Free and exact: an `eaten` pellet still in the array can only have
+  been taken this tick, and the scan is walking it anyway.
+- **`stats.crowdedOut`** — turns in which a creature was full enough to split and
+  was refused because the pond had already reached `populationMax`. The sharper
+  of the two: a lost pellet is one meal, a refused split is a lineage that never
+  starts.
+- **`shuffleTurnOrder`** (opt-in, off by default) — a fresh Fisher–Yates order
+  each tick. Not a fairness fix, because there is no "off": somebody has to go
+  first. It is the **scrambled arm** the v1.27 rule demands as the control for a
+  rule that decides *who* goes first.
+- **`test/turnOrder.test.js`** — ten tests, the first six staged in a single
+  tick with two creatures and one pellet rather than waiting for a collision in
+  a real pond.
+- **The rule, written down**, at the top of `src/world.js`: the sweep is
+  sequential, its order is birth order, and the three things that deliberately
+  step out of it (contagion on pre-move positions, a call heard as it was
+  emitted last tick, newborns waiting for the next one).
+
+### Measured
+
+- **4.50% of every meal the pond takes is taken out from under somebody** who
+  was standing in reach and went hungry — 8,021 of 178,354 meals over twelve
+  seeds at 9,000 ticks, ranging 2.45% (seed 512) to 8.04% (seed 1234), one lost
+  meal every 7–28 ticks.
+- **The other mechanism never fires.** `crowdedOut` is **0 on every one of the
+  twelve seeds, in both arms**: `populationMax` is 650 and a default pond peaks
+  near 300. The sharper of the two things the order decides is mute in the only
+  world anybody looks at — `kinRecognition` (v1.36) again.
+- **What the order is worth in aggregate: nothing this instrument can see.**
+  Shuffling moved the mean population +3.2% (median +4.1%, 10/12 seeds up, range
+  −47.1…+31.3%). A control arm that burns the same *n−1* draws and then hands
+  back the **unchanged** array moved it **+11.8%** (9/12 up), and an arm burning
+  one wasted draw per tick — no mechanism whatsoever — moved it +4.6% (7/12 up).
+  All three arms are doing the same thing: dealing the pond a different hand.
+- Shuffling does not reduce the collisions either: 668 lost meals per run with
+  the fixed order, 668 shuffled. The order does not create the contests. It only
+  makes sure they always go the same way.
+
+### Changed
+
+- The **Shuffled turn order** toggle joins the controls panel and the permalink
+  (`ord`), like every opt-in before it.
+
 ## [1.46.0] — 2026-08-02
 
 The colour audit that has run since v1.25 had never opened the Tree of Life —

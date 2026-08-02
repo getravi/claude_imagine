@@ -333,6 +333,29 @@ export const DEFAULT_CONFIG = Object.freeze({
   // the twelve-seed measurement.
   deathIsFinal: false,
 
+  // Shuffled turn order (v1.47, opt-in). The sweep in `world.step()` walks
+  // `this.creatures` in array order, and that array is birth order: survivors
+  // keep their places and newborns are appended, so a founder is near the front
+  // for its whole life. Every contest inside a tick is therefore settled by
+  // seniority. Two creatures standing on one pellet: the earlier index eats it
+  // and the later one finds it already gone. The pond at `populationMax`: the
+  // earlier index splits and the later one is refused. Nothing in this world
+  // was ever *meant* to reward being old — it falls out of the loop.
+  //
+  // Switch this on and each tick draws a fresh Fisher–Yates order, which is the
+  // scrambled arm the v1.27 rule asks for: a feature that decides *who goes
+  // first* is not controlled by switching it off (there is no "off" — somebody
+  // has to go first), it is controlled by choosing at random instead. So this
+  // is the control for a rule the project has always had and never written
+  // down, and — like `exactVision` and `deathIsFinal` — the measurement is the
+  // deliverable rather than the flag.
+  //
+  // Off by default: while off the loop iterates `this.creatures` itself, so
+  // there is no copy, no branch inside the sweep and no draw. See
+  // docs/SCIENCE.md for the twelve-seed measurement, and `stats.contested` /
+  // `stats.crowdedOut` for the two events it decides.
+  shuffleTurnOrder: false,
+
   // --- Neural plasticity / within-lifetime learning (v1.4) ---
   // OFF by default: when off, brains are static from birth and every world is
   // bit-for-bit identical to earlier versions. Switch it on and each connection

@@ -9,6 +9,24 @@
 //      5 is what has always given a death its moment — see `deathIsFinal`)
 //   6. safety valves: population cap, auto-reseed if life dies out
 //
+// Within a tick — the rule this file went forty-six versions without stating,
+// which is how v1.45 came to find a bug inside it:
+//
+//   * Step 2 is a **sequential** sweep, not a simultaneous update. Each
+//     creature senses the pond as the ones before it have already left it, so
+//     it can move onto a pellet a neighbour ate a microsecond ago, or be bitten
+//     to death before its own turn comes round.
+//   * The sweep's order is the order of `this.creatures`, and that array is
+//     birth order: step 5 keeps survivors in place and appends the newborns.
+//     **Seniority therefore decides every contest inside a tick** — see
+//     `shuffleTurnOrder` in config.js for the control arm, and `stats.contested`
+//     and `stats.crowdedOut` for the two events it settles.
+//   * Three things deliberately step out of that order, each because reading
+//     stale state is the *fairer* answer: contagion (1b) judges exposure on the
+//     positions everyone held before anyone moved, a call is heard as it was
+//     emitted last tick (`prevSignal`), and newborns land in `born` and take no
+//     turn until the tick after the one they were born in.
+//
 // The world owns its own RNG, so a (seed, config) pair fully determines the
 // entire future — a property the tests and the "share a seed" feature rely on.
 
@@ -168,6 +186,30 @@ export class World {
     else grid.forEachNear(x, y, fn);
   }
 
+  /**
+   * The order step 2 takes its turns in.
+   *
+   * Off (the default) this returns `this.creatures` itself — the same array the
+   * loop has walked since v1.0, with no copy made, no branch inside the sweep
+   * and no random number drawn. On, it is a fresh Fisher–Yates permutation each
+   * tick, drawn from the world RNG, so seniority stops paying.
+   *
+   * Note what the shuffle is *not*: it is not a simultaneous update. Somebody
+   * still goes first — the point is only that who it is stops being a fact
+   * about how long they have been alive.
+   */
+  _turnOrder() {
+    if (!this.config.shuffleTurnOrder) return this.creatures;
+    const order = this.creatures.slice();
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = this.rng.int(0, i);
+      const t = order[i];
+      order[i] = order[j];
+      order[j] = t;
+    }
+    return order;
+  }
+
   /** Advance the world by exactly one tick. */
   step() {
     const cfg = this.config;
@@ -220,8 +262,9 @@ export class World {
       cfg.sexualReproduction ? cfg.mateRadius : 0
     );
 
-    // 2. Sense, think, act.
-    for (const c of this.creatures) {
+    // 2. Sense, think, act, in the order `_turnOrder()` hands them over — which
+    // is `this.creatures` itself unless this world has asked for a shuffle.
+    for (const c of this._turnOrder()) {
       // A body killed earlier in this same tick — bitten to zero by a predator
       // that updated before it — takes no turn at all. The scans below already
       // skip `o.dead`, so the rest of the pond has treated it as gone since
@@ -233,8 +276,20 @@ export class World {
       // Nearest food within vision.
       let nf = null;
       let nfD2 = visionR2;
+      // A pellet inside this creature's own reach that somebody earlier in the
+      // turn order already took. `eaten` pellets are compacted out at the end of
+      // every tick, so anything still flagged here was eaten *this* tick, by an
+      // earlier turn — which makes this the exact record of what the order cost
+      // it, and it is free: the scan is walking the pellet anyway. Counting
+      // only; nothing in the simulation reads it.
+      const eatR = cfg.eatRadius + c.radius * 0.4;
+      const eatR2 = eatR * eatR;
+      let missed = false;
       this._scan(this.foodGrid, c.x, c.y, sightR, (f) => {
-        if (f.eaten) return;
+        if (f.eaten) {
+          if (!missed && torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height) <= eatR2) missed = true;
+          return;
+        }
         const d2 = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
         if (d2 < nfD2) {
           nfD2 = d2;
@@ -318,10 +373,11 @@ export class World {
       // 3a. Grazing: consume the nearest pellet if we're on top of it. Nutrition
       // from plants shrinks as a creature becomes more carnivorous, so pure
       // predators get almost nothing from grazing and must hunt.
+      let grazed = false;
       if (nf && !nf.eaten) {
-        const eatR = cfg.eatRadius + c.radius * 0.4;
-        if (nfD2 <= eatR * eatR) {
+        if (nfD2 <= eatR2) {
           nf.eaten = true;
+          grazed = true;
           const plantGain = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * c.carnivory);
           // A pellet is a place, not a battery: these units exist for the first
           // time here. What the eater had no room for is minted and lost in the
@@ -331,6 +387,11 @@ export class World {
           this.energy.graze(plantGain, c.energy - before);
         }
       }
+      // A meal the turn order cost it, and only that: a creature eats at most
+      // one pellet a tick, so losing one of two it was standing on costs it
+      // nothing. This counts the creatures that had a pellet in reach, found it
+      // already taken, and went hungry.
+      if (missed && !grazed) this.stats.contested++;
 
       // 3b. Feeding on flesh — the target is whichever the creature homed in on.
       // A corpse is scavenged; a living creature is bitten (predation). Both
@@ -370,14 +431,23 @@ export class World {
       }
 
       // 4. Reproduction (sexual if enabled and a partner is near, else asexual).
-      if (c.canReproduce() && this.creatures.length + born.length < cfg.populationMax) {
-        const mateGenome = cfg.sexualReproduction && mate ? mate.genome : null;
-        const child = c.reproduce(this.rng, mateGenome);
-        // Classify the newborn: it joins its parent's species unless it has
-        // drifted far enough to found a new one branching from it.
-        this.phylogeny.assign(child, this.tick, c.speciesId);
-        born.push(child);
-        this.stats.births++;
+      if (c.canReproduce()) {
+        if (this.creatures.length + born.length < cfg.populationMax) {
+          const mateGenome = cfg.sexualReproduction && mate ? mate.genome : null;
+          const child = c.reproduce(this.rng, mateGenome);
+          // Classify the newborn: it joins its parent's species unless it has
+          // drifted far enough to found a new one branching from it.
+          this.phylogeny.assign(child, this.tick, c.speciesId);
+          born.push(child);
+          this.stats.births++;
+        } else {
+          // The pond is full, and which creatures get the last places was
+          // settled by nothing but their index. The sharper of the two things
+          // the turn order decides: a lost pellet is one meal, a refused split
+          // is a whole line that does not start. Counting only — the refusal
+          // itself is v1.0 behaviour and is unchanged.
+          this.stats.crowdedOut++;
+        }
       }
     }
 

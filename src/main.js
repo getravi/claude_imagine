@@ -74,6 +74,7 @@ function parseHash() {
   if (p.has("eye")) o.exactVision = p.get("eye") === "1";
   if (p.has("feel")) o.groundSense = p.get("feel") === "1";
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
+  if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
   return o;
 }
 
@@ -104,6 +105,7 @@ function syncHash() {
   p.set("eye", config.exactVision ? "1" : "0");
   p.set("feel", config.groundSense ? "1" : "0");
   p.set("fin", config.deathIsFinal ? "1" : "0");
+  p.set("ord", config.shuffleTurnOrder ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -212,6 +214,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-exactvision", config.exactVision);
   setToggle("toggle-groundsense", config.groundSense);
   setToggle("toggle-deathfinal", config.deathIsFinal);
+  setToggle("toggle-turnorder", config.shuffleTurnOrder);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -1388,6 +1391,13 @@ function wireControls() {
     // switching it mid-run takes effect on the very next tick. A body already
     // lying in the pond is swept this tick either way.
     config.deathIsFinal = e.target.checked;
+    syncHash();
+  });
+  $("toggle-turnorder").checked = config.shuffleTurnOrder;
+  $("toggle-turnorder").addEventListener("change", (e) => {
+    // Nothing to rebuild: the order is drawn fresh at the top of every tick, so
+    // this takes effect on the next one and nothing already in the pond cares.
+    config.shuffleTurnOrder = e.target.checked;
     syncHash();
   });
   $("toggle-groundsense").checked = config.groundSense;
