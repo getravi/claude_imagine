@@ -697,6 +697,65 @@ export function attackFlashTones() {
 }
 
 /**
+ * A lineage's colour, in the two places the Tree of Life draws it: the Muller
+ * plot's band and the legend chip's dot. They have disagreed since v1.2 — the
+ * band was `hsla(hue, 68%, 55%, 0.9)` in `mullerplot.js` and the dot
+ * `hsl(hue, 70%, 55%)` inline in `main.js` — which is the v1.26 complaint
+ * exactly: a colour a test cannot reach is a colour that will drift, and these
+ * two are a *key* and the thing it is a key to.
+ *
+ * What the audit found when it finally reached them (v1.46) is not about the
+ * tones at all. A species' hue is its founder's, and hue is inherited, so a
+ * daughter species is very nearly its parent's colour: over twelve seeds every
+ * single one draws at least two bands that collide under **normal** vision, and
+ * seed 88 draws six of nineteen at hue 106 — ΔE 0.0, the same colour. The
+ * default pond draws four of eleven at hue 335. The hue is honest about
+ * *ancestry* and was being read as a name. See `bandTextures()`.
+ *
+ * @param {number} hue 0..360
+ * @param {"band"|"dim"|"lit"|"dot"} [role]
+ */
+export function lineageFill(hue, role = "band") {
+  if (role === "dim") return `hsla(${hue}, 25%, 45%, 0.35)`; // a band the highlight is not on
+  if (role === "lit") return `hsla(${hue}, 85%, 62%, 0.98)`; // the highlighted band
+  if (role === "dot") return `hsl(${hue}, 68%, 55%)`; // the legend chip, opaque
+  return `hsla(${hue}, 68%, 55%, 0.9)`;
+}
+
+/** A lineage band's composited colour, for the audit and for `bandTextures()`. */
+export function lineageBandRgb(hue) {
+  return blendOver(panelBackground(), hslToRgb(hue, 68, 55), 0.9);
+}
+
+/**
+ * The hatch a Muller band wears so it is not identified by colour alone.
+ *
+ * Colour cannot do this job and the reason is arithmetic, not taste: the hue
+ * wheel affords **16** pairwise-`MIN_DELTA_E` colours under normal vision, 12
+ * under tritanopia, 9 under protanopia and **7** under deuteranopia, and this
+ * plot has drawn as many as **19** bands at once. Even with a perfect palette
+ * there are not enough colours; with an *inherited* one there are far fewer.
+ * So the cue is geometry, which v1.34 established survives every vision model
+ * and costs nothing — the same escape the immune ring's dashes took.
+ *
+ * One dark tone rather than the usual two, because unlike every mark audited
+ * before it this one is not drawn on a background the world chooses: a band is
+ * always `lineageFill` at 55% lightness, so a near-black line has no bright
+ * case to fail on. Swept over all 360 hues under all four vision models at
+ * `HATCH_ALPHA`, worst case **26.6** against a bar of 25 (hue 344, protanopia).
+ *
+ * A *dimmed* band is the exception and deliberately so: the highlight exists to
+ * push the other bands towards the background, and a cue that stayed legible
+ * there would be undoing it. Its hatch dims with its colour.
+ */
+export function bandHatch() {
+  return { r: 4, g: 8, b: 14 };
+}
+
+/** How hard the hatch is drawn over its band — see `bandHatch()`. */
+export const HATCH_ALPHA = 0.7;
+
+/**
  * How well a mark stands out from a background: the *best* of its tones, since a
  * viewer only needs one of them to read. This is the scoring function the audit
  * and the tests both use, so "the mark is legible" means one thing in this

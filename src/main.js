@@ -9,7 +9,7 @@ import { makeConfig } from "./config.js";
 import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
-import { drawMuller, mullerShares } from "./mullerplot.js";
+import { drawMuller, mullerShares, textureCss } from "./mullerplot.js";
 import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
@@ -23,7 +23,7 @@ import {
   DEATH_CAUSES,
   POWER_WINDOW,
 } from "./stats.js";
-import { mortalityColours, energyColours, chartLines, powerLine } from "./palette.js";
+import { mortalityColours, energyColours, chartLines, powerLine, lineageFill } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import {
   describeChart,
@@ -460,11 +460,15 @@ function drawPhylogeny(world) {
   if (rangeEl.textContent !== range) rangeEl.textContent = range;
 
   // Rebuild the legend only when the set of shown species (or highlight) changes.
+  // The chips are ordered by abundance and the bands by age, so the hatch — the
+  // only part of the key that survives two lineages sharing an inherited hue —
+  // travels by species id rather than by position.
+  const hatch = new Map(shares.shown.map((s, k) => [s.id, shares.texture[k]]));
   const living = shown.filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
   const sig = living.map((s) => s.id).join(",") + "|" + renderer.highlightSpeciesId;
   if (sig !== legendSig) {
     legendSig = sig;
-    buildLegend(living);
+    buildLegend(living, hatch);
   } else {
     // Cheap in-place count refresh.
     for (const s of living) {
@@ -482,14 +486,18 @@ function setMullerLabel(text) {
   $("muller").setAttribute("aria-label", text);
 }
 
-function buildLegend(living) {
+function buildLegend(living, hatch) {
   const box = $("species-legend");
   box.innerHTML = "";
   for (const s of living.slice(0, 16)) {
     const chip = document.createElement("div");
     chip.className = "chip" + (renderer.highlightSpeciesId === s.id ? " active" : "");
+    // The dot wears the band's hatch and the band's colour, both from the same
+    // module the plot draws from — the dot had its own hand-written `70%, 55%`
+    // here until v1.46, one shade off the thing it was a key to.
     chip.innerHTML =
-      `<span class="dot" style="background:hsl(${s.hue},70%,55%);color:hsl(${s.hue},70%,55%)"></span>` +
+      `<span class="dot" style="background:${textureCss(hatch.get(s.id) || 0, s.hue)};` +
+      `color:${lineageFill(s.hue, "dot")}"></span>` +
       `species ${s.id} <span class="n" id="chip-n-${s.id}">${s.count}</span>`;
     chip.addEventListener("click", () => toggleHighlight(s.id));
     box.appendChild(chip);

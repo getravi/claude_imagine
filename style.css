@@ -923,9 +923,11 @@ details .field {
   border-color: var(--accent);
   color: var(--ink);
 }
+/* Two pixels wider than it was, so the band's hatch (v1.46) has room to show a
+   direction. The background is written from `mullerplot.js#textureCss`. */
 .legend .chip .dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   box-shadow: 0 0 6px currentColor;
 }

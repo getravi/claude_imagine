@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.46.0] — 2026-08-02
+
+The colour audit that has run since v1.25 had never opened the Tree of Life —
+the figure this project's headline claim is made of. What it found there is not
+a pair of tones chosen badly. A species' colour is its founder's hue, hue is an
+inherited gene, and so the plot has been drawing daughters in their parents'
+colour since v1.2: the default pond puts **four of its eleven bands at hue 335**,
+and seed 88 puts **six of nineteen at hue 106**. ΔE 0.0 — not nearly the same
+colour, the same colour. The legend calls them different species and gives them
+one dot.
+
+### Added
+
+- **Every Muller band wears a hatch** — plain, `/`, `\`, `|`, `—`, `×` or `+` —
+  clipped to its own band, drawn as one path and one stroke however the band is
+  shaped. **The legend chip wears the same one**, from the same definition, so
+  the key and the thing it keys cannot drift apart.
+- **`bandTextures()` in `src/mullerplot.js`**: a greedy colouring of the
+  collision graph, walked in stacking order. A pair costs *how many* of the four
+  vision models cannot separate it, so an identical-colour pair (cost 4) is
+  always broken before a dichromacy-only one, and neighbours in the stack get a
+  nudge apart even when their colours are fine. `collisionCost()` memoises the
+  CIE work on the rounded hue pair, keyed on the whole of its input so there is
+  nothing a stale entry could be about.
+- **`lineageFill()`, `lineageBandRgb()`, `bandHatch()` and `HATCH_ALPHA` in
+  `src/palette.js`**, and eight new tests across `test/mullerplot.test.js` and
+  `test/palette.test.js` — including the pinned failure (two hues one degree
+  apart are not a distinction under any vision model) and the pinned shortfall.
+
+### Measured
+
+- **Eleven of twelve seeds draw at least one pair of species in the same
+  colour**, and the exception has only two bands. 128 bands over twelve seeds,
+  **194 pairs at ΔE 0.0** under normal vision.
+- **Colour could not have fixed it.** Walking the hue wheel greedily for hues
+  that clear `MIN_DELTA_E` pairwise gives **16** usable lineage colours under
+  normal vision, 12 under tritanopia, 9 under protanopia and **7** under
+  deuteranopia. The plot has drawn **19** bands at once. Colour runs out before
+  the pond does, with a palette chosen perfectly — and this one is inherited,
+  not chosen.
+- **What the hatch buys:** of those 194 identical-colour pairs, **5 still share
+  a hatch** — ten of twelve seeds fully separated, including the default. The
+  residue is seed 88 (nineteen bands, needs eleven hatches, gets seven) plus one
+  pair on seed 42. Seven is not enough in general; the code degrades to the
+  least-bad clash and the number is stated rather than rounded off.
+- **The hatch reads on every hue a lineage can take:** one dark tone rather than
+  the usual two, because this is the first mark audited here whose background is
+  *not* chosen by the world — a band is always 55% lightness. Swept over all 360
+  hues, both undimmed band styles, all four vision models: worst case **26.6**
+  against a bar of 25.
+
+### Changed
+
+- **The legend dot's colour comes out of `palette.js`.** It had carried a
+  hand-written `hsl(hue, 70%, 55%)` in `main.js` since v1.2 — one point of
+  saturation away from the `68%` of the band it was a key to. The v1.26 rule (a
+  colour a test cannot reach is a colour that will drift), proven on the surface
+  whose job is naming lineages.
+- The chip's dot is 14px rather than 12px, so a hatch has room to show a
+  direction. Size costs nothing and survives every vision model.
+
+### Notes
+
+- Observation only: not one random draw moved, `test/fingerprint.test.js` still
+  holds the default pond to its v1.36 hashes, and the plot's existing "drawing
+  the Tree of Life changes nothing about the world" test now covers the hatch
+  too. A dimmed band's hatch dims with it, deliberately — the spotlight exists
+  to push the other bands towards the background.
+- `docs/screenshots/phylogeny.png` still shows the pre-v1.46 plot; screenshots
+  here are captured by hand.
+
 ## [1.45.0] — 2026-08-01
 
 v1.44 found, by accident, that the update loop has no `dead` guard on the

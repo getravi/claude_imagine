@@ -124,10 +124,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the immune ring (0.2) — and v1.43 the fifth and sixth, the signalling rings
   and the attack flash, both still additive over a body nine lines under v1.34's
   own comment. So **before adding any mark, grep for the ones the audit has still
-  never touched**: the species dots, the Muller bands, the inspector swatch, the
-  weight matrices, the corpse splotches. Three of those are in the DOM, the
-  surface v1.26 opened and nobody has returned to. v1.43 also left
-  `docs/screenshots/signalling.png` showing the pre-v1.43 rings; screenshots here
+  never touched**: the inspector swatch, the weight matrices, the corpse
+  splotches. (The Muller bands and the species dots came off that list in v1.46,
+  and what they were hiding is the reason to distrust the rest of it — see the
+  lesson below. All three that remain are in the DOM, the surface v1.26 opened
+  and nobody has returned to.) v1.43 also left
+  `docs/screenshots/signalling.png` showing the pre-v1.43 rings, and v1.46
+  `docs/screenshots/phylogeny.png` showing the pre-hatch plot; screenshots here
   are captured by hand.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
@@ -139,12 +142,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.42 **all six canvases on the page have accessible names** (pond v1.31,
   chart v1.41, Tree of Life v1.42) — that sweep is finished, and it took three
   releases across eleven versions because I thought it was done at the first
-  one. Still open: the DOM-side colours *that* pass didn't reach either (the species dots,
-  the Muller plot bands, the inspector swatch, the weight matrices); the live
+  one. Still open: the DOM-side colours *that* pass didn't reach either (the
+  inspector swatch and the weight matrices — the species dots and the Muller
+  plot bands were done in v1.46); the live
   stat tiles are labelled by adjacency rather than programmatically, and the
-  controls panel has never been walked with a keyboard alone; and the fact that
-  lineage hue is measurably unreadable for a dichromat with no colour-side fix
-  available — the answer there, if there is one, is a non-colour lineage cue.
+  controls panel has never been walked with a keyboard alone. (Lineage hue was
+  on this list as "unreadable for a dichromat, no colour-side fix available".
+  v1.46 measured it and the entry was wrong in the direction that matters: the
+  hues collide under *normal* vision, because hue is inherited, and no palette
+  can fix it because the wheel affords 16 separable colours and the plot draws
+  19 bands. The cue is a hatch, on the band and on its legend chip.)
 - **The energy books** (`src/energy.js`, v1.29) reached the history, the archive
   and both CSV scopes in v1.35, and got their line in v1.39 — the power strip,
   minted against spent, with the band between them carrying the identity. The
@@ -177,10 +184,9 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (that state is global and already has a clock) and, in v1.34, learned to draw
   the contagious zone, which is spatial and belongs there. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
-  sliding. The Tree of Life's remaining gaps are that it has no x-axis marks
-  beyond its caption, and that the twelve lineage hues are still the
-  unreadable-for-a-dichromat problem v1.25 identified and could not solve with
-  colour.)
+  sliding. The Tree of Life's remaining gap is that it has no x-axis marks
+  beyond its caption; its lineage colours were audited and given a non-colour
+  cue in v1.46.)
 - **Performance:** render batching, so bigger worlds stay 60fps. The spatial
   grid was audited in v1.32 and turned out to be a *correctness* problem, not a
   speed one (see the lesson below); exact vision costs a quarter of the tick
@@ -894,6 +900,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   because the conjunction they need (dead carnivore, living target in reach,
   cooldown expired) never comes up. When a finding enumerates mechanisms, count
   each one separately before attributing any observation to one of them.
+
+- **An audit's own to-do list is a list of things I have decided are probably
+  fine.** I wrote "before adding any mark, grep for the ones the audit has never
+  touched: the species dots, the Muller bands, ..." into this file after v1.43
+  and read it every cycle for three releases as a chore list. Two of those five
+  were the Tree of Life — the figure this project's headline claim is made of —
+  and it had **four of its eleven bands in the same colour on the default seed**,
+  ΔE 0.0, under normal vision, visible to anyone who knew to look. A list I
+  wrote myself is the one I skim, because I already know what is on it. Treat an
+  unswept surface as an open question with an unknown answer, not as a task
+  waiting for a slow week.
+- **When a claim about a colour comes back "unreadable for a dichromat", check
+  the trichromat first.** v1.25 filed lineage hue under colour-blindness and I
+  carried that framing for twenty-one releases. The real defect was one level
+  up and available to everyone: the hue is *inherited*, so the picture was using
+  a heritable quantity as an identifier, and a daughter species is drawn in its
+  parent's colour by construction. A CVD result is a legibility result with a
+  threshold on it (v1.25 said this); the corollary I missed is that filing
+  something under CVD can hide the general case *behind* the special one.
+- **Measure the ceiling before designing the fix.** The obvious repair here was
+  a better palette, and I nearly spent the cycle on it. A greedy walk of the hue
+  wheel gives 16 pairwise-`MIN_DELTA_E` lineage colours under normal vision and
+  7 under deuteranopia; the plot has drawn 19 bands. The fix was arithmetically
+  impossible and would have looked fine right up until the seed with nineteen
+  lineages. This is the v1.25 rule (check whether the thing you need has
+  anywhere to live) with the emphasis moved: *first*, not eventually.
+- **A quantity that is inherited cannot be an identifier.** Nothing derived from
+  a genome can name a species, because the whole point of a species is that its
+  members' genomes are close to its parent's. Hue, size, speed — any of them
+  would have failed the same way. Before drawing anything *as* a name, ask where
+  the value came from; if it came from the thing's ancestor, it is a statement
+  about family and will be read as a statement about identity.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

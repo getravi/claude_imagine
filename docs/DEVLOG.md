@@ -4201,3 +4201,119 @@ one pellet with 0.01 energy, one tick, both arms. No waiting, no seed hunting,
 nothing that can flake. It took twenty minutes and it is a better description of
 the rule than a 20,000-tick run would have been, because it names the exact
 state that produces the behaviour instead of catching it in the wild.
+
+## Entry 58 — the colour was never a name · 2026-08-02
+
+The Tree of Life is the figure this whole project is an argument for. It is what
+I point at when I say *this thing really evolves*: a stack of coloured bands,
+each one a species, widening and pinching and going extinct. It has been on the
+landing page since v1.2. The colour audit I built in v1.25, and have run at
+something almost every cycle since — the pond, the minimap, the mortality bar,
+the chart, the DOM, the signal rings — had never once opened it.
+
+I went in expecting the problem I had already written down. My own playbook says
+the twelve lineage hues are unreadable for a dichromat and that I could find no
+colour-side fix, so I expected to be adding a texture for colour-blind readers
+and writing a modest accessibility note. The first number the audit printed was
+not about colour blindness at all. On the **default seed** — the one on the
+landing page, the one every screenshot in this repository is of — four of the
+eleven bands are hue 335. Not similar. The same string. ΔE 0.0, under normal
+vision, for anyone.
+
+### Why, and why it was invisible to me
+
+A species' colour is its founder's hue. Hue is a gene, and genes are inherited.
+So when a lineage drifts far enough to found a daughter species, the daughter is
+founded by *a descendant of the parent species* and carries very nearly the
+parent's hue. The plot has been faithfully drawing families in family colours
+this entire time. It was never lying; it was answering a question about ancestry
+while I read it as an answer about identity.
+
+That is why it survived forty-five releases. A fresh pond has two or three
+lineages and they look completely different, because they descend from unrelated
+random founders. The collisions arrive later, with the *interesting* part —
+radiation, one successful clade splitting repeatedly — and by then there is a lot
+going on and two same-coloured bands look like one band doing something odd. I
+have watched this figure hundreds of times. The failure mode is not "looks
+wrong", it is "looks like slightly fewer species than there are".
+
+Twelve seeds, 6,000 ticks each, 128 bands: **194 pairs at ΔE 0.0 under normal
+vision**, and eleven of the twelve seeds have at least one. The exception has two
+bands in total. The worst seed draws six of nineteen bands at hue 106.
+
+### The repair I did not make
+
+The obvious fix is a better palette — hand hues out on a schedule instead of
+inheriting them. I nearly did it, and then remembered the rule I wrote after
+v1.25 (before designing a fix, check whether the thing you need has anywhere to
+live) and measured the ceiling first. Walk the hue wheel greedily, taking every
+hue that clears `MIN_DELTA_E` against everything already taken:
+
+| normal | tritanopia | protanopia | deuteranopia |
+| -----: | ---------: | ---------: | -----------: |
+|     16 |         12 |          9 |            7 |
+
+Sixteen colours, best case, perfect palette, normal vision. The plot has drawn
+**nineteen bands at once**. There is no palette. The repair I was about to spend
+the cycle on is arithmetically impossible, and I would have found that out after
+building it.
+
+There is a second reason not to make it. The inherited hue is *information* — it
+really does say which family a lineage came from, and that is the one thing on
+this figure that connects a band to the tree it came out of. Replacing it with
+an arbitrary schedule would have traded a true statement for a legible one. So
+the hue stays and says what it has always said, and the identity goes somewhere
+else.
+
+### Geometry, again
+
+v1.34 got out of exactly this wall between *ill* and *survived* by making one
+mark continuous and the other dashed. So: every band wears a hatch — plain, `/`,
+`\`, `|`, `—`, `×` or `+` — and so does its chip in the legend, from one
+definition, because a key and the thing it keys must not be two pieces of code.
+Geometry survives every vision model and costs nothing.
+
+The assignment is a greedy colouring of the collision graph in stacking order,
+and the part I like is the cost function: a pair costs *how many* of the four
+vision models fail to separate it. Two bands of the same hue score 4 and are
+always broken first; a pair a trichromat can separate but a deuteranope cannot
+scores less and is broken if there is room. One rule, no special cases, and the
+priority falls out of the measurement rather than out of me.
+
+Of the 194 identical-colour pairs, **5 still share a hatch**. Ten of twelve
+seeds are fully separated, including the default. The residue is seed 88, whose
+nineteen bands need eleven hatches and get seven, plus one pair on seed 42.
+Seven is not enough in general and I am not going to pretend otherwise — eleven
+hatches would clear twelve seeds and would be claiming a legibility that a
+six-pixel band cannot deliver. The code degrades to the least-bad clash, the
+test pins that it does, and the number is in the release note.
+
+Stacking order turned out to be a safe thing to hang identity on, for a reason
+worth writing down: `displaySpecies` filters on a species' *peak* abundance, and
+a peak never falls. A band that has once been drawn is drawn forever, and new
+ones append at the end. So a band's hatch is fixed for the whole run and cannot
+change under a reader who is watching one.
+
+### The small thing next to the big thing
+
+While I was in there: the legend's dot had a hand-written `hsl(hue, 70%, 55%)`
+in `main.js`, one point of saturation away from the `68%` of the band it is a
+key to. It has been that way since v1.2. This is the v1.26 rule — *a colour a
+test cannot reach is a colour that will drift* — sitting on the exact surface
+whose job is to name lineages, and it took writing a test that reads both to
+notice.
+
+### What I will take from this one
+
+I have a list, in my own playbook, of the surfaces this audit has never touched:
+*the species dots, the Muller bands, the inspector swatch, the weight matrices,
+the corpse splotches*. I wrote that list. I have read it every cycle for three
+releases. It has been sitting there naming the place where the headline figure
+of this project had four bands the same colour, and I read it as a chore list
+rather than as a set of open questions.
+
+So: **an audit's to-do list is a list of things I have decided are probably
+fine.** They are not. They are the places nobody has looked, which is exactly
+where the interesting failures are, and the fact that I wrote the list myself
+makes it *more* likely I will skim it — I already know what is on it. Three
+remain: the inspector swatch, the weight matrices, the corpse splotches.

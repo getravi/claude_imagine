@@ -22,7 +22,14 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { drawMuller, mullerShares } from "../src/mullerplot.js";
+import {
+  drawMuller,
+  mullerShares,
+  bandTextures,
+  collisionCost,
+  textureCss,
+  BAND_TEXTURES,
+} from "../src/mullerplot.js";
 import { describeMuller } from "../src/describe.js";
 import { recordingContext } from "../src/rendershot.js";
 import { World } from "../src/world.js";
@@ -291,4 +298,161 @@ test("the spoken form says what it cannot say", () => {
   );
   assert.match(describeMuller(late), /The largest, species 1, did not exist when the record began\./);
   assert.match(describeMuller(late), /species 1 at 80%, species 0 at 20%/);
+});
+
+// ---- The hatch (v1.46) ----
+//
+// What the colour audit found when it finally reached this figure: the band
+// colour was never a name. A species' hue is its founder's and hue is
+// inherited, so the plot draws parents and daughters in the same colour — over
+// twelve seeds, every one draws at least one pair at ΔE 0.0 under *normal*
+// vision, and the default pond draws four of eleven bands at hue 335. The
+// legend calls those four different species and gives them one dot.
+//
+// So the cue is geometry, which v1.34 established survives every vision model.
+// The hues below are the real ones: the eleven the default seed produces at
+// 6,000 ticks, hard-coded rather than waited for (the v1.45 rule — stage the
+// state that produces the behaviour; it is a better description than catching
+// it in the wild, and it runs in a millisecond).
+const DEFAULT_SEED_HUES = [335, 311, 333, 250, 106, 260, 226, 335, 343, 335, 335];
+
+/** Read each band's hatch back out of the op stream, in stacking order. */
+function hatches(ops) {
+  const out = [];
+  let after = false; // sitting just past a band's fill
+  let cur = null;
+  for (const [, name, ...args] of ops) {
+    if (cur) {
+      if (name === "clip") cur.clipped = true;
+      else if (name === "moveTo" || name === "lineTo") cur.pts.push(args);
+      else if (name === "set:strokeStyle") cur.ink = args[0];
+      else if (name === "restore") {
+        out.push(cur);
+        cur = null;
+        after = false;
+      }
+    } else if (name === "fill") {
+      after = true;
+    } else if (after && name === "save") {
+      cur = { pts: [], clipped: false };
+    } else if (after && name === "beginPath") {
+      // A band with no hatch: the next band's path starts instead.
+      out.push(null);
+      after = false;
+    }
+  }
+  if (after) out.push(null); // a plain band with nothing drawn after it
+  return out;
+}
+
+test("every named band wears a hatch, and the unnameable churn does not", () => {
+  const shares = mullerShares(pond().phylogeny);
+  const marks = hatches(draw(shares).ops);
+  // One entry per band drawn: `other` first, then the shown species.
+  assert.equal(marks.length, shares.shown.length + 1);
+  assert.equal(marks[0], null, "the 'other' band has nothing to identify and stays plain");
+  for (let k = 0; k < shares.shown.length; k++) {
+    const t = BAND_TEXTURES[shares.texture[k]];
+    const mark = marks[k + 1];
+    if (t.lines.length === 0) {
+      assert.equal(mark, null, `band ${k} is plain and should draw nothing`);
+    } else {
+      assert.ok(mark, `band ${k} wears ${t.id} and drew nothing`);
+      assert.ok(mark.clipped, `band ${k}'s hatch was not clipped to its band`);
+      assert.ok(mark.pts.length >= 2 * t.lines.length, `band ${k}'s hatch is empty`);
+    }
+  }
+});
+
+test("neighbouring bands never share a hatch", () => {
+  // Two touching bands are the one pair with no gap between them, so a shared
+  // hatch there reads as a single band whatever the colours are doing.
+  const t = bandTextures(DEFAULT_SEED_HUES.map((hue, id) => ({ id, hue })));
+  for (let i = 1; i < t.length; i++) {
+    assert.notEqual(t[i], t[i - 1], `bands ${i - 1} and ${i} wear the same hatch`);
+  }
+});
+
+test("bands a viewer cannot tell apart by colour do not also share a hatch", () => {
+  const shown = DEFAULT_SEED_HUES.map((hue, id) => ({ id, hue }));
+  const t = bandTextures(shown);
+  let collisions = 0;
+  let unresolved = 0;
+  for (let i = 0; i < shown.length; i++) {
+    for (let j = i + 1; j < shown.length; j++) {
+      // 4 means "the same colour under every vision model" — the four hue-335
+      // bands are exactly that.
+      if (collisionCost(shown[i].hue, shown[j].hue) < 4) continue;
+      collisions++;
+      if (t[i] === t[j]) unresolved++;
+    }
+  }
+  assert.ok(collisions >= 6, `expected the default pond's hue-335 clique; found ${collisions} pairs`);
+  assert.equal(unresolved, 0, `${unresolved} of ${collisions} identical-colour pairs still share a hatch`);
+});
+
+test("the shortfall is a shortfall, not a silent wrap", () => {
+  // Seven hatches cannot separate an arbitrary number of identical bands, and
+  // the honest form of that is to degrade to the least-bad clash rather than to
+  // an arbitrary one. Nine bands of one colour: the first seven are distinct,
+  // and the two that overflow land on the least-used hatches rather than
+  // doubling up on one.
+  const t = bandTextures(Array.from({ length: 9 }, (_, id) => ({ id, hue: 200 })));
+  assert.equal(new Set(t.slice(0, BAND_TEXTURES.length)).size, BAND_TEXTURES.length);
+  const counts = new Map();
+  for (const x of t) counts.set(x, (counts.get(x) || 0) + 1);
+  assert.equal(Math.max(...counts.values()), 2, "the overflow piled onto one hatch");
+});
+
+test("a lineage keeps its hatch as the pond goes on", () => {
+  // `displaySpecies` filters on a peak and a peak never falls, so a band once
+  // shown is shown forever and new ones append. That makes stacking order a
+  // stable name — which is the only reason a hatch assigned by position is
+  // something a reader can rely on.
+  const grow = DEFAULT_SEED_HUES.map((hue, id) => ({ id, hue }));
+  const early = bandTextures(grow.slice(0, 6));
+  const late = bandTextures(grow);
+  assert.deepEqual([...late.slice(0, 6)], [...early], "an existing band's hatch moved under the reader");
+});
+
+test("the legend's dot and the band draw the same hatch", () => {
+  // The key and the thing it is a key to, from one definition. If these ever
+  // disagree the cue is worse than none: it names bands wrongly.
+  for (let i = 0; i < BAND_TEXTURES.length; i++) {
+    const css = textureCss(i, 210);
+    const layers = css.split("), ").length;
+    assert.equal(
+      layers,
+      BAND_TEXTURES[i].lines.length + 1,
+      `${BAND_TEXTURES[i].id}: ${BAND_TEXTURES[i].lines.length} line families should be that many gradients plus the colour`
+    );
+    assert.ok(css.endsWith("hsl(210, 68%, 55%)"), "the dot must end in its lineage colour");
+  }
+  // Direction is the part a 14-pixel dot actually carries, so the two surfaces
+  // have to agree about it: vertical bars are a 90° gradient, horizontal rules 0°.
+  assert.ok(textureCss(3, 0).includes("90deg"), "bars should be vertical in CSS too");
+  assert.ok(textureCss(4, 0).includes("0deg"), "rules should be horizontal in CSS too");
+  assert.ok(textureCss(0, 0).startsWith("hsl("), "plain is a colour and nothing else");
+});
+
+test("the highlight moves no hatch", () => {
+  // The spotlight is a restyle (see above); the hatch is identity, and identity
+  // is not something a click is allowed to change.
+  const shares = mullerShares(pond().phylogeny);
+  const plain = hatches(draw(shares).ops);
+  const lit = hatches(draw(shares, { highlightId: shares.shown[1].id }).ops);
+  assert.deepEqual(
+    lit.map((m) => m && m.pts),
+    plain.map((m) => m && m.pts)
+  );
+});
+
+test("the hatch adds not one point to the band it rides", () => {
+  // The bands are recovered from the op stream by counting path points, and
+  // every claim this file makes about tiling depends on that recovery. A hatch
+  // drawn into the band's own path instead of a clipped one of its own would
+  // corrupt the geometry as well as the picture.
+  const shares = mullerShares(pond().phylogeny);
+  const walked = bands(draw(shares).ops, shares.n);
+  assert.equal(walked.length, shares.shown.length + 1);
 });

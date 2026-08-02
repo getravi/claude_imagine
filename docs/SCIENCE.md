@@ -2607,6 +2607,110 @@ Promise.all([import("./src/world.js"), import("./src/config.js"), import("./src/
   });'
 ```
 
+## The colour that was never a name (v1.46)
+
+The Tree of Life groups creatures into species and stacks each species'
+abundance as a coloured band. A species' colour is its founder's hue, and hue is
+an inherited gene — so a daughter species founded by a descendant of species *k*
+is drawn in **very nearly species *k*'s colour**, and often in exactly it.
+
+Nobody had measured this in forty-five releases. The colour audit added in v1.25
+had reached the pond, the minimap, the mortality bar, the chart and the DOM, and
+had never opened this figure, which is the one this project's headline claim is
+made of.
+
+### What the bands actually look like
+
+Twelve seeds, 6,000 ticks each, every band the plot names, composited over the
+panel background and measured with the same CIE76 ΔE the rest of the audit uses:
+
+| seed | bands | pairs at ΔE 0 under **normal** vision |
+| ---: | ----: | ------------------------------------: |
+|    1 |    10 |                                    10 |
+|    7 |    12 |                                     3 |
+|   13 |     5 |                                     1 |
+|   23 |     2 |                                     0 |
+|   42 |    16 |                                    24 |
+|   64 |     5 |                                     1 |
+|   77 |    14 |                                    24 |
+|   88 |    19 |                                    70 |
+|  314 |    11 |                                    15 |
+|  512 |    15 |                                    22 |
+| 2024 |     7 |                                     2 |
+| 9001 |    12 |                                    22 |
+
+**Eleven of twelve seeds draw at least one pair of species in the same colour**,
+and the exception has only two bands. The default pond — the one on the landing
+page, the one every screenshot is of — draws **four of its eleven bands at hue
+335**. The worst draws **six of nineteen at hue 106**. These are not near
+misses: ΔE 0.0, the same fill string.
+
+This is not a colour-blindness finding. It fails for everyone, and it fails
+first under normal vision, which is the v1.25 lesson arriving again — an
+accessibility audit is a general legibility audit that happens to have a
+threshold.
+
+### Colour cannot fix it, and that is arithmetic
+
+The obvious repair is a better palette: hand out hues so they never collide.
+Walk the hue wheel greedily, taking every hue that clears `MIN_DELTA_E` against
+everything already taken, and you get an upper bound on how many lineages colour
+could *ever* name at once in this figure:
+
+| vision model | distinct lineage colours available |
+| ------------ | ---------------------------------: |
+| normal       |                                 16 |
+| tritanopia   |                                 12 |
+| protanopia   |                                  9 |
+| deuteranopia |                                  7 |
+
+The plot has drawn **19** bands at once. Colour runs out before the pond does,
+under the best vision model, with a palette chosen perfectly — and the palette
+is not chosen at all, it is inherited. (Same shape as v1.25's conclusion about
+twelve lineage hues in a dichromat's two-dimensional space: before designing a
+fix, check whether the thing you need has anywhere to live.)
+
+### The cue is geometry
+
+So every band wears a **hatch** — nothing, `/`, `\`, `|`, `—`, `×` or `+` — and
+so does its legend chip, from one definition, because a key and the thing it
+keys must not be two pieces of code. Geometry survives every vision model
+(v1.34), and the assignment is a greedy colouring of the collision graph in
+stacking order, costing a pair by *how many* of the four vision models cannot
+separate it, so an identical-colour pair is always broken before a
+dichromacy-only one.
+
+Over the same twelve seeds and 128 bands: **194 identical-colour pairs, of which
+5 still share a hatch** — ten of twelve seeds fully separated, including the
+default. The residue is entirely seed 88, whose nineteen bands need eleven
+hatches and get seven, plus one pair on seed 42. Seven hatches cannot separate
+an arbitrary number of identical bands and the code degrades to the least-bad
+clash rather than to an arbitrary one; the shortfall is stated here rather than
+rounded off.
+
+Stacking order is a safe name to hang this on, and that is worth writing down:
+`displaySpecies` filters on a species' *peak* abundance, and a peak never falls,
+so a band that has once been drawn is drawn forever and new ones append at the
+end. A band's hatch is therefore fixed for the whole run — it cannot change
+under a reader who is watching one.
+
+Reproduce it:
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const M = await import("./src/mullerplot.js");
+  for (const seed of [1,7,13,23,42,64,77,88,314,512,2024,9001]) {
+    const w = new W.World(C.makeConfig({ seed }));
+    for (let i = 0; i < 6000; i++) w.step();
+    const sh = M.mullerShares(w.phylogeny), hues = sh.shown.map(s => s.hue);
+    let same = 0, unresolved = 0;
+    for (let i = 0; i < hues.length; i++) for (let j = i + 1; j < hues.length; j++)
+      if (M.collisionCost(hues[i], hues[j]) === 4) { same++; if (sh.texture[i] === sh.texture[j]) unresolved++; }
+    console.log(seed, { bands: hues.length, same, unresolved });
+  }'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

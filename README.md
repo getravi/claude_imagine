@@ -82,6 +82,16 @@ existence** is a new species branching off as a lineage drifts; a band
 creature's inspector) to **spotlight** it — the whole pond dims except that
 lineage, so you can see where it lives and how far it has spread.
 
+Each band also wears a **hatch** — plain, `/`, `\`, `|`, `—`, `×` or `+` — and
+so does its chip in the legend, because the colour alone was never enough to
+name a lineage. A species' hue is its founder's and hue is inherited, so a
+daughter species is drawn in its parent's colour: the default pond puts four of
+its eleven bands at the same hue, and one seed puts six of nineteen there. The
+hue still tells you *which family a lineage came from*, which is true and
+useful; the hatch tells you *which band you are looking at*. See
+[SCIENCE.md](docs/SCIENCE.md) for the measurement, including why no palette
+could have fixed it.
+
 ## Controls
 
 | Control | What it does |
@@ -121,7 +131,7 @@ lineage, so you can see where it lives and how far it has spread.
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
 | **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, the enriched ground where things have died, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
 | **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
-| **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. |
+| **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. Each chip carries its band's hatch as well as its colour, so two lineages that inherited the same hue are still tellable apart. |
 
 ## Things to try
 

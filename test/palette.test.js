@@ -60,6 +60,10 @@ import {
   signalRingTones,
   SIGNAL_QUIET,
   attackFlashTones,
+  lineageFill,
+  lineageBandRgb,
+  bandHatch,
+  HATCH_ALPHA,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -1181,4 +1185,89 @@ test("colour tells the two calls apart, and geometry tells a call from a symptom
   );
   assert.ok(signalRing(SIGNAL_QUIET).inner > 3 + 1, "a call's inner ring must clear the sick halo");
   assert.ok(signalRing(SIGNAL_QUIET).inner > 2.4, "and the immune ring");
+});
+
+// ---- The Tree of Life's lineage colours (v1.46) ----
+//
+// The last of the surfaces v1.25's colour audit never reached, and the one
+// where the answer is not a better palette. A species' hue is its founder's,
+// hue is inherited, and the plot draws parents and daughters side by side — so
+// the failure here is not a pair of tones chosen badly but a *namespace*: the
+// picture is using an inherited quantity as an identifier.
+
+test("two lineages of the same hue are the same colour, which is the whole bug", () => {
+  // The default pond draws four of its eleven bands at hue 335. This is the
+  // pinned failure: not "nearly", exactly.
+  const a = lineageBandRgb(335);
+  const b = lineageBandRgb(335);
+  for (const vision of VISION_MODELS) {
+    assert.equal(deltaE(a, b, vision), 0, `hue 335 against itself moved under ${vision}`);
+  }
+  // And a daughter one degree away is no better off.
+  for (const vision of VISION_MODELS) {
+    assert.ok(
+      deltaE(lineageBandRgb(335), lineageBandRgb(336), vision) < MIN_DELTA_E,
+      `a one-degree hue drift should not be a different colour under ${vision}`
+    );
+  }
+});
+
+test("the hue wheel has fewer colours in it than the plot has bands", () => {
+  // Why the cue has to be geometry. A greedy walk of the wheel taking every hue
+  // that clears MIN_DELTA_E against everything already taken is an upper bound
+  // on how many lineages colour could ever name at once. The Muller plot has
+  // drawn nineteen bands (seed 88, 6,000 ticks) — more than the *best case*
+  // under any vision model, let alone the inherited case.
+  const capacity = {};
+  for (const vision of VISION_MODELS) {
+    const taken = [];
+    for (let h = 0; h < 360; h++) {
+      if (taken.every((t) => deltaE(lineageBandRgb(t), lineageBandRgb(h), vision) >= MIN_DELTA_E)) {
+        taken.push(h);
+      }
+    }
+    capacity[vision] = taken.length;
+  }
+  assert.ok(capacity.normal <= 19, `normal vision affords ${capacity.normal} lineage colours`);
+  assert.ok(
+    capacity.deuteranopia < capacity.normal,
+    "a dichromacy should afford strictly fewer, or this audit is measuring nothing"
+  );
+  assert.ok(capacity.deuteranopia <= 9, `deuteranopia affords ${capacity.deuteranopia}`);
+});
+
+test("the hatch reads on every hue a lineage can take", () => {
+  // One tone, not the usual two, and the reason is in `bandHatch()`: this is the
+  // one mark in the project whose background is not chosen by the world. Both
+  // undimmed band styles, all 360 hues, all four vision models.
+  const ink = bandHatch();
+  let worst = Infinity;
+  let worstAt = null;
+  for (let h = 0; h < 360; h++) {
+    for (const [role, rgb] of [
+      ["band", blendOver(panelBackground(), hslToRgb(h, 68, 55), 0.9)],
+      ["lit", blendOver(panelBackground(), hslToRgb(h, 85, 62), 0.98)],
+    ]) {
+      const hatched = blendOver(rgb, ink, HATCH_ALPHA);
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(rgb, hatched, vision);
+        if (d < worst) {
+          worst = d;
+          worstAt = `hue ${h} ${role} ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `the hatch fades into its band at ${worst.toFixed(1)} (${worstAt})`);
+});
+
+test("the band and its key are one colour, not two that agree", () => {
+  // The legend's dot carried a hand-written `hsl(hue,70%,55%)` in main.js from
+  // v1.2 to v1.46, one point of saturation away from the band it was a key to —
+  // the v1.26 rule (a colour a test cannot reach is a colour that will drift)
+  // proven on the surface that names the lineages.
+  assert.equal(lineageFill(210), "hsla(210, 68%, 55%, 0.9)");
+  assert.equal(lineageFill(210, "dot"), "hsl(210, 68%, 55%)");
+  assert.ok(lineageFill(210).includes("68%, 55%"), "the band and the dot must share a hue and a tone");
+  assert.ok(lineageFill(210, "dot").includes("68%, 55%"));
 });
