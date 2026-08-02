@@ -16,6 +16,7 @@ import {
   signalRing,
   SIGNAL_QUIET,
   attackFlash,
+  barrierRock,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
@@ -164,6 +165,14 @@ export class Renderer {
       }
     }
 
+    // Rock: drawn over every field and under everything alive. It goes last of
+    // the backdrops because it is the only one that is not water — the
+    // roughness, the fertility, the nutrient and the hazard all describe ground
+    // a creature could be standing on, and a wall is ground nothing can be
+    // standing on, so it covers them rather than tinting them. Nothing at all in
+    // a world without barriers.
+    if (world.barriers) this._drawBarriers(ctx, world.barriers, cam);
+
     // Corpses: dim maroon splotches that fade as they rot. Drawn under the food
     // and creatures. Nothing to draw when scavenging is off (the list is empty).
     if (world.corpses.length) {
@@ -271,6 +280,36 @@ export class Renderer {
     ctx.globalCompositeOperation = "source-over";
     for (const t of cam.worldTiles()) {
       ctx.drawImage(this._terrainCanvas, t.x, t.y, cfg.width, cfg.height);
+    }
+  }
+
+  /**
+   * Paint the rock: one filled rectangle per solid run of each wall, tiled
+   * across the seam by the camera the same way the terrain is.
+   *
+   * The geometry comes from `BarrierField.rects()` rather than being rebuilt
+   * here, so the picture and the rule cannot drift apart — `test/barriers.test.js`
+   * walks a grid and asserts that a point is inside one of these rectangles
+   * exactly when `blocked()` says so, which is the v1.24 lesson (an aggregate is
+   * not a test of a tiling) applied before anybody has had a chance to need it.
+   *
+   * @param {import('./barriers.js').BarrierField} barriers
+   */
+  _drawBarriers(ctx, barriers, cam) {
+    const rock = barrierRock();
+    const rects = barriers.rects();
+    ctx.globalCompositeOperation = "source-over";
+    for (const t of cam.worldTiles()) {
+      for (const r of rects) {
+        ctx.fillStyle = rock.fill;
+        ctx.fillRect(t.x + r.x, t.y + r.y, r.w, r.h);
+        // A darker rim, so a slab reads as a solid object with a top and a side
+        // rather than as one more translucent stain over the water. It is
+        // furniture, not a distinction: it carries no meaning the fill does not.
+        ctx.strokeStyle = rock.edge;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(t.x + r.x + 0.5, t.y + r.y + 0.5, r.w - 1, r.h - 1);
+      }
     }
   }
 

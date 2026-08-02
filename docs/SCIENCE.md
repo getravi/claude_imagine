@@ -2834,6 +2834,153 @@ node --input-type=module -e '
   }'
 ```
 
+## Rock: giving a spatial pressure somewhere to accumulate (v1.48)
+
+v1.23 built terrain in two halves — rough ground costs more to cross, and rough
+ground grows less — and only the second half did anything. The write-up above
+("Terrain: why a cost is not a landscape") diagnosed the failure as a
+**timescale**: `maxSpeed` and `maxAge` together say a creature samples the whole
+map many times over in its life, so a spatially varying *mortality* averages
+clean away before selection can act on it. Three remedies were listed. v1.33
+built the wrong one — perception, which changes the information and not the
+timescale, and which found exactly nothing. The two that address the diagnosis
+are *restrict movement* and *vary the resource*. Barriers are the first.
+
+### What the rock is
+
+Four walls, seed-derived by integer hash like the terrain (so switching them on
+draws no random numbers): two north-south, two east-west, 14 px thick,
+wrapping. On a torus one wall of an axis divides nothing — you walk around
+through the seam — so two of each is the minimum that makes rooms, and it makes
+**four**. Each wall carries gates 44 px wide, and it carries them **per room
+border**, not per wall: one gate in every band the perpendicular walls cut it
+into. Rock covers 5.7% of the pond.
+
+Movement only. Sight, sound, teeth and the pathogen all still cross rock, and
+nothing can perceive a wall — a creature meets one, loses the component of its
+velocity that pointed into it, keeps the other, and runs along the rock until a
+gate happens. "Finding the gate" is not a behaviour anything evolved; it is what
+axis-separated collision does for free.
+
+### The bug the invariant found before the pond did
+
+The first version placed each wall's gate independently, and the flood fill in
+`test/barriers.test.js` failed on the second seed it tried. On seed 77 both
+north-south gates landed in the same east-west band, so one of the four rooms
+had no door at all: 26% of the pond was an aquarium, on a layout that would have
+shipped to anyone who typed that seed. Independent placement makes connectivity
+a matter of luck, and a layout is drawn from a seed, so the unlucky ones ship.
+Placing a gate in every band a wall crosses makes the room graph the full grid,
+and the pond is one pond **by construction** rather than on the seeds I happened
+to test.
+
+### One door is a pond that dies; two are free
+
+Twelve seeds, 9,000 ticks, mean population over the run:
+
+| layout | mean population | seeds under 40 |
+|---|---|---|
+| no walls | 181.1 | 0 / 12 |
+| 4 walls, **one** 44 px gate per border | 135.9 | **3 / 12** |
+| 4 walls, **two** 44 px gates per border | **196.4** | 0 / 12 |
+| 4 walls, one 88 px gate per border | 149.4 | 3 / 12 |
+
+One door per border kills ponds, and the mechanism is visible in the runs: a
+room that loses its population cannot be recolonised through a single 44 px
+door, so the pond loses that quarter of its carrying capacity permanently. Two
+44 px doors also beat one 88 px door, on both columns. What a room needs is
+**routes, not aperture** — which is a statement about the graph, not about the
+geometry, and I would not have guessed it.
+
+At two gates the walls cost the pond nothing measurable. The +8% in the table is
+not a claim: it is one arm against one baseline per seed, which v1.47 established
+is exactly as clean as one coin toss.
+
+### The pond really is less mixed
+
+Room changes per 10,000 creature-turns, same imaginary room lines in both arms:
+
+| seed | no walls | walls |
+|---|---|---|
+| 314 | 27.9 | **4.7** |
+| 13 | 16.0 | **5.6** |
+| 77 | 27.4 | **5.9** |
+
+A three- to six-fold drop. This is the mechanism the feature is for, and it is
+the one thing here that could not have been bought with a bigger number in
+`terrainRoughCost`: a cost slows a crossing, a wall removes it.
+
+Net *displacement* — how far a marked cohort gets from where it started over 600
+ticks — was the first thing I measured and it is not the statistic to use. It
+moved in both directions across seeds (95 → 123 px on seed 1, 95 → 106 on seed
+13, 98 → 95 on seed 7), because 600 ticks does not carry a creature across a
+room in either arm. A measure of mixing has to be about the *boundary* being
+crossed, not about distance travelled near it.
+
+### Isolation by distance, with the control inside the same world
+
+If the rooms are real, lineages should diverge across them. Measured as the mean
+genetic distance between creatures in *different* rooms minus the mean between
+creatures in the *same* room, over the run's second half, as a fraction of the
+within-room distance:
+
+| arm | median | mean |
+|---|---|---|
+| walled pond, real room lines | **+0.177** | +0.219 |
+| walled pond, lines shifted half a room over | +0.036 | +0.036 |
+| unwalled pond, same real lines | +0.030 | +0.070 |
+
+Two creatures either side of a wall are about 18% further apart genetically than
+two on the same side. The second row is the control worth having and the reason
+this claim is worth making: it is the **same run, the same trajectory, the same
+creatures**, partitioned by lines that do not follow the rock — and the signal
+almost vanishes (11 of 12 seeds). That control cannot inherit the shared-baseline
+problem v1.47 ran into, because there is no second run for it to share anything
+with. The third row is the ordinary between-arms control, and it agrees.
+
+Note that the unwalled pond is **not** at zero (+0.030 median, and +0.472 on seed
+23). This pond has always had some spatial genetic structure — offspring are born
+touching their parent, and lineages pool in the biomes — so the honest claim is
+that rock multiplies an existing structure roughly sixfold, not that it creates
+one from nothing.
+
+### What it does not do
+
+Nothing perceives the rock, so nothing has learned to use it. There is no
+wall-following behaviour beyond the physics, no memory of where a gate is, and a
+predator standing on one side of a wall can still see, hear, infect and bite
+something on the other. Those are the interesting next questions and none of them
+is claimed here.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const B = await import("./src/barriers.js");
+  const rooms = (f) => {
+    const vs = f.walls.filter(w=>w.vertical).map(w=>w.pos).sort((a,b)=>a-b);
+    const hs = f.walls.filter(w=>!w.vertical).map(w=>w.pos).sort((a,b)=>a-b);
+    const band = (v,l) => { if (l.length<2) return 0; let k=0; for (const p of l) if (v>=p) k++; return k%l.length; };
+    return (x,y) => band(x,vs)*10 + band(y,hs);
+  };
+  for (const seed of [314, 13, 77]) for (const on of [false, true]) {
+    const w = new W.World(C.makeConfig({ seed, barriers: on }));
+    const room = rooms(w.barriers ?? new B.BarrierField(C.makeConfig({ seed, barriers: true })));
+    const prev = new Map(); let moves = 0, turns = 0;
+    for (let i = 1; i <= 2000; i++) {
+      w.step();
+      if (i < 500) continue;
+      for (const c of w.creatures) {
+        const r = room(c.x, c.y), p = prev.get(c.id);
+        if (p !== undefined) { turns++; if (p !== r) moves++; }
+        prev.set(c.id, r);
+      }
+    }
+    console.log(seed, on ? "walls" : "open ", (1e4*moves/turns).toFixed(1), "room changes per 10k turns");
+  }'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

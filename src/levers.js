@@ -94,6 +94,14 @@ export const SPECIAL = {
   corpseEnergyPerRadius: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and needs a corpse" },
   corpseDecay: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and needs a corpse" },
   scavengeRadius: { world: { scavenging: true }, ticks: 700, why: "scavenging is opt-in, and a reach needs a corpse to reach for" },
+  barrierCount: { world: { barriers: true }, why: "barriers are opt-in" },
+  barrierThickness: { world: { barriers: true }, why: "barriers are opt-in" },
+  // A count of gates per room border, so the generic ×1.37 nudge (2 → 3) is
+  // fine but a future default of 1 would round back to itself. Pinned to one
+  // door per border instead — a different pond, and the one v1.48's sweep
+  // measured as the layout that kills three seeds in twelve.
+  barrierGaps: { world: { barriers: true }, to: 1, why: "barriers are opt-in; a gate count is an integer" },
+  barrierGapWidth: { world: { barriers: true }, why: "barriers are opt-in" },
   dayLength: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   nightVisionFactor: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   signalRadius: { world: { signalling: true }, why: "signalling is opt-in" },

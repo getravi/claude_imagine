@@ -51,8 +51,9 @@ export class FoodField {
    * @param {import('./environment.js').FertilityField} [fertility] biome field
    * @param {import('./terrain.js').TerrainField} [terrain] the ground, if any
    * @param {import('./detritus.js').DetritusField} [detritus] the nutrient it holds
+   * @param {import('./barriers.js').BarrierField} [barriers] the rock, if any
    */
-  constructor(config, rng, fertility = null, terrain = null, detritus = null) {
+  constructor(config, rng, fertility = null, terrain = null, detritus = null, barriers = null) {
     this.config = config;
     this.rng = rng;
     this.fertility = fertility;
@@ -62,6 +63,9 @@ export class FoodField {
     // What the ground remembers. Null in every world without detritus, which is
     // what makes the sprouting branch in `spawnOne()` unreachable.
     this.detritus = detritus;
+    // The rock. Null in every world without barriers, which is what makes the
+    // rejection in `_takes()` and the ejection in `spawnAnywhere()` unreachable.
+    this.barriers = barriers;
     /** @type {Food[]} */
     this.items = [];
     this._spawnAccumulator = 0;
@@ -101,8 +105,13 @@ export class FoodField {
     // this world that pushes back against terrain's barrenness instead of
     // agreeing with it.
     if (this.detritus && this.detritus.total > 0 && this.rng.chance(this.config.detritusSprout)) {
-      const spot = this.detritus.sprout(this.rng);
+      let spot = this.detritus.sprout(this.rng);
       if (spot) {
+        // A sprout overrides the ground on purpose — a carcass on a ridge makes
+        // rock grow — but it cannot override a wall, for the reachability reason
+        // in `spawnAnywhere()`. Something died against the rock; the pellet
+        // appears beside it.
+        if (this.barriers) spot = this.barriers.eject(spot.x, spot.y);
         this.items.push(new Food(spot.x, spot.y));
         this.sprouted++;
         return;
@@ -127,6 +136,10 @@ export class FoodField {
    * food is does not average away.
    */
   _takes(x, y) {
+    // Rock is not poor ground, it is not ground: nothing grows inside a wall,
+    // at any roughness, ever. Checked before the terrain arm and before any
+    // draw, so a rejection here costs the stream nothing.
+    if (this.barriers && this.barriers.blocked(x, y)) return false;
     if (!this.terrain) return true;
     return this.rng.float() >= this.terrain.at(x, y) * this.config.terrainBarrenness;
   }
@@ -149,6 +162,13 @@ export class FoodField {
       }
       if (attempt >= TERRAIN_SPAWN_TRIES - 1 || this._takes(x, y)) break;
     }
+    // The retries are bounded, so the last attempt is placed wherever it fell —
+    // which for a ridge is fine (a pellet on rough ground is merely rare) and
+    // for a *wall* would not be: nothing could ever reach it, so it would sit in
+    // `foodMax` forever and the standing crop would shrink by the share of the
+    // world that is walled. Barriers therefore eject rather than reject, and the
+    // influx contract holds exactly as it does for terrain.
+    if (this.barriers) ({ x, y } = this.barriers.eject(x, y));
     this.items.push(new Food(x, y));
   }
 

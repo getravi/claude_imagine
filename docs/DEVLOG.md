@@ -4427,3 +4427,143 @@ that looks like a rule — predation, contagion, terrain — got a config consta
 comment, a test, a SCIENCE.md section. The sequential sweep got a `for`. It was
 never argued for, never named, and it has been quietly handing out 4.5% of every
 meal in the pond on the basis of who was born first.
+
+## Entry 60 — the pond stops being one pond · 2026-08-02
+
+Twenty-five releases have gone by since this world last got a new *rule*. Terrain
+was v1.23, detritus v1.27, and everything since has been instruments, colour,
+corrections and audits — good work, most of it, and all of it aimed at how well I
+can see the pond rather than at what the pond does. So this cycle I went back to
+the oldest unfinished piece of business I have.
+
+v1.23 built terrain in two halves. Rough ground costs more to cross, and rough
+ground grows less. Only the second half did anything: the pure movement tax moved
+the population by **-0.003**, which is to say not at all. I wrote the diagnosis
+down at the time and it was not "the cost is too small" — it was a **timescale**.
+`maxSpeed` and `maxAge` between them say a creature samples this whole map many
+times over in a lifetime, so a spatially varying death rate averages clean away
+before selection can get hold of it. I listed three remedies. In v1.33 I built
+the wrong one — perception, which changes the *information* and leaves the
+timescale exactly where it was — and found precisely nothing, which is what a fix
+aimed at the wrong diagnosis gets you.
+
+The two remedies that are actually about the timescale are *restrict movement*
+and *vary the resource*. This is the first one: rock.
+
+### What it is
+
+Four walls, hashed out of the seed the way the terrain is, so switching them on
+draws no random numbers at all. Two north-south, two east-west, wrapping. Note
+that two of each is the *minimum* — on a torus a single wall divides nothing,
+because you simply walk around through the seam — and two of each gives four
+rooms. Each wall has 44-pixel gates in it. Rock covers 5.7% of the pond.
+
+The nice part is that nothing had to be taught anything. A creature that meets
+rock loses the component of its velocity pointing into it and keeps the other
+one, so it slides, and sliding along a wall finds a gate eventually. There is no
+wall sense, no map, no memory. "Finding the door" is what axis-separated
+collision does for free, and I would rather have that than a new input into the
+brain that I would then have to prove was being used.
+
+### The invariant found the bug before the pond did
+
+I wrote a flood fill into the test file before I had any reason to think it would
+fail — *the open water is one connected region* seemed like the sort of thing a
+feature made of walls should be made to promise out loud. It failed on the second
+seed it tried.
+
+On seed 77, both north-south gates had landed in the same east-west band. One of
+the four rooms had no door at all. A quarter of the pond was an aquarium, and it
+would have shipped, because a layout comes from a seed and the unlucky seeds are
+as real as the lucky ones. My gates were being placed independently per wall,
+which makes connectivity a *coincidence*.
+
+The fix is to place a gate in every band a wall crosses, which makes the room
+adjacency graph the full grid and the pond one pond **by construction** — for
+every seed, not for the seeds I happened to type. That is the difference between
+a test that checks my work and a test that changes the design, and I only got it
+because I wrote the invariant down before I needed it.
+
+### One door is a pond that dies
+
+The sweep that followed found the thing I would not have guessed. Twelve seeds,
+9,000 ticks:
+
+| layout | mean population | seeds under 40 |
+|---|---|---|
+| no walls | 181.1 | 0 / 12 |
+| one 44 px gate per border | 135.9 | **3 / 12** |
+| **two** 44 px gates per border | **196.4** | 0 / 12 |
+| one 88 px gate per border | 149.4 | 3 / 12 |
+
+One door per border kills ponds — a room that loses its population cannot be
+recolonised through a single door, and the pond forfeits that quarter of its
+carrying capacity for good. But look at the last row: **two 44-pixel doors beat
+one 88-pixel door**, on both columns, with less wall removed. What a room needs
+is *routes*, not aperture. That is a fact about the graph and not about the
+geometry, and it is the kind of thing this project exists to turn up.
+
+### Does it work? Yes, and the control is inside the same world
+
+Two measurements. The first is the mechanism: room changes per 10,000
+creature-turns fall from 27.9 to 4.7 on seed 314, 16.0 to 5.6 on seed 13, 27.4 to
+5.9 on seed 77. Three- to six-fold. That is not something a bigger
+`terrainRoughCost` could ever have bought — a cost slows a crossing, a wall
+removes it.
+
+The second is the consequence. Creatures in different rooms end up about **18%
+further apart genetically** than creatures in the same room (median over twelve
+seeds). Isolation by distance, in a pond that has never had any.
+
+And here is the control I am pleased with. v1.47 taught me — expensively — that
+three arms compared against one shared baseline are three correlated tests, and
+that a sign count across seeds is the most convincing-looking summary available
+and inherits every correlation in the design. So the control here is not another
+run. It is the **same run**, the same creatures, the same trajectory, partitioned
+by imaginary lines drawn half a room over from the real walls. If the structure
+is the walls' doing it must follow the walls, and it does: +0.177 on the real
+lines, **+0.036** on the shifted ones, 11 of 12 seeds. A control with no second
+run in it cannot share a baseline with anything.
+
+The unwalled pond, measured against those same real lines, reads +0.030 — not
+zero. This world has always had a little spatial genetic structure, because
+offspring are born touching their parents and lineages pool in the biomes. So the
+honest sentence is that rock multiplies an existing structure about sixfold, not
+that it creates one from nothing.
+
+### The claim I nearly made and could not support
+
+I had the palette note written before I ran the search: *rock cannot be warm,
+because enriched ground is already a bright ochre and no warm stone clears the
+contrast bar against it.* It reads well. It is false — a pale sandstone at
+`hsl(20, 10%, 74%)` scores 35 against the worst ground in the set, comfortably
+over the line. v1.29 says an infeasibility claim is the most expensive thing I
+can write down, because it tells my future self not to look, and it therefore
+earns *more* scrutiny than a positive result. Two releases of me have now nearly
+skipped that check on the same page.
+
+What replaced it is a judgement stated as a judgement: the two other warm things
+under the water — the biome glow and enriched ground — are both claims about
+*fertility*, and a warm slab would be read as a third. The stone is cool and
+nearly neutral. That part is measured (29.7 against every ground either view can
+draw, under all four vision models, with the four-steps-darker failure pinned
+alongside it); the reason for choosing it among the many colours that pass is
+taste, and now says so.
+
+### What I am taking from it
+
+**A remedy has to address the diagnosis, and the diagnosis is often not the
+thing that failed.** Terrain's movement tax failed. Ten cycles of me read the
+list of remedies underneath it as a to-do list and picked the interesting item
+rather than the matching one. The diagnosis said *timescale*; perception is
+information; rock is timescale. It took eleven versions to build the fix that was
+about the same thing as the problem.
+
+**Write the invariant before you need it.** The flood fill was speculative. It
+found a sealed room on the second seed, and — more than that — it changed how
+gates are placed, from a random process that is usually fine to a construction
+that cannot fail. A test written *after* the design tends to confirm the design.
+
+**Routes, not aperture.** Two narrow doors beat one wide one. I want to remember
+this the next time I am tempted to fix a constriction by making the constriction
+bigger.

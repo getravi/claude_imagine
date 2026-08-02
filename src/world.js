@@ -41,6 +41,7 @@ import { Phylogeny } from "./phylogeny.js";
 import { Chronicle } from "./chronicle.js";
 import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
 import { TerrainField } from "./terrain.js";
+import { BarrierField } from "./barriers.js";
 import { DetritusField } from "./detritus.js";
 import { EnergyLedger } from "./energy.js";
 import { torusDist2 } from "./vec.js";
@@ -78,7 +79,21 @@ export class World {
     this.detritus = null;
     this.syncDetritus();
 
-    this.food = new FoodField(config, this.rng, this.environment, this.terrain, this.detritus);
+    // The rock, when this world has any. Hash-derived like the terrain, so it
+    // costs zero draws, and built before the crop and the founders because both
+    // have to be placed out of it.
+    /** @type {BarrierField|null} */
+    this.barriers = null;
+    this.syncBarriers();
+
+    this.food = new FoodField(
+      config,
+      this.rng,
+      this.environment,
+      this.terrain,
+      this.detritus,
+      this.barriers
+    );
 
     // The books. Pure bookkeeping written alongside events that happen anyway —
     // it draws no randomness and nothing in the simulation reads it, so its
@@ -147,6 +162,45 @@ export class World {
     if (this.food) this.food.detritus = this.detritus;
   }
 
+  /**
+   * Build or discard the rock to match the config.
+   *
+   * Switching barriers on under a running pond leaves creatures and pellets
+   * standing inside the new walls, so both are pushed out — the alternative is
+   * a pond that spends its first hundred ticks walking out of the scenery and a
+   * crop with a permanently unreachable share. Switching them off drops the
+   * field outright, which also drops the renderers' caches: they key on the
+   * object, so a discarded layout cannot leave a stale wall on screen.
+   */
+  syncBarriers() {
+    if (this.config.barriers) {
+      if (!this.barriers) {
+        this.barriers = new BarrierField(this.config);
+        // Both collections are absent on the first call, which happens in the
+        // constructor before either exists — the founders and the opening crop
+        // are placed out of the rock by their own paths instead.
+        if (this.creatures) {
+          for (const c of this.creatures) {
+            const p = this.barriers.eject(c.x, c.y);
+            c.x = p.x;
+            c.y = p.y;
+          }
+        }
+        if (this.food) {
+          for (const f of this.food.items) {
+            const p = this.barriers.eject(f.x, f.y);
+            f.x = p.x;
+            f.y = p.y;
+          }
+        }
+      }
+    } else if (this.barriers) {
+      this.barriers = null;
+      for (const c of this.creatures) c.walled = false;
+    }
+    if (this.food) this.food.barriers = this.barriers;
+  }
+
   _randomCreature() {
     const cfg = this.config;
     // A fresh genome of whichever kind this world uses. When evolvableTopology is
@@ -155,20 +209,27 @@ export class World {
     const genome = cfg.evolvableTopology
       ? NeatGenome.random(this.rng)
       : Genome.random(this.rng, cfg.signalling, cfg.groundSense);
-    const c = new Creature(
-      genome,
-      cfg,
-      this.rng.range(0, cfg.width),
-      this.rng.range(0, cfg.height),
-      this.rng,
-      0
-    );
+    // The two draws happen either way, and the ejection that may follow costs
+    // none: a founder that lands in rock is moved to the nearest open ground
+    // rather than re-rolled, so the stream is identical in both kinds of world.
+    const spot = this._openSpot(this.rng.range(0, cfg.width), this.rng.range(0, cfg.height));
+    const c = new Creature(genome, cfg, spot.x, spot.y, this.rng, 0);
     // A creature made from scratch arrives with `energyStart` that came from
     // nowhere. Every path that conjures life — the founding population, the
     // auto-reseed after a crash, the "seed life" button — goes through here, so
     // this is the one place that has to say so.
     this.energy.found(c.energy);
     return c;
+  }
+
+  /**
+   * A point, moved out of the rock if it landed in any. Exactly the point it
+   * was given in every world without barriers — no field, no call, no branch
+   * that could round differently.
+   * @param {number} x @param {number} y
+   */
+  _openSpot(x, y) {
+    return this.barriers ? this.barriers.eject(x, y) : { x, y };
   }
 
   /**
@@ -361,7 +422,10 @@ export class World {
         threat,
         threat ? Math.sqrt(threatD2) : Infinity
       );
-      this.energy.burn(c.act(c.think()));
+      this.energy.burn(c.act(c.think(), this.barriers));
+      // What the rock refused this turn. Exactly 0 in every world without it:
+      // `walled` is only ever set from the resolver's answer.
+      if (c.walled) this.stats.walled++;
 
       // ...and the other half of the same rule: `act()` has just paid this
       // creature's last bill and may have marked it starved or aged out. What
@@ -435,6 +499,14 @@ export class World {
         if (this.creatures.length + born.length < cfg.populationMax) {
           const mateGenome = cfg.sexualReproduction && mate ? mate.genome : null;
           const child = c.reproduce(this.rng, mateGenome);
+          // A child is placed behind its parent, which may be rock. Moved out
+          // rather than refused: a birth denied by scenery would be a second,
+          // undocumented population control living inside the walls.
+          if (this.barriers) {
+            const spot = this.barriers.eject(child.x, child.y);
+            child.x = spot.x;
+            child.y = spot.y;
+          }
           // Classify the newborn: it joins its parent's species unless it has
           // drifted far enough to found a new one branching from it.
           this.phylogeny.assign(child, this.tick, c.speciesId);

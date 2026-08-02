@@ -73,6 +73,7 @@ function parseHash() {
   if (p.has("det")) o.detritus = p.get("det") === "1";
   if (p.has("eye")) o.exactVision = p.get("eye") === "1";
   if (p.has("feel")) o.groundSense = p.get("feel") === "1";
+  if (p.has("rock")) o.barriers = p.get("rock") === "1";
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
   return o;
@@ -104,6 +105,7 @@ function syncHash() {
   p.set("det", config.detritus ? "1" : "0");
   p.set("eye", config.exactVision ? "1" : "0");
   p.set("feel", config.groundSense ? "1" : "0");
+  p.set("rock", config.barriers ? "1" : "0");
   p.set("fin", config.deathIsFinal ? "1" : "0");
   p.set("ord", config.shuffleTurnOrder ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
@@ -213,6 +215,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-detritus", config.detritus);
   setToggle("toggle-exactvision", config.exactVision);
   setToggle("toggle-groundsense", config.groundSense);
+  setToggle("toggle-barriers", config.barriers);
   setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-turnorder", config.shuffleTurnOrder);
   setToggle("toggle-sexual", config.sexualReproduction);
@@ -554,6 +557,12 @@ function updateHUD() {
   $("stat-ground").textContent = config.terrain
     ? `${s.groundBias <= 0 ? "−" : "+"}${Math.abs(Math.round(s.groundBias * 100))}%`
     : "off";
+  // Barriers: how often the rock is refusing a move, per hundred ticks over the
+  // trailing window. The walls are visible and the detours are not, so this is
+  // the number that says what the layout is actually costing — and it is a rate
+  // rather than the run's total, which would stop moving by tick 3,000. Reads
+  // exactly 0 with no walls in the pond, so it says "off" instead.
+  $("stat-walled").textContent = config.barriers ? `${s.walledRate.toFixed(1)}/100t` : "off";
   // Detritus: what share of the crop is currently growing out of the pond's own
   // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
   // field, so it says "off" rather than showing a steady, plausible zero.
@@ -1370,6 +1379,16 @@ function wireControls() {
     // Build (or drop) the landscape right away rather than at the next reset,
     // so the toggle does something you can see in the same frame you flip it.
     world.syncTerrain();
+    syncHash();
+  });
+  $("toggle-barriers").checked = config.barriers;
+  $("toggle-barriers").addEventListener("change", (e) => {
+    config.barriers = e.target.checked;
+    // Build (or drop) the rock in the same frame. Switching it on pushes any
+    // creature or pellet standing where a wall now is out onto open ground —
+    // see world.syncBarriers — so the pond does not spend its next hundred ticks
+    // walking out of the scenery.
+    world.syncBarriers();
     syncHash();
   });
   $("toggle-detritus").checked = config.detritus;

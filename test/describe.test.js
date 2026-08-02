@@ -336,3 +336,19 @@ test("the caption describes the same rates the strip is drawn from", () => {
   assert.match(peak, new RegExp(`^peak ${series.scale.toFixed(1)}/tick · \\d+-tick mean$`));
   assert.match(label, /^Power over time: /);
 });
+
+test("the rock gets a sentence, and only where there is rock", () => {
+  // v1.31's rule: which sense is this claim available to? A wall is the most
+  // visual thing this project has ever added, and a listener would otherwise be
+  // told nothing about the shape of the world at all.
+  const open = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 400; i++) open.step();
+  const quiet = describePond(open, open.config);
+  assert.ok(!/rock/i.test(quiet), `a pond with no walls talked about rock: ${quiet}`);
+
+  const world = new World(makeConfig({ seed: 314, barriers: true }));
+  for (let i = 0; i < 400; i++) world.step();
+  const text = describePond(world, world.config);
+  assert.match(text, /Rock divides the pond into 4 rooms, joined by gates\./);
+  assert.match(text, /turned back by it \d+ times per hundred ticks/);
+});

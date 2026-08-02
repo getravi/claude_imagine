@@ -20,7 +20,7 @@
 // default view rather than drawing a frame around everything.
 
 import { wrap } from "./vec.js";
-import { minimapPredatorMark, detritusTint, hazardTint } from "./palette.js";
+import { minimapPredatorMark, detritusTint, hazardTint, barrierRock } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
@@ -277,6 +277,22 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
     for (const src of sources) {
       const p = worldToMinimap(src.x, src.y, layout, config);
       discWrapped(ctx, p.x, p.y, hazardRadius, W, H);
+    }
+  }
+
+  // Rock, over every field and under everything alive, in the same order the
+  // pond draws it. This is the surface where a wall matters most: the shape of
+  // the rooms is a whole-pond fact, and the pond view can only ever show you one
+  // room at a time once you have zoomed in far enough to see anything. Every
+  // rectangle is already inside the world's bounds (`rects()` splits the ones
+  // that straddle a seam), which is exactly what this flat, four-edged view
+  // needs — the v1.24 rule, for free.
+  if (world.barriers) {
+    const rock = barrierRock();
+    ctx.fillStyle = rock.fill;
+    for (const r of world.barriers.rects()) {
+      const p = worldToMinimap(r.x, r.y, layout, config);
+      ctx.fillRect(p.x, p.y, Math.max(1, r.w * s), Math.max(1, r.h * s));
     }
   }
 

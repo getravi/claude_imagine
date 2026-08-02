@@ -123,6 +123,12 @@ export class Creature {
     // at all — so multiplying by it unconditionally is a true no-op.
     this.ground = 1;
 
+    // Whether rock refused this creature's move on its last turn (barriers
+    // only). Always false in a world without them: the flag is set from the
+    // resolver's answer, and the resolver is never asked. Read by the world
+    // into `stats.walled` and by nothing in the simulation.
+    this.walled = false;
+
     // What that ground *feels* like, if this creature can feel it: 0 on the
     // flattest ground and 1 on the roughest the config allows. It is derived
     // from `ground`, so it is exactly 0 in every world without terrain — a
@@ -274,10 +280,14 @@ export class Creature {
   /**
    * Apply motor commands and physics for one tick, then pay metabolism.
    * @param {number[]|Float32Array} out - brain outputs
+   * @param {import('./barriers.js').BarrierField|null} [barriers] the rock, in a
+   *   world that has any. Omitted (and null) everywhere else, which is what
+   *   keeps the integration below byte-for-byte the one every earlier version
+   *   ran.
    * @returns {number} the metabolic bill paid this tick, for the world's energy
    *   ledger. Nothing in here reads it, so a caller may ignore it entirely.
    */
-  act(out) {
+  act(out, barriers = null) {
     const cfg = this.config;
     const turn = out[0];
     const thrust = clamp(out[1], 0, 1); // only forward thrust; no reverse
@@ -298,9 +308,23 @@ export class Creature {
       this.vy *= s;
     }
 
-    // Integrate position on the torus.
-    this.x = wrap(this.x + this.vx, cfg.width);
-    this.y = wrap(this.y + this.vy, cfg.height);
+    // Integrate position on the torus. With barriers on, rock may refuse one or
+    // both components of the step; the refused component's velocity is dropped
+    // rather than reflected, so a body meeting a wall stops dead against it and
+    // keeps running along it. That is the whole of "finding a gate".
+    if (barriers) {
+      const nx = wrap(this.x + this.vx, cfg.width);
+      const ny = wrap(this.y + this.vy, cfg.height);
+      const hit = barriers.resolve(this.x, this.y, nx, ny);
+      this.x = hit.x;
+      this.y = hit.y;
+      if (hit.stoppedX) this.vx = 0;
+      if (hit.stoppedY) this.vy = 0;
+      this.walled = hit.stoppedX || hit.stoppedY;
+    } else {
+      this.x = wrap(this.x + this.vx, cfg.width);
+      this.y = wrap(this.y + this.vy, cfg.height);
+    }
 
     // Advance internal clock.
     this.phase += 0.15;

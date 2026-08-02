@@ -234,6 +234,18 @@ export class Stats {
     // nothing in the simulation reads them.
     this.contested = 0;
     this.crowdedOut = 0;
+    // Turns in which rock refused at least one component of a creature's move
+    // (v1.48, barriers). Cumulative like the two above, exactly 0 in a world
+    // with no walls, and the only number that says how much the layout is
+    // actually costing this pond — the walls are visible, the detours are not.
+    this.walled = 0;
+    // The same counter as a rate: stops per hundred ticks over the trailing
+    // `POWER_WINDOW` samples. Cumulative is what makes the differencing exact;
+    // the rate is the only form of it a watcher can see change, which is the
+    // v1.35 rule — a run-to-date total is a number that has already stopped.
+    this.walledRate = 0;
+    /** @type {Array<{tick:number, walled:number}>} the ring the rate reads. */
+    this._walledRing = [];
     this.infections = 0; // cumulative cases of the disease (contagion on)
     this.recoveries = 0; // cumulative recoveries, each one a new immune creature
     this.infectedCount = 0; // currently sick
@@ -455,6 +467,18 @@ export class Stats {
       const back = h[Math.max(0, h.length - 1 - POWER_WINDOW)];
       const dt = point.tick - back.tick;
       this.power = dt > 0 ? (created(point) - created(back)) / dt : 0;
+
+      // What the rock is costing, over the same window and by the same exact
+      // differencing. Kept in a ring of its own rather than in the history point
+      // because it belongs to the panel and not to the chart, the archive or the
+      // CSV — a counter that is 0 in every world but one does not earn a column
+      // in every export.
+      this._walledRing.push({ tick: this.tick, walled: this.walled });
+      if (this._walledRing.length > POWER_WINDOW + 1) this._walledRing.shift();
+      const wr = this._walledRing;
+      const wBack = wr[0];
+      const wDt = this.tick - wBack.tick;
+      this.walledRate = wDt > 0 ? ((this.walled - wBack.walled) / wDt) * 100 : 0;
     }
   }
 

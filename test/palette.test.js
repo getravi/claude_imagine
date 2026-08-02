@@ -40,6 +40,7 @@ import {
   VISION_MODELS,
   MIN_DELTA_E,
   hazardTint,
+  barrierRockTones,
   HAZARD_SOURCE_ALPHA,
   HAZARD_AUDIT_SOURCES,
   sickHalo,
@@ -436,6 +437,78 @@ function soilOver(bg, richness) {
   const tint = detritusTint(richness);
   return blendOver(bg, tint, tint.a);
 }
+
+/**
+ * Every ground rock can be drawn *beside* — the same set enriched ground is
+ * audited on, plus soil and the hazard field, because rock is drawn over both
+ * of those and therefore borders them.
+ */
+function rockBackgrounds() {
+  const out = [];
+  for (const { name, rgb } of soilBackgrounds()) {
+    out.push({ name, rgb });
+    out.push({ name: `${name} +soil`, rgb: soilOver(rgb, 1) });
+    out.push({ name: `${name} +hazard`, rgb: hazardOver(rgb, HAZARD_AUDIT_SOURCES) });
+  }
+  return out;
+}
+
+test("rock reads as rock against every ground it can border", () => {
+  // Rock is opaque, so unlike every other layer under the water there is no
+  // compositing lottery here — the only question is whether the one tone it has
+  // can be told from the water beside it, everywhere and by everyone.
+  const { fill } = barrierRockTones();
+  let worst = { d: Infinity };
+  for (const { name, rgb } of rockBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(fill, rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `rock scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("a darker stone would have failed — the lightness is a measurement", () => {
+  // Pins the failure alongside the pass (v1.24's rule). The chosen stone scores
+  // 29.7; the same hue four steps darker scores 21.5 and would leave a wall you
+  // have to look for in a scene whose whole subject is a near-black deep.
+  const dim = hslToRgb(210, 8, 44);
+  let worst = Infinity;
+  for (const { rgb } of rockBackgrounds()) {
+    for (const vision of VISION_MODELS) worst = Math.min(worst, deltaE(dim, rgb, vision));
+  }
+  assert.ok(
+    worst < MIN_DELTA_E,
+    `a darker stone clears the bar after all (${worst.toFixed(1)}) — the note in palette.js is wrong`
+  );
+});
+
+test("a warm stone was possible, and the note says so", () => {
+  // The other half, and the reason this pair exists: I had written "rock cannot
+  // be warm" into palette.js before checking, which is exactly the claim v1.29
+  // says costs the most to get wrong. It is false — a pale sandstone clears the
+  // bar comfortably — so the palette note now gives a judgement as a judgement.
+  // If this ever fails, the *note* is what needs rewriting, not the colour.
+  let best = 0;
+  for (let hue = 20; hue <= 60; hue += 5) {
+    for (let sat = 10; sat <= 30; sat += 10) {
+      for (let light = 60; light <= 80; light += 2) {
+        const candidate = hslToRgb(hue, sat, light);
+        let worst = Infinity;
+        for (const { rgb } of rockBackgrounds()) {
+          for (const vision of VISION_MODELS) {
+            worst = Math.min(worst, deltaE(candidate, rgb, vision));
+          }
+        }
+        best = Math.max(best, worst);
+      }
+    }
+  }
+  assert.ok(best >= MIN_DELTA_E, `no warm stone clears the bar (best ${best.toFixed(1)})`);
+});
 
 test("enriched ground reads against every background it can be drawn on", () => {
   let worst = { d: Infinity };

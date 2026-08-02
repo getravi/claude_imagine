@@ -155,6 +155,18 @@ export function describePond(world, config, camera = null) {
           } than the landscape average.`
     );
   }
+  // The rock. A wall is a fact about the shape of the world rather than a
+  // quantity, so it is stated once and plainly — how many rooms there are, and
+  // how hard the pond is currently finding them. The rate is exactly 0 without
+  // barriers, and the sentence is skipped there, so a pond with no walls says
+  // nothing about walls.
+  if (world.barriers && pop > 0) {
+    const rooms = world.barriers.roomCount();
+    out.push(
+      `Rock divides the pond into ${count(rooms, "room")}, joined by gates. ` +
+        `Creatures are turned back by it ${s.walledRate.toFixed(0)} times per hundred ticks.`
+    );
+  }
   if (camera) out.push(describeView(camera, config));
 
   return out.filter(Boolean).join(" ");

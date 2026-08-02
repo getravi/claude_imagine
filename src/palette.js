@@ -505,6 +505,54 @@ export function detritusTint(richness) {
 export const DETRITUS_MAX_ALPHA = 0.54;
 
 /**
+ * Rock (v1.48, barriers) — the one thing down there that is not water.
+ *
+ * Every other layer under the pond is translucent, because every other layer is
+ * a *field*: roughness, fertility, nutrient, hazard, all of them quantities
+ * spread over ground you can still swim through. Rock is the first that is not a
+ * quantity at all but a fact — you cannot be here — so it is the first that is
+ * opaque, and opacity is what the claim needs: a translucent wall is a wall you
+ * can see the water through, which is precisely the wrong sentence.
+ *
+ * The hue is **not** forced by the constraint, and it is worth saying so plainly
+ * rather than dressing a taste up as a search. I began writing the paragraph
+ * where warm stone turns out to be impossible next to enriched ground — the
+ * `hazardTint` story, which really was impossible — and the sweep in
+ * `test/palette.test.js` refused it: a pale sandstone at `hsl(20, 10%, 74%)`
+ * scores 35, and even a properly saturated one clears the bar if it is light
+ * enough. That is v1.29's rule arriving on schedule: an infeasibility claim is
+ * the most expensive thing I can write down, and this one was false.
+ *
+ * So the reason is a judgement, stated as one. The two other things down there
+ * with any warmth in them — the biome glow and enriched ground — are both claims
+ * about *fertility*, and a warm slab would be read as a third. Cool and nearly
+ * neutral says "not water, not food, not soil" with nothing left over.
+ *
+ * What is measured: `hsl(210, 8%, 52%)` scores **29.7** against the worst of
+ * every ground either view can draw — both seasons, the biome glow, the whole
+ * terrain ramp with and without contours, full enriched ground, five overlapping
+ * cases of hazard — under all four vision models. Four steps darker (48%) is
+ * 25.5, one step under that misses the bar outright, and the test pins the
+ * failure as well as the pass. Deliberately no further over the line than that:
+ * this is a seventh of the pond's area, and a slab that out-shouts the creatures
+ * would be the v1.23 terrain complaint with the volume turned up.
+ *
+ * What the audit does *not* cover, said out loud because v1.43 was three
+ * versions ago: the creature bodies. They span the whole hue wheel, so no colour
+ * is far from all of them, and no colour could be — but a body is a small moving
+ * mark with a glow and rock is a static slab, and nothing is ever drawn *on*
+ * rock, because nothing can be there.
+ */
+export function barrierRock() {
+  return { fill: "hsl(210, 8%, 52%)", edge: "hsl(210, 12%, 33%)" };
+}
+
+/** Rock's two tones as RGB, for the audit. */
+export function barrierRockTones() {
+  return { fill: hslToRgb(210, 8, 52), edge: hslToRgb(210, 12, 33) };
+}
+
+/**
  * The contagious zone (v1.34) — the water within `infectionRadius` of somebody
  * infected, which is the only question a watcher of an epidemic actually has.
  *

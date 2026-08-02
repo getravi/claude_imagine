@@ -4,6 +4,88 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.48.0] — 2026-08-02
+
+Twenty-five releases since this world last got a new *rule*. v1.23 built terrain
+in two halves and only one of them worked: a pure movement tax moved the
+population by -0.003, and the diagnosis written down at the time was a
+**timescale** — a creature samples this whole map many times in a lifetime, so a
+spatially varying cost averages away before selection can act. Two remedies
+address a timescale rather than a magnitude: restrict movement, or vary the
+resource. This is the first of them.
+
+### Added
+
+- **`barriers`** (opt-in, off by default) — rock. Four seed-derived walls (two
+  north-south, two east-west, 14 px, wrapping) cut the torus into **four rooms**
+  joined by 44 px gates. Two of each axis is the minimum that divides a torus at
+  all; one wall you simply walk around through the seam. Rock covers 5.7% of the
+  pond. Hash-derived like the terrain, so switching it on draws **zero** random
+  numbers.
+- **Sliding, for free.** A creature that meets rock loses the component of its
+  velocity pointing into it and keeps the other, so it runs along the wall until
+  a gate turns up. Nothing perceives a wall; there is no map, no memory and no
+  new sense. Movement only — sight, sound, teeth and the pathogen all still
+  cross rock.
+- **`stats.walled`** and the **Walled** tile — turns in which rock refused a
+  move, cumulative and exact, shown as a rate per hundred ticks (v1.35's rule: a
+  run-to-date total is a number that has already stopped). Exactly 0 with no
+  walls, so the tile reads `off`.
+- **`src/barriers.js`**, `test/barriers.test.js` (15 tests), a rock colour in
+  `src/palette.js` with its own audit, the rock drawn in **both** views (pond and
+  minimap, from the same `rects()`), a **Barriers** toggle, the `rock` permalink
+  key, and a sentence in the canvas's accessible description saying how many
+  rooms there are and how often the pond is being turned back.
+
+### Measured
+
+- **Two doors beat one, and beat one twice as wide.** Twelve seeds, 9,000 ticks:
+  no walls 181.1 mean population; **one** 44 px gate per room border 135.9 with
+  **three of twelve seeds under 40 creatures**; **two** 44 px gates 196.4 with
+  none; one 88 px gate 149.4 with three. A room that loses its population cannot
+  be recolonised through a single door. What a room needs is **routes, not
+  aperture** — a fact about the graph, not the geometry. Two gates per border is
+  the shipped default because of this table.
+- **The pond is genuinely less mixed.** Room changes per 10,000 creature-turns:
+  27.9 → **4.7** (seed 314), 16.0 → **5.6** (13), 27.4 → **5.9** (77).
+- **Isolation by distance, for the first time in this project.** Creatures in
+  different rooms are **+0.177** further apart genetically than creatures in the
+  same room (median, twelve seeds), against **+0.036** for the *same run*
+  partitioned by lines drawn half a room over from the real walls, and +0.030 for
+  an unwalled pond measured against the real lines. The within-run control is the
+  one that matters: it cannot inherit v1.47's shared-baseline problem, because
+  there is no second run for it to share a baseline with. The unwalled figure is
+  not zero — this pond has always had a little spatial structure — so rock
+  multiplies an existing signal about sixfold rather than creating one.
+- **Net displacement is the wrong instrument** and is reported here so nobody
+  reaches for it again: over 600 ticks it moved in *both* directions across seeds
+  (95→123 px on seed 1, 98→95 on seed 7), because 600 ticks does not carry a
+  creature across a room in either arm.
+
+### Fixed
+
+- **A sealed room, found before it shipped.** Gates were first placed
+  independently per wall, and the new flood-fill invariant failed on the second
+  seed it tried: on seed 77 both north-south gates landed in the same east-west
+  band, leaving one of the four rooms with no door and 26% of the pond an
+  aquarium. Gates are now placed **per room border** — one in every band a wall
+  crosses — which makes the room graph the full grid and the pond one pond by
+  construction rather than by luck.
+
+### Changed
+
+- `src/palette.js` gains `barrierRock()`, audited at **ΔE 29.7** against every
+  ground either view can draw (both seasons, biome glow, the whole terrain ramp
+  with and without contours, full enriched ground, five overlapping hazard cases)
+  under all four vision models, with the four-steps-darker failure pinned beside
+  the pass. The note there originally claimed a warm stone was impossible; the
+  search says otherwise (a pale sandstone scores 35), so the note now gives the
+  reason for a cool stone as the judgement it is — the two other warm layers down
+  there are both fertility claims.
+- `src/levers.js` learns the four new constants, including that a *count* of
+  gates needs an explicit target rather than the generic ×0.7 nudge, which would
+  have rounded 1 back to 1.
+
 ## [1.47.0] — 2026-08-02
 
 `world.step()` sweeps its population one creature at a time, and the array it

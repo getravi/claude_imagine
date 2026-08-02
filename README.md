@@ -113,6 +113,7 @@ could have fixed it.
 | **Contagion** | Toggle a pathogen that spreads by proximity: the sick burn extra energy for a while, survivors are immune for life, and newborns are susceptible again — so the epidemic returns in waves. Every case draws its *reach* — a blue disc of `infectionRadius`, in the pond and on the minimap, which stacks where cases overlap at exactly the rate the per-tick risk does. Off by default. Watch the *Sick*, *Immune* and *Contagious* stats — the last being the share of the water inside somebody's catching distance. |
 | **Signalling** | Toggle whether creatures can *hear* one another. Every brain has always emitted a "colour signal" that nothing could perceive; switch this on and the loudest call within earshot becomes a sense, wired in through evolved ear genes, and calling costs a little energy. Off by default. Watch the *Heard* stat. |
 | **Terrain** | Toggle a landscape. The ground stops being uniform: a static, seed-derived roughness field makes rough ground both expensive to cross and reluctant to grow food, so the pond gathers into its basins. Drawn as contour lines under the world. Off by default. Watch the *Ground* stat — how much flatter than average the ground under the living is, and exactly `off` when there is no landscape to measure against. |
+| **Barriers** | Toggle rock. Four seed-derived walls — two north-south, two east-west, wrapping like everything else here — cut the pond into four rooms joined by 44-pixel gates, and a creature that meets one loses the half of its velocity that pointed into the rock and slides along it until a gate turns up. Nothing perceives a wall, and only *bodies* are stopped: sight, sound, teeth and the pathogen all still cross. This is terrain's unfinished business — v1.23 found that a movement cost buys no spatial structure in a well-mixed world, and rock is the remedy that attacks the mixing rather than the cost. It works: room changes fall three- to six-fold, and creatures either side of a wall end up about 18% further apart genetically than creatures on the same side, a signal that nearly vanishes if you measure it against lines drawn half a room over. Off by default. Watch the *Walled* stat — how often rock is turning somebody back, per hundred ticks. |
 | **Detritus** | Toggle whether the ground remembers its dead. A body leaves nutrient in the ground under it, the nutrient rots away over a few hundred ticks, and about a quarter of the pond's new food grows out of it — so the crop stops being a rate and becomes an inheritance. Drawn as warm ochre stains under the water and on the minimap. Off by default. Watch the *Soil* stat: the share of new food currently growing where something died, and exactly `off` when nothing is being remembered. |
 | **Ground sense** | Toggle whether creatures can feel the roughness of the ground they are standing on — one more number into every brain, wired in through evolved foot genes. A creature is told what is under it and never which direction is smoother, which is the information a bacterium has and enough, in principle, to concentrate a population in the good places. It does not: the wire really does reach the motor commands, and selection is indifferent to it, because terrain's movement cost is too small to be worth avoiding. That null result — with the scrambled-input control that produced it — is written up in [SCIENCE.md](docs/SCIENCE.md). Off by default. Click a creature and watch its *Underfoot* reading. |
 | **Exact vision** | Toggle whether a creature can really see as far as `visionRadius` says. What it has actually searched since v1.0 is the 3x3 block of spatial-index cells around it — a guaranteed 126 px of the configured 168, reaching further only in whichever directions its position inside its cell happens to favour, so sight was grid-aligned and 1.5% of glances at food landed on the wrong nearest pellet. Switch this on and every sense query covers the radius it asks for. Off by default, because it is a correction rather than a rule: it moves every world off the trajectory earlier versions recorded. Turn on **Show vision** and the overlay draws the region actually searched, not just the circle. |
@@ -130,7 +131,7 @@ could have fixed it.
 | **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, and a colour "fingerprint" of its brain weights. |
 | **Zoom & pan** | Scroll to zoom about the cursor (up to 8×), drag to move around, <kbd>0</kbd> for the whole pond again. The world is a torus, so the view can roam forever without meeting an edge. |
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
-| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, the enriched ground where things have died, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
+| **Minimap** | The moment the view stops being the whole pond, a minimap appears in the corner: the terrain in banded contours, the rock (when there is any) in solid slate, the enriched ground where things have died, biomes, food, creatures (predators wearing the same bright-in-dark badge they wear in the pond) and a bright rectangle showing where you are looking. Click or drag it to move the view — with terrain on, you can pick the next basin over before you travel to it. |
 | **Ancestry chain** (in the inspector) | The line of species a creature descends from, founder first — dashed pips are ancestors with no living members. Click any pip to spotlight that lineage in the pond. |
 | **Tree of Life legend** | Click a species chip (or a creature's "spotlight lineage" link) to highlight that lineage in the pond; click again or **Clear highlight** to reset. Each chip carries its band's hatch as well as its colour, so two lineages that inherited the same hue are still tellable apart. |
 
@@ -192,6 +193,15 @@ could have fixed it.
   cost alone moves the population by essentially nothing, which is written up
   with the control and the sweep on
   [the Science page](docs/SCIENCE.md#terrain-why-a-cost-is-not-a-landscape).
+- **Turn on Barriers** and watch the pond stop being one pond. Four walls appear,
+  the creatures nearest them stop dead and start sliding, and within a few
+  hundred ticks each room is running its own little economy. It is worth watching
+  the *Walled* number rather than the walls: it says how much the layout is
+  actually costing, which the picture never will. This is the follow-through on
+  terrain's negative result — a spatial pressure needs somewhere to accumulate,
+  and a room is somewhere — and the measurement, including the control that
+  partitions the very same pond along lines that do not follow the rock, is on
+  [the Science page](docs/SCIENCE.md#rock-giving-a-spatial-pressure-somewhere-to-accumulate-v148).
 - **Turn on Detritus** and watch warm patches bloom under the water wherever the
   pond has been losing creatures — then watch pellets start appearing in them. It
   closes the last of this world's unconditional gifts: food used to arrive from
@@ -357,6 +367,7 @@ src/
   rendershot.js     a canvas that records instead of painting, so drawing is testable
   mullerplot.js     the "Tree of Life" stacked-area chart
   config.js         every tunable "physics constant" in one place
+  barriers.js       optional rock: wrapped slabs with gates, cutting the pond into rooms
   scenarios.js      curated one-click world presets
   main.js           boot, animation loop, UI wiring
 test/               unit + integration tests (node --test)

@@ -110,6 +110,43 @@ export const DEFAULT_CONFIG = Object.freeze({
   // it off, and the input reads exactly 0 in a world with no terrain at all.
   groundSense: false,
 
+  // Barriers (v1.48, opt-in): rock the pond cannot cross. Terrain priced space
+  // and v1.23 measured what that bought: -0.003, nothing, because a creature
+  // crosses this world a dozen times in a lifetime and averages every local
+  // difference away. The diagnosis was a *timescale*, and the two remedies that
+  // address a timescale rather than a magnitude are restricting movement and
+  // varying the resource. This is the first of them — slabs with gates in them,
+  // cutting the torus into rooms, so crossing the pond becomes a search for a
+  // door instead of a straight line.
+  //
+  // Movement only: sight, sound, teeth and the pathogen all still cross rock,
+  // and nothing can perceive a wall. A creature finds a gate by sliding, which
+  // falls out of dropping the refused component of its velocity — see
+  // barriers.js. The layout comes from an integer hash of the seed rather than
+  // the world RNG, so switching this on draws zero random numbers.
+  barriers: false,
+  // Four walls — two north-south, two east-west — is the smallest number that
+  // makes *rooms* on a torus rather than bands you can walk around the long
+  // way, and it leaves four of them.
+  barrierCount: 4,
+  barrierThickness: 14, // three body-lengths of rock: too wide to cross in a tick
+  // Gates **per room border**, not per wall — a wall gets one of these in every
+  // band the perpendicular walls cut it into, which is what makes the pond
+  // provably connected on every seed rather than on most of them (see
+  // barriers.js, and the flood fill in test/barriers.test.js that found the
+  // difference).
+  //
+  // Two, from a twelve-seed sweep at 9,000 ticks. One gate per border is a pond
+  // that dies: three of twelve seeds fell under 40 creatures, because a room
+  // that loses its population cannot be recolonised through a single 44 px door
+  // and the pond loses that quarter of its carrying capacity for good. With two
+  // the mean population is 196 against an unwalled 181 — no cost at all — and
+  // nothing came close to dying. Two 44 px doors also beat one 88 px door on
+  // both counts, which is worth remembering: what a room needs is *routes*, not
+  // aperture.
+  barrierGaps: 2,
+  barrierGapWidth: 44,
+
   // Detritus (v1.27, opt-in): the ground remembers where things died. Food has
   // arrived from nowhere since v1.0 — v1.18 made the crop conditional on itself
   // and v1.23 on the ground, but a death still had no consequence for the pond
