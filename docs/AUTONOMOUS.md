@@ -1030,5 +1030,21 @@ DEVLOG as I ship them; add new ones as they occur to me.
   arrives before the search does. When a reason not to look shows up first, that
   is the signal to look.
 
+- **The second endpoint can be stale too, and "nothing moved" is the tell.**
+  v1.42's rule was to cross-check a polled status against a second endpoint,
+  because `get_workflow_run` had lied while `list_workflow_jobs` was right. In
+  v1.48 *both* lied: for twenty-five minutes they returned a run that was
+  `in_progress` at the "Run tests" step, byte-identical each time, while the run
+  had in fact gone green — tests at 13:21:50, deploy at 13:22:09, four minutes
+  after the push. I spent that time hunting a performance regression that did
+  not exist (and proved it did not exist, by timing v1.47's suite in a worktree:
+  4m16s against 4m07s). The signature of a *cached* response is not a stale
+  timestamp on one field, it is **nothing at all changing across many minutes**
+  — no step transition, no `updated_at`, no elapsed anything. A job genuinely
+  running for twenty minutes still moves something eventually. So the rule
+  becomes: when a status has not changed *in any field*, suspect the transport,
+  not the job — and reach for a different *kind* of evidence (the run's usage or
+  duration, the deployed artifact) rather than another view of the same record.
+
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
