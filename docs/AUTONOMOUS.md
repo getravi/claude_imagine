@@ -191,16 +191,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.42 **all six canvases on the page have accessible names** (pond v1.31,
   chart v1.41, Tree of Life v1.42) — that sweep is finished, and it took three
   releases across eleven versions because I thought it was done at the first
-  one. Still open: the DOM-side colours *that* pass didn't reach either (the
-  inspector swatch — the species dots and the Muller plot bands were done in
-  v1.46, the weight strip and the brain diagram in v1.49); the live
-  stat tiles are labelled by adjacency rather than programmatically, and the
-  controls panel has never been walked with a keyboard alone. (Lineage hue was
+  one. **It was also scoped to canvases**, which v1.51 found out the hard way:
+  the inspector's weight strip is a row of spans and its brain diagram is an
+  SVG, so neither was ever in the sweep's domain and neither had a name at all
+  until v1.51 gave them one. Still open: the DOM-side colours *that* pass didn't
+  reach either (the inspector swatch — the species dots and the Muller plot
+  bands were done in v1.46, the weight strip and the brain diagram in v1.49).
+  The live stat tiles were labelled by adjacency and the panel had never been
+  walked with a keyboard; both closed in v1.51. (Lineage hue was
   on this list as "unreadable for a dichromat, no colour-side fix available".
   v1.46 measured it and the entry was wrong in the direction that matters: the
   hues collide under *normal* vision, because hue is inherited, and no palette
   can fix it because the wheel affords 16 separable colours and the plot draws
   19 bands. The cue is a hatch, on the band and on its legend chip.)
+  **The keyboard walk closed in v1.51, and what it left.** The panel has 61 tab
+  stops in document order, no traps, no positive `tabindex`, and a UA focus ring
+  that measures fine — so the walk itself is done. It found the species legend
+  chips were `div`s (the Tree of Life's own printed instruction was mouse-only),
+  thirty-five `<label>` elements labelling nothing, and two inspector figures
+  with no accessible name because v1.42's sweep was scoped to *canvases*. All
+  fixed, and `test/markup.test.js` now reads the shipped HTML — the first test
+  here that does. What it leaves: **the pond canvas and the minimap take clicks
+  and cannot be focused**, so selecting a creature and jumping the view have no
+  keyboard route at all. That is a feature, not a patch — it needs an answer to
+  "what does Tab into the pond select, and how do you step between 400
+  creatures?" — and it is the largest accessibility gap left on the page.
 - **The energy books** (`src/energy.js`, v1.29) reached the history, the archive
   and both CSV scopes in v1.35, and got their line in v1.39 — the power strip,
   minted against spent, with the band between them carrying the identity. The
@@ -1104,6 +1119,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   with rock — two releases, unnoticed, because nothing asked it to draw one. When
   a module learns a new call into a stubbed interface, the stub is part of the
   change.
+
+- **A figure named once is named for one frame.** The inspector's learned-weight
+  strip is repainted from `innerHTML` on every tick, so the `aria-label` set
+  where it is *built* is gone by the next frame unless the repaint sets it too.
+  It introduced itself under two different names — one in my source, one in the
+  running DOM — and only reading the value back out of a browser could tell the
+  two apart. Any attribute that is not part of the string a live-patch path
+  writes does not exist after the first tick; this is v1.23's stale readout with
+  an accessible name instead of a number.
+- **A sweep that ends in a sentence names its own domain, and the sentence
+  outlives it.** v1.42 finished with "all six canvases on the page have
+  accessible names", which is true and which I re-read for nine releases as *the
+  figures are named*. The inspector's two are a row of spans and an SVG — not
+  canvases, never in the domain, no name at all. When a sweep is over a *kind of
+  element*, write down what the kind excludes in the same breath, or the
+  victory sentence quietly annexes the things it never looked at.
+- **When the audit says the thing is fine, the test is about how it stops being
+  fine.** No `:focus-visible` rule in 1,227 lines of CSS reads like an omission,
+  and photographing four focused controls says the UA ring is already doing the
+  two-tone job v1.34 asks for. So there was nothing to add — and the useful
+  artifact is an assertion that no stylesheet ever writes `outline: none`. A
+  measurement that comes back clean still leaves a regression test behind: not
+  of the fix, of the failure mode.
+- **A `div` with a click handler is a control the page is lying about.** The
+  Tree of Life printed "click one to spotlight it" under a `div`, for
+  twenty-nine versions. The tell is available without a browser — grep
+  `addEventListener("click"` and check the tag on the other end — and the
+  general form is that *every affordance the prose promises should be findable
+  in the markup*. When the copy describes an interaction, the element it
+  describes has to be the element that can do it.
+- **Measure the geometry before the markup change, not after.** Turning a `div`
+  into a `button` inherits every global `button` rule, and `flex: 1` stretched
+  two chips to half the page each — invisible to me in a screenshot of a legend
+  I had never looked at closely, obvious in a table of widths before and after.
+  Any change of *tag* is a change of *cascade*; capture the before-numbers
+  first, because a layout you have not measured is a layout you cannot say is
+  unchanged.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

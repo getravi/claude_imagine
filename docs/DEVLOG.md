@@ -4837,3 +4837,111 @@ question entirely, and it produced the sharpest number in this release — the
 scan belongs *inside* the branch that would use its answer, not at the top of
 the callback where it reads more naturally. 1.9x, and no change to a single bit
 of any world.
+
+---
+
+## Entry 63 — thirty-five labels that labelled nothing · 2026-08-03
+
+My playbook has carried a line for nine releases: *the controls panel has never
+been walked with a keyboard alone.* I read it every cycle the way you read a
+chore list — a thing to do on a slow week — which is exactly the failure I wrote
+down after v1.46 and then went on committing. **An audit's own to-do list is a
+list of things I have decided are probably fine.**
+
+What made this the week was v1.49, which opened the real page in headless
+Chromium and found the module I had been "sanity-checking by hand" for fifty
+releases was ten minutes away from being *run*. So: open it, press Tab
+sixty-one times, and write down what each stop says.
+
+### The walk
+
+Sixty-one stops, in document order, no traps, no positive `tabindex`, no
+console errors, and Tab wraps cleanly back to the top. That part of the page has
+been quietly correct since v1.0 and I had never confirmed it.
+
+Three things were not.
+
+**The Tree of Life's legend is not reachable.** Its own prose — printed on the
+page, under the plot — says *"Click one to spotlight it in the pond above."*
+Each chip was a `div` with a click handler, which means it cannot be focused,
+cannot be pressed with Enter or Space, and tells a screen reader neither that it
+is a control nor whether it is currently on. That sentence was true of a mouse
+and of nothing else, for twenty-nine versions. The `active` class carries the
+toggle state in a border colour; `aria-pressed` carries the same thing in the
+one channel a listener has.
+
+**Thirty-five `<label>` elements labelling nothing.** A `<label>` with no `for`
+and no control inside it is not a label. It is text that happens to sit above a
+number, and the pairing exists only in the layout — which is the visual channel
+doing a job I never gave to the markup. Twenty-two are the live stat tiles;
+thirteen more the inspector generates every time you click a creature. They are
+description lists now, so the accessibility tree holds twenty-two terms and
+twenty-two definitions where it used to hold forty-four loose strings.
+
+**Two figures with no name at all.** This is the one that stung. v1.42 ended a
+three-release sweep with a sentence I have re-read many times since: *all six
+canvases on the page have accessible names.* True — and the sweep was scoped to
+canvases. The inspector's weight strip is a row of 120 `<span>`s and its NEAT
+diagram is an SVG, so neither was ever in the domain of the thing that declared
+victory. **Before trusting any sweep, ask what is *in* its domain** — I wrote
+that after v1.43, about a colour audit, and here it is again about a naming
+audit one figure over.
+
+Both are named now, and named the way `describe.js` names the pond: by saying
+what the picture shows. *"Inherited brain: 120 weights, 59 excitatory and 61
+inhibitory, strongest 2.21."* A name that only says *a chart is here* is a label
+for the fact of the figure, not for the figure.
+
+### The one I nearly shipped
+
+The learned-weights strip is repainted from `innerHTML` on every tick. I named
+it where it is built, ran the page, and the browser told me it was called
+"Brain as learned so far" in the markup and "Brain" in the DOM — because the
+live-patch path calls the same function without the name. **A figure named once
+is named for one frame.** That is v1.23's stale Ground readout wearing a
+caption, and the only reason I caught it is that I read the value back out of a
+running browser instead of reading my own diff.
+
+### The negative result
+
+There is no `:focus-visible` rule anywhere in 1,227 lines of CSS, and my first
+instinct was that this was the biggest finding of the cycle: a dark page with no
+focus styling. So I photographed four controls at 4×, focused and unfocused, and
+the ring is *fine* — the user agent draws an opaque white band with a dark one
+behind it, which is precisely v1.34's remedy for a mark whose background it does
+not control, arrived at by somebody else years ago. Nothing to add. What I
+pinned instead is the way it breaks: a future tidy-up writing `outline: none` to
+make a button look neater. **Pin the failure, not only the fix** — and when a
+thing turns out to be right, the test is about the ways it could stop being.
+
+### The regression the measurement caught
+
+Turning a `div` into a `button` picked up the global `button { flex: 1 }` rule
+and stretched two chips to 635 pixels each — half the page apiece. I did not
+notice by looking at the screenshot; I noticed because I had measured the
+geometry before the change and compared. The correction is the one `.scope-btn`
+already carries with a comment explaining it, four hundred lines up. Before and
+after now agree to the pixel: chips 102×24 and 109×24, a stat tile 72×32, the
+stats block 320×324, the panel 2,110 tall.
+
+### The instrument
+
+`test/markup.test.js` is the first test in this project that reads the HTML it
+ships. Forty-two test files, every one of them pointed at JavaScript, and the
+two hand-written documents a visitor actually loads had never been read by
+anything but me. It is a text scan and it says so in its header: no id twice,
+every `for` target exists, every label labels something, no positive `tabindex`,
+every `role="img"` names itself, every button and link has something to
+announce, the legend is built from buttons, and no stylesheet removes the focus
+ring. Every rule in it is one the browser confirmed first. **The scan is what
+keeps the answer true; it is not what found it.**
+
+### What it leaves behind
+
+The pond canvas and the minimap both take clicks, and neither can be focused. So
+*selecting a creature* — the gateway to the entire inspector, the brain diagram,
+the ancestry, the follow camera — and *jumping the view* still have no keyboard
+route at all. That is a real feature, not a patch, and it wants its own cycle:
+what does Tab-into-the-pond even select first, and how does a keyboard user step
+between four hundred creatures? I would rather name it than quietly ship a half
+version of it in the margin of a release about labels.

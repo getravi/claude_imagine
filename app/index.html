@@ -112,7 +112,9 @@
             <span>Seed</span>
             <span class="inline">
               <input id="seed-input" type="number" min="0" />
-              <button id="btn-randomseed" class="mini">🎲</button>
+              <button id="btn-randomseed" class="mini" aria-label="Random seed" title="Random seed">
+                🎲
+              </button>
             </span>
           </label>
 
@@ -241,30 +243,36 @@
           </div>
         </div>
 
-        <div class="stats">
-          <div class="stat"><label>Population</label><b id="stat-pop">0</b></div>
-          <div class="stat"><label>Food</label><b id="stat-food">0</b></div>
-          <div class="stat"><label>Max gen</label><b id="stat-gen">0</b></div>
-          <div class="stat"><label>Diversity</label><b id="stat-div">0</b></div>
-          <div class="stat"><label>Carnivores 🔺</label><b id="stat-carn">0</b></div>
-          <div class="stat"><label>Kills</label><b id="stat-kills">0</b></div>
-          <div class="stat"><label>Sick 🦠</label><b id="stat-sick">off</b></div>
-          <div class="stat"><label>Immune 🛡️</label><b id="stat-immune">off</b></div>
-          <div class="stat"><label>Contagious 💧</label><b id="stat-reach">off</b></div>
-          <div class="stat"><label>Learning 🧠</label><b id="stat-learn">0</b></div>
-          <div class="stat"><label>Heard 📣</label><b id="stat-heard">off</b></div>
-          <div class="stat"><label>Ground ⛰️</label><b id="stat-ground">off</b></div>
-          <div class="stat"><label>Walled 🧱</label><b id="stat-walled">off</b></div>
-          <div class="stat"><label>Soil 🍂</label><b id="stat-soil">off</b></div>
-          <div class="stat"><label>Brain 🧬</label><b id="stat-brain">fixed</b></div>
-          <div class="stat"><label>Births</label><b id="stat-births">0</b></div>
-          <div class="stat"><label>Deaths</label><b id="stat-deaths">0</b></div>
-          <div class="stat"><label>Lifespan ⏳</label><b id="stat-life">—</b></div>
-          <div class="stat"><label>Standing ⚡</label><b id="stat-standing">0</b></div>
-          <div class="stat"><label>Power ⚡</label><b id="stat-power">0</b></div>
-          <div class="stat"><label>Tick</label><b id="stat-tick">0</b></div>
-          <div class="stat"><label>FPS</label><b id="stat-fps">0</b></div>
-        </div>
+        <!-- Twenty-two name/value pairs. They were `<label>` elements until
+             v1.51, which is a label that labels nothing: a `<label>` with no
+             `for` and no control inside it is plain text in the accessibility
+             tree, so the name and its number were a pair only by being next to
+             each other on screen. A description list says the pairing in the
+             markup, where a screen reader can read it. -->
+        <dl class="stats">
+          <div class="stat"><dt>Population</dt><dd id="stat-pop">0</dd></div>
+          <div class="stat"><dt>Food</dt><dd id="stat-food">0</dd></div>
+          <div class="stat"><dt>Max gen</dt><dd id="stat-gen">0</dd></div>
+          <div class="stat"><dt>Diversity</dt><dd id="stat-div">0</dd></div>
+          <div class="stat"><dt>Carnivores 🔺</dt><dd id="stat-carn">0</dd></div>
+          <div class="stat"><dt>Kills</dt><dd id="stat-kills">0</dd></div>
+          <div class="stat"><dt>Sick 🦠</dt><dd id="stat-sick">off</dd></div>
+          <div class="stat"><dt>Immune 🛡️</dt><dd id="stat-immune">off</dd></div>
+          <div class="stat"><dt>Contagious 💧</dt><dd id="stat-reach">off</dd></div>
+          <div class="stat"><dt>Learning 🧠</dt><dd id="stat-learn">0</dd></div>
+          <div class="stat"><dt>Heard 📣</dt><dd id="stat-heard">off</dd></div>
+          <div class="stat"><dt>Ground ⛰️</dt><dd id="stat-ground">off</dd></div>
+          <div class="stat"><dt>Walled 🧱</dt><dd id="stat-walled">off</dd></div>
+          <div class="stat"><dt>Soil 🍂</dt><dd id="stat-soil">off</dd></div>
+          <div class="stat"><dt>Brain 🧬</dt><dd id="stat-brain">fixed</dd></div>
+          <div class="stat"><dt>Births</dt><dd id="stat-births">0</dd></div>
+          <div class="stat"><dt>Deaths</dt><dd id="stat-deaths">0</dd></div>
+          <div class="stat"><dt>Lifespan ⏳</dt><dd id="stat-life">—</dd></div>
+          <div class="stat"><dt>Standing ⚡</dt><dd id="stat-standing">0</dd></div>
+          <div class="stat"><dt>Power ⚡</dt><dd id="stat-power">0</dd></div>
+          <div class="stat"><dt>Tick</dt><dd id="stat-tick">0</dd></div>
+          <div class="stat"><dt>FPS</dt><dd id="stat-fps">0</dd></div>
+        </dl>
 
         <div class="mortality">
           <div class="mort-head">⚰️ What they die of <span id="mort-window">rolling window</span></div>

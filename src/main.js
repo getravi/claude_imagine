@@ -512,8 +512,17 @@ function buildLegend(living, hatch) {
   const box = $("species-legend");
   box.innerHTML = "";
   for (const s of living.slice(0, 16)) {
-    const chip = document.createElement("div");
-    chip.className = "chip" + (renderer.highlightSpeciesId === s.id ? " active" : "");
+    // A button, not a div, since v1.51. The section's own prose says "click one
+    // to spotlight it in the pond above" and for twenty-nine versions that was
+    // true only of a mouse: a div with a click handler is not focusable, not
+    // operable by Enter or Space, and announces neither that it can be pressed
+    // nor whether it currently is. `aria-pressed` carries the state the `active`
+    // class carries visually, which is the same toggle said twice.
+    const on = renderer.highlightSpeciesId === s.id;
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip" + (on ? " active" : "");
+    chip.setAttribute("aria-pressed", on ? "true" : "false");
     // The dot wears the band's hatch and the band's colour, both from the same
     // module the plot draws from — the dot had its own hand-written `70%, 55%`
     // here until v1.46, one shade off the thing it was a key to.
@@ -1056,7 +1065,11 @@ function updateInspector() {
     ).toFixed(2)}`;
   }
   const learned = document.getElementById("insp-learned");
-  if (learned) learned.innerHTML = sparkFromWeights(c.brain.w);
+  // Repainted every frame, so it needs the name every frame: a figure that is
+  // named when it is built and anonymous when it is refreshed is named for one
+  // tick. (It said "Brain" here and "Brain as learned so far" above it, which is
+  // the same figure introducing itself twice under two names.)
+  if (learned) learned.innerHTML = sparkFromWeights(c.brain.w, "Brain as learned so far");
   // An ancestor can die out while you watch: toggle the class rather than
   // re-rendering the chain, so a lineage going hollow never eats a click.
   for (const pip of panel.querySelectorAll(".anc")) {
@@ -1075,39 +1088,46 @@ function inspectorHTML(c, chain) {
   return `
     <div class="insp-row"><span class="swatch" style="background:hsl(${c.hue},70%,55%)"></span>
       <strong>Creature #${c.id}</strong></div>
-    <div class="insp-grid">
-      <div><label>Generation</label><b>${c.generation}</b></div>
-      <div><label>Age</label><b id="insp-age">${c.age}</b></div>
-      <div><label>Energy</label><b id="insp-energy">—</b></div>
-      <div><label>Children</label><b id="insp-children">${c.children}</b></div>
-      <div><label>Size</label><b>${c.radius.toFixed(1)}</b></div>
-      <div><label>Metabolism</label><b>${c.metabolismScale.toFixed(2)}×</b></div>
-      <div class="insp-wide"><label>Diet</label><b>${dietLabel}</b></div>
+    <dl class="insp-grid">
+      <div><dt>Generation</dt><dd>${c.generation}</dd></div>
+      <div><dt>Age</dt><dd id="insp-age">${c.age}</dd></div>
+      <div><dt>Energy</dt><dd id="insp-energy">—</dd></div>
+      <div><dt>Children</dt><dd id="insp-children">${c.children}</dd></div>
+      <div><dt>Size</dt><dd>${c.radius.toFixed(1)}</dd></div>
+      <div><dt>Metabolism</dt><dd>${c.metabolismScale.toFixed(2)}×</dd></div>
+      <div class="insp-wide"><dt>Diet</dt><dd>${dietLabel}</dd></div>
       ${
         // The ground sense, per creature: what it is standing on, and how much
         // of its steering that fact is deciding right now. Both are live, so
         // they are patched rather than rebuilt (see the v1.15 lesson).
         config.groundSense
-          ? `<div class="insp-wide"><label>Underfoot 👣</label><b id="insp-foot">—</b></div>`
+          ? `<div class="insp-wide"><dt>Underfoot 👣</dt><dd id="insp-foot">—</dd></div>`
           : ""
       }
-      <div class="insp-wide"><label>Species</label>
-        <b><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></b></div>
+      <div class="insp-wide"><dt>Species</dt>
+        <dd><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></dd></div>
       ${ancestryRow(c, chain)}
-    </div>
+    </dl>
     ${
+      // The captions used to be `<label>` too, and these two label *figures*
+      // rather than values, so they are captions (`p`) and the figure carries
+      // the name itself. v1.42 said every canvas on the page has an accessible
+      // name; neither of these is a canvas — one is a strip of spans and the
+      // other an SVG — so the sweep walked past both, and they had none at all.
       c.genome.conns // NEAT genome: show the evolved network graph
-        ? `<div class="brainwrap"><label>Brain — evolved network (${
+        ? `<div class="brainwrap"><p class="fig-label">Brain — evolved network (${
             c.genome.complexity.conns
-          } connections, ${c.genome.complexity.nodes} hidden) 🧬</label>${brainGraphSVG(
+          } connections, ${c.genome.complexity.nodes} hidden) 🧬</p>${brainGraphSVG(
             c.genome
           )}</div>`
-        : `<div class="brainwrap"><label>Brain — inherited</label>${sparkFromWeights(
-            c.genome.brainWeights
+        : `<div class="brainwrap"><p class="fig-label">Brain — inherited</p>${sparkFromWeights(
+            c.genome.brainWeights,
+            "Inherited brain"
           )}${
             c.brain.plastic
-              ? `<label class="learned-label">Brain — current (learned) 🧠</label><div id="insp-learned">${sparkFromWeights(
-                  c.brain.w
+              ? `<p class="fig-label learned-label">Brain — current (learned) 🧠</p><div id="insp-learned">${sparkFromWeights(
+                  c.brain.w,
+                  "Brain as learned so far"
                 )}</div>`
               : ""
           }</div>`
@@ -1134,12 +1154,12 @@ function ancestryRow(c, chain) {
         style="--anc-hue:${s.hue}">${s.id}</button>`;
     })
     .join('<span class="anc-arrow">›</span>');
-  return `<div class="insp-wide"><label>Ancestry — ${branchings} branching${
+  return `<div class="insp-wide"><dt>Ancestry — ${branchings} branching${
     branchings === 1 ? "" : "s"
-  } deep</label>
-    <div class="ancestry">${
+  } deep</dt>
+    <dd class="ancestry">${
       elided ? `<span class="anc-arrow" title="${elided} older ancestors">…</span>` : ""
-    }${pips}</div></div>`;
+    }${pips}</dd></div>`;
 }
 
 // Render a weight vector as a tiny bar strip — a visual "fingerprint" of the
@@ -1149,10 +1169,23 @@ function ancestryRow(c, chain) {
 // there for why the magnitude stopped being an opacity in v1.49. With
 // plasticity on, showing this for both the inherited and current weights makes
 // within-lifetime learning visible as the strip shifts.
-function sparkFromWeights(w) {
+function sparkFromWeights(w, name = "Brain") {
   const n = Math.min(w.length, 120);
   const track = rgbCss(inspectorTrack());
-  let html = '<div class="genome">';
+  // A figure made of 120 unnamed spans says nothing at all to a screen reader,
+  // so it gets a name — and a name that reports the picture rather than merely
+  // announcing that a picture is here. The shape of a brain, in one sentence:
+  // how many weights, how they split by sign, and how strong the strongest is.
+  let pos = 0;
+  let peak = 0;
+  for (let i = 0; i < n; i++) {
+    if (w[i] > 0) pos++;
+    if (Math.abs(w[i]) > peak) peak = Math.abs(w[i]);
+  }
+  const label =
+    `${name}: ${n} weight${n === 1 ? "" : "s"}, ${pos} excitatory and ${n - pos} inhibitory, ` +
+    `strongest ${peak.toFixed(2)}.`;
+  let html = `<div class="genome" role="img" aria-label="${label}">`;
   for (let i = 0; i < n; i++) {
     const m = weightMark(w[i]);
     const pct = (m.fill * 100).toFixed(0);
@@ -1224,7 +1257,13 @@ function brainGraphSVG(genome) {
         }</span>`
     )
     .join("");
-  return `<svg class="braingraph" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg><div class="bg-key">${key}<span class="bg-chip"><i class="bg-pos"></i>+ weight</span><span class="bg-chip"><i class="bg-neg"></i>− weight</span></div>`;
+  // Named, like every other figure on the page: an SVG with no accessible name
+  // is an unlabelled graphic, and this one is the whole point of NEAT being on.
+  const label =
+    `Evolved brain: ${nIn} senses on the left, ${hidden.length} hidden neuron` +
+    `${hidden.length === 1 ? "" : "s"} in the middle, ${nOut} motors on the right, ` +
+    `wired by ${genome.complexity.conns} live connections.`;
+  return `<svg class="braingraph" role="img" aria-label="${label}" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg><div class="bg-key">${key}<span class="bg-chip"><i class="bg-pos"></i>+ weight</span><span class="bg-chip"><i class="bg-neg"></i>− weight</span></div>`;
 }
 
 // Toggle the simulation between running and paused, keeping the button label in

@@ -407,26 +407,32 @@ details .field {
   margin-top: 10px;
 }
 
-/* ---- Stats grid ---- */
+/* ---- Stats grid ----
+   A description list since v1.51: `dt` is the name, `dd` is the live number.
+   The tiles look exactly as they did — the only thing that changed is that the
+   pairing is now stated rather than implied by being adjacent. */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px 8px;
+  margin: 0;
 }
 .stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.stat label {
+.stat dt {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--ink-faint);
 }
-.stat b {
+.stat dd {
+  margin: 0;
   font-family: var(--mono);
   font-size: 16px;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -652,11 +658,14 @@ details .field {
   display: inline-block;
   box-shadow: 0 0 8px currentColor;
 }
+/* A description list since v1.51, for the same reason the stats grid is one:
+   every row here is a name and a value, and `dt`/`dd` is the pairing said out
+   loud. `dd` carries the bold `b` used to bring with it. */
 .insp-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
 }
 .insp-grid div {
   display: flex;
@@ -665,15 +674,17 @@ details .field {
 .insp-grid .insp-wide {
   grid-column: 1 / -1;
 }
-.insp-grid label {
+.insp-grid dt {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ink-faint);
 }
-.insp-grid b {
+.insp-grid dd {
+  margin: 0;
   font-family: var(--mono);
   font-size: 14px;
+  font-weight: 700;
 }
 .insp-grid a {
   color: var(--accent);
@@ -689,7 +700,7 @@ details .field {
   flex-wrap: wrap;
   align-items: center;
   gap: 3px;
-  margin-top: 4px;
+  margin: 4px 0 0;
 }
 .anc {
   font-family: var(--mono);
@@ -720,12 +731,15 @@ details .field {
   color: var(--ink-faint);
   font-size: 11px;
 }
-.brainwrap label {
+/* A caption, not a `label` — it names a figure, and the figure carries its own
+   accessible name (v1.51). */
+.brainwrap .fig-label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ink-faint);
   display: block;
+  margin: 0;
 }
 .brainwrap .learned-label {
   margin-top: 8px;
@@ -942,15 +956,22 @@ details .field {
   gap: 6px;
   margin-top: 10px;
 }
+/* A `button` since v1.51 — it always behaved like one — which means the global
+   `button { flex: 1 }` rule now reaches it and would stretch six chips across
+   the whole width of the page. Same correction the scope button carries, for
+   the same reason; the chip hugs its species name as it always did. */
 .legend .chip {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   background: var(--bg-panel);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 4px 10px 4px 6px;
+  font-family: inherit;
   font-size: 12px;
+  margin: 0;
   color: var(--ink-dim);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
