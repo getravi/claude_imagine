@@ -4,6 +4,7 @@ import { World } from "../src/world.js";
 import { Creature } from "../src/creature.js";
 import { Genome } from "../src/genome.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 
 // A world with contagion on, deliberately generous so an epidemic actually gets
@@ -31,21 +32,12 @@ test("contagion is off by default and no creature is ever sick", () => {
 });
 
 test("with contagion off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 12, disease: false }));
-  const withoutFlag = new World(makeConfig({ seed: 12 }));
-  for (let i = 0; i < 3000; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  assert.equal(withFlag.stats.kills, withoutFlag.stats.kills);
-  // The strongest form: the whole population, position by position.
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    assert.equal(withFlag.creatures[i].x, withoutFlag.creatures[i].x);
-    assert.equal(withFlag.creatures[i].energy, withoutFlag.creatures[i].energy);
-  }
+  assertUnaffected(
+    new World(makeConfig({ seed: 12, disease: false })),
+    new World(makeConfig({ seed: 12 })),
+    3000,
+    "disease"
+  );
 });
 
 test("an infection starts, spreads, and is survived", () => {

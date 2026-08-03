@@ -8,6 +8,7 @@ import {
   dayNightPhase,
 } from "../src/environment.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 import { World } from "../src/world.js";
 
@@ -190,15 +191,16 @@ test("a world with the day/night cycle on stays alive and deterministic", () => 
 });
 
 test("with the day/night cycle off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 314, dayNightCycle: false }));
-  const withoutFlag = new World(makeConfig({ seed: 314 }));
-  for (let i = 0; i < 3000; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.stats.kills, withoutFlag.stats.kills);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
+  // This one compared three integers from v1.13 to v1.52 — the whole pond could
+  // have moved one ULP sideways and it would have passed. `world.visionFactor`,
+  // which is the state this flag actually writes, is in the state hash as of
+  // v1.53 and was in no comparison at all before it.
+  assertUnaffected(
+    new World(makeConfig({ seed: 314, dayNightCycle: false })),
+    new World(makeConfig({ seed: 314 })),
+    3000,
+    "dayNightCycle"
+  );
 });
 
 test("a world with seasons and biomes survives several years", () => {

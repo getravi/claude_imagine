@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 
 import { BarrierField, blockedAt } from "../src/barriers.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { World } from "../src/world.js";
 import { Creature } from "../src/creature.js";
 import { Genome } from "../src/genome.js";
@@ -25,25 +26,12 @@ const walled = (over = {}) => makeConfig({ seed: 314, barriers: true, ...over })
 test("a world without barriers is untouched, down to the last pellet", () => {
   const a = new World(makeConfig({ seed: 77 }));
   const b = new World(makeConfig({ seed: 77, barriers: false }));
-  for (let i = 0; i < 500; i++) {
-    a.step();
-    b.step();
-  }
   assert.equal(a.barriers, null, "no field is built");
-  assert.equal(a.creatures.length, b.creatures.length);
-  for (let i = 0; i < a.creatures.length; i++) {
-    assert.equal(a.creatures[i].x, b.creatures[i].x);
-    assert.equal(a.creatures[i].y, b.creatures[i].y);
-    assert.equal(a.creatures[i].energy, b.creatures[i].energy);
-  }
-  // The food array too: v1.18's lesson, that a feature touching a collection no
-  // test has ever compared needs that collection compared element by element.
-  assert.equal(a.food.items.length, b.food.items.length);
-  for (let i = 0; i < a.food.items.length; i++) {
-    assert.equal(a.food.items[i].x, b.food.items[i].x);
-    assert.equal(a.food.items[i].y, b.food.items[i].y);
-  }
+  assertUnaffected(a, b, 500, "barriers");
   assert.equal(a.stats.walled, 0, "the counter reads exactly zero with no rock");
+  // And `creature.walled`, the per-creature flag the counter is summed from,
+  // which nothing compared until it entered the state hash in v1.53.
+  for (const c of a.creatures) assert.equal(c.walled, false);
 });
 
 test("the layout costs the world RNG nothing to build", () => {

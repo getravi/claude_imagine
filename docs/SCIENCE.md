@@ -3174,6 +3174,123 @@ node --input-type=module -e '
 ```
 
 
+## The instrument that was itself a hand-picked list (v1.53)
+
+The second prime directive is that a `(seed, config)` pair reproduces a world
+exactly, and that a feature which is switched off costs the world nothing at
+all. v1.36 built the thing that enforces it — `src/fingerprint.js` — and asked
+the sharp question of one of its two hashes: *what must this be blind to?*
+`trajectoryFingerprint` must not see a new gene or a new per-creature field,
+because almost every release adds one and a constant that gets re-recorded every
+cycle is a note rather than a test. There is a test asserting that blindness.
+
+The complementary question was never asked. `stateFingerprint` is the hash every
+same-process comparison in this project runs on — the twelve per-feature "with
+this off, worlds are bit-for-bit unaffected" tests, the all-flags sweep in
+`test/fingerprint.test.js`, and the constant sweep in `src/levers.js`, which
+decides whether a number is a lever by asking whether moving it moves this hash.
+Nobody ever asked what it must **not** be blind to, and the answer was that it
+hashed sixteen of the twenty-eight fields a creature carries, chosen by hand in
+v1.36 and untouched for seventeen releases.
+
+### Sweeping the state the way v1.38 swept the constants
+
+`levers.js` moves every numeric constant in `config.js` and asks whether
+*anything* changes; it has no theory, which is exactly why it caught a wrong
+sentence about `energyMax` that a correct measurement had licensed. The same
+move points at state: take a warmed pond, perturb one field on every creature,
+and ask which instrument notices — and, separately, whether the pond's future
+notices.
+
+Seed 21, warmed 300 ticks, each field moved by 0.25 (or negated, or +1 for a
+counter), then both worlds stepped 400 more:
+
+| field | in the state hash? | does the pond care? |
+|---|---|---|
+| `metabolismScale` | **no** | trajectory moves at +1 tick |
+| `phase` | **no** | trajectory moves at +1 tick |
+| `lastBiteAge` | **no** | trajectory moves at +3 ticks |
+| `world.visionFactor` | **no** | trajectory moves at +1 tick |
+| `walled`, `groundFeel`, `hue`, `infectedAtAge`, `prevSignal`, `heard` | **no** | inert *today* |
+| `id` | no, and must stay out | never — see below |
+| `speciesId` | no, and must stay out | never — it is the observer's |
+| the other sixteen | yes | yes |
+
+Four things the strongest determinism instrument in the project could not see
+change the world within three ticks. `metabolismScale` multiplies the metabolic
+bill; `phase` is the internal oscillator wired to input 12; `lastBiteAge` is the
+predation cooldown, which decides who may bite next tick; `visionFactor` is the
+day/night multiplier on every sense. Six more are invisible only because their
+readers sit behind flags that are off by default — they are holes with nothing
+in them yet.
+
+None of this was a live bug: no code writes those fields except the code that
+should, so the promise the hash was checking was in fact being kept. That is
+precisely the shape v1.36 warned about in a different costume — *a promise I
+have always kept feels exactly like a promise that is enforced*. The hash was
+not enforcing eleven of the twelve fields it skipped; it was agreeing with them.
+
+### The two that must stay outside, and why that is not the same omission
+
+`creature.id` comes from a module-level counter, so the second world built in a
+process never agrees with the first however identical the ponds are. It is the
+one field that *looks* most like identity and is the one a same-process
+comparison can never use. `creature.speciesId` is written by `phylogeny.assign`
+— the observer's handwriting on the observed — and it is already covered by
+`observationFingerprint`; hashing it into the state would make the "observation
+never feeds back" test fail for something that is not feedback.
+
+Both are now named in `CREATURE_UNHASHED` with those reasons, and
+`test/determinism.test.js` walks a live creature's own properties and fails on
+any field that is in neither list. That is the durable half of this release: not
+the ten fields added, but that the next release's new field cannot quietly land
+outside the instrument.
+
+### The channel no fingerprint can have
+
+All three hashes are pictures of a world at an instant, and the canonical
+violation of directive 2 does not appear in one. A feature that is switched off
+and draws a random number anyway — and throws it away — leaves the pond
+bit-identical at that moment. Measured on seed 21: one discarded `rng.next()` is
+invisible to all three fingerprints and the trajectory parts **eight ticks
+later**. A comparison made at a horizon shorter than that is a comparison of two
+worlds that have already diverged.
+
+v1.45 and v1.47 both met this and both solved it by counting draws, in one file
+each. `drawStream()` hashes the values instead, which is the same idea and
+strictly stronger — two streams can agree on how many numbers were taken and
+disagree about which consumer took which — and it is now one of the four
+channels every one of the twelve tests runs through.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const { World } = await import("./src/world.js");
+  const { makeConfig } = await import("./src/config.js");
+  const F = await import("./src/fingerprint.js");
+  const pair = (mut) => {
+    const a = new World(makeConfig({ seed: 21 })), b = new World(makeConfig({ seed: 21 }));
+    for (let i = 0; i < 300; i++) { a.step(); b.step(); }
+    mut(a);
+    const seen = F.stateFingerprint(a) !== F.stateFingerprint(b);
+    let at = -1;
+    for (let i = 0; i < 400; i++) {
+      a.step(); b.step();
+      if (at < 0 && F.trajectoryFingerprint(a) !== F.trajectoryFingerprint(b)) at = i + 1;
+    }
+    return (seen ? "hash sees it" : "HASH BLIND") + ", " + (at < 0 ? "pond unchanged" : "pond moves at +" + at);
+  };
+  for (const f of ["metabolismScale", "phase", "lastBiteAge", "x"])
+    console.log(f.padEnd(16), pair((w) => w.creatures.forEach((c) => (c[f] += 0.25))));
+  console.log("visionFactor    ", pair((w) => (w.visionFactor += 0.25)));
+  console.log("a stolen draw   ", pair((w) => w.rng.next()));'
+```
+
+Run against v1.52 the first four rows read `HASH BLIND`; against v1.53 only the
+stolen draw does, which is the row the fourth channel exists for.
+
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

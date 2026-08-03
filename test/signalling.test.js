@@ -5,6 +5,7 @@ import { Creature, deserializeGenome } from "../src/creature.js";
 import { Genome, genomeLength, migrateGenomeData, BRAIN } from "../src/genome.js";
 import { NeuralNet } from "../src/nn.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 
 const WLEN = NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs);
@@ -18,24 +19,15 @@ test("signalling is off by default, and nobody hears anything", () => {
 });
 
 test("with signalling off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 21, signalling: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  for (let i = 0; i < 2500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  assert.equal(withFlag.stats.kills, withoutFlag.stats.kills);
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    const a = withFlag.creatures[i];
-    const b = withoutFlag.creatures[i];
-    assert.equal(a.x, b.x);
-    assert.equal(a.y, b.y);
-    assert.equal(a.energy, b.energy); // the voice cost must be an exact zero
-    assert.equal(a.signal, b.signal);
-  }
+  // The voice cost must be an exact zero, and `signal`, `prevSignal` and
+  // `heard` must all still be their initial values — all four are inside the
+  // state hash the shared assertion compares.
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, signalling: false })),
+    new World(makeConfig({ seed: 21 })),
+    2500,
+    "signalling"
+  );
 });
 
 // The riskiest thing about an extra sense is that it lengthens the genome, and

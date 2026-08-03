@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { SpatialGrid } from "../src/grid.js";
 import { World } from "../src/world.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { torusDist2 } from "../src/vec.js";
 
 /** Every item within `radius` of (x, y), found the slow honest way. */
@@ -161,28 +162,12 @@ test("the old query is blind to part of the vision radius, and the new one isn't
 
 test("exact vision is off by default and leaves worlds bit-for-bit unchanged", () => {
   assert.equal(DEFAULT_CONFIG.exactVision, false);
-  const withFlag = new World(makeConfig({ seed: 21, exactVision: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  for (let i = 0; i < 1500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.food.items.length, withoutFlag.food.items.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    const a = withFlag.creatures[i];
-    const b = withoutFlag.creatures[i];
-    assert.equal(a.x, b.x);
-    assert.equal(a.y, b.y);
-    assert.equal(a.energy, b.energy);
-    assert.equal(a.heading, b.heading);
-  }
-  for (let i = 0; i < withFlag.food.items.length; i++) {
-    assert.equal(withFlag.food.items[i].x, withoutFlag.food.items[i].x);
-    assert.equal(withFlag.food.items[i].y, withoutFlag.food.items[i].y);
-  }
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, exactVision: false })),
+    new World(makeConfig({ seed: 21 })),
+    1500,
+    "exactVision"
+  );
 });
 
 test("with exact vision on, a creature really sees everything within its radius", () => {

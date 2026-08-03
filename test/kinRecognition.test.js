@@ -4,6 +4,7 @@ import { World } from "../src/world.js";
 import { Creature } from "../src/creature.js";
 import { Genome } from "../src/genome.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 
 // Build a genome with specific body genes (size, diet) but otherwise random
@@ -60,15 +61,12 @@ test("kin recognition never grants immunity by size/diet alone", () => {
 });
 
 test("with kin recognition off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 5, kinRecognition: false }));
-  const withoutFlag = new World(makeConfig({ seed: 5 }));
-  for (let i = 0; i < 3000; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.stats.kills, withoutFlag.stats.kills);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
+  assertUnaffected(
+    new World(makeConfig({ seed: 5, kinRecognition: false })),
+    new World(makeConfig({ seed: 5 })),
+    3000,
+    "kinRecognition"
+  );
 });
 
 test("a kin-recognition world stays alive and deterministic", () => {

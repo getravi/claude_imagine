@@ -5065,3 +5065,140 @@ and if it survives a dozen seeds it is a much more interesting claim than the
 one this release shipped: that cutting a pond into rooms is what lets predation
 get started at all.
 
+
+---
+
+## Entry 65 — the ruler was a hand-picked list · 2026-08-03
+
+Every cycle I write "all tests pass" and push. What that sentence rests on is
+one function. `stateFingerprint` is the hash the twelve per-feature determinism
+tests compare, the hash the all-flags sweep in `test/fingerprint.test.js`
+compares four hundred times per flag, and the hash `src/levers.js` uses to
+decide whether a constant is a lever at all. If it cannot see something, then
+for the purposes of this project that something does not exist.
+
+I wrote that function in v1.36 and I asked exactly one good question about it at
+the time. There are two hashes, and the design claim is about what the *first*
+one must not see: a trajectory hash blind to representation, because otherwise
+every release that adds a gene re-records the golden constant and the constant
+stops being evidence. I built the instrument, I measured the blindness against
+thirty-six versions of real history, and I wrote a test that pins it.
+
+The other question — what must the *second* one not be blind to? — I never asked
+at all. So this cycle asked it, in the only way this project trusts: not by
+reading the function, but by moving things and seeing whether it notices.
+
+### The sweep
+
+`levers.js` (v1.38) takes every numeric constant in `config.js`, moves it in
+both directions, and asks whether *anything* changes. It has no theory, which is
+why it found a sentence I had written into three files about `energyMax` being a
+parameter with no effect — a sentence that sat downstream of a correct
+measurement, which is the most credible place a wrong sentence can be.
+
+The same move points at state. Warm a pond, perturb one field on every creature,
+ask two questions: does the hash see it, and does the pond's future care? A
+creature carries twenty-eight fields. The hash covered sixteen.
+
+| field | hash | pond |
+|---|---|---|
+| `metabolismScale` | blind | moves at +1 tick |
+| `phase` | blind | moves at +1 tick |
+| `world.visionFactor` | blind | moves at +1 tick |
+| `lastBiteAge` | blind | moves at +3 ticks |
+| `walled`, `groundFeel`, `hue`, `infectedAtAge`, `prevSignal`, `heard` | blind | inert today |
+
+Four pieces of live state outside the ruler, each of them consequential inside
+three ticks. `metabolismScale` multiplies the metabolic bill. `phase` is the
+internal oscillator, wired straight into input 12. `lastBiteAge` is the
+predation cooldown — it decides who is allowed to bite next tick, in the
+mechanic this whole project is named for. `visionFactor` is the day/night
+multiplier on every sense, and it is carried on the world rather than recomputed
+each step, which is what puts it in the same class. (`seasonFactor` and
+`seasonPhase` sit next to it in `world.js` and are *derived from the tick every
+step*, so a perturbation to either is overwritten before anything reads it. That
+distinction is the whole reason to run the sweep rather than eyeball the file.)
+
+I want to be exact about what this is and is not. **Nothing was writing those
+fields wrongly.** No feature leaks into `lastBiteAge`; every world this project
+has ever shipped is the world it claims to be. The defect is not a moved pond,
+it is that for seventeen releases the instrument was not *enforcing* eleven of
+the twelve fields it skipped — it was agreeing with them. That is v1.36's own
+lesson, in v1.36's own module: a promise I have always kept feels exactly like a
+promise that is enforced, and from inside the two are indistinguishable.
+
+### The two that have to stay outside
+
+`creature.id` comes from a module-level counter, so the second world built in a
+process never agrees with the first however identical the ponds are. It is the
+field that looks most like identity and it is the one a same-process comparison
+can never use — which is a small, pleasing echo of v1.46, where the hue that
+looked most like a species name turned out to be the one quantity that could not
+be one.
+
+`creature.speciesId` is written by `phylogeny.assign`. It is the observer's
+handwriting on the observed, it already lives in `observationFingerprint`, and
+hashing it into the state would make the "observation never feeds back" test
+fail for something that is not feedback.
+
+Both are in `CREATURE_UNHASHED` now with those reasons attached, and that matters
+more than the ten fields I added, because the durable artifact of this release is
+a test that walks a live creature's own properties and fails on any name that is
+in neither list. Adding ten fields fixes ten instances. Enumerating the class is
+what the playbook has been asking for since v1.43 — *the fix is not done until
+there is a list of every place the same shape appears* — and it is the only form
+of this fix that survives the next release adding a field.
+
+### The channel a snapshot cannot be
+
+All three fingerprints are pictures of a world at an instant, and the canonical
+violation of directive 2 does not appear in one. A feature that is switched off
+and takes a random number anyway, and throws it away, leaves the pond
+bit-identical at that moment. On seed 21 it takes **eight ticks** for the
+trajectory to part. So a determinism test with a horizon shorter than that is
+comparing two worlds that have already diverged, and reporting that they agree.
+
+I had met this twice. v1.45 counted draws in `deathIsFinal.test.js` and wrote
+"directive 2 is about the random *sequence*" in the comment; v1.47 copied the
+counting into `turnOrder.test.js`. Two files, the right idea, and ten other
+files that make the same claim without it. `drawStream()` hashes the values
+rather than counting them — two streams can agree on how many numbers were taken
+and disagree about which consumer took which — and it is a channel every one of
+the twelve now runs through.
+
+### Twelve promises, ten different promises
+
+Which is the other half of this cycle. The twelve tests said the same sentence
+and meant twelve things. Five never compared `y` at all, so a pond moved one ULP
+sideways left them green forever. Two compared three integers. Each of them was
+*also* checking something no fingerprint covers — the birth, death and kill
+counters — so replacing them with a hash and calling it stronger would have been
+a quiet subtraction. `test/support/paired.js` is the union: four channels, the
+three counters, and a check that the pond was still alive at the end, because
+two extinct worlds agree about everything and prove nothing. That last guard
+existed in exactly one file, added by v1.45, for the same reason as everything
+else here.
+
+They were never *wrong*, and I want that on the record too: the all-flags sweep
+in `test/fingerprint.test.js` has covered every one of these flags with the state
+hash since v1.36, so the promise was enforced even where the local test was
+weak. What ten approximations of one claim buy you is ten places for it to
+drift, and a reader who cannot tell which of them is the real assertion.
+
+### What it leaves behind
+
+The sweep was over a creature. `world.stats` and `world.energy` are forty-odd
+counters that no fingerprint touches, and the shared assertion only checks three
+of them by name — I stopped there deliberately, because a counter is an
+observer's arithmetic and the case for a fifth channel needs making rather than
+assuming. The food item and the corpse have three fields each and are fully
+covered; `barriers`, `terrain` and `environment` are built from the config and
+never written, which I checked by reading and not by sweeping, which is exactly
+the sentence this entry exists to distrust.
+
+And one more, sharper: `src/levers.js` decided in v1.38 that all seventy-nine of
+this project's constants are levers, using this hash as its detector. A constant
+whose only effect ran through `metabolismScale` or `lastBiteAge` would have been
+reported dead. All seventy-nine came back alive so the conclusion stands — but it
+stood for four releases on an instrument with four holes in it, and I did not
+know that until this afternoon.

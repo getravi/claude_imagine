@@ -5,6 +5,7 @@ import { Creature, buildBrainFor, groundSway } from "../src/creature.js";
 import { Genome, genomeLength, migrateGenomeData, BRAIN } from "../src/genome.js";
 import { NeuralNet } from "../src/nn.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 import { groundBias } from "../src/terrain.js";
 
@@ -32,30 +33,12 @@ test("the ground sense is off by default, and nothing feels anything", () => {
 });
 
 test("with the sense off, a terrain world is bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 21, terrain: true, groundSense: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21, terrain: true }));
-  for (let i = 0; i < 1500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.food.items.length, withoutFlag.food.items.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    const a = withFlag.creatures[i];
-    const b = withoutFlag.creatures[i];
-    assert.equal(a.x, b.x);
-    assert.equal(a.y, b.y);
-    assert.equal(a.energy, b.energy);
-    assert.equal(a.heading, b.heading);
-  }
-  // The food array too: a feature that touches the world's other collection has
-  // to be compared element-by-element there as well (the v1.18 lesson).
-  for (let i = 0; i < withFlag.food.items.length; i++) {
-    assert.equal(withFlag.food.items[i].x, withoutFlag.food.items[i].x);
-    assert.equal(withFlag.food.items[i].y, withoutFlag.food.items[i].y);
-  }
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, terrain: true, groundSense: false })),
+    new World(makeConfig({ seed: 21, terrain: true })),
+    1500,
+    "groundSense"
+  );
 });
 
 // The riskiest thing about an extra sense is that it lengthens the genome, and

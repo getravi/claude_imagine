@@ -4,6 +4,61 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.53.0] — 2026-08-03
+
+v1.36 built this project's determinism instruments and asked the sharp question
+of one of them — *what must this hash be blind to?* — and wrote a test for the
+answer. The other half of that question was never asked. `stateFingerprint` is
+what every same-process comparison here runs on, including the constant sweep,
+and it hashed sixteen of the twenty-eight fields a creature carries, hand-picked
+in v1.36 and untouched for seventeen releases.
+
+### Fixed
+
+- **Four pieces of live state the strongest determinism instrument could not
+  see.** Sweeping the state the way `levers.js` sweeps the constants — perturb
+  each field, ask whether anything notices — found `metabolismScale`, `phase`
+  and `world.visionFactor` moving the pond's future at the *next tick* while the
+  hash held still, and `lastBiteAge`, the predation cooldown, within three. Six
+  further omissions (`walled`, `groundFeel`, `hue`, `infectedAtAge`,
+  `prevSignal`, `heard`) are inert only because their readers sit behind flags
+  that are off. All ten are hashed now, along with the two brain arrays that
+  were outside it for the same reason — `auxW`, which carries signalling and the
+  ground sense into the network, and the per-weight plasticity coefficients.
+  Nothing was writing them wrongly: the hash was not enforcing those fields, it
+  was agreeing with them, which is v1.36's own "a promise I have always kept
+  feels exactly like a promise that is enforced" one level down.
+- **The two fields that must stay outside, said out loud.** `creature.id` is a
+  module-level counter, so the second world built in a process never agrees with
+  the first however identical the ponds are; `creature.speciesId` is written by
+  the observer and already lives in `observationFingerprint`. Both are named in
+  `CREATURE_UNHASHED` with the reason attached.
+
+### Added
+
+- **A test that walks a live creature and fails on any field in neither list.**
+  The durable half of this release is not the ten fields added but that the next
+  one cannot quietly land outside the instrument. `test/determinism.test.js`
+  enumerates the class rather than fixing the instances — the playbook has
+  demanded that since v1.43 — and also pins the blindness, the sight, and the
+  fact that each of the three consequential omissions really does move a pond.
+- **`drawStream()`, the fourth channel.** The three fingerprints are pictures of
+  a world at an instant, and the canonical violation of the second prime
+  directive does not appear in one: a feature that is off and draws a random
+  number anyway leaves the pond bit-identical and parts from it **eight ticks
+  later** (measured, seed 21). v1.45 and v1.47 each met this and each solved it
+  by counting draws in one file; hashing the values is the same idea and
+  strictly stronger, since two streams can agree on how many numbers were taken
+  and disagree about which consumer took which.
+- **One assertion behind all twelve "bit-for-bit unaffected" tests.**
+  `test/support/paired.js` checks four channels, the birth/death/kill counters
+  (which no fingerprint covers, and which ten of the twelve were checking), and
+  that the pond was still alive at the end — a guard v1.45 added to one test and
+  nowhere else. The ten hand-rolled comparisons it replaces did not agree with
+  each other: five never compared `y`, so moving every creature in the pond one
+  ULP sideways left them green, and two compared three integers and nothing
+  else.
+
 ## [1.52.0] — 2026-08-03
 
 v1.48 gave this world rock and v1.50 made it opaque, and neither release gave a

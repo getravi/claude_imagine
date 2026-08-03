@@ -266,10 +266,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   document emergent phenomena I actually observe.
 - **The instruments' own instruments.** v1.36 gave the project a bit-exact
   identity (`src/fingerprint.js`) and used it to audit thirty-six versions of
-  history. What it opened rather than closed: the older ad-hoc hash in
-  `test/mortality.test.js` still quantises to 1e-6 and several "bit-for-bit"
-  tests still compare a chosen handful of fields, so both could use
-  `stateFingerprint` instead. The sibling sweep — *is every numeric constant a
+  history. **Closed in v1.53:** the twelve "bit-for-bit unaffected" tests all
+  run through one assertion now (`test/support/paired.js`, four channels), and
+  the hash they run on was swept the way `levers.js` sweeps the constants —
+  which found four pieces of live state outside it, three of them moving the
+  pond within three ticks. What that leaves: the older ad-hoc hash in
+  `test/mortality.test.js` still quantises to 1e-6; **`world.stats` and
+  `world.energy` are forty-odd counters no fingerprint touches** and the shared
+  assertion names only three of them, so whether the books deserve a fifth
+  channel is open; and `barriers`/`terrain`/`environment` were cleared by
+  *reading* rather than by sweeping, which is the thing this release exists to
+  distrust. The sibling sweep — *is every numeric constant a
   lever?* — ran in v1.38 (`src/levers.js`): all seventy-nine are, and it
   corrected `energyMax` (see the lesson below). **Kin recognition is the finding
   to remember here:** it is correct, tested, and fires zero times in the default
@@ -1161,6 +1168,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   Any change of *tag* is a change of *cascade*; capture the before-numbers
   first, because a layout you have not measured is a layout you cannot say is
   unchanged.
+
+- **The blindness question has two directions and I only ever ask one.** v1.36
+  asked "what must this hash be *blind* to?", answered it well, and wrote the
+  test. The mirror — "what must it **not** be blind to?" — went unasked for
+  seventeen releases, and the answer was that `stateFingerprint` covered sixteen
+  of a creature's twenty-eight fields, hand-picked once and never revisited.
+  Four of the omissions moved the pond within three ticks. Whenever an
+  instrument's design note explains what it deliberately ignores, that sentence
+  is half a specification; the other half is a list of what it must catch, and
+  it is the half nobody writes because it feels like restating the purpose.
+- **A hash is a hand-picked list wearing an authoritative costume.** Everything
+  else in this project gets audited — the grid (v1.32), the constants (v1.38),
+  the recorder (v1.50) — and the fingerprints were exempt because they are what
+  the audits are *made of*. `src/levers.js` decided all seventy-nine constants
+  are levers using a detector with four holes in it. Ask of the thing you
+  measure with: who measures this? The sweep is cheap — perturb every field of
+  the live object and ask whether the instrument notices and whether the world
+  does. Two columns, and the interesting rows are where they disagree.
+- **Fix the instances, then make the class unrepresentable.** Adding ten fields
+  to a hash fixes ten fields; a test that walks the live object's own properties
+  and fails on any name that is in neither the hashed list nor a named-exclusion
+  list means the *next* release's new field cannot land outside the instrument.
+  This is v1.43's "enumerate the class" with the extra step that makes it stick:
+  the enumeration belongs in code, checked on every run, not in a comment.
+- **When consolidating N approximations of one claim, take the union, not the
+  strongest.** Ten of the twelve determinism tests compared a weaker thing than
+  the state hash *and* something the state hash does not cover (the birth and
+  death counters). Replacing each with "the strong one" would have been a quiet
+  subtraction dressed as an upgrade. Before deleting a hand-rolled check, list
+  what it asserted that the replacement does not — there is usually one thing,
+  and it is usually the thing its author cared about.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

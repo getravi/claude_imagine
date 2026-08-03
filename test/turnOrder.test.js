@@ -19,11 +19,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { Creature } from "../src/creature.js";
 import { Genome } from "../src/genome.js";
 import { Food } from "../src/food.js";
 import { RNG } from "../src/rng.js";
-import { stateFingerprint } from "../src/fingerprint.js";
 
 /** An empty pond: nothing lives, grows or spawns except what we put in it. */
 function emptyWorld(extra = {}) {
@@ -171,28 +171,17 @@ test("neither counter fires in a pond with room and no collisions", () => {
 
 test("shuffling is off by default and leaves worlds bit-for-bit unchanged", () => {
   assert.equal(DEFAULT_CONFIG.shuffleTurnOrder, false);
-  const withFlag = new World(makeConfig({ seed: 21, shuffleTurnOrder: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  // Count the draws as well as the outcome: the flag's whole cost is a
-  // permutation, and a permutation is drawn. Off, not one number may move.
-  let drawsA = 0;
-  let drawsB = 0;
-  const nextA = withFlag.rng.next;
-  withFlag.rng.next = () => {
-    drawsA++;
-    return nextA();
-  };
-  const nextB = withoutFlag.rng.next;
-  withoutFlag.rng.next = () => {
-    drawsB++;
-    return nextB();
-  };
-  for (let i = 0; i < 1500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(drawsA, drawsB, "the flag being present must not cost a single draw");
-  assert.equal(stateFingerprint(withFlag), stateFingerprint(withoutFlag));
+  // The flag's whole cost is a permutation, and a permutation is drawn — so the
+  // random stream is the channel that matters here. This test counted draws by
+  // hand from v1.47; the shared assertion hashes them, which is the same idea
+  // and strictly stronger (two streams can agree on how many numbers were taken
+  // and disagree on which consumer took which).
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, shuffleTurnOrder: false })),
+    new World(makeConfig({ seed: 21 })),
+    1500,
+    "shuffleTurnOrder"
+  );
 });
 
 test("off, the sweep walks the population array itself", () => {

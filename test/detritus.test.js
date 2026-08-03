@@ -5,6 +5,7 @@ import { FoodField, Corpse } from "../src/food.js";
 import { DetritusField } from "../src/detritus.js";
 import { FertilityField } from "../src/environment.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 
 /** A bare food field, with a nutrient field when the config asks for one. */
@@ -33,26 +34,12 @@ test("detritus is off by default, and then does not exist", () => {
 });
 
 test("with detritus off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 21, detritus: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  for (let i = 0; i < 2500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.food.items.length, withoutFlag.food.items.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    assert.equal(withFlag.creatures[i].x, withoutFlag.creatures[i].x);
-    assert.equal(withFlag.creatures[i].energy, withoutFlag.creatures[i].energy);
-  }
-  // The food array is the collection this feature touches, so it is compared
-  // pellet by pellet rather than by length (the v1.18 lesson).
-  for (let i = 0; i < withFlag.food.items.length; i++) {
-    assert.equal(withFlag.food.items[i].x, withoutFlag.food.items[i].x);
-    assert.equal(withFlag.food.items[i].y, withoutFlag.food.items[i].y);
-  }
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, detritus: false })),
+    new World(makeConfig({ seed: 21 })),
+    2500,
+    "detritus"
+  );
 });
 
 test("a scavenging world is unaffected too — the corpse gained a field, not a behaviour", () => {

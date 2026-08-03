@@ -24,6 +24,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { Creature } from "../src/creature.js";
 import { Genome } from "../src/genome.js";
 import { Food } from "../src/food.js";
@@ -175,30 +176,15 @@ test("with the flag on, no body is ever buried holding more than it died with", 
 
 test("death is final is off by default and leaves worlds bit-for-bit unchanged", () => {
   assert.equal(DEFAULT_CONFIG.deathIsFinal, false);
-  const withFlag = new World(makeConfig({ seed: 21, deathIsFinal: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  // Count the draws as well as compare the outcome: directive 2 is about the
-  // random *sequence*, and two worlds can agree for a while on a stream that has
-  // already diverged.
-  let drawsA = 0;
-  let drawsB = 0;
-  const nextA = withFlag.rng.next;
-  withFlag.rng.next = () => {
-    drawsA++;
-    return nextA();
-  };
-  const nextB = withoutFlag.rng.next;
-  withoutFlag.rng.next = () => {
-    drawsB++;
-    return nextB();
-  };
-  for (let i = 0; i < 1500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(drawsA, drawsB, "the flag being present must not cost a single draw");
-  assert.equal(stateFingerprint(withFlag), stateFingerprint(withoutFlag));
-  assert.ok(withFlag.creatures.length > 0, "and the pond has to be alive to have proved anything");
+  // v1.45 wrote the two things this needs — compare the random *sequence*, and
+  // check the pond was alive at the end, because two extinct worlds agree about
+  // nothing — and wrote them in one file. Both are in the shared assertion now.
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, deathIsFinal: false })),
+    new World(makeConfig({ seed: 21 })),
+    1500,
+    "deathIsFinal"
+  );
 });
 
 test("a world where death is final is still a reproducible world — and a different one", () => {

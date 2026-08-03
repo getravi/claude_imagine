@@ -4,6 +4,7 @@ import { World } from "../src/world.js";
 import { FoodField, Food } from "../src/food.js";
 import { FertilityField } from "../src/environment.js";
 import { makeConfig } from "../src/config.js";
+import { assertUnaffected } from "./support/paired.js";
 import { RNG } from "../src/rng.js";
 
 /** Shortest wrapped distance between two points on the torus. */
@@ -30,25 +31,12 @@ test("regrowth is off by default", () => {
 });
 
 test("with regrowth off, worlds are bit-for-bit unaffected", () => {
-  const withFlag = new World(makeConfig({ seed: 21, foodRegrowth: false }));
-  const withoutFlag = new World(makeConfig({ seed: 21 }));
-  for (let i = 0; i < 2500; i++) {
-    withFlag.step();
-    withoutFlag.step();
-  }
-  assert.equal(withFlag.food.items.length, withoutFlag.food.items.length);
-  assert.equal(withFlag.creatures.length, withoutFlag.creatures.length);
-  assert.equal(withFlag.stats.births, withoutFlag.stats.births);
-  assert.equal(withFlag.stats.deaths, withoutFlag.stats.deaths);
-  // The strongest form: every creature and every pellet, position by position.
-  for (let i = 0; i < withFlag.creatures.length; i++) {
-    assert.equal(withFlag.creatures[i].x, withoutFlag.creatures[i].x);
-    assert.equal(withFlag.creatures[i].energy, withoutFlag.creatures[i].energy);
-  }
-  for (let i = 0; i < withFlag.food.items.length; i++) {
-    assert.equal(withFlag.food.items[i].x, withoutFlag.food.items[i].x);
-    assert.equal(withFlag.food.items[i].y, withoutFlag.food.items[i].y);
-  }
+  assertUnaffected(
+    new World(makeConfig({ seed: 21, foodRegrowth: false })),
+    new World(makeConfig({ seed: 21 })),
+    2500,
+    "foodRegrowth"
+  );
 });
 
 test("the growth rate is exactly 1 when off, and stock-dependent when on", () => {

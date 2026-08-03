@@ -95,6 +95,18 @@ export class Hash {
     return this;
   }
 
+  /**
+   * Mix a string by its code units, length first. `null` and `undefined` mix a
+   * marker rather than nothing, so "no cause of death" and the empty string
+   * cannot collide.
+   */
+  text(s) {
+    if (s === null || s === undefined) return this.word(0xfeedface);
+    this.word(s.length);
+    for (let i = 0; i < s.length; i++) this.word(s.charCodeAt(i));
+    return this;
+  }
+
   /** Eight lowercase hex digits. */
   digest() {
     return (this.h >>> 0).toString(16).padStart(8, "0");
@@ -136,6 +148,33 @@ export function trajectoryFingerprint(world) {
 }
 
 /**
+ * Every field a creature carries that `stateFingerprint` hashes, in the order it
+ * hashes them. Exported as data because a list the hash is *checked against* is
+ * the only thing that stops the next release quietly falling outside it — see
+ * `CREATURE_UNHASHED` and `test/determinism.test.js`, which walks a live
+ * creature's own properties and fails on any name that is in neither list.
+ */
+export const CREATURE_HASHED = [
+  "x", "y", "heading", "vx", "vy", "energy", "age", "generation", "children",
+  "dead", "deathCause", "radius", "metabolismScale", "carnivory", "phase",
+  "hue", "ground", "groundFeel", "walled", "infected", "immune",
+  "infectedAtAge", "signal", "prevSignal", "heard", "lastBiteAge",
+];
+
+/**
+ * The two fields a same-process comparison must *not* hash, and why. Both are
+ * real state; neither is the pond's.
+ */
+export const CREATURE_UNHASHED = {
+  id: "a module-level counter, so the second world built in a process never " +
+    "agrees with the first however identical the pond is",
+  speciesId: "written by the observer (`phylogeny.assign`), not by the " +
+    "simulation — it lives in `observationFingerprint`, and hashing it here " +
+    "would make 'observation never feeds back' fail for something that is not " +
+    "feedback",
+};
+
+/**
  * Everything the trajectory hash covers, plus how this build *represents* it:
  * the genome a child would inherit, the brain the creature currently is, its
  * body genes, its disease and signalling state, the ground under it, and the
@@ -146,6 +185,20 @@ export function trajectoryFingerprint(world) {
  * is any comparison inside one process: two seeds agreeing, a feature switched
  * off leaving a world untouched, a readout that must not write to what it reads.
  *
+ * **What v1.53 changed, and why it is the same bug this file was built to
+ * catch.** For seventeen releases this hash was a hand-picked list of sixteen
+ * creature fields, and a creature carries twenty-eight. Sweeping the state the
+ * way `levers.js` sweeps the constants — perturb each field, ask whether any
+ * instrument notices — found three of the twelve omissions moving the pond's
+ * future while the hash held still: `metabolismScale` and `phase` at the next
+ * tick, `lastBiteAge` (the predation cooldown) within three. Six more
+ * (`walled`, `groundFeel`, `hue`, `infectedAtAge`, `prevSignal`, `heard`) are
+ * inert only because their readers are behind flags that are off. v1.36 wrote
+ * "decide what the instrument must be *blind* to, and then write a test
+ * asserting the blindness", and wrote that test for the trajectory hash; the
+ * complementary question — what must this one *not* be blind to? — went with
+ * it, and the answer was nobody's list.
+ *
  * @param {import('./world.js').World} world
  * @returns {string} eight hex digits
  */
@@ -153,16 +206,30 @@ export function stateFingerprint(world) {
   const h = new Hash();
   h.word(0x5747484c); // domain separator: never collides with a trajectory hash
   h.num(world.tick);
+  // The day/night multiplier is carried on the world rather than recomputed, so
+  // a hash blind to it is blind to the state of the sky. (`seasonFactor` and
+  // `seasonPhase` are next to it and are *derived from the tick every step*, so
+  // a perturbation to either is overwritten before anything reads it.)
+  h.num(world.visionFactor);
   h.word(world.creatures.length);
   h.word(world.food.items.length);
   h.word(world.corpses ? world.corpses.length : 0);
   for (const c of world.creatures) {
+    // Kept in the order of CREATURE_HASHED, which a test holds this to.
     h.num(c.x).num(c.y).num(c.heading).num(c.vx).num(c.vy);
-    h.num(c.energy).num(c.age).num(c.radius).num(c.carnivory);
-    h.word(c.generation).word(c.children).flag(c.dead);
-    h.flag(c.infected).flag(c.immune).num(c.signal).num(c.ground);
+    h.num(c.energy).num(c.age);
+    h.word(c.generation).word(c.children).flag(c.dead).text(c.deathCause);
+    h.num(c.radius).num(c.metabolismScale).num(c.carnivory).num(c.phase).num(c.hue);
+    h.num(c.ground).num(c.groundFeel).flag(c.walled);
+    h.flag(c.infected).flag(c.immune).num(c.infectedAtAge);
+    h.num(c.signal).num(c.prevSignal).num(c.heard).num(c.lastBiteAge);
     h.array(c.genome && c.genome.data);
+    // The brain is three arrays, not one: the extra input weights signalling
+    // and the ground sense are wired through, and the per-weight plasticity
+    // coefficients. Hashing only `w` was the same omission one level down.
     h.array(c.brain && c.brain.w);
+    h.array(c.brain && c.brain.auxW);
+    h.array(c.brain && c.brain.plastic);
   }
   for (const f of world.food.items) h.num(f.x).num(f.y).flag(f.eaten);
   for (const k of world.corpses || []) h.num(k.x).num(k.y).num(k.energy);
@@ -219,6 +286,45 @@ export function observationFingerprint(world) {
     }
   }
   return h.digest();
+}
+
+/**
+ * The fourth channel: the random sequence itself.
+ *
+ * The three hashes above are all pictures of a world at an instant, and the
+ * canonical violation of the second prime directive does not show up in one. A
+ * feature that is switched off and draws a number anyway — and throws it away —
+ * leaves the pond bit-identical at that moment; the divergence arrives later,
+ * when the shifted stream reaches a decision. Measured on seed 21: one
+ * discarded `rng.next()` is invisible to all three fingerprints and moves the
+ * trajectory **eight ticks later**. So a test comparing states at a horizon
+ * shorter than that is comparing two worlds that have already parted.
+ *
+ * v1.45 and v1.47 both hit this and both solved it by *counting* draws. A count
+ * is the right idea and the weaker form of it: two streams can agree on how many
+ * numbers were taken and disagree on which consumer took which. Hashing the
+ * values makes the whole sequence the assertion, at the cost of two words per
+ * draw.
+ *
+ * Replaces `rng.next` in place, which is what the two counting tests did too —
+ * the wrapper is a recorder, not a substitute: it returns exactly what the
+ * generator returned, so a recorded world is bit-for-bit an unrecorded one.
+ * There is a test.
+ *
+ * @param {import('./rng.js').RNG} rng
+ * @returns {{count: number, digest: () => string}} live view of the stream
+ */
+export function drawStream(rng) {
+  const inner = rng.next;
+  const h = new Hash();
+  const view = { count: 0, digest: () => h.digest() };
+  rng.next = () => {
+    const v = inner();
+    view.count++;
+    h.num(v);
+    return v;
+  };
+  return view;
 }
 
 /** How many arguments the math probe evaluates each function at. */
