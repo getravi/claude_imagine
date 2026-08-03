@@ -108,6 +108,38 @@ export const SCENARIOS = [
     over: { seed: 13, terrain: true, detritus: true, predation: true, seasons: true },
   },
   {
+    id: "rooms",
+    icon: "🧱",
+    name: "The Four Rooms",
+    blurb:
+      "Four walls of rock, opaque to every sense, cut the pond into rooms joined by narrow gates. Crossings all but stop, and the lineages either side of a wall drift apart.",
+    // Seed 51 was earned by a 64-seed sweep scored on the claim this world makes
+    // and, above all, on its *control*. v1.48 measured isolation by distance as
+    // the mean genetic distance between creatures in different rooms minus the
+    // mean within a room, as a fraction of the within-room distance — and the
+    // control that makes it worth believing is the one inside the same run: the
+    // same creatures at the same instant, partitioned by lines shifted half a
+    // room over. At 4,000 ticks on this seed the real lines read **+0.807** and
+    // the shifted ones **+0.052**, a factor of fifteen; the ordinary
+    // between-arms control (no walls, same real lines) reads **-0.104**. All
+    // three agree, and the seed keeps the signal for a long watch (+0.556 over
+    // ticks 4,000–8,000 against a control of +0.074, +0.176 over 8,000–16,000
+    // against +0.037), which most of the field does not — a lineage sweeping the
+    // whole pond erases the difference it took the rooms to build.
+    //
+    // The mechanism is the crossing rate: 31.7 room changes per 10,000
+    // creature-turns without the rock, 8.1 with it. The pond stays a pond
+    // meanwhile — a mean of 217 creatures, never below 37, and a working
+    // predator lineage (765 kills over 16,000 ticks).
+    //
+    // `barrierOcclusion` is on because a wall you can see through is not a wall,
+    // and for no other reason: v1.50 measured opacity against exactly this
+    // isolation claim and found it does not deepen it (6 of 12 seeds, a coin
+    // toss). The drift here is what restricted *movement* does. The darkness is
+    // what a creature can know.
+    over: { seed: 51, barriers: true, barrierOcclusion: true, predation: true, seasons: true },
+  },
+  {
     id: "earshot",
     icon: "📣",
     name: "Earshot",

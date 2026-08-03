@@ -151,13 +151,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the v1.9 scenario sweep — never slap `seed: 1` on a blurb). v1.37 gave terrain
   and detritus their first door on seed 13, chosen because its *control* arm
   reads -0.003 where the default seed's reads -0.034 — **score a candidate on
-  whether its control is clean, not only on how the shipped arm looks.** Still
-  doorless: `groundSense`, `exactVision`, `kinRecognition` (which v1.36 measured
-  as mute on most seeds — its doorway would have to be seed 23 or nothing), and
-  `dayNightCycle` × `disease` together. And the count of scenarios lives in
-  README prose while the scenarios live in an array; it was wrong for sixteen
-  releases. Anything stated as a number in prose about a collection in code will
-  drift.
+  whether its control is clean, not only on how the shipped arm looks.** v1.52
+  gave the rock its door on seed 51 (64-seed sweep, isolation +0.807 against a
+  shifted-lines control of +0.052) and added the second half of that rule: score
+  on **persistence, not the peak** — see the lesson below. Still doorless:
+  `groundSense`, `exactVision`, `kinRecognition` (which v1.36 measured as mute on
+  most seeds — its doorway would have to be seed 23 or nothing), `deathIsFinal`,
+  `shuffleTurnOrder`, and `dayNightCycle` × `disease` together; four of those six
+  are corrections rather than features, which is probably why. The count of
+  scenarios lived in README prose while the scenarios lived in an array and was
+  wrong for sixteen releases — **closed in v1.52**, which reads both the word and
+  the list of names out of the README and compares them to the array. Anything
+  else stated as a number in prose about a collection in code is still drifting.
 - **Visual & rendering polish:** trails, better creature/energy shading,
   prettier food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap
   that finishes it in v1.19.0.)
@@ -1189,3 +1194,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and I had been treating them as one. v1.39 said a module that can't be tested
   without a browser usually can't be tested without a *pixel*; the other half is
   that a browser is available.
+
+- **A statistic worth shipping is the one that is still there in ten minutes.**
+  Sixty-four seeds sorted by peak isolation gave a leaderboard, and nearly every
+  name on it had lost the signal by tick 8,000 — the sweep sorts by the number it
+  measured, and the number a *visitor* meets is the one still readable while they
+  watch. Seed 51 was second on the peak by a hair and first on persistence by a
+  distance — and persistence was the column I had not computed. Whenever a measurement is going to be *shown* rather
+  than reported, ask over what window the viewer sees it, and score that window.
+- **A count of species is not a measure of diversity.** The explanation for why
+  most seeds lose their room isolation was written before it was measured — one
+  lineage sweeps the pond — and it is not what the Tree of Life counts: seed 45
+  ends with 28 species and zero isolation, seed 51 holds the signal longest with
+  8. `speciationDistance` is a fixed threshold, so a pond that has lost most of
+  its variance goes on naming the scraps. The headline figure of this project
+  answers a question about *clustering at a threshold*, not about variance, and
+  I had been reading it as though the two were the same. (v1.38's "an instrument
+  answers in its own vocabulary", on the instrument that is on the landing page.)
+- **A mechanic with no door is a mechanic nobody meets.** v1.13's rule — a
+  mechanic is finished when a watcher can *tell* it is happening — reads as
+  advice about drawing, and the rock is drawn beautifully. It was still two
+  checkboxes down a panel of thirty for two releases, with nothing on the page
+  leading anyone to them. The scenarios strip is the only navigational surface
+  this project has; ask of any new mechanic not only "what on screen says this is
+  on?" but "what would make somebody turn it on?"

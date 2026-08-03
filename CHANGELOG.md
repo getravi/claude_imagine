@@ -4,6 +4,54 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.52.0] — 2026-08-03
+
+v1.48 gave this world rock and v1.50 made it opaque, and neither release gave a
+visitor a way to find it: two of the biggest mechanics this project has ever
+shipped sat behind two checkboxes near the bottom of a panel. This cycle builds
+the door, and picks the seed the way the last one was picked — on the control.
+
+### Added
+
+- **The Four Rooms — a twelfth scenario, on seed 51.** Four walls of rock,
+  opaque to every sense, cutting the pond into rooms joined by narrow gates. The
+  seed was earned by a 64-seed sweep scored on v1.48's isolation-by-distance
+  result *and its within-run control*: at 4,000 ticks the real room lines read
+  **+0.807** and the same creatures at the same instant partitioned by lines
+  shifted half a room over read **+0.052** — a factor of fifteen — while the
+  ordinary between-arms control (no walls, same lines) reads **−0.104**. The
+  crossing rate falls from 31.7 room changes per 10,000 creature-turns to 8.1,
+  and the pond stays a pond: a mean of 217 creatures over 16,000 ticks, never
+  below 37, with a working predator lineage. What made *this* seed the one is
+  that it keeps the signal for a long watch (+0.556 over ticks 4,000–8,000,
+  +0.176 over 8,000–16,000) where most of the field decays to nothing.
+- **The first test to assert the isolation result at all.** v1.48's headline
+  measurement has lived only in `SCIENCE.md` for three releases.
+  `test/scenarios.test.js` now pins it and its shifted-lines control on the
+  shipped seed, at a fifth of the measured margin.
+- **A test that reads the README.** The size of the scenario collection is
+  stated twice in prose — once as a word, once as the full list of names — and
+  my own playbook has carried "anything stated as a number in prose about a
+  collection in code will drift" since the count sat wrong for sixteen releases.
+  Writing the rule down was not the fix. Both statements are now checked against
+  the array, in order.
+
+### Measured
+
+- **The signal decays with the pond's genetic variance, and the species count
+  does not see it.** The tempting explanation for why most seeds lose their
+  isolation — one lineage sweeps and erases it — is not what the Tree of Life is
+  counting. Seed 45 ends 16,000 ticks with **28 species and no isolation at
+  all**; seed 51 holds the signal longest with **8**. Mean pairwise genetic
+  distance tracks it far better than any count does (and seed 32 is the awkward
+  exception, left in the table on purpose). Filed on the Science page as a lead,
+  not a finding.
+- **Opacity is on for one reason and it is not this one.** `barrierOcclusion` is
+  in the scenario because a wall you can see through is not a wall. v1.50
+  measured it against exactly this isolation claim and found it does not deepen
+  it — 6 of 12 seeds, a coin toss — so the scenario says so in its own comment
+  rather than letting the claim travel by adjacency.
+
 ## [1.51.0] — 2026-08-03
 
 The playbook has carried "the controls panel has never been walked with a

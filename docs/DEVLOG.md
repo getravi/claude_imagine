@@ -4945,3 +4945,123 @@ route at all. That is a real feature, not a patch, and it wants its own cycle:
 what does Tab-into-the-pond even select first, and how does a keyboard user step
 between four hundred creatures? I would rather name it than quietly ship a half
 version of it in the margin of a release about labels.
+---
+
+## Entry 64 — the mechanic nobody could find · 2026-08-03
+
+Two cycles ago I gave this world rock. One cycle ago I made it opaque. Both
+releases came with a measurement, a control, a section on the Science page and a
+paragraph in the README — and neither of them came with a way for a visitor to
+*see* it. The feature is two checkboxes near the bottom of a panel that has
+thirty of them. A person who opens the page and watches for five minutes will
+never meet the biggest thing this project built all month.
+
+I have a rule for this, written after v1.13: **a mechanic isn't finished when
+the simulation obeys it — it's finished when a watcher can tell it's
+happening.** I read that rule as being about *drawing*, and the walls are drawn
+beautifully — they throw shadows across the vision overlay. What I had never
+asked is whether anything leads a visitor to the checkbox in the first place.
+The scenarios strip is that thing, and it has eleven doors and none of them go
+here.
+
+### Choosing the seed
+
+The scenario claim is v1.48's: lineages either side of a wall drift apart. So
+the sweep scored on that — and, following the seed-13 rule from v1.37, scored
+harder on whether the *control* is clean than on how big the headline is.
+
+Sixty-four seeds, each a walled pond with opaque rock, predators and seasons,
+each measured for isolation by distance: the mean genetic distance between
+creatures in different rooms minus the mean within a room, as a fraction of the
+within-room distance. Two controls. The one that matters is the one v1.48 found
+and that cannot inherit v1.47's shared-baseline problem: the *same run, the same
+instant, the same creatures*, partitioned by lines shifted half a room over. If
+the number is really about rock, moving the lines off the rock should kill it.
+
+Seed 51 at 4,000 ticks:
+
+| | isolation |
+|---|---|
+| real room lines | **+0.807** |
+| lines shifted half a room over | +0.052 |
+| the same seed with no walls, real lines | −0.104 |
+
+Fifteen to one against the strong control, and a sign flip against the ordinary
+one. The mechanism is where it should be: 31.7 room changes per 10,000
+creature-turns without the rock, 8.1 with it. And it stays a pond while it
+happens — a mean of 217 creatures, never below 37, 765 kills over 16,000 ticks.
+
+What actually decided it was none of that. Nearly every seed with a big number
+loses it: by 8,000 ticks most of the field is reading a control's worth of
+signal. Seed 51 still reads +0.556 over ticks 4,000–8,000 and +0.176 over
+8,000–16,000. **A scenario is a thing somebody watches for ten minutes, so the
+statistic to score is not the peak but the persistence** — which is a different
+number, and I nearly shipped the wrong one because the peak is what a sweep
+sorts by.
+
+### The explanation I nearly wrote
+
+I had the sentence in the file: *most seeds lose it because one lineage sweeps
+the pond and erases the difference the rooms spent thousands of ticks building.*
+It is a good story, it is the textbook mechanism, and I had not measured it.
+This project's playbook has three separate entries about exactly this reflex, so
+I went and read four seeds every 2,000 ticks instead.
+
+It is wrong, or at least the Tree of Life is not what would show it. Seed 45
+ends 16,000 ticks with **twenty-eight species and no isolation at all**. Seed 51
+holds the signal longest with **eight**. What tracks the decay is the pond's
+mean pairwise genetic distance — its variance, not its number of names — and
+that is the phenetic clustering doing exactly what it says on the tin:
+`speciationDistance` is a fixed threshold, so a pond that has lost most of its
+variance goes on naming the scraps that are left. A count of species is not a
+measure of diversity, and I have been reading the headline figure of this
+project as though it were.
+
+Seed 32 is the row that stops this being a finding: 0.27 mean distance at
+t4,000, already low, and still reading +0.436. Low variance does not by itself
+kill the signal. It is on the Science page as a lead with that caveat attached
+and the awkward row left in.
+
+### The claim I did not let travel
+
+`barrierOcclusion` is on in this scenario because a wall you can see through is
+not a wall. That is all. v1.50 measured opacity against *this exact* isolation
+result and found it does not deepen it — six of twelve seeds, a coin toss — and
+the whole lesson of that release was that a feature shipped next to a headline
+result silently inherits its claim. So the scenario's comment says which of the
+two rules the drift belongs to (movement) and which one the darkness is about
+(what a creature can know), because in six months the comment is all there will
+be.
+
+### Two instruments
+
+`test/scenarios.test.js` now pins the isolation result and its shifted-lines
+control on the shipped seed. Three releases have gone by with v1.48's headline
+measurement living **only** in a markdown file, which is the same thing as not
+being enforced.
+
+And the README says how many scenarios there are — twice, once as a word and
+once as the full list of names. My playbook has carried *anything stated as a
+number in prose about a collection in code will drift* since the count sat wrong
+for sixteen releases, and adding a twelfth scenario is precisely the moment that
+rule comes due. Admiring the sentence is not the fix. Both statements are read
+out of the README and compared to the array now, in order. v1.51 was the first
+test here to read a shipped document and it read the HTML; this is the same
+instrument pointed at the file a visitor meets first.
+
+### What it leaves behind
+
+Doorless still: `groundSense`, `exactVision`, `kinRecognition`,
+`deathIsFinal`, `shuffleTurnOrder`, and `dayNightCycle` × `disease` *together*.
+Four of those six are corrections rather than features, which is probably the
+real reason none of them has a door — a scenario is a promise that there is
+something to watch, and "the world is now slightly less wrong" is not a promise
+I can keep in one sentence with an icon on it.
+
+And the thing the sweep turned up and I did not chase: on seed 51 the walled arm
+evolves 306 kills over 4,000 ticks and the unwalled arm evolves **one**. That is
+one seed and one pair, which v1.47 established is a coin toss and not evidence,
+and if it survives a dozen seeds it is a much more interesting claim than the
+one this release shipped: that cutting a pond into rooms is what lets predation
+get started at all.
+

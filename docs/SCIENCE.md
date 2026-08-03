@@ -2982,6 +2982,60 @@ node --input-type=module -e '
   }'
 ```
 
+### The door: seed 51 (v1.52)
+
+Sixteen releases of this project have shipped a mechanic and left it behind a
+checkbox. Rock now has a scenario — **The Four Rooms** — and the seed it ships
+was chosen by a 64-seed sweep scored on the *control* rather than on the
+headline, which is the rule the Lay of the Land's seed 13 was picked under: a
+big number with a dirty control is not a demonstration of anything.
+
+On seed 51, with `barriers` and `barrierOcclusion` on, predation and seasons:
+
+| what is being compared | isolation |
+|---|---|
+| walled pond, real room lines | **+0.807** |
+| walled pond, lines shifted half a room over (same run, same instant) | +0.052 |
+| unwalled pond, same real lines | −0.104 |
+
+A factor of fifteen against the control that cannot share a baseline, and a
+sign flip against the one that can. The crossing rate does the usual thing —
+31.7 room changes per 10,000 creature-turns open, 8.1 walled — and the pond
+stays a pond while it happens: a mean of 217 creatures over 16,000 ticks, never
+below 37, with 765 kills.
+
+What made this seed the one is not the size of the first row but that it *keeps*
+the signal: +0.556 over ticks 4,000–8,000 against a control of +0.074, and
++0.176 over 8,000–16,000 against +0.037. Most of the field decays to nothing
+long before then, and the tempting explanation — one lineage sweeps the pond and
+erases the difference the rooms spent thousands of ticks building — is wrong, or
+at least is not what the Tree of Life is counting. Four seeds, read every 2,000
+ticks:
+
+| seed | isolation, t4,000 → t16,000 | mean pairwise distance | species, t16,000 |
+|---|---|---|---|
+| 51 | +1.017 → +0.042 | 0.84 → 0.32 | 8 |
+| 13 | +0.966 → +0.022 | 0.48 → 0.20 | 16 |
+| 45 | +0.240 → +0.031 | 0.79 → 0.25 | 28 |
+| 32 | +0.436 → +0.020 | 0.27 → 0.19 | 7 |
+
+The signal goes when the pond's *genetic variance* goes, and the species count
+says nothing about it: seed 45 ends with twenty-eight species and no isolation
+at all, while seed 51 holds the signal longest with eight. That is the phenetic
+clustering doing exactly what it is documented to do — `speciationDistance` is a
+fixed threshold, so a pond that has lost most of its variance still names its
+remaining scraps — and it is a reminder that a count of species is not a measure
+of diversity. Seed 32 is the awkward row and is left in on purpose: it is
+already down to 0.27 at t4,000 and still reading +0.436, so low variance does
+not *by itself* kill the signal. Filed as a lead, not a finding: four seeds, one
+arm each, and no control that separates *why* the variance drains from *that*
+it does.
+
+`test/scenarios.test.js` pins the first two rows on the shipped seed with a
+fifth of the measured margin. It is the first test in this project to assert the
+isolation result at all; before this it lived only on this page.
+
+
 ## Opaque rock: a wall that stops information, and what that is worth (v1.50)
 
 v1.48 shipped rock that stops a body and nothing else, and said so in three

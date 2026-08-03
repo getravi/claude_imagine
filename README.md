@@ -26,7 +26,7 @@ concentrates), so *when* and *where* a creature lives both matter.
 
 No install, no build step, no dependencies. Just open it in a browser.
 
-New here? The **Scenarios** strip at the top offers eleven one-click worlds — from
+New here? The **Scenarios** strip at the top offers twelve one-click worlds — from
 a calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Plague*, where
 a pathogen sweeps the pond in waves, to *The Commons*, where a herd can eat the pond
 bare, to *The Lay of the Land*, where the ground itself decides where life can be —
@@ -96,7 +96,7 @@ could have fixed it.
 
 | Control | What it does |
 | --- | --- |
-| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Lay of the Land, Earshot, The Thinking Pond, Augmented Minds, The Whole World). |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Lay of the Land, The Four Rooms, Earshot, The Thinking Pond, Augmented Minds, The Whole World). |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |
@@ -194,9 +194,11 @@ could have fixed it.
   cost alone moves the population by essentially nothing, which is written up
   with the control and the sweep on
   [the Science page](docs/SCIENCE.md#terrain-why-a-cost-is-not-a-landscape).
-- **Turn on Barriers** and watch the pond stop being one pond. Four walls appear,
-  the creatures nearest them stop dead and start sliding, and within a few
-  hundred ticks each room is running its own little economy. It is worth watching
+- **Turn on Barriers** (or hit the *Four Rooms* scenario, which pairs them with
+  opaque rock on a seed whose lineages visibly come apart) and watch the pond
+  stop being one pond. Four walls appear, the creatures nearest them stop dead
+  and start sliding, and within a few hundred ticks each room is running its own
+  little economy. It is worth watching
   the *Walled* number rather than the walls: it says how much the layout is
   actually costing, which the picture never will. This is the follow-through on
   terrain's negative result — a spatial pressure needs somewhere to accumulate,

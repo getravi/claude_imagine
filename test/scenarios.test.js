@@ -1,8 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { SCENARIOS } from "../src/scenarios.js";
 import { makeConfig } from "../src/config.js";
 import { World } from "../src/world.js";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 test("scenarios are well-formed and unique", () => {
   const ids = new Set();
@@ -12,6 +17,39 @@ test("scenarios are well-formed and unique", () => {
     assert.ok(!ids.has(s.id), `duplicate scenario id: ${s.id}`);
     ids.add(s.id);
   }
+});
+
+// The README states the size of this collection twice: once as a word in the
+// opening paragraph and once as the full list of names in the controls table.
+// Both are prose about an array, and my own playbook has carried the finding
+// since v1.37 — *anything stated as a number in prose about a collection in code
+// will drift* — after the count sat wrong for sixteen releases. Writing the rule
+// down is not the fix; this is. (v1.51 was the first test here to read a shipped
+// document, and it read the HTML. This is the same instrument aimed at the file
+// a visitor meets first.)
+test("the README's account of the scenarios is the scenarios", () => {
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  const words = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+  ];
+  const count = words[SCENARIOS.length];
+  assert.ok(count, `the word for ${SCENARIOS.length} is not in this test's vocabulary`);
+  assert.match(
+    readme,
+    new RegExp(`offers ${count} one-click worlds`),
+    `the README should say there are ${count} scenarios`
+  );
+
+  const row = readme.split("\n").find((l) => l.startsWith("| **Scenarios**"));
+  assert.ok(row, "the controls table should still have a Scenarios row");
+  const listed = row.slice(row.lastIndexOf("(") + 1, row.lastIndexOf(")")).split(", ");
+  assert.deepEqual(
+    listed,
+    SCENARIOS.map((s) => s.name),
+    "the README's list of scenarios should be the scenarios, in order"
+  );
 });
 
 test("every scenario produces a viable, non-extinct world", () => {
@@ -79,6 +117,109 @@ test("each scenario delivers the character it advertises", () => {
   let grew = false;
   for (const c of augment.creatures) if (c.genome.complexity && c.genome.complexity.nodes > 0) grew = true;
   assert.ok(grew, "Augmented Minds should grow hidden neurons");
+});
+
+// The Four Rooms ships the isolation-by-distance result v1.48 measured, which
+// until now lived only in SCIENCE.md: lineages either side of a wall drift
+// apart. The control is the one that cannot inherit a shared baseline, because
+// there is no second run for it to share one with — the *same* creatures at the
+// *same* instant, partitioned by lines shifted half a room over. If the signal
+// were spatial structure this pond has anyway (offspring are born touching their
+// parent; lineages pool in the biomes), the shifted lines would find it too.
+test("The Four Rooms isolates its lineages, and the walls are where the line is", () => {
+  const rooms = SCENARIOS.find((s) => s.id === "rooms");
+  assert.ok(rooms, "the rock scenario should exist");
+
+  /** Room index from a set of cut lines, optionally shifted half a room over. */
+  const roomsOf = (field, shift) => {
+    const axis = (vertical) =>
+      field.walls.filter((w) => w.vertical === vertical).map((w) => w.pos).sort((a, b) => a - b);
+    const size = (vertical) => (vertical ? field.config.width : field.config.height);
+    const lines = (vertical) => {
+      const l = axis(vertical);
+      const s = shift ? size(vertical) / (2 * Math.max(1, l.length)) : 0;
+      return l.map((p) => (p + s) % size(vertical)).sort((a, b) => a - b);
+    };
+    const vs = lines(true);
+    const hs = lines(false);
+    const band = (v, l) => {
+      if (l.length < 2) return 0;
+      let k = 0;
+      for (const p of l) if (v >= p) k++;
+      return k % l.length;
+    };
+    return (x, y) => band(x, vs) * 10 + band(y, hs);
+  };
+
+  // Mean genetic distance across the partition minus the mean within it, as a
+  // fraction of the within-partition distance. Null while a partition is empty.
+  const isolation = (creatures, room) => {
+    let across = 0;
+    let nAcross = 0;
+    let within = 0;
+    let nWithin = 0;
+    for (let i = 0; i < creatures.length; i++) {
+      const a = creatures[i];
+      const ra = room(a.x, a.y);
+      for (let j = i + 1; j < creatures.length; j++) {
+        const b = creatures[j];
+        const d = a.genome.distance(b.genome);
+        if (ra === room(b.x, b.y)) {
+          within += d;
+          nWithin++;
+        } else {
+          across += d;
+          nAcross++;
+        }
+      }
+    }
+    if (!nWithin || !nAcross) return null;
+    const w = within / nWithin;
+    return w > 0 ? (across / nAcross - w) / w : null;
+  };
+
+  const median = (a) => {
+    const s = [...a].sort((x, y) => x - y);
+    const m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+
+  const world = new World(makeConfig(rooms.over));
+  assert.ok(world.barriers, "The Four Rooms should have rock in it");
+  const real = roomsOf(world.barriers, false);
+  const shifted = roomsOf(world.barriers, true);
+
+  // The instantaneous figure over a couple of hundred creatures swings, so this
+  // is the run's tendency over its second half, the same window v1.48 used.
+  const walls = [];
+  const control = [];
+  let minPop = Infinity;
+  for (let i = 1; i <= 4000; i++) {
+    world.step();
+    if (i >= 500) minPop = Math.min(minPop, world.creatures.length);
+    if (i < 2000 || i % 250 !== 0) continue;
+    const a = isolation(world.creatures, real);
+    const b = isolation(world.creatures, shifted);
+    if (a !== null) walls.push(a);
+    if (b !== null) control.push(b);
+  }
+  assert.ok(walls.length >= 5 && control.length >= 5, "both partitions should have been sampled");
+
+  const signal = median(walls);
+  const noise = median(control);
+  // Measured +0.807 against +0.052 at 4,000 ticks — a factor of fifteen. The
+  // bounds below are a fifth of that and cannot flake on the shipped seed.
+  assert.ok(
+    signal > 0.15,
+    `The Four Rooms should isolate across its walls (isolation ${signal.toFixed(3)})`
+  );
+  assert.ok(
+    Math.abs(noise) < signal / 3,
+    `the wall is where the line is, not anywhere: real lines ${signal.toFixed(3)}, ` +
+      `lines shifted half a room ${noise.toFixed(3)}`
+  );
+  assert.ok(minPop > 20, `The Four Rooms should stay a pond (fell to ${minPop})`);
+  assert.ok(world.stats.kills > 0, "The Four Rooms should evolve hunting");
 });
 
 // The Lay of the Land makes a claim about *why* its pond ends up where it does:
