@@ -4,6 +4,86 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.50.0] — 2026-08-03
+
+v1.48 gave this world rock, and wrote into three files that only *bodies* are
+stopped: sight, earshot, a mate search and the pathogen all crossed solid stone.
+That was the right call for one release — a wall that changes movement and
+information at once cannot be attributed — and it left a wall you can see, hear
+and infect through, which is a detour rather than a wall. This is the second
+mechanic, on its own flag.
+
+### Added
+
+- **`barrierOcclusion` (opt-in, needs `barriers`): rock you cannot see through.**
+  Every sense query asks `barriers.occluded()` first — the nearest pellet, the
+  nearest prey, the nearest threat, the loudest voice in earshot, a mate, and the
+  pathogen. Teeth needed no rule of their own: a hunter bites what it homed in
+  on, and it can no longer home in on what it cannot see. A room stops being only
+  somewhere to be stuck and becomes somewhere to hide.
+- **The geometry is exact, not sampled.** A marched ray steps clean through
+  fourteen pixels of rock, and a rule that depends on a step size is a rule
+  nobody can state. `firstHit()` intersects the segment with each wrapped slab
+  and then with that wall's solid runs, so it is O(walls) rather than O(length),
+  and it agrees with an eight-thousand-step walk on a thousand segments across
+  two seeds with no disagreements.
+- **The vision overlay stops being a circle.** `visibleRadii()` is `firstHit()`
+  asked once per direction, so selecting a creature in a walled pond draws the
+  shape sight actually takes, with the walls' shadows cut out of it — and it
+  composes with the grid-shaped bite v1.32 drew, by clipping, because the region
+  a sense reaches is the intersection of every constraint on it. A new test in
+  `test/render.test.js` takes the path the renderer emits and asserts every
+  vertex is a point the *rule* calls visible with the point beyond it hidden, so
+  the picture cannot drift from the rule it is a picture of.
+- **A toggle, a URL parameter (`dark=1`), and a sentence in the pond's
+  `aria-label`** — opacity has no picture at all unless a creature is selected,
+  so the one surface that cannot show it says it instead.
+
+### Measured
+
+- **A third of what a creature can see, it can no longer see.** Inside one pond
+  at one instant, under both rules, so nothing is attributed to a diverging
+  trajectory: **32.5%** of in-range sight lines cross rock, the nearest pellet
+  changes for **14.6%** of the pond and the nearest threat for **12.7%**, and
+  **15.5%** of everyone who could see a hunter stops being able to. The number is
+  exactly 0 with the feature off.
+- **It does not blind anybody — it redirects them.** Creatures left with no
+  pellet in sight at all: **0.0%**. With 280 pellets in the water, the pellet
+  behind the wall is replaced by a different pellet on this side.
+- **It does not deepen v1.48's isolation, and that is the finding.** Twelve
+  seeds, 9,000 ticks, with v1.48's within-run control: isolation-by-distance is
+  up on **6 of 12** seeds and the median falls (+0.168 → +0.105); population is
+  up on **6 of 12**. Genetic structure across the rooms comes from restricted
+  *movement* — a timescale — and opacity changes *information*. A remedy has to
+  be about the same noun as the diagnosis; this one is not, which v1.23, v1.33
+  and v1.48 between them had already established and I did not predict.
+- **Predation more than doubles, and it is not established.** The median rises
+  from 153 kills per 10,000 ticks to 371 — on 8 of 12 seeds, p ≈ 0.19 by a sign
+  test, across a between-seed spread of 11 to 911. Reported as a lead, with a
+  hypothesis (sight is symmetric, and fleeing is worth more to prey than spotting
+  is to a predator) and no claim.
+- **It costs 3.4x of the tick** in a walled pond (1,530 → 450 ticks/second on
+  seed 314, against an animation rate of 60), all of it in the sense queries.
+  Half of what it would have cost is saved by asking the question only of a
+  candidate that could change an answer: a pellet no nearer than the best so far
+  can never become the nearest one, so the wall in front of it is never looked
+  for.
+
+### Fixed
+
+- **The headless renderer could not draw a walled world.** `src/rendershot.js`
+  has stubbed every canvas method `render.js` uses since v1.40, and `strokeRect`
+  arrived in v1.48 — so `renderOps()` on a pond with rock threw instead of
+  recording, and nothing noticed for two releases. A stub built from the methods
+  a renderer happened to use on the day it was written goes stale the first time
+  the renderer learns a new one.
+- **The opt-in flag sweep can ask for a world.** `test/fingerprint.test.js`
+  checks every `false` in the config is a lever by switching it on; a flag that
+  needs rock to do anything would have failed. It now runs its two arms in the
+  world the flag is defined in, the same device `src/levers.js` uses for
+  constants — which is a better answer than adding a third entry to the skip
+  list.
+
 ## [1.49.0] — 2026-08-02
 
 The colour audit has run for twenty-four releases and never once opened the

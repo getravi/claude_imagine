@@ -258,3 +258,68 @@ test("reduced motion changes the veil and nothing in the pond", () => {
   assert.ok(veil(reduced).startsWith("rgb("), `reduced motion still paints a veil: ${veil(reduced)}`);
   assert.notEqual(hashOps(reduced), hashOps(normal));
 });
+
+test("the vision overlay draws the shadows opaque rock actually casts", () => {
+  // v1.32 gave this overlay the region the index really searches, on the
+  // principle that a bug you keep for compatibility is defensible and a view
+  // that hides it is not. Opaque rock (v1.50) puts a second bite in the same
+  // disc, and this asserts the drawing is `barriers.firstHit` and not a drawing
+  // *about* it: every vertex of the path the renderer emits has to be a point
+  // the rule itself calls visible, and the one just beyond it hidden.
+  const w = new World(makeConfig({ seed: 314, barriers: true, barrierOcclusion: true }));
+  for (let i = 0; i < 60; i++) w.step();
+  // A creature with rock in front of it, so the polygon is not just the circle.
+  const R = w.config.visionRadius;
+  const subject = w.creatures.find((c) => {
+    const radii = w.barriers.visibleRadii(c.x, c.y, R, 128);
+    for (const d of radii) if (d < R - 1) return true;
+    return false;
+  });
+  assert.ok(subject, "no creature in the pond had rock in sight");
+
+  const ops = renderOps(w, null, (r) => {
+    r.showVision = true;
+    r.selected = subject;
+  });
+  // The overlay is the only thing here drawn as a long run of lineTo, so the
+  // path is found by shape rather than by counting calls into the frame.
+  // An op is [canvasId, name, ...args].
+  let run = [];
+  let best = [];
+  for (const op of ops) {
+    if (op[1] === "lineTo" || op[1] === "moveTo") run.push([op[2], op[3]]);
+    else {
+      if (run.length > best.length) best = run;
+      run = [];
+    }
+  }
+  if (run.length > best.length) best = run;
+  assert.equal(best.length, 128, `the visibility path has ${best.length} vertices`);
+
+  // At zoom 1 the camera is the identity, so a vertex is a world point.
+  let shadowed = 0;
+  for (const [px, py] of best) {
+    const dx = px - subject.x;
+    const dy = py - subject.y;
+    const d = Math.hypot(dx, dy);
+    assert.ok(d <= R + 1e-6, `a vertex sits ${d} out, past a radius of ${R}`);
+    // Just inside the drawn distance is visible; just past it is not, unless
+    // the ray never met rock at all and the vertex is simply the disc's edge.
+    const ux = dx / (d || 1);
+    const uy = dy / (d || 1);
+    assert.equal(
+      w.barriers.occluded(subject.x, subject.y, subject.x + ux * (d - 1), subject.y + uy * (d - 1)),
+      false,
+      "the overlay claims a point is visible that the rule hides"
+    );
+    if (d < R - 1) {
+      shadowed++;
+      assert.equal(
+        w.barriers.occluded(subject.x, subject.y, subject.x + ux * (d + 1), subject.y + uy * (d + 1)),
+        true,
+        "the overlay stopped short of something the rule shows"
+      );
+    }
+  }
+  assert.ok(shadowed > 3, `only ${shadowed} of 128 rays were cut short`);
+});

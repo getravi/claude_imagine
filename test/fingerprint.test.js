@@ -236,11 +236,19 @@ test("every opt-in feature is a lever when it is on", () => {
   // tick 3,587 on seed 314, 2,963 on seed 77, and four of eight seeds tried
   // were still identical at 4,000. test/deathIsFinal.test.js stages the
   // mechanism directly in one tick and pins the divergence on seed 77.
+  //
+  // barrierOcclusion (v1.50) needs no exception but it does need a world: rock
+  // that stops sight can only stop it where there is rock, so the sweep runs its
+  // two arms in a *walled* pond. That is the same device `src/levers.js` uses for
+  // every constant whose world has to be asked for, and it is a better answer
+  // than a skip — the flag is still swept, in the only world it is defined in.
+  const NEEDS = { barrierOcclusion: { barriers: true } };
   const skip = new Set(["kinRecognition", "deathIsFinal"]);
   for (const flag of OPT_IN_FLAGS) {
     if (skip.has(flag)) continue;
-    const off = new World(makeConfig({ seed: 314 }));
-    const on = new World(makeConfig({ seed: 314, [flag]: true }));
+    const world = { seed: 314, ...NEEDS[flag] };
+    const off = new World(makeConfig(world));
+    const on = new World(makeConfig({ ...world, [flag]: true }));
     let at = -1;
     for (let i = 0; i < 1000 && at < 0; i++) {
       off.step();

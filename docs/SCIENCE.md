@@ -2950,7 +2950,8 @@ Nothing perceives the rock, so nothing has learned to use it. There is no
 wall-following behaviour beyond the physics, no memory of where a gate is, and a
 predator standing on one side of a wall can still see, hear, infect and bite
 something on the other. Those are the interesting next questions and none of them
-is claimed here.
+is claimed here. (The second of them is `barrierOcclusion`, below, and what it
+found is that it does not deepen this result at all.)
 
 ### Reproducing it
 
@@ -2980,6 +2981,144 @@ node --input-type=module -e '
     console.log(seed, on ? "walls" : "open ", (1e4*moves/turns).toFixed(1), "room changes per 10k turns");
   }'
 ```
+
+## Opaque rock: a wall that stops information, and what that is worth (v1.50)
+
+v1.48 shipped rock that stops a body and nothing else, and said so in three
+places: sight, earshot, a mate search and the pathogen all crossed solid stone.
+That was the right call for one release, because a wall that changes movement
+*and* information cannot be attributed. `barrierOcclusion` is the second
+mechanic, on its own flag, measured against the transparent walls rather than
+against open water.
+
+### The rule, and how it is drawn
+
+One predicate. `barriers.occluded(ax, ay, bx, by)` asks whether rock stands on
+the segment between two points, and every sense query asks it first: the nearest
+pellet, the nearest prey, the nearest threat, the loudest voice in earshot, a
+mate, and the pathogen. Teeth needed no rule of their own — a hunter bites what
+it homed in on, and it can no longer home in on what it cannot see.
+
+The geometry is exact rather than sampled. A marched ray steps straight through
+fourteen pixels of rock often enough to matter, and a rule that depends on a
+step size is a rule nobody can state. Every wall is axis-aligned, so a segment's
+stay inside a slab is one interval of *t*, and inside that interval the question
+"gate or rock?" is another interval intersection. Checked against the dumbest
+possible implementation — walk the segment, ask `blocked()` eight thousand times
+— on a thousand segments across two seeds, with no disagreements.
+
+**The same function draws it.** `visibleRadii` is `firstHit` asked once per
+direction, so the vision overlay stops being a circle and becomes the shape
+sight actually takes, shadows and all. That is not a courtesy: v1.32 kept the
+inexact-vision bug and fixed the *picture* of it, on the principle that a bug
+you keep for compatibility is defensible and a view that hides it is not. A test
+in `test/render.test.js` takes the path the renderer emits and asserts every
+vertex is a point the rule calls visible with the point one pixel beyond it
+hidden, so the picture cannot drift from the rule.
+
+### How much the rule bites
+
+Measured inside **one** pond at **one** instant, under both rules — so there is
+no trajectory divergence to attribute anything to, and the number is exactly
+zero with the feature off (the v1.20 standard). Six seeds, tick 4,000:
+
+| quantity | value |
+|---|---|
+| in-range sight lines that cross rock | **32.5%** |
+| creatures whose nearest pellet changes | **14.6%** |
+| creatures whose nearest threat changes | **12.7%** |
+| of those who could see a hunter, share who stop being able to | **15.5%** |
+| creatures left with no pellet in sight at all | **0.0%** |
+
+A third of everything a creature can see, it can no longer see. The last row is
+the shape of the change: with 280 pellets in the pond, opacity almost never
+*blinds* anybody, it **redirects** them — the pellet behind the wall is replaced
+by a different pellet, on this side.
+
+### It does not deepen the isolation, and that is the finding
+
+v1.48's headline is that creatures either side of a wall are about 18% further
+apart genetically than creatures on the same side. Opaque rock is the obvious
+way to make that bigger, and here it is over twelve seeds at 9,000 ticks, with
+v1.48's own within-run control (the same pond partitioned along lines shifted
+half a room over):
+
+| arm | isolation, median | control, median | population, median | kills/10k, median |
+|---|---|---|---|---|
+| no walls | +0.018 | +0.028 | 195 | 57 |
+| walls, transparent | **+0.168** | +0.027 | 239 | 153 |
+| walls, opaque | **+0.105** | +0.020 | 229 | 371 |
+
+Per-seed, opaque against transparent: isolation up on **6 of 12** seeds,
+population up on **6 of 12**. That is a coin toss twice over, and the median
+moves the wrong way. The tempting claim — a wall that also blocks sight ought to
+isolate more — is dead.
+
+It is dead for a reason this project has already written down twice. Genetic
+structure across the rooms comes from **restricted movement**: a lineage stays
+where it is because crossing takes long enough for drift to act. That is a
+*timescale*. Opacity changes the **information** a creature has, and information
+is not a timescale — the same mismatch v1.33 found when it gave creatures a
+sense for rough ground and selection was indifferent, and the same one v1.48
+finally got right by attacking the mixing instead of the cost. **A remedy has to
+be about the same noun as the diagnosis**, and this remedy is about a different
+noun from the quantity it was expected to move. It is worth saying that this was
+predictable from the file it is written in, and I did not predict it.
+
+The one thing that did move is predation: the median rises from 153 kills per
+10,000 ticks to 371. But it rises on **8 of 12** seeds, which is p ≈ 0.19 by a
+sign test — not evidence — and the between-seed spread runs from 11 to 911. A
+dozen seeds, or it is an anecdote about a trajectory (v1.32). The plausible
+mechanism, offered as a hypothesis and not as a result, is that sight is
+symmetric and fleeing is worth more to prey than spotting is to a predator: 15%
+of everyone who could see a hunter stops being able to, and a prey that cannot
+see a hunter does not run.
+
+### What it costs
+
+The tick is **3.4x** slower in a walled pond with opacity on (1,530 → 450 ticks
+per second on seed 314, against an animation rate of 60), and the whole of that
+is the sense queries. Two things keep it from being worse. The rule is exact and
+therefore O(walls), not O(length); and the scans only ask it of a candidate that
+could **change an answer** — a pellet no nearer than the best so far can never
+become the nearest one, so the wall in front of it never has to be looked for.
+That one reordering is worth 1.9x on its own.
+
+### Reproducing it
+
+The pellet half of the table above — the creature half is the same loop over
+`w.creatures` with a `canEat` filter, which is why the percentage here (27.2% on
+seed 314) sits a little under the 30.7% that run reports for both together.
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const V = await import("./src/vec.js");
+  for (const seed of [314, 13, 77]) {
+    const cfg = C.makeConfig({ seed, barriers: true });
+    const w = new W.World(cfg);
+    for (let i = 0; i < 4000; i++) w.step();
+    const R2 = cfg.visionRadius ** 2;
+    let pairs = 0, hidden = 0, changed = 0;
+    for (const c of w.creatures) {
+      let open = null, occ = null, od = R2, cd = R2;
+      for (const f of w.food.items) {
+        if (f.eaten) continue;
+        const d2 = V.torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
+        if (d2 >= R2) continue;
+        pairs++;
+        const blocked = w.barriers.occluded(c.x, c.y, f.x, f.y);
+        if (blocked) hidden++;
+        if (d2 < od) { od = d2; open = f; }
+        if (!blocked && d2 < cd) { cd = d2; occ = f; }
+      }
+      if (open !== occ) changed++;
+    }
+    console.log(seed, (100*hidden/pairs).toFixed(1) + "% of sight lines cross rock,",
+                (100*changed/w.creatures.length).toFixed(1) + "% of the pond looks somewhere else");
+  }'
+```
+
 
 ## What this model deliberately leaves out
 

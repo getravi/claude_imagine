@@ -365,3 +365,182 @@ test("the walls really do un-mix the pond", () => {
     );
   }
 });
+
+// --- Opaque rock (v1.50) ------------------------------------------------------
+//
+// The rule is one predicate — `occluded` — and everything below is an attempt to
+// break it in a way a running pond would not. The geometry is exact rather than
+// sampled, so the first test is the one that matters: it is checked against the
+// dumbest possible implementation, a walk along the segment asking `blocked()`
+// several thousand times. Two rules that were written independently and agree on
+// forty thousand segments is a stronger claim than either of them alone.
+
+/** A deterministic stream, so the segments below are the same on every run and engine. */
+function lcg(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+/** The middle of a wall's widest solid run — a place it is definitely rock. */
+function deepRock(wall) {
+  let best = { at: 0, len: -1 };
+  for (let i = 0; i < wall.runs.length; i += 2) {
+    const len = wall.runs[i + 1] - wall.runs[i];
+    if (len > best.len) best = { at: (wall.runs[i] + wall.runs[i + 1]) / 2, len };
+  }
+  return best.at;
+}
+
+test("the occlusion rule agrees with walking the segment and asking", () => {
+  // No trigonometry anywhere in the sample: `Math.cos` is implementation-defined
+  // (v1.36), and a test that generates its own cases must not depend on the one
+  // thing this project has already had to name as a precondition.
+  for (const seed of [314, 77]) {
+    const cfg = walled({ seed });
+    const f = new BarrierField(cfg);
+    const STEPS = 8000; // ~0.05 px, fine enough to catch a corner clipped in passing
+    const march = (ax, ay, dx, dy) => {
+      for (let i = 1; i <= STEPS; i++) {
+        const t = i / STEPS;
+        if (f.blocked(ax + t * dx, ay + t * dy)) return true;
+      }
+      return false;
+    };
+    const rnd = lcg(seed * 7919 + 1);
+    let tested = 0;
+    let hidden = 0;
+    for (let i = 0; i < 500; i++) {
+      const ax = rnd() * cfg.width;
+      const ay = rnd() * cfg.height;
+      const dx = (rnd() - 0.5) * 400;
+      const dy = (rnd() - 0.5) * 400;
+      if (f.blocked(ax, ay)) continue;
+      tested++;
+      const exact = f.occluded(ax, ay, ax + dx, ay + dy);
+      if (exact) hidden++;
+      assert.equal(exact, march(ax, ay, dx, dy), `seed ${seed}, segment ${i}`);
+    }
+    // ...and the sample has to contain both answers, or the agreement above is
+    // an agreement about nothing.
+    assert.ok(tested > 300, `only ${tested} usable segments on seed ${seed}`);
+    assert.ok(hidden > 50 && hidden < tested - 50, `${hidden}/${tested} hidden on seed ${seed}`);
+  }
+});
+
+test("rock hides nothing from someone standing in it", () => {
+  // The same decision `resolve()` makes for movement: barriers can be switched
+  // on under a living pond, and a creature the walls closed around should walk
+  // out rather than go blind. It makes the relation asymmetric, and only for as
+  // long as it takes the stranded one to leave.
+  const cfg = walled();
+  const f = new BarrierField(cfg);
+  const w = f.walls[0];
+  const inside = { x: w.pos, y: deepRock(w) };
+  assert.ok(f.blocked(inside.x, inside.y), "the staged point is inside rock");
+  const outside = { x: w.pos + w.half + 60, y: inside.y };
+  assert.ok(!f.blocked(outside.x, outside.y), "the other point is not");
+  assert.equal(f.occluded(inside.x, inside.y, outside.x, outside.y), false);
+  assert.equal(f.occluded(outside.x, outside.y, inside.x, inside.y), true);
+});
+
+test("the overlay is the rule plotted, not a drawing about it", () => {
+  // v1.32's lesson in its general form: a picture that "should" agree with the
+  // rule eventually does not. `visibleRadii` is `firstHit` and nothing else, so
+  // this asserts the two cannot part — just inside each drawn distance is
+  // visible, just past it is not.
+  const cfg = walled();
+  const f = new BarrierField(cfg);
+  const R = cfg.visionRadius;
+  const rays = 64;
+  let shadowed = 0;
+  for (const [x, y] of [
+    [f.walls[0].pos + f.walls[0].half + 20, f.walls[0].gaps[0] + 90],
+    [cfg.width * 0.5, cfg.height * 0.25],
+    [cfg.width * 0.8, cfg.height * 0.6],
+  ]) {
+    if (f.blocked(x, y)) continue;
+    const radii = f.visibleRadii(x, y, R, rays);
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2;
+      const ux = Math.cos(a);
+      const uy = Math.sin(a);
+      const d = radii[i];
+      assert.ok(d >= 0 && d <= R, `ray ${i} reaches ${d}`);
+      assert.equal(f.occluded(x, y, x + ux * (d - 1), y + uy * (d - 1)), false, `inside ray ${i}`);
+      if (d < R - 1) {
+        shadowed++;
+        assert.equal(f.occluded(x, y, x + ux * (d + 1), y + uy * (d + 1)), true, `past ray ${i}`);
+      }
+    }
+  }
+  assert.ok(shadowed > 10, `only ${shadowed} rays met rock — nothing was tested`);
+});
+
+test("opaque rock without any rock is exactly the world without it", () => {
+  // The flag composes with the one it depends on, and the dependency is the
+  // whole of it: no walls, no shadows, no difference of any kind.
+  const a = new World(makeConfig({ seed: 21 }));
+  const b = new World(makeConfig({ seed: 21, barrierOcclusion: true }));
+  for (let i = 0; i < 300; i++) {
+    a.step();
+    b.step();
+  }
+  assert.equal(a.creatures.length, b.creatures.length);
+  for (let i = 0; i < a.creatures.length; i++) {
+    assert.equal(a.creatures[i].x, b.creatures[i].x);
+    assert.equal(a.creatures[i].y, b.creatures[i].y);
+  }
+});
+
+test("a wall between a creature and a pellet is a pellet it cannot see", () => {
+  // Staged, not waited for. One creature, one pellet, one wall, one tick, in
+  // both arms — which names the exact state that produces the behaviour instead
+  // of describing how often a real pond happens to reach it.
+  const stage = (occlusion) => {
+    const w = new World(walled({ barrierOcclusion: occlusion }));
+    const wall = w.barriers.walls.find((v) => v.vertical);
+    // Either side of the rock, deep in a solid run rather than beside a gate.
+    const y = deepRock(wall);
+    const x = wall.pos - wall.half - 25;
+    const fx = wall.pos + wall.half + 25;
+    assert.ok(!w.barriers.blocked(x, y) && !w.barriers.blocked(fx, y), "staged in open water");
+    assert.ok(w.barriers.occluded(x, y, fx, y), "staged with rock between them");
+    const c = new Creature(Genome.random(new RNG(9)), w.config, x, y, new RNG(1), 0);
+    c.heading = 0;
+    w.creatures = [c];
+    w.food.items = [{ x: fx, y, eaten: false, radius: 3 }];
+    w.step();
+    return c._in[4]; // food proximity, 0 when there is no pellet in sight
+  };
+  const seen = stage(false);
+  assert.ok(seen > 0, `the transparent arm should see the pellet, read ${seen}`);
+  assert.equal(stage(true), 0, "opaque rock left a pellet visible through a wall");
+});
+
+test("a wall between two creatures is a wall the pathogen does not cross", () => {
+  // Contagion is the one sense that spends a random number on the answer, so the
+  // occlusion test has to come *before* the roll — otherwise the walls would
+  // move an epidemic in every world they merely stand in. Staged at
+  // infectionChance 1, where the only thing that can prevent a case is the rock.
+  const stage = (occlusion) => {
+    const w = new World(
+      walled({ disease: true, infectionChance: 1, barrierOcclusion: occlusion })
+    );
+    const wall = w.barriers.walls.find((v) => v.vertical);
+    const y = deepRock(wall);
+    const gap = wall.half + 3; // inside infectionRadius (22), either side of 14px of rock
+    const a = new Creature(Genome.random(new RNG(9)), w.config, wall.pos - gap, y, new RNG(1), 0);
+    const b = new Creature(Genome.random(new RNG(3)), w.config, wall.pos + gap, y, new RNG(2), 0);
+    assert.ok(!w.barriers.blocked(a.x, a.y) && !w.barriers.blocked(b.x, b.y));
+    a.infected = true;
+    a.infectedAtAge = 0;
+    w.creatures = [a, b];
+    w.step();
+    return b.infected;
+  };
+  assert.equal(stage(false), true, "the transparent arm should infect through rock");
+  assert.equal(stage(true), false, "opaque rock let the pathogen through a wall");
+});

@@ -164,7 +164,12 @@ export function describePond(world, config, camera = null) {
     const rooms = world.barriers.roomCount();
     out.push(
       `Rock divides the pond into ${count(rooms, "room")}, joined by gates. ` +
-        `Creatures are turned back by it ${s.walledRate.toFixed(0)} times per hundred ticks.`
+        `Creatures are turned back by it ${s.walledRate.toFixed(0)} times per hundred ticks.` +
+        // Opacity changes what a room *is* — somewhere to hide rather than only
+        // somewhere to be stuck — and it is the one property of this feature
+        // that has no picture at all unless a creature is selected. A watcher
+        // who cannot see the canvas gets it in words instead.
+        (config.barrierOcclusion ? " The rock is opaque: nothing sees, hears or infects through it." : "")
     );
   }
   if (camera) out.push(describeView(camera, config));

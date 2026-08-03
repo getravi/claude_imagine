@@ -119,11 +119,11 @@ export const DEFAULT_CONFIG = Object.freeze({
   // cutting the torus into rooms, so crossing the pond becomes a search for a
   // door instead of a straight line.
   //
-  // Movement only: sight, sound, teeth and the pathogen all still cross rock,
-  // and nothing can perceive a wall. A creature finds a gate by sliding, which
-  // falls out of dropping the refused component of its velocity — see
-  // barriers.js. The layout comes from an integer hash of the seed rather than
-  // the world RNG, so switching this on draws zero random numbers.
+  // Movement only, unless `barrierOcclusion` is also on: a creature finds a gate
+  // by sliding, which falls out of dropping the refused component of its
+  // velocity — see barriers.js. The layout comes from an integer hash of the
+  // seed rather than the world RNG, so switching this on draws zero random
+  // numbers.
   barriers: false,
   // Four walls — two north-south, two east-west — is the smallest number that
   // makes *rooms* on a torus rather than bands you can walk around the long
@@ -146,6 +146,19 @@ export const DEFAULT_CONFIG = Object.freeze({
   // aperture.
   barrierGaps: 2,
   barrierGapWidth: 44,
+  // Opaque rock (v1.50, opt-in, needs `barriers`). v1.48 shipped walls that stop
+  // a body and nothing else, and said so in three places: sight, earshot, a mate
+  // search and the pathogen all crossed solid stone. That was the right call for
+  // one release — a wall that changes movement *and* information cannot be
+  // attributed — and it is the wrong thing to leave standing, because a barrier
+  // you can see, hear and infect through is a detour, not a wall.
+  //
+  // Switch this on and every sense query asks `barriers.occluded()` first: a
+  // room becomes somewhere to hide as well as somewhere to be stuck. Teeth need
+  // no rule of their own — a predator bites what it homed in on, and it can no
+  // longer home in on what it cannot see. Draws zero random numbers; the
+  // geometry is exact, not sampled.
+  barrierOcclusion: false,
 
   // Detritus (v1.27, opt-in): the ground remembers where things died. Food has
   // arrived from nowhere since v1.0 — v1.18 made the crop conditional on itself

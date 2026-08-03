@@ -91,6 +91,12 @@ class RecordingContext {
   stroke() { this.op("stroke"); }
   clip() { this.op("clip"); }
   fillRect(x, y, w, h) { this.op("fillRect", x, y, w, h); }
+  // Added in v1.50, and its absence is the finding: `_drawBarriers` has called
+  // this since v1.48, so pointing the recorder at a walled world threw rather
+  // than recording. A stub built from the methods a renderer happened to use on
+  // the day it was written goes stale the first time the renderer learns a new
+  // one — and it fails loudly, which is the good case.
+  strokeRect(x, y, w, h) { this.op("strokeRect", x, y, w, h); }
   clearRect(x, y, w, h) { this.op("clearRect", x, y, w, h); }
   setLineDash(d) { this.op("setLineDash", ...d); }
 

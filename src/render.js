@@ -20,6 +20,41 @@ import {
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
+/**
+ * Directions sampled when drawing what opaque rock leaves visible. This is a
+ * *drawing* resolution and nothing else — the rule itself (`barriers.occluded`)
+ * is exact and asks no rays at all — so it trades a shadow edge that can be a
+ * couple of pixels off for a polygon the frame budget does not notice.
+ */
+const VISION_RAYS = 128;
+
+/** Start a closed circular path. Kept as a function so it can be a clip *and* a stroke. */
+function circlePath(ctx, x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+}
+
+/**
+ * Start a closed path through one point per direction, at the distances
+ * `BarrierField.visibleRadii` measured — the disc with the walls' shadows cut
+ * out of it.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x @param {number} y centre, in the camera's coordinates
+ * @param {ArrayLike<number>} radii visible distance per direction, from angle 0
+ */
+function visibilityPath(ctx, x, y, radii) {
+  const n = radii.length;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const px = x + Math.cos(a) * radii[i];
+    const py = y + Math.sin(a) * radii[i];
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
 export class Renderer {
   /**
    * @param {HTMLCanvasElement} canvas
@@ -557,48 +592,54 @@ export class Renderer {
       // creatures sense.
       const r = cfg.visionRadius * (world.visionFactor ?? 1);
       ctx.lineWidth = hair;
-      if (cfg.exactVision || !world.creatureGrid) {
+
+      // What actually bounds a sense, as a list of closed shapes to intersect.
+      // The disc is always in it. The 3x3 block joins it when the index is the
+      // inexact one (`exactVision` off), because then the search is the block
+      // and the disc is only an aspiration. Opaque rock (v1.50) joins it as the
+      // visible polygon, which is `barriers.firstHit` plotted rather than a
+      // drawing *about* the rule.
+      const parts = [() => circlePath(ctx, p.x, p.y, r)];
+      const inexact = !cfg.exactVision && world.creatureGrid;
+      if (inexact) {
+        const b = world.creatureGrid.nearBounds(c.x, c.y);
+        parts.push(() => {
+          ctx.beginPath();
+          ctx.rect(p.x + b.left, p.y + b.top, b.right - b.left, b.bottom - b.top);
+        });
+      }
+      if (cfg.barrierOcclusion && world.barriers) {
+        const radii = world.barriers.visibleRadii(c.x, c.y, r, VISION_RAYS);
+        parts.push(() => visibilityPath(ctx, p.x, p.y, radii));
+      }
+
+      if (parts.length === 1) {
         ctx.strokeStyle = "rgba(120, 180, 255, 0.15)";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        parts[0]();
         ctx.stroke();
       } else {
-        // Without exact vision this circle is an aspiration: the spatial index
-        // only offers up the 3x3 block of cells around the creature, so what it
-        // can find is that disc with grid-aligned bites out of it (config.js,
-        // `exactVision`). Drawing the circle alone would be the thirty-one
-        // versions of quiet fiction this overlay has already told, so draw both
-        // — the intended radius faintly, and the region actually searched at
-        // full strength.
-        const b = world.creatureGrid.nearBounds(c.x, c.y);
-        const bx = p.x + b.left;
-        const by = p.y + b.top;
-        const bw = b.right - b.left;
-        const bh = b.bottom - b.top;
+        // Drawing the disc alone here would be the thirty-one versions of quiet
+        // fiction this overlay told before v1.32, so draw both: the intended
+        // radius faintly, and the region actually searched at full strength.
+        // That region is the intersection of every part, and its boundary is
+        // each part's own outline clipped by all the others — clips compose,
+        // because `ctx.clip()` intersects with whatever is already clipped.
         ctx.strokeStyle = "rgba(120, 180, 255, 0.06)";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        circlePath(ctx, p.x, p.y, r);
         ctx.stroke();
 
         ctx.strokeStyle = "rgba(120, 180, 255, 0.18)";
-        // The curved part of the boundary: the disc, clipped to the block.
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(bx, by, bw, bh);
-        ctx.clip();
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-        // ...and the flat part: the block, clipped to the disc.
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.beginPath();
-        ctx.rect(bx, by, bw, bh);
-        ctx.stroke();
-        ctx.restore();
+        for (let i = 0; i < parts.length; i++) {
+          ctx.save();
+          for (let j = 0; j < parts.length; j++) {
+            if (j === i) continue;
+            parts[j]();
+            ctx.clip();
+          }
+          parts[i]();
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     }
     ctx.restore();

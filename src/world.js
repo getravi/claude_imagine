@@ -323,6 +323,14 @@ export class World {
       cfg.sexualReproduction ? cfg.mateRadius : 0
     );
 
+    // The rock, if it is opaque in this world (v1.50). Null unless *both* flags
+    // are on, so every world that has not asked for it takes one null test per
+    // candidate and no branch that could move it. Every sense below asks the
+    // same question of it — sight, earshot, a mate search — because a wall that
+    // stops one kind of information and not another would be a rule nobody
+    // could state.
+    const rock = cfg.barrierOcclusion ? this.barriers : null;
+
     // 2. Sense, think, act, in the order `_turnOrder()` hands them over — which
     // is `this.creatures` itself unless this world has asked for a shuffle.
     for (const c of this._turnOrder()) {
@@ -353,6 +361,13 @@ export class World {
         }
         const d2 = torusDist2(c.x, c.y, f.x, f.y, cfg.width, cfg.height);
         if (d2 < nfD2) {
+          // Only now, and only in a world with opaque rock: a pellet that is not
+          // nearer than the best so far can never become the answer, so asking
+          // whether a wall stands in front of it would be work with no reader.
+          // The question is exact and it is not cheap — see barriers.js — so the
+          // scan asks it of the two or three candidates that could change the
+          // outcome rather than of every pellet in the block.
+          if (rock && rock.occluded(c.x, c.y, f.x, f.y)) return;
           nfD2 = d2;
           nf = f;
         }
@@ -370,6 +385,18 @@ export class World {
       this._scan(this.creatureGrid, c.x, c.y, nearbyR, (o) => {
         if (o === c || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
+        if (rock) {
+          // Same economy as the pellet scan above, over the three nearest-
+          // queries and the one that is not a nearest-query: a neighbour who is
+          // no nearer than the best prey, threat or mate so far and is saying
+          // nothing cannot affect anything below, so the wall between them never
+          // has to be looked for.
+          const nearer =
+            d2 < preyD2 || d2 < threatD2 || (cfg.sexualReproduction && d2 < mateD2);
+          const audible = cfg.signalling && d2 < earR2 && o.prevSignal !== 0;
+          if (!nearer && !audible) return;
+          if (rock.occluded(c.x, c.y, o.x, o.y)) return;
+        }
         // Hearing: a call fades linearly with distance, and the loudest one
         // wins — a single channel, so a creature has to be worth listening to
         // over its neighbours. Sign is preserved, so "loudest" means the largest
@@ -403,6 +430,7 @@ export class World {
           if (k.energy <= 0) return;
           const d2 = torusDist2(c.x, c.y, k.x, k.y, cfg.width, cfg.height);
           if (d2 < preyTargetD2) {
+            if (rock && rock.occluded(c.x, c.y, k.x, k.y)) return;
             preyTargetD2 = d2;
             preyTarget = k;
           }
@@ -636,6 +664,7 @@ export class World {
    */
   _stepDisease() {
     const cfg = this.config;
+    const rock = cfg.barrierOcclusion ? this.barriers : null;
     const r2 = cfg.infectionRadius * cfg.infectionRadius;
     const caught = [];
     let sick = 0;
@@ -646,7 +675,12 @@ export class World {
       this.creatureGrid.forEachNear(c.x, c.y, (o) => {
         if (o === c || o.infected || o.immune || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);
-        if (d2 <= r2 && this.rng.chance(cfg.infectionChance)) caught.push(o);
+        if (d2 > r2) return;
+        // Opaque rock stops the pathogen too, and it stops it *before* the roll:
+        // a contact the wall refused must not consume a random number, or the
+        // walls would move the epidemic in every world they merely stand in.
+        if (rock && rock.occluded(c.x, c.y, o.x, o.y)) return;
+        if (this.rng.chance(cfg.infectionChance)) caught.push(o);
       });
     }
 

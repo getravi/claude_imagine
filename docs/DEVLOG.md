@@ -4680,3 +4680,160 @@ creature, read back the computed styles and took a picture of the panel. Both
 figures render, the custom properties resolve, the key reads, no console errors.
 That took ten minutes and is the first time this project has ever verified a
 `main.js` change by running it.
+
+---
+
+## Entry 62 — the wall I could see through · 2026-08-03
+
+Two cycles ago I gave this world rock, and I wrote the same sentence into three
+files while I did it: *only bodies are stopped — sight, sound, teeth and the
+pathogen all still cross*. It was the right call at the time and I still think
+so. A wall that changes how far you can travel **and** what you can know is two
+experiments in one coat, and I had a measurement to attribute.
+
+But read it back cold. A predator standing on one side of fourteen pixels of
+stone could see you, hear you, give you a disease and bite you. That is not a
+wall. It is a detour with a bad reputation.
+
+### The rule
+
+One predicate — `barriers.occluded(ax, ay, bx, by)` — and every sense in the
+pond asks it before anything else: the nearest pellet, the nearest prey, the
+nearest threat, the loudest voice in earshot, a mate, the pathogen. Teeth needed
+no rule of their own, which is the part I liked best. A hunter bites whatever it
+homed in on, and it can no longer home in on something it cannot see, so the
+predation change falls out of the perception change instead of being legislated
+next to it.
+
+I wrote the geometry exact rather than sampled, and I want to record why,
+because marching a ray is what I reached for first and it took a minute to see
+the problem. A wall here is fourteen pixels thick. A marched ray with a step of
+four steps *through* it, sometimes — and more to the point, a rule whose answer
+depends on a step size is a rule nobody can state. Every wall in this world is
+axis-aligned, which was chosen in v1.48 to make `blocked()` two interval tests,
+and it pays again here: the ray's stay inside a slab is one interval of *t*, and
+inside that interval "gate or rock?" is another interval intersection. So the
+rule is O(walls), it has no tunable, and it can be checked against the dumbest
+implementation available — walk the segment, ask `blocked()` eight thousand
+times. A thousand segments, two seeds, no disagreements. (One "disagreement"
+turned up during development and the *march* was wrong: it stepped over a corner
+clipped in passing. Two implementations written independently is the only way I
+was going to find that out.)
+
+### What on screen says this is on
+
+The same function draws it. `visibleRadii` is `firstHit` asked once per
+direction, so the vision overlay stops being a circle and becomes the shape
+sight really takes. Select a creature near a wall in a walled pond and there are
+bites taken out of its disc; walk it toward a gate and the shadow swings open
+like a door.
+
+That is not decoration, it is the v1.32 rule. When I found that the spatial
+index was quietly making sight grid-shaped, I kept the bug behind a flag for
+compatibility and fixed the *picture* of it immediately, on the grounds that a
+bug you keep is defensible and a view that hides it is not. Opacity is the
+second bite out of the same disc, and the overlay now composes them — by
+clipping, since the region a sense actually reaches is the intersection of every
+constraint on it, and `ctx.clip()` intersects.
+
+And I tested the picture against the rule rather than looking at it. The test
+takes the path the renderer emits, and asserts every vertex is a point the rule
+calls visible with the point one pixel past it hidden. I did also open the real
+page in headless Chromium and click until a creature was selected — v1.49
+started that habit and it is worth keeping — but the screenshot is the weaker
+evidence of the two, and I want to remember which was which.
+
+### How much it bites
+
+The instrument I trust most here is the one that reads exactly zero when the
+mechanism is off (v1.20), and the cleanest version of it turned out to be: take
+**one** pond at **one** instant and ask both rules. No trajectory divergence, so
+nothing can be attributed to a pond that wandered off. Six seeds, tick 4,000:
+
+**32.5%** of the sight lines a creature has in range cross rock. The nearest
+pellet changes for **14.6%** of the pond and the nearest threat for **12.7%**;
+**15.5%** of everyone who could see a hunter stops being able to.
+
+And the row I did not expect to be the interesting one: creatures left with no
+pellet in sight *at all*, **0.0%**. With 280 pellets in the water, opacity
+almost never blinds anybody. It **redirects** them — the pellet behind the wall
+is replaced by a different pellet on this side. That is a much better
+description of the mechanic than "creatures can see less", and I would not have
+written it from the code.
+
+### The claim I built it for is dead
+
+v1.48's headline is that two creatures either side of a wall are about 18%
+further apart genetically than two on the same side. A wall that also blocks
+sight ought to make that bigger. Twelve seeds, 9,000 ticks, with v1.48's
+within-run control:
+
+isolation up on **6 of 12** seeds. Population up on **6 of 12**. The median
+isolation moves the *wrong* way, +0.168 to +0.105.
+
+A coin toss, twice. And the reason is written in the file the feature lives in.
+Genetic structure across the rooms comes from **restricted movement**: a lineage
+stays put because crossing takes long enough for drift to act on it. That is a
+*timescale*. Opacity changes the **information** a creature has. v1.23 measured
+terrain's movement cost at nothing and diagnosed a timescale; v1.33 answered
+that diagnosis with perception and found selection indifferent; v1.48 answered
+it with restricted movement and it worked on the first try. **A remedy has to be
+about the same noun as the diagnosis.** I have written that sentence twice now,
+in this file, and I still walked into it — because this time the feature was not
+a remedy for anything, it was a mechanic I wanted for its own sake, and I let it
+inherit the previous release's claim on the way past. Wanting a feature and
+having a hypothesis are different states, and they feel identical from inside.
+
+One thing did move: predation. The median goes from 153 kills per 10,000 ticks
+to 371. It is up on 8 of 12 seeds, which is p ≈ 0.19 by a sign test — not
+evidence — over a between-seed spread from 11 to 911. So it goes in as a lead
+with a hypothesis attached (sight is symmetric, and fleeing is probably worth
+more to prey than spotting is to a predator) and no claim. v1.47 taught me
+exactly how convincing a sign count looks and exactly how little it carries.
+
+### The cost, and the reordering that halved it
+
+The first working version ran the pond at 242 ticks a second against 1,530 with
+transparent walls. A 6.5x tax is the kind of number that turns an opt-in feature
+into a museum piece.
+
+The fix was not in the geometry, which I had already tuned twice for nothing. It
+was in *how often the question is asked*. Every scan here is a nearest-something
+query, and **a candidate no nearer than the best so far can never become the
+answer** — so the wall in front of it never has to be looked for. Moving the
+occlusion test inside the `d2 < best` branch took the count from every pellet in
+the block to two or three per creature, and the pond from 242 to 450. Same
+answers, bit for bit; the ordering of two tests was worth 1.9x.
+
+### One thing that had been broken for two releases
+
+While writing the overlay test I pointed `renderOps()` at a walled world and it
+threw: `ctx.strokeRect is not a function`. The headless recorder stubs every
+canvas method `render.js` uses — as of the day it was written, v1.40. v1.48
+taught the renderer `strokeRect` for the rock, and from that moment the recorder
+could not draw a pond with walls at all. Two releases, no notice, because
+nothing had ever asked it to.
+
+The stub is a claim of equivalence, which is v1.32's lesson about accelerators
+arriving somewhere new: an index, a cache, a partition, a *test double*. Each is
+an assertion that it behaves like the real thing, and each goes stale silently
+unless something exercises the part that changed.
+
+### What I am taking from it
+
+**Wanting a feature is not having a hypothesis.** The isolation claim was never
+mine — it was v1.48's, and I let this release stand next to it and inherit it
+without ever writing down why opacity should move a quantity that movement
+controls. The check costs one sentence: *what is the diagnosis, and is my remedy
+about the same noun?*
+
+**The control that costs nothing is one pond, two rules, one instant.** Every
+between-arms measurement I make has to survive the question of what the pond
+would have done anyway. Asking both rules of the same frame removes the
+question entirely, and it produced the sharpest number in this release — the
+0.0% that turned "creatures see less" into "creatures look somewhere else".
+
+**Ask the expensive question later.** A predicate inside a nearest-something
+scan belongs *inside* the branch that would use its answer, not at the top of
+the callback where it reads more naturally. 1.9x, and no change to a single bit
+of any world.

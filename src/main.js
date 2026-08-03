@@ -87,6 +87,7 @@ function parseHash() {
   if (p.has("eye")) o.exactVision = p.get("eye") === "1";
   if (p.has("feel")) o.groundSense = p.get("feel") === "1";
   if (p.has("rock")) o.barriers = p.get("rock") === "1";
+  if (p.has("dark")) o.barrierOcclusion = p.get("dark") === "1";
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
   return o;
@@ -119,6 +120,7 @@ function syncHash() {
   p.set("eye", config.exactVision ? "1" : "0");
   p.set("feel", config.groundSense ? "1" : "0");
   p.set("rock", config.barriers ? "1" : "0");
+  p.set("dark", config.barrierOcclusion ? "1" : "0");
   p.set("fin", config.deathIsFinal ? "1" : "0");
   p.set("ord", config.shuffleTurnOrder ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
@@ -229,6 +231,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-exactvision", config.exactVision);
   setToggle("toggle-groundsense", config.groundSense);
   setToggle("toggle-barriers", config.barriers);
+  setToggle("toggle-occlusion", config.barrierOcclusion);
   setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-turnorder", config.shuffleTurnOrder);
   setToggle("toggle-sexual", config.sexualReproduction);
@@ -1431,6 +1434,13 @@ function wireControls() {
     // see world.syncBarriers — so the pond does not spend its next hundred ticks
     // walking out of the scenery.
     world.syncBarriers();
+    syncHash();
+  });
+  $("toggle-occlusion").checked = config.barrierOcclusion;
+  $("toggle-occlusion").addEventListener("change", (e) => {
+    config.barrierOcclusion = e.target.checked;
+    // Nothing to rebuild: opacity is a property of the queries, not of the
+    // layout, so the very next tick asks a different question of the same rock.
     syncHash();
   });
   $("toggle-detritus").checked = config.detritus;

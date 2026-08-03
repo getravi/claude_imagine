@@ -23,10 +23,14 @@
 //     of its velocity is dropped and the other one survives — which is enough
 //     to find a gate without anything having to know a gate exists. Any story
 //     about creatures *learning* the map would be the v1.23 mistake again.
-//   * **Not a wall to everything else.** Sight, sound, teeth and the pathogen
-//     all still cross rock; only bodies and pellets are stopped. Blocking the
-//     senses would be a second mechanic wearing this one's clothes, and it
-//     would make the measurement below impossible to attribute.
+//   * **Not a wall to everything else** — until v1.50. Sight, sound, teeth and
+//     the pathogen all crossed rock in v1.48; blocking them would have been a
+//     second mechanic wearing this one's clothes, and would have made that
+//     release's measurement impossible to attribute. It is that second mechanic
+//     that `barrierOcclusion` now is, on its own flag, measured against the
+//     transparent walls rather than against open water: `occluded()` below is
+//     the rule, `firstHit()` is the geometry underneath it, and `visibleRadii()`
+//     is the same geometry drawn, so the picture cannot disagree with the rule.
 //
 // Two properties are copied deliberately from `terrain.js`:
 //
@@ -151,6 +155,25 @@ export class BarrierField {
         }
       }
     }
+
+    // Pass three: each wall's *solid* runs — its length minus its merged gates,
+    // the same intervals `rects()` draws. Cached because `firstHit()` is asked
+    // this question once per candidate pair per sense query, and the answer
+    // cannot change: a layout is fixed at construction.
+    for (const w of this.walls) {
+      const cross = w.vertical ? config.height : config.width;
+      w.span = w.vertical ? config.width : config.height;
+      w.cross = cross;
+      // Flat pairs rather than objects: this is the innermost loop of every
+      // sense query in a world with opaque rock, and an indexed walk over a
+      // typed array is measurably cheaper than an iterator over records.
+      const runs = solidRuns(w.gaps, w.gapHalf, cross);
+      w.runs = new Float64Array(runs.length * 2);
+      for (let i = 0; i < runs.length; i++) {
+        w.runs[i * 2] = runs[i].a;
+        w.runs[i * 2 + 1] = runs[i].b;
+      }
+    }
   }
 
   /**
@@ -252,6 +275,148 @@ export class BarrierField {
       }
     }
     return { x, y };
+  }
+
+  /**
+   * How far along the displacement `(dx, dy)` from `(ax, ay)` the ray first
+   * enters rock, as a fraction in [0, 1] — or `Infinity` if it reaches the end
+   * without meeting any. The displacement is a *delta*, already wrapped by the
+   * caller, so this works on the torus without knowing where the seam is.
+   *
+   * One function answers both questions the occlusion rule has: whether a thing
+   * is hidden (`occluded`, which asks whether the hit lands before the target)
+   * and where the shadow starts (`visibleRadii`, which asks for the hit itself).
+   * That is deliberate — v1.32's lesson is that an accelerator or a picture
+   * which "should" agree with the rule eventually does not, and the cheapest
+   * defence is that there is only one rule to disagree with.
+   *
+   * Exact rather than sampled, which matters twice over: a marched ray can step
+   * straight through a 14-pixel slab, and a rule that depends on a step size is
+   * a rule nobody can state. Every wall is axis-aligned, so the ray's stay
+   * inside a slab is one interval of t — and inside that interval the crossing
+   * coordinate moves linearly, so the first solid run it meets is another
+   * interval intersection. Three images of each wall (and of each run) are
+   * tested because both axes wrap and a delta may reach half the world.
+   *
+   * @param {number} ax @param {number} ay start, wrapped into the world
+   * @param {number} dx @param {number} dy displacement, already a wrapped delta
+   * @returns {number} the first t in [0, 1] inside rock, or Infinity
+   */
+  firstHit(ax, ay, dx, dy) {
+    let best = Infinity;
+    const walls = this.walls;
+    for (let wi = 0; wi < walls.length; wi++) {
+      const w = walls[wi];
+      const runs = w.runs;
+      if (runs.length === 0) continue; // a wall that is all gate stops nothing
+      const span = w.span;
+      const cross = w.cross;
+      const half = w.half;
+      // `0` is the axis the wall's position lives on; `1` the axis it runs
+      // along, and therefore the one its gates are placed on.
+      const a0 = w.vertical ? ax : ay;
+      const d0 = w.vertical ? dx : dy;
+      const a1 = w.vertical ? ay : ax;
+      const d1 = w.vertical ? dy : dx;
+      const reach = (d0 < 0 ? -d0 : d0) + half;
+      // One reciprocal per axis per wall instead of two divisions per doorway
+      // tested. This is the innermost arithmetic of every sense query in a
+      // walled world and division is the only expensive operation in it.
+      const inv0 = d0 === 0 ? 0 : 1 / d0;
+      const inv1 = d1 === 0 ? 0 : 1 / d1;
+      const nearest = wrapDelta(a0, w.pos, span); // the wall centre, as an offset
+      for (let img = -1; img <= 1; img++) {
+        const c = nearest + img * span;
+        if (c > reach || c < -reach) continue; // this image is out of range
+        let t0, t1;
+        if (d0 === 0) {
+          // Parallel to the wall: either always inside the slab or never.
+          if (c >= half || c <= -half) continue;
+          t0 = 0;
+          t1 = 1;
+        } else {
+          const ta = (c - half) * inv0;
+          const tb = (c + half) * inv0;
+          t0 = ta < tb ? ta : tb;
+          t1 = ta < tb ? tb : ta;
+          if (t0 < 0) t0 = 0;
+          if (t1 > 1) t1 = 1;
+          if (t0 >= t1 || t0 >= best) continue;
+        }
+        // Inside the slab from t0 to t1: when is the crossing coordinate in rock
+        // rather than in a doorway?
+        for (let ri = 0; ri < runs.length; ri += 2) {
+          for (let j = -1; j <= 1; j++) {
+            const ra = runs[ri] + j * cross;
+            const rb = runs[ri + 1] + j * cross;
+            let s, e;
+            if (d1 === 0) {
+              if (a1 <= ra || a1 >= rb) continue;
+              s = t0;
+              e = t1;
+            } else {
+              const ua = (ra - a1) * inv1;
+              const ub = (rb - a1) * inv1;
+              s = ua < ub ? ua : ub;
+              e = ua < ub ? ub : ua;
+              if (s < t0) s = t0;
+              if (e > t1) e = t1;
+            }
+            if (s < e && s < best) best = s;
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Does rock stand between these two points? The whole of the occlusion rule:
+   * sight, earshot, a mate search and the pathogen all ask exactly this.
+   *
+   * A point *inside* rock is hidden from nothing. That is the same decision
+   * `resolve()` makes for movement — barriers can be switched on under a living
+   * pond, and a creature the walls closed around should be able to walk out
+   * rather than go blind — and it makes the relation asymmetric for exactly as
+   * long as it takes the stranded one to leave.
+   *
+   * @param {number} ax @param {number} ay @param {number} bx @param {number} by
+   */
+  occluded(ax, ay, bx, by) {
+    const { width, height } = this.config;
+    if (this.firstHit(ax, ay, wrapDelta(ax, bx, width), wrapDelta(ay, by, height)) > 1) return false;
+    // Only now: a watcher standing in rock hits it at t = 0, so this is the one
+    // case a hit does not mean hidden — and asking first would pay for the test
+    // on every pair rather than on the third of them that meet a wall at all.
+    return !this.blocked(ax, ay);
+  }
+
+  /**
+   * What a watcher at (x, y) can actually see, as the distance to the first rock
+   * along each of `rays` evenly spaced directions (clamped to `radius`).
+   *
+   * This is the answer to "what on screen says this is on?" — the vision overlay
+   * stops being a circle and becomes the shape sight really takes, with the
+   * shadows of the walls cut out of it. It is `firstHit` and nothing else, so
+   * the overlay is not a drawing *about* the rule, it is the rule plotted.
+   *
+   * @param {number} x @param {number} y
+   * @param {number} radius
+   * @param {number} rays
+   * @returns {Float64Array} one visible distance per direction, from angle 0
+   */
+  visibleRadii(x, y, radius, rays = 96) {
+    const out = new Float64Array(rays);
+    if (this.blocked(x, y)) {
+      out.fill(radius);
+      return out;
+    }
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2;
+      const t = this.firstHit(x, y, Math.cos(a) * radius, Math.sin(a) * radius);
+      out[i] = t < 1 ? t * radius : radius;
+    }
+    return out;
   }
 
   /**

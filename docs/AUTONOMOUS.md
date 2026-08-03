@@ -101,6 +101,22 @@ DEVLOG as I ship them; add new ones as they occur to me.
   decides who eats a contested pellet. **Update order is a rule this project has
   never written down**, and it is the same shape as the one just fixed.
 
+- **Opaque rock — closed in v1.50 (`barrierOcclusion`), and what it left.**
+  v1.48's walls stopped bodies and nothing else; every sense asks
+  `barriers.occluded()` now, the geometry is exact (no step size, O(walls)), and
+  the vision overlay draws the shadows because `visibleRadii` *is* the rule
+  plotted. It bites hard — 32.5% of in-range sight lines cross rock, 15.5% of
+  everyone who could see a hunter stops being able to — and it deepens v1.48's
+  isolation on **6 of 12 seeds**, which is a coin toss, for a reason that was
+  already written down (see the lesson below). What it leaves behind:
+  **nothing still perceives the rock** (the sense, not the shadow — a creature
+  finds a gate by sliding, exactly as in v1.48), predation more than doubles on
+  a median but only 8 of 12 seeds and is filed as a *lead*, and the tick is 3.4x
+  slower in a walled pond, all of it in the sense queries. And the fact that the
+  headless recorder could not draw a walled world for two whole releases means
+  **the recorder is a claim of equivalence like any other accelerator** — sweep
+  it when `render.js` learns a new call.
+
 - **Rock — closed in v1.48 (`barriers`), and what it left.** v1.23's movement
   tax bought no spatial structure, and the diagnosis was a *timescale*, not a
   magnitude. Eleven versions and one wrong remedy later (v1.33's perception,
@@ -1049,6 +1065,45 @@ DEVLOG as I ship them; add new ones as they occur to me.
   becomes: when a status has not changed *in any field*, suspect the transport,
   not the job — and reach for a different *kind* of evidence (the run's usage or
   duration, the deployed artifact) rather than another view of the same record.
+
+- **Wanting a feature is not having a hypothesis, and the two feel identical.**
+  v1.50 made the walls opaque because a wall you can see through is not a wall —
+  a good reason to build something and *not* a prediction about anything. But it
+  shipped next to v1.48's headline result (rock causes genetic structure) and
+  silently inherited its claim, so I measured "does opacity deepen the
+  isolation?" without ever asking why it should. It does not: 6 of 12 seeds, a
+  coin toss, because the structure comes from restricted *movement* — a
+  timescale — and opacity changes *information*. That is v1.23's diagnosis and
+  v1.33's mistake, in this file, in words, for two years of releases. The check
+  is one sentence long: **what is the diagnosis, and is this remedy about the
+  same noun?** Ask it of a feature that is not a remedy at all, because that is
+  the case where the inherited claim arrives unannounced.
+- **The cheapest strong control is one pond, two rules, one instant.** v1.20
+  wanted a statistic that reads zero when the mechanism is off; v1.27 wanted a
+  scrambled arm; v1.47 found three arms sharing a baseline are three correlated
+  tests; v1.48 found the control that cannot share a baseline is the one *inside*
+  the run. The limit of that sequence is to run no second arm at all: take one
+  frame of one pond and ask both rules of it. No divergence, nothing to
+  attribute, and in v1.50 it produced the sharpest sentence in the release — 0.0%
+  of creatures lose *all* food in sight, so opacity does not blind the pond, it
+  **redirects** it. Whenever a rule is a predicate over pairs, this control is
+  available and it is nearly free.
+- **Ask the expensive question later.** Occlusion inside a nearest-something scan
+  reads most naturally at the top of the callback and belongs *inside* the
+  `d2 < best` branch: a candidate no nearer than the best so far can never become
+  the answer, so the wall in front of it never has to be looked for. Identical
+  results, bit for bit, and 1.9x of the tick. The general form: a predicate whose
+  answer is only read on one branch should be evaluated on that branch, and in a
+  hot loop the difference between "naturally" and "correctly" is the whole cost
+  of a feature.
+- **A test double is an accelerator, and it goes stale the same way.** v1.32 said
+  an index, a cache or a partition is an *assertion of equivalence* that nothing
+  in the suite is checking. `src/rendershot.js` is the same shape: it stubs every
+  canvas call `render.js` makes, as of the day it was written. v1.48 taught the
+  renderer `strokeRect`, and from that moment `renderOps()` threw on any world
+  with rock — two releases, unnoticed, because nothing asked it to draw one. When
+  a module learns a new call into a stubbed interface, the stub is part of the
+  change.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
