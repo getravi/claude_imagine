@@ -9,7 +9,7 @@ import { makeConfig } from "./config.js";
 import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
-import { drawMuller, mullerShares, textureCss } from "./mullerplot.js";
+import { drawMuller, mullerShares, mullerAxis, textureCss } from "./mullerplot.js";
 import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
@@ -470,6 +470,8 @@ function drawPhylogeny(world) {
     `${ph.livingCount()} species alive · ${ph.species.length} ever · ` +
     `${ph.species.filter((s) => s.extinctTick >= 0).length} extinct`;
 
+  updateMullerAxis(ph, canvas.width);
+
   // The plot's x-axis changes meaning as the record coarsens, so it says so —
   // the same caption the whole-run chart carries, for the same reason.
   const span = ph.snapshotSpan();
@@ -497,6 +499,47 @@ function drawPhylogeny(world) {
       const el = document.getElementById("chip-n-" + s.id);
       if (el) el.textContent = s.count;
     }
+  }
+}
+
+// The x-axis numbers, as DOM text under the plot. The arithmetic is
+// `mullerAxis` (in `src/mullerplot.js`, where the suite can reach it); what is
+// left here is the same adapter the chart has.
+//
+// Two things change on different clocks, and the first version of this conflated
+// them. *Which* numbers are marked changes only when a round tick comes into
+// range — a few times a run — so the elements are rebuilt on that, which is the
+// v1.15 rule about not replacing elements the animation loop is redrawing.
+// *Where* each one sits changes on every new column, because the axis's
+// right-hand end is the run's own present, so every position is patched in
+// place every frame. Caching both together left the numbers where they were
+// when the set last changed, drifting up to a whole step away from the columns
+// they name: v1.23's stale readout, and invisible to reading the code — only
+// opening the page showed a mark labelled 1,000 sitting over tick 1,150.
+let mullerAxisKey = "";
+let mullerMarks = [];
+function updateMullerAxis(phylo, width) {
+  const axis = mullerAxis(phylo, width);
+  const key = axis.marks.map((m) => m.tick).join(",");
+  if (key !== mullerAxisKey) {
+    mullerAxisKey = key;
+    const box = $("phylo-ticks");
+    box.innerHTML = "";
+    mullerMarks = axis.marks.map((mark) => {
+      const el = document.createElement("span");
+      el.textContent = mark.text;
+      box.appendChild(el);
+      return el;
+    });
+  }
+  for (let i = 0; i < mullerMarks.length; i++) {
+    const el = mullerMarks[i];
+    const mark = axis.marks[i];
+    el.style.left = `${(mark.frac * 100).toFixed(4)}%`;
+    // The anchor follows the position: a mark drifts in from the right-hand
+    // edge as the record grows, and stops needing to be tucked inside it.
+    const cls = "tick-" + mark.anchor;
+    if (el.className !== cls) el.className = cls;
   }
 }
 

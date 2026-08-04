@@ -1,9 +1,18 @@
-// mullerplot.js — draws a "Muller plot": species abundance over time as stacked
-// bands, each coloured by its lineage. This is the classic way to visualise an
-// evolving population's phylogeny — you can watch lineages appear (a new band
-// pinching into existence), sweep to dominance (a band widening), and go extinct
-// (a band pinching shut). It reads the snapshots recorded by phylogeny.js and,
-// like all rendering here, never touches simulation state.
+// mullerplot.js — draws a "Muller plot": each species' *share* of the pond over
+// time as stacked bands, each coloured by its lineage. This is the classic way
+// to visualise an evolving population's phylogeny — you can watch lineages
+// appear (a new band pinching into existence), sweep to dominance (a band
+// widening), and go extinct (a band pinching shut). It reads the snapshots
+// recorded by phylogeny.js and, like all rendering here, never touches
+// simulation state.
+//
+// Share, not count: a column is normalised by the pond alive in it, so the
+// stack is always exactly full and a band's thickness says what fraction of the
+// pond a lineage held, never how many creatures that was. Three prose surfaces
+// said "abundance" until v1.54, which is the word for a count; over twelve seeds
+// the two move in opposite directions 11.3-19.2% of the time (17.8% on the
+// default seed), so a widening band is a sweep and is not news about the
+// population's size. That is the chart's job, one figure up.
 //
 // Bands are stacked in birth order (oldest lineage at the bottom), with a grey
 // "other" band on top absorbing the churn of tiny, short-lived species so the
@@ -28,6 +37,7 @@
 // Since v1.46 a band also carries a *hatch*, because the colour was never a name
 // (see `bandTextures`).
 
+import { niceStep } from "./chart.js";
 import {
   lineageBandRgb,
   lineageFill,
@@ -158,6 +168,83 @@ export function textureCss(texture, hue) {
   );
   layers.push(lineageFill(hue, "dot"));
   return layers.join(", ");
+}
+
+/** Roughly how many pixels of figure each labelled tick is worth. */
+export const PIXELS_PER_MARK = 160;
+
+/** The most marks the axis will ask for, however wide the figure gets. */
+export const MAX_MARKS = 9;
+
+/**
+ * A mark within this fraction of an end anchors to that end rather than to its
+ * own centre, so the first and last numbers sit inside the figure.
+ */
+const EDGE = 0.03;
+
+/**
+ * The x-axis: which ticks to mark under the plot, and where along it.
+ *
+ * The figure's whole horizontal dimension is time, it is the widest thing on
+ * the page, and for fifty-three versions the only statement of its scale was a
+ * caption naming the two ends. v1.41 wrote the rule this closes — *a scale that
+ * never moves needs a word; a scale that moves needs marks* — gave the
+ * population chart its y-axis, and left the axis that is nothing but a moving
+ * scale unmarked one figure over. Reading "that sweep happened around tick
+ * 12,000" off the plot meant measuring a fraction by eye across 1,276 pixels
+ * and multiplying it by a number in the caption.
+ *
+ * The marks are *positions*, not painted pixels: `frac` is a fraction of the
+ * figure's width, and the caller puts text in the DOM at that fraction. The
+ * chart draws its rules onto the canvas because a line chart has a background
+ * for furniture to sit on. A stacked-band plot has none — every pixel is data,
+ * in a colour the pond chose — so a rule inside it is either invisible or v1.34's
+ * lottery (a mark over a background the world picks). The axis goes outside the
+ * paint, which is where a published Muller plot puts it too.
+ *
+ * `to` is the tick the *right-hand edge stands for*, and it is deliberately not
+ * `phylo.snapshotSpan().to`. The record's newest raw sample can sit up to one
+ * window past the last stored snapshot, and that window is drawn as the single
+ * column at `x = W` — so the caption's range (what the record holds) and the
+ * axis's range (what a position on the picture means) are two different
+ * questions, and only the second one can label a coordinate.
+ *
+ * The step is `niceStep`, the same round-step machinery the chart's ceiling
+ * uses, because "a number a reader can hold" is one definition and not two.
+ * Column `i` sits at `i / (n - 1)` of the width and covers ticks
+ * `[from + i·res, from + (i+1)·res)`, every window the same width by
+ * construction (`phylogeny.js#_record`), so the mapping from tick to fraction
+ * is exactly linear — which `test/mullerplot.test.js` pins, because the axis is
+ * a lie the moment that stops being true.
+ *
+ * @param {{snapshots: Array<{tick:number}>}} phylo
+ * @param {number} width the figure's rendered width, in pixels
+ * @returns {{from:number, to:number, step:number,
+ *            marks: Array<{tick:number, frac:number, text:string, anchor:string}>}}
+ */
+export function mullerAxis(phylo, width = 0) {
+  const snaps = phylo.snapshots;
+  const n = snaps.length;
+  const from = n ? snaps[0].tick : 0;
+  const to = n ? snaps[n - 1].tick : 0;
+  const span = to - from;
+  // One column is not a plot (`drawMuller` draws nothing), and a record whose
+  // ends coincide has no axis to divide.
+  if (n < 2 || !(span > 0)) return { from, to, step: 0, marks: [] };
+
+  const target = Math.max(2, Math.min(MAX_MARKS, Math.round(width / PIXELS_PER_MARK)));
+  const step = niceStep(span, target);
+  const marks = [];
+  for (let t = Math.ceil(from / step) * step; t <= to; t += step) {
+    const frac = (t - from) / span;
+    marks.push({
+      tick: t,
+      frac,
+      text: t.toLocaleString(),
+      anchor: frac < EDGE ? "start" : frac > 1 - EDGE ? "end" : "mid",
+    });
+  }
+  return { from, to, step, marks };
 }
 
 /**

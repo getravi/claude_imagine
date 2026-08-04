@@ -29,6 +29,8 @@ import {
   collisionCost,
   textureCss,
   BAND_TEXTURES,
+  mullerAxis,
+  MAX_MARKS,
 } from "../src/mullerplot.js";
 import { describeMuller } from "../src/describe.js";
 import { recordingContext } from "../src/rendershot.js";
@@ -455,4 +457,121 @@ test("the hatch adds not one point to the band it rides", () => {
   const shares = mullerShares(pond().phylogeny);
   const walked = bands(draw(shares).ops, shares.n);
   assert.equal(walked.length, shares.shown.length + 1);
+});
+
+// ---- The x-axis (v1.54) ----
+//
+// The figure's whole horizontal dimension is time and its only statement of
+// scale was a caption naming the two ends. `mullerAxis` marks it. Every claim
+// below is about the same thing: a number written under the plot has to name
+// the moment the pixels above it are drawn from, and there are three ways for
+// that to go wrong — the columns not being evenly spaced in *ticks*, the
+// fraction not matching where the drawing puts the column, and the axis
+// borrowing the record's range instead of the picture's.
+
+test("every column is the same number of ticks wide, which is what the axis rests on", () => {
+  // The plot has spaced its columns evenly in *pixels* since v1.0, and the test
+  // above says so. Whether they are evenly spaced in *ticks* is a claim about
+  // `phylogeny.js#_record` — a window is `stride × sampleInterval` ticks and
+  // stays that width through any number of halvings — that has been written in
+  // a comment since v1.30 and asserted nowhere. The axis is a lie without it.
+  const ph = pond({ phylogenyHistory: 20 }, 1200).phylogeny;
+  assert.ok(ph.snapshotStride >= 8, `expected several halvings, got stride ${ph.snapshotStride}`);
+  const res = ph.snapshotResolution();
+  const from = ph.snapshots[0].tick;
+  ph.snapshots.forEach((s, i) => {
+    assert.equal(s.tick, from + i * res, `column ${i} does not start on the grid`);
+  });
+});
+
+test("a mark lands on the column whose tick it names", () => {
+  const ph = pond().phylogeny;
+  const shares = mullerShares(ph);
+  const { x } = bands(draw(shares).ops, shares.n)[0];
+  const axis = mullerAxis(ph, W);
+  assert.ok(axis.marks.length >= 2, "a record this long should carry marks");
+
+  const res = ph.snapshotResolution();
+  for (const m of axis.marks) {
+    assert.ok(m.frac >= 0 && m.frac <= 1, `mark ${m.tick} is outside the figure`);
+    // Where the tick falls among the columns, as a fractional index — the
+    // drawing's own coordinate, recovered from the recorded path rather than
+    // from the axis's arithmetic.
+    const idx = (m.tick - axis.from) / res;
+    const lo = Math.floor(idx);
+    const hi = Math.min(shares.n - 1, Math.ceil(idx));
+    const want = x[lo] + (idx - lo) * (x[hi] - x[lo] || 0);
+    assert.ok(
+      Math.abs(m.frac * W - want) < 1e-9,
+      `tick ${m.tick} is labelled at x=${m.frac * W} and drawn at x=${want}`
+    );
+  }
+});
+
+test("the axis names the last column, not the newest sample", () => {
+  // Two different questions, and only one of them can label a coordinate: the
+  // caption says what the record holds, the axis says what a position means.
+  // The newest raw sample can sit up to one window past the last stored
+  // snapshot, and that window is drawn as the single column at the right edge.
+  const w = pond({ phylogenyHistory: 20 }, 1200);
+  const ph = w.phylogeny;
+  let strict = false;
+  for (let i = 0; i < ph.snapshotResolution() && !strict; i++) {
+    const axis = mullerAxis(ph, W);
+    assert.equal(axis.to, ph.snapshots[ph.snapshots.length - 1].tick);
+    assert.ok(ph.snapshotSpan().to >= axis.to, "the record cannot end before the picture does");
+    if (ph.snapshotSpan().to > axis.to) strict = true;
+    else w.step();
+  }
+  assert.ok(strict, "expected a record whose newest sample sits inside the last window");
+});
+
+test("the marks are round numbers, in order, and never more than the figure holds", () => {
+  const ph = pond().phylogeny;
+  for (const width of [320, 640, 1276, 4000]) {
+    const axis = mullerAxis(ph, width);
+    assert.ok(axis.marks.length >= 1, `no marks at ${width}px`);
+    assert.ok(axis.marks.length <= MAX_MARKS + 1, `${axis.marks.length} marks at ${width}px`);
+    let prev = -Infinity;
+    for (const m of axis.marks) {
+      assert.equal(m.tick % axis.step, 0, `${m.tick} is not a multiple of the step`);
+      assert.ok(m.tick > prev, "marks are not in order");
+      assert.ok(m.tick >= axis.from && m.tick <= axis.to, `${m.tick} is outside the record`);
+      assert.equal(m.text, m.tick.toLocaleString());
+      prev = m.tick;
+    }
+  }
+});
+
+test("a narrow figure asks for fewer marks than a wide one", () => {
+  // The canvas is sized from its own rendered width, so on a phone this figure
+  // is a third of the width it is on a desktop. An axis that ignores that is
+  // v1.28's lesson (check the work in a viewport I don't use) with numbers.
+  const ph = pond().phylogeny;
+  const narrow = mullerAxis(ph, 320).marks.length;
+  const wide = mullerAxis(ph, 1276).marks.length;
+  assert.ok(narrow < wide, `${narrow} marks at 320px and ${wide} at 1276px`);
+  assert.ok(narrow >= 2, "even a narrow figure gets its ends");
+});
+
+test("a record too short to plot has no axis", () => {
+  // `drawMuller` draws nothing under two columns, and an axis under an empty
+  // figure would be the only thing on screen claiming there was a run.
+  assert.deepEqual(mullerAxis({ snapshots: [] }, W).marks, []);
+  assert.deepEqual(mullerAxis(record([{ counts: [], total: 0 }], []), W).marks, []);
+});
+
+test("the end marks anchor to the ends, so the numbers stay inside the figure", () => {
+  // 101 columns six ticks apart: 0 to 600, a step of 200 at this width.
+  const columns = Array.from({ length: 101 }, () => ({ counts: [], total: 4 }));
+  const axis = mullerAxis(record(columns, []), W);
+  assert.deepEqual(
+    axis.marks.map((m) => [m.tick, m.frac, m.anchor]),
+    [
+      [0, 0, "start"],
+      [200, 1 / 3, "mid"],
+      [400, 2 / 3, "mid"],
+      [600, 1, "end"],
+    ]
+  );
 });

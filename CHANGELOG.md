@@ -4,6 +4,70 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.54.0] — 2026-08-04
+
+The Tree of Life is the widest figure on the page and its entire horizontal
+dimension is time. v1.41 gave the population chart the y-axis it had gone forty
+releases without and wrote down the rule — *a scale that never moves needs a
+word; a scale that moves needs marks* — and then left the axis that is nothing
+but a moving scale unmarked, one figure down the page, for thirteen more
+versions. Its only statement of scale was a caption naming the two ends.
+
+### Added
+
+- **An x-axis under the Tree of Life.** Round tick numbers — one about every 160
+  pixels of figure, so a phone gets fewer rather than a collision — each with a
+  short rule joining it to the column it names. `mullerAxis()` is the
+  arithmetic, in `src/mullerplot.js` where the suite can reach it; `main.js` is
+  the adapter, as it is for the chart. The marks are DOM text below the figure
+  rather than gridlines through it, for two reasons: this canvas is stretched to
+  whatever the column is (canvas text would stretch with it — v1.41's reason)
+  and, new here, **a stacked-band plot has no background for furniture to sit
+  on**. Every pixel of it is data in a colour the pond chose, so a rule inside it
+  is either invisible or v1.34's lottery.
+- **The invariant the axis rests on, asserted.** The plot has spaced its columns
+  evenly in *pixels* since v1.0 and has had a test saying so since v1.42.
+  Whether they are evenly spaced in *ticks* is a different claim, belonging to
+  `phylogeny.js#_record`, written in a comment in v1.30 and checked nowhere.
+  Measured across twelve seeds at 20,000 ticks — after three halvings, 417
+  columns of 48 ticks each — the largest departure of any column from
+  `from + i × resolution` is **0 ticks** on every seed, so the tick-to-position
+  map is exactly linear. `test/mullerplot.test.js` now pins it: the day a
+  halving leaves a window that is not the width of its neighbours, the axis is
+  a lie and the suite says so first.
+- **A test that every id `main.js` looks up exists somewhere.** The last module
+  with no test of any kind fails most easily not on logic but on `$("phylo-tick")`
+  against a page that says `phylo-ticks` — which throws inside the animation loop
+  and takes the whole page with it. `test/markup.test.js` reads the shipped HTML
+  and the ids `main.js` writes itself, and fails on any third case.
+
+### Fixed
+
+- **"Abundance" was the wrong word, on three surfaces, since v1.2.** The plot
+  normalises every column by the pond alive in it: a band's thickness is a
+  *share*, the stack is always exactly full, and a band can widen while the
+  population falls. The app's caption, the README and `SCIENCE.md` all called it
+  abundance, which is the word for a headcount. Over twelve seeds, **11.3–19.2%**
+  of the moves a band makes point the opposite way to the lineage's own numbers
+  (a median of 15.0%, 17.8% on the default seed) — so roughly one band movement
+  in six is read backwards by a visitor who believes the caption. All three now
+  say share, and say the consequence in the same breath.
+- **The axis names the last column, not the newest sample.** The caption's range
+  and the axis's range answer different questions and are not the same number:
+  the record's newest raw sample can sit up to one window past the last stored
+  snapshot, and that window is drawn as the single column at the right-hand
+  edge. On the default seed at 20,000 ticks the record reaches 19,998 and the
+  right edge stands for **19,968**. Only the second can label a coordinate.
+
+### Notes
+
+- The first version of the adapter cached the marks' *positions* alongside the
+  set of marks, and the two change on different clocks — which numbers are
+  marked changes a few times a run, where each one sits changes with every new
+  column. Reading the code did not show it; opening the page did, with a mark
+  labelled 1,000 sitting over tick 1,150. v1.23's stale readout, in a figure
+  whose whole subject is when things happened.
+
 ## [1.53.0] — 2026-08-03
 
 v1.36 built this project's determinism instruments and asked the sharp question

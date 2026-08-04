@@ -1372,8 +1372,9 @@ run you get the two fundamental macro-evolutionary motions:
 The **Muller plot** used to visualise this is a real tool from experimental
 evolution — famously used to show clonal dynamics in long-running microbial
 experiments like the *E. coli* Long-Term Evolution Experiment. Each lineage is a
-band; the band's thickness is its abundance; time runs along the horizontal axis.
-Reading it, you can spot:
+band; the band's thickness is its **share** of the population — the column is
+normalised, so a band can widen while the pond shrinks — and time runs along the
+horizontal axis, marked in ticks since v1.54. Reading it, you can spot:
 
 - a **selective sweep** — a band widening as a fitter lineage displaces others;
 - **speciation** — a new band pinching into existence mid-plot;
@@ -2609,8 +2610,8 @@ Promise.all([import("./src/world.js"), import("./src/config.js"), import("./src/
 
 ## The colour that was never a name (v1.46)
 
-The Tree of Life groups creatures into species and stacks each species'
-abundance as a coloured band. A species' colour is its founder's hue, and hue is
+The Tree of Life groups creatures into species and stacks each species' share of
+the pond as a coloured band. A species' colour is its founder's hue, and hue is
 an inherited gene — so a daughter species founded by a descendant of species *k*
 is drawn in **very nearly species *k*'s colour**, and often in exactly it.
 
@@ -3289,6 +3290,111 @@ node --input-type=module -e '
 
 Run against v1.52 the first four rows read `HASH BLIND`; against v1.53 only the
 stolen draw does, which is the row the fourth channel exists for.
+
+
+## The axis that was only ever a caption (v1.54)
+
+The Tree of Life is the widest figure on the page and its entire horizontal
+dimension is time. For fifty-three versions the only statement of that scale was
+a line of text underneath it naming the two ends — *ticks 0–19,998* — so
+answering "when did that lineage sweep?" meant measuring a fraction by eye
+across 1,276 pixels and multiplying it by a number in the caption.
+
+v1.41 wrote the rule this closes, gave the population chart the y-axis it had
+gone forty releases without, and stated the principle in one line: **a scale
+that never moves needs a word; a scale that moves needs marks.** Then it left
+the axis that is *nothing but* a moving scale unmarked, one figure down the
+page. That is v1.30's lesson — a rule needs a sweep of every place it applies —
+missing the nearest surface, again.
+
+### Why the marks can be a straight line of arithmetic
+
+The plot spaces its columns evenly across the figure, and it has been tested
+since v1.42 that it does. Whether they are evenly spaced *in ticks* is a
+different claim, and it belongs to `phylogeny.js#_record`: the record halves its
+own resolution when it fills, and a new snapshot is started only when
+`snapshotsSeen % snapshotStride === 0`, so a stored window is exactly
+`stride × sampleInterval` ticks wide however many halvings it has been through.
+It was written in a comment in v1.30 and asserted nowhere. Measured over twelve
+seeds at 20,000 ticks — after three halvings, at 417 columns of 48 ticks each —
+the largest departure of any column from `from + i × resolution` is **0 ticks**,
+on every seed. So the mapping from tick to position is exactly linear, one
+division, and `test/mullerplot.test.js` now pins it: if a future release makes a
+window that is not the width of its neighbours, the axis becomes a lie and the
+suite says so before anyone reads a wrong number off the picture.
+
+### Two ranges, and only one of them can label a coordinate
+
+The caption's range and the axis's range are not the same numbers, and the
+difference is not a rounding error — it is a question about what a *position*
+means. The caption says what the record holds, and the newest raw sample can sit
+up to one window past the last stored snapshot. That final, still-filling window
+is drawn as the single column at `x = W`. So on the default seed at 20,000
+ticks, the record reaches tick 19,998 and the right-hand edge of the picture
+stands for tick **19,968** — one window, 30 ticks, apart. `mullerAxis` returns
+the second, because the first cannot name a coordinate.
+
+### The marks are text, and they are outside the paint
+
+The chart draws its rules onto the canvas, under the data, because a line chart
+has a background for furniture to sit on. A stacked-band plot has none: every
+pixel is data, in a colour the pond chose rather than one this project picked.
+A gridline through it is either invisible or v1.34's lottery — a mark whose
+background is chosen by the world. So the axis lives below the figure, in the
+DOM, which is also where v1.41 put the chart's numbers and for a second reason:
+this canvas is sized from its own rendered width, so on a phone it is a third of
+its desktop size, and canvas text would be stretched with it. The number of
+marks follows the width — one about every 160 pixels, so a narrow figure gets
+fewer rather than a collision.
+
+### The word the y-axis needed
+
+Marking one axis meant reading what the page said about the other, and the page
+had been saying the wrong word since v1.2, the release that drew the first band.
+The plot normalises every column by the pond alive in it: a band's thickness is
+a **share**, and the stack is always exactly full. Three prose surfaces — the app's own caption, the README and this
+document — called it *abundance*, which is the word for a headcount.
+
+The difference is not pedantry, and it is measurable. Take every consecutive
+pair of columns for every named species and ask whether the band's thickness and
+the species' actual headcount moved in the same direction:
+
+```bash
+node --input-type=module -e '
+  import { World } from "./src/world.js";
+  import { makeConfig } from "./src/config.js";
+  import { mullerShares } from "./src/mullerplot.js";
+  for (const seed of [1, 2, 3, 5, 7, 8, 9, 11, 13, 17, 19, 23]) {
+    const w = new World(makeConfig({ seed }));
+    for (let t = 0; t < 20000; t++) w.step();
+    const ph = w.phylogeny, snaps = ph.snapshots;
+    let agree = 0, against = 0;
+    for (const s of mullerShares(ph).shown) {
+      for (let i = 1; i < snaps.length; i++) {
+        const a = snaps[i - 1], b = snaps[i];
+        if (!(a.total > 0) || !(b.total > 0)) continue;
+        // Mean headcount over the window, and the share drawn for it.
+        const dc = (b.counts.get(s.id) || 0) / b.span - (a.counts.get(s.id) || 0) / a.span;
+        const df = (b.counts.get(s.id) || 0) / b.total - (a.counts.get(s.id) || 0) / a.total;
+        if (!dc || !df) continue;
+        Math.sign(dc) === Math.sign(df) ? agree++ : against++;
+      }
+    }
+    console.log(seed, (100 * against / (agree + against)).toFixed(1) + "% of moves disagree");
+  }'
+```
+
+Across twelve seeds, **11.3% to 19.2%** of the moves a band makes point the
+opposite way to the lineage's own numbers — a median of 15.0%, and 17.8% on the
+default seed 314. The band widens as the species shrinks, because everything
+around it shrank faster.
+That is exactly what a Muller plot is *for* — relative success is what a sweep
+is — but it is not what the word *abundance* promises, and roughly one band
+movement in six is actively misread by a visitor who believes the caption. The
+copy now says share, says that a column is always full, and says the
+consequence in the same breath: **a band can widen while the population falls.**
+The population's own size is the chart's job, one figure up, where it has an
+axis of its own.
 
 
 ## What this model deliberately leaves out

@@ -5202,3 +5202,129 @@ whose only effect ran through `metabolismScale` or `lastBiteAge` would have been
 reported dead. All seventy-nine came back alive so the conclusion stands — but it
 stood for four releases on an instrument with four holes in it, and I did not
 know that until this afternoon.
+
+## Entry 66 — the axis that was only ever a caption · 2026-08-04
+
+The Tree of Life is the widest thing on this page. It is 1,276 pixels of
+stacked colour and its entire horizontal dimension is time, and until this
+cycle the only statement of that scale was a line of grey text underneath it:
+*ticks 0–19,998*. If you wanted to know when a lineage swept — which is the one
+question the figure exists to answer — you measured a fraction by eye across a
+metre of bands and multiplied it by a number in the caption.
+
+What makes that annoying rather than merely absent is that I wrote the rule for
+it thirteen releases ago. v1.41 gave the population chart the y-axis it had gone
+forty versions without, and the sentence in that release note is: **a scale that
+never moves needs a word; a scale that moves needs marks.** Then I applied it to
+one axis of one figure and stopped. The axis that is *nothing but* a moving
+scale — the run's own present, growing every tick — sat three hundred pixels
+below it, unmarked. v1.30 taught me that a rule needs a sweep of every place it
+applies and that admiring the sentence is not the fix; this is the fourth time
+that lesson has caught me, and the surface it missed was, as usual, the nearest
+one.
+
+### The part that had to be checked before anything could be drawn
+
+An axis is a claim that position means time, and here that claim rests on
+somebody else's arithmetic. The phylogeny record halves its own resolution when
+it fills (v1.30), so a column is not an instant but a window, and the columns
+are drawn evenly spaced. Evenly spaced *in pixels* has been tested since v1.42.
+Evenly spaced *in ticks* is a different claim, and it lives in `_record`: a new
+snapshot is started only when `snapshotsSeen % snapshotStride === 0`, which is
+what keeps every window exactly `stride × sampleInterval` ticks wide through any
+number of halvings. That was written in a comment six years of releases ago and
+asserted by nothing.
+
+So I measured it before building on it: twelve seeds, 20,000 ticks, three
+halvings, 417 columns of 48 ticks each. The largest departure of any column from
+`from + i × resolution` is **0 ticks**, on every seed. Good — the map from tick
+to position is one division. And now the suite says so, because the day a
+halving leaves one window a different width from its neighbours, the axis
+silently becomes a lie and I would rather the tests found that than a reader.
+
+### Two ranges, and only one of them can label a coordinate
+
+Then a small thing that turned out not to be small. The caption's range and the
+axis's range are different numbers. The caption says what the *record* holds,
+and the newest raw sample can sit up to one window past the last stored
+snapshot — that final, still-filling window is drawn as the single column at the
+right-hand edge. On the default seed at 20,000 ticks the record reaches tick
+19,998 and the right edge of the picture stands for tick 19,968.
+
+Thirty ticks is nothing. The distinction is not: one number describes a
+collection, the other describes a coordinate, and only the second one can go
+under a mark. I had been about to reuse `snapshotSpan()` because it was there.
+
+### The marks are outside the paint, and that is a rule now
+
+The chart draws its gridlines onto the canvas, under the data. My first instinct
+was to do the same here, and it is wrong for a reason worth writing down: a
+stacked-band plot **has no background**. Every pixel of it is data, in a colour
+the pond chose rather than one I picked, so a rule drawn through it is either
+invisible or v1.34's lottery — a mark whose background is chosen by the world.
+There is no tone that survives nineteen lineage fills, and looking for one would
+have been the third or fourth time I have gone hunting for a colour that has
+nowhere to live.
+
+So the axis goes below the figure, in the DOM, where a published Muller plot
+puts it too. Which also gets v1.41's other reason for free: this canvas is sized
+from its own rendered width, so on a phone it is a third of its desktop size,
+and canvas text would be stretched with it. The mark count follows the width —
+one about every 160 pixels — so a narrow figure gets fewer numbers rather than a
+collision.
+
+### The word underneath the other axis
+
+Marking one axis made me read what the page said about the other, and it had
+been saying the wrong word since v1.2, the release that drew the first band.
+The plot normalises every column by the pond alive in it. A band's thickness is
+a **share**. Three prose surfaces — the app's own caption, the README, and
+`SCIENCE.md` — called it *abundance*, which is the word for a headcount.
+
+I nearly filed that as pedantry, and then remembered v1.49: before fixing a
+wrong thing, find out how much of the real data lands in the wrong part. So:
+take every consecutive pair of columns for every named species and ask whether
+the band's thickness and the lineage's actual headcount moved in the same
+direction. Across twelve seeds, **11.3% to 19.2%** of the moves disagree — a
+median of 15.0%, 17.8% on the default seed. Roughly one band movement in six is
+read backwards by a visitor who believes the caption: the band widens as the
+species shrinks, because everything around it shrank faster.
+
+That is exactly what a Muller plot is *for* — relative success is what a sweep
+is — but it is not what the word promised, and the fix is one sentence that says
+the consequence out loud: a band can widen while the population falls. The
+population's own size is the chart's job, one figure up, where it has an axis of
+its own.
+
+### And then I opened the page
+
+`main.js` is still the only module with no test of any kind, and v1.49 established
+what to do about that: run it. Headless Chromium, the real page over a real
+server, forty seconds of real pond, and read the axis back out of the live DOM.
+
+It was wrong. Not broken — wrong in the way this project's favourite bug is
+always wrong. I had cached the marks, sensibly, because rebuilding elements
+inside an animation loop is what v1.15 exists to forbid. But two things change
+on two different clocks: *which* numbers are marked changes only when a round
+tick comes into range, a few times a run, while *where each one sits* changes
+with every new column, because the axis's right-hand end is the run's own
+present. Caching them together froze the positions at the moment the set last
+changed. In the browser, a mark reading 1,000 was sitting over tick 1,150.
+
+Reading the code did not show me that. Reading the code is what *wrote* it. The
+split is the v1.15 pattern I already knew — rebuild structure when structure
+changes, patch the live values in place — and I had applied half of it. What
+found the other half was ten minutes and a browser, which is the whole of v1.49's
+lesson and the second cycle running in which it has paid.
+
+### Where this leaves the figures
+
+Every axis on the page now either moves and is marked, or doesn't and is stated
+in a word. What is left on this figure is smaller and real: the y-axis is a
+share to one, which is fixed and now said in prose, and the Tree of Life still
+has no way to tell you *which* tick a particular band edge sits on other than by
+reading across to the marks. And one thing this cycle did not touch: the
+population chart's x-axis has a caption and no marks either. It is a different
+case — its scope switch means the axis changes meaning, not just extent — but I
+have written "check the other axis in the same file" once already, and I am
+noting it here rather than discovering it in v1.67.

@@ -382,10 +382,11 @@
       </div>
       <p class="phylo-sub">
         Each band is a species — a cluster of genetically similar creatures —
-        stacked by abundance over time. Watch lineages appear, sweep to
-        dominance, and go extinct. Click one to spotlight it in the pond above.
-        The plot always spans the whole run: as the run grows it gets coarser,
-        never shorter.
+        and its thickness is that species' <b>share of the pond</b>, not its
+        headcount: every column is exactly full, so a band can widen while the
+        population falls. Watch lineages appear, sweep to dominance, and go
+        extinct. Click one to spotlight it in the pond above. The plot always
+        spans the whole run: as the run grows it gets coarser, never shorter.
       </p>
       <canvas
         id="muller"
@@ -394,6 +395,12 @@
         role="img"
         aria-label="Species over time: not enough history yet."
       ></canvas>
+      <!-- The x-axis: tick numbers under the plot, positioned by fraction of
+           the figure's width. Text, not paint — the canvas is stretched to
+           whatever the column is, and a stacked plot has no background for a
+           gridline to sit on. The spoken form carries the range in words, so
+           the marks themselves are decoration to a screen reader. -->
+      <div class="phylo-ticks" id="phylo-ticks" aria-hidden="true"></div>
       <div class="phylo-range" id="phylo-range"></div>
       <div class="legend" id="species-legend"></div>
     </section>

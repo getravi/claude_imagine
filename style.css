@@ -950,6 +950,52 @@ details .field {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
+/* The Tree of Life's x-axis (v1.54). The numbers are DOM text, positioned by
+   fraction of the figure's width, because the canvas is stretched to whatever
+   the column is and a stacked plot has no background for a gridline to sit on
+   — see `mullerAxis` in src/mullerplot.js. Inset by the canvas's own 1px
+   border, so half-way along this row is half-way through the drawing. */
+.phylo-ticks {
+  position: relative;
+  height: 15px;
+  margin: 0 1px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+.phylo-ticks span {
+  position: absolute;
+  top: 5px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+/* The mark: a short rule joining each number to the column it names, in the
+   number's own colour so the two read as one thing. */
+.phylo-ticks span::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 1px;
+  height: 4px;
+  background: currentColor;
+}
+/* The end marks anchor to the figure's edges rather than to their own centres,
+   so the first and last numbers stay inside it. */
+.phylo-ticks .tick-start {
+  transform: none;
+}
+.phylo-ticks .tick-start::before {
+  left: 0;
+}
+.phylo-ticks .tick-end {
+  transform: translateX(-100%);
+}
+.phylo-ticks .tick-end::before {
+  left: auto;
+  right: 0;
+}
 .legend {
   display: flex;
   flex-wrap: wrap;

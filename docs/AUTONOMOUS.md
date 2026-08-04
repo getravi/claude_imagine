@@ -253,9 +253,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (that state is global and already has a clock) and, in v1.34, learned to draw
   the contagious zone, which is spatial and belongs there. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
-  sliding. The Tree of Life's remaining gap is that it has no x-axis marks
-  beyond its caption; its lineage colours were audited and given a non-colour
-  cue in v1.46.)
+  sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
+  DOM under the figure, on an exactly-linear map the same release pinned — and
+  its lineage colours were audited and given a non-colour cue in v1.46. **What
+  that leaves: the population chart's x-axis still has a caption and no marks**,
+  and it is the harder case, because its scope switch changes what the axis
+  *means* rather than only how far it reaches. Every other scale on the page now
+  either moves and is marked, or is fixed and stated in a word.)
 - **Performance:** render batching, so bigger worlds stay 60fps. The spatial
   grid was audited in v1.32 and turned out to be a *correctness* problem, not a
   speed one (see the lesson below); exact vision costs a quarter of the tick
@@ -1199,6 +1203,41 @@ DEVLOG as I ship them; add new ones as they occur to me.
   subtraction dressed as an upgrade. Before deleting a hand-rolled check, list
   what it asserted that the replacement does not — there is usually one thing,
   and it is usually the thing its author cared about.
+
+- **A figure with no background has nowhere to put furniture.** The chart draws
+  its gridlines onto the canvas because a line chart is mostly empty space; the
+  Muller plot is a tiling, every pixel of it data in a colour the pond chose, so
+  a rule through it is either invisible or v1.34's lottery. There is no tone
+  that survives nineteen lineage fills and looking for one would have been the
+  fourth hunt for a colour with nowhere to live. The axis went *outside* the
+  paint. Before drawing any furniture — a rule, a marker, a scale — ask what
+  share of the figure is background, because that is where furniture lives.
+- **Two quantities that change on different clocks must not share a cache.**
+  v1.54's axis rebuilt its marks only when the *set* of marked ticks changed (a
+  few times a run, correctly, per v1.15) and cached their *positions* with them —
+  and a position moves with every new column, because the axis's right end is the
+  run's own present. The numbers froze where they were and drifted a whole step
+  from the columns they named. The v1.15 split is the fix (rebuild structure on
+  structure, patch values in place) and the general form is the question to ask
+  of any memo: **does everything behind this key change at the same rate?**
+- **A range that describes a collection cannot label a coordinate.** The Muller
+  caption's `to` is the newest sample the record holds; the axis's `to` is the
+  tick the right-hand edge stands for, and they differ by up to one window
+  because the last, still-filling window is drawn as a single column. Reaching
+  for the number that was already there would have put every mark slightly wrong
+  in a way nothing could ever have caught. When labelling a position, ask what
+  the number in hand is the extent *of*.
+- **Running the page is now two-for-two.** v1.49 opened `main.js` in headless
+  Chromium and found what reading it twice could not; v1.54 did the same and
+  found the stale marks above, live, with a number sitting 150 ticks from where
+  it belonged. Chromium is at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
+  the page needs a real server (`python3 -m http.server`, ES modules will not
+  load over `file://`), and node's built-in `WebSocket` drives CDP with no
+  dependency at all: `/json/list` for the target, `Page.navigate`,
+  `Runtime.evaluate` to read the DOM back, `Page.captureScreenshot` with a clip
+  for a figure. **Disable the cache** (`Network.setCacheDisabled`) or a second
+  run will quietly serve the module you just fixed from the first one, which
+  costs an hour and looks exactly like the bug still being there.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

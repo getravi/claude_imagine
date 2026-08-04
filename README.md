@@ -72,13 +72,16 @@ each a hand-picked doorway into what the simulation can do.
 ### The Tree of Life
 
 Below the pond, a live **Muller plot** groups creatures into species by genetic
-similarity and stacks each species' abundance over time:
+similarity and stacks each species' *share of the pond* over time — every column
+is exactly full, so a band's thickness is a fraction and never a headcount:
 
 ![The Tree of Life: a Muller plot of species rising and falling over time](docs/screenshots/phylogeny.png)
 
-A band **widening** is a lineage sweeping to dominance; a band **pinching into
-existence** is a new species branching off as a lineage drifts; a band
-**pinching shut** is an extinction. Click any species (in the legend, or via a
+A band **widening** is a lineage sweeping to dominance — of the pond, not
+necessarily in numbers, which is a distinction worth holding on to; a band
+**pinching into existence** is a new species branching off as a lineage drifts;
+a band **pinching shut** is an extinction. The **x-axis under the plot** marks
+the ticks, so an event has a time you can read off rather than estimate. Click any species (in the legend, or via a
 creature's inspector) to **spotlight** it — the whole pond dims except that
 lineage, so you can see where it lives and how far it has spread.
 

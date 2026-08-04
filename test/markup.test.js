@@ -170,3 +170,26 @@ test("the species legend is built from buttons", () => {
   assert.match(body, /createElement\("button"\)/, "legend chips must be real buttons");
   assert.match(body, /aria-pressed/, "a toggle must say whether it is pressed");
 });
+
+test("every element the app looks up by id exists somewhere", () => {
+  // `main.js` is the last module with no test of any kind, and its commonest
+  // possible failure is not a bug in logic: it is `$("phylo-tick")` against a
+  // page that spells it `phylo-ticks`, which throws on the frame that reads it
+  // and takes the whole render loop with it. The scan cannot resolve a DOM, but
+  // it does not need to — an id is either written into the shipped page or
+  // written by `main.js` itself, and any third case is a typo.
+  const src = read("src/main.js");
+  const page = read("app/index.html");
+  // Ids the script builds into markup of its own (the inspector's rows, mostly),
+  // which are as real as the ones in the document.
+  const built = new Set(attrValues(src, "id"));
+  for (const m of src.matchAll(/id="([a-z0-9-]+)-\$\{/g)) built.add(m[1]); // templated: chip-n-${id}
+  const inPage = new Set(attrValues(page, "id"));
+
+  const missing = [];
+  for (const m of src.matchAll(/\$\("([a-zA-Z0-9_-]+)"\)/g)) {
+    const id = m[1];
+    if (!inPage.has(id) && !built.has(id)) missing.push(id);
+  }
+  assert.deepEqual([...new Set(missing)], [], "looked up but never written");
+});
