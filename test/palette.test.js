@@ -28,6 +28,7 @@ import {
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
+  minimapCorpseMark,
   mortalityColours,
   mortalityTones,
   energyColours,
@@ -766,6 +767,179 @@ test("how much meat is left moves the mark's size, not its opacity", () => {
   assert.ok(empty.ringWidth > 0 && empty.ringWidth < 1);
 });
 
+// ---- Corpses in the corner (v1.57) ----
+//
+// v1.55 audited the corpse against every ground *the pond* draws it on, and the
+// minimap did not draw it at all — so the sweep was complete and the surface was
+// missing, which is the v1.23/v1.25 shape one more time. Now that the little map
+// draws the dead, their two tones have a second domain: the map's own grounds,
+// the rock they can lie against, and the marks a watcher has to tell them from.
+
+/** The minimap's own water: the background under every other ground it draws. */
+const MINIMAP_WATER = { r: 7, g: 12, b: 19 };
+
+/** `rgb(r, g, b)` back to `{r,g,b}`, so a mark stored as a CSS string is measurable. */
+function rgbToneOf(css) {
+  const m = css.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  assert.ok(m, `${css} is not a plain rgb() this audit can measure`);
+  return { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+}
+
+/** Every ground the minimap can put under a corpse. */
+function minimapCorpseBackgrounds() {
+  const out = [];
+  for (const { name, rgb } of minimapGrounds()) {
+    out.push({ name, rgb });
+    out.push({ name: `${name} +zone`, rgb: hazardOver(rgb, HAZARD_AUDIT_SOURCES) });
+  }
+  // Nothing can *die* inside rock, but a corpse a few world pixels from a wall
+  // is a square drawn over one at a fifth of the scale. v1.55's rule was to ask
+  // what the world puts underneath a mark; at this size the answer includes the
+  // neighbours.
+  out.push({ name: "rock", rgb: barrierRockTones().fill });
+  out.push({ name: "rock edge", rgb: barrierRockTones().edge });
+  return out;
+}
+
+test("a corpse reads against every ground the little map can draw it on", () => {
+  const { rim, core } = minimapCorpseMark();
+  const tones = [rgbToneOf(rim), rgbToneOf(core)];
+  let worst = { d: Infinity };
+  for (const { name, rgb } of minimapCorpseBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast(tones, rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a corpse scores only ${worst.d.toFixed(1)} on the minimap's ${worst.name} (${worst.vision})`
+  );
+});
+
+test("a corpse is not any of the things the minimap draws beside it", () => {
+  // The mistake the v1.24 dot made: at this size everything is a square of a few
+  // pixels, so the marks are each other's backgrounds. Every lineage hue, the
+  // pellet, and both tones of the hunter's badge.
+  const { rim, core } = minimapCorpseMark();
+  const tones = [rgbToneOf(rim), rgbToneOf(core)];
+  const neighbours = [];
+  for (let hue = 0; hue < 360; hue++) neighbours.push({ name: `prey hue ${hue}`, rgb: hslToRgb(hue, 65, 70) });
+  neighbours.push({ name: "pellet", rgb: blendOver(MINIMAP_WATER, { r: 80, g: 205, b: 140 }, 0.5) });
+  for (const [n, rgb] of Object.entries(minimapPredatorTones())) {
+    neighbours.push({ name: `hunter ${n}`, rgb });
+  }
+  let worst = { d: Infinity };
+  for (const { name, rgb } of neighbours) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast(tones, rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a corpse scores only ${worst.d.toFixed(1)} against the ${worst.name} (${worst.vision})`
+  );
+});
+
+// The corpse's arrival is what put a pellet on a bright background here for the
+// first time, and the pellet turned out not to survive one. The minimap had its
+// own copy of the mote — `rgba(80, 205, 140, 0.5)`, a flat wash, a literal in
+// `minimap.js` no test could reach — and a wash reads against the water and
+// against nothing else. So the pellet is the pond's `foodMote()` now, drawn the
+// way the pond draws it, and these three tests are the audit it never had.
+
+/** Everything the little map can put *under* a pellet. */
+function minimapMoteBackgrounds() {
+  const out = [];
+  for (const { name, rgb } of minimapCorpseBackgrounds()) out.push({ name, rgb });
+  const { core, ring } = corpseMarkTones();
+  out.push({ name: "corpse bone", rgb: ring }, { name: "corpse core", rgb: core });
+  return out;
+}
+
+test("a pellet reads on every ground the minimap can draw under it, corpses included", () => {
+  const m = foodMote();
+  let worst = { d: Infinity };
+  for (const { name, rgb } of minimapMoteBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(addOver(rgb, m, m.a), rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a pellet scores only ${worst.d.toFixed(1)} on the minimap's ${worst.name} (${worst.vision})`
+  );
+  // And the binding case is the corpse's bone at 25.6 — the same constraint,
+  // to the same tenth, that picked that lightness in the pond (v1.55). Once the
+  // little map does the pond's arithmetic it inherits the pond's tight spot.
+  assert.ok(worst.name.startsWith("corpse"), `the binding ground is ${worst.name}, not the corpse`);
+  assert.ok(worst.d < 26, `the constraint has gone slack at ${worst.d.toFixed(1)}`);
+});
+
+test("the flat wash did not — it was legible on water and on almost nothing else", () => {
+  // The failure, pinned. A future me tidying this back into one `fillStyle`
+  // string restores a pellet that vanishes on two thirds of its own map.
+  const old = { r: 80, g: 205, b: 140 };
+  const washed = ({ rgb }) =>
+    Math.min(...VISION_MODELS.map((v) => deltaE(blendOver(rgb, old, 0.5), rgb, v)));
+  // Stated as classes rather than as a count: what the wash could not survive
+  // was everything this map has learned to draw since v1.27 — enriched ground
+  // at any richness, either tone of rock, and now the dead. Bare water and
+  // plain terrain, the grounds it was chosen against in v1.19, are the only
+  // ones it reliably cleared, and the brightest of the tinted waters caught it
+  // too (a biome under the contagious zone, at 23.2).
+  const domain = minimapMoteBackgrounds();
+  const bright = (g) => /soil|rock|corpse bone/.test(g.name) && !/zone/.test(g.name);
+  for (const g of domain.filter(bright)) {
+    assert.ok(washed(g) < MIN_DELTA_E, `the wash on ${g.name} scored ${washed(g).toFixed(1)}`);
+  }
+  // 32 of the 70 grounds in this domain, as a lower bound rather than a
+  // number: a future domain can only be larger.
+  const failed = domain.filter((g) => washed(g) < MIN_DELTA_E);
+  assert.ok(failed.length >= 32, `only ${failed.length} of ${domain.length} failed`);
+  // Worst of all on the mark this release added, which is how it was found.
+  const bone = corpseMarkTones().ring;
+  const onBone = Math.min(...VISION_MODELS.map((v) => deltaE(blendOver(bone, old, 0.5), bone, v)));
+  assert.ok(onBone < 5, `a wash on bone scored ${onBone.toFixed(1)} — not the collision this was`);
+});
+
+test("the corpse badge is the pond's colour and the hunter's geometry, inverted", () => {
+  const dead = minimapCorpseMark();
+  const pond = corpseMarkTones();
+  // Built from the pond's tones rather than copied out of them: a colour a test
+  // cannot reach is a colour that will drift, and two views disagreeing about
+  // what a corpse looks like is the v1.23 failure in a palette.
+  assert.equal(dead.rim, rgbCss(pond.ring));
+  assert.equal(dead.core, rgbCss(pond.core));
+  assert.ok(!/rgba|hsla/.test(dead.rim + dead.core), "the two tones must be opaque");
+  assert.ok(dead.rimSize > dead.coreSize, "the outer tone has to show around the inner one");
+
+  // The inversion, stated as an assertion rather than as a comment: the hunter
+  // is dark outside and pale inside, the corpse pale outside and dark inside.
+  const hunter = minimapPredatorTones();
+  const L = (rgb) => toLab(rgb)[0];
+  assert.ok(L(hunter.rim) < 20 && L(hunter.core) > 80, "the hunter's badge is dark around pale");
+  assert.ok(L(pond.ring) > 75 && L(pond.core) < 15, "the corpse's badge is pale around dark");
+});
+
+test("and the colours could not have carried that distinction — which is why the shapes do", () => {
+  // Pinning the thing that is *not* true (v1.25's rule, aimed at a design
+  // decision rather than at an old colour): the two pale tones are the two
+  // brightest marks on the map and they are nowhere near `MIN_DELTA_E` apart.
+  // If a future me deletes the geometry and leaves the colours to it, this fails.
+  const pale = corpseMarkTones().ring;
+  const hunterPale = minimapPredatorTones().core;
+  let worst = 0;
+  for (const vision of VISION_MODELS) worst = Math.max(worst, deltaE(pale, hunterPale, vision));
+  assert.ok(
+    worst < MIN_DELTA_E,
+    `the two pale tones score ${worst.toFixed(1)} — if that clears the bar the inversion is optional`
+  );
+  assert.equal(minimapCorpseMark().rimSize < minimapPredatorMark().rimSize, true, "and the corpse is the smaller badge");
+});
+
 // ---- The energy bar (v1.29) ----
 //
 // A second three-segment strip in the same sidebar as the mortality one. It
@@ -1011,7 +1185,7 @@ test("the axis numbers are legible, and are the population's own colour", () => 
 
 /** The minimap's own grounds, which the field is drawn on too. */
 function minimapGrounds() {
-  const bg = { r: 7, g: 12, b: 19 };
+  const bg = MINIMAP_WATER;
   const out = [{ name: "mini bare", rgb: bg }];
   for (let band = 0; band < TERRAIN_BANDS; band++) {
     const m = terrainBandFill(band).match(/rgba?\(([^)]+)\)/)[1].split(",").map(Number);

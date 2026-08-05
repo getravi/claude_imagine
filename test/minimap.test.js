@@ -20,7 +20,8 @@ import {
   drawMinimap,
 } from "../src/minimap.js";
 import { DetritusField } from "../src/detritus.js";
-import { minimapPredatorMark } from "../src/palette.js";
+import { minimapPredatorMark, minimapCorpseMark, foodMote } from "../src/palette.js";
+import { recordingContext } from "../src/rendershot.js";
 import { Camera } from "../src/camera.js";
 import { World } from "../src/world.js";
 import { TerrainField } from "../src/terrain.js";
@@ -34,20 +35,53 @@ const near = (a, b, eps = 1e-9) =>
 const predatorCount = (w) =>
   w.creatures.filter((c) => c.carnivory >= w.config.carnivoreThreshold).length;
 
-/** A recording 2D context: enough of the API for drawMinimap, and nothing else. */
-function stubCtx() {
-  const ops = [];
-  return {
-    ops,
-    fillStyle: "",
-    strokeStyle: "",
-    lineWidth: 1,
-    fillRect: (...a) => ops.push(["fillRect", ...a]),
-    strokeRect: (...a) => ops.push(["strokeRect", ...a]),
-    beginPath: () => ops.push(["beginPath"]),
-    arc: (...a) => ops.push(["arc", ...a]),
-    fill: () => ops.push(["fill"]),
-  };
+/**
+ * A recording 2D context — `src/rendershot.js`'s, as of v1.57.
+ *
+ * This file hand-rolled its own from v1.19: an object with the five methods
+ * `drawMinimap` happened to call and `fillStyle` as a plain field, which meant
+ * every assertion here was about *geometry* and none could be about colour.
+ * The recorder makes the style properties accessors and logs an entry when one
+ * is assigned, which is the only reason the corpse badge's two tones below can
+ * be checked at all. This stub was never *stale* the way v1.50 found the
+ * renderer's — `drawMinimap` never learned a call it did not have — it was
+ * blind by construction, which is the quieter half of v1.32's rule: a double is
+ * an assertion of equivalence, and equivalence includes the parts of the
+ * interface nobody thought to record.
+ *
+ * Its log entries are `[surface, name, ...args]`, so the helpers below name the
+ * parts rather than leaving index arithmetic in thirty assertions.
+ */
+function recorder() {
+  return recordingContext("minimap");
+}
+
+/** Every call of one name, in order. */
+const called = (ops, name) => ops.filter((o) => o[1] === name);
+
+/** A call's arguments, without the surface and the method name. */
+const args = (op) => op.slice(2);
+
+/** The drawing calls, with the style assignments dropped. */
+const paints = (ops) => ops.filter((o) => !String(o[1]).startsWith("set:"));
+
+/** Every numeric argument the frame emitted is a real number. */
+function assertNoNaN(ops) {
+  for (const op of paints(ops)) {
+    for (const a of args(op)) {
+      assert.ok(typeof a !== "number" || Number.isFinite(a), `${op[1]} got a non-finite argument`);
+    }
+  }
+}
+
+/** The fill colour in force when `op` was recorded. */
+function fillAt(ops, op) {
+  let fill = null;
+  for (const o of ops) {
+    if (o === op) return fill;
+    if (o[1] === "set:fillStyle") fill = o[2];
+  }
+  return null;
 }
 
 test("the layout keeps the world's aspect ratio exactly", () => {
@@ -146,21 +180,17 @@ test("drawing paints the pond and never emits a NaN", () => {
   cam.x = 20; // over the seam, so the wrapped pieces get drawn too
   cam.y = 600;
 
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   const layout = drawMinimap(ctx, world, cam, { selected: world.creatures[0] });
   assert.equal(layout.width, MINIMAP_WIDTH);
 
-  for (const op of ctx.ops) {
-    for (let i = 1; i < op.length; i++) {
-      assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);
-    }
-  }
+  assertNoNaN(ops);
   // The background, every pellet, every creature, and the four viewport pieces.
   // A predator is two rects rather than one — a dark badge with a bright core —
   // so the count is stated as what it is rather than fudged with a tolerance.
-  const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
+  const rects = called(ops, "fillRect").length;
   assert.equal(rects, 1 + world.food.items.length + world.creatures.length + predatorCount(world));
-  assert.equal(ctx.ops.filter((o) => o[0] === "strokeRect").length, 4 + 1);
+  assert.equal(called(ops, "strokeRect").length, 4 + 1);
 });
 
 test("a predator on the minimap is a badge, not a coloured dot", () => {
@@ -172,19 +202,25 @@ test("a predator on the minimap is a badge, not a coloured dot", () => {
   for (let i = 0; i < 600; i++) world.step();
   assert.ok(predatorCount(world) > 0, "seed 8 should have evolved some predators by now");
 
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   drawMinimap(ctx, world, new Camera(world.config), {});
   const mark = minimapPredatorMark();
-  const badges = ctx.ops.filter((o) => o[0] === "fillRect" && o[3] === mark.rimSize);
-  const cores = ctx.ops.filter((o) => o[0] === "fillRect" && o[3] === mark.coreSize);
+  const rects = called(ops, "fillRect");
+  const badges = rects.filter((o) => args(o)[2] === mark.rimSize);
+  const cores = rects.filter((o) => args(o)[2] === mark.coreSize);
   assert.equal(badges.length, predatorCount(world));
   // Every prey creature is a core-sized square too, so cores outnumber badges by
   // exactly the prey population.
   assert.equal(cores.length, world.creatures.length);
-  // The bright core goes on top of the dark rim, or the badge is just a dark dot.
-  const firstBadge = ctx.ops.findIndex((o) => o[0] === "fillRect" && o[3] === mark.rimSize);
-  assert.equal(ctx.ops[firstBadge + 1][0], "fillRect");
-  assert.equal(ctx.ops[firstBadge + 1][3], mark.coreSize);
+  // The bright core goes on top of the dark rim, or the badge is just a dark dot
+  // — and each is painted in the tone the audit measured, which the stub this
+  // file used until v1.57 could not see.
+  const firstBadge = paints(ops).findIndex((o) => o[1] === "fillRect" && args(o)[2] === mark.rimSize);
+  const after = paints(ops)[firstBadge + 1];
+  assert.equal(after[1], "fillRect");
+  assert.equal(args(after)[2], mark.coreSize);
+  assert.equal(fillAt(ops, badges[0]), mark.rim);
+  assert.equal(fillAt(ops, after), mark.core);
 });
 
 test("drawing the minimap cannot change the world", () => {
@@ -196,7 +232,7 @@ test("drawing the minimap cannot change the world", () => {
     watched.step();
     ignored.step();
     cam.x = (cam.x + 7) % watched.config.width; // roam, so every branch is taken
-    drawMinimap(stubCtx(), watched, cam, { selected: watched.creatures[0] });
+    drawMinimap(recorder().ctx, watched, cam, { selected: watched.creatures[0] });
   }
   assert.equal(watched.creatures.length, ignored.creatures.length);
   assert.equal(watched.food.items.length, ignored.food.items.length);
@@ -332,25 +368,22 @@ test("the minimap draws the ground under the pond, not over it", () => {
   const cam = new Camera(world.config);
   cam.zoom = 4;
 
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   const layout = drawMinimap(ctx, world, cam, {});
   const ground = terrainBandRects(world.terrain, layout, world.config);
   assert.ok(ground.length > 0);
 
-  const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
+  const rects = called(ops, "fillRect").length;
   assert.equal(
     rects,
     1 + ground.length + world.food.items.length + world.creatures.length + predatorCount(world)
   );
-  for (const op of ctx.ops) {
-    for (let i = 1; i < op.length; i++) {
-      assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);
-    }
-  }
+  assertNoNaN(ops);
   // The last band is painted before the first biome — the ground is a backdrop,
   // and a backdrop drawn late is a blindfold.
+  const drawn = paints(ops);
   const lastGround = 1 + ground.length - 1;
-  const firstBiome = ctx.ops.findIndex((o) => o[0] === "arc");
+  const firstBiome = drawn.findIndex((o) => o[1] === "arc");
   assert.ok(firstBiome > lastGround, "the ground goes down first");
 });
 
@@ -363,7 +396,7 @@ test("drawing the ground cannot change a world that has one", () => {
     watched.step();
     ignored.step();
     cam.x = (cam.x + 7) % watched.config.width;
-    drawMinimap(stubCtx(), watched, cam, { selected: watched.creatures[0] });
+    drawMinimap(recorder().ctx, watched, cam, { selected: watched.creatures[0] });
   }
   assert.equal(watched.creatures.length, ignored.creatures.length);
   for (let i = 0; i < watched.creatures.length; i++) {
@@ -438,19 +471,15 @@ test("the minimap draws the same enriched ground the pond does", () => {
   const expected = detritusCellRects(world.detritus, layout).length;
   assert.ok(expected > 0);
 
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   drawMinimap(ctx, world, new Camera(world.config), {});
-  const rects = ctx.ops.filter((o) => o[0] === "fillRect").length;
+  const rects = called(ops, "fillRect").length;
   // Background + soil cells + pellets + creatures (+ a second rect per predator).
   assert.equal(
     rects,
     1 + expected + world.food.items.length + world.creatures.length + predatorCount(world)
   );
-  for (const op of ctx.ops) {
-    for (let i = 1; i < op.length; i++) {
-      assert.ok(Number.isFinite(op[i]), `${op[0]} got a non-finite argument`);
-    }
-  }
+  assertNoNaN(ops);
 });
 
 // ---- the contagious zone (v1.34) ----
@@ -463,17 +492,17 @@ test("the minimap draws the same enriched ground the pond does", () => {
 // later.
 
 /** The discs drawMinimap drew for the contagious zone, by their radius. */
-function hazardArcs(ctx, world, layout) {
+function hazardArcs(ops, world, layout) {
   const r = world.config.infectionRadius * layout.scale;
-  return ctx.ops.filter((o) => o[0] === "arc" && Math.abs(o[3] - r) < 1e-9);
+  return called(ops, "arc").filter((o) => Math.abs(args(o)[2] - r) < 1e-9);
 }
 
 test("a pond with nobody sick draws no contagious water at all", () => {
   const world = new World(makeConfig({ seed: 8 }));
   for (let i = 0; i < 200; i++) world.step();
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   const layout = drawMinimap(ctx, world, new Camera(world.config), {});
-  assert.equal(hazardArcs(ctx, world, layout).length, 0);
+  assert.equal(hazardArcs(ops, world, layout).length, 0);
 });
 
 test("each case draws its own reach, under the living", () => {
@@ -487,12 +516,13 @@ test("each case draws its own reach, under the living", () => {
     c.x = 200 + i * 200;
     c.y = 300;
   });
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   const layout = drawMinimap(ctx, world, new Camera(world.config), {});
-  assert.equal(hazardArcs(ctx, world, layout).length, 3);
+  assert.equal(hazardArcs(ops, world, layout).length, 3);
   // Under the living: the last hazard disc is drawn before the first creature.
-  const lastZone = ctx.ops.map((o) => o[0]).lastIndexOf("arc");
-  const firstCreature = ctx.ops.findIndex((o) => o[0] === "fillRect" && o[3] === 2);
+  const drawn = paints(ops);
+  const lastZone = drawn.map((o) => o[1]).lastIndexOf("arc");
+  const firstCreature = drawn.findIndex((o) => o[1] === "fillRect" && args(o)[2] === 2);
   assert.ok(lastZone < firstCreature, "the zone belongs to the water, not to the creatures");
 });
 
@@ -503,12 +533,126 @@ test("a case on the seam is contagious on both sides of it", () => {
   one.infected = true;
   one.x = 1;
   one.y = 300;
-  const ctx = stubCtx();
+  const { ctx, ops } = recorder();
   const layout = drawMinimap(ctx, world, new Camera(world.config), {});
-  const arcs = hazardArcs(ctx, world, layout);
+  const arcs = hazardArcs(ops, world, layout);
   assert.equal(arcs.length, 2, "a disc over the left edge is drawn twice, once past each side");
-  const xs = arcs.map((a) => a[1]).sort((a, b) => a - b);
+  const xs = arcs.map((a) => args(a)[0]).sort((a, b) => a - b);
   const r = world.config.infectionRadius * layout.scale;
   assert.ok(xs[0] < r, "one image sits on the left edge, half of it off the map");
   assert.ok(xs[1] > layout.width - r, "and the half that fell off comes back on the right");
+});
+
+// ---- the dead (v1.57) ----
+//
+// Scavenging has left corpses in the water since v1.8 and this view drew none of
+// them for thirty-eight releases — the v1.23 mistake again, with the feature and
+// the surface a decade apart instead of one release. The Chronicle announces a
+// die-off at forty corpses and the map it says that over was empty water. The
+// tests: that they are drawn, as the two tones the audit measured, under the
+// living and in the pond's own order; and that a world without them draws
+// nothing at all, so a pond with scavenging off looks exactly as it did.
+
+/** A world run far enough to be burying its dead. */
+function scavengingWorld(seed = 314, ticks = 1200) {
+  const world = new World(makeConfig({ seed, scavenging: true }));
+  for (let i = 0; i < ticks; i++) world.step();
+  assert.ok(world.corpses.length > 0, `seed ${seed} should have corpses after ${ticks} ticks`);
+  return world;
+}
+
+/** The squares of one size, which is how each mark is told from the others here. */
+const squaresOf = (ops, size) => called(ops, "fillRect").filter((o) => args(o)[2] === size);
+
+test("a pond with scavenging off draws no dead at all", () => {
+  const world = new World(makeConfig({ seed: 8 }));
+  for (let i = 0; i < 400; i++) world.step();
+  assert.equal(world.corpses.length, 0, "no corpses without the flag");
+  const { ctx, ops } = recorder();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const dead = minimapCorpseMark();
+  assert.equal(squaresOf(ops, dead.rimSize).length, 0);
+  assert.equal(squaresOf(ops, dead.coreSize).length, 0);
+  // And no tone of it is ever set, so the flag being off is not merely a mark
+  // of zero size — it is a colour the frame never mentions.
+  assert.equal(called(ops, "set:fillStyle").filter((o) => o[2] === dead.rim).length, 0);
+});
+
+test("every corpse is two squares, pale around dark, in the tones the pond uses", () => {
+  const world = scavengingWorld();
+  const { ctx, ops } = recorder();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const dead = minimapCorpseMark();
+  const rims = squaresOf(ops, dead.rimSize);
+  const cores = squaresOf(ops, dead.coreSize);
+  assert.equal(rims.length, world.corpses.length);
+  assert.equal(cores.length, world.corpses.length);
+  // The dark core goes on top of the pale square — the inverse of the hunter's
+  // badge, which is the only thing telling the two apart at this size.
+  const drawn = paints(ops);
+  const first = drawn.findIndex((o) => o[1] === "fillRect" && args(o)[2] === dead.rimSize);
+  assert.equal(args(drawn[first + 1])[2], dead.coreSize);
+  assert.equal(fillAt(ops, rims[0]), dead.rim);
+  assert.equal(fillAt(ops, drawn[first + 1]), dead.core);
+  assertNoNaN(ops);
+});
+
+test("the dead are drawn under the living and under the crop, as in the pond", () => {
+  const world = scavengingWorld();
+  const drawn = (() => {
+    const { ctx, ops } = recorder();
+    drawMinimap(ctx, world, new Camera(world.config), {});
+    return paints(ops);
+  })();
+  const dead = minimapCorpseMark();
+  const at = (pred) => drawn.map((o, i) => [o, i]).filter(([o]) => pred(o)).map(([, i]) => i);
+  const corpses = at((o) => o[1] === "fillRect" && args(o)[2] === dead.rimSize);
+  const pellets = at((o) => o[1] === "fillRect" && args(o)[2] === 1.2);
+  const creatures = at((o) => o[1] === "fillRect" && args(o)[2] === 2);
+  assert.ok(corpses.length && pellets.length && creatures.length);
+  assert.ok(Math.max(...corpses) < Math.min(...pellets), "a pellet lies on a corpse, not under it");
+  assert.ok(Math.max(...pellets) < Math.min(...creatures), "and the living are on top of both");
+});
+
+test("a corpse is drawn where the corpse is, seam and all", () => {
+  const world = scavengingWorld();
+  const layout = minimapLayout(world.config);
+  // One corpse, hand-placed over the left seam: the minimap has four real edges,
+  // so its coordinate is wrapped into bounds rather than drawn off the map.
+  world.corpses.length = 1;
+  world.corpses[0].x = -3;
+  world.corpses[0].y = 310;
+  const { ctx, ops } = recorder();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const dead = minimapCorpseMark();
+  const rim = squaresOf(ops, dead.rimSize)[0];
+  const p = worldToMinimap(world.corpses[0].x, world.corpses[0].y, layout, world.config);
+  near(args(rim)[0], p.x - dead.rimSize / 2);
+  near(args(rim)[1], p.y - dead.rimSize / 2);
+  assert.ok(args(rim)[0] > layout.width - dead.rimSize, "wrapped onto the right-hand edge");
+});
+
+test("the pellet is the pond's pellet, drawn the pond's way and put back", () => {
+  // The wash this replaces was a literal in `minimap.js` and failed on every
+  // bright ground the map has (palette.test.js measures that). Two things have
+  // to hold for the fix: the colour comes from the palette, and the additive
+  // mode it needs is restored before anything else is drawn — the creatures are
+  // next, and this context is reused for every frame of the run.
+  const world = scavengingWorld();
+  const { ctx, ops } = recorder();
+  drawMinimap(ctx, world, new Camera(world.config), {});
+  const mote = foodMote();
+  const expected = `rgba(${mote.r}, ${mote.g}, ${mote.b}, ${mote.a})`;
+  const pellets = squaresOf(ops, 1.2);
+  assert.equal(pellets.length, world.food.items.length);
+  assert.equal(fillAt(ops, pellets[0]), expected);
+
+  const modes = called(ops, "set:globalCompositeOperation");
+  assert.deepEqual(modes.map((o) => o[2]), ["lighter", "source-over"]);
+  // The pellets, and only the pellets, are drawn additively.
+  const drawn = paints(ops);
+  const on = drawn.findIndex((o) => o === pellets[0]);
+  const off = drawn.findIndex((o) => o[1] === "fillRect" && args(o)[2] === 2);
+  assert.ok(on < off, "the crop is drawn before the living");
+  for (const p of pellets) assert.ok(drawn.indexOf(p) < off, "every pellet is inside the additive pass");
 });

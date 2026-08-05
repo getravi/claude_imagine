@@ -3680,6 +3680,118 @@ node --input-type=module -e '
 For the depth table, replace `overlaps()` with the largest `p.radius + q.radius − d`
 over all pairs, and take its mean over the samples rather than its total.
 
+## The dead, and the map that never drew them (v1.57)
+
+The minimap is the only surface where a whole-pond pattern is visible at a
+glance, and it has been catching up with the world since v1.19: terrain in
+v1.24, enriched ground in v1.27, the contagious zone in v1.34, rock in v1.48.
+The thing it never drew is older than all of them. Scavenging (v1.8) leaves a
+corpse where a creature dies, the Chronicle announces a die-off in words the
+moment forty of them are down, and for thirty-eight releases the map that
+sentence was written over showed empty water.
+
+### There is something to draw
+
+Twelve seeds, 9,000 ticks each, `scavenging: true`, sampled every fiftieth tick.
+
+| | median over seeds | range |
+| --- | --- | --- |
+| standing corpses | **7.0** | 3.6–21.2 |
+| the busiest sample | 27 | 11–63 |
+| samples holding at least one corpse | **93%** | 81–94% |
+| samples at the Chronicle's die-off threshold (≥ 40) | 0% | 0–15% |
+
+Two seeds of the twelve — 314, the default, and 51 — spend an eighth of their
+lives past forty corpses. And the view this map exists to supplement cannot show
+them: at zoom 4, the point where the minimap appears at all, **6.9%** of the
+standing corpses are on screen (2.3–11.2% by seed).
+
+### The pattern it was supposed to show is not there
+
+The claim I would have written in the caption is that a die-off leaves a shape —
+a scar the shape of wherever the pond was dying. It does not. Two controls, both
+of the cheap kind that needs no second run (v1.50: one pond, two rules, one
+instant):
+
+| | corpses | the null | seeds where corpses are lower |
+| --- | --- | --- | --- |
+| distance to the nearest living creature | 33.2 px | **31.9 px** (a uniform random point, same frame, same query) | 6 of 12 |
+| distance to the nearest other corpse | 135.6 px | **128.9 px** (the same number of random points) | 8 of 12 |
+
+The dead are placed like scattered points: no nearer the living than chance, and
+no more clustered with each other than chance, with the seed-to-seed spread far
+larger than either gap (v1.32's rule — a dozen seeds, or it is an anecdote).
+
+One statistic did look like evidence before the null arrived. Only **1.2%** of
+corpses sit in a coarse 6×4 cell holding nobody alive, which reads as *the dead
+lie among the living* until you notice that 200 creatures occupy nearly all
+twenty-four cells, so a random point would score about the same. A statistic
+with no control is a statement about the instrument (v1.20, again).
+
+So the mark is not a pattern; it is a **count and a place**, which is what the
+zoomed-in pond cannot give you, and it is the reason the size channel the pond
+spends on freshness is not spent here. The little map answers *how many, and
+where*. The big one answers *how fresh*.
+
+### What the new mark found: the pellet had a private colour
+
+The corpse's bone tone is the brightest thing the map draws, and a pellet is
+drawn on top of it. That check failed at **ΔE 4.6** — and the reason was not the
+corpse. The minimap's pellet was `rgba(80, 205, 140, 0.5)`, a flat wash, a
+literal in `minimap.js`: the pond's mote colour typed out a second time with the
+pond's *arithmetic* (an additive glow) left behind. A wash is legible on dark
+water and on nothing brighter.
+
+| pellet drawn on | flat wash (v1.19–v1.56) | additive, from `foodMote()` (v1.57) |
+| --- | --- | --- |
+| bare water | 39.0 | 47.4 |
+| the brightest enriched ground | **10.3** | 36.8 |
+| rock | **15.3** | 33.6 |
+| a corpse's bone | **4.6** | 25.6 |
+| grounds under `MIN_DELTA_E` = 25 | **32 of 70** | **0 of 70** |
+
+Everything the map has learned to draw since v1.27 was a ground its own pellet
+could not be seen on, for as long as it has been drawing it. The fix is to stop
+keeping a private copy: the pellet is `foodMote()` now, drawn with
+`globalCompositeOperation = "lighter"` exactly as the pond draws it, and the
+binding case afterwards is the corpse's bone at **25.6** — the same number, to
+the same tenth, that picked that lightness in the pond in v1.55. Once the little
+map does the big one's arithmetic it inherits the big one's tight spot.
+
+### Reproducing it
+
+```js
+import { blendOver, addOver, deltaE, foodMote, corpseMarkTones, VISION_MODELS } from "./src/palette.js";
+const bone = corpseMarkTones().ring;            // the brightest ground on the map
+const old = { r: 80, g: 205, b: 140 };          // the wash, v1.19–v1.56
+const mote = foodMote();
+console.log(VISION_MODELS.map((v) => deltaE(blendOver(bone, old, 0.5), bone, v).toFixed(1)));
+console.log(VISION_MODELS.map((v) => deltaE(addOver(bone, mote, mote.a), bone, v).toFixed(1)));
+```
+
+```bash
+# standing corpses, and how few of them a zoomed pond shows
+node -e '
+  import("./src/world.js").then(async ({ World }) => {
+    const { makeConfig } = await import("./src/config.js");
+    for (const seed of [314, 51, 8]) {
+      const w = new World(makeConfig({ seed, scavenging: true }));
+      let sum = 0, peak = 0, n = 0, seen = 0, shown = 0;
+      for (let t = 0; t < 9000; t++) {
+        w.step();
+        if (t % 50) continue;
+        n++; sum += w.corpses.length; peak = Math.max(peak, w.corpses.length);
+        for (const k of w.corpses) {
+          seen++;
+          const dx = Math.abs(k.x - 450), dy = Math.abs(k.y - 310);
+          if (Math.min(dx, 900 - dx) <= 112.5 && Math.min(dy, 620 - dy) <= 77.5) shown++;
+        }
+      }
+      console.log(seed, "mean", (sum / n).toFixed(1), "peak", peak, "on screen at zoom 4", ((100 * shown) / seen).toFixed(1) + "%");
+    }
+  })'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

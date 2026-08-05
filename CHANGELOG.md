@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.57.0] — 2026-08-05
+
+The minimap has been catching up with the world since v1.19 — terrain in v1.24,
+enriched ground in v1.27, the contagious zone in v1.34, rock in v1.48 — and the
+thing it never drew is older than all of them. Scavenging has left corpses lying
+in the water since v1.8. The Chronicle announces a die-off in words the moment
+forty of them are down, and for thirty-eight releases the map that sentence sits
+next to showed empty water. This release draws them, finds that they make no
+pattern at all, and trips over a colour on the way in.
+
+### Added
+
+- **The dead, on the minimap.** A pale square with a dark one inside it — the
+  hunter's badge inverted, which is what tells the two apart at three pixels,
+  because their pale tones sit ΔE 13.6–21.9 apart against a bar of 25 and the
+  colours cannot do it. The tones are the pond's own `corpseMarkTones()`, built
+  from that function rather than copied out of it. Drawn over every field and
+  under everything alive, in the pond's order; a pond with scavenging off draws
+  nothing and never so much as names the colour.
+- **`minimapCorpseMark()` in `src/palette.js`**, audited over 68 grounds — the
+  map's water, its eight terrain bands, biomes, enriched ground, the contagious
+  zone, both tones of rock — every lineage hue, the pellet and the hunter's
+  badge, under all four vision models. Worst case **ΔE 42.3**.
+- **What the mark deliberately does not say.** The pond ramps a corpse's size
+  with the meat left in it; three minimap pixels have no such range to spend, so
+  the little map answers *how many and where* and leaves *how fresh* to the view
+  that can draw it.
+
+### Measured
+
+- **There is something to draw.** Twelve seeds, 9,000 ticks, sampled every
+  fiftieth tick: a median of **7.0 standing corpses** (3.6–21.2 by seed), a
+  busiest sample of 27 (11–63), and at least one corpse in **93%** of samples.
+  Two seeds — 314, the default, and 51 — spend an eighth of their lives past the
+  Chronicle's forty-corpse die-off threshold. At zoom 4, where this map first
+  appears, the pond view holds **6.9%** of them.
+- **And no pattern in it, which is the finding.** The caption I would have
+  written is that a die-off leaves a shape. Two controls of the cheapest strong
+  kind — same frame, same query, the positions replaced by uniform random points
+  — say otherwise: a corpse's nearest living neighbour is 33.2 px against the
+  null's **31.9** (6 seeds of 12), and its nearest other corpse 135.6 px against
+  **128.9** (8 of 12), both differences far smaller than the seed-to-seed spread.
+  The dead are scattered. What the mark carries is a count and a place, not a
+  shape. Full tables in [docs/SCIENCE.md](docs/SCIENCE.md).
+- **The statistic that looked like evidence.** Only 1.2% of corpses sit in a
+  coarse cell holding nobody alive — which reads as *the dead lie among the
+  living* until you notice 200 creatures occupy nearly every cell, so a random
+  point scores the same. It was a statement about the grid, not about the pond.
+
+### Fixed
+
+- **The minimap's pellet had a private colour, and it failed on every bright
+  ground the map has.** `rgba(80, 205, 140, 0.5)` was a literal in `minimap.js`
+  from v1.19: the pond's mote colour typed out again with the pond's arithmetic
+  — an additive glow — left behind. A flat wash reads on dark water and on
+  nothing brighter: **ΔE 10.3** on the brightest enriched ground, **15.3** on
+  rock, **4.6** on a corpse's bone, and under the bar on **32 of 70** grounds.
+  It is `foodMote()` now, drawn with `globalCompositeOperation = "lighter"`
+  exactly as the pond draws it and restored immediately (the creatures are next,
+  and the context outlives the frame): 0 of 70 grounds fail, and the binding
+  case is the corpse's bone at **25.6** — the same number, to the same tenth,
+  that picked that lightness in the pond in v1.55.
+- The old wash is pinned as a failure in `test/palette.test.js`, so a future
+  tidy-up back into one `fillStyle` string fails loudly.
+
+### Changed
+
+- **`test/minimap.test.js` uses the recorder now.** It had hand-rolled its own
+  stub since v1.19 — five methods and `fillStyle` as a plain field — so every
+  assertion here was about geometry and none could be about colour. It shares
+  `recordingContext()` with the renderer's tests, which is what lets the corpse
+  badge's two tones and the pellet's composite mode be checked at all. That was
+  the last surface `src/rendershot.js` had not reached.
+
 ## [1.56.0] — 2026-08-05
 
 `docs/AUTONOMOUS.md` keeps a list of things this world hands out for free, and

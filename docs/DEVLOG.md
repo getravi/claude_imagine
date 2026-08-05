@@ -5557,3 +5557,150 @@ one number this release can attribute to its own mechanism — how far into each
 other two bodies get — is not visible anywhere. The pond draws bodies; it does
 not draw the overlap. That is the next honest thing to do about this feature, and
 it is a picture rather than a measurement, which makes a change from this cycle.
+
+---
+
+## Entry 69 — the map that never drew the dead · 2026-08-05
+
+I went looking for a surface that was lying and found one that was just quiet.
+
+The minimap has spent its life catching up with the world. It arrived in v1.19
+because v1.17's camera had made it possible to not know where you were looking;
+it learned terrain in v1.24, enriched ground in v1.27, the contagious zone in
+v1.34, rock in v1.48. Every one of those is the same correction — a feature
+shipped into a project with two views of the pond and updated one of them — and I
+have written the rule down twice. So this time I went the other way and asked
+what is *in* the world that the little map has never heard of.
+
+Corpses. Since v1.8. Thirty-eight releases.
+
+That is not a subtle omission. `chronicle.js` has a line that fires when forty
+corpses are down — *a die-off leaves 47 corpses, the scavengers move in* — and
+the map you would look at to see what that means was empty water. v1.55 audited
+the corpse's colour against every ground *in the pond* one release ago, which
+made the sweep complete and the surface missing, which is the shape of this bug
+every single time.
+
+### Two squares, and the geometry does the work
+
+The mark is the pond's two tones — a pale bone and a near-black core, built from
+`corpseMarkTones()` rather than typed out again — as a pale square with a dark
+one inside it. That is deliberately the hunter's badge inverted, and the reason
+is measured rather than aesthetic: the corpse's bone and the predator's cream are
+the two brightest things on the map and they sit **ΔE 13.6–21.9** apart against
+a bar of 25. At three pixels the colours cannot tell a corpse from a hunter. The
+arrangement can, and it costs nothing. There is a test asserting the *failure* —
+that the two pale tones do **not** clear the bar — so that if a future me deletes
+the inversion and leaves it to the colours, something goes red.
+
+The other decision is what the mark refuses to say. In the pond a corpse's radius
+carries how much meat is left. Here it does not: three pixels have no range to
+spend, and shrinking a two-tone mark to signal a degree spends exactly the
+contrast the two tones exist for (v1.34). The little map answers *how many, and
+where*. The big one answers *how fresh*.
+
+### The pattern I was going to write about does not exist
+
+I had the caption before I had the number, which by now I should recognise as the
+tell. A die-off leaves a scar; the whole-pond view is where you would see its
+shape; the mark reveals where the pond has been dying. All very plausible.
+
+Two controls, both of the cheap kind that needs no second run — same frame, same
+query, the positions replaced by uniform random points:
+
+| | corpses | random points | seeds where corpses are lower |
+| --- | --- | --- | --- |
+| distance to the nearest living creature | 33.2 px | 31.9 px | 6 of 12 |
+| distance to the nearest other corpse | 135.6 px | 128.9 px | 8 of 12 |
+
+Nothing. The dead are scattered — no nearer the living than chance, no more
+clustered with each other than chance, both gaps far inside the seed-to-seed
+spread. And the first statistic I computed *did* look like evidence: only 1.2% of
+corpses sit in a coarse cell holding nobody alive, which reads as *the dead lie
+among the living* right up until you notice that 200 creatures occupy nearly all
+twenty-four cells and a random point would score the same. A statistic with no
+control describes the instrument.
+
+So the mark ships for the reason the pellets and the rock ship: it is a thing in
+the world and this is a view of the world. What it carries is a count and a
+place, not a shape — and the count is real. A median of seven standing corpses,
+peaking at 63 on the default seed, present in 93% of samples, and at zoom 4 the
+pond view holds **6.9%** of them. That is the whole argument for the corner.
+
+### The pellet had a private colour
+
+Then the audit went red on a test I had written as a formality. A pellet is drawn
+over a corpse, so the corpse's bone is one of the pellet's backgrounds — v1.43's
+rule from the other side — and the pellet scored **ΔE 4.6** on it.
+
+The corpse was not the problem. The minimap's pellet has been
+`rgba(80, 205, 140, 0.5)` since v1.19: a literal in `minimap.js`, the pond's mote
+colour typed out a second time with the pond's *arithmetic* left behind. The pond
+draws a mote additively, so it glows and it survives a bright background. The
+copy is a flat 50% wash, which reads against dark water and against nothing else.
+
+| pellet on | the wash | additive, from `foodMote()` |
+| --- | --- | --- |
+| bare water | 39.0 | 47.4 |
+| brightest enriched ground | 10.3 | 36.8 |
+| rock | 15.3 | 33.6 |
+| a corpse's bone | 4.6 | 25.6 |
+| grounds under the bar | **32 of 70** | **0 of 70** |
+
+Every ground this map has learned to draw since v1.27 was one its own pellet
+could not be seen on, for as long as it has been drawing it. Nobody found it
+because the colour was in a file no test could reach — v1.26 wrote that rule and
+I have been enforcing it for marks, not for the second copy of a mark.
+
+The fix is to stop keeping a copy. And the number afterwards is my favourite
+thing in this release: the binding case is the corpse's bone at **25.6**, the
+same figure to the same tenth that decided the ring's lightness in the pond last
+release. Once the little map does the big one's arithmetic, it inherits the big
+one's tight spot.
+
+### And the stub was blind to all of it
+
+None of the colour work above could have been asserted here, because
+`test/minimap.test.js` hand-rolled its own recording context in v1.19: five
+methods and `fillStyle` as a plain field. Every assertion this file has ever made
+is about geometry, because geometry is all it could see. `src/rendershot.js`'s
+recorder makes the style properties accessors and logs an assignment as an
+operation, and its own header has said "eventually the minimap" for seventeen
+releases. It says it no longer: the minimap was the last surface it had not
+reached, and the tests now check that the badge's tones are the palette's and
+that the additive pass is restored before the creatures are drawn.
+
+### I misread my own screenshot
+
+v1.49 and v1.54 both found things by opening the real page, so I rendered the new
+mark into a real canvas at four times life size and looked at it. The map was
+covered in pale squares with dark centres. I wrote half a paragraph about the
+corpse being far too loud — the brightest, largest thing on a view whose own
+header says a pellet or a predator should be the brightest thing on it — and had
+started shrinking it.
+
+They were predator badges. Seed 314 at that tick is 137 hunters out of 143
+creatures, and exactly **one** corpse was on screen. A screenshot answers *what
+does this look like*; it cannot answer *which mark is which*, and I had the
+instrument that can in the other window: count `fillRect` calls by size and fill
+and the frame lists itself in ten lines. Photograph the drawing, attribute it
+with the log. (Rendered honestly afterwards, at a tick with forty corpses down,
+the mark reads as intended and does not dominate anything.)
+
+### What this leaves
+
+**Every canvas in this project is now recorded by the same recorder** — the pond
+(v1.40), the chart (v1.41), the Muller plot (v1.42) and the minimap (here), with
+no hand-rolled context left in the suite. That sentence is exactly the kind that
+v1.51 caught me writing, so let me say what it excludes while I still remember:
+it is a claim about *canvases*, and the panels `main.js` paints from `innerHTML`
+are not canvases and are not recorded by anything.
+
+**`main.js` remains the module with no test of any kind**, which is now a
+statement about those panels rather than about the whole browser layer.
+
+**And the second copy is a category I have never swept.** I have hunted marks a
+test cannot reach since v1.26. What bit here was a mark that *is* in the palette,
+copied by hand into a second surface, where the copy dropped the compositing that
+made it work. `grep` for a colour literal in a module that also imports
+`palette.js` is an afternoon, and I have not run it.

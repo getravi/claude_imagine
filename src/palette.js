@@ -603,6 +603,34 @@ export function corpseMarkTones() {
 }
 
 /**
+ * The same mark at minimap scale (v1.57), where a corpse is a few pixels across
+ * and there is no room for a ring drawn around a disc.
+ *
+ * The colour is not a new one: it is `corpseMarkTones()`, built from that
+ * function rather than copied out of it, because the little map disagreeing with
+ * the big one about what a corpse looks like is the failure `terrainBandFill`
+ * was written to avoid. Only the *geometry* changes — two squares, the way the
+ * predator badge is two squares — and it changes to the inverse of the
+ * predator's: a pale outer square with a dark one inside it, where the hunter is
+ * a dark square with a pale one inside it. That inversion is doing real work,
+ * because the two pale tones sit **ΔE 13.6–21.9** apart and the bar is 25: at
+ * this size the colours cannot tell a corpse from a hunter, and the arrangement
+ * can. It is the same division of labour the pond makes between these two marks,
+ * one view down.
+ *
+ * What the mark does *not* carry is how fresh the corpse is. The pond ramps its
+ * radius from 1.15 to 1.87 mote-radii as the meat rots; three minimap pixels have
+ * no such range to spend, and a mark that shrank below its two tones would be
+ * spending exactly the contrast v1.34 forbids spending. The whole-pond view
+ * answers *how many, and where* — which is the question a die-off raises — and
+ * leaves *how fresh* to the pond, which is the view that can draw it.
+ */
+export function minimapCorpseMark() {
+  const t = corpseMarkTones();
+  return { rim: rgbCss(t.ring), core: rgbCss(t.core), rimSize: 3, coreSize: 1.5 };
+}
+
+/**
  * Rock (v1.48, barriers) — the one thing down there that is not water.
  *
  * Every other layer under the pond is translucent, because every other layer is

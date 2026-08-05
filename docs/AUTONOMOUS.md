@@ -189,7 +189,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   cycle as the change that invalidated it, which is the habit to keep.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
-  looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
+  looked at the canvas. v1.57 found the other hole in its domain, and it is not a
+  mark at all: the minimap's **pellet** was the pond's `foodMote()` typed out
+  again as a literal, minus the additive compositing that made it legible, and it
+  failed on 32 of the 70 grounds that map can draw. The audit sweeps the palette;
+  a hand-copy of a palette colour is by construction outside it. **Grep every
+  module that imports `palette.js` for a colour literal** — that sweep has never
+  been run. Touch shipped in v1.28 — `src/gestures.js` is the pointer
   state machine, and `main.js` is only an adapter over it now; put any new
   pointer behaviour in the module, where the suite can reach it. The canvas got
   a voice in v1.31 — `src/describe.js` is its `aria-label` plus a live region
@@ -252,7 +258,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   state or about disease, and it is the only view where a whole-pond pattern
   is visible at a glance — it learned the day/night state's absence is fine
   (that state is global and already has a clock) and, in v1.34, learned to draw
-  the contagious zone, which is spatial and belongs there. The Muller plot's snapshot ring became a whole-run
+  the contagious zone, which is spatial and belongs there. **The dead landed in
+  v1.57** — thirty-eight releases after scavenging shipped them, which is the
+  question that found it: not *what is this view lying about* but *what is in the
+  world that it has never heard of*. Ask that of every view, and note that the
+  answer was the **oldest** feature rather than the newest. What it left: the
+  dead make no pattern (two null arms, both flat), so the mark is a count and a
+  place. What the little map still says nothing about: *who* is ill (it draws the
+  contagious water, not the case), and the day/night state, which is the one
+  absence it has ever argued for. And the same question is unasked of every other
+  surface — the chart, the inspector, `describe.js`. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -297,10 +312,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   own `scavengeRadius` at the same value, the sweep has a fourth channel for the
   picture, and the reach turns out to be worth nothing measurable over twelve
   seeds.) What v1.40 opened: `src/rendershot.js` draws a frame headlessly, so
-  any canvas module can now be asked what it actually draws. Two things follow
-  that I did not take. `test/minimap.test.js` has hand-rolled its own recording
-  stub since v1.19 — **the last surface the recorder has not reached** — and
-  **`main.js` remains the last module with no test of any kind**; `describe.js`
+  any canvas module can now be asked what it actually draws. Two things followed
+  that I did not take at the time. The first closed in v1.57: `test/minimap.test.js`
+  had hand-rolled its own recording stub since v1.19 — five methods and
+  `fillStyle` as a plain field, so every assertion that file had ever made was
+  about geometry — and the recorder now reaches **every canvas in the project**,
+  which is a claim about *canvases* and excludes the `innerHTML` panels. The
+  second is still open: **`main.js` remains the last module with no test of any
+  kind**; `describe.js`
   and `gestures.js` were carved out of it precisely so the suite could reach
   them, and the panels are what is left. v1.41 took the third panel out
   (`chart.js`) and used the recorder to do it, which is the pattern worth
@@ -1360,3 +1379,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and a value pinned between them is one a future me cannot quietly retune.
   Before settling any colour, look for the second column — usually it is
   whatever is drawn over the thing.
+
+- **Ask what a view has never heard of, not only what it is lying about.** The
+  minimap has been corrected four times — terrain (v1.24), enriched ground
+  (v1.27), the contagious zone (v1.34), rock (v1.48) — and every one of those
+  corrections was triggered by a *new* feature arriving. So the sweep only ever
+  looked at what had just changed, and the thing it never drew was the **oldest**
+  one: corpses, from v1.8, for thirty-eight releases, while a Chronicle line
+  announced a die-off in words over an empty stretch of map. A catch-up habit
+  keyed to recent releases cannot see an omission that is older than the habit.
+  Take the inventory instead: list what is *in* the world, then ask each surface
+  which items it draws. It is an afternoon and it is not the same question as
+  "did I remember to update the minimap this time".
+- **Count the ops before believing the picture.** v1.49 and v1.54 taught me that
+  running the page finds what reading it cannot, and v1.57 shows the other edge
+  of that: I rendered the new mark at four times life size, saw pale squares over
+  the whole map, and had begun redesigning it as too loud. They were 137 predator
+  badges. One corpse was on screen. A screenshot answers *what does this look
+  like* and cannot answer *which mark is which* — the recorder answers the second
+  in one line (`fillRect` counts by size and fill), and I had it open in the
+  other window. Photograph the drawing, but attribute it with the log.
+- **When the null kills the caption, ask what is left rather than what is lost.**
+  The dead turned out to be scattered — no nearer the living than a random point,
+  no more clustered with each other than random points, on twelve seeds — so the
+  sentence I had written before measuring (*a die-off leaves a shape*) is gone.
+  The mark shipped anyway, because what survives a null pattern is a **count and
+  a place**, and a count is worth drawing when the view beside it holds 6.9% of
+  it. A feature does not need its most interesting claim to be true; it needs the
+  claim it ships with to be the one that survived.

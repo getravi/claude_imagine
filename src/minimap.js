@@ -20,7 +20,14 @@
 // default view rather than drawing a frame around everything.
 
 import { wrap } from "./vec.js";
-import { minimapPredatorMark, detritusTint, hazardTint, barrierRock } from "./palette.js";
+import {
+  minimapPredatorMark,
+  minimapCorpseMark,
+  foodMote,
+  detritusTint,
+  hazardTint,
+  barrierRock,
+} from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
 /** Minimap width in CSS pixels. 180 over a 900-wide world is a clean 0.2 scale. */
@@ -296,13 +303,47 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
     }
   }
 
+  // The dead, over every field and under everything alive, in the same order
+  // the pond draws them. Scavenging has left corpses lying in the water since
+  // v1.8 and this view has never drawn one, through thirty-eight releases: the
+  // Chronicle announces a die-off in words the moment forty of them are down,
+  // and the map it says that over showed an empty stretch of pond. Nothing here
+  // is a pattern — the dead turn out to lie where random points would (see
+  // SCIENCE.md) — so what the mark is for is the count and the place, which is
+  // exactly what the pond view cannot give you: at zoom 4, where this map first
+  // appears, 6.9% of the standing corpses are on screen.
+  if (world.corpses.length) {
+    const dead = minimapCorpseMark();
+    for (const k of world.corpses) {
+      const p = worldToMinimap(k.x, k.y, layout, config);
+      ctx.fillStyle = dead.rim;
+      ctx.fillRect(p.x - dead.rimSize / 2, p.y - dead.rimSize / 2, dead.rimSize, dead.rimSize);
+      ctx.fillStyle = dead.core;
+      ctx.fillRect(p.x - dead.coreSize / 2, p.y - dead.coreSize / 2, dead.coreSize, dead.coreSize);
+    }
+  }
+
   // Food and creatures are single pixels here, so they are squares rather than
   // discs: at 2px across a fillRect is both crisper and cheaper than an arc.
-  ctx.fillStyle = "rgba(80, 205, 140, 0.5)";
+  //
+  // The pellet was `rgba(80, 205, 140, 0.5)` — a flat wash, a literal in this
+  // file, the pond's mote colour typed out again with the pond's arithmetic left
+  // behind — from v1.19 until v1.57, when the corpse audit walked into it. A
+  // wash is legible against the water and against nothing else: it scores ΔE
+  // 15.3 on rock, 10.3 on the brightest enriched ground and **4.6** on a
+  // corpse's bone, against a bar of 25. So it becomes the pond's own mote,
+  // `foodMote()`, drawn the way the pond draws it — additive, which is both what
+  // makes it survive a bright background and what makes a dense patch glow.
+  // Restored to `source-over` immediately: the creatures are next, and this
+  // context outlives the frame.
+  const mote = foodMote();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = `rgba(${mote.r}, ${mote.g}, ${mote.b}, ${mote.a})`;
   for (const f of world.food.items) {
     const p = worldToMinimap(f.x, f.y, layout, config);
     ctx.fillRect(p.x - 0.6, p.y - 0.6, 1.2, 1.2);
   }
+  ctx.globalCompositeOperation = "source-over";
 
   const threshold = config.carnivoreThreshold;
   const mark = minimapPredatorMark();
