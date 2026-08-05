@@ -3513,6 +3513,173 @@ for (const alpha of [0.15, 0.35, 0.7])
   console.log(alpha, VISION_MODELS.map((v) => deltaE(blendOver(soil, old, alpha), soil, v).toFixed(1)));
 ```
 
+## Space stops being free, and the control takes most of it back (v1.56)
+
+Every rule this pond has about *being somewhere* is a rule about resources. Food
+gathers in biomes (v1.3), the ground can be expensive to cross (v1.23), rock can
+refuse a step outright (v1.48). What no rule has ever said is that somebody is
+*in the way*. Two creatures have been able to occupy the same point since v1.0,
+for their whole lives, at no cost to either — and a fertile patch has had no
+ceiling on how many bodies fit inside it. This is the last free gift on the list
+in `docs/AUTONOMOUS.md`, and `bodyCollision` (opt-in) is the rule that charges
+for it.
+
+### What the rule is
+
+After every creature has moved under its own power, any two whose bodies overlap
+are pushed apart along the line between them, each giving up **half** the
+overlap. Size does not enter: this is exclusion, not force. No new constant — the
+distance a pair owes is `r1 + r2`, which the bodies already carry — and no random
+number, in either direction, so a shoving world is still reproducible from its
+seed.
+
+It is a **relaxation**, not a solver. One pass per tick, every displacement
+computed from the same instant and applied together, so no creature's shove
+depends on where it sits in the update order — the only exactly simultaneous rule
+in `world.step()`. What that buys, and what it costs, is visible in a chain of
+three equal bodies in a row: the middle one is pushed both ways by the same
+amount and does not move, so each end gives up half of what its pair owes and the
+gap closes by half a tick. 9 px, 10.5, 11.25, 11.625 — geometric, converging on
+the 12 it owes and never arriving. `test/bodyCollision.test.js` pins that
+sequence exactly.
+
+In a real pond the chain never gets the chance: the pass separates about **32
+pairs a tick** in a population of 220 — one creature in seven is being shoved on
+any given tick — and finishes each tick still holding **0.82 overlapping pairs
+for every pair it just separated**. The pond does not settle. It is held down.
+
+### The control, and why it was needed
+
+A rule that moves things needs a control that moves them somewhere else (v1.27),
+and a null arm has to be **as expensive as the treatment** (v1.47). So: the same
+pairs, the same displacement, turned 90°. Every overlapping pair is displaced by
+exactly the distance the real rule would have used, at right angles to the line
+between them — which separates nothing, to first order, and counter-rotates the
+pair about its own midpoint instead.
+
+Twelve seeds, 9,000 ticks, measured over the last 4,500. Median change against
+the same seed's default run:
+
+| what | `bodyCollision` | same shove, turned 90° | seeds moved |
+|---|---|---|---|
+| standing overlapping pairs | **−69.7%** | −52.7% | 12/12 vs 11/12 down |
+| mean nearest-neighbour distance | +13.5% | **+20.5%** | 12/12 vs 11/12 up |
+| contested meals (`stats.contested`) | −56.9% | −52.3% | 12/12 both down |
+| mean population | +2.3% | +1.6% | 10/12 vs 8/12 up |
+| kills over the run | −6.4% | −15.5% | 5/12 vs 4/12 up |
+
+Read the second column first. Four of those five rows are the control's.
+
+- **Spacing is not the rule.** The pond does spread out — nearest neighbours are
+  13.5% further apart, on every one of twelve seeds — and the arm that separates
+  nothing spreads it **further**, +20.5%. Paired seed by seed the two arms differ
+  by −0.6% with 6 seeds of 12 in each direction, which is a coin toss. "Solid
+  bodies make the pond less crowded" is a sentence about displacement, not about
+  exclusion.
+- **Nor are the lost meals.** Contested pellets — a creature that had one inside
+  its own reach and found it already eaten — fall by more than half, and 52 of
+  those 57 points are the control's.
+- **Population and predation say nothing.** Both arms are up on population
+  against a shared baseline, which is exactly the correlated design v1.47 was
+  burned by; kills swing from −70% to +486% across seeds.
+
+What survives is the one thing the rule is actually about. Standing overlap falls
+69.7% with the rule and 52.7% with the null, and paired seed by seed the rule
+beats the null by a further **30.1%, on 11 seeds of 12**. So of the overlap the
+rule removes, roughly three-quarters would have gone away under any equally
+vigorous shoving — bodies that are pushed at all stop being where they were — and
+the last quarter is the exclusion itself.
+
+### Why the null does so much, and the statistic that is only the rule's
+
+Not a flaw in the control: it is the finding. Two overlapping bodies that are
+each displaced by a couple of pixels in *any* direction have a fair chance of no
+longer overlapping, because most overlaps in this pond are shallow. So a
+statistic that counts *how many* pairs overlap is largely a statistic about how
+much anything moved.
+
+The obvious next guess is that exclusion should own a **bound** where
+displacement cannot — a ceiling on how deep a pile gets. Half of that is wrong,
+and the half that is wrong is the one I would have written down without
+measuring. Six seeds, 6,000 ticks, sampled every hundredth tick over the second
+half:
+
+| | default | `bodyCollision` | shove turned 90° |
+|---|---|---|---|
+| deepest pile (bodies within 8 px), mean | 3.4 – 5.1 | 1.0 – 2.0 | 1.0 – 1.7 |
+| deepest pile, worst seen | 5 – 12 | 1 – 3 | 2 – 3 |
+| **deepest overlap, mean (px)** | **12.3 – 14.1** | **0.6 – 2.3** | **4.5 – 6.8** |
+| deepest overlap, worst seen (px) | 13.5 – 15.3 | 5.0 – 7.0 | 6.4 – 13.3 |
+
+Pile *depth* is the null's as thoroughly as spacing was: shoving a heap in
+circles pulls it apart about as well as pushing it outward, and both cap it at
+two or three where the default pond reaches twelve. What the null cannot do is
+control how far *into* each other two bodies get. The worst intrusion anywhere in
+the pond, at a typical instant, is **0.6–2.3 px with the rule and 4.5–6.8 px with
+the null** — three- to eightfold, on six seeds of six, with no overlap between
+the two ranges. That is the statistic exclusion owns, and it is a depth rather
+than a count or a spacing, which is the shape of thing the rule is: it does not
+say where anybody may be, only how far in.
+
+### The honest summary
+
+**The rule is real, busy and almost entirely invisible in the aggregate.** It
+fires 32 times a tick, it holds standing overlap at a third of its default level
+and the pond's worst intrusion at a fifth of the null's, and once that null is
+subtracted, nothing else this instrument measures — spacing, pile depth, lost
+meals, population, predation — can be attributed to bodies excluding each other
+rather than to bodies being nudged. That is the fifth time in this project that a
+scrambled arm has taken back most of a result (v1.20, v1.27, v1.33, v1.47, and
+now this), and the first time the treatment survived it at all: two statistics
+out of six are the rule's, and both of them are about *depth* rather than about
+where anybody is.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const V = await import("./src/vec.js");
+  // The null: the same pairs, the same distance, turned 90 degrees.
+  const perp = (w) => {
+    const cfg = w.config, live = w.creatures.filter((c) => !c.dead);
+    w.creatureGrid.clear(); for (const c of live) w.creatureGrid.insert(c);
+    const px = new Float64Array(live.length), py = new Float64Array(live.length);
+    live.forEach((c, i) => w.creatureGrid.forEachWithin(c.x, c.y, cfg.bodyRadiusMax * 2, (o) => {
+      if (o === c) return;
+      const dx = V.wrapDelta(c.x, o.x, cfg.width), dy = V.wrapDelta(c.y, o.y, cfg.height);
+      const d2 = dx * dx + dy * dy, sum = c.radius + o.radius;
+      if (d2 >= sum * sum || d2 === 0) return;
+      const d = Math.sqrt(d2), s = (sum - d) * 0.5;
+      px[i] += (-dy / d) * s; py[i] += (dx / d) * s;
+    }));
+    live.forEach((c, i) => { c.x = V.wrap(c.x + px[i], cfg.width); c.y = V.wrap(c.y + py[i], cfg.height); });
+  };
+  const overlaps = (w) => {
+    let n = 0;
+    for (let i = 0; i < w.creatures.length; i++) for (let j = i + 1; j < w.creatures.length; j++) {
+      const p = w.creatures[i], q = w.creatures[j];
+      const dx = V.wrapDelta(p.x, q.x, w.config.width), dy = V.wrapDelta(p.y, q.y, w.config.height);
+      const s = p.radius + q.radius; if (dx * dx + dy * dy < s * s) n++;
+    }
+    return n;
+  };
+  for (const seed of [314,7,21,45,51,77,101,256,512,777,999,1234]) {
+    const out = {};
+    for (const arm of ["off", "on", "perp"]) {
+      const w = new W.World(C.makeConfig({ seed, bodyCollision: arm !== "off" }));
+      if (arm === "perp") w._separate = () => perp(w);
+      let ov = 0, k = 0;
+      for (let i = 0; i < 9000; i++) { w.step(); if (i >= 4500 && i % 250 === 249) { ov += overlaps(w); k++; } }
+      out[arm] = { overlap: ov / k, pop: w.creatures.length, contested: w.stats.contested };
+    }
+    console.log(seed, out);
+  }'
+```
+
+For the depth table, replace `overlaps()` with the largest `p.radius + q.radius − d`
+over all pairs, and take its mean over the samples rather than its total.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

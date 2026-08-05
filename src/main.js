@@ -90,6 +90,7 @@ function parseHash() {
   if (p.has("dark")) o.barrierOcclusion = p.get("dark") === "1";
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
+  if (p.has("body")) o.bodyCollision = p.get("body") === "1";
   return o;
 }
 
@@ -123,6 +124,7 @@ function syncHash() {
   p.set("dark", config.barrierOcclusion ? "1" : "0");
   p.set("fin", config.deathIsFinal ? "1" : "0");
   p.set("ord", config.shuffleTurnOrder ? "1" : "0");
+  p.set("body", config.bodyCollision ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -234,6 +236,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-occlusion", config.barrierOcclusion);
   setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-turnorder", config.shuffleTurnOrder);
+  setToggle("toggle-bodies", config.bodyCollision);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -631,6 +634,14 @@ function updateHUD() {
   // rather than the run's total, which would stop moving by tick 3,000. Reads
   // exactly 0 with no walls in the pond, so it says "off" instead.
   $("stat-walled").textContent = config.barriers ? `${s.walledRate.toFixed(1)}/100t` : "off";
+  // Solid bodies: how many pairs the pond is pushing apart, per hundred ticks
+  // over the same window. This is the only readout of a rule that is almost
+  // invisible — two creatures that cannot overlap look very like two that can —
+  // and it is a rate for the same reason `walled` is: a run's total stops
+  // moving. Exactly 0 in a pond where bodies pass through each other.
+  $("stat-jostled").textContent = config.bodyCollision
+    ? `${s.jostledRate.toFixed(0)}/100t`
+    : "off";
   // Detritus: what share of the crop is currently growing out of the pond's own
   // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
   // field, so it says "off" rather than showing a steady, plausible zero.
@@ -1551,6 +1562,14 @@ function wireControls() {
     // Nothing to rebuild: the order is drawn fresh at the top of every tick, so
     // this takes effect on the next one and nothing already in the pond cares.
     config.shuffleTurnOrder = e.target.checked;
+    syncHash();
+  });
+  $("toggle-bodies").checked = config.bodyCollision;
+  $("toggle-bodies").addEventListener("change", (e) => {
+    // Nothing to rebuild: the pass is a function of where everyone is standing
+    // when it runs, so switching it on takes effect on the next tick and a pond
+    // that has been piling up for an hour simply unpiles over the next few.
+    config.bodyCollision = e.target.checked;
     syncHash();
   });
   $("toggle-groundsense").checked = config.groundSense;

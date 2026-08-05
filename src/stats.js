@@ -244,8 +244,19 @@ export class Stats {
     // the rate is the only form of it a watcher can see change, which is the
     // v1.35 rule — a run-to-date total is a number that has already stopped.
     this.walledRate = 0;
-    /** @type {Array<{tick:number, walled:number}>} the ring the rate reads. */
+    /** @type {Array<{tick:number, v:number}>} the ring the rate reads. */
     this._walledRing = [];
+    // Pairs of bodies pushed apart, cumulative (v1.56, `bodyCollision`). Exactly
+    // 0 in a world where creatures can stand on each other, which is every
+    // world before v1.56 and every world that leaves the flag alone. Like
+    // `walled` it is the number that says what the rule is *doing*: the pond
+    // looks much the same either way, and this is how much shoving is behind
+    // that. Counted as pairs — a crush of three bodies is three of them.
+    this.jostled = 0;
+    /** The same counter as a rate: pairs separated per hundred ticks. */
+    this.jostledRate = 0;
+    /** @type {Array<{tick:number, v:number}>} the ring the rate reads. */
+    this._jostledRing = [];
     this.infections = 0; // cumulative cases of the disease (contagion on)
     this.recoveries = 0; // cumulative recoveries, each one a new immune creature
     this.infectedCount = 0; // currently sick
@@ -473,13 +484,32 @@ export class Stats {
       // because it belongs to the panel and not to the chart, the archive or the
       // CSV — a counter that is 0 in every world but one does not earn a column
       // in every export.
-      this._walledRing.push({ tick: this.tick, walled: this.walled });
-      if (this._walledRing.length > POWER_WINDOW + 1) this._walledRing.shift();
-      const wr = this._walledRing;
-      const wBack = wr[0];
-      const wDt = this.tick - wBack.tick;
-      this.walledRate = wDt > 0 ? ((this.walled - wBack.walled) / wDt) * 100 : 0;
+      this.walledRate = this._perHundred(this._walledRing, this.walled);
+      // And what the bodies are costing each other, on the same window and by
+      // the same exact differencing. Its own ring for the same reason: a
+      // counter that is 0 in every world but one does not earn a column in
+      // every export.
+      this.jostledRate = this._perHundred(this._jostledRing, this.jostled);
     }
+  }
+
+  /**
+   * A cumulative counter, read out as a rate per hundred ticks over the
+   * trailing `POWER_WINDOW` samples. Push the running total into its own ring
+   * and difference the two ends: consecutive samples partition the ticks
+   * between them with no gap and no overlap, so this is exactly what happened
+   * in the window rather than an estimate of it (the v1.22 rule) — and a rate
+   * is the only form of a run-to-date total a watcher can see change at all
+   * (the v1.35 one). Mutates the ring it is handed and returns the rate.
+   * @param {Array<{tick:number, v:number}>} ring
+   * @param {number} total the counter's value now
+   */
+  _perHundred(ring, total) {
+    ring.push({ tick: this.tick, v: total });
+    if (ring.length > POWER_WINDOW + 1) ring.shift();
+    const back = ring[0];
+    const dt = this.tick - back.tick;
+    return dt > 0 ? ((total - back.v) / dt) * 100 : 0;
   }
 
   /**

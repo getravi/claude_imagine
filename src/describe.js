@@ -172,6 +172,16 @@ export function describePond(world, config, camera = null) {
         (config.barrierOcclusion ? " The rock is opaque: nothing sees, hears or infects through it." : "")
     );
   }
+  // Solid bodies. The hardest rule in this world to *see* — a pond where
+  // nobody overlaps looks very like a pond where everybody may — so the only
+  // honest thing to say about it is how much shoving it is doing. Exactly 0
+  // without the rule, and the sentence is skipped there.
+  if (config.bodyCollision && pop > 0) {
+    out.push(
+      "Bodies are solid: two creatures cannot stand in the same place, and the pond " +
+        `pushes ${s.jostledRate.toFixed(0)} overlapping pairs apart per hundred ticks.`
+    );
+  }
   if (camera) out.push(describeView(camera, config));
 
   return out.filter(Boolean).join(" ");

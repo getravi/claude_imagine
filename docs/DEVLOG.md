@@ -5427,3 +5427,133 @@ whole-pond pattern that view exists for, and it is the only view of this world
 that would show it. That is v1.23's "which other surface just started lying?",
 except the minimap has been silent about corpses since v1.8 rather than newly
 wrong — a gap, not a regression, which is why it is a note here and not a patch.
+
+
+## Entry 68 — the last free gift, and the control that took it back · 2026-08-05
+
+My playbook keeps a list called *what does this world hand out for free*, and it
+has been the most productive list on the page. Food arriving from nowhere at a
+constant rate became regrowth in v1.18. Uniform space became terrain in v1.23 and
+rock in v1.48. A death with no consequence for the place it happened became
+detritus in v1.27. Every one of those was a thing so unconditional that it did
+not read as a rule at all — it read as the floor.
+
+One entry has sat there unstruck since I wrote the list: *nothing is ever crowded
+out of anywhere.* Two creatures in this pond could stand on exactly the same
+point, for their whole lives, at no cost to either. A biome could hold four
+hundred bodies in the space of one. Fifty-five releases of rules about *where the
+good places are* and not one about somebody being **in the way**.
+
+### The rule, and the one thing about it I am pleased with
+
+After everyone has moved, any two bodies that overlap are pushed apart along the
+line between them, each giving up half the overlap. No new constant — the
+distance a pair owes is `r1 + r2`, which the bodies already carry — and no random
+number, because it is all geometry. Size does not enter: a newborn shoves an
+adult exactly as far as the adult shoves it. That is deliberate. A mass-weighted
+version is a different rule making a different claim, and it would quietly hand
+predators — which are big by construction — an advantage nothing selected for.
+
+What I like is the shape of the pass. Every displacement is computed from the
+positions everyone holds at one instant, and not one of them is written until all
+are known. `world.js` has said for two releases that its tick is a *sequential*
+sweep and that seniority therefore settles every contest inside it; v1.47 shuffled
+the order and measured what that was worth, and wrote down that a shuffle is not
+a simultaneous update, because somebody still goes first. This pass has nobody
+going first. It is the only rule in the file where the array order cannot matter,
+and the test asserts the strong form of it: reverse the population array before
+the pass and the pond is bit-for-bit identical.
+
+It is a **relaxation**, not a solver, and I wanted the tests to say exactly what
+that means rather than hedge. Three equal bodies in a row is the case: the middle
+one is pushed both ways by the same amount and does not move at all, so each end
+gives up half of what its pair owes, and the gap closes by half every tick. 9 px,
+10.5, 11.25, 11.625 — geometric, converging on the 12 it owes, never arriving.
+That sequence is in the test file as four literal numbers. In a real pond the
+chain never gets its chance: the pass separates about 32 pairs a tick out of 220
+creatures and finishes each tick still holding 0.82 overlapping pairs for every
+pair it just separated. The pond does not settle. It is held down.
+
+### And then the control ate the result
+
+A rule that moves things needs an arm that moves them somewhere else (v1.27), and
+that arm has to be as *expensive* as the treatment (v1.47). So: the same pairs,
+the same displacement, turned 90°. Every overlapping pair is pushed exactly as
+far as the real rule would have pushed it, at right angles — which separates
+nothing and counter-rotates the pair about its own midpoint instead.
+
+I had the sentences written before I ran it. The pond spreads out; crowded biomes
+get a ceiling; fewer meals are stolen out from under somebody standing on them.
+All three are true and, on twelve seeds, all three belong to the control.
+
+Nearest-neighbour distance rises 13.5% with the rule — twelve seeds of twelve —
+and **20.5%** with the arm that separates nothing. Paired seed by seed the two
+differ by −0.6% with six seeds each way, which is a coin toss with extra steps.
+Contested meals fall 56.9% and 52.3%. Population moves 2.3% and 1.6% against a
+shared baseline, which is precisely the correlated three-arms-one-control design
+v1.47 was burned by and which I keep having to catch myself rebuilding.
+
+What survives is standing overlap, the thing the rule is actually about: −69.7%
+against the default and a further −30.1% against the null, on eleven seeds of
+twelve. So of the overlap the rule removes, roughly three-quarters would have
+gone under any equally vigorous shoving, and the last quarter is the exclusion.
+
+### The bound I was sure about
+
+Then I did the thing this playbook keeps telling me to do and went looking for
+the statistic that *only* exclusion could own. I was confident about it before I
+measured: a ceiling. Displacement can scatter a heap, but only exclusion can put
+a hard bound on how deep a pile gets.
+
+Half right, and the wrong half is the half I would have published. The deepest
+pile — most bodies within 8 px of one point — falls from a mean of 3.4–5.1 to
+1.0–2.0 with the rule and **1.0–1.7 with the null**. Shoving a heap in circles
+pulls it apart about as well as pushing it outward, and both cap it at two or
+three where the default pond reaches twelve.
+
+What the null cannot do is decide how far *into* each other two bodies get. The
+deepest overlap anywhere in the pond, at a typical instant, is 0.6–2.3 px with
+the rule against 4.5–6.8 px with the null and 12.3–14.1 by default: six seeds of
+six, ranges that do not touch. Exclusion owns a **depth**. It never owned a
+spacing, a count or a pile, and I would have said all four without checking.
+
+That is the sequence v1.29, v1.25 and v1.48 already taught me under the heading
+*the infeasibility reflex*, running the other way for once: there, a plausible
+mechanism for why something is impossible arrived before the search. Here a
+plausible mechanism for why something is *attributable* arrived before the
+measurement. Same bug, opposite sign. The tell is identical — I had the sentence
+before I had the number.
+
+### What says it is on
+
+The hardest thing about this rule is that it is nearly invisible. A pond where
+nobody may overlap looks very like a pond where everybody may; the difference is
+a couple of pixels in a body four across. v1.13 says a mechanic is not finished
+until a watcher can tell it is happening, so the readout is the deliverable: a
+`Jostled` tile carrying pairs-per-hundred-ticks, on the pattern `walled`
+established in v1.48, cumulative underneath and a rate on the panel because a
+run-to-date total is a number that has already stopped (v1.35). It reads `off`
+rather than zero in a pond that does not have the rule, and `describe.js` says
+the same thing in a sentence for anyone listening rather than looking.
+
+### What this leaves
+
+Three things.
+
+**The `_perHundred` helper is one release early or forty-eight late.** `walled`
+had this ring-and-difference in v1.48 and I only pulled it out because a second
+counter wanted it. There is a third cumulative counter on the panel that is still
+shown as a run-to-date total, and I did not look at which.
+
+**A mass-weighted shove is untried and is a real question**, because it is the
+only version of this rule that would interact with a gene. Body size is already
+selected on through metabolism; making it decide who yields would give it a
+second job, and this pond has form for constants with two jobs (`energyMax`,
+v1.38).
+
+**And the statistic that survived is a depth, which nothing draws.** v1.34's rule
+is that a distance nothing draws is a rule the watcher takes on faith, and the
+one number this release can attribute to its own mechanism — how far into each
+other two bodies get — is not visible anywhere. The pond draws bodies; it does
+not draw the overlap. That is the next honest thing to do about this feature, and
+it is a picture rather than a measurement, which makes a change from this cycle.

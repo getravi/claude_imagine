@@ -5,6 +5,7 @@
 //   2. for each creature: find nearest food + neighbour, sense, think, act
 //   3. resolve eating (creature over a pellet consumes it)
 //   4. resolve reproduction (energetic creatures split)
+//   4b. push overlapping bodies apart (`bodyCollision` only)
 //   5. remove the dead, compact eaten food, spawn new food (and note that step
 //      5 is what has always given a death its moment — see `deathIsFinal`)
 //   6. safety valves: population cap, auto-reseed if life dies out
@@ -26,6 +27,11 @@
 //     positions everyone held before anyone moved, a call is heard as it was
 //     emitted last tick (`prevSignal`), and newborns land in `born` and take no
 //     turn until the tick after the one they were born in.
+//   * A fourth, when this world has bodies that exclude each other: step 4b
+//     reads every position after everyone has moved and applies every shove at
+//     once. It is the one rule here that is exactly simultaneous — no creature's
+//     displacement can depend on its index, because none of them is written
+//     until all of them are computed.
 //
 // The world owns its own RNG, so a (seed, config) pair fully determines the
 // entire future — a property the tests and the "share a seed" feature rely on.
@@ -44,7 +50,7 @@ import { TerrainField } from "./terrain.js";
 import { BarrierField } from "./barriers.js";
 import { DetritusField } from "./detritus.js";
 import { EnergyLedger } from "./energy.js";
-import { torusDist2 } from "./vec.js";
+import { torusDist2, wrapDelta, wrap } from "./vec.js";
 
 export class World {
   constructor(config) {
@@ -269,6 +275,94 @@ export class World {
       order[j] = t;
     }
     return order;
+  }
+
+  /**
+   * Push overlapping bodies apart (step 4b, `bodyCollision` only).
+   *
+   * One pass, in two halves, and the split is the whole design: every
+   * displacement is computed from the positions everyone holds *now*, and not
+   * one of them is written until all of them are known. So the answer does not
+   * depend on the order this loop happens to walk in — unlike every other rule
+   * in `step()`, which is why this is the one place the tick is simultaneous.
+   *
+   * A pair overlapping by `o` each gives up `o / 2`, along the line between
+   * them, whatever their sizes. Two things follow that are worth stating rather
+   * than discovering:
+   *
+   *   * A body in a crush takes the sum of what each of its neighbours asks of
+   *     it, which can over- or under-shoot. This is a relaxation step, not a
+   *     solver: a pile loosens over several ticks instead of resolving in one.
+   *     `stats.jostled` counts what it is doing, so a pond that never unpiles
+   *     says so.
+   *   * Two bodies at *exactly* the same point have no line to be pushed apart
+   *     along, so they are left alone for this tick. Anything at all that moves
+   *     either of them gives the next tick an axis to work with, and a shove is
+   *     the one thing here that cannot manufacture one out of nothing without a
+   *     random number — which this pass does not have and must not take.
+   *
+   * The grid is rebuilt first because the one from step 1 holds pre-move
+   * positions, and a contact rule read off a stale index is v1.32's bug with a
+   * shorter radius. The query is `forEachWithin` directly rather than `_scan`:
+   * what two bodies touching means cannot depend on a *sight* setting.
+   */
+  _separate() {
+    const cfg = this.config;
+    // The dead are excluded: they are swept up at step 5 and the rest of the
+    // pond has treated them as gone since v1.0. A corpse does not hold a place.
+    const live = [];
+    for (const c of this.creatures) if (!c.dead) live.push(c);
+    if (live.length < 2) return;
+
+    this.creatureGrid.clear();
+    for (const c of live) this.creatureGrid.insert(c);
+
+    // The widest two bodies that could possibly touch. Nothing beyond this can
+    // overlap anything, so it is the exact reach of the question.
+    const reach = cfg.bodyRadiusMax * 2;
+    const n = live.length;
+    const pushX = new Float64Array(n);
+    const pushY = new Float64Array(n);
+    let visits = 0;
+
+    for (let i = 0; i < n; i++) {
+      const c = live[i];
+      this.creatureGrid.forEachWithin(c.x, c.y, reach, (o) => {
+        if (o === c) return;
+        const dx = wrapDelta(c.x, o.x, cfg.width);
+        const dy = wrapDelta(c.y, o.y, cfg.height);
+        const d2 = dx * dx + dy * dy;
+        const sum = c.radius + o.radius;
+        if (d2 >= sum * sum || d2 === 0) return;
+        const d = Math.sqrt(d2);
+        const share = (sum - d) * 0.5;
+        pushX[i] -= (dx / d) * share;
+        pushY[i] -= (dy / d) * share;
+        visits++;
+      });
+    }
+
+    // Every overlapping pair is seen exactly twice — once from each side, on a
+    // symmetric predicate — so the count of pairs is exact, not rounded.
+    this.stats.jostled += visits / 2;
+
+    for (let i = 0; i < n; i++) {
+      if (pushX[i] === 0 && pushY[i] === 0) continue;
+      const c = live[i];
+      const nx = wrap(c.x + pushX[i], cfg.width);
+      const ny = wrap(c.y + pushY[i], cfg.height);
+      if (this.barriers) {
+        // Rock refuses a shove exactly as it refuses a step. Velocity is left
+        // alone and `walled` is not set: neither belongs to a push, which is
+        // something done *to* a creature rather than by it.
+        const hit = this.barriers.resolve(c.x, c.y, nx, ny);
+        c.x = hit.x;
+        c.y = hit.y;
+      } else {
+        c.x = nx;
+        c.y = ny;
+      }
+    }
   }
 
   /** Advance the world by exactly one tick. */
@@ -550,6 +644,12 @@ export class World {
         }
       }
     }
+
+    // 4b. Bodies, if this world has any that exclude each other. Runs after the
+    // whole sweep, so every meal, bite and birth above was decided at the place
+    // a creature reached under its own power — the shove is the pond's answer
+    // to where everyone ended up, not a term in anybody's turn.
+    if (cfg.bodyCollision) this._separate();
 
     // 5. Remove the dead; append newborns. When scavenging is on, each corpse
     // left behind holds meat proportional to the creature's body size —

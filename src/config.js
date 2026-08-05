@@ -235,6 +235,37 @@ export const DEFAULT_CONFIG = Object.freeze({
   thrustAccel: 0.22,
   drag: 0.86, // velocity retained each tick (0..1)
 
+  // Bodies (v1.56, opt-in): two creatures cannot stand in the same place.
+  //
+  // Every rule this pond has ever had about *being somewhere* is a rule about
+  // resources — food is in biomes, the ground can be expensive (v1.23), rock
+  // can refuse a step (v1.48). Nothing has ever been in anybody's way. A
+  // creature has been able to sit exactly on top of another one since v1.0,
+  // for its whole life, and a fertile patch has had no ceiling on how many
+  // bodies could occupy it at once. Space was the last thing in this world
+  // handed out for free, and this is the rule that charges for it.
+  //
+  // What it is, exactly: after every creature has moved under its own power,
+  // any two whose bodies overlap are pushed apart along the line between them,
+  // each giving up half the overlap. It is a *relaxation*, not a constraint
+  // solver — one pass per tick, every displacement computed from the same
+  // instant and applied together, so no creature's shove depends on where it
+  // sits in the update order (the only rule in this file that is exactly
+  // simultaneous). A crush of three or more can therefore still overlap after
+  // a pass, and unpiles over the next few ticks.
+  //
+  // Size does not enter: both bodies give up the same distance whether a
+  // newborn meets an adult or two adults meet. That is exclusion, not force. A
+  // mass-weighted version — the bigger body shoves the smaller — is a different
+  // rule with a different claim (it would hand predators, which are big, an
+  // advantage they have not earned), and it belongs to its own measurement.
+  //
+  // No new constant: the overlap a pair has to lose is `r1 + r2`, which the
+  // bodies already carry. Zero random draws either way — the whole pass is
+  // geometry — so a world with this off is bit-for-bit every earlier version's,
+  // and a world with it on is still reproducible from its seed.
+  bodyCollision: false,
+
   // --- Senses ---
   visionRadius: 168, // how far a creature can see food/others
   eatRadius: 8, // contact distance to consume food

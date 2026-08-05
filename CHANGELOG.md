@@ -4,6 +4,78 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.56.0] — 2026-08-05
+
+`docs/AUTONOMOUS.md` keeps a list of things this world hands out for free, and
+space has been on it since v1.18. Food gathers in biomes, rough ground costs more
+to cross, rock refuses a step — and through fifty-five releases nobody has ever
+been *in the way*. Two creatures could stand on the same point, for their whole
+lives, at no cost to either. This is the rule that charges for it, and the
+control arm that takes most of the result back.
+
+### Added
+
+- **`bodyCollision` (opt-in): two creatures cannot occupy the same place.** After
+  every creature has moved under its own power, any two whose bodies overlap are
+  pushed apart along the line between them, each giving up half the overlap. Size
+  does not enter — this is exclusion, not force, and a mass-weighted version
+  would be a different rule with a different claim. No new constant (the distance
+  a pair owes is `r1 + r2`, which the bodies already carry) and no random draw in
+  either direction, so a shoving world is still reproducible from its seed and a
+  world with the flag off is bit-for-bit every earlier version's.
+- **It is the first rule in `world.step()` that is exactly simultaneous.** Every
+  displacement is computed from the positions everyone holds at one instant and
+  none is written until all are known, so — unlike grazing, biting, reproduction
+  and the population cap — the answer cannot depend on where a creature sits in
+  the array. `test/bodyCollision.test.js` asserts the strong form of that:
+  reverse the population array before the pass and the pond is bit-for-bit
+  identical.
+- **A relaxation, not a solver, and the tests say so exactly.** Three equal bodies
+  in a row: the middle one's two shoves cancel, so each end gives up half of what
+  its pair owes and the gap closes by half a tick — 9 px, 10.5, 11.25, 11.625,
+  converging on the 12 it owes and never arriving. That sequence is pinned. In a
+  real pond the pass separates **32 pairs a tick** in a population of 220 and
+  ends every tick still holding 0.82 overlapping pairs for each one it just
+  separated.
+- **`stats.jostled` and a `Jostled` tile**, cumulative with a per-hundred-tick
+  rate, on the pattern `walled` established in v1.48 and for the same reason: the
+  rule is nearly impossible to *see* — a pond where nobody may overlap looks very
+  like a pond where everybody may — so the readout is the only thing on the page
+  that says how much shoving is behind the picture. Exactly 0 without the flag,
+  so it reads `off` rather than a suspiciously steady zero, and `describe.js`
+  says the same thing in words for a listener.
+
+### Measured
+
+- **The rule survives its control on one statistic out of six, and it is the one
+  the rule is about.** The null arm is the v1.27/v1.47 shape: the same pairs, the
+  same displacement, turned 90° — separating nothing, costing exactly as much.
+  Twelve seeds, 9,000 ticks, median change against the same seed's default run.
+  Standing overlapping pairs: **−69.7%** with the rule, −52.7% with the null, and
+  paired seed by seed the rule beats the null by a further **30.1% on 11 of 12
+  seeds**.
+- **Everything else is the null's.** Mean nearest-neighbour distance rises 13.5%
+  with the rule and **20.5%** with the null (paired difference −0.6%, 6 seeds of
+  12 — a coin toss). Contested meals fall 56.9% and 52.3%. Population is +2.3%
+  and +1.6% against a *shared* baseline, which is the correlated design v1.47 was
+  burned by. Kills swing from −70% to +486% across seeds and say nothing.
+- **And the bound I expected to be exclusion's turned out to be half the null's.**
+  The deepest pile — most bodies within 8 px of one point — falls from a mean of
+  3.4–5.1 to 1.0–2.0 with the rule and 1.0–1.7 with the null: shoving a heap in
+  circles pulls it apart about as well as pushing it outward. What the null
+  cannot do is control how far *into* each other two bodies get. The pond's
+  deepest overlap at a typical instant is **0.6–2.3 px with the rule against
+  4.5–6.8 px with the null** and 12.3–14.1 by default — six seeds of six, ranges
+  that do not touch. Exclusion owns a *depth*, not a spacing or a count. The full
+  write-up, both tables and a runnable script are in
+  [docs/SCIENCE.md](docs/SCIENCE.md).
+
+### Changed
+
+- `Stats` grows one small private helper, `_perHundred`, and `walledRate` now
+  reads through it — the ring-and-difference for a cumulative counter was about
+  to exist twice.
+
 ## [1.55.0] — 2026-08-05
 
 Every colour audit since v1.25 has been wrong about the *set* of backgrounds
