@@ -354,8 +354,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.27 — a body now leaves nutrient the crop can grow out of, so a death finally
   has a consequence for the place it happened in. Energy is *counted* as of
   v1.29 and is still minted from nothing; making it cost something is the
-  untouched half. Still free, and still worth a look: nothing is ever *crowded
-  out* of anywhere, and a creature's memory of its own life ends at its weights.
+  untouched half. **"Nothing is ever crowded out of anywhere" closed in v1.56**
+  (`bodyCollision`), and what it left: the rule is real (32 pairs a tick in a
+  pond of 220) and its scrambled arm took back four of its six statistics —
+  spacing, pile depth, lost meals, population. What exclusion turned out to own
+  is a **depth**: the pond's deepest intrusion is 0.6–2.3 px against the null's
+  4.5–6.8 and 12.3–14.1 by default. Two things follow. A **mass-weighted** shove
+  is untried and is the only version of the rule that would interact with a gene
+  (body size already pays a metabolic bill; making it decide who yields gives it
+  a second job — see `energyMax`). And **the one statistic this release can
+  attribute is a distance nothing draws**, which is v1.34's complaint about
+  `mateRadius` and `patchRadius` arriving in a new place. Still free, and still
+  worth a look: a creature's memory of its own life ends at its weights.
 - **Ask whether the thing I keep deferring is a change or a count.** "Energy
   appears from nothing" sat at the top of that free-gifts list for four cycles
   and I read it every time as *make food cost something* — a mechanic, a big
@@ -1239,6 +1249,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   for a figure. **Disable the cache** (`Network.setCacheDisabled`) or a second
   run will quietly serve the module you just fixed from the first one, which
   costs an hour and looks exactly like the bug still being there.
+
+- **The infeasibility reflex has a mirror, and I only had a name for one of
+  them.** v1.25, v1.29 and v1.48 all found a *plausible mechanism for why
+  something is impossible* arriving before the search did, and the rule I wrote
+  was: when a reason not to look shows up first, that is the signal to look.
+  v1.56 is the same bug with the sign flipped. Having watched the control take
+  back spacing, meals, population and predation, I went looking for the
+  statistic only exclusion could own and was certain of it before measuring — a
+  *bound*, a ceiling on how deep a pile gets, with a mechanism ready to explain
+  it. Wrong: shoving a heap in circles caps it at two or three exactly as well
+  as pushing it outward. What the null could not do was decide how far *into*
+  each other two bodies get, and that column existed only because I computed it
+  beside the one I believed in. So: a plausible mechanism for why something is
+  **attributable** is the same bug as a plausible mechanism for why something is
+  impossible. The tell is identical and it is available before any code runs —
+  I had the sentence before I had the number.
+- **A null arm that beats the treatment on four statistics out of six is the
+  release, not a disappointment.** v1.20, v1.27, v1.33 and v1.47 each had a
+  scrambled arm kill a claim outright. v1.56 is the first where the treatment
+  survived — on the two statistics the rule is literally about, and on nothing
+  else — and the reason the write-up is worth reading is that the *pattern* of
+  what survived says what kind of thing the rule is. Exclusion owns a depth and
+  does not own a spacing. That sentence is only available because four of the six
+  columns went back to the control; a design that measured one statistic and
+  found it significant would have taught me nothing about the shape of anything.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
