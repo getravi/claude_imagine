@@ -14,18 +14,30 @@
 //     claim `test/render.test.js` makes about the pond, on the other canvas.
 //  4. The spoken form carries both scales, because "214 creatures" without a
 //     ceiling is the number the picture already failed to give.
+//
+// And, since v1.58, the other axis. The x has been a caption naming two ends
+// since v1.22 — which is what v1.41 says a *moving* scale cannot use — and
+// marking it turns on one property the figure has never had to state: where a
+// tick sits. The recent window is evenly spaced in time and the whole-run
+// archive is not, so the two claims here are that the map is exactly linear in
+// the first case and exactly *not* in the second.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   AXIS_LINES,
+  MAX_MARKS,
   MIN_TOP,
   niceStep,
   popAxis,
   plotY,
   axisLabels,
+  axisMarks,
+  chartAxis,
+  tickFrac,
   drawChart,
 } from "../src/chart.js";
+import { Archive } from "../src/archive.js";
 import { recordingContext } from "../src/rendershot.js";
 import { describeChart } from "../src/describe.js";
 import { chartLines } from "../src/palette.js";
@@ -219,6 +231,139 @@ test("a real run's history is drawn inside the figure", () => {
   const ys = ops.filter(([, name]) => name === "lineTo" || name === "moveTo").map((o) => o[3]);
   assert.ok(ys.length > 0);
   for (const y of ys) assert.ok(y >= 0 && y <= H, `a point was drawn at y=${y}, outside the figure`);
+});
+
+// ---- the x-axis ----
+
+/** Where the naive map — the one a caption's two ends invite — would put a tick. */
+const naiveFrac = (hist, tick) => {
+  const from = hist[0].tick;
+  const to = hist[hist.length - 1].tick;
+  return (tick - from) / (to - from);
+};
+
+test("every mark is a round number, in order, inside the figure", () => {
+  const hist = history(400);
+  const axis = chartAxis(hist, 900);
+  assert.ok(axis.marks.length >= 2);
+  assert.ok(axis.marks.length <= MAX_MARKS + 1, `${axis.marks.length} marks`);
+  let last = -Infinity;
+  for (const m of axis.marks) {
+    assert.equal(m.tick % axis.step, 0, `${m.tick} is not a multiple of ${axis.step}`);
+    assert.ok(m.tick > last, "marks must climb");
+    last = m.tick;
+    assert.ok(m.frac >= 0 && m.frac <= 1, `${m.tick} sits at ${m.frac}`);
+    assert.ok(m.tick >= axis.from && m.tick <= axis.to, `${m.tick} is outside the window`);
+  }
+});
+
+test("a wider figure asks for more marks", () => {
+  const hist = history(400);
+  assert.ok(chartAxis(hist, 1200).marks.length > chartAxis(hist, 300).marks.length);
+});
+
+test("a sample sits exactly where the chart draws it", () => {
+  // `drawSeries` puts sample i at i / (n - 1) of the width, whatever its tick
+  // says. Every mark is placed by interpolating that same index, so the two
+  // cannot drift apart — which is the whole claim an axis makes.
+  const hist = history(41);
+  for (let i = 0; i < hist.length; i++) {
+    assert.equal(tickFrac(hist, hist[i].tick), i / (hist.length - 1));
+  }
+});
+
+test("the recent window is evenly spaced, so the map is exactly linear there", () => {
+  // `Stats.sample` records one point every four ticks forever, so the ring the
+  // chart has always drawn has no raggedness in it at all. Exactly zero, not
+  // nearly zero: if this ever reads non-zero the ring has stopped being uniform.
+  const hist = history(480);
+  for (const m of chartAxis(hist, 900).marks) {
+    assert.equal(m.frac - naiveFrac(hist, m.tick), 0);
+  }
+});
+
+test("the whole-run archive is not, and the axis knows it", () => {
+  // `Archive.series()` appends the newest raw sample after the last
+  // representative, so the final column stands for as little as one sample
+  // while being drawn as wide as every other. The naive map — the one the
+  // caption's two ends invite — puts every mark too far right, and this pins
+  // that it does, so a future tidy-up back into one division fails loudly.
+  const archive = new Archive({ capacity: 8, fields: ["pop"] });
+  for (let i = 0; i <= 41; i++) archive.push({ tick: i * 4, pop: 100 + i });
+  const hist = archive.series();
+  const last = hist[hist.length - 1];
+  const penultimate = hist[hist.length - 2];
+  assert.ok(
+    last.tick - penultimate.tick < penultimate.tick - hist[hist.length - 3].tick,
+    "this history is supposed to have a short final column"
+  );
+
+  const axis = chartAxis(hist, 900);
+  assert.ok(axis.marks.length >= 2);
+  let worst = 0;
+  for (const m of axis.marks) {
+    const gap = naiveFrac(hist, m.tick) - m.frac;
+    assert.ok(gap >= 0, "the naive map is one-sided: it can only run late");
+    worst = Math.max(worst, gap);
+  }
+  // One column, and no more: the raggedness is confined to the last segment.
+  assert.ok(worst > 0, "the two maps agree, so this history is not testing anything");
+  assert.ok(worst <= 1 / (hist.length - 1) + 1e-12, `off by ${worst}, more than one column`);
+});
+
+test("a mark lands between the two samples that bracket its tick", () => {
+  const archive = new Archive({ capacity: 8, fields: ["pop"] });
+  for (let i = 0; i <= 57; i++) archive.push({ tick: i * 4, pop: 100 + i });
+  const hist = archive.series();
+  const span = hist.length - 1;
+  for (const m of chartAxis(hist, 900).marks) {
+    const i = Math.floor(m.frac * span + 1e-9);
+    const lo = hist[Math.min(i, span)];
+    const hi = hist[Math.min(i + 1, span)];
+    assert.ok(
+      m.tick >= lo.tick && m.tick <= Math.max(hi.tick, lo.tick),
+      `tick ${m.tick} was placed between samples at ${lo.tick} and ${hi.tick}`
+    );
+  }
+});
+
+test("a window with no width has no axis", () => {
+  assert.deepEqual(chartAxis([], 900).marks, []);
+  assert.deepEqual(chartAxis(history(1), 900).marks, []);
+  // Every sample at the same tick: two ends that coincide cannot be divided.
+  const flat = [
+    { tick: 12, pop: 1, food: 1 },
+    { tick: 12, pop: 2, food: 2 },
+  ];
+  assert.deepEqual(chartAxis(flat, 900).marks, []);
+  assert.equal(chartAxis(flat, 900).step, 0);
+});
+
+test("a tick outside the window clamps to the edge it left by", () => {
+  const hist = history(20);
+  assert.equal(tickFrac(hist, -400), 0);
+  assert.equal(tickFrac(hist, 1e9), 1);
+  assert.equal(tickFrac([], 4), 0);
+});
+
+test("the end marks anchor to the ends, so the numbers stay inside the figure", () => {
+  // The same rule the Tree of Life's axis follows, through the same helper.
+  const marks = axisMarks(0, 1000, 900, (t) => t / 1000).marks;
+  assert.equal(marks[0].anchor, "start");
+  assert.equal(marks[marks.length - 1].anchor, "end");
+  for (const m of marks.slice(1, -1)) assert.equal(m.anchor, "mid");
+});
+
+test("a real run's axis labels the history the chart is drawn from", () => {
+  const world = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 2000; i++) world.step();
+  for (const hist of [world.stats.popHistory, world.stats.runHistory.series()]) {
+    const axis = chartAxis(hist, 900);
+    assert.equal(axis.from, hist[0].tick);
+    assert.equal(axis.to, hist[hist.length - 1].tick);
+    assert.ok(axis.marks.length >= 2, "a 2,000-tick run has room for marks");
+    for (const m of axis.marks) assert.ok(m.frac >= 0 && m.frac <= 1);
+  }
 });
 
 // ---- said out loud ----

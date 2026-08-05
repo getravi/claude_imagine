@@ -950,12 +950,15 @@ details .field {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-/* The Tree of Life's x-axis (v1.54). The numbers are DOM text, positioned by
-   fraction of the figure's width, because the canvas is stretched to whatever
-   the column is and a stacked plot has no background for a gridline to sit on
-   — see `mullerAxis` in src/mullerplot.js. Inset by the canvas's own 1px
-   border, so half-way along this row is half-way through the drawing. */
-.phylo-ticks {
+/* An x-axis under a figure: the Tree of Life's (v1.54) and the population
+   chart's (v1.58). The numbers are DOM text, positioned by fraction of the
+   figure's width, because these canvases are stretched to whatever the column
+   is and a stacked plot has no background for a gridline to sit on — see
+   `mullerAxis` in src/mullerplot.js and `chartAxis` in src/chart.js. The Tree
+   of Life's row is inset by the canvas's own 1px border, so half-way along it
+   is half-way through the drawing. */
+.phylo-ticks,
+.chart-xticks {
   position: relative;
   height: 15px;
   margin: 0 1px;
@@ -964,7 +967,15 @@ details .field {
   color: var(--ink-faint);
   pointer-events: none;
 }
-.phylo-ticks span {
+/* The population chart's x-axis (v1.58) is the same row of numbers under a
+   different figure, so it shares every rule here and differs in one thing: it
+   sits under three stacked canvases that are inset by the y-axis gutter, and it
+   has to start and end exactly where they do or it labels the wrong columns. */
+.chart-xticks {
+  margin: 0 0 0 var(--axis-gutter);
+}
+.phylo-ticks span,
+.chart-xticks span {
   position: absolute;
   top: 5px;
   white-space: nowrap;
@@ -972,7 +983,8 @@ details .field {
 }
 /* The mark: a short rule joining each number to the column it names, in the
    number's own colour so the two read as one thing. */
-.phylo-ticks span::before {
+.phylo-ticks span::before,
+.chart-xticks span::before {
   content: "";
   position: absolute;
   left: 50%;
@@ -983,16 +995,20 @@ details .field {
 }
 /* The end marks anchor to the figure's edges rather than to their own centres,
    so the first and last numbers stay inside it. */
-.phylo-ticks .tick-start {
+.phylo-ticks .tick-start,
+.chart-xticks .tick-start {
   transform: none;
 }
-.phylo-ticks .tick-start::before {
+.phylo-ticks .tick-start::before,
+.chart-xticks .tick-start::before {
   left: 0;
 }
-.phylo-ticks .tick-end {
+.phylo-ticks .tick-end,
+.chart-xticks .tick-end {
   transform: translateX(-100%);
 }
-.phylo-ticks .tick-end::before {
+.phylo-ticks .tick-end::before,
+.chart-xticks .tick-end::before {
   left: auto;
   right: 0;
 }

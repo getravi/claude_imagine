@@ -37,7 +37,7 @@
 // Since v1.46 a band also carries a *hatch*, because the colour was never a name
 // (see `bandTextures`).
 
-import { niceStep } from "./chart.js";
+import { axisMarks, MAX_MARKS, PIXELS_PER_MARK } from "./chart.js";
 import {
   lineageBandRgb,
   lineageFill,
@@ -170,17 +170,11 @@ export function textureCss(texture, hue) {
   return layers.join(", ");
 }
 
-/** Roughly how many pixels of figure each labelled tick is worth. */
-export const PIXELS_PER_MARK = 160;
-
-/** The most marks the axis will ask for, however wide the figure gets. */
-export const MAX_MARKS = 9;
-
-/**
- * A mark within this fraction of an end anchors to that end rather than to its
- * own centre, so the first and last numbers sit inside the figure.
- */
-const EDGE = 0.03;
+// Both constants, and the mark-building itself, moved to `src/chart.js` in
+// v1.58 when the population chart wanted the same row of round numbers under
+// it. Re-exported here because this is where they were first asked for and
+// where the tests that pin them look.
+export { MAX_MARKS, PIXELS_PER_MARK };
 
 /**
  * The x-axis: which ticks to mark under the plot, and where along it.
@@ -215,7 +209,9 @@ const EDGE = 0.03;
  * `[from + i·res, from + (i+1)·res)`, every window the same width by
  * construction (`phylogeny.js#_record`), so the mapping from tick to fraction
  * is exactly linear — which `test/mullerplot.test.js` pins, because the axis is
- * a lie the moment that stops being true.
+ * a lie the moment that stops being true. That is this figure's own property
+ * and not the shared helper's: the chart's history has no such guarantee, which
+ * is why `axisMarks` is handed the map rather than assuming one.
  *
  * @param {{snapshots: Array<{tick:number}>}} phylo
  * @param {number} width the figure's rendered width, in pixels
@@ -232,18 +228,7 @@ export function mullerAxis(phylo, width = 0) {
   // ends coincide has no axis to divide.
   if (n < 2 || !(span > 0)) return { from, to, step: 0, marks: [] };
 
-  const target = Math.max(2, Math.min(MAX_MARKS, Math.round(width / PIXELS_PER_MARK)));
-  const step = niceStep(span, target);
-  const marks = [];
-  for (let t = Math.ceil(from / step) * step; t <= to; t += step) {
-    const frac = (t - from) / span;
-    marks.push({
-      tick: t,
-      frac,
-      text: t.toLocaleString(),
-      anchor: frac < EDGE ? "start" : frac > 1 - EDGE ? "end" : "mid",
-    });
-  }
+  const { step, marks } = axisMarks(from, to, width, (t) => (t - from) / span);
   return { from, to, step, marks };
 }
 

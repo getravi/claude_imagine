@@ -15,7 +15,7 @@ import { SCENARIOS } from "./scenarios.js";
 import { ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
-import { drawChart, popAxis, axisLabels } from "./chart.js";
+import { drawChart, popAxis, axisLabels, chartAxis } from "./chart.js";
 import {
   wholePercents,
   mortalitySeries,
@@ -257,9 +257,12 @@ function loop(now) {
   renderer.draw(world);
   updateViewBadge();
   updateMinimap();
-  updateChart(world);
+  // The three figures that share one x-axis, and then the axis itself — drawn
+  // last because it labels all three and belongs to none of them.
+  const chartHist = updateChart(world);
   drawDeaths(world);
   drawPower(world);
+  updateChartXAxis(chartHist);
   drawPhylogeny(world);
   updateHUD();
   updateSeasonBadge(world);
@@ -779,6 +782,42 @@ function updateChart(world) {
   updateChartAxis(axis, H, foodMax);
   updateChartRange(world, hist);
   setChartLabel(describeChart(hist, axis, foodMax));
+  return hist;
+}
+
+// The x-axis numbers, in the DOM under the whole stack — the chart, the death
+// strip and the power strip all draw the same history at the same x positions,
+// so one row of marks labels three figures. The arithmetic is `chartAxis` (in
+// `src/chart.js`, where the suite can reach it); this is the same adapter the
+// Tree of Life has, and it is the same adapter for the same reason: *which*
+// numbers are marked changes rarely, so the elements are rebuilt on that (the
+// v1.15 rule), and *where* each one sits changes every four ticks in the recent
+// scope, because that window slides, so every position is patched in place
+// every frame. v1.54 conflated the two and left the numbers drifting a whole
+// step from the columns they named; this axis moves faster than that one.
+let chartXKey = "";
+let chartXMarks = [];
+function updateChartXAxis(hist) {
+  const box = $("chart-xticks");
+  const axis = chartAxis(hist, Math.round(box.clientWidth) || 300);
+  const key = axis.marks.map((m) => m.tick).join(",");
+  if (key !== chartXKey) {
+    chartXKey = key;
+    box.innerHTML = "";
+    chartXMarks = axis.marks.map((mark) => {
+      const el = document.createElement("span");
+      el.textContent = mark.text;
+      box.appendChild(el);
+      return el;
+    });
+  }
+  for (let i = 0; i < chartXMarks.length; i++) {
+    const el = chartXMarks[i];
+    const mark = axis.marks[i];
+    el.style.left = `${(mark.frac * 100).toFixed(4)}%`;
+    const cls = "tick-" + mark.anchor;
+    if (el.className !== cls) el.className = cls;
+  }
 }
 
 // The axis numbers, as DOM text in the gutter beside the canvas. Rebuilt only

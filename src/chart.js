@@ -32,6 +32,15 @@
 //
 // Pure and DOM-free, like `minimap.js`: it takes a context and draws. The
 // labels are *not* drawn here — see `axisLabels`.
+//
+// v1.58 finishes the other axis. v1.22 gave the x a *caption* — "ticks
+// 4,000–5,920" — and wrote the rule that this figure has quoted ever since (a
+// chart whose x-axis silently changes meaning is worse than one with no axis at
+// all), and a caption naming two ends is the thing v1.41 says a *moving* scale
+// cannot use. Both of this figure's scales move; only one of them was marked.
+// See `chartAxis`, and note that the mark-building `mullerAxis` has used since
+// v1.54 lives here now, because two figures wanting round numbers under them is
+// one definition of "a number a reader can hold", not two.
 
 import { chartLines, axisRule } from "./palette.js";
 
@@ -116,6 +125,128 @@ export function axisLabels(axis, H) {
     text: value.toLocaleString(),
     frac: plotY(value / axis.top, H) / H,
   }));
+}
+
+// ---- The x-axis ----
+
+/** Roughly how many pixels of figure each labelled tick is worth. */
+export const PIXELS_PER_MARK = 160;
+
+/** The most marks an axis will ask for, however wide the figure gets. */
+export const MAX_MARKS = 9;
+
+/**
+ * A mark within this fraction of an end anchors to that end rather than to its
+ * own centre, so the first and last numbers sit inside the figure.
+ */
+const EDGE = 0.03;
+
+/**
+ * Round ticks along a horizontal axis, and where each of them sits.
+ *
+ * Shared by this figure and the Tree of Life (`mullerAxis`), which is why the
+ * one thing it does not know is *where a tick is*: that is `fracOf`, and it is
+ * the only part the two plots disagree about. The Muller plot's columns are all
+ * the same width in ticks by construction, so its map is a division; this
+ * chart's is not (see `tickFrac`), and a shared helper that assumed either one
+ * would be silently wrong on the other.
+ *
+ * @param {number} from the tick the left edge stands for
+ * @param {number} to the tick the right edge stands for
+ * @param {number} width the figure's rendered width, in pixels
+ * @param {(tick:number)=>number} fracOf where a tick sits, 0..1 across the figure
+ * @returns {{step:number, marks:Array<{tick:number,frac:number,text:string,anchor:string}>}}
+ */
+export function axisMarks(from, to, width, fracOf) {
+  const span = to - from;
+  if (!(span > 0)) return { step: 0, marks: [] };
+  const target = Math.max(2, Math.min(MAX_MARKS, Math.round(width / PIXELS_PER_MARK)));
+  const step = niceStep(span, target);
+  const marks = [];
+  for (let t = Math.ceil(from / step) * step; t <= to; t += step) {
+    const frac = fracOf(t);
+    marks.push({
+      tick: t,
+      frac,
+      text: t.toLocaleString(),
+      anchor: frac < EDGE ? "start" : frac > 1 - EDGE ? "end" : "mid",
+    });
+  }
+  return { step, marks };
+}
+
+/**
+ * Where a tick sits along the figure, as a fraction of its width.
+ *
+ * The chart plots sample `i` of `n` at `i / (n - 1)` — evenly spaced by
+ * *index*, whatever the ticks say — and for the recent window that is the same
+ * thing, because `Stats.sample` records one point every four ticks forever. The
+ * whole-run scope is where the two part company: `Archive.series()` returns its
+ * representatives, evenly spaced at `stride` samples apart, and then appends
+ * the newest raw sample so the right-hand edge is *now* rather than up to a
+ * stride in the past. That last column is drawn the full width of every other
+ * one while standing for as little as a single sample.
+ *
+ * So the map is piecewise linear, and this walks the array rather than dividing
+ * by the span. The error the division makes is bounded by one column — at most
+ * 0.83% of the figure, since a halving leaves at least 121 of them — which is
+ * small, exactly one-sided (every mark too far right), and would have been
+ * invisible to anything except a test that knew to look for it. It is pinned in
+ * `test/chart.test.js` as the failure, not only the fix.
+ *
+ * @param {Array<{tick:number}>} hist the samples the figure is drawn from
+ * @param {number} tick
+ * @returns {number} 0..1; clamped at both ends
+ */
+export function tickFrac(hist, tick) {
+  const n = hist.length;
+  if (n < 2) return 0;
+  if (tick <= hist[0].tick) return 0;
+  if (tick >= hist[n - 1].tick) return 1;
+  // The last sample at or before `tick`. Ticks increase by construction — they
+  // are the world's own clock — so a binary search is exact and cheap.
+  let lo = 0;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (hist[mid].tick <= tick) lo = mid;
+    else hi = mid - 1;
+  }
+  const a = hist[lo].tick;
+  const b = hist[lo + 1].tick;
+  const within = b > a ? (tick - a) / (b - a) : 0;
+  return (lo + within) / (n - 1);
+}
+
+/**
+ * The x-axis: which ticks to mark under the figure, and where along it.
+ *
+ * Three stacked figures share this axis — the chart, the death strip and the
+ * power strip all draw from the same history at the same x positions — so one
+ * row of numbers under the stack labels all three. The marks go *below* the
+ * paint rather than on it, like the Tree of Life's: two of the three figures
+ * are filled areas, and a rule through a filled area is v1.34's lottery.
+ *
+ * `from` and `to` are the ticks the two *edges* stand for, which is not what
+ * the caption underneath reports. The caption says what the record holds; in
+ * the whole-run scope those agree, and in the recent scope they agree too — but
+ * they are different questions (v1.54), and only this one can label a
+ * coordinate.
+ *
+ * @param {Array<{tick:number}>} hist the history the figures are drawn from
+ * @param {number} width the figure's rendered width, in pixels
+ * @returns {{from:number, to:number, step:number,
+ *            marks: Array<{tick:number, frac:number, text:string, anchor:string}>}}
+ */
+export function chartAxis(hist, width = 0) {
+  const n = hist.length;
+  const from = n ? hist[0].tick : 0;
+  const to = n ? hist[n - 1].tick : 0;
+  // One point is not a figure — `drawChart` draws no line — and a window whose
+  // ends coincide has no axis to divide.
+  if (n < 2 || !(to > from)) return { from, to, step: 0, marks: [] };
+  const { step, marks } = axisMarks(from, to, width, (t) => tickFrac(hist, t));
+  return { from, to, step, marks };
 }
 
 /**

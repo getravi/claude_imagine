@@ -271,11 +271,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
-  its lineage colours were audited and given a non-colour cue in v1.46. **What
-  that leaves: the population chart's x-axis still has a caption and no marks**,
-  and it is the harder case, because its scope switch changes what the axis
-  *means* rather than only how far it reaches. Every other scale on the page now
-  either moves and is marked, or is fixed and stated in a word.)
+  its lineage colours were audited and given a non-colour cue in v1.46. **The
+  population chart's x-axis closed in v1.58** — one row of marks under the
+  chart, the death strip and the power strip, which is the first thing on the
+  page that depends on the markup's long-standing claim that the three share an
+  axis. Every *moving scale on a figure* is now marked; what that sentence
+  excludes is the two strips, which normalise to the busiest interval on screen
+  and state that peak in a caption instead, and the pond canvas, which has no
+  scale at all. What v1.58 leaves: the caption and the marks answer different
+  questions (what the record holds; what a position means) and agree at both
+  ends *on this figure only* — the day the chart grows a still-filling last
+  column the caption does not count, they part here as they already do on the
+  Tree of Life.)
 - **Performance:** render batching, so bigger worlds stay 60fps. The spatial
   grid was audited in v1.32 and turned out to be a *correctness* problem, not a
   speed one (see the lesson below); exact vision costs a quarter of the tick
@@ -1407,3 +1414,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a place**, and a count is worth drawing when the view beside it holds 6.9% of
   it. A feature does not need its most interesting claim to be true; it needs the
   claim it ships with to be the one that survived.
+
+- **What you port when you reuse a helper is not the code, it is the code's
+  preconditions.** v1.58 shared `mullerAxis`'s mark-building with the population
+  chart, and the one line worth *not* sharing was `(t - from) / span` — correct
+  for the Tree of Life, whose columns are all the same width in ticks by
+  construction, and wrong for the chart, whose archive appends a short final
+  column so the right-hand edge can be *now*. The tell was in the other module's
+  own header, in words, naming the test that guards it: "every window the same
+  width by construction … which `test/mullerplot.test.js` pins, because the axis
+  is a lie the moment that stops being true." So the concrete habit: before
+  lifting anything out of a module, read what its tests *pin*, because a
+  precondition somebody bothered to assert is the checklist for the second
+  caller — and if the new caller cannot satisfy it, that part is a parameter,
+  not shared code. (Same family as v1.32's "an optimisation is a claim" and
+  v1.50's "a test double is an accelerator": a thing that is right here is not
+  therefore right there.)
+- **Three seeds agreeing exactly is a tell, not a result.** The rule since v1.32
+  is a dozen seeds or it is an anecdote, and that rule is about the *pond* —
+  attractors, regime flips, one coin toss per seed-matched pair. v1.58's error
+  figure came back at 0.662% on seeds 314, 77 and 51, identical to three
+  decimals, because the archive's geometry depends on the clock and no pond
+  enters it. When a measurement shows *no* seed-to-seed spread, stop and ask
+  which of the two things you are measuring: a world needs twelve seeds, an
+  instrument's arithmetic needs one, and a sweep of the wrong kind buys three
+  decimal places of nothing.

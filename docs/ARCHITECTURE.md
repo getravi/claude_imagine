@@ -66,7 +66,7 @@ The dependency arrows point from a module to what it imports.
 | `describe.js` | The pond in words: the canvas's `aria-label`, the badges' labels, and what a live region should be told (observation only). | — |
 | `world.js` | Owns all state; steps the whole simulation one tick. | — |
 | `camera.js` | The viewer's lens: zoom, pan, follow, world↔screen on a torus. | — |
-| `chart.js` | The population/food figure: the y-axis (a round ceiling and its labels), the grid, the lines and the whole-run envelopes. Pure — it takes a context and draws, and the labels come back as data for the DOM. | canvas |
+| `chart.js` | The population/food figure: both axes (a round ceiling and its labels; round ticks along time, placed by walking the history rather than dividing its span), the grid, the lines and the whole-run envelopes. Pure — it takes a context and draws, and the labels come back as data for the DOM. Also owns the mark-building the Tree of Life's x-axis uses. | canvas |
 | `minimap.js` | The whole pond in miniature — ground, life and the viewport (read-only). | canvas |
 | `gestures.js` | Pointer arithmetic: tap vs drag vs pinch, for a mouse and a hand alike. | — |
 | `render.js` | Draws a world onto a 2D canvas (read-only). | canvas |

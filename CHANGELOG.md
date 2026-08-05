@@ -4,6 +4,63 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.58.0] — 2026-08-05
+
+The population chart has had a caption naming two ends since v1.22, and the rule
+it was written to obey — *a scale that never moves needs a word; a scale that
+moves needs marks* — was written down in v1.41 while giving the same figure its
+**y**-axis. Both of this chart's scales move. Only one of them was marked. This
+release marks the other one, discovers that the obvious way to place a mark is
+wrong on this figure and right on the one it was borrowed from, and says why.
+
+### Added
+
+- **An x-axis under the population chart** — round ticks in the DOM, below the
+  paint, on the pattern v1.54 gave the Tree of Life. One row labels three
+  figures: the chart, the death strip and the power strip all draw the same
+  history at the same x positions, and it is the first thing on the page that
+  makes that shared axis a statement rather than a comment in the markup. It
+  sits against the bottom figure because a tick rule has to touch something.
+- **`chartAxis()` and `tickFrac()` in `src/chart.js`**, and `axisMarks()`, which
+  is `mullerAxis`'s mark-building lifted out and shared. The one thing the
+  shared helper does not know is *where a tick sits*: that is passed in, because
+  the two figures do not agree about it.
+
+### Fixed
+
+- **The map from tick to position is not a division, and treating it as one is
+  off by a column.** The Tree of Life's columns are all the same width in ticks
+  by construction, so its axis divides the span and its own test pins that this
+  stays true. The chart's are not: `Archive.series()` appends the newest raw
+  sample after the last representative so the right-hand edge is *now*, and that
+  final column is drawn as wide as every other while standing for as little as
+  one sample. `tickFrac()` walks the history instead. Pinned both ways in
+  `test/chart.test.js` — the recent window reads a difference of **exactly
+  zero**, and the whole-run archive reads non-zero, one-sided, and never more
+  than one column.
+
+### Measured
+
+- **What the division would have cost:** at most **0.662%** of the figure's
+  width — 6.0 px of a 900-px phone column, 1.8 px of the 268-px sidebar — over
+  20,000 ticks on three seeds, every mark displaced to the *right*, never the
+  left. The bound is one column: a halving leaves at least 121 of them, so the
+  error can never exceed 0.83%.
+- **And the number is identical on seeds 314, 77 and 51, to three decimals.** The
+  archive's geometry is a property of the clock, not of the pond. This project's
+  standing rule is that a dozen seeds or it is an anecdote; a claim about an
+  *instrument's* arithmetic has no seed-to-seed spread to average over, and one
+  seed is the whole population.
+- **The recent window is exactly uniform**, because `Stats.sample` has recorded
+  one point every four ticks since v1.0 — so the assertion is `=== 0` rather
+  than a tolerance, and it fails loudly the day that stops being true.
+
+### Changed
+
+- `mullerAxis()` keeps its behaviour, its exports and its tests; it now builds
+  its marks through the shared helper and passes its own linear map in.
+- The x-axis stylesheet rules cover both figures from one definition.
+
 ## [1.57.0] — 2026-08-05
 
 The minimap has been catching up with the world since v1.19 — terrain in v1.24,

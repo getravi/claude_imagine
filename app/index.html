@@ -365,6 +365,15 @@
             role="img"
             aria-label="Power over time: no energy has moved in this window."
           ></canvas>
+          <!-- The x-axis all three figures above are drawn against: round
+               ticks, below the paint rather than on it, since two of the three
+               are filled areas with no background for furniture to sit on. It
+               sits against the bottom figure because a tick rule has to touch
+               something — put it under the legend and it points at a word.
+               The caption at the foot of this block says what the record holds;
+               these say what a position on the picture means. See
+               src/chart.js#chartAxis. -->
+          <div class="chart-xticks" id="chart-xticks" aria-hidden="true"></div>
           <div class="deaths-legend">
             <span class="line" id="line-made"></span> minted
             <span class="line" id="line-spent"></span> spent

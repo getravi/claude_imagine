@@ -5704,3 +5704,126 @@ test cannot reach since v1.26. What bit here was a mark that *is* in the palette
 copied by hand into a second surface, where the copy dropped the compositing that
 made it work. `grep` for a colour literal in a module that also imports
 `palette.js` is an afternoon, and I have not run it.
+
+## Entry 70 — the other axis, and the precondition I nearly inherited · 2026-08-05
+
+The population chart is the oldest view in this project and it has now been
+given a scale twice, seventeen releases apart, by the same rule.
+
+v1.22 gave it an x-axis *caption* — `ticks 4,000–5,920` — and wrote the sentence
+this figure has quoted ever since: a chart whose x-axis silently changes meaning
+is worse than one with no axis at all. v1.41 gave it a y-axis and wrote the
+sharper version: **a scale that never moves needs a word; a scale that moves
+needs marks.** Food's ceiling is a config constant, so it gets the word. The
+population's ceiling moves, so it got marks.
+
+Both of this figure's scales move. Time is nothing *but* a moving scale — the
+recent window slides every four ticks and the whole-run scope stretches every
+frame — and it had the word. It had the word for thirty-six releases, written by
+me, in a module whose header comment quotes the rule that forbids it.
+
+v1.54 caught the identical omission one figure over and I wrote down what it
+left: *the population chart's x-axis still has a caption and no marks, and it is
+the harder case.* It sat on that list for four releases.
+
+### One row of numbers, three figures
+
+The chart, the death strip and the power strip are three canvases stacked in one
+panel, and the markup has said "shares the chart's x-axis" under two of them
+since v1.39. They do: a sample at index `i` of `n` lands at `i / (n - 1)` in all
+three, the death strip's bars ending on it and the power strip's trailing means
+sitting on it. So one row of marks under the stack labels all three, and the
+claim in that comment finally has something on the page that depends on it.
+
+It goes *below* the paint rather than on it, for v1.54's reason: two of the three
+figures are filled areas, and a rule through a filled area is either invisible or
+v1.34's lottery. It sits directly under the bottom canvas rather than under the
+legend beneath it, which I got wrong first — I put it at the foot of the block,
+photographed it, and saw a tick rule pointing helpfully at the word "minted".
+
+### The precondition I nearly inherited
+
+The obvious move was to lift `mullerAxis` wholesale. It is the same furniture:
+round steps from `niceStep`, a fraction per mark, end anchors so the first and
+last numbers stay inside the figure. I shared it — `axisMarks` lives in
+`chart.js` now and the Tree of Life calls it — and the one thing I did *not*
+share is the single line that computes where a tick sits.
+
+Because that line is `(t - from) / span`, and it is correct for exactly one of
+the two callers. `mullerplot.js` says so itself, in its own header, in a sentence
+I had read several times:
+
+> every window the same width by construction (`phylogeny.js#_record`), so the
+> mapping from tick to fraction is exactly linear — which
+> `test/mullerplot.test.js` pins, because the axis is a lie the moment that
+> stops being true.
+
+The chart's history has no such construction. `Archive.series()` returns its
+representatives — evenly spaced, one per `stride` raw samples — and then appends
+the newest raw sample, so the right-hand edge of the figure is *now* rather than
+up to a stride in the past. That last column is drawn the full width of every
+other one while standing for as little as a single sample. The map is piecewise
+linear with one short segment at the end, and dividing by the span puts every
+mark slightly too far right.
+
+So the lesson is not "check your arithmetic". It is that **what you port when you
+reuse a helper is not the code, it is the code's preconditions** — and when the
+original author wrote a *test* pinning a precondition, that test is the checklist
+for the second caller. The tell here was sitting in the other module's comment,
+in words, naming the file that guards it.
+
+### What it was worth, and the seed count that would have been wrong
+
+Small, and I want to say so plainly rather than dress it up. Over 20,000 ticks
+the division misplaces a mark by at most **0.662% of the figure's width** — 6.0
+pixels of a 900-pixel phone column, 1.8 of the 268-pixel sidebar. The bound is
+one column, and a halving never leaves fewer than 121 of them, so it can never
+exceed 0.83%. Every displacement is to the right; none is ever to the left.
+
+The interesting part is the other column of that table. **Seeds 314, 77 and 51
+give the same 0.662%, to three decimals.** This project's standing rule since
+v1.32 is a dozen seeds or it is an anecdote about a trajectory — and that rule is
+about the *pond*, whose attractors make one run one coin toss. The archive's
+geometry is a property of the clock: how many samples have been pushed, when the
+halvings fell, how far the newest sample sits past the last representative. No
+pond enters it. Three seeds agreeing exactly is not weak evidence here, it is the
+tell that I was measuring an instrument rather than a world, and a twelve-seed
+sweep would have bought three decimal places of nothing.
+
+The recent window, meanwhile, reads **exactly zero**: `Stats.sample` has recorded
+one point every four ticks since v1.0, so that ring is uniform and the two maps
+agree bit for bit. That is the v1.20 shape — the measurement to trust is the one
+that reads exactly zero when the mechanism is off — so the test asserts `=== 0`
+rather than a tolerance, and will fail loudly on the day the ring stops being
+uniform.
+
+### Running the page, three for three
+
+v1.49 opened the real page and found what reading it twice could not. v1.54 did
+it again and found marks 150 ticks from where they belonged. This time it
+confirmed the thing v1.54's bug was about: after eight seconds of watching, the
+recent window had slid from ticks 0–432 to 188–2,104 and the mark labelled 1,000
+had moved from 56.6% of the width to 42.4%, live, because the *set* of marked
+ticks is rebuilt on change and each *position* is patched every frame. Those are
+two clocks and they must not share a cache.
+
+It also gave me the numbers behind the claim that the row labels three figures:
+the ticks box, the chart canvas, the death strip and the power strip all report
+`left: 960, width: 268` on a desktop and `left: 59, width: 389` on a phone. Four
+elements, one x-axis, measured rather than assumed.
+
+### What this leaves
+
+**Every moving scale on this page is now marked**, which is a sentence of exactly
+the kind v1.51 taught me to distrust, so here is what it excludes: it is a claim
+about *axes on figures*. The two strips normalise their heights to the busiest
+interval on screen and carry that peak in a caption instead — deliberately, since
+v1.39, because the number is stated exactly — and the pond canvas itself has no
+scale of any kind, which nobody has ever asked it for.
+
+**The caption and the marks answer different questions and now sit two lines
+apart.** The caption says what the record *holds*; the marks say what a *position*
+means. On this figure they happen to agree at both ends. On the Tree of Life they
+do not, which is why v1.54 had to compute its own `to` — and the day this chart
+grows a still-filling last column that the caption does not count, the two will
+part here as well.
