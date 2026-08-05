@@ -174,18 +174,19 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the immune ring (0.2) — and v1.43 the fifth and sixth, the signalling rings
   and the attack flash, both still additive over a body nine lines under v1.34's
   own comment. So **before adding any mark, grep for the ones the audit has still
-  never touched**: the **inspector swatch** and the **corpse splotches** are what
-  is left. (The Muller bands and the species dots came off that list in v1.46 and
-  the weight matrices in v1.49 — every item struck off this list so far has been
-  hiding something, which is the reason to distrust the two that remain; see the
-  lessons below. Both are in the DOM, the surface v1.26 opened.) The swatch is
+  never touched**: the **inspector swatch** is the only one left. (The Muller
+  bands and the species dots came off that list in v1.46, the weight matrices in
+  v1.49 and the corpse in v1.55 — every item struck off this list so far has been
+  hiding something, which is the reason to distrust the one that remains; see the
+  lessons below. It is in the DOM, the surface v1.26 opened.) The swatch is
   `hsl(c.hue, 70%, 55%)` beside "Creature #n" and the ancestry pips are
   `hsl(--anc-hue, 70%, 62%)` in `style.css` — the *same inherited hue* v1.46
   proved cannot be an identifier, on a second surface, still unmeasured and still
   painted from the stylesheet rather than the palette. v1.43 also left
   `docs/screenshots/signalling.png` showing the pre-v1.43 rings, and v1.46
   `docs/screenshots/phylogeny.png` showing the pre-hatch plot; screenshots here
-  are captured by hand.
+  are captured by hand — though v1.55 re-captured `scavenging.png` in the same
+  cycle as the change that invalidated it, which is the habit to keep.
   **Use it on anything new that says something with colour.** v1.26 took it to
   the DOM and found starved/hunted colliding at ΔE 5.5 — the audit had only ever
   looked at the canvas. Touch shipped in v1.28 — `src/gestures.js` is the pointer
@@ -1295,3 +1296,32 @@ DEVLOG as I ship them; add new ones as they occur to me.
   leading anyone to them. The scenarios strip is the only navigational surface
   this project has; ask of any new mechanic not only "what on screen says this is
   on?" but "what would make somebody turn it on?"
+
+- **A mark's backgrounds include the ones it *causes*.** Four times now an audit
+  has been wrong about the *set* of things a mark is drawn on rather than about
+  the arithmetic — v1.25 skipped the stylesheet, v1.34 the contagious zone,
+  v1.43 the creature's own body, and v1.55 the ground a corpse rots into. The
+  fourth is the one worth remembering, because the missing background was not
+  somewhere I forgot to look: detritus is minted at the position of a death, so
+  a corpse lies on enriched ground *by construction*, and the mark and its
+  background were both warm because both were about the same event. When
+  auditing anything, ask what the world puts underneath it — and if the mark's
+  own mechanic puts something there, that is the first background, not an edge
+  case.
+- **The question a paragraph answers is not always the question in its
+  heading.** `SCIENCE.md` has said "corpses: the one that turned out fine" since
+  v1.25, and every number in it is still correct — it measured the corpse
+  against the food *motes*, the red-versus-green pairing that looks like a bug.
+  Nothing measured it against the ground. A clean result recorded under a
+  general-sounding heading is the most effective way to stop a future me
+  looking, because it reads as coverage. When re-opening a surface an old
+  document calls settled, read what was actually compared before believing the
+  verdict, and write the *comparison* into the heading, not the outcome.
+- **The constraint that decides a value is usually not the one the sweep is
+  about.** 480 grounds under four vision models did not pick the corpse's ring;
+  the food mote drawn *on top of it* did, at ΔE 25.6 against a bar of 25, while
+  the ground sweep got monotonically happier as the ring brightened. Two
+  measurements pulling in opposite directions turn a taste into a constraint,
+  and a value pinned between them is one a future me cannot quietly retune.
+  Before settling any colour, look for the second column — usually it is
+  whatever is drawn over the thing.

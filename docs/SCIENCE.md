@@ -1289,13 +1289,20 @@ distinction, which everyone can see. Colour is the convenient index here, not
 the only one. The predator mark had no such fallback, which is why it was the
 one worth fixing.
 
-### The one that turned out fine
+### The one that turned out fine — and did not
 
 Corpses (dim maroon) sit under food (green motes) — textbook red and green, and
 the pair most likely to be a second bug. Measured, they are ΔE 39 apart under
 deuteranopia and 55 under protanopia: comfortably clear, because they differ in
 lightness as well as hue. No change was made. An audit that only reports
 problems is not an audit.
+
+That paragraph stood for thirty releases and every number in it is still
+correct. It is also the wrong question, and **v1.55 is the answer to the right
+one** — the corpse was measured against the other *mark* it sits beside and
+never against the *ground* it lies on, which is the one background a corpse
+does not get to choose. See
+[The mark that made its own background](#the-mark-that-made-its-own-background-v155).
 
 ### The audit that skipped the DOM
 
@@ -3396,6 +3403,115 @@ consequence in the same breath: **a band can widen while the population falls.**
 The population's own size is the chart's job, one figure up, where it has an
 axis of its own.
 
+
+## The mark that made its own background (v1.55)
+
+Every colour audit in this project since v1.25 has asked the same question —
+*does this mark stand out from what it is drawn on?* — and each one has been
+wrong about the **set** of things it is drawn on rather than about the
+arithmetic. v1.25 measured the canvas and skipped the stylesheet. v1.34 skipped
+the contagious zone. v1.43 skipped the creature's own body, and found two marks
+that were not faint but bit-identical to it. The corpse is the fourth in that
+sequence and the sharpest, because its missing background is one the mark
+*causes*.
+
+### The audit had looked at it, and asked the wrong question
+
+The v1.25 sweep did measure corpses: against the food motes, the red-and-green
+pairing that looked most likely to be a second bug. They cleared it easily
+(above). What nobody measured in thirty releases was the corpse against the
+**ground**, and there is only one ground a corpse can be on. Detritus is minted
+where things die (`world.js`, stage 5 of the tick): a body deposits nutrient at
+its own position and, with scavenging on, rots into the soil directly beneath
+it. Enriched ground is a warm ochre. The splotch was a warm maroon.
+
+| corpse over enriched ground | normal | protanopia | deuteranopia | tritanopia |
+| --- | --- | --- | --- | --- |
+| worst, opacity 0.15 | 4.9 | **0.1** | **0.2** | **0.0** |
+| worst, opacity 0.35 | 11.2 | **0.3** | **0.2** | **0.0** |
+| worst, opacity 0.70 (the maximum) | 21.7 | **0.9** | **0.8** | **0.0** |
+
+The bar is `MIN_DELTA_E` = 25. Two things are worth separating here. For a
+dichromat the mark was not faint but *the same colour*, at every opacity
+including the strongest it could ever reach — so this is not a case where
+turning the mark up would have helped. And under normal vision it missed the bar
+too, which is the general case and the reason this is filed as legibility rather
+than as colour blindness (the v1.46 lesson: check the trichromat first). Over
+plain water it was better in places and still poor: 2.1 under protanopia at the
+low end, which is the just-noticeable difference.
+
+### Half of every corpse ever drawn was in the faint half of the ramp
+
+The old mark carried how much meat was left in its **opacity** —
+`min(0.7, 0.15 + meat/60)` — which is the one thing v1.34 forbids by name,
+because fading a mark spends exactly the contrast the mark exists for. The
+question that decides whether that is a tidy-up or a finding is *what share of
+the real data lands in the broken part* (v1.49). Over twelve 12,000-tick
+scavenging worlds, sampling every corpse every fifth tick (n = 353,000):
+
+| opacity | share of all corpse-frames |
+| --- | --- |
+| below 0.25 | 13.4% |
+| below 0.35 | 27.4% |
+| below 0.50 | 50.2% |
+| at the 0.70 cap | 10.9–43.2% by seed |
+
+The median corpse-frame sat at 0.50. Half of every corpse this pond has ever
+drawn was in the dimmer half of a ramp that had no contrast to spend — and the
+top of the ramp is a cap that a fresh corpse of average body size is already
+over, so the channel was saturated at one end and invisible at the other.
+
+### The fix, and the constraint that actually decided it
+
+Two opaque tones and a size channel: a pale bone ring (`hsl(50, 40%, 76%)`)
+around a near-black core (`hsl(350, 55%, 7%)`), drawn as two filled discs rather
+than a fill and a stroke, with the remaining meat moving the radius. This is the
+shape v1.25 gave the predator and v1.34 the epidemic — a mark carrying both a
+very light and a very dark tone cannot be swallowed by a background, because no
+background is close to both — and it is deliberately the *inverse* of the
+predator's pale disc inside a dark rim, so a glance separates them without
+reading either colour.
+
+Swept over 480 grounds (both seasons, the whole terrain ramp with and without
+contours, the biome glow, enriched ground at four richnesses, the contagious
+zone) under all four vision models, the worst case is **ΔE 42.1**.
+
+The interesting part is which constraint picked the ring's lightness, and it was
+none of those. A food mote is drawn *over* a corpse, additively, so the corpse
+is one of the mote's backgrounds — v1.43's rule, arriving from the other side.
+Against a pale ring the additive green clamps and the pellet disappears. That
+check scores **25.6**, a hair over the bar, and it is what rules out the
+brighter cream the ground sweep alone would happily have taken:
+
+| ring lightness | ground sweep | a mote drawn on the ring |
+| --- | --- | --- |
+| **76%** (shipped) | 42.1 | **25.6** |
+| 80% | 43.9 | 22.2 |
+| 84% | 44.2 | 17.7 |
+| 88% | 44.2 | 13.4 |
+
+The two columns pull in opposite directions, which is what makes this a
+constraint rather than a taste: every step brighter *improves* the reading
+against the ground and costs the pellet drawn on top of it, and the shipped
+value is the last one that satisfies both.
+
+Both halves are pinned in `test/palette.test.js`, along with the failure itself:
+the old maroon is asserted to *still* collide with enriched ground, so a future
+tidy-up that restores it fails loudly rather than quietly (the v1.25 rule — a
+regression test that does not know what the bug looked like cannot recognise it
+coming back).
+
+### Reproducing it
+
+```js
+import { blendOver, deltaE, detritusTint, VISION_MODELS } from "./src/palette.js";
+const veil = { r: 6, g: 10, b: 20 };                    // the water, midwinter
+const t = detritusTint(1);
+const soil = blendOver(veil, t, t.a);                   // ground a corpse lies on
+const old = { r: 150, g: 55, b: 48 };                   // the splotch, v1.8–v1.54
+for (const alpha of [0.15, 0.35, 0.7])
+  console.log(alpha, VISION_MODELS.map((v) => deltaE(blendOver(soil, old, alpha), soil, v).toFixed(1)));
+```
 
 ## What this model deliberately leaves out
 

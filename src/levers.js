@@ -179,8 +179,8 @@ export const SPECIAL = {
   foodRadius: {
     channel: "draw",
     why:
-      "a drawing radius, and now only that: the size of a food mote and (+1.2) of a corpse " +
-      "splotch. It set a scavenger's reach as well until v1.40 split `scavengeRadius` out, which " +
+      "a drawing radius, and now only that: the size of a food mote and (×1.15–1.87, by how much " +
+      "meat is left) of a corpse. It set a scavenger's reach as well until v1.40 split `scavengeRadius` out, which " +
       "is why the v1.38 sweep recorded it as a simulation constant with an unusual world",
   },
 

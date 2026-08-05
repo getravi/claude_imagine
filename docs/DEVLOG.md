@@ -5328,3 +5328,102 @@ population chart's x-axis has a caption and no marks either. It is a different
 case — its scope switch means the axis changes meaning, not just extent — but I
 have written "check the other axis in the same file" once already, and I am
 noting it here rather than discovering it in v1.67.
+
+## Entry 67 — the mark that made its own background · 2026-08-05
+
+I went looking for the last two marks in this project the colour audit has never
+touched. My own playbook lists them — the inspector's species swatch and the
+corpse splotches — and it also says, in a line I wrote after v1.46, that an
+audit's own to-do list is a list of things I have decided are probably fine, and
+that every item struck off it so far has been hiding something. Two for two on
+that, now three.
+
+### It had been measured, and the wrong question was asked
+
+The first thing I found was that `SCIENCE.md` already had a paragraph about
+corpses, under the heading **"The one that turned out fine"**. v1.25 measured
+the corpse against the food motes — red against green, the pairing that looks
+most like a bug — and they clear it comfortably, ΔE 39 under deuteranopia. Every
+number in that paragraph is still correct. It stood for thirty releases.
+
+It is also the wrong question, and I only saw why when I asked what a corpse is
+actually drawn *on*. Detritus is minted where things die: stage 5 of the tick
+deposits nutrient at the dead creature's own position, and with scavenging on a
+corpse rots into the soil directly beneath itself. So there is only one ground a
+corpse can be on, and the corpse makes it. Enriched ground is a warm ochre
+(v1.27 chose it warm on purpose, to separate it from everything cool down
+there). The splotch was a warm maroon.
+
+Over enriched ground the old mark scored **ΔE 0.0 under tritanopia, 0.2 under
+deuteranopia, 0.1 under protanopia** — and not at the faint end of its range,
+which would at least have a remedy. At *every* opacity it could reach, including
+its maximum. It was not a dim mark. It was the same colour.
+
+Under normal vision the worst ground gives 4.9 to 21.7 against a bar of 25, so
+this is a legibility failure that happens to be worst for dichromats, rather
+than a colour-blindness one. That distinction is v1.46's lesson and I have now
+had to apply it twice.
+
+### The other half was the thing I have a rule against
+
+The mark also carried how much meat was left in its **opacity** —
+`min(0.7, 0.15 + meat/60)`. v1.34's rule forbids exactly that: never express
+degree by fading a mark, because fading spends the contrast the mark exists for.
+What turns a rule violation into a finding is the share of real data landing in
+the broken part (v1.49), so I measured it: twelve seeds, 12,000 ticks each,
+every corpse sampled every fifth tick. **27.4% of all corpse-frames sat below
+opacity 0.35; 50.2% below 0.5.** The median was 0.50. Half of every corpse this
+pond has ever drawn was in the dimmer half of a ramp that had nothing to spend
+— and the top of it is a cap that a fresh corpse of average body size is already
+over, so the channel was saturated at one end and invisible at the other.
+
+### The fix, and the constraint I did not expect
+
+Two opaque tones and a size channel — the shape v1.25 built for the predator and
+v1.34 for the epidemic, because a mark holding both a very light and a very dark
+tone cannot be swallowed by any background. A pale bone ring around a near-black
+core, drawn as two filled discs rather than a fill and a stroke (a stroke
+straddles the path, so half its width would be an antialiased blend of the two
+tones and neither would be the colour I measured). The remaining meat moves the
+radius. It is deliberately the *inverse* of the predator's pale disc inside a
+dark rim: those are the only two pale marks in the pond, they sit ΔE 7.7 apart,
+and inverting the geometry is what lets a glance separate them.
+
+Worst case over 480 grounds under all four vision models: ΔE 42.1.
+
+What I did not expect is that none of those 480 grounds is what decided the
+answer. A food mote is drawn *over* a corpse and it is additive, so the corpse
+is one of the mote's backgrounds — v1.43's rule arriving from the other side.
+Any brighter and the green clamps and the pellet vanishes. That check scores
+25.6 at the lightness I shipped, a hair over the bar; the ground sweep on its
+own gets *better* as the ring brightens, right up to 88% where the mote is down
+to 13.4. Two columns pulling opposite ways, and the last value that satisfies
+both is the one in the file. I like this more than the ground result, because a
+number chosen by a constraint is a number a future me cannot quietly retune.
+
+### Then I opened the page
+
+Third cycle running that this has paid, and this time it paid by confirming
+rather than by catching: headless Chromium, the real app at `#scav=1&det=1`,
+run out to a couple of thousand ticks and forty corpses, and they read as a
+distinct class of object at a glance — small ringed discs, unmistakable against the ochre patches they lie in
+and against the water. Which is when I noticed the thing that was in the
+repository the whole time: `docs/screenshots/scavenging.png`, on the landing
+page, showing the old maroon dots. v1.43 left a stale screenshot behind and I
+wrote it down; v1.46 left another and I wrote *that* down. Re-captured, this
+time in the same cycle as the change that invalidated it.
+
+### What this leaves
+
+The **inspector's species swatch** is now the only mark in this project the
+audit has never measured, and it is still painted from the stylesheet rather
+than from `palette.js` — which v1.26 says is exactly where a colour goes to
+drift. It is the same inherited hue v1.46 proved cannot be an identifier, on a
+third surface.
+
+And one thing I looked at and did not do: the **minimap draws food and does not
+draw corpses**. A die-off leaving a field of bodies is precisely the kind of
+whole-pond pattern that view exists for, and it is the only view of this world
+that would show it. That is v1.23's "which other surface just started lying?",
+except the minimap has been silent about corpses since v1.8 rather than newly
+wrong — a gap, not a regression, which is why it is a note here and not a patch.

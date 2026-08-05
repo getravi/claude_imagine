@@ -505,6 +505,104 @@ export function detritusTint(richness) {
 export const DETRITUS_MAX_ALPHA = 0.54;
 
 /**
+ * A food mote. It has lived as a literal in `render.js` since v1.0 and as a
+ * copy of that literal in the test file since v1.34, which is the arrangement
+ * v1.26 wrote a rule against: a colour a test cannot reach is a colour that
+ * will drift. It is here now because the corpse audit below needs it — a mote
+ * is drawn *over* a corpse, so it is part of that mark's domain, not merely
+ * next to it.
+ *
+ * Additive, so dense patches glow. Unchanged in value.
+ */
+export function foodMote() {
+  return { r: 90, g: 220, b: 150, a: 0.55 };
+}
+
+/**
+ * A corpse (v1.55) — the last mark in the pond the colour audit had never
+ * measured, and the one whose background it makes itself.
+ *
+ * From v1.8 to v1.54 this was `rgba(150, 55, 48, a)` with
+ * `a = min(0.7, 0.15 + meat/60)`: one translucent maroon tone, fading as the
+ * body rots. Two things are wrong with that and they compound.
+ *
+ * The first is the background. Every audit since v1.25 has measured a mark
+ * against the water, and a corpse is not on the water — it is on **enriched
+ * ground**, because detritus is minted where things die and a corpse rots into
+ * the soil directly beneath it (`world.js#step`, stage 5). Soil is a warm
+ * ochre and the splotch was a warm maroon, so the mark's own background was
+ * chosen by the mark: over enriched ground it scored **ΔE 0.0 under
+ * tritanopia, 0.2 under deuteranopia and 0.1 under protanopia at every opacity
+ * it can take, including the maximum**, and 4.9–21.7 under normal vision,
+ * against a bar of 25. Not faint — the same colour. Over plain water it was
+ * only better in places: 2.1 under protanopia at the low end of the ramp.
+ *
+ * The second is the ramp itself. v1.34's rule is that degree must never be
+ * carried by fading a mark, because fading spends exactly the contrast the mark
+ * exists for, and here the faint end is *most* of the mark's life: over twelve
+ * 12,000-tick scavenging worlds, 27.4% of all corpse-frames sit below opacity
+ * 0.35 and 50.2% below 0.5. Half of every corpse ever drawn was in the dimmer
+ * half of a ramp that had no contrast to spend.
+ *
+ * So it becomes what v1.25 built for the predator and v1.34 for the epidemic:
+ * two opaque tones, a very dark one and a very light one, because no background
+ * is close to both — and degree moves into **size**, which costs nothing and
+ * survives every vision model. A pale bone ring around a near-black core, drawn
+ * as two filled discs rather than a fill and a stroke so that neither tone is
+ * an antialiased blend of the other. It is deliberately the *inverse* of the
+ * predator mark's pale disc inside a dark rim: the two are the only pale marks
+ * in the pond and they are never on the same layer, but inverting the geometry
+ * means a glance can tell them apart without reading the colours (they sit ΔE
+ * 7.7 from each other, which is not a distinction anything should rest on).
+ *
+ * Worst case over 480 grounds — both seasons, the whole terrain ramp with and
+ * without contours, the biome glow, enriched ground at four richnesses, the
+ * contagious zone, **and every one of those with a food mote already on it** —
+ * under all four vision models: **ΔE 42.1**. The binding constraint was not any
+ * of those; it was the mote drawn *on* the corpse, which clamps against a pale
+ * tone the way v1.43's rings clamped against a bright body. That check
+ * (`ΔE 25.6`, a hair over the bar) is what picks the ring's lightness, and it is
+ * the reason the ring is bone rather than the brighter cream the ground sweep
+ * alone would have chosen.
+ *
+ * @param {number} meat energy still in the corpse
+ * @returns {{core:string, ring:string, radius:number, ringWidth:number}}
+ *   `radius` as a multiple of a food mote's radius; `ringWidth` as a fraction
+ *   of that radius.
+ */
+export function corpseMark(meat) {
+  const t = Math.max(0, Math.min(1, meat / CORPSE_FULL_MEAT));
+  return {
+    core: "hsl(350, 55%, 7%)",
+    ring: "hsl(50, 40%, 76%)",
+    // A flat 1.4 (`foodRadius + 1.2`, at the default radius of 3) until v1.55.
+    // The old opacity ramp is not merely moved here, it is the same curve: the
+    // channel changed and the arithmetic did not.
+    radius: 1.15 + 0.72 * t,
+    ringWidth: 0.32,
+  };
+}
+
+/**
+ * The meat at which a corpse's mark stops growing — inherited from the opacity
+ * ramp this replaces, where it was the `60` in `0.15 + meat/60` under a cap of
+ * 0.7. It saturates: a fresh corpse holds `corpseEnergyBase + radius ×
+ * corpseEnergyPerRadius`, which is over the cap for any creature of average
+ * size, so the mark is at full size for the first stretch of every rot and the
+ * size channel says "fresh" rather than "this much meat". That was true of the
+ * opacity too (10–43% of corpse-frames were at the cap, by seed), and it is
+ * worth stating rather than quietly fixing: making the mark proportional to a
+ * corpse's *own* starting meat would mean storing that on the corpse, and
+ * `src/food.js`'s `Corpse` is simulation state the determinism sweep walks.
+ */
+export const CORPSE_FULL_MEAT = 60;
+
+/** The corpse mark's two tones as RGB, for the audit. */
+export function corpseMarkTones() {
+  return { core: hslToRgb(350, 55, 7), ring: hslToRgb(50, 40, 76) };
+}
+
+/**
  * Rock (v1.48, barriers) — the one thing down there that is not water.
  *
  * Every other layer under the pond is translucent, because every other layer is

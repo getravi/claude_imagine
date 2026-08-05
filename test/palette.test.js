@@ -58,6 +58,10 @@ import {
   MIN_RULE_DELTA_E,
   MAX_RULE_DELTA_E,
   signalRing,
+  corpseMark,
+  corpseMarkTones,
+  CORPSE_FULL_MEAT,
+  foodMote,
   signalRingTones,
   SIGNAL_QUIET,
   attackFlashTones,
@@ -619,6 +623,149 @@ test("enriched ground is the lightest thing under the water, which is why it sur
   assert.ok(L(soil) > L(biome) + 10, `soil L* ${L(soil)} vs biome ${L(biome)}`);
 });
 
+// ---- Corpses (v1.55) ----
+//
+// The last mark in the pond the audit had never touched, and the one that
+// makes its own background: detritus is minted where things die, so a corpse
+// lies on enriched ground by construction. Its domain is therefore the soil
+// sweep above — plus every one of those grounds with a food mote already on
+// it, because a corpse and a pellet are both small discs and a watcher has to
+// tell the scavenger's meal from the grazer's.
+
+/** Every ground a corpse can lie on, and every one of them with a mote on it. */
+function corpseBackgrounds() {
+  const out = [];
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const richness of [0, 0.25, 0.5, 0.75, 1]) {
+      const ground = richness ? soilOver(rgb, richness) : rgb;
+      const tag = richness ? `${name} soil ${richness}` : name;
+      for (const zone of [false, true]) {
+        const g = zone ? hazardOver(ground, HAZARD_AUDIT_SOURCES) : ground;
+        const t2 = zone ? `${tag} +zone` : tag;
+        out.push({ name: t2, rgb: g });
+        const m = foodMote();
+        out.push({ name: `${t2} +mote`, rgb: addOver(g, m, m.a) });
+      }
+    }
+  }
+  return out;
+}
+
+test("a corpse reads against every ground it can lie on, including the one it makes", () => {
+  const { core, ring } = corpseMarkTones();
+  let worst = { d: Infinity };
+  for (const { name, rgb } of corpseBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast([core, ring], rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a corpse scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("the maroon splotch did not — it was the colour of the soil it rots into", () => {
+  // The failure, pinned (v1.25's rule): a suite that only knows the new numbers
+  // stays green while someone restores the old colour. `rgba(150, 55, 48, a)`
+  // over enriched ground, at *every* opacity the ramp could reach including its
+  // maximum, was not faint — it was the same colour for all three dichromacies.
+  const old = { r: 150, g: 55, b: 48 };
+  const worst = Object.fromEntries(VISION_MODELS.map((v) => [v, Infinity]));
+  for (const { rgb } of soilBackgrounds()) {
+    for (const richness of [0.25, 0.5, 0.75, 1]) {
+      for (const zone of [false, true]) {
+        const bare = soilOver(rgb, richness);
+        const soil = zone ? hazardOver(bare, HAZARD_AUDIT_SOURCES) : bare;
+        for (const alpha of [0.15, 0.35, 0.7]) {
+          const drawn = blendOver(soil, old, alpha);
+          for (const vision of VISION_MODELS) {
+            worst[vision] = Math.min(worst[vision], deltaE(drawn, soil, vision));
+          }
+        }
+      }
+    }
+  }
+  // Two different failures, and only one of them is about colour blindness. On
+  // its *worst* enriched ground the mark missed the bar for everybody — that is
+  // the general case, and it is why this is filed as legibility rather than as
+  // CVD (v1.46's lesson: check the trichromat first).
+  assert.ok(
+    worst.normal < MIN_DELTA_E,
+    `the old splotch's worst soil scored ${worst.normal.toFixed(1)} under normal vision — above the bar`
+  );
+  // For a dichromat it was not faint anywhere but *identical* somewhere, at
+  // every opacity including the maximum. A bound of "under the bar" would still
+  // pass for a mark scoring 20, so the collision is what gets pinned.
+  for (const vision of CVD_TYPES) {
+    assert.ok(
+      worst[vision] < 0.5,
+      `the old splotch's best case under ${vision} was ${worst[vision].toFixed(1)}, not a collision`
+    );
+  }
+});
+
+test("a food mote stays a food mote on top of a corpse — the constraint that picked the ring", () => {
+  // v1.43's lesson is that a mark's domain is what is drawn *over* it as well
+  // as what is beside it, and this is the check that binds: the mote is
+  // additive, so a ring any lighter clamps it out of existence. It clears the
+  // bar by 0.6, which is why the ring is bone rather than cream.
+  const m = foodMote();
+  const tones = corpseMarkTones();
+  let worst = { d: Infinity };
+  for (const [name, tone] of Object.entries(tones)) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(addOver(tone, m, m.a), tone, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a mote on the corpse's ${worst.name} scores only ${worst.d.toFixed(1)} (${worst.vision})`
+  );
+});
+
+test("a brighter ring would have failed that check — the lightness is a measurement", () => {
+  // The squeeze, so the number above reads as a constraint rather than a taste.
+  // Lighter than 76% and the mote on top stops being legible; the ground sweep
+  // on its own would happily have taken 84%.
+  const m = foodMote();
+  for (const l of [80, 84, 88]) {
+    const brighter = hslToRgb(50, 40, l);
+    const worst = Math.min(...VISION_MODELS.map((v) => deltaE(addOver(brighter, m, m.a), brighter, v)));
+    assert.ok(worst < MIN_DELTA_E, `a ring at lightness ${l} would have kept the mote (${worst.toFixed(1)})`);
+  }
+});
+
+test("a corpse carries a light tone and a dark one, which is what makes it background-proof", () => {
+  const { core, ring } = corpseMarkTones();
+  const L = (rgb) => toLab(rgb)[0];
+  assert.ok(L(core) < 15, `the core is not dark enough: L* ${L(core).toFixed(1)}`);
+  assert.ok(L(ring) > 75, `the ring is not light enough: L* ${L(ring).toFixed(1)}`);
+  // And the two are far apart under every model, or the mark is one tone.
+  for (const vision of VISION_MODELS) {
+    assert.ok(deltaE(core, ring, vision) >= MIN_DELTA_E, `the two tones collide under ${vision}`);
+  }
+});
+
+test("how much meat is left moves the mark's size, not its opacity", () => {
+  // v1.34's rule, and the reason this release exists: the old ramp spent
+  // opacity on degree and 27.4% of all corpse-frames sat below 0.35 of it.
+  const empty = corpseMark(0);
+  const full = corpseMark(CORPSE_FULL_MEAT);
+  assert.ok(full.radius > empty.radius, "a fresh corpse is not drawn larger than a spent one");
+  assert.equal(empty.core, full.core, "the core tone moved with the meat");
+  assert.equal(empty.ring, full.ring, "the ring tone moved with the meat");
+  for (const tone of [empty.core, empty.ring, full.core, full.ring]) {
+    assert.ok(!/rgba|hsla/.test(tone), `${tone} is translucent — a corpse's tones must be opaque`);
+  }
+  // Clamped at both ends, and the ring is always a real share of the mark.
+  assert.equal(corpseMark(-5).radius, empty.radius);
+  assert.equal(corpseMark(CORPSE_FULL_MEAT * 4).radius, full.radius);
+  assert.ok(empty.ringWidth > 0 && empty.ringWidth < 1);
+});
+
 // ---- The energy bar (v1.29) ----
 //
 // A second three-segment strip in the same sidebar as the mortality one. It
@@ -939,12 +1086,12 @@ test("food is still findable inside a plague zone — the constraint that picked
   // A mote is a mark drawn *over* this field, so the field is one of its
   // backgrounds. This is the test that rules out sulphur, and with it the idea
   // that the zone could wear the same colour as the halo it belongs to.
-  const mote = { r: 90, g: 220, b: 150 }; // rgba(90, 220, 150, 0.55), additive
+  const mote = foodMote(); // additive, and now reachable from the palette (v1.55)
   let worst = { d: Infinity };
   for (const { name, rgb } of hazardBackgrounds()) {
     const field = hazardOver(rgb, HAZARD_AUDIT_SOURCES);
     for (const vision of VISION_MODELS) {
-      const d = deltaE(addOver(field, mote, 0.55), field, vision);
+      const d = deltaE(addOver(field, mote, mote.a), field, vision);
       if (d < worst.d) worst = { d, name, vision };
     }
   }

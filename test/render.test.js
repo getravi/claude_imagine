@@ -23,6 +23,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
+import { Corpse } from "../src/food.js";
 import { makeConfig } from "../src/config.js";
 import { renderOps, renderFingerprint, hashOps } from "../src/rendershot.js";
 import { stateFingerprint, trajectoryFingerprint, observationFingerprint } from "../src/fingerprint.js";
@@ -33,6 +34,8 @@ import {
   hazardTint,
   signalRing,
   attackFlash,
+  corpseMark,
+  CORPSE_FULL_MEAT,
 } from "../src/palette.js";
 
 /** A world with some history in it, so there is something to draw. */
@@ -225,6 +228,44 @@ test("the call and the bite are drawn opaque, in the tones the audit measured", 
   assert.notDeepEqual(loud, quiet, "a louder call drew exactly the same rings");
   const grew = loud.filter((r, i) => r > (quiet[i] ?? Infinity)).length;
   assert.ok(grew > 0, "no arc got bigger when the call got louder");
+});
+
+test("a corpse is drawn in two opaque tones, and its meat is its size", () => {
+  // v1.55's half. The old splotch was one translucent maroon whose opacity fell
+  // as the body rotted — the exact thing v1.34 forbids — and the tone was the
+  // colour of the enriched ground a corpse lies on by construction.
+  const w = pond({ scavenging: true }, 600);
+  // Stage the corpses rather than wait for a die-off: two at the same spot, one
+  // fresh and one nearly rotted, so the only thing that differs is the meat.
+  w.corpses = [new Corpse(100, 100, CORPSE_FULL_MEAT), new Corpse(300, 300, 1)];
+  const ops = renderOps(w);
+  const painted = new Set(styles(ops));
+  const m = corpseMark(CORPSE_FULL_MEAT);
+  assert.ok(painted.has(m.core), `the corpse's core (${m.core}) never reached the canvas`);
+  assert.ok(painted.has(m.ring), `the corpse's ring (${m.ring}) never reached the canvas`);
+  // The exact style that was wrong, kept out — at either end of its old ramp.
+  for (const s of painted) {
+    assert.ok(!/^rgba\(150, 55, 48,/.test(s), `the translucent maroon splotch is back: ${s}`);
+  }
+
+  // Size carries the meat: the fresh corpse's discs are strictly larger than the
+  // spent one's, and both are drawn. Asserted through the recorder because the
+  // palette cannot know whether render.js used the number it returned.
+  const cfg = w.config;
+  const spent = corpseMark(1);
+  const radii = opsNamed(ops, "arc").map((o) => o[4]);
+  for (const [what, mark] of [["fresh", m], ["spent", spent]]) {
+    for (const [half, r] of [
+      ["ring", cfg.foodRadius * mark.radius],
+      ["core", cfg.foodRadius * mark.radius * (1 - mark.ringWidth)],
+    ]) {
+      assert.ok(radii.some((x) => Math.abs(x - r) < 1e-9), `the ${what} corpse's ${half} (r=${r}) is not drawn`);
+    }
+  }
+  assert.ok(
+    cfg.foodRadius * m.radius > cfg.foodRadius * spent.radius,
+    "a fresh corpse is not drawn larger than a spent one"
+  );
 });
 
 test("the picture hash sees a restyled mark", () => {

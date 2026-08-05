@@ -167,8 +167,8 @@ could have fixed it.
   world — the shoals of creatures follow the food, migrating to track it. The
   pond can never settle into a fixed pattern.
 - **Turn on Scavenging with Seasons** and watch a winter: as creatures starve, a
-  glut of corpses (dim maroon marks) appears — and carnivores converge to feed on
-  the dead. Death feeds life.
+  glut of corpses appears — pale bone rings around dark centres, shrinking as
+  they rot — and carnivores converge to feed on the dead. Death feeds life.
 - **Turn on Contagion** (or hit the *Plague* scenario) and watch the pond wear its
   epidemic: sick creatures pulse with a sulphur halo, survivors keep a dashed blue
   ring for the immunity they earned, and the water inside catching distance of a

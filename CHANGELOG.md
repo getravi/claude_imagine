@@ -4,6 +4,68 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.55.0] — 2026-08-05
+
+Every colour audit since v1.25 has been wrong about the *set* of backgrounds
+rather than about the arithmetic: v1.25 skipped the stylesheet, v1.34 the
+contagious zone, v1.43 the creature's own body. The corpse is the fourth and
+the sharpest, because the background it was never measured against is one the
+mark itself creates. Detritus is minted where things die, so a corpse lies on
+enriched ground by construction — and the ground is a warm ochre while the
+splotch was a warm maroon.
+
+### Fixed
+
+- **A corpse was the colour of the soil it rots into.** Over enriched ground the
+  old `rgba(150, 55, 48, a)` scored **ΔE 0.0 under tritanopia, 0.2 under
+  deuteranopia and 0.1 under protanopia** — at *every* opacity it could reach,
+  including the maximum, so turning it up was never going to help — against a
+  bar of 25. Under normal vision its worst ground scored 4.9–21.7, so this is a
+  legibility failure that happens to be worst for dichromats, not a
+  colour-blindness one (v1.46's rule: check the trichromat first). Over plain
+  water it was better in places and still poor: 2.1 under protanopia.
+- **And it spent opacity on degree, which is the one thing v1.34 forbids by
+  name.** How much meat was left rode on the alpha, `min(0.7, 0.15 + meat/60)`.
+  Over twelve 12,000-tick scavenging worlds (n = 353,000 corpse-frames)
+  **27.4% sat below 0.35 and 50.2% below 0.5**, with a median of 0.50 — half of
+  every corpse this pond has drawn was in the dimmer half of a ramp with no
+  contrast to spend, while the top of the ramp is a cap a fresh corpse of
+  average size is already over.
+- **It becomes two opaque tones and a size.** A pale bone ring
+  (`hsl(50, 40%, 76%)`) around a near-black core (`hsl(350, 55%, 7%)`), drawn as
+  two filled discs rather than a fill and a stroke so neither tone is an
+  antialiased blend of the other, with the remaining meat moving the radius.
+  Deliberately the *inverse* of the predator mark's pale disc inside a dark rim:
+  the two are the only pale marks in the pond, they sit ΔE 7.7 apart, and
+  inverting the geometry is what separates them at a glance. Worst case over 480
+  grounds under all four vision models: **ΔE 42.1**.
+- **The constraint that picked the ring was the pellet drawn on top of it.** A
+  food mote is additive and a corpse is one of *its* backgrounds — v1.43's rule
+  arriving from the other side. Against a lighter ring the green clamps out of
+  existence: the check scores **25.6** at the shipped lightness, 22.2 at 80% and
+  13.4 at 88%, while the ground sweep *improves* over that range. The two
+  columns pull opposite ways, and the shipped value is the last that satisfies
+  both. `test/palette.test.js` pins the squeeze, and pins the old maroon as the
+  collision it was so restoring it fails loudly.
+
+### Added
+
+- **`foodMote()` in `src/palette.js`.** The mote's colour has been a literal in
+  `render.js` since v1.0 and a copy of that literal in the test file since
+  v1.34 — the arrangement v1.26 wrote a rule against. It is in the palette now
+  because the corpse audit needs it, and both callers read it.
+- **A corpse test on the canvas side.** `test/render.test.js` stages a fresh
+  corpse and a nearly-rotted one at fixed positions and asserts both tones reach
+  the canvas, the old translucent maroon does not, and the two corpses are drawn
+  at different radii — the palette cannot know whether `render.js` used the
+  number it returned.
+
+### Changed
+
+- `docs/screenshots/scavenging.png` re-captured. It had shown the old splotch
+  since it was taken, which is the stale-artifact failure v1.43 left behind and
+  v1.46 left again.
+
 ## [1.54.0] — 2026-08-04
 
 The Tree of Life is the widest figure on the page and its entire horizontal

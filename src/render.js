@@ -17,6 +17,8 @@ import {
   SIGNAL_QUIET,
   attackFlash,
   barrierRock,
+  corpseMark,
+  foodMote,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 
@@ -208,26 +210,40 @@ export class Renderer {
     // a world without barriers.
     if (world.barriers) this._drawBarriers(ctx, world.barriers, cam);
 
-    // Corpses: dim maroon splotches that fade as they rot. Drawn under the food
-    // and creatures. Nothing to draw when scavenging is off (the list is empty).
+    // Corpses: remains, drawn under the food and creatures. A pale bone ring
+    // around a near-black core — two opaque tones rather than the one
+    // translucent maroon this was until v1.55, which was the same colour as the
+    // enriched ground it lies on for every dichromat and nearly so for
+    // everyone. What is left of the meat moves the mark's *size*; see
+    // `corpseMark`. Nothing to draw when scavenging is off (the list is empty).
     if (world.corpses.length) {
       ctx.globalCompositeOperation = "source-over";
       for (const k of world.corpses) {
         const p = cam.nearest(k.x, k.y);
-        const a = Math.min(0.7, 0.15 + k.energy / 60);
+        const m = corpseMark(k.energy);
+        const r = cfg.foodRadius * m.radius;
+        // Two filled discs, not a fill and a stroke: a stroke straddles the
+        // path, so half its width would be an antialiased blend of the two
+        // tones and neither would be the colour the audit measured.
         ctx.beginPath();
-        ctx.fillStyle = `rgba(150, 55, 48, ${a.toFixed(2)})`;
-        ctx.arc(p.x, p.y, cfg.foodRadius + 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = m.ring;
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = m.core;
+        ctx.arc(p.x, p.y, r * (1 - m.ringWidth), 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
     // Food: additive green motes so dense patches glow.
     ctx.globalCompositeOperation = "lighter";
+    const mote = foodMote();
+    const moteFill = `rgba(${mote.r}, ${mote.g}, ${mote.b}, ${mote.a})`;
     for (const f of world.food.items) {
       const p = cam.nearest(f.x, f.y);
       ctx.beginPath();
-      ctx.fillStyle = "rgba(90, 220, 150, 0.55)";
+      ctx.fillStyle = moteFill;
       ctx.arc(p.x, p.y, cfg.foodRadius, 0, Math.PI * 2);
       ctx.fill();
     }
