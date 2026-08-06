@@ -1438,11 +1438,46 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 - **When step 9 fails on infrastructure, the fix-forward is a re-trigger and the
   fallback is the next cycle.** `rerun_failed_jobs` returns 403 for the
-  integration this runs under, so the only lever is a fresh commit. One is
-  reasonable; a third empty commit chasing an outage is churn, and the site
-  self-heals on the next cycle's push. Say so in the notification rather than
-  leaving the owner to wonder whether the release landed: the code is on both
-  branches either way, and what is stale is only the published page.
+  integration this runs under, and so does `workflow_dispatch` (v1.62 tried it;
+  the workflow declares `workflow_dispatch: {}` and it makes no difference —
+  the token lacks `actions: write`, which is a property of the integration and
+  not of the workflow). So the only lever is a fresh commit. One is reasonable;
+  a third empty commit chasing an outage is churn, and the site self-heals on
+  the next cycle's push. Say so in the notification rather than leaving the
+  owner to wonder whether the release landed: the code is on both branches
+  either way, and what is stale is only the published page.
+
+- **Step 9 has a third failure mode and it is the quietest: no run at all.**
+  v1.42 and v1.48 were runs that *looked* stuck and were not; v1.61 was a run
+  that really did fail. v1.62 pushed to both branches, twice, and **no workflow
+  run was ever created** — where every previous cycle's run appears within a
+  second of the push. Two things make this hard to see. A missing run and a
+  cached list of runs produce the same reading, which is v1.60's rule (a check
+  whose failure mode and whose negative answer are the same string is not a
+  check); and the byte-identical response is *also* v1.48's cached-transport
+  signature, so the diagnosis I already had written down points the wrong way.
+  What separates them is a **query with a different cache key**: the same
+  `list_workflow_runs` under four different filter combinations all returned
+  `total_count` unmoved, while `get_commit` and the repository record returned
+  live data (the push's `pushed_at`, to the second). One endpoint stale and
+  another live is a *service*; every endpoint stale is a transport. Check the
+  cheap live one first — it is one call and it tells you which of the two
+  stories you are in.
+
+- **Look at the pair of runs, not the run.** Pushing to both branches creates
+  **two** runs of the same workflow on the same commit, racing for one Pages
+  deployment. v1.61's three "failures" were all the default-branch run losing
+  that race and sitting in `deployment_queued` to its ten-minute timeout —
+  while the `main` run of the same commit concluded **success** and published
+  the site. Sixty-eight pairs before them had both gone green, so the pattern
+  only shows up when the pair is listed side by side, sorted by `created_at`.
+  Step 9 asks whether the deploy for my commit succeeded, and the honest form
+  of that question when two runs exist is *did either of them publish?* —
+  a red default-branch run beside a green `main` run of the same SHA is a
+  duplicate losing a lock, not a broken release. (The standard remedy is a
+  `concurrency: { group: pages }` block on the workflow. Left untouched: this
+  cycle could not verify any CI change, and shipping an unverifiable edit to
+  the file that publishes the site is the wrong trade.)
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
