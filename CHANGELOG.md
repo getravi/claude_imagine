@@ -4,6 +4,73 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.60.0] — 2026-08-06
+
+v1.51 walked this page with a keyboard, fixed everything it found, and finished
+with one gap it deliberately did not close: *the pond canvas and the minimap take
+clicks and cannot be focused, so selecting a creature and jumping the view have
+no keyboard route at all.* It was filed as a feature rather than a patch because
+a `tabindex` does not answer the question underneath it — **what does Tab into
+the pond select, and how do you step between three hundred creatures?** This
+release answers it spatially: an arrow key moves the selection to the nearest
+creature in that direction.
+
+### Added
+
+- **`src/pondnav.js` — the arrow keys' arithmetic.** A candidate is "east" of
+  you when `dx > 0 && |dy| <= dx`, and the four quadrants tile the plane, so no
+  creature can sit in a gap between the keys. Offsets are wrapped, so a step off
+  the right-hand edge continues into the left-hand one exactly as the water does.
+  Pure, like `describe.js` and `gestures.js`: `main.js` is the adapter that turns
+  a key event into one of these calls, and `test/pondnav.test.js` is where the
+  rule itself is pinned.
+- **A keyboard route into the pond.** `Tab` reaches the canvas; the first arrow
+  press selects whatever the *view* is already on (the camera's centre, or the
+  creature it is following) rather than something from the far side of the water;
+  `Enter` follows the selection, as a double-click does; `Escape` clears it. A
+  step that lands off-screen while zoomed brings the view with it. Focus alone
+  selects nothing — tabbing past the pond on the way to the controls must not
+  move the camera.
+- **`describeSelection()` — the selection, said out loud.** One short sentence
+  per press into the live region the Chronicle already uses, because an arrow key
+  that moves a selection silently is v1.13's rule with the senses swapped. It is
+  a *state*, so a new one replaces an unspoken old one: holding a key down
+  announces where you ended up, not every creature you passed. Energy is the
+  inspector's own arithmetic, so the number a reader sees and the number a
+  listener hears cannot drift.
+- **The minimap answers the arrow keys too**, sliding the view 60 px a press —
+  the keyboard form of a click on it. It is `display: none` at zoom 1, so it
+  is not a tab stop in the one state every screenshot in this project depends on.
+
+### Measured
+
+- **Every living creature is reachable.** From the entry selection, following
+  arrow steps reaches **100%** of the pond on twelve seeds, at thirteen sample
+  points through a run of seed 314, in thin ponds down to two creatures, and in a
+  walled, occluded pond. Worst case **13 presses**, mean 4–7. This is an
+  observation and not a theorem: I could not prove it, and 200,000 randomly
+  clustered layouts failed to produce a counterexample.
+- **What the obvious alternative would have done.** Stepping through
+  `world.creatures` — the array, in birth order — moves the selection a median
+  **295.8 px** across twelve seeds, against **68.6 px** for an arrow step. The
+  expected distance between two *uniformly random* points on this torus is
+  296.8 px: a list-shaped keyboard route is, to within measurement, teleporting
+  to a random creature. (v1.47's lesson that birth order is an accident of the
+  sweep, arriving on the interface side.)
+- **Rock does not block a step**, even with `barrierOcclusion` on. That is the
+  decision, not an oversight: occlusion is a rule about what a *creature* can
+  sense, and a watcher can plainly see over a wall.
+
+### Changed
+
+- `app/index.html`: both canvases carry `tabindex="0"`, the pond names its keys
+  in an `sr-only` paragraph it points at with `aria-describedby`, and the visible
+  shortcut bar prints them too — v1.51's rule that every affordance the prose
+  promises should be findable in the markup, run in the other direction.
+- `test/markup.test.js` pins both `tabindex` values and the key hint, because the
+  way this breaks is an attribute deleted while tidying markup, which leaves a
+  canvas that looks identical and is unreachable again.
+
 ## [1.59.0] — 2026-08-06
 
 v1.53 replaced twelve hand-rolled determinism checks with one shared assertion

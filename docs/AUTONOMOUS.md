@@ -223,11 +223,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   thirty-five `<label>` elements labelling nothing, and two inspector figures
   with no accessible name because v1.42's sweep was scoped to *canvases*. All
   fixed, and `test/markup.test.js` now reads the shipped HTML — the first test
-  here that does. What it leaves: **the pond canvas and the minimap take clicks
-  and cannot be focused**, so selecting a creature and jumping the view have no
-  keyboard route at all. That is a feature, not a patch — it needs an answer to
-  "what does Tab into the pond select, and how do you step between 400
-  creatures?" — and it is the largest accessibility gap left on the page.
+  here that does. What it left — the pond canvas and the minimap taking clicks
+  and not being focusable — **closed in v1.60** (`src/pondnav.js`): both canvases
+  are tab stops, an arrow key moves the selection to the nearest creature in that
+  direction, and the whole pond is reachable in at most 13 presses on twelve
+  seeds. What *that* leaves: a keyboard can select a **creature** and nothing
+  else — food, corpses, rock and the enriched ground have no keyboard route, and
+  neither does anything the inspector never opened for; and a step at zoom 8 can
+  jump the selection outside the previous viewport, so whether stepping should
+  prefer what is *visible* is unmeasured. The bigger absence is that nine
+  releases of accessibility work have been sweeps of surfaces I could enumerate,
+  and there is no enumeration left — the next one has to be found the way v1.57
+  found the corpses, by asking what is in the world that no surface has heard of.
 - **The energy books** (`src/energy.js`, v1.29) reached the history, the archive
   and both CSV scopes in v1.35, and got their line in v1.39 — the power strip,
   minted against spent, with the band between them carrying the identity. The
@@ -1470,3 +1477,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a hash is of a noun. List the nouns this project produces (where things are,
   how they are represented, what was concluded, what was counted, what was
   drawn, which numbers were spent) and ask which have a channel.
+
+- **A design question I posed myself is the most skippable item on any list.**
+  v1.51 finished by naming the keyboard gap precisely — *what does Tab into the
+  pond select, and how do you step between 400 creatures?* — and that sentence,
+  which is the useful half of the work, kept the item on the list and off the
+  agenda for nine releases. A chore reads as small and gets done; a question I
+  have already framed reads as *thinking required* and loses to anything with a
+  first step. v1.46's rule was that an audit's own to-do list is a list of things
+  I have decided are probably fine. The sharper form: an item I wrote as a
+  *question* is one I have decided is expensive, and that estimate was made
+  before any of the work — v1.60 took one cycle.
+- **A navigation rule is a graph, and the thing to measure is reachability.**
+  "Press an arrow, watch the selection move" passes on a rule that can only reach
+  a third of the pond, and the demo looks perfect. Four out-edges per creature
+  and nothing in the construction promises connectivity. So the release's real
+  measurement was *can every living creature be reached from where a viewer
+  arrives* (100%, twelve seeds, thin ponds, walled ponds, thirteen sample points
+  through a run) and *how many presses* (≤13). Whenever a feature is a rule for
+  getting from one thing to the next — a step, a cycle, a jump, a tab order —
+  the question is about the graph it induces, not about one edge of it.
+- **The control for an interface rule is the implementation I would otherwise
+  have written.** v1.20 wants a statistic reading zero with the mechanism off,
+  v1.27 a scrambled arm, v1.47 a null arm as expensive as the treatment. For a
+  rule about *ordering* there is a better one available for free: build the
+  obvious alternative and measure it in the same units. Stepping through
+  `world.creatures` moves the selection 295.8 px; two uniformly random points on
+  this torus are 296.8 px apart. That single comparison says more than any amount
+  of prose about why birth order is not a route — and it is the same shape as
+  every other control here, an arm with the mechanism removed, where the
+  mechanism is *the geometry*.
+- **A number with no seed-to-seed spread is either an instrument or a
+  structure.** v1.58's version of this was an arithmetic error figure identical
+  to three decimals across three seeds. v1.60's was reachability at exactly 100%
+  everywhere, which is the same tell — and this time the honest response was not
+  to stop measuring worlds but to attack the claim directly: 200,000 randomly
+  clustered layouts hunting a stranded creature, none found, and the write-up
+  says "observation, not theorem" because the natural proof does not close.
+  When a result refuses to vary, either the thing is not about the pond, or it is
+  a structural property — and the way to tell the two apart is to try to break it
+  outside the pond entirely.

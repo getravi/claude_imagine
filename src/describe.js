@@ -202,6 +202,62 @@ function describeView(camera, config) {
 }
 
 /**
+ * Which ninth of the pond a point is in, as a compass word. A listener stepping
+ * the selection with the arrow keys is building a map in their head, and
+ * "x 612, y 88" is a coordinate rather than a place — the pond's own copy talks
+ * about north and south everywhere else, so this does too. The middle band on an
+ * axis contributes nothing, which is what makes the centre "the middle" rather
+ * than "the middle middle".
+ */
+export function regionOf(x, y, config) {
+  const band = (v, size) => (v < size / 3 ? 0 : v < (2 * size) / 3 ? 1 : 2);
+  const ns = ["north", "", "south"][band(y, config.height)];
+  const ew = ["west", "", "east"][band(x, config.width)];
+  if (!ns && !ew) return "the middle";
+  return `the ${[ns, ew].filter(Boolean).join("-")}`;
+}
+
+/**
+ * The creature the keyboard has just landed on, said out loud.
+ *
+ * The inspector has shown all of this since v1.15, and a listener can read it —
+ * but only by leaving the pond, walking the panel, and losing the place they
+ * were navigating from. An arrow key that moves a selection and says nothing is
+ * v1.13's rule with the senses swapped: the mechanic obeys, and the watcher
+ * cannot tell it happened.
+ *
+ * It is deliberately one short sentence. This goes into the same live region as
+ * the Chronicle, and it fires on *every* press — the v1.31 rule that the cost of
+ * saying something is the listener's time applies hardest to the thing they are
+ * about to say again.
+ *
+ * Energy is a share of `energyMax`, which is exactly the arithmetic the
+ * inspector's Energy row uses, so the number a reader sees and the number a
+ * listener hears cannot drift apart. (That clamp is unreachable in practice —
+ * see v1.29 — so the share is a low number by construction and not a bug.)
+ *
+ * @param {object|null} c - the selected creature, or null for a cleared selection
+ * @param {object} config
+ */
+export function describeSelection(c, config) {
+  if (!c) return "Selection cleared.";
+  const bits = [`generation ${c.generation}`];
+  // Diet only where it decides something, the same guard `describePond` uses on
+  // the hunter count: the gene exists in every world and means nothing without
+  // predation.
+  if (config.predation) {
+    bits.push(c.carnivory >= config.carnivoreThreshold ? "a hunter" : "a grazer");
+  }
+  bits.push(`${percent(c.energy / config.energyMax)} fed`);
+  if (config.disease) {
+    if (c.infected) bits.push("sick");
+    else if (c.immune) bits.push("immune");
+  }
+  const where = `in ${regionOf(c.x, c.y, config)} of the pond`;
+  return `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
+}
+
+/**
  * What a live region should be told, given the Chronicle so far and the last
  * line the listener has already heard.
  *

@@ -48,13 +48,24 @@
     <main class="layout">
       <div class="left-col">
         <section class="stage">
+          <!-- Focusable since v1.60: the arrow keys step the selection from one
+               creature to the next, so choosing one no longer needs a pointer.
+               The img role stays, because the description is still what this
+               element *is*; tabindex is what makes it reachable. -->
           <canvas
             id="world"
             width="900"
             height="620"
             role="img"
+            tabindex="0"
+            aria-describedby="pond-keys"
             aria-label="The pond. Its contents are described here as they change."
           ></canvas>
+          <p id="pond-keys" class="sr-only">
+            Arrow keys select a creature and step to the nearest one in that
+            direction; Enter follows the selection with the camera; Escape clears
+            it.
+          </p>
           <div id="season-badge" class="season-badge"></div>
           <div id="zoom-badge" class="zoom-badge hidden"></div>
           <canvas
@@ -62,8 +73,9 @@
             class="minimap hidden"
             width="180"
             height="124"
-            title="The whole pond — click to move the view"
-            aria-label="Minimap of the whole pond; click to move the view"
+            tabindex="0"
+            title="The whole pond — click, or use the arrow keys, to move the view"
+            aria-label="Minimap of the whole pond; click or use the arrow keys to move the view"
           ></canvas>
           <div id="flash" class="flash"></div>
           <!-- The pond's spoken channel: the Chronicle's newest line, announced
@@ -98,6 +110,11 @@
             <kbd>F</kbd> feed · <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
             <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond ·
             <kbd>H</kbd> chart history
+          </p>
+          <p class="kbd-hint" aria-label="Choosing a creature with the keyboard">
+            <kbd>Tab</kbd> to the pond, then <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd
+            ><kbd>→</kbd> to step between creatures · <kbd>Enter</kbd> follow ·
+            <kbd>Esc</kbd> clear
           </p>
           <p class="kbd-hint fine-only" aria-label="Mouse controls">
             Scroll to zoom · drag to pan · double-click a creature to follow it ·

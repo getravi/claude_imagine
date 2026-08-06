@@ -15,6 +15,8 @@ import { Camera } from "../src/camera.js";
 import {
   describePond,
   describePower,
+  describeSelection,
+  regionOf,
   pendingSpeech,
   seasonLabel,
   timeOfDayLabel,
@@ -351,4 +353,54 @@ test("the rock gets a sentence, and only where there is rock", () => {
   const text = describePond(world, world.config);
   assert.match(text, /Rock divides the pond into 4 rooms, joined by gates\./);
   assert.match(text, /turned back by it \d+ times per hundred ticks/);
+});
+
+test("the keyboard's selection says who it landed on, and only what is decided", () => {
+  // v1.60 gave the pond arrow keys. A step that moves a selection and says
+  // nothing is v1.13's rule with the senses swapped — the mechanic obeys and the
+  // watcher cannot tell it happened — and the inspector is no answer, because
+  // reading it means leaving the pond and losing the place you were navigating
+  // from.
+  const config = makeConfig({ seed: 314, predation: false, disease: false });
+  const c = { id: 42, generation: 3, carnivory: 0.9, energy: 110, x: 100, y: 80, infected: false, immune: false };
+
+  const quiet = describeSelection(c, config);
+  assert.match(quiet, /^Creature 42, generation 3, /);
+  assert.ok(!/hunter|grazer/.test(quiet), `diet spoken in a pond with no predation: ${quiet}`);
+  assert.ok(!/sick|immune/.test(quiet), `disease spoken in a pond with none: ${quiet}`);
+  assert.match(quiet, /in the north-west of the pond\.$/);
+
+  // The same creature where the gene decides something.
+  const hunting = describeSelection(c, makeConfig({ seed: 314, predation: true }));
+  assert.match(hunting, /a hunter/);
+  const grazing = describeSelection({ ...c, carnivory: 0.1 }, makeConfig({ seed: 314, predation: true }));
+  assert.match(grazing, /a grazer/);
+
+  // Energy is the inspector's own arithmetic, so the number a reader sees and
+  // the number a listener hears cannot drift apart.
+  assert.ok(quiet.includes(`${Math.round((110 / config.energyMax) * 100)}% fed`), quiet);
+
+  const ill = describeSelection({ ...c, infected: true }, makeConfig({ seed: 314, disease: true }));
+  assert.match(ill, /sick/);
+  const survived = describeSelection({ ...c, immune: true }, makeConfig({ seed: 314, disease: true }));
+  assert.match(survived, /immune/);
+
+  assert.equal(describeSelection(null, config), "Selection cleared.");
+});
+
+test("the pond is described in ninths, and the middle one has no compass word", () => {
+  const config = makeConfig({ seed: 314 });
+  const { width: w, height: h } = config;
+  assert.equal(regionOf(w / 2, h / 2, config), "the middle");
+  assert.equal(regionOf(10, 10, config), "the north-west");
+  assert.equal(regionOf(w - 10, h - 10, config), "the south-east");
+  assert.equal(regionOf(w / 2, 10, config), "the north");
+  assert.equal(regionOf(10, h / 2, config), "the west");
+  // Every point in the pond gets a name — a listener building a map in their
+  // head must never be told a creature is nowhere.
+  for (let x = 0; x < w; x += 7) {
+    for (let y = 0; y < h; y += 7) {
+      assert.match(regionOf(x, y, config), /^the (middle|north|south|west|east|north-west|north-east|south-west|south-east)$/);
+    }
+  }
 });

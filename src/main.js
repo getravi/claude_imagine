@@ -12,7 +12,7 @@ import { RNG } from "./rng.js";
 import { drawMuller, mullerShares, mullerAxis, textureCss } from "./mullerplot.js";
 import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
-import { ZOOM_STEP } from "./camera.js";
+import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { drawChart, popAxis, axisLabels, chartAxis } from "./chart.js";
@@ -43,10 +43,12 @@ import {
   describeMuller,
   describePond,
   describePower,
+  describeSelection,
   pendingSpeech,
   seasonLabel,
   timeOfDayLabel,
 } from "./describe.js";
+import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -285,6 +287,17 @@ let spokenLine = null;
 let pendingSay = "";
 let pondLabel = "";
 let describeIn = 0;
+// What the keyboard has just done, waiting for the region to be free. A *state*
+// rather than an event, so a new one replaces an unspoken old one: holding an
+// arrow key down should announce where the selection ended up, not read out
+// every creature it passed through. Nothing is lost by overwriting, because the
+// Chronicle's own queue is only consulted on a frame where this is empty.
+let pendingAct = null;
+
+/** Say something in response to a key press, once the live region is free. */
+function announce(text) {
+  pendingAct = text;
+}
 
 function updateNarration(world) {
   // Keyed on the world *object*, not on a seed or a tick: a reset, a scenario
@@ -295,6 +308,7 @@ function updateNarration(world) {
     narratedWorld = world;
     spokenLine = null;
     pendingSay = "";
+    pendingAct = null;
     describeIn = 0;
   }
 
@@ -307,6 +321,13 @@ function updateNarration(world) {
   if (pendingSay) {
     say.textContent = pendingSay;
     pendingSay = "";
+  } else if (pendingAct) {
+    // A keystroke answered first: it is the only thing here a listener is
+    // actively waiting for, and the Chronicle's line keeps until the next frame
+    // because `spokenLine` has not moved.
+    say.textContent = "";
+    pendingSay = pendingAct;
+    pendingAct = null;
   } else {
     const said = pendingSpeech(world.chronicle.events, spokenLine);
     spokenLine = said.spoken;
@@ -410,6 +431,9 @@ function updateMinimap() {
   drawMinimap(miniCtx, world, cam, { selected: renderer.selected });
 }
 
+/** How far one arrow press slides the view, in pond pixels of screen. */
+const MINIMAP_PAN = 60;
+
 // Click (or drag) anywhere on the minimap to put the view there. Like a drag in
 // the pond itself, taking the wheel by hand releases the follow lock.
 function wireMinimap(canvas) {
@@ -436,6 +460,19 @@ function wireMinimap(canvas) {
   };
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
+
+  // The keyboard equivalent of a click on the map: arrows slide the view a step
+  // at a time. `panByScreen` is a no-op at zoom 1, and the map is `display:none`
+  // there, so a viewer can neither reach this nor be surprised by it in the one
+  // state the whole project's screenshots depend on.
+  canvas.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!step) return;
+    renderer.camera.setTarget(null); // taking the wheel by hand, as a click does
+    renderer.camera.panByScreen(-step[0] * MINIMAP_PAN, -step[1] * MINIMAP_PAN);
+    e.preventDefault();
+  });
 }
 
 function updateSeasonBadge(world) {
@@ -1788,6 +1825,54 @@ function wireCanvas(canvas) {
   };
   canvas.addEventListener("pointerup", (e) => lift(e, false));
   canvas.addEventListener("pointercancel", (e) => lift(e, true));
+
+  // ---- The keyboard route into the pond ----
+  // Everything above this line needs a pointer. `src/pondnav.js` is where the
+  // "which creature is east of this one?" arithmetic lives and where the suite
+  // can reach it; this is the adapter, the same division the pointer path uses.
+  //
+  // The first arrow press with nothing selected picks up whatever the view is
+  // already on, rather than the focus landing on the canvas selecting something
+  // by itself — tabbing *past* the pond on the way to the controls must not
+  // move the camera or start narrating a creature nobody asked about.
+  canvas.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const dir = DIRECTION_KEYS[e.key];
+    if (dir) {
+      const live = renderer.selected && !renderer.selected.dead ? renderer.selected : null;
+      const next = live
+        ? stepSelection(world.creatures, live, dir, config)
+        : entrySelection(world.creatures, { x: cam().x, y: cam().y }, config);
+      // Nobody that way: keep the selection. A key that cannot do anything must
+      // not undo the thing a viewer has spent five presses reaching.
+      if (next) {
+        renderer.selected = next;
+        // Following, then stepping, hands the camera over — exactly what
+        // clicking somebody else while following does.
+        if (cam().target) cam().setTarget(next);
+        else if (cam().zoom > MIN_ZOOM) cam().moveTo(next.x, next.y);
+        announce(describeSelection(next, config));
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Enter") {
+      const c = renderer.selected;
+      if (c && !c.dead) {
+        cam().setTarget(c);
+        flash(`Following creature #${c.id} — press Escape, or 0, to let go.`);
+        announce(`Following creature ${c.id}.`);
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.key === "Escape") {
+      renderer.selected = null;
+      cam().setTarget(null);
+      announce(describeSelection(null, config));
+      e.preventDefault();
+    }
+  });
 
   // Wheel zooms about the cursor, so you magnify what you were looking at.
   canvas.addEventListener(

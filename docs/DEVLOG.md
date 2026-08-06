@@ -5974,3 +5974,164 @@ lesson was that an audit's own to-do list is a list of things I have decided are
 probably fine. This is the same, with the extra turn that the item was not on a
 list somewhere else — it was in a comment three lines above the code that needed
 it.
+
+---
+
+## Entry 72 — the pond finally has a keyboard · 2026-08-06
+
+Nine releases ago I opened this page in headless Chromium and walked it with a
+keyboard alone. It went well: 61 tab stops in document order, no traps, no
+positive `tabindex`, a focus ring that measures fine. I fixed thirty-five labels
+that labelled nothing, turned a `div` with a click handler into a button, and
+gave the inspector's two figures the names v1.42's canvas-shaped sweep had walked
+past.
+
+Then I wrote this into the playbook and left it there:
+
+> What it leaves: **the pond canvas and the minimap take clicks and cannot be
+> focused**, so selecting a creature and jumping the view have no keyboard route
+> at all. That is a feature, not a patch — it needs an answer to "what does Tab
+> into the pond select, and how do you step between 400 creatures?" — and it is
+> the largest accessibility gap left on the page.
+
+That paragraph is honest and it is also a way of not doing something. The reason
+it survived nine releases is not that the work is large — it took a cycle — it is
+that I had written the design question down and then read it every time as a
+*difficulty* rather than as a question with an answer. v1.46's lesson is that an
+audit's own to-do list is a list of things I have decided are probably fine; this
+is the version where the item is not a chore but a *design problem*, and a design
+problem I posed myself is the most skippable thing there is.
+
+### The wrong answer is a list
+
+The obvious implementation is an index into `world.creatures`: Tab focuses the
+pond, the arrow keys walk the array, the inspector follows. It is ten lines.
+
+`world.creatures` is in birth order. v1.47 spent a whole release establishing
+that birth order is not a fact about this world — it is an accident of the
+sequential sweep, and it was quietly handing out 4.5% of the pond's meals on the
+basis of who was born first. Navigating by it would mean each press teleports the
+viewer to a creature with no relationship to the one they were looking at.
+
+I could have left that as an argument. It is measurable, so here it is: stepping
+to the next creature in the array moves the selection a median of **295.8 px**
+across twelve seeds at tick 1,000. The expected distance between two uniformly
+random points on this 900×620 torus is **296.8 px**. A list-shaped keyboard route
+is not *like* teleporting to a random creature; within measurement, it **is**
+teleporting to a random creature — and the figure barely moves across seeds
+(282–340), which is the tell that it carries no information about the pond at
+all.
+
+An arrow step moves it a median of 68.6 px, and that number *does* move with the
+seed (36 px in a pond of 260, 119 px in a pond of 39), because it is a fact about
+how crowded the water is.
+
+### The answer this pond already has
+
+What a viewer of this page has is not a list, it is a *place*: the thing they are
+looking at, and the things around it. So the rule is the one every television
+remote uses. A creature is "east" of you when `dx > 0 && |dy| <= dx`, and the
+other three directions by symmetry.
+
+Three properties fall out, and each is a test rather than a sentence:
+
+**The four quadrants tile the plane.** Whichever axis has the larger offset
+decides, so every non-zero offset belongs to at least one direction, and a
+diagonal belongs to exactly two. Nobody can sit in a seam between the arrow keys.
+This project has been wrong about tilings twice — the minimap's viewport pieces
+in v1.24, the Muller plot's bands in v1.42 — and both times the tempting
+assertion was an aggregate that two cancelling errors satisfy. So the test walks
+6,561 offsets one at a time and checks the *count* of directions each belongs to,
+which is a claim a gap and an overlap cannot jointly satisfy.
+
+**A direction cannot run out of world.** Offsets are wrapped with the same
+`wrapDelta` the camera uses to hide the seam, so east from the right-hand edge
+continues into the left-hand edge exactly as the water does.
+
+**It is the viewer's geometry, not a creature's.** With `barrierOcclusion` on, a
+creature cannot see through rock. A watcher plainly can, and the walled pond is
+still navigable end to end (measured, 100% reachable on seed 314 with walls and
+opacity). Writing that down is the point: a guard against a case is a decision
+about what happens in it, and "the selection rule inherits the simulation's
+senses" is a different feature wearing this one's name.
+
+### The question I nearly shipped without asking
+
+Directional stepping is a *graph*: four out-edges per creature, and no reason in
+the construction why it should be connected. If a third of the pond is
+unreachable, the feature is a demo rather than a route, and it would look
+completely fine in the only test I would have thought to write — press an arrow,
+watch the selection move.
+
+So I measured reachability from the entry selection. **100%**, on twelve seeds at
+tick 1,000, at thirteen sample points through a 12,000-tick run of seed 314, in
+thin ponds of two to twelve creatures, and in a walled and occluded one. Worst
+case thirteen presses; mean four to seven. The whole pond, in about a dozen keys.
+
+That number being exactly 100 everywhere is the shape v1.58 taught me to
+distrust — no spread means you may be measuring an instrument rather than a
+world — so I went looking for the counterexample directly: 200,000 randomly
+clustered layouts, blob sizes from 4 px to 60 px, three to twelve points. None
+stranded. I still cannot prove it: the natural argument (the globally nearest
+creature is always reachable) does not extend, because the next-nearest unreached
+creature need not be nearest to anything already reached. So the release says
+what it can defend — an observation on ponds this dense, pinned on a
+deterministic world so the test cannot flake, with a hop bound loose enough
+(40 against a measured 13) that it pins the property rather than a trajectory.
+
+### The half that is not geometry
+
+A selection that moves in silence is v1.13's rule with the senses swapped: the
+mechanic obeys and the watcher cannot tell it happened. The inspector has shown
+everything about the selected creature since v1.15, and it is no answer for a
+listener — reading it means leaving the pond and losing the place you were
+navigating from.
+
+So each press announces one short sentence: *Creature 44, generation 1, a grazer,
+37% fed, in the middle of the pond.* The wording is in `describe.js`, where the
+project keeps every sentence it says out loud, and it obeys that module's two
+existing rules: a mechanic that is switched off is not mentioned (no diet without
+predation, no sickness without disease), and the energy share is the inspector's
+own arithmetic so the number a reader sees and the number a listener hears cannot
+part.
+
+The interesting part was the live region, which already belongs to the Chronicle.
+Two writers, one channel. A keystroke is the only thing on that page a listener
+is actively waiting for, so it goes first — and it is a *state*, not an event, so
+a new one replaces an unspoken old one. Holding an arrow key down says where you
+ended up, not every creature you passed through. Nothing of the Chronicle's is
+lost by this, because its queue is only consulted on a frame where the keyboard's
+is empty, and `spokenLine` does not move until its line is actually taken.
+
+### Running it, which is now three-for-three
+
+v1.49 and v1.54 both found things in headless Chromium that reading the code
+twice could not, and this made three. Focus the canvas, press `→` twice, `↑`,
+`Enter`, `↓`, `Escape`, then focus the minimap and press `←` twice. The live
+region read out four different creatures, the zoom badge showed `🔍 3.0× 🎯 #44`
+after Enter, following-then-stepping handed the camera to the new creature, the
+canvas description moved from `centred at x 477` to `x 437` — exactly two 60 px
+presses at 3× — and `window.scrollY` never changed, which is the one thing a
+missing `preventDefault` would have broken and no unit test of mine would ever
+have caught.
+
+### What this leaves
+
+**The pond is reachable; the rest of the canvas is not.** Food, corpses, rock,
+the enriched ground — a keyboard can now select a creature and nothing else. That
+is the right first half (the inspector only ever opened for creatures) and it is
+worth naming as an absence rather than letting "the pond has a keyboard" annex
+it.
+
+**A step is a jump, not a walk.** At zoom 8 a press can move the selection
+outside the previous viewport entirely; the camera follows so the selection is
+never off-screen, but a viewer at high zoom is being teleported around their own
+view. Whether stepping should prefer what is *visible* is a real question and I
+have not measured it.
+
+**And the largest gap on this page is now closed, so the list needs a new
+largest.** Nine releases of accessibility work — v1.31's voice, v1.42's canvas
+names, v1.51's walk, this — have been about surfaces I could enumerate. I do not
+have an enumeration of what is left, which is exactly the state v1.57 was in
+before it stopped asking "what has this view got wrong?" and started asking "what
+is in the world that it has never heard of?".

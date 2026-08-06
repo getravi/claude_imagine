@@ -193,3 +193,26 @@ test("every element the app looks up by id exists somewhere", () => {
   }
   assert.deepEqual([...new Set(missing)], [], "looked up but never written");
 });
+
+test("the two canvases a visitor can click can also be focused", () => {
+  // v1.51 walked the app with a keyboard and finished with a sentence: the pond
+  // and the minimap take clicks and cannot be focused, so selecting a creature
+  // and moving the view had no keyboard route at all. v1.60 gave them one. The
+  // tell that it has been undone is the attribute, not the behaviour — a
+  // `tabindex` deleted while tidying the markup leaves a canvas that looks
+  // exactly the same and is unreachable again.
+  const page = read("app/index.html");
+  for (const id of ["world", "minimap"]) {
+    const tag = page.slice(page.indexOf(`id="${id}"`));
+    const el = tag.slice(0, tag.indexOf(">"));
+    assert.match(el, /tabindex="0"/, `#${id} is clickable and cannot be focused`);
+  }
+  // And the keys it answers to are written down where a screen reader will read
+  // them out: an affordance the prose does not promise is one nobody finds.
+  assert.match(page, /id="pond-keys"/);
+  const keys = page.slice(page.indexOf('id="pond-keys"'));
+  const text = keys.slice(0, keys.indexOf("</p>"));
+  for (const word of ["Arrow", "Enter", "Escape"]) {
+    assert.ok(text.includes(word), `the pond's key hint never mentions ${word}`);
+  }
+});
