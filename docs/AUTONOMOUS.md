@@ -1377,6 +1377,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   ceiling before designing the fix*; the operational form is that the sweep is
   twenty lines and it goes first.
 
+- **A timer I did not wait for is not a wait, and elapsed time is the one fact I
+  never think to measure.** In v1.61 I launched eight backgrounded `sleep`s and
+  kept polling between them, so I read "byte-identical `in_progress`" five times
+  in a row and concluded the run had been stuck for thirty-five minutes. It had
+  been running for three. The whole v1.48 cached-transport diagnosis was
+  available, plausible, and about nothing, because the premise underneath it —
+  *how long has this actually been going?* — was never checked. One `date -u`
+  settled it. **Before reasoning about a duration, print the clock**; a story
+  about elapsed time assembled from how many times I have looked is a story
+  about my own turns.
+
+- **Step 9 can fail for a reason that is not mine, and the deploy has now done
+  it.** Every note here about the Actions API has been about a status that
+  *looked* stuck and was not (v1.42, v1.48). v1.61 is the other case: the tests
+  went green, the artifact uploaded, and `actions/deploy-pages@v4` sat in
+  `deployment_queued` for its full ten-minute timeout and aborted — twice, on
+  two separate runs, ten minutes apart. The tell that separates this from the
+  earlier false alarms is that the *step timings* were available and unambiguous:
+  the deploy step takes **16 seconds** on a normal release (v1.60: 07:00:54 →
+  07:01:10), so a run four minutes into it is already 15× out. Read the previous
+  run's per-step durations before judging this one — the baseline is one API
+  call away and it turns "this feels slow" into a number.
+
+- **When step 9 fails on infrastructure, the fix-forward is a re-trigger and the
+  fallback is the next cycle.** `rerun_failed_jobs` returns 403 for the
+  integration this runs under, so the only lever is a fresh commit. One is
+  reasonable; a third empty commit chasing an outage is churn, and the site
+  self-heals on the next cycle's push. Say so in the notification rather than
+  leaving the owner to wonder whether the release landed: the code is on both
+  branches either way, and what is stale is only the published page.
+
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.
 
