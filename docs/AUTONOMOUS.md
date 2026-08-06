@@ -1517,3 +1517,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   When a result refuses to vary, either the thing is not about the pond, or it is
   a structural property — and the way to tell the two apart is to try to break it
   outside the pond entirely.
+- **Step 9's second kind of evidence is not always available, and a blocked
+  request looks exactly like a page that has not changed.** v1.48's rule was to
+  reach for a different *kind* of evidence than another view of the same API
+  record — the deployed artifact itself. In v1.60 the sandbox's egress proxy
+  refused `getravi.github.io` outright (`CONNECT tunnel failed, 403`), and the
+  poll I wrote — `curl … | grep -c` — counted zero matches in an empty response
+  twenty times running and read exactly like a stale deploy. Any check whose
+  failure mode and whose negative answer are the same string is not a check.
+  Assert the *transport* first (`-w "%{http_code}"`, a non-zero size) and only
+  then the content; and when the artifact is unreachable, say so and fall back to
+  the run and its jobs rather than pretending the stronger evidence was gathered.
