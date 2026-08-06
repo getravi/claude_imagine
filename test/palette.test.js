@@ -29,6 +29,9 @@ import {
   minimapPredatorMark,
   minimapPredatorTones,
   minimapCorpseMark,
+  minimapWater,
+  minimapBiomeWash,
+  minimapPreyDotRgb,
   mortalityColours,
   mortalityTones,
   energyColours,
@@ -51,6 +54,9 @@ import {
   panelBackground,
   chartLines,
   chartLineTones,
+  chartBands,
+  chartBandTones,
+  CHART_BAND_SCALE,
   powerLine,
   powerLineTones,
   POWER_BAND_ALPHA,
@@ -775,8 +781,11 @@ test("how much meat is left moves the mark's size, not its opacity", () => {
 // draws the dead, their two tones have a second domain: the map's own grounds,
 // the rock they can lie against, and the marks a watcher has to tell them from.
 
-/** The minimap's own water: the background under every other ground it draws. */
-const MINIMAP_WATER = { r: 7, g: 12, b: 19 };
+// The minimap's water, its biome wash and its prey dot were three constants in
+// this file until v1.61 — hand-copies of colours three other lines of
+// `minimap.js` draw. v1.26's rule is that a colour a test cannot reach will
+// drift; a test that reaches for its *own copy* of the colour is the same bug
+// with the failure moved into the instrument, where it reads as a pass.
 
 /** `rgb(r, g, b)` back to `{r,g,b}`, so a mark stored as a CSS string is measurable. */
 function rgbToneOf(css) {
@@ -824,8 +833,15 @@ test("a corpse is not any of the things the minimap draws beside it", () => {
   const { rim, core } = minimapCorpseMark();
   const tones = [rgbToneOf(rim), rgbToneOf(core)];
   const neighbours = [];
-  for (let hue = 0; hue < 360; hue++) neighbours.push({ name: `prey hue ${hue}`, rgb: hslToRgb(hue, 65, 70) });
-  neighbours.push({ name: "pellet", rgb: blendOver(MINIMAP_WATER, { r: 80, g: 205, b: 140 }, 0.5) });
+  for (let hue = 0; hue < 360; hue++) {
+    neighbours.push({ name: `prey hue ${hue}`, rgb: minimapPreyDotRgb(hue) });
+  }
+  // The pellet, as v1.57 left it: the pond's own mote, drawn additively. This
+  // line held `rgba(80, 205, 140, 0.5)` — the wash v1.57 *removed* — for three
+  // releases, so the corpse was being checked against a pellet the little map
+  // had stopped drawing.
+  const mote = foodMote();
+  neighbours.push({ name: "pellet", rgb: addOver(minimapWater(), mote, mote.a) });
   for (const [n, rgb] of Object.entries(minimapPredatorTones())) {
     neighbours.push({ name: `hunter ${n}`, rgb });
   }
@@ -1128,6 +1144,87 @@ test("the chart lines the canvas is painted with are the ones that were measured
   }
 });
 
+// ---- the whole-run envelope bands (v1.22, audited v1.61) ----
+//
+// The bands are the honest half of a thinned chart: past the first halving the
+// line is a sample and the band is the true extreme it was sampled from. They
+// were two literals in `chart.js` — the series' own RGB retyped at two alphas
+// picked by eye — and so were outside this file's domain by construction, which
+// is why every sweep since v1.25 passed over them. See `chartBands()`.
+
+test("an envelope band reads against the panel it is drawn on", () => {
+  // v1.39's rule for the power strip's band, one figure up: the alpha is chosen
+  // so the band clears MIN_DELTA_E rather than by eye. It scored 12.9 and 19.4.
+  for (const [name, tone] of Object.entries(chartBandTones())) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(tone, panelBackground(), vision);
+      assert.ok(d >= MIN_DELTA_E, `the ${name} envelope is ΔE ${d.toFixed(1)} from the panel under ${vision}`);
+    }
+  }
+});
+
+test("the two envelopes are not each other", () => {
+  // The failure this release exists for: at 0.16 and 0.22 the bands were very
+  // nearly the same alpha, which threw away the lightness gap that is the only
+  // thing a tritanope has to tell green from blue here. ΔE 9.3.
+  const { pop, food } = chartBandTones();
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(pop, food, vision);
+    assert.ok(d >= MIN_DELTA_E, `the two envelopes are ΔE ${d.toFixed(1)} apart under ${vision}`);
+  }
+});
+
+test("a band belongs to its own line, and the line still reads on it", () => {
+  // The pair a reader actually has to resolve is "which series is this
+  // envelope", and it fails if a band is closer in colour to the *other*
+  // series' band than to its own line. It was: 9.3 against the other band
+  // against 25.2 to its own line, so the answer a reader got was the wrong one.
+  //
+  // What is deliberately not asserted here is that a band is quieter than its
+  // line. It reads like the obvious claim — a band is a wash, a line is the
+  // value — and it is false: under tritanopia the pop band sits *further* from
+  // the panel than the pop line does, because a desaturated blue is not
+  // monotone in that model. The relation that is actually true is the one in
+  // the CSS (a band is its line's alpha times one scale), and the test below
+  // pins that instead. A perceptual claim standing in for an arithmetic one
+  // fails on the one model nobody pictures.
+  const bands = chartBandTones();
+  const lines = chartLineTones();
+  for (const name of Object.keys(bands)) {
+    const other = name === "pop" ? "food" : "pop";
+    for (const vision of VISION_MODELS) {
+      const own = deltaE(bands[name], lines[name], vision);
+      const cross = deltaE(bands[name], bands[other], vision);
+      assert.ok(own < cross, `the ${name} envelope is nearer the ${other} band than its own line under ${vision}`);
+      // And the line has to stay visible where it crosses its own band. Not the
+      // bar for a mark — the line carries shape as well as colour — but the bar
+      // this project uses for "present without being looked for".
+      assert.ok(own >= MIN_RULE_DELTA_E, `the ${name} line is ΔE ${own.toFixed(1)} from its own band under ${vision}`);
+    }
+  }
+});
+
+test("a band is its line, at one scale, and cannot drift from it", () => {
+  // The point of deriving rather than retyping: parse both back out of the CSS
+  // and assert the band is the line's own colour with its alpha scaled. This is
+  // the assertion the two literals in `chart.js` could never have had.
+  const lines = chartLines();
+  const bands = chartBands();
+  assert.deepEqual(Object.keys(lines), Object.keys(bands));
+  const parse = (text) => {
+    const m = text.match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/);
+    assert.ok(m, `not a plain rgba() this test can parse: ${text}`);
+    return { rgb: { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) }, a: Number(m[4]) };
+  };
+  for (const name of Object.keys(lines)) {
+    const line = parse(lines[name]);
+    const band = parse(bands[name]);
+    assert.deepEqual(band.rgb, line.rgb, `the ${name} band is not the ${name} line's colour`);
+    assert.ok(Math.abs(band.a - line.a * CHART_BAND_SCALE) < 1e-9);
+    assert.deepEqual(blendOver(panelBackground(), band.rgb, band.a), chartBandTones()[name]);
+  }
+});
+
 // ---- the chart's grid (v1.41) ----
 //
 // The first colour in this project that can fail for being too *loud*. A
@@ -1185,14 +1282,15 @@ test("the axis numbers are legible, and are the population's own colour", () => 
 
 /** The minimap's own grounds, which the field is drawn on too. */
 function minimapGrounds() {
-  const bg = MINIMAP_WATER;
+  const bg = minimapWater();
   const out = [{ name: "mini bare", rgb: bg }];
   for (let band = 0; band < TERRAIN_BANDS; band++) {
     const m = terrainBandFill(band).match(/rgba?\(([^)]+)\)/)[1].split(",").map(Number);
     const g = blendOver(bg, { r: m[0], g: m[1], b: m[2] }, m[3]);
     out.push({ name: `mini band ${band}`, rgb: g });
     // The minimap paints biomes as a flat wash rather than an additive glow.
-    out.push({ name: `mini band ${band} +biome`, rgb: blendOver(g, { r: 32, g: 82, b: 70 }, 0.5) });
+    const wash = minimapBiomeWash();
+    out.push({ name: `mini band ${band} +biome`, rgb: blendOver(g, wash, wash.a) });
     for (const rich of [0.5, 1]) {
       const t = detritusTint(rich);
       out.push({ name: `mini band ${band} +soil ${rich}`, rgb: blendOver(g, t, t.a) });

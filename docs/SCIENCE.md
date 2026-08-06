@@ -3895,6 +3895,113 @@ node --input-type=module -e '
 Every row reads `state=blind traj=blind tree=blind books=SEES`. Run the same
 against v1.58 and the fourth column is gone, along with any way to notice.
 
+## The colours the palette never owned (v1.61)
+
+`palette.js` exists so that every colour in this project is somewhere a test can
+reach. Twelve releases moved colours *into* it and none ever asked whether any
+were still outside. Five modules import it; between them they name twenty
+colours of their own, and the audit's own test file had grown four hand-copies
+of colours those modules draw.
+
+`test/colourliterals.test.js` is that sweep, standing. Three findings are worth
+recording as measurements rather than as a changelog entry.
+
+### The envelope bands, and what actually separates two series
+
+The whole-run chart draws a min/max envelope per series (v1.22) — past the first
+halving of the archive, the line is a sample and the band is the true extreme it
+was sampled from. Both bands were literals in `chart.js`, at alphas 0.16 and
+0.22, and both failed:
+
+| pair | worst ΔE over four vision models | bar |
+| --- | --- | --- |
+| food band vs panel | 12.9 (deuteranopia) | 25 |
+| pop band vs panel | 19.4 (normal) | 25 |
+| **food band vs pop band** | **9.3 (tritanopia)** | 25 |
+| food line vs pop line | 25.9 (tritanopia) | 25 |
+
+The last row is the explanation for the third. Green against blue is a *hue*
+distinction and tritanopia is the model that loses it, so the two lines clear
+the bar only because their alphas differ by a factor of two — the population
+line is nearly opaque and the food line half-strength, and what survives that
+model is their **lightness**. Two bands drawn at 0.16 and 0.22 are two bands at
+very nearly the same alpha, which spends exactly the axis that was carrying the
+distinction.
+
+So the fix is one number rather than two colours: a band is its own line at
+`CHART_BAND_SCALE` (0.70) of that line's opacity, inheriting the gap by
+construction. There is a window and it is narrow — below 0.65 the food band
+falls under 25 against the panel, above 0.80 the pair closes again as both
+approach their opaque colours.
+
+### The "other" band: a case where no colour exists
+
+The Muller plot stacks each species' share and puts the churn of lineages too
+small to name into a grey "other" band. It is `rgba(120, 140, 160, 0.16)` and it
+scores **ΔE 9.0** against the background it is drawn on — inside the [5, 10]
+window this project reserves for gridlines.
+
+How much lands in it, over twelve seeds at 12,000 ticks:
+
+| seed | bands | "other" mean | "other" peak |
+| --- | --- | --- | --- |
+| 314 | 17 | 5.0% | 82.5% |
+| 77 | 25 | 6.2% | 82.9% |
+| 51 | 21 | 6.0% | 92.5% |
+| 13 | 17 | 9.2% | 90.2% |
+| 23 | 7 | **28.1%** | 97.5% |
+| 45 | 21 | 9.3% | 81.4% |
+| 88 | 34 | 7.7% | 82.5% |
+| 512 | 23 | 6.8% | 70.0% |
+| 7 | 20 | 6.1% | 72.3% |
+| 101 | 22 | 7.2% | 90.0% |
+| 202 | 13 | 10.3% | 90.0% |
+| 999 | 18 | 7.1% | 80.0% |
+
+Mean of means **9.1%**, and a peak above 70% on every seed tried.
+
+The value was left alone, because there is no value. The lineage fills are
+`hsl(h, 68%, 55%)` around the whole hue wheel at 0.9 over a near-black canvas:
+anything dark enough to sit near the background fails the background, and
+anything bright enough to clear it collides with some lineage. Swept over
+neutrals from L 70 to L 100 at every opacity, the best available is **pure white
+at full opacity, ΔE 23.9** from the nearest lineage band — under the bar of 25.
+
+```js
+// node --input-type=module -e "$(cat this)"
+import { blendOver, deltaE, VISION_MODELS, hslToRgb } from "./src/palette.js";
+const BG = { r: 0x04, g: 0x07, b: 0x0b };                    // what #muller paints
+const worst = (a, b) => Math.min(...VISION_MODELS.map((v) => deltaE(a, b, v)));
+for (const [L, a] of [[75, 1], [88, 1], [96, 1], [100, 1], [100, 0.85]]) {
+  const o = blendOver(BG, hslToRgb(0, 0, L), a);
+  let near = Infinity;
+  for (let h = 0; h < 360; h++) near = Math.min(near, worst(o, blendOver(BG, hslToRgb(h, 68, 55), 0.9)));
+  console.log(`L ${L}% a ${a}: ΔE ${worst(o, BG).toFixed(1)} from the water, ${near.toFixed(1)} from the nearest lineage`);
+}
+```
+
+The escape is the one this figure already took in v1.46 for the same arithmetic
+reason (16 separable hues, 19 bands): geometry. A hatch no lineage is ever
+assigned, dimmed under a highlight like every other band.
+
+### The instrument's own copies
+
+`test/palette.test.js` held four colours by hand. Two were duplicates
+(`MINIMAP_WATER`, the biome wash), and two were *wrong*:
+
+- the minimap's **pellet**, rebuilt as `rgba(80, 205, 140, 0.5)` — the flat wash
+  v1.57 removed, in favour of the pond's additive `foodMote()`, three releases
+  earlier and one file over.
+- the minimap's **prey dot**, as the right hue fully opaque. It is drawn at
+  0.85. The difference reaches **ΔE 19.8** (hue 54), and in the direction that
+  flatters: every mark required to stand out from a prey creature was scored
+  against a brighter dot than the one on screen. Corrected, the corpse badge's
+  worst case against a prey dot falls from 56.0 to 48.1 — still clear of 25.
+
+v1.26's rule is that a colour a test cannot reach will drift. A test that
+reaches for its own *copy* is worse: the drift happens inside the instrument and
+is reported as a pass.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

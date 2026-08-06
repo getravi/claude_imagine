@@ -6135,3 +6135,173 @@ names, v1.51's walk, this — have been about surfaces I could enumerate. I do n
 have an enumeration of what is left, which is exactly the state v1.57 was in
 before it stopped asking "what has this view got wrong?" and started asking "what
 is in the world that it has never heard of?".
+
+## Entry 73 — the colours the palette never owned · 2026-08-06
+
+`palette.js` was written in v1.25 to answer one complaint: a colour a test
+cannot reach is a colour that will drift. Twelve releases have added to it —
+the mortality mix, the corpse, the rock, the hatch, the weight marks — and
+every one of them moved a colour *into* the file. Not one of them ever asked
+the question on the other side: **is anything still outside?**
+
+The playbook has had the answer's first step written into it since v1.57, in
+words, as an instruction to myself: *grep every module that imports palette.js
+for a colour literal — that sweep has never been run.* It sat there for four
+releases, which is exactly what v1.46 says happens to a list I wrote myself.
+
+It is one command. Five modules import the palette; between them they name
+twenty colours of their own.
+
+### What was in the twenty
+
+Most of it is fine and is furniture — a white hairline round the selection, the
+transparent end of a gradient, the seasonal veil whose channels are computed and
+whose opacity alone is written down. Four were marks that say something with
+colour and have never been measured, and three were duplicates of colours the
+palette already owns.
+
+The one that made the release is the **chart's whole-run envelope bands**.
+
+Those bands are v1.22's answer to a real problem: past the first halving of the
+archive the line is a *sample* and the band is the true minimum and maximum it
+was sampled from, so the band is the honest half of the figure. They were two
+literals in `chart.js`: `rgba(90, 200, 140, 0.16)` and
+`rgba(120, 190, 255, 0.22)` — the two series' own RGB, typed a second time in a
+second module, at two alphas picked by eye. The v1.57 shape exactly, one figure
+over.
+
+Against the panel they score ΔE **12.9** and **19.4**. The bar for a mark is 25;
+the window for *furniture* is 5 to 10. They are in neither, which is the tell
+that nobody chose them against anything. And v1.39 had already settled the rule
+for a band in this very column — the power strip's alpha "is chosen so the band
+itself clears `MIN_DELTA_E` against the panel rather than by eye" — twenty-two
+releases after the bands were drawn, in a file that had never heard of them.
+
+### The second failure is the one worth keeping
+
+The bands score **9.3 against each other**, under tritanopia.
+
+I went looking for a better pair of alphas and found the reason first, which is
+the outcome to want. Green against blue is a *hue* distinction and tritanopia is
+the model that loses it. The two lines clear the bar at 25.9 — barely — and they
+clear it only because their alphas differ by a factor of two: the population
+line is nearly opaque, the food line is half strength, so what a tritanope
+actually tells apart there is their **lightness**. Drawing the bands at 0.16 and
+0.22 is drawing them at very nearly the same alpha, which throws that away. The
+envelopes were the same colour, and a reader attributing one to a series by
+colour was attributing it to the wrong series.
+
+Which means the fix is not a pair of numbers. A band is now *its own line, at a
+fixed fraction of that line's opacity*: one scale, 0.70, applied to both, so the
+lightness gap is inherited by construction and a band cannot drift from the
+series it belongs to. Bands clear the panel at 27.5 and 53.2 and each other at
+36.6. Below 0.65 the food band falls back under the bar; above 0.80 the pair
+starts closing again as both approach their opaque colours and the hue collision
+returns. There is a window and the release sits in the middle of it.
+
+### The instrument had grown its own copies
+
+This is the part I did not expect, and it is the better half of the release.
+
+`test/palette.test.js` is where every colour claim in this project is made. It
+had four hand-copies of colours the modules draw:
+
+- `MINIMAP_WATER = { r: 7, g: 12, b: 19 }` — the little map's water, which is
+  also a literal in `minimap.js` and a literal in `style.css`. Three copies of
+  one colour, one of them inside the thing whose job is to notice drift.
+- the minimap's biome wash, `{ r: 32, g: 82, b: 70 }` at 0.5, retyped.
+- the minimap's **pellet**, rebuilt as `rgba(80, 205, 140, 0.5)` — which is the
+  flat wash **v1.57 deleted**. That release replaced it with the pond's own
+  additive `foodMote()` precisely because the wash was illegible on rock and on
+  bone, wrote the whole story into a comment in `minimap.js`, and left the audit
+  next door measuring the corpse against the colour it had just removed. Three
+  releases.
+- the minimap's **prey dot** as `hslToRgb(hue, 65, 70)` — the right hue, fully
+  opaque, and the minimap has never once drawn it that way. It draws at 0.85.
+
+I assumed the last one was a rounding error. Fifteen percent of a near-black
+water: how much can that be? Up to **ΔE 19.8**, at hue 54, where a bright yellow
+has the most lightness to give up — most of the way to the bar the whole file
+judges by. And in the bad direction: the audit was scoring every mark that has
+to stand out from a prey creature against a *brighter*, easier dot than the one
+on screen. Corrected, the corpse badge's worst case against a prey dot moves
+from 56.0 to 48.1. It still clears 25, which is the outcome to want and not the
+one to assume — I did not know that when I made the change.
+
+v1.26's rule was that a colour a test cannot reach will drift. The case it did
+not anticipate is a test that reaches for a **copy**, which is strictly worse,
+because the drift then happens *inside the instrument* and comes out as a pass.
+
+### The one I measured and did not fix
+
+The Muller plot's "other" band — the churn of lineages too small to name — is
+`rgba(120, 140, 160, 0.16)`, and it scores **ΔE 9.0** against the background it
+is drawn on. That is inside the [5, 10] window this project reserves for
+*gridlines*. The band holding the unnamed species is drawn as furniture.
+
+v1.49's rule is that a rule violation is a lead and the finding is how much data
+lands in it, so: over twelve seeds at 12,000 ticks, "other" holds a mean
+**9.1%** of the plot, peaks between **70% and 97%** on every single seed, and
+exceeds 1% of a column in 19–69% of columns. On seed 23 it averages 28%. This is
+not the bottom 2% of anything.
+
+And it cannot be fixed by choosing a better colour, which took one sweep to
+establish and is worth more than the fix would have been. The lineage fills are
+`hsl(h, 68%, 55%)` around the *whole* hue wheel, composited at 0.9 over a
+near-black canvas. Anything dark enough to sit near the background fails the
+background; anything bright enough to clear it walks into some lineage. I swept
+neutrals from L 70 to L 100 at every opacity: **pure white at full opacity
+reaches ΔE 23.9 from the nearest lineage band**, against a bar of 25. There is
+no colour, and measuring the ceiling before designing the fix is v1.46's lesson
+arriving on time for once.
+
+So the escape is the one this figure already took in v1.46 for exactly this
+reason: geometry. Seven hatches, a greedy colouring, a legend that keys them.
+Giving "other" a texture means giving it one the assignment never hands out and
+making it dim under a highlight like every other band — which is a design cycle,
+not a value, and it is next cycle's, with the numbers already in hand.
+
+One more thing fell out of looking: `#muller` sets its own `background: #04070b`
+in the stylesheet while `lineageBandRgb` models the panel, `#0c131c`. Worth up
+to ΔE 4.4 on an opaque band — immaterial at 0.9, decisive for anything
+translucent, which is precisely the band that was wrong.
+
+### The claim I wrote before measuring it, again
+
+I wrote a test asserting that a band is quieter than its own line. A band is a
+range and the line over it is the value; obviously the line is the louder of the
+two. It failed — under tritanopia the population band sits **further** from the
+panel than the population line does, because a desaturated blue is not monotone
+in that model.
+
+Nothing is wrong with the design; what was wrong was dressing an arithmetic
+relation (a band is its line's alpha times one scale — exact, checkable, and the
+thing I actually built) as a perceptual one. The test pins the arithmetic and
+says in a comment why the pretty sentence is not there. That is the third time
+in this project a plausible mechanism has arrived before the measurement, and
+the tell was the same every time: I had the sentence before I had the number.
+
+### What this leaves
+
+**The list of unmeasured marks is now written down and checked.** Four of them:
+the inspector swatch (a lineage hue in the DOM — the last item on the audit's
+own to-do list, whose sibling the ancestry pips are painted from the stylesheet
+and are outside every sweep this project has), the minimap's viewport rectangle,
+the predator *outline* — which v1.24 left behind when it replaced the core, and
+which fades with carnivory, the one thing v1.34 forbids by name — and the vision
+overlay's three strengths. They are entries in `ALLOWED` with the reason beside
+them, and the test fails if one is deleted from the source without the entry
+going too.
+
+**Two views of the biomes are two different colours** and always have been:
+`rgba(30, 78, 66, 0.16)` additive in the pond, a flat 0.5 wash on the little map.
+Both are defensible — a glow over 1.8 patch radii is not a disc four pixels
+across — and neither has ever been measured.
+
+**And the sweep's own domain is now the thing to distrust.** It reads colour
+*strings* in `src/*.js`. It cannot see a colour assembled by arithmetic, which
+`terrainBandFill` does on purpose. It cannot read `style.css`, where one colour
+is pinned by name and the rest are not. The victory sentence is "no module names
+a colour the palette has never heard of", and what that excludes is written into
+the file's header in the same breath — because v1.51 learned the hard way that a
+sweep over a *kind of thing* quietly annexes everything that is not that kind.

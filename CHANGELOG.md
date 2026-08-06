@@ -4,6 +4,82 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.61.0] — 2026-08-06
+
+`palette.js` exists so that no colour in this project lives somewhere a test
+cannot reach it. Twelve releases of colour work went by without anyone asking
+the follow-up question — *did they all go there?* They had not. Five modules
+import the palette and between them name twenty colours of their own, and the
+audit's own test file had quietly grown four hand-copies of colours the modules
+draw. This release is the grep, as a test, plus the three fixes it turned up.
+
+### Fixed
+
+- **The chart's whole-run envelope bands were never in the audit, and both
+  failed it.** `chart.js` held `rgba(90, 200, 140, 0.16)` and
+  `rgba(120, 190, 255, 0.22)` — the two series' own RGB, retyped in a second
+  module at two alphas picked by eye. Against the panel they scored ΔE **12.9**
+  and **19.4**, under the 25 a mark must clear and over the 10 that makes a
+  thing furniture; v1.39 had already settled the rule for a band in this column
+  and this figure predated it. Against **each other** they scored **9.3** under
+  tritanopia, which is the failure worth naming: green against blue is a hue
+  distinction, tritanopia is the model that loses it, and the two *lines* clear
+  the bar only because their alphas differ by a factor of two. Two bands drawn
+  at 0.16 and 0.22 threw that away, so a reader attributing an envelope by
+  colour attributed it to the wrong series. A band is now its own line at
+  `CHART_BAND_SCALE` (0.70) of that line's opacity — derived, not retyped, so it
+  cannot drift from the series it belongs to — and clears the panel at 27.5 and
+  53.2 and the other band at 36.6.
+- **The corpse audit was measuring against a pellet the minimap stopped drawing
+  in v1.57.** `test/palette.test.js` rebuilt the little map's pellet as
+  `rgba(80, 205, 140, 0.5)`, which is the flat wash v1.57 *deleted* in favour of
+  the pond's own additive `foodMote()`. Three releases of a background that no
+  longer existed.
+- **The audit was measuring against a prey dot the minimap has never drawn.**
+  The dot is `hsla(hue, 65%, 70%, 0.85)`; the audit compared marks against the
+  same hue fully opaque. Fifteen percent of a near-black water is worth up to
+  **ΔE 19.8**, and in the wrong direction — every mark that has to stand out
+  from a prey creature was scored against a brighter, easier dot. Corrected, the
+  corpse badge's worst case against a prey dot moves from 56.0 to 48.1, still
+  clear of 25.
+- **`rgb(7, 12, 19)` existed in three places** — `minimap.js`, `style.css` and a
+  `MINIMAP_WATER` constant in the test file. It is `minimapWater()` now, and the
+  stylesheet is pinned against it.
+
+### Added
+
+- **`test/colourliterals.test.js` — the sweep, as a standing check.** It reads
+  the shipped sources, finds every colour named outside `palette.js`, and fails
+  on any that has no entry with a reason beside it. Two further assertions carry
+  the weight: an entry naming a colour the module no longer draws fails too
+  (which is exactly the bug it found in the corpse audit), and a reason has to
+  be a sentence rather than a label. Fixing instances fixes instances; a list
+  checked on every run is what keeps the *next* colour inside the instrument.
+- **`minimapWater()`, `minimapBiomeWash()`, `minimapPreyDot()`,
+  `chartBands()`, `rgbaCss()`** in `palette.js`, with the measurements above in
+  the doc comments.
+
+### Measured, and deliberately not changed
+
+- **The Muller plot's "other" band is drawn at gridline contrast and cannot be
+  fixed by picking a value.** `rgba(120, 140, 160, 0.16)` scores ΔE **9.0**
+  against the background it is actually drawn on — inside the [5, 10] window
+  this project reserves for furniture — while holding a mean **9.1%** of the
+  plot across twelve seeds and peaking at **70–97%** on every one of them. It
+  cannot be repaired with a better colour: the lineage fills are
+  `hsl(h, 68%, 55%)` around the whole hue wheel, so anything bright enough to
+  clear the background walks into some lineage, and *pure white at full opacity*
+  still only reaches 23.9 from the nearest of them. The escape is geometry — the
+  hatch machinery this figure already has — and that is a design cycle, not a
+  value. Written up in `docs/SCIENCE.md`.
+- **`#muller` paints its own background** (`#04070b`) while the audit models the
+  panel (`#0c131c`), worth up to ΔE 4.4 on an opaque band. Immaterial for the
+  lineage fills at 0.9 and decisive for anything translucent.
+- **A band is not "quieter than its own line" under every vision model.** It
+  reads like the obvious claim and it is false: under tritanopia the population
+  band sits *further* from the panel than the population line does. The relation
+  that is true is the arithmetic one in the CSS, and that is what the test pins.
+
 ## [1.60.0] — 2026-08-06
 
 v1.51 walked this page with a keyboard, fixed everything it found, and finished

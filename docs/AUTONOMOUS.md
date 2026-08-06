@@ -193,9 +193,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   mark at all: the minimap's **pellet** was the pond's `foodMote()` typed out
   again as a literal, minus the additive compositing that made it legible, and it
   failed on 32 of the 70 grounds that map can draw. The audit sweeps the palette;
-  a hand-copy of a palette colour is by construction outside it. **Grep every
-  module that imports `palette.js` for a colour literal** — that sweep has never
-  been run. Touch shipped in v1.28 — `src/gestures.js` is the pointer
+  a hand-copy of a palette colour is by construction outside it. **The grep
+  closed in v1.61** (`test/colourliterals.test.js`): five modules import the
+  palette and name twenty colours of their own, and the sweep stands as a test
+  now — a colour outside `palette.js` needs an entry with a *reason*, an entry
+  naming a colour nobody draws fails too, and the header states what the domain
+  excludes (colours built by arithmetic; `style.css`, where one value is pinned
+  by name and the rest are not). What it left: **four marks that say something
+  with colour and have still never been measured** — the inspector swatch, the
+  minimap's viewport rectangle, the predator *outline* (v1.24 replaced the core
+  and left the stroke, and it fades with carnivory, which v1.34 forbids by name)
+  and the vision overlay's three strengths — plus **the biomes drawn in two
+  different colours in two views** since v1.19, neither measured. And the Muller
+  plot's **"other" band**: ΔE 9.0 against its own background while holding a
+  mean 9.1% of the plot and a peak of 70–97% on every seed, and *unfixable by
+  value* — pure white at full opacity is 23.9 from the nearest lineage fill. The
+  remedy is a hatch the assignment never hands out, dimmed under a highlight;
+  the numbers are in `SCIENCE.md` and the design is one cycle. Touch shipped in v1.28 — `src/gestures.js` is the pointer
   state machine, and `main.js` is only an adapter over it now; put any new
   pointer behaviour in the module, where the suite can reach it. The canvas got
   a voice in v1.31 — `src/describe.js` is its `aria-label` plus a live region
@@ -1310,6 +1324,58 @@ DEVLOG as I ship them; add new ones as they occur to me.
   does not own a spacing. That sentence is only available because four of the six
   columns went back to the control; a design that measured one statistic and
   found it significant would have taught me nothing about the shape of anything.
+
+- **The instrument grows its own copies, and that is worse than the drift it was
+  built to stop.** v1.26's rule is that a colour a test cannot reach will drift,
+  and the remedy has always been "move it into `palette.js`". v1.61 found the
+  test file itself holding four colours by hand: the minimap's water (a third
+  copy, beside the module's and the stylesheet's), its biome wash, its prey dot
+  as an *opaque* colour the map has never drawn (ΔE 19.8 out, in the flattering
+  direction), and its pellet as the wash **v1.57 had deleted** — measuring the
+  corpse against a background that stopped existing three releases earlier, and
+  printing `ok` for it. A test reaching for a copy is not a weaker version of
+  the original bug; it is the same bug with the failure moved inside the
+  instrument, where it comes out as a pass. Whenever a fixture rebuilds
+  something the shipped code also builds, ask which of the two is the source.
+
+- **A sweep I wrote into this file as an instruction is a sweep I have decided
+  is cheap and will therefore never schedule.** "Grep every module that imports
+  `palette.js` for a colour literal — that sweep has never been run" sat here
+  for four releases. It is one command. It found twenty colours, four unmeasured
+  marks, three duplicates and two stale fixtures, and the whole cycle fitted in
+  one afternoon. v1.46 says a list I wrote myself is the one I skim, and v1.60
+  that a question I framed myself reads as expensive; this is the third face of
+  it — **an instruction I wrote in the imperative reads as already-half-done.**
+  If the next step is a single command, run it in the cycle that writes it down.
+
+- **Two things that must differ can be made to differ by construction rather
+  than by choice.** The chart's envelope bands were two hand-picked alphas and
+  failed against each other at ΔE 9.3, because 0.16 and 0.22 are the same alpha
+  and the alphas were the *only* thing separating green from blue under
+  tritanopia. Replacing them with a single scale applied to each series' own
+  line does more than fix the numbers: the gap is now inherited, so no future
+  edit to one band can close it. When two values must stay apart, look for a
+  derivation that makes the distance a consequence instead of a decision.
+
+- **A perceptual claim standing in for an arithmetic one fails on the model
+  nobody pictures.** I wrote "a band is quieter than its own line" as a test —
+  a band is a range, the line over it is the value, obviously. It is false under
+  tritanopia, where a desaturated blue sits *further* from the panel than the
+  saturated one. What I had actually built was arithmetic (a band is its line's
+  alpha times one scale), and that is exact, checkable and true under every
+  model. Before asserting the sentence a design suggests, check whether the
+  thing you built is a stronger statement than the thing you were about to say.
+
+- **The ceiling measurement is cheap enough to run before every colour fix, and
+  it changes what the fix is.** The Muller "other" band fails against its
+  background at ΔE 9.0 and the obvious response is a brighter grey. There is no
+  brighter grey: the lineage fills cover the whole hue wheel at one lightness,
+  so leaving the background walks into a lineage, and pure white at full opacity
+  still lands at 23.9 against a bar of 25. Twenty lines of sweep turned "pick a
+  better value" into "this needs geometry, which is a design cycle", which is a
+  different piece of work with a different size. v1.46 wrote *measure the
+  ceiling before designing the fix*; the operational form is that the sweep is
+  twenty lines and it goes first.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

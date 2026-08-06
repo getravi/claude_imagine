@@ -272,6 +272,69 @@ export function minimapPredatorTones() {
 }
 
 /**
+ * The little map's water: the background under every other ground it draws, and
+ * therefore the first term in every contrast the minimap audit computes.
+ *
+ * It arrived in v1.61 with nothing wrong with the *value* and everything wrong
+ * with the arrangement. `rgb(7, 12, 19)` existed in three places — the module
+ * that paints it, `style.css` (which paints the same rectangle underneath, so
+ * the corner does not flash a different colour before the first frame), and a
+ * `MINIMAP_WATER` constant in `test/palette.test.js`. v1.26's rule is that a
+ * colour a test cannot reach is a colour that will drift; the case it did not
+ * anticipate is a test that reaches for a *copy*, which is worse, because the
+ * audit then measures a world the module is no longer drawing and says so in
+ * green. The stylesheet is checked against this function by
+ * `test/colourliterals.test.js`.
+ */
+export function minimapWater() {
+  return { r: 7, g: 12, b: 19 };
+}
+
+/**
+ * Biomes on the little map: a flat wash rather than the pond's additive glow,
+ * because at a fifth of the scale a gradient is one pixel of ramp.
+ *
+ * Here for the same reason as `minimapWater()` — the audit's ground list held a
+ * hand-copy of it — and note that this is *not* the pond's biome colour. Two
+ * views of one feature have been drawn in two different colours since v1.19
+ * (`rgba(30, 78, 66, 0.16)` additive there, this flat 0.5 here), and both are
+ * defensible: the pond's is a glow over a large radius, the map's is a disc of
+ * a few pixels that has to survive the terrain ramp under it. What was not
+ * defensible was neither of them having a name.
+ */
+export function minimapBiomeWash() {
+  return { r: 32, g: 82, b: 70, a: 0.5 };
+}
+
+/**
+ * A prey creature on the little map: two pixels of its inherited lineage hue.
+ *
+ * The alpha is the point of this entry. The module has drawn the dot at 0.85
+ * since v1.19 and the audit compared its neighbours against `hslToRgb(hue, 65,
+ * 70)` — the same hue, fully opaque, a colour the minimap has never once put on
+ * screen. Fifteen percent of a near-black water sounds like a rounding error
+ * and is not: the two differ by up to **ΔE 19.8** (hue 54, where a bright
+ * yellow has the most lightness to lose), which is most of the way to the bar
+ * the audit judges by. And the direction was the bad one — the audit was
+ * measuring against a *brighter* dot than the one drawn, so every mark that has
+ * to stand out from a prey creature was being scored against the easier case.
+ * Corrected, the corpse badge's worst case against a prey dot moves from 56.0
+ * to 48.1; it still clears 25, which is the outcome to want and not the one to
+ * assume.
+ */
+export function minimapPreyDot(hue) {
+  return `hsla(${hue}, 65%, 70%, ${MINIMAP_PREY_ALPHA})`;
+}
+
+/** How hard a prey dot is drawn over the little map's water — see above. */
+export const MINIMAP_PREY_ALPHA = 0.85;
+
+/** A prey dot as it is actually composited, for the audit. */
+export function minimapPreyDotRgb(hue) {
+  return blendOver(minimapWater(), hslToRgb(hue, 65, 70), MINIMAP_PREY_ALPHA);
+}
+
+/**
  * The three ways out of this world, as colours.
  *
  * The mortality bar has said *starved / aged / hunted* in gold, grey and orange
@@ -377,14 +440,91 @@ export function barTrack() {
  * unchanged — `test/palette.test.js` pins the composited results.
  */
 export function chartLines() {
-  return { pop: "rgba(120, 190, 255, 0.95)", food: "rgba(90, 200, 140, 0.5)" };
+  return {
+    pop: rgbaCss(CHART_SERIES.pop.rgb, CHART_SERIES.pop.alpha),
+    food: rgbaCss(CHART_SERIES.food.rgb, CHART_SERIES.food.alpha),
+  };
 }
 
 /** The two chart lines as they are actually composited over the panel. */
 export function chartLineTones() {
   return {
-    pop: blendOver(panelBackground(), { r: 120, g: 190, b: 255 }, 0.95),
-    food: blendOver(panelBackground(), { r: 90, g: 200, b: 140 }, 0.5),
+    pop: blendOver(panelBackground(), CHART_SERIES.pop.rgb, CHART_SERIES.pop.alpha),
+    food: blendOver(panelBackground(), CHART_SERIES.food.rgb, CHART_SERIES.food.alpha),
+  };
+}
+
+/**
+ * The two series in their parts, so that everything else drawn in this figure
+ * can be *derived* from them rather than retyped. Values unchanged since v1.0.
+ *
+ * Note which axis separates them. Green against blue is a hue distinction and
+ * tritanopia is the model that loses it: the two lines score **25.9** under it,
+ * against a bar of 25, and they clear it only because their alphas differ by a
+ * factor of two — the population line is nearly opaque and the food line is
+ * half-strength, so what a tritanope actually tells apart is their *lightness*.
+ * That is the whole reason `CHART_BAND_SCALE` is one number rather than two.
+ */
+const CHART_SERIES = Object.freeze({
+  pop: Object.freeze({ rgb: Object.freeze({ r: 120, g: 190, b: 255 }), alpha: 0.95 }),
+  food: Object.freeze({ rgb: Object.freeze({ r: 90, g: 200, b: 140 }), alpha: 0.5 }),
+});
+
+/**
+ * The whole-run envelope bands (v1.22), which the audit did not reach until
+ * v1.61 — and which had never been in it, because they were never colours this
+ * file knew about. `chart.js` held `rgba(90, 200, 140, 0.16)` and
+ * `rgba(120, 190, 255, 0.22)`: the two series' own RGB, typed a second time in
+ * a second module at two alphas picked by eye. The v1.57 shape exactly.
+ *
+ * Both failed, and the second failure is the interesting one:
+ *
+ *   - against the panel, ΔE **12.9** (food) and **19.4** (pop) — under the 25 a
+ *     mark must clear, and over the 10 that makes a thing furniture. v1.39
+ *     already settled the rule for a band in this column: the power strip's
+ *     alpha "is chosen so the band itself clears `MIN_DELTA_E` against the
+ *     panel rather than by eye". One figure up, nothing was.
+ *   - against **each other**, ΔE **9.3** under tritanopia. The bands were drawn
+ *     at 0.16 and 0.22, which is very nearly the same alpha, and that threw
+ *     away the one axis holding the two series apart (see `CHART_SERIES`). The
+ *     envelope is the honest half of a thinned chart — the line is a sample and
+ *     the band is the true extreme it was sampled from — so a reader
+ *     attributing an envelope to a series by colour was attributing it to the
+ *     wrong one.
+ *
+ * The fix is that a band is no longer a colour at all. It is its own line, at a
+ * fixed fraction of that line's opacity, so it inherits the lightness gap by
+ * construction and cannot drift from the series it belongs to. One number:
+ *
+ *   - at 0.70 the bands clear the panel at 27.5 and 53.2 and each other at
+ *     36.6, and each stays quieter than its own line (a band is a range, the
+ *     line drawn over it is the value).
+ *   - below 0.65 the food band falls back under 25; above 0.80 the pair starts
+ *     closing again as both approach their opaque colours, where the hue
+ *     collision under tritanopia returns.
+ */
+export const CHART_BAND_SCALE = 0.7;
+
+/**
+ * A band's opacity, rounded exactly as `rgbaCss` will write it — so the number
+ * measured and the number drawn are one number, not two that agree to four
+ * decimal places. (v1.54's rule about two things behind one key, in miniature.)
+ */
+const bandAlpha = (s) => Number((s.alpha * CHART_BAND_SCALE).toFixed(4));
+
+/** The envelope band for each series: its line's colour, at `CHART_BAND_SCALE`. */
+export function chartBands() {
+  return {
+    pop: rgbaCss(CHART_SERIES.pop.rgb, bandAlpha(CHART_SERIES.pop)),
+    food: rgbaCss(CHART_SERIES.food.rgb, bandAlpha(CHART_SERIES.food)),
+  };
+}
+
+/** The two envelope bands as they are actually composited over the panel. */
+export function chartBandTones() {
+  return {
+    pop: blendOver(panelBackground(), CHART_SERIES.pop.rgb, bandAlpha(CHART_SERIES.pop)),
+    food: blendOver(panelBackground(), CHART_SERIES.food.rgb, bandAlpha(CHART_SERIES.food)),
   };
 }
 
@@ -957,6 +1097,16 @@ export function brainGraphBackground() {
 /** `{r,g,b}` → a CSS colour, for the places the DOM is painted from this file. */
 export function rgbCss({ r, g, b }) {
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+}
+
+/**
+ * The same for a colour that carries an alpha. Kept parseable by the audit —
+ * plain integers and a decimal — because several tests read a value back out of
+ * the string this produces and rebuild the composite from it, which is the only
+ * way the measured colour and the drawn one cannot be two different colours.
+ */
+export function rgbaCss({ r, g, b }, alpha) {
+  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${Number(alpha.toFixed(4))})`;
 }
 
 /** Where the weight strip's bar reaches full height. Weights beyond it clamp. */

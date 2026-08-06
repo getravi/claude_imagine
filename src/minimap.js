@@ -23,7 +23,11 @@ import { wrap } from "./vec.js";
 import {
   minimapPredatorMark,
   minimapCorpseMark,
+  minimapWater,
+  minimapBiomeWash,
+  minimapPreyDot,
   foodMote,
+  rgbCss,
   detritusTint,
   hazardTint,
   barrierRock,
@@ -242,7 +246,7 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
   const layout = minimapLayout(config, opts.width);
   const { width: W, height: H, scale: s } = layout;
 
-  ctx.fillStyle = "rgb(7, 12, 19)";
+  ctx.fillStyle = rgbCss(minimapWater());
   ctx.fillRect(0, 0, W, H);
 
   // The ground first, under everything, in the same order the pond draws it.
@@ -255,7 +259,8 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
   // Biomes, so fertile ground is recognisable at this size even when the crop
   // sitting on it has been eaten.
   if (config.foodPatches && world.environment) {
-    ctx.fillStyle = "rgba(32, 82, 70, 0.5)";
+    const wash = minimapBiomeWash();
+    ctx.fillStyle = `rgba(${wash.r}, ${wash.g}, ${wash.b}, ${wash.a})`;
     for (const c of world.environment.centres) {
       const p = worldToMinimap(c.x, c.y, layout, config);
       discWrapped(ctx, p.x, p.y, config.patchRadius * s, W, H);
@@ -362,7 +367,7 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
       ctx.fillStyle = mark.core;
       ctx.fillRect(p.x - mark.coreSize / 2, p.y - mark.coreSize / 2, mark.coreSize, mark.coreSize);
     } else {
-      ctx.fillStyle = `hsla(${c.hue}, 65%, 70%, 0.85)`;
+      ctx.fillStyle = minimapPreyDot(c.hue);
       ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
     }
   }

@@ -42,7 +42,7 @@
 // v1.54 lives here now, because two figures wanting round numbers under them is
 // one definition of "a number a reader can hold", not two.
 
-import { chartLines, axisRule } from "./palette.js";
+import { chartLines, chartBands, axisRule } from "./palette.js";
 
 /** How many labelled lines the axis aims for. Three is what 90 pixels holds. */
 export const AXIS_LINES = 3;
@@ -326,10 +326,11 @@ export function drawChart(ctx, W, H, hist, { axis, foodMax, whole = false }) {
 
   const maxFood = Math.max(MIN_TOP, foodMax);
   if (whole) {
-    drawBand(ctx, hist, W, H, (h) => h.min.food / maxFood, (h) => h.max.food / maxFood,
-      "rgba(90, 200, 140, 0.16)");
-    drawBand(ctx, hist, W, H, (h) => h.min.pop / axis.top, (h) => h.max.pop / axis.top,
-      "rgba(120, 190, 255, 0.22)");
+    // The envelopes are each series' own colour at `CHART_BAND_SCALE` — see
+    // palette.js, which has what the two literals that used to sit here scored.
+    const band = chartBands();
+    drawBand(ctx, hist, W, H, (h) => h.min.food / maxFood, (h) => h.max.food / maxFood, band.food);
+    drawBand(ctx, hist, W, H, (h) => h.min.pop / axis.top, (h) => h.max.pop / axis.top, band.pop);
   }
   const line = chartLines();
   drawSeries(ctx, hist, W, H, (h) => h.food / maxFood, line.food);
