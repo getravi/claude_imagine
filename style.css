@@ -1039,9 +1039,18 @@ details .field {
   transition: border-color 0.15s, background 0.15s;
   user-select: none;
 }
-.legend .chip:hover {
+.legend .chip:not(.static):hover {
   border-color: #34506a;
   background: var(--bg-panel-2);
+}
+/* The key for the "other" band (v1.62). It names a band rather than a species,
+   so there is nothing to press and nothing to glow: no hover, no pointer, and
+   no halo behind a dot whose whole point is that it is the quiet one. */
+.legend .chip.static {
+  cursor: default;
+}
+.legend .chip.static .dot {
+  box-shadow: none;
 }
 .legend .chip.active {
   border-color: var(--accent);

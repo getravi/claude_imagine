@@ -76,6 +76,12 @@ import {
   lineageBandRgb,
   bandHatch,
   HATCH_ALPHA,
+  mullerBackground,
+  otherBand,
+  otherBandRgb,
+  otherBandHatch,
+  OTHER_BAND_ALPHA,
+  BAND_DIM_SCALE,
   rgbCss,
   inspectorTrack,
   brainGraphBackground,
@@ -1774,6 +1780,129 @@ test("the band and its key are one colour, not two that agree", () => {
   assert.equal(lineageFill(210, "dot"), "hsl(210, 68%, 55%)");
   assert.ok(lineageFill(210).includes("68%, 55%"), "the band and the dot must share a hue and a tone");
   assert.ok(lineageFill(210, "dot").includes("68%, 55%"));
+});
+
+// ---- The "other" band (v1.62) ----
+//
+// The loudest entry on v1.61's list of colours the palette had never owned, and
+// the one it measured and deliberately did not fix: the churn of lineages too
+// small to name, at ΔE 9.0 from the background it is drawn on, holding a mean
+// 9.1% of the plot and a peak of 70–97% on every seed. v1.61 also established
+// that no *value* fixes it, which is why the release after it is geometry.
+//
+// Five tests. The one that earns its keep is the *ceiling*: a floor alone would
+// license a stipple bright enough to make the churn the loudest thing in a
+// figure about lineages, which is a different lie from the one being fixed.
+
+test("the plot's background is the plot's, not the panel's", () => {
+  // The thing v1.61 saw and left, and the reason every number below is what it
+  // is. `#muller` paints itself darker than the column it sits in, so an audit
+  // that reaches for `panelBackground()` — as this one nearly did — is holding
+  // a 0.16 band up against a surface it is not drawn on. It reads **9.0**
+  // against its own canvas and **4.8** against the panel: the same band, and
+  // the second number is half a complaint.
+  assert.equal(rgbCss(mullerBackground()), "rgb(4, 7, 11)");
+  assert.notDeepEqual(mullerBackground(), panelBackground());
+  const band = otherBandRgb();
+  const right = deltaE(band, mullerBackground(), "normal");
+  const wrongReference = deltaE(band, panelBackground(), "normal");
+  assert.ok(
+    right > 1.5 * wrongReference,
+    `the reference should matter here (${right.toFixed(1)} against the canvas, ${wrongReference.toFixed(1)} against the panel)`
+  );
+  // And the composite itself moves, which is why `otherBandRgb` cannot borrow
+  // the panel the way `lineageBandRgb` does at 0.9.
+  const onPanel = blendOver(panelBackground(), otherBand(), OTHER_BAND_ALPHA);
+  assert.ok(deltaE(band, onPanel, "normal") > MIN_RULE_DELTA_E, "the two composites should be visibly different colours");
+});
+
+test("the churn was furniture, which is the failure being fixed", () => {
+  // Pinned, not merely fixed (v1.25): the fill is untouched — it is still the
+  // value the plot has drawn since v1.2 — so this measures the same thing it
+  // always did and says what was wrong with it. The [5, 10] window is the one
+  // this project reserves for *gridlines*, and a band holding up to 97% of the
+  // picture is not a gridline.
+  const band = otherBandRgb();
+  const bg = mullerBackground();
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(band, bg, vision);
+    assert.ok(d >= MIN_RULE_DELTA_E, `the fill is invisible under ${vision} at ${d.toFixed(1)}`);
+    assert.ok(d < MIN_DELTA_E, `the fill has been changed; this test is about what it could not do`);
+  }
+  assert.ok(deltaE(band, bg, "normal") <= MAX_RULE_DELTA_E, "the fill read as a gridline, and that was the finding");
+  // And the reason a *darker* hatch was not the answer: `bandHatch()` works
+  // because a lineage band is a 55%-lightness fill, and this band is not one.
+  const dark = blendOver(band, bandHatch(), HATCH_ALPHA);
+  assert.ok(
+    Math.min(...VISION_MODELS.map((v) => deltaE(dark, band, v))) < MIN_DELTA_E,
+    "if the lineage ink reads on this band, the stipple did not need its own colour"
+  );
+});
+
+test("a dot of the churn's stipple reads, on every vision model", () => {
+  // The floor. The ink is the band's own colour undiluted, so this is a
+  // statement about what 16% of a colour looks like next to 100% of it.
+  const band = otherBandRgb();
+  const dot = blendOver(band, otherBand(), 1);
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(dot, band, vision);
+    assert.ok(d >= MIN_DELTA_E, `the stipple fades into its band at ${d.toFixed(1)} under ${vision}`);
+  }
+  // It has to clear the empty canvas too, since a thin band is mostly edge.
+  for (const vision of VISION_MODELS) {
+    assert.ok(deltaE(dot, mullerBackground(), vision) >= MIN_DELTA_E, `the stipple fades into the canvas under ${vision}`);
+  }
+});
+
+test("the churn stays the quietest band in the figure", () => {
+  // The ceiling, and the constraint that actually decided the geometry (v1.55 —
+  // the column that settles a value is usually not the one the sweep is about).
+  // What a reader sees over a stretch of band is its area-weighted mean, so a
+  // stipple is as loud as its coverage: `HATCH_PITCH` apart, dotted 1-on-3-off,
+  // is 1/28 of the band. Against that, the *quietest* colour any lineage can
+  // take — because "other" outshouting the faintest real species would invert
+  // the thing the figure is about.
+  const COVER = 1 / (7 * 4); // HATCH_PITCH × the dash's period
+  const bg = mullerBackground();
+  const band = otherBandRgb();
+  const dot = blendOver(band, otherBand(), 1);
+  const mean = blendOver(band, dot, COVER);
+
+  const loudest = Math.max(...VISION_MODELS.map((v) => deltaE(mean, bg, v)));
+  let quietestLineage = Infinity;
+  for (let h = 0; h < 360; h++) {
+    // `lineageBandRgb` models the panel, so it is rebuilt here on the surface
+    // the bands are actually painted on — the difference is worth up to ΔE 4.4
+    // and changes 0.58% of the collision costs `bandTextures` deals hatches by,
+    // which is a lead this release states rather than takes.
+    const on = blendOver(bg, hslToRgb(h, 68, 55), 0.9);
+    const d = Math.min(...VISION_MODELS.map((v) => deltaE(on, bg, v)));
+    if (d < quietestLineage) quietestLineage = d;
+  }
+  assert.ok(
+    loudest < quietestLineage,
+    `the churn reads at ${loudest.toFixed(1)} against the quietest lineage's ${quietestLineage.toFixed(1)}`
+  );
+  // And it is no longer furniture, which is the whole point of doing anything.
+  assert.ok(loudest > MAX_RULE_DELTA_E, `the stippled band still reads as a gridline at ${loudest.toFixed(1)}`);
+});
+
+test("the churn dims by the factor the lineages dim by, not by a chosen one", () => {
+  // v1.61's rule: two values that must move together should be derived from one
+  // another. The dimmed stipple is deliberately *under* the bar a mark clears —
+  // `bandHatch()`'s argument, that a cue surviving the spotlight undoes the
+  // spotlight — and that is an outcome of the factor rather than a target.
+  assert.equal(BAND_DIM_SCALE, 0.35 / 0.9);
+  assert.equal(otherBandHatch(false), `rgba(120, 140, 160, 1)`);
+  assert.equal(otherBandHatch(true), `rgba(120, 140, 160, ${Number(BAND_DIM_SCALE.toFixed(4))})`);
+  const band = otherBandRgb();
+  const dimmed = blendOver(band, otherBand(), BAND_DIM_SCALE);
+  assert.ok(
+    Math.max(...VISION_MODELS.map((v) => deltaE(dimmed, band, v))) < MIN_DELTA_E,
+    "a dimmed stipple that still reads as a mark is competing with the highlight"
+  );
+  // Still the fill it always was: the highlight moves the cue, not the band.
+  assert.equal(OTHER_BAND_ALPHA, 0.16);
 });
 
 // ---- The inspector (v1.49) ----

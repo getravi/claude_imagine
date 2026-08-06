@@ -9,7 +9,7 @@ import { makeConfig } from "./config.js";
 import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
-import { drawMuller, mullerShares, mullerAxis, textureCss } from "./mullerplot.js";
+import { drawMuller, mullerShares, mullerAxis, textureCss, otherTextureCss } from "./mullerplot.js";
 import { buildBrainFor, groundSway } from "./creature.js";
 import { SCENARIOS } from "./scenarios.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
@@ -619,6 +619,22 @@ function buildLegend(living, hatch) {
     chip.addEventListener("click", () => toggleHighlight(s.id));
     box.appendChild(chip);
   }
+  // The band the legend has never keyed. It was defensible while "other" was
+  // the one plain band — nothing to name, nothing to look up — and stopped
+  // being so the moment it grew a texture of its own in v1.62: every *other*
+  // hatch on the figure now has a chip, so the one without reads as an omission
+  // rather than as an absence of meaning. A new capability arrives with its own
+  // new absences (v1.19).
+  //
+  // A span, not a button: there is no species behind it to spotlight, and
+  // v1.51's rule cuts both ways — a `div` with a click handler is a control the
+  // page is lying about, and a `button` that does nothing when pressed is the
+  // same lie from the other end.
+  const rest = document.createElement("span");
+  rest.className = "chip static";
+  rest.innerHTML =
+    `<span class="dot" style="background:${otherTextureCss()}"></span>` + "too small to name";
+  box.appendChild(rest);
 }
 
 function toggleHighlight(id) {

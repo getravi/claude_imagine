@@ -4,6 +4,82 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.62.0] — 2026-08-06
+
+v1.61 measured the "other" band — the churn of lineages too small to earn a name
+along the bottom of the Tree of Life — found it was drawn as *furniture*, proved
+no colour could fix it, and shipped the measurement instead of the fix. This is
+the fix. It is geometry, because that is what was left, and the release's second
+half is the discovery that v1.61's own number had been taken against the wrong
+surface by a hair's breadth of luck.
+
+### Added
+
+- **The churn has a stipple, and it is the one hatch no lineage can be dealt.**
+  `OTHER_TEXTURE` in `mullerplot.js` is dotted horizontal rules, `HATCH_PITCH`
+  apart and 1-on-3-off, deliberately *not* a member of `BAND_TEXTURES` — so the
+  greedy colouring that hands hatches to species can never produce it, and it
+  names exactly one thing wherever it appears. Two of its three degrees of
+  freedom had to move at once: every lineage hatch is solid, so this one is
+  dotted, and every lineage hatch is near-black, which is invisible here (ΔE
+  **6.4** against this band, 2.9 against the canvas) — so this one is drawn in
+  the band's *own* colour undiluted. Nothing new was picked.
+  - A dot reads at **47.8–53.1** across the four vision models, against a bar
+    of 25.
+  - The band as a whole stays the quietest thing in the figure, which is the
+    constraint that actually chose the geometry: a stipple is as loud as its
+    coverage, and 1/28 puts the band's area-weighted mean at **ΔE 14.3** from
+    the canvas — above the 10 that makes a thing furniture, and well under the
+    **35.6** of the faintest lineage band there is.
+  - Under a highlight it recedes to `BAND_DIM_SCALE` (`0.35 / 0.9`, the factor
+    the lineage fills already dim by, now derived instead of typed twice) and
+    lands at 20.0, deliberately under the bar a mark clears. A cue that survives
+    the spotlight is undoing the spotlight.
+- **The legend keys it.** A `too small to name` chip, wearing the same stipple.
+  The band went unkeyed for sixty releases and that was defensible while it was
+  the one *plain* band; the moment it has a texture, the chip missing from the
+  key reads as an omission rather than as an absence of meaning. A `span` and
+  not a `button`: there is no species behind it to spotlight, and v1.51's rule
+  cuts both ways.
+- **`mullerBackground()`** — `#muller`'s own `#04070b`, with `style.css` pinned
+  to it the way the minimap's water has been since v1.61.
+
+### Fixed
+
+- **The audit had been holding this band up against the wrong surface.** The
+  Tree of Life's canvas paints itself a shade darker than the panel it sits in,
+  and `lineageBandRgb` — with every colour test in this project — models the
+  panel. v1.61 noticed and moved on, correctly: at 0.9 opacity the difference is
+  worth up to ΔE 4.4 and nothing turns on it. The "other" band is drawn at
+  **0.16**, where it is the entire measurement: the same band reads **9.0**
+  against its own canvas and **4.8** against the panel — half a complaint, on
+  the region that is 97% of the picture at its peak.
+- **The band's colour, and the fill it is 16% of, are no longer the same value
+  in the legend.** A lineage's chip may restate its band opaquely and land
+  within a point of it, because a lineage band is 0.9 opaque. Doing that here
+  would key the quietest region of the plot with a grey six times louder than
+  the band, so the chip is the band **already composited**.
+
+### Changed
+
+- The `other` band's fill moved from a literal in `mullerplot.js` into
+  `palette.js`. **Its value is untouched** — it is what the plot has drawn since
+  v1.2, and `test/palette.test.js` now pins the failure as well as the fix: if
+  the fill ever stops reading as a gridline, the test that says it was one
+  fails.
+
+### What this leaves
+
+- `lineageBandRgb` still models the panel. Moving it to the canvas changes
+  **0.58%** of the 64,620 hue pairs' collision costs, which is what
+  `bandTextures` deals hatches by — so it would redraw the key on some existing
+  runs. Measured, stated, not taken.
+- The audit's open list of never-measured marks is **unchanged at four** — the
+  inspector swatch, the minimap's viewport rectangle, the predator outline and
+  the vision overlay's three strengths. The "other" band was the fifth and the
+  only one v1.61 had already measured; the four that are left are the ones where
+  the measurement itself has still not been made.
+
 ## [1.61.0] — 2026-08-06
 
 `palette.js` exists so that no colour in this project lives somewhere a test

@@ -3984,6 +3984,61 @@ The escape is the one this figure already took in v1.46 for the same arithmetic
 reason (16 separable hues, 19 bands): geometry. A hatch no lineage is ever
 assigned, dimmed under a highlight like every other band.
 
+### The stipple, and the ceiling that chose its shape (v1.62)
+
+That hatch is `OTHER_TEXTURE` — dotted horizontal rules, `HATCH_PITCH` apart and
+1-on-3-off, drawn in the band's *own* colour undiluted. Two of its three degrees
+of freedom had to move at once, because it has to differ from every lineage
+hatch there is:
+
+| | a lineage band | the churn |
+| --- | --- | --- |
+| ink | `bandHatch()`, near-black | the band's own grey, opaque |
+| lines | solid | dotted |
+| in `BAND_TEXTURES` | yes, one of seven | **no** — it cannot be dealt |
+
+A dark line was tried first and is the reason the ink is light: `bandHatch()`
+works because a lineage band is always a 55%-lightness fill, and this band is
+16% of a grey over a near-black canvas, so the same ink scores **ΔE 6.4** on it
+and 2.9 against the canvas — invisible, twice.
+
+Two measurements pin the light one, and the second is the one that decided the
+geometry rather than the value:
+
+- **the floor.** A dot against the band it lies on: **47.9 / 48.3 / 47.8 / 53.1**
+  under normal, protan, deutan and tritan vision, against a bar of 25. Against
+  the empty canvas, 56.6–64.7.
+- **the ceiling.** What a reader sees over a stretch of band is its
+  area-weighted mean, so a stipple is exactly as loud as its coverage. At 1/28
+  the band reads **ΔE 14.3** from the canvas at its loudest model — above the 10
+  that makes a thing furniture, and well under the **35.6** of the quietest
+  lineage band there is. The churn must not out-shout a real species; that is
+  what fixes the coverage, and therefore the pitch and the dash.
+
+Under a highlight the stipple recedes to `BAND_DIM_SCALE` — the same factor the
+lineage fills dim by, `0.35 / 0.9`, derived rather than chosen — and lands at
+20.0, deliberately *under* the bar a mark must clear. `bandHatch()`'s argument
+applies unchanged: a cue that survives the spotlight is undoing the spotlight.
+
+### The background this figure is actually drawn on
+
+Worth separating out, because it changed every number above. `#muller` sets its
+own `background: #04070b`, a shade darker than the `#0c131c` panel that
+`lineageBandRgb` — and every colour test in this project — reaches for. v1.61
+noticed and moved on: at 0.9 opacity the difference is worth up to ΔE 4.4 and
+nothing turns on it.
+
+At **0.16** it is the whole measurement. The same band reads 9.0 against its own
+canvas and 4.8 against the panel — half a complaint, on the region that is 97%
+of the picture at its peak. `mullerBackground()` exists now and the stylesheet is
+pinned to it, the way the minimap's water has been since v1.61.
+
+What that leaves is a lead rather than a fix: `lineageBandRgb` still models the
+panel, and moving it to the canvas changes **0.58% of the 64,620 hue pairs'**
+collision costs — which is what `bandTextures` deals hatches by, so it would
+redraw the key on some existing runs. Small, real, and a separate question from
+the one this release is about.
+
 ### The instrument's own copies
 
 `test/palette.test.js` held four colours by hand. Two were duplicates

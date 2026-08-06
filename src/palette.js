@@ -1030,15 +1030,35 @@ export function attackFlashTones() {
  * @param {"band"|"dim"|"lit"|"dot"} [role]
  */
 export function lineageFill(hue, role = "band") {
-  if (role === "dim") return `hsla(${hue}, 25%, 45%, 0.35)`; // a band the highlight is not on
-  if (role === "lit") return `hsla(${hue}, 85%, 62%, 0.98)`; // the highlighted band
+  if (role === "dim") return `hsla(${hue}, 25%, 45%, ${BAND_ALPHA.dim})`; // a band the highlight is not on
+  if (role === "lit") return `hsla(${hue}, 85%, 62%, ${BAND_ALPHA.lit})`; // the highlighted band
   if (role === "dot") return `hsl(${hue}, 68%, 55%)`; // the legend chip, opaque
-  return `hsla(${hue}, 68%, 55%, 0.9)`;
+  return `hsla(${hue}, 68%, 55%, ${BAND_ALPHA.band})`;
 }
 
-/** A lineage band's composited colour, for the audit and for `bandTextures()`. */
+/** How opaque a lineage band is in each of its three roles. */
+const BAND_ALPHA = Object.freeze({ band: 0.9, dim: 0.35, lit: 0.98 });
+
+/**
+ * What the highlight does to a band it is not on, as a factor rather than as a
+ * second value: `dim` is `band` at this much of its opacity. Anything else in
+ * this figure that has to recede when a lineage is spotlighted multiplies by it
+ * instead of choosing a number, so the two cannot drift apart (v1.61's rule —
+ * two things that must differ by a fixed amount should differ by construction).
+ */
+export const BAND_DIM_SCALE = BAND_ALPHA.dim / BAND_ALPHA.band;
+
+/**
+ * A lineage band's composited colour, for the audit and for `bandTextures()`.
+ *
+ * Over the *panel*, not `mullerBackground()` — which is wrong and known to be,
+ * and left alone deliberately. At 0.9 opacity the two surfaces differ by up to
+ * ΔE 4.4, which changes 0.58% of the 64,620 hue pairs' collision costs, and
+ * `bandTextures` deals hatches by those: correcting it would redraw the key on
+ * some existing runs. A measured lead rather than a fix (v1.62).
+ */
 export function lineageBandRgb(hue) {
-  return blendOver(panelBackground(), hslToRgb(hue, 68, 55), 0.9);
+  return blendOver(panelBackground(), hslToRgb(hue, 68, 55), BAND_ALPHA.band);
 }
 
 /**
@@ -1068,6 +1088,93 @@ export function bandHatch() {
 
 /** How hard the hatch is drawn over its band — see `bandHatch()`. */
 export const HATCH_ALPHA = 0.7;
+
+/**
+ * The Muller plot's own background — `#muller`'s `background` in `style.css`,
+ * and *not* `panelBackground()`.
+ *
+ * Here because of what v1.61 noticed on its way past and did not chase: this
+ * canvas paints itself a shade darker than the column it sits in, while
+ * `lineageBandRgb` above models the panel. On a band at 0.9 opacity that is
+ * worth up to ΔE 4.4 and nothing turns on it; on a band at **0.16** it is the
+ * whole measurement — the "other" band reads 9.0 from the surface it is
+ * actually drawn on and 4.8 from the one an audit would reach for by mistake,
+ * which is the difference between a fixable complaint and an invisible one.
+ * The lesson is v1.34's: a mark's background is the thing beneath it, not the
+ * thing beside it.
+ */
+export function mullerBackground() {
+  return { r: 0x04, g: 0x07, b: 0x0b };
+}
+
+/**
+ * The "other" band: the churn of lineages too small to earn a name, drawn along
+ * the bottom of the Muller plot.
+ *
+ * It lived in `mullerplot.js` as a literal until v1.62 and was the loudest entry
+ * on v1.61's list of colours the audit had never reached. Measured against
+ * `mullerBackground()`, it is **ΔE 9.0** (9.0/9.2/9.1/12.3 across the four
+ * vision models) — at or under the [`MIN_RULE_DELTA_E`, `MAX_RULE_DELTA_E`]
+ * ceiling this project reserves for *gridlines* on three of the four. The band
+ * holding the unnamed species was drawn as furniture, while holding a mean 9.1%
+ * of the plot over twelve seeds and peaking between 70% and 97% on every one of
+ * them.
+ *
+ * And it cannot be fixed by choosing a better value, which one sweep settled:
+ * the lineage fills are `hsl(h, 68%, 55%)` around the whole hue wheel, so
+ * anything dark enough to sit near the background fails the background and
+ * anything bright enough to clear it walks into some lineage — pure white at
+ * full opacity still only reaches ΔE 23.9 from the nearest lineage band,
+ * against a bar of 25. So the escape is geometry, the same one v1.46 took one
+ * figure over (`mullerplot.js#OTHER_TEXTURE`), and the *fill* below is
+ * unchanged from the value it has had since v1.2.
+ */
+export function otherBand() {
+  return { r: 120, g: 140, b: 160 };
+}
+
+/** How much of `otherBand()` the band's fill actually is. */
+export const OTHER_BAND_ALPHA = 0.16;
+
+/** The "other" band's fill, as the plot draws it. */
+export function otherBandFill() {
+  return rgbaCss(otherBand(), OTHER_BAND_ALPHA);
+}
+
+/** The same, composited — the colour a viewer actually sees, and the chip's. */
+export function otherBandRgb() {
+  return blendOver(mullerBackground(), otherBand(), OTHER_BAND_ALPHA);
+}
+
+/**
+ * The ink of the stipple that identifies the band, and it is *derived* rather
+ * than chosen: the band is its own colour at `OTHER_BAND_ALPHA`, and the
+ * stipple is that same colour undiluted. Nothing new is picked, so no future
+ * edit can move one without the other.
+ *
+ * Two measurements pin it, and the second is the one that decided the shape —
+ * v1.55's rule that the constraint settling a value is usually not the one the
+ * sweep is about:
+ *
+ *   - **A dot must read.** Against the band it lies on it scores 47.8–53.1
+ *     across the four vision models, against a bar of 25.
+ *   - **The band must stay the quiet one.** It is the churn, not a lineage, so
+ *     it must not out-shout one. The stipple covers 1/28 of the band
+ *     (`HATCH_PITCH` apart, dotted 1-on-3-off), which puts the band's
+ *     area-weighted mean at ΔE **14.3** from the background at its loudest
+ *     model — above the 10 that makes a thing furniture, and well under the
+ *     **35.6** of the quietest lineage band there is (hue 347).
+ *
+ * Under a highlight it recedes to `BAND_DIM_SCALE` of that, landing at 20.0 —
+ * deliberately under the bar a mark must clear, for the reason `bandHatch()`
+ * gives: a cue that stayed legible while the spotlight was on something else
+ * would be undoing the spotlight.
+ *
+ * @param {boolean} [dimmed] true while some other band is highlighted
+ */
+export function otherBandHatch(dimmed = false) {
+  return rgbaCss(otherBand(), dimmed ? BAND_DIM_SCALE : 1);
+}
 
 // ---- The inspector (v1.49) ----
 //

@@ -26,7 +26,10 @@
 //     `minimap.js#terrainBandFill` does on purpose (a ramp is a formula, not a
 //     value), so a channel computed from constants passes through unnoticed.
 //   - It reads `src/*.js`. The stylesheet is not source it can parse, and the
-//     one colour that lives in both is checked by name at the bottom.
+//     colours that live in both are checked by name at the bottom — two of
+//     them as of v1.62, which is the shape to expect: a surface that paints
+//     before any module runs needs its background in the CSS *and* in the
+//     palette, so the pair gets pinned rather than deduplicated.
 //   - It says nothing about whether a colour is *good*. That is
 //     `test/palette.test.js`; this file only asks whether the palette knows
 //     about it. A literal on this list is a colour that has never been
@@ -38,7 +41,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { minimapWater, rgbCss } from "../src/palette.js";
+import { minimapWater, mullerBackground, rgbCss } from "../src/palette.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
@@ -64,11 +67,6 @@ const ALLOWED = [
     file: "minimap.js",
     literal: "rgba(226, 238, 255, 0.85)",
     why: "the viewport rectangle. A near-white stroke over anything the little map can draw, and the one mark on that surface v1.57's corpse sweep did not enumerate.",
-  },
-  {
-    file: "mullerplot.js",
-    literal: "rgba(120, 140, 160, 0.16)",
-    why: "the 'other' band — measured in v1.61 and deliberately not changed. It is ΔE 9.0 from the background it is drawn on, inside the window this project reserves for gridlines, while holding a mean 9.1% of the plot over twelve seeds and a peak of 70-97% on every one of them. It cannot be fixed by picking a value: the lineage fills are hsl(h, 68%, 55%) over the whole hue wheel, so raising it to clear the background walks it into some lineage, and pure white at full opacity still only reaches ΔE 23.9 from the nearest of them, against a bar of 25. The escape is geometry, which this figure already has machinery for. See docs/SCIENCE.md.",
   },
   {
     file: "render.js",
@@ -185,4 +183,22 @@ test("the stylesheet and the palette agree about the minimap's water", () => {
   const declared = rule[0].match(/background:\s*([^;]+);/);
   assert.ok(declared, "the .minimap rule no longer sets a background");
   assert.equal(declared[1].trim(), rgbCss(minimapWater()));
+});
+
+test("the stylesheet and the palette agree about the Tree of Life's canvas", () => {
+  // The second of the two, and the one v1.61 noticed and left: `#muller` paints
+  // itself `#04070b` while every audit in this project reaches for the panel.
+  // At 0.9 opacity that is worth up to ΔE 4.4 and nothing turned on it; the
+  // "other" band is drawn at 0.16, where it is the difference between ΔE 9.0
+  // and 4.8 — so v1.62 gave the canvas an entry and this pins the stylesheet to
+  // it, for the same reason the minimap's water is pinned above.
+  const css = readFileSync(join(ROOT, "style.css"), "utf8");
+  const rule = css.match(/#muller\b[^{]*\{[^}]*\}/);
+  assert.ok(rule, "no #muller rule in style.css");
+  const declared = rule[0].match(/background:\s*([^;]+);/);
+  assert.ok(declared, "the #muller rule no longer sets a background");
+  const hex = declared[1].trim();
+  assert.match(hex, /^#[0-9a-f]{6}$/i, `#muller's background is ${hex}, which this test cannot compare`);
+  const { r, g, b } = mullerBackground();
+  assert.equal(hex.toLowerCase(), "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join(""));
 });

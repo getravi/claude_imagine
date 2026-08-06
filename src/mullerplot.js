@@ -43,6 +43,11 @@ import {
   lineageFill,
   bandHatch,
   HATCH_ALPHA,
+  otherBand,
+  otherBandFill,
+  otherBandRgb,
+  otherBandHatch,
+  rgbCss,
   deltaE,
   VISION_MODELS,
   MIN_DELTA_E,
@@ -68,6 +73,35 @@ export const BAND_TEXTURES = Object.freeze(
     { id: "grid", lines: ["bars", "rules"] },
   ].map(Object.freeze)
 );
+
+/**
+ * The hatch the "other" band wears, and the one hatch `bandTextures` can never
+ * hand out — it is not in `BAND_TEXTURES`, so no lineage can be dealt it and it
+ * names exactly one thing wherever it appears.
+ *
+ * It is the same machinery as a lineage's hatch with two of its three degrees of
+ * freedom moved, because the band it identifies is unlike every other band in
+ * the plot and had to differ from all of them at once:
+ *
+ *   - **Dotted, not solid** (`dash`). Every hatch above is drawn as unbroken
+ *     lines, so a broken one is a texture no named band can approximate. It is
+ *     also the escape v1.34 took for the immune ring, for the same reason:
+ *     dashing survives every vision model.
+ *   - **Light, not dark.** `bandHatch()` is a near-black line, which works
+ *     because a lineage band is always a 55%-lightness fill. The "other" band is
+ *     16% of a grey over a near-black canvas, so a dark line on it is invisible
+ *     — ΔE 6.4 against the band, and 2.9 against the canvas. The stipple is
+ *     drawn in the band's *own* colour undiluted (`otherBandHatch()`), which is
+ *     the one tone in this figure guaranteed not to belong to a lineage.
+ *
+ * One family rather than two: the coverage is what keeps the churn quieter than
+ * the lineages, and the numbers are in `palette.js#otherBandHatch`.
+ */
+export const OTHER_TEXTURE = Object.freeze({
+  id: "stipple",
+  lines: Object.freeze(["rules"]),
+  dash: Object.freeze([1, 3]),
+});
 
 /** Which way a family of lines runs, as the angle CSS needs for the same picture. */
 const CSS_ANGLE = { rise: 135, fall: 45, bars: 90, rules: 0 };
@@ -168,6 +202,25 @@ export function textureCss(texture, hue) {
   );
   layers.push(lineageFill(hue, "dot"));
   return layers.join(", ");
+}
+
+/**
+ * The "other" band's stipple as a CSS `background`, for the legend chip that
+ * keys it. Same shape as `textureCss` above and the same liberty with scale —
+ * a 4px lattice rather than the canvas's 7 — because a 14-pixel dot has to
+ * carry *that it is dotted*, which is all this key is for.
+ *
+ * Both layers are the band **already composited** (`otherBandRgb`), not the
+ * translucent fill re-laid over whatever is behind the chip. A lineage's chip
+ * can restate its band's colour opaquely and be within a point of it, because a
+ * lineage band is 0.9 opaque; this one is 0.16, so the same shortcut would key
+ * the band with a colour six times louder than the band. The key and the thing
+ * it keys are one definition — the mistake `lineageFill` exists to undo — and
+ * here that has to mean the composite rather than the ingredient.
+ */
+export function otherTextureCss() {
+  const ink = rgbCss(otherBand());
+  return `radial-gradient(circle at 1px 1px, ${ink} 0 1px, transparent 1px) 0 0 / 4px 4px, ${rgbCss(otherBandRgb())}`;
 }
 
 // Both constants, and the mark-building itself, moved to `src/chart.js` in
@@ -305,7 +358,7 @@ export function drawMuller(ctx, shares, opts) {
   // Running cumulative bottom for each column, filled as we stack upward.
   const bottom = new Float64Array(n); // starts at 0
 
-  const band = (fracArr, fill, hatch) => {
+  const band = (fracArr, fill, hatch, ink = hatchStyle) => {
     ctx.beginPath();
     // Bottom edge left→right.
     ctx.moveTo(xAt(0), yAt(bottom[0]));
@@ -323,19 +376,29 @@ export function drawMuller(ctx, shares, opts) {
       ctx.clip();
       ctx.beginPath();
       for (const line of hatch.lines) hatchPath(ctx, line, W, H);
-      ctx.strokeStyle = hatchStyle;
+      ctx.strokeStyle = ink;
       ctx.lineWidth = 1;
+      // Set inside the save and cleared before the restore rather than left to
+      // it: the dash *is* part of the canvas state a restore rolls back, but a
+      // recording context has no state to roll back (v1.50 — a test double is an
+      // accelerator, and it goes stale the same way), so the clearing is a call
+      // the log can see rather than a promise about a stub.
+      if (hatch.dash) ctx.setLineDash(hatch.dash);
       ctx.stroke();
+      if (hatch.dash) ctx.setLineDash([]);
       ctx.restore();
     }
     // Advance the running bottom.
     for (let i = 0; i < n; i++) bottom[i] += fracArr[i];
   };
 
-  // Draw the "other" band first (at the very bottom), dim grey. It is the churn
-  // of lineages too small to name, so it is the one band with nothing to
-  // identify and stays plain.
-  band(other, "rgba(120, 140, 160, 0.16)", null);
+  // The "other" band first, at the very bottom: the churn of lineages too small
+  // to name. It has no *identity* to carry — that was the argument for leaving
+  // it plain for sixty releases — but it is still a region of the picture that
+  // has to be told from the empty canvas behind it, and at ΔE 9.0 it was not.
+  // The stipple is the only cue available, for reasons `palette.js#otherBand`
+  // sets out, and it dims under a highlight exactly as a lineage band does.
+  band(other, otherBandFill(), OTHER_TEXTURE, otherBandHatch(highlightId != null));
 
   // Then each shown species, oldest to newest.
   for (let k = 0; k < K; k++) {

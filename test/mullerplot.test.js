@@ -28,10 +28,25 @@ import {
   bandTextures,
   collisionCost,
   textureCss,
+  otherTextureCss,
   BAND_TEXTURES,
+  OTHER_TEXTURE,
   mullerAxis,
   MAX_MARKS,
 } from "../src/mullerplot.js";
+import {
+  bandHatch,
+  HATCH_ALPHA,
+  otherBand,
+  otherBandFill,
+  otherBandRgb,
+  otherBandHatch,
+  BAND_DIM_SCALE,
+  rgbCss,
+  deltaE,
+  VISION_MODELS,
+  MIN_DELTA_E,
+} from "../src/palette.js";
 import { describeMuller } from "../src/describe.js";
 import { recordingContext } from "../src/rendershot.js";
 import { World } from "../src/world.js";
@@ -318,6 +333,12 @@ test("the spoken form says what it cannot say", () => {
 // it in the wild, and it runs in a millisecond).
 const DEFAULT_SEED_HUES = [335, 311, 333, 250, 106, 260, 226, 335, 343, 335, 335];
 
+/** The ink a *lineage* band's hatch is stroked in, rebuilt the way the plot builds it. */
+function hatchInk() {
+  const h = bandHatch();
+  return `rgba(${h.r}, ${h.g}, ${h.b}, ${HATCH_ALPHA})`;
+}
+
 /** Read each band's hatch back out of the op stream, in stacking order. */
 function hatches(ops) {
   const out = [];
@@ -328,6 +349,7 @@ function hatches(ops) {
       if (name === "clip") cur.clipped = true;
       else if (name === "moveTo" || name === "lineTo") cur.pts.push(args);
       else if (name === "set:strokeStyle") cur.ink = args[0];
+      else if (name === "setLineDash") cur.dashes.push(args);
       else if (name === "restore") {
         out.push(cur);
         cur = null;
@@ -336,7 +358,7 @@ function hatches(ops) {
     } else if (name === "fill") {
       after = true;
     } else if (after && name === "save") {
-      cur = { pts: [], clipped: false };
+      cur = { pts: [], clipped: false, dashes: [] };
     } else if (after && name === "beginPath") {
       // A band with no hatch: the next band's path starts instead.
       out.push(null);
@@ -347,12 +369,27 @@ function hatches(ops) {
   return out;
 }
 
-test("every named band wears a hatch, and the unnameable churn does not", () => {
+test("every band wears a hatch, and the churn wears the one no lineage can be dealt", () => {
   const shares = mullerShares(pond().phylogeny);
   const marks = hatches(draw(shares).ops);
   // One entry per band drawn: `other` first, then the shown species.
   assert.equal(marks.length, shares.shown.length + 1);
-  assert.equal(marks[0], null, "the 'other' band has nothing to identify and stays plain");
+
+  // The churn's own (v1.62). It was plain until then, for a reason that read
+  // well — it has no identity to carry — and left the band at ΔE 9.0 from the
+  // canvas behind it: furniture, holding up to 97% of the plot. See
+  // `test/palette.test.js` for what the stipple is worth and why it is dotted.
+  const churn = marks[0];
+  assert.ok(churn, "the 'other' band drew no hatch at all");
+  assert.ok(churn.clipped, "the churn's stipple was not clipped to its band");
+  assert.ok(churn.pts.length >= 2, "the churn's stipple is empty");
+  assert.equal(churn.ink, otherBandHatch(), "the churn's stipple is not drawn in its own colour");
+  assert.notEqual(churn.ink, hatchInk(), "the churn's stipple is the lineage hatch, which is invisible on it");
+  // Set, then cleared, both inside the save — a recording context has no state
+  // for `restore` to roll back, so a dash left set would leak into whatever the
+  // next caller strokes (v1.50).
+  assert.deepEqual(churn.dashes, [[...OTHER_TEXTURE.dash], []], "the dash was not set and cleared around the stroke");
+
   for (let k = 0; k < shares.shown.length; k++) {
     const t = BAND_TEXTURES[shares.texture[k]];
     const mark = marks[k + 1];
@@ -362,8 +399,42 @@ test("every named band wears a hatch, and the unnameable churn does not", () => 
       assert.ok(mark, `band ${k} wears ${t.id} and drew nothing`);
       assert.ok(mark.clipped, `band ${k}'s hatch was not clipped to its band`);
       assert.ok(mark.pts.length >= 2 * t.lines.length, `band ${k}'s hatch is empty`);
+      assert.equal(mark.ink, hatchInk(), `band ${k}'s hatch is not the lineage ink`);
+      // Solid, and that is half of what makes the churn's stipple unmistakable.
+      assert.deepEqual(mark.dashes, [], `band ${k} drew a dashed hatch`);
     }
   }
+});
+
+test("the churn's hatch is one no lineage can be handed", () => {
+  // The other half of the cue. A texture that separates the churn from the
+  // lineages only works if the assignment cannot deal it out, so this is a
+  // claim about `BAND_TEXTURES` rather than about a drawing: nine bands of one
+  // colour exhaust the set and the overflow doubles up, and none of it can
+  // reach the stipple.
+  for (const t of BAND_TEXTURES) {
+    assert.notEqual(t.id, OTHER_TEXTURE.id, `${t.id} can be dealt to a lineage`);
+    assert.ok(!t.dash, `${t.id} is dashed, which is the churn's half of the distinction`);
+  }
+  const dealt = bandTextures(Array.from({ length: 9 }, (_, id) => ({ id, hue: 200 })));
+  for (const i of dealt) assert.ok(BAND_TEXTURES[i], "a band was dealt a texture off the end of the set");
+});
+
+test("the churn recedes under a highlight, like every other band it is not", () => {
+  // `bandHatch()`'s rule, applied one band over: the spotlight exists to push
+  // everything else towards the background, so a cue that stayed at full
+  // strength there would be undoing it. The band's *fill* does not move — it is
+  // already the quietest thing in the figure — and its stipple does.
+  const shares = mullerShares(pond().phylogeny);
+  const plain = hatches(draw(shares).ops)[0];
+  const lit = hatches(draw(shares, { highlightId: shares.shown[1].id }).ops)[0];
+  assert.equal(plain.ink, otherBandHatch(false));
+  assert.equal(lit.ink, otherBandHatch(true));
+  assert.notEqual(lit.ink, plain.ink, "the churn ignored the highlight");
+  // Derived, not chosen: the same factor the lineage fills dim by.
+  assert.equal(lit.ink, `rgba(120, 140, 160, ${Number(BAND_DIM_SCALE.toFixed(4))})`);
+  const fills = (ops) => ops.filter(([, n]) => n === "set:fillStyle").map(([, , v]) => v);
+  assert.equal(fills(draw(shares).ops)[0], fills(draw(shares, { highlightId: shares.shown[1].id }).ops)[0]);
 });
 
 test("neighbouring bands never share a hatch", () => {
@@ -435,6 +506,27 @@ test("the legend's dot and the band draw the same hatch", () => {
   assert.ok(textureCss(3, 0).includes("90deg"), "bars should be vertical in CSS too");
   assert.ok(textureCss(4, 0).includes("0deg"), "rules should be horizontal in CSS too");
   assert.ok(textureCss(0, 0).startsWith("hsl("), "plain is a colour and nothing else");
+});
+
+test("the churn's chip is the band, not a restatement of it", () => {
+  // The legend never keyed this band, which was defensible while it was the one
+  // plain band and stopped being so when it grew a texture (v1.62). The chip
+  // has to be the *same two things* the plot draws — the stipple's ink and the
+  // fill, translucent, so it composites over the panel exactly as the band does
+  // rather than being an opaque approximation of the result.
+  const css = otherTextureCss();
+  assert.ok(css.includes(rgbCss(otherBand())), "the chip's dots are not the band's ink");
+  assert.ok(css.endsWith(rgbCss(otherBandRgb())), "the chip must end in the band as it is actually drawn");
+  assert.ok(/radial-gradient/.test(css), "the chip's cue is that it is dotted");
+  assert.ok(!css.includes("repeating-linear-gradient"), "a lineage's stripes are not this band's cue");
+  // The shortcut a lineage chip is allowed and this one is not: `otherBand()`
+  // laid on straight is what the band is *made of*, six times louder than the
+  // band, and it would key the quietest region of the plot with a bright grey.
+  assert.ok(!css.includes(otherBandFill()), "the chip must not re-composite the fill over whatever is behind it");
+  assert.ok(
+    Math.min(...VISION_MODELS.map((v) => deltaE(otherBandRgb(), otherBand(), v))) > MIN_DELTA_E,
+    "if the fill and the composite were the same colour this distinction would not matter"
+  );
 });
 
 test("the highlight moves no hatch", () => {

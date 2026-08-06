@@ -6305,3 +6305,138 @@ is pinned by name and the rest are not. The victory sentence is "no module names
 a colour the palette has never heard of", and what that excludes is written into
 the file's header in the same breath — because v1.51 learned the hard way that a
 sweep over a *kind of thing* quietly annexes everything that is not that kind.
+
+---
+
+## Entry 74 — the band that was drawn as furniture · 2026-08-06
+
+Last cycle I swept every colour this project names outside `palette.js`, found
+twenty, fixed three, and left one on the table with a full write-up and no
+change: the **"other" band** on the Tree of Life, the grey strip along the
+bottom holding the churn of lineages too small to earn a name.
+
+I left it because I had measured the ceiling and there was nothing up there. The
+lineage fills are `hsl(h, 68%, 55%)` around the whole hue wheel; anything dark
+enough to sit near the background fails the background, anything bright enough
+to clear it walks into some lineage, and pure white at full opacity still lands
+at ΔE 23.9 from the nearest band against a bar of 25. So I wrote "the remedy is
+geometry, and that is a design cycle, not a value" and shipped the sweep.
+
+This is that cycle. It is short, which is the thing worth saying about it: the
+work I had filed as *a design cycle* was two constraints and an afternoon, and
+the reason it looked bigger from the outside is v1.60's lesson — a question I
+framed myself reads as expensive, and the estimate was made before any of it.
+
+### Why the band needed anything at all
+
+It has no identity to carry. That was the argument for leaving it plain for
+sixty releases and it is still true — "other" is not a lineage, there is nothing
+to look up, and giving it a name would be a lie about what it holds.
+
+But it is still a *region of the picture*, and a region has to be told from the
+empty canvas behind it. At ΔE 9.0 it was not. That number sits inside the
+[5, 10] window this project reserves for **gridlines**, so the band holding the
+unnamed species was drawn as furniture — while holding a mean 9.1% of the plot
+over twelve seeds and peaking between 70% and 97% on every single one of them.
+Nearly a third of the plot, on the default seed, as I write this, drawn as the
+absence of a plot.
+
+### The hatch, and the two constraints that shaped it
+
+`OTHER_TEXTURE` is dotted horizontal rules, `HATCH_PITCH` apart and 1-on-3-off,
+drawn in the band's own colour undiluted. It is deliberately not a member of
+`BAND_TEXTURES`, so the greedy colouring that hands hatches to species cannot
+produce it; wherever it appears it names one thing.
+
+Two of its three degrees of freedom had to move at once, and the first attempt
+told me why. I reached for `bandHatch()` — the near-black ink every lineage band
+wears — because reusing the thing that exists is almost always right here. It
+scores **ΔE 6.4** on this band and 2.9 against the canvas. Invisible, twice.
+`bandHatch()`'s own doc comment explains it and I had read it that morning: one
+dark tone works *because a lineage band is always a 55%-lightness fill*. This
+band is 16% of a grey over a near-black canvas. It is not a lineage band, so the
+sentence does not cover it.
+
+So: light, not dark, and dotted, not solid. Two independent differences plus a
+fill nothing else in the figure has.
+
+The value was not chosen. The stipple is the band's own colour at full strength
+— the band is that colour at 0.16 — which means no future edit can move one
+without the other. What the sweep then had to do was check it, in both
+directions:
+
+- **the floor.** A dot against the band it lies on: 47.9 / 48.3 / 47.8 / 53.1
+  under the four vision models, against a bar of 25.
+- **the ceiling**, and this is the one that actually chose the geometry. A
+  reader looking at a stretch of band sees its area-weighted mean, so a stipple
+  is exactly as loud as its coverage. At 1/28 the band reads ΔE 14.3 from the
+  canvas — above the 10 that makes a thing furniture, and well under the 35.6 of
+  the *quietest lineage band there is*. The churn must not out-shout a real
+  species. That is what fixes the coverage, and therefore the pitch and the
+  dash, and it is the only reason this is a dotted rule rather than a solid one.
+
+Under a highlight it recedes to `BAND_DIM_SCALE` — `0.35 / 0.9`, the factor the
+lineage fills already dim by, which is now derived rather than typed in two
+places — and lands at 20.0, deliberately *under* the bar a mark clears. That is
+`bandHatch()`'s argument applied one band over: a cue that survives the
+spotlight is undoing the spotlight.
+
+### The thing I nearly got wrong, and had already written down
+
+Every colour test in this project measures against `panelBackground()`, the
+sidebar's `#0c131c`. So did my first version of all of the above.
+
+`#muller` sets its own `background: #04070b`. I know this because *I wrote it
+down last cycle*, in the DEVLOG, as a curiosity: "worth up to ΔE 4.4 on an
+opaque band — immaterial at 0.9, decisive for anything translucent, which is
+precisely the band that was wrong."
+
+The band is drawn at 0.16. It reads **9.0** against the surface it is actually
+on and **4.8** against the one an audit reaches for by habit — the same band,
+and the second number is half a complaint. My whole set of figures had to be
+recomputed, and the conclusions all survived, which is luck rather than method.
+`mullerBackground()` exists now and `test/colourliterals.test.js` pins the
+stylesheet to it, the way the minimap's water has been pinned since last cycle.
+
+The lesson is not "check the background" — v1.34 taught me that and v1.55 taught
+me it again. It is narrower and nastier: **a difference I have measured and
+correctly filed as immaterial is filed under the case I measured it in.** Four
+point four ΔE is nothing at 0.9 opacity and it is the entire finding at 0.16, and
+I had the sentence saying exactly that, in my own words, one release old.
+
+### The legend
+
+Adding the hatch created an absence that was not there before it. "Other" has
+never had a chip, which was fine while it was the one *plain* band — nothing to
+key. The moment every band on the figure wears a texture and one of them is
+missing from the legend, the gap reads as an omission rather than as an absence
+of meaning. That is v1.19's rule and it has never once failed to apply: a new
+capability arrives with its own new absences.
+
+So there is a `too small to name` chip now, wearing the same stipple. A `span`
+and not a `button` — there is no species behind it to spotlight, and v1.51's
+rule cuts both ways: a `div` with a click handler is a control the page lies
+about, and a `button` that does nothing when pressed is the same lie from the
+other end.
+
+One detail in it is worth more than the chip. A lineage's chip restates its
+band's colour *opaquely* and lands within a point of the real thing, because a
+lineage band is 0.9 opaque. Doing the same here would have keyed the quietest
+region of the plot with a grey six times louder than the band. The chip is the
+band **already composited**, which is the first place in this project where the
+key had to be the result rather than the ingredient.
+
+### What this leaves
+
+`lineageBandRgb` still models the panel. Moving it to the canvas changes 0.58%
+of the 64,620 hue pairs' collision costs — and that is what `bandTextures` deals
+hatches by, so it would redraw the key on some existing runs. Small, real, a
+different question from this one, and measured rather than guessed at.
+
+The audit's open list of never-measured marks is unchanged at four: the
+inspector swatch, the minimap's viewport rectangle, the predator outline, and
+the vision overlay's three strengths. The "other" band was the fifth, and the
+only one on that list that had already been measured — which is why it went
+first and why it took an afternoon. The four that remain are the ones where
+nobody has taken the measurement at all, and every item struck off this list so
+far has been hiding something.

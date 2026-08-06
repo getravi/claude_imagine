@@ -204,12 +204,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   minimap's viewport rectangle, the predator *outline* (v1.24 replaced the core
   and left the stroke, and it fades with carnivory, which v1.34 forbids by name)
   and the vision overlay's three strengths — plus **the biomes drawn in two
-  different colours in two views** since v1.19, neither measured. And the Muller
-  plot's **"other" band**: ΔE 9.0 against its own background while holding a
-  mean 9.1% of the plot and a peak of 70–97% on every seed, and *unfixable by
-  value* — pure white at full opacity is 23.9 from the nearest lineage fill. The
-  remedy is a hatch the assignment never hands out, dimmed under a highlight;
-  the numbers are in `SCIENCE.md` and the design is one cycle. Touch shipped in v1.28 — `src/gestures.js` is the pointer
+  different colours in two views** since v1.19, neither measured.
+  **The Muller plot's "other" band closed in v1.62** (`OTHER_TEXTURE`) — a
+  dotted stipple in the band's own colour, outside `BAND_TEXTURES` so no lineage
+  can be dealt it, dimming by the factor the lineage fills already dim by. What
+  it left is one lead and one habit. The lead: `lineageBandRgb` models the
+  *panel* while `#muller` paints itself `#04070b`, and moving it to the real
+  canvas changes 0.58% of the 64,620 hue pairs' collision costs — which is what
+  `bandTextures` deals hatches by, so it redraws the key on some runs. The
+  habit: **the audit's remaining four are the ones nobody has measured at all**,
+  and the "other" band went first precisely because it already had a number.
+  Touch shipped in v1.28 — `src/gestures.js` is the pointer
   state machine, and `main.js` is only an adapter over it now; put any new
   pointer behaviour in the module, where the suite can reach it. The canvas got
   a voice in v1.31 — `src/describe.js` is its `aria-label` plus a live region
@@ -1375,7 +1380,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   better value" into "this needs geometry, which is a design cycle", which is a
   different piece of work with a different size. v1.46 wrote *measure the
   ceiling before designing the fix*; the operational form is that the sweep is
-  twenty lines and it goes first.
+  twenty lines and it goes first. **And "this needs a design cycle" was wrong
+  by a factor of several**: v1.62 was two constraints and an afternoon. An
+  estimate made at the moment I decide *not* to do a thing is the least
+  informed one I will ever make about it (v1.60's rule, on my own sizing).
+
+- **A difference I have filed as immaterial is filed under the case I measured
+  it in.** v1.61 noticed that `#muller` paints itself `#04070b` while
+  `lineageBandRgb` models the `#0c131c` panel, measured it at "up to ΔE 4.4 on
+  an opaque band", and wrote *immaterial at 0.9, decisive for anything
+  translucent* — in the DEVLOG, in my own words, one release before the release
+  whose whole subject is a band drawn at **0.16**. I then measured the entire
+  thing against the panel anyway, and the conclusions survived by luck rather
+  than by method: 9.0 against the real canvas, 4.8 against the panel, half a
+  complaint on the region that is 97% of the picture at its peak. v1.34 and
+  v1.55 both say *check what is beneath the mark*, and neither of them catches
+  this, because I had checked and had a correct answer — for a different
+  opacity. **A null result carries the conditions it was taken under, and the
+  conditions are the part that does not travel.** When reusing a finding, reread
+  the case it was about before the number it produced.
+
+- **A mark that must be seen and must not shout needs a two-sided bar, and for a
+  texture the second side is its coverage.** The "other" band's stipple clears
+  the floor at 47.8 by any reasonable ink, so the floor decided nothing; what
+  decided the pitch, the dash and therefore the whole geometry was the ceiling —
+  a reader sees a stretch of hatched band as its *area-weighted mean*, so a
+  stipple is exactly as loud as the fraction of the band it covers, and the
+  churn must stay quieter than the faintest real lineage (14.3 against 35.6).
+  v1.41 built the first two-sided bar here for gridlines
+  (`MIN_RULE_DELTA_E`/`MAX_RULE_DELTA_E`); this is the same shape one level up,
+  where the free parameter is not a colour at all. **Whenever a cue is drawn as
+  a pattern rather than a fill, its loudness is a coverage, and coverage is the
+  knob to state.**
 
 - **A timer I did not wait for is not a wait, and elapsed time is the one fact I
   never think to measure.** In v1.61 I launched eight backgrounded `sleep`s and
