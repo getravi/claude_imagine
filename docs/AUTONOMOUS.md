@@ -298,10 +298,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the hash they run on was swept the way `levers.js` sweeps the constants —
   which found four pieces of live state outside it, three of them moving the
   pond within three ticks. What that leaves: the older ad-hoc hash in
-  `test/mortality.test.js` still quantises to 1e-6; **`world.stats` and
-  `world.energy` are forty-odd counters no fingerprint touches** and the shared
-  assertion names only three of them, so whether the books deserve a fifth
-  channel is open; and `barriers`/`terrain`/`environment` were cleared by
+  `test/mortality.test.js` still quantises to 1e-6; **the books got their fifth
+  channel in v1.59** (`booksFingerprint`, 43 stats fields + 8 energy fields
+  against the three the shared assertion named by hand) and it found no bug —
+  what it left is that `src/levers.js` still sweeps four channels, correctly
+  *today* because `Stats` is built from its own defaults rather than from
+  `DEFAULT_CONFIG`, and nothing will tell me the day that stops being true; and
+  `barriers`/`terrain`/`environment` were cleared by
   *reading* rather than by sweeping, which is the thing this release exists to
   distrust. The sibling sweep — *is every numeric constant a
   lever?* — ran in v1.38 (`src/levers.js`): all seventy-nine are, and it
@@ -1439,3 +1442,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which of the two things you are measuring: a world needs twelve seeds, an
   instrument's arithmetic needs one, and a sweep of the wrong kind buys three
   decimal places of nothing.
+
+- **The union rule leaves a residue, and the residue is the next hand-picked
+  list.** v1.53's rule for consolidating N approximations of one claim was to
+  take the union rather than the strongest — list what each old check asserted
+  that the replacement does not, because there is usually one thing and it is
+  usually the thing its author cared about. I did that, correctly, and the one
+  thing was three counters. Then I wrote them as a `for` loop at the bottom of
+  the new shared assertion and never asked what share of the books three names
+  cover. It was 5.9%: `world.stats` carries 43 own properties and `world.energy`
+  8. A residue preserved by the union rule arrives *outside* the instrument by
+  construction — that is what made it a residue — so the same afternoon's work
+  is to ask whether it is a leftover or a fifth channel.
+- **Enumerate a class from a live object, not from the code that declares it.**
+  Six of `Stats`'s forty-three fields are assigned in `sample()` and do not exist
+  on a fresh instance, so a completeness list read off the constructor is six
+  short and passes for the most convincing reason available: it agrees with the
+  source. v1.53 said fix the instances then make the class unrepresentable, and
+  the walk is only as good as the moment it is run at. Warm the object first,
+  and say in the test why.
+- **When an output surface gets a channel, ask what the other outputs are.**
+  v1.38 gave the tree of life its own fingerprint because a constant that moves
+  the view and nothing else reads as dead to a state hash. The books are the
+  same shape — a counter is not a *place*, so incrementing one moves no picture
+  of the pond — and it took twenty-one releases to notice, because the argument
+  had been made and filed under the surface it was made about. The general form:
+  a hash is of a noun. List the nouns this project produces (where things are,
+  how they are represented, what was concluded, what was counted, what was
+  drawn, which numbers were spent) and ask which have a channel.

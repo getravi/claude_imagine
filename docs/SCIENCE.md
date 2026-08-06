@@ -3792,6 +3792,109 @@ node -e '
   })'
 ```
 
+## The books nobody was watching (v1.59)
+
+v1.53 replaced twelve hand-rolled determinism checks with one shared assertion
+over four channels: the random stream, the state, the trajectory, and the tree of
+life. It also carried over, unexamined, the one thing none of those four could
+say — a loop over three counters:
+
+```js
+for (const counter of ["births", "deaths", "kills"]) { ... }
+```
+
+Three of fifty-one. `world.stats` carries **43** own properties and
+`world.energy` **8**, and until v1.59 a feature that was switched off and wrote
+to any of the other forty-eight left every fingerprint in this project
+bit-identical. `booksFingerprint()` is the fifth channel.
+
+### Why a counter needs a channel and cannot borrow one
+
+The four existing hashes are all pictures of the *pond* — where everything is,
+how this build represents it, what the observer made of it, and which random
+numbers were spent getting there. A counter is none of those. Incrementing
+`stats.scavenged` moves no creature, so no picture of the pond can fail on it.
+This is exactly the argument that produced `observationFingerprint` in v1.38, one
+output surface over: the tree of life is what the observer *concluded*, the books
+are what it *counted*, and both are invisible to a hash of the water.
+
+Staged as ten arms in `test/books.test.js` — a miscounted birth, a phantom
+scavenging bite, a doubled archive stride, a burial filed under the wrong cause
+— every one moves the books hash and none of them moves the state, trajectory or
+observation hash.
+
+### Six fields a list written from the constructor never sees
+
+The obvious way to enumerate `Stats` is to read its constructor. That gives
+thirty-seven names and looks complete. Six more — `avgGeneration`,
+`currentMaxGeneration`, `carnivoreCount`, `avgHidden`, `avgConns`, `maxHidden` —
+are created by `sample()` and do not exist until the world has stepped once. So
+the completeness test walks a **stepped** world, and the exclusion lists are
+empty on purpose: every measurement this pond keeps, including the two
+construction parameters and all three history buffers, is inside the instrument.
+
+The archive is in there for the v1.22 reason. Its thinning state (`stride`,
+`seen`, the min/max envelopes) can differ between two worlds whose every creature
+agrees, and a record that quietly halved itself at a different moment is exactly
+the kind of difference that looks like nothing.
+
+### Nothing in the books feeds back into the simulation
+
+`stats.js` has opened with *"none of this feeds back into the simulation"* since
+v1.0 and `energy.js` with *"nor is read by the simulation"* since v1.29. Both are
+comments, and a comment is not a measurement. Measured now: each of the 51 fields
+is held wrong for **60 consecutive ticks** — re-applied before every step, so a
+field that `sample()` recomputes is still wrong during the part of the tick a
+reader would read it in — against an unperturbed run of the same seed.
+
+All 51 leave the state, the trajectory and the tree of life bit-for-bit
+identical. Per-field rather than all at once, because an aggregate two cancelling
+errors can satisfy is not a test of either.
+
+The related check, in the other direction: every feature-specific counter reads
+**exactly 0** over 1,500 ticks with its feature off — `walled`, `walledRate`,
+`jostled`, `jostledRate`, the six disease counters, `groundBias`, `soilShare`,
+`avgLearning`, `avgVoice`, `avgHeard`. A statistic that is non-zero with its
+mechanism off is not measuring the mechanism (v1.20).
+
+### What it costs
+
+On a 500-tick pond the books hash walks **6,600 numbers** and takes about 1.0 ms,
+against 0.25 ms for the state hash — roughly three ticks' worth of time, twice
+per paired test, twelve tests. About 93% of that walk is the two history buffers;
+the counters themselves are 51 numbers. The suite is unchanged in wall clock to
+within its own noise.
+
+No config constant needs this channel: `Stats` is constructed with its own
+defaults rather than from `DEFAULT_CONFIG`, so `src/levers.js` still has the four
+it had. The day a history length becomes a config knob is the day the constant
+sweep needs a fifth column too.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const { World } = await import("./src/world.js");
+  const { makeConfig } = await import("./src/config.js");
+  const F = await import("./src/fingerprint.js");
+  const warm = (n) => { const w = new World(makeConfig({ seed: 21 })); for (let i = 0; i < n; i++) w.step(); return w; };
+  for (const [label, miscount] of [
+    ["stats.births",    (w) => (w.stats.births += 1)],
+    ["stats.scavenged", (w) => (w.stats.scavenged += 1)],
+    ["archive stride",  (w) => (w.stats.runHistory.stride *= 2)],
+    ["energy.crop",     (w) => (w.energy.crop += 1)],
+  ]) {
+    const w = warm(200);
+    const was = [F.stateFingerprint(w), F.trajectoryFingerprint(w), F.observationFingerprint(w), F.booksFingerprint(w)];
+    miscount(w);
+    const now = [F.stateFingerprint(w), F.trajectoryFingerprint(w), F.observationFingerprint(w), F.booksFingerprint(w)];
+    console.log(label.padEnd(16), ["state", "traj", "tree", "books"].map((c, i) => c + "=" + (was[i] === now[i] ? "blind" : "SEES")).join(" "));
+  }'
+```
+
+Every row reads `state=blind traj=blind tree=blind books=SEES`. Run the same
+against v1.58 and the fourth column is gone, along with any way to notice.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

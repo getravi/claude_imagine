@@ -12,8 +12,8 @@
 // of them was also asserting something (the birth and death counters) that the
 // hash does not cover.
 //
-// So: one function, four channels, and everything any of the twelve used to
-// check is in it.
+// So: one function, five channels as of v1.59, and everything any of the twelve
+// used to check is in it.
 //
 //   1. **The random sequence**, hashed from before the first tick. This is the
 //      channel the other three cannot have: a feature that is off and draws a
@@ -27,11 +27,18 @@
 //      naming it says the *pond* moved, not the representation.
 //   4. **The observer**, so a feature that leaves the pond alone and rewrites
 //      the tree of life still fails.
+//   5. **The books**, added in v1.59. This was three hand-picked counters —
+//      `births`, `deaths`, `kills` — carried over because ten of the twelve
+//      tests had been checking them and no fingerprint covered them. Three of
+//      fifty-one: `world.stats` has forty-three own properties and
+//      `world.energy` eight, and a feature that was off and wrote to any of the
+//      other forty-eight passed every channel here. It is the same shape as (4),
+//      one output over — a counter is not a place, so moving one moves no
+//      picture of the pond.
 //
-// Plus the two things a hash cannot say: that the counters agree (the ledger is
-// not in any fingerprint, and ten of the twelve were checking it), and that the
-// pond was alive at the end — comparing two extinct worlds proves nothing, a
-// guard v1.45 added to one test and nowhere else.
+// Plus the thing no hash can say: that the pond was alive at the end — comparing
+// two extinct worlds proves nothing, a guard v1.45 added to one test and nowhere
+// else.
 
 import assert from "node:assert/strict";
 
@@ -39,6 +46,7 @@ import {
   stateFingerprint,
   trajectoryFingerprint,
   observationFingerprint,
+  booksFingerprint,
   drawStream,
 } from "../../src/fingerprint.js";
 
@@ -96,9 +104,12 @@ export function assertUnaffected(a, b, ticks, what) {
     observationFingerprint(b),
     `${where}the pond is identical and the tree of life is not`
   );
-  for (const counter of ["births", "deaths", "kills"]) {
-    assert.equal(a.stats[counter], b.stats[counter], `${where}stats.${counter} differs`);
-  }
+  assert.equal(
+    booksFingerprint(a),
+    booksFingerprint(b),
+    `${where}the pond is identical and its books are not — some counter, ` +
+      "ledger field or history buffer was written by a feature that is off"
+  );
   assert.ok(
     a.creatures.length > 0,
     `${where}both ponds were empty after ${ticks} ticks, which proves nothing`

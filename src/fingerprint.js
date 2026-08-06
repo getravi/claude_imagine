@@ -250,7 +250,8 @@ export function stateFingerprint(world) {
  * identical — a sweep with only a state hash calls all three dead. It also
  * gives the header comment in `phylogeny.js` ("nothing here feeds back into the
  * simulation") a test: a change that moves this hash and not the state hash is
- * exactly what pure observation looks like.
+ * exactly what pure observation looks like. `booksFingerprint` is the same idea
+ * one output over — see it for why a counter needs its own channel.
  *
  * Deliberately excludes each species' representative genome, for the same
  * reason `trajectoryFingerprint` excludes genomes: it is representation, and it
@@ -286,6 +287,149 @@ export function observationFingerprint(world) {
     }
   }
   return h.digest();
+}
+
+/**
+ * How deep `mixValue` will walk before it decides it is lost. The deepest thing
+ * the books actually hold is four down — the archive, its rows, a row's `min`
+ * envelope, a number — so this has two levels of slack and is a guard against a
+ * future field that carries a cycle, not a limit anything real is near.
+ */
+const MAX_BOOK_DEPTH = 6;
+
+/**
+ * Mix any plain value: a number, a string, a boolean, an array, or an object of
+ * those. Arrays and objects carry a tag and a length, so `[]` and `{}` are not
+ * the same thing and neither is a collection that lost an element.
+ *
+ * Object keys are sorted, which makes the hash a statement about *what an
+ * object holds* rather than about the order some loop happened to write it in —
+ * the same choice `observationFingerprint` makes for the abundance Maps. Sorting
+ * is not the same as ignoring: each key is mixed by name, so a field that
+ * appears, disappears or is renamed moves the digest.
+ *
+ * The reason this is generic where the three hashes above are hand-written is
+ * that they hash a *fixed shape* — a creature has the fields a creature has —
+ * and the books do not. A history point is whatever `Stats.sample` assembled
+ * that tick, and half of those keys are built by `energyField()` and
+ * `buriedField()` from lists that grow. A hand-written mixer for that is a list
+ * of names one level further down, which is the thing v1.53 spent a release
+ * proving is not an instrument.
+ */
+function mixValue(h, v, depth = 0) {
+  if (v === null || v === undefined) return h.word(0xfeedface);
+  const t = typeof v;
+  if (t === "number") return h.num(v);
+  if (t === "boolean") return h.flag(v);
+  if (t === "string") return h.text(v);
+  if (t !== "object") {
+    throw new TypeError(`the books carry a ${t}, which no fingerprint can mean anything about`);
+  }
+  if (depth >= MAX_BOOK_DEPTH) {
+    throw new RangeError(`the books nest deeper than ${MAX_BOOK_DEPTH}; is something cyclic?`);
+  }
+  if (Array.isArray(v)) {
+    h.word(0x0a44a1); // tag: array
+    h.word(v.length);
+    for (const el of v) mixValue(h, el, depth + 1);
+    return h;
+  }
+  h.word(0x0b1ec70b); // tag: object
+  const keys = Object.keys(v).sort();
+  h.word(keys.length);
+  for (const k of keys) {
+    h.text(k);
+    mixValue(h, v[k], depth + 1);
+  }
+  return h;
+}
+
+/**
+ * Every own property of `world.stats` that `booksFingerprint` hashes.
+ *
+ * Six of these — the last six — do not exist until the first `sample()`. A list
+ * written by reading the constructor, which is the obvious way to write one,
+ * gets thirty-seven of the forty-three and looks complete. That is why the test
+ * that walks this list walks a *stepped* world.
+ */
+export const STATS_HASHED = [
+  "historyLength", "popHistory", "runHistory", "tick", "births", "deaths",
+  "kills", "deathWindow", "deathsBy", "recentDeaths", "lifespanSum",
+  "scavenged", "contested", "crowdedOut", "walled", "walledRate", "_walledRing",
+  "jostled", "jostledRate", "_jostledRing", "infections", "recoveries",
+  "infectedCount", "immuneCount", "peakInfected", "hazardShare", "power",
+  "maxGeneration", "maxPopEver", "carnivoreFrac", "avgLearning", "avgVoice",
+  "avgHeard", "groundBias", "soilShare", "_lastSpawned", "_lastSprouted",
+  "avgGeneration", "currentMaxGeneration", "carnivoreCount", "avgHidden",
+  "avgConns", "maxHidden",
+];
+
+/**
+ * Nothing. Every measurement the pond keeps is in the channel, including the
+ * two construction parameters and the three history buffers — the archive's own
+ * thinning state is exactly the kind of thing that can differ while every
+ * creature agrees, which is what this channel is for.
+ *
+ * The list exists anyway, so that a field which *should* stay outside has
+ * somewhere to be written down with its reason rather than being deleted from
+ * `STATS_HASHED` and forgotten. (`Stats`'s methods and `Energy`'s four derived
+ * getters are on the prototype, so they are not own properties and never enter
+ * this question. A derived total that disagreed with its own inputs would be a
+ * bug in the getter, not a difference between two worlds.)
+ */
+export const STATS_UNHASHED = {};
+
+/** Every own property of `world.energy`: the eight stored fields, `buried` split by cause. */
+export const ENERGY_HASHED = [
+  "crop", "carrion", "founders", "metabolism", "digested", "spilled", "rotted",
+  "buriedBy",
+];
+
+/** Nothing, for the same reason as `STATS_UNHASHED`. */
+export const ENERGY_UNHASHED = {};
+
+/**
+ * The fifth channel: the pond's books.
+ *
+ * The four channels below and above are the world, its representation, the
+ * observer's tree, and the random stream — and none of them touches a counter.
+ * `world.stats` carries forty-three own properties and `world.energy` eight;
+ * until v1.59 the shared paired assertion named **three** of them by hand, and a
+ * feature that was switched off and wrote to any of the other forty-eight left
+ * every fingerprint in this project bit-identical.
+ *
+ * That is not a hypothetical gap, it is the same gap `observationFingerprint`
+ * was built for one surface over: the books are an *output*, so a difference in
+ * them is invisible to any picture of the pond, by construction. A hash of the
+ * state cannot fail on a miscount, because a miscount does not move a creature.
+ *
+ * Same-process only, like `stateFingerprint` — the books gain a field most
+ * releases, so a golden constant recorded from this would be a note about the
+ * last time somebody re-recorded it. What it is *for* is the paired comparison:
+ * two worlds that ought to be identical, one of which may have been counting.
+ *
+ * Read-only: it draws no random numbers and writes nothing. There is a test.
+ *
+ * @param {import('./world.js').World} world
+ * @returns {string} eight hex digits
+ */
+export function booksFingerprint(world) {
+  const h = new Hash();
+  h.word(0x424f4f4b); // domain separator: "BOOK"
+  mixBook(h, world.stats, STATS_HASHED);
+  mixBook(h, world.energy, ENERGY_HASHED);
+  return h.digest();
+}
+
+/** Mix one ledger's named fields, by name, so a rename is a difference. */
+function mixBook(h, book, names) {
+  if (!book) return h.word(0xdeadbeef);
+  h.word(names.length);
+  for (const n of names) {
+    h.text(n);
+    mixValue(h, book[n]);
+  }
+  return h;
 }
 
 /**

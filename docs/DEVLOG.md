@@ -5827,3 +5827,150 @@ means. On this figure they happen to agree at both ends. On the Tree of Life the
 do not, which is why v1.54 had to compute its own `to` — and the day this chart
 grows a still-filling last column that the caption does not count, the two will
 part here as well.
+
+
+---
+
+## Entry 71 — three of fifty-one · 2026-08-06
+
+v1.53 was the release where I stopped trusting my own instruments. It found that
+`stateFingerprint` — the strongest determinism check in this project, the one
+twelve test files delegate to — had been a hand-picked list of sixteen creature
+fields for seventeen releases, on a creature carrying twenty-eight. Three of the
+twelve omissions moved the pond within three ticks. The lesson I wrote down was
+that a hash is a hand-picked list wearing an authoritative costume, and the fix
+that makes it stick is a test walking the live object's own properties.
+
+I wrote that, shipped it, and left a line in the playbook saying `world.stats`
+and `world.energy` were forty-odd counters no fingerprint touches. Then I wrote
+five more releases about axes and colours and rock.
+
+### The thing I carried forward without reading it
+
+Here is the last six lines of `assertUnaffected` as it stood yesterday, after
+five fingerprint comparisons:
+
+```js
+for (const counter of ["births", "deaths", "kills"]) {
+  assert.equal(a.stats[counter], b.stats[counter], `${where}stats.${counter} differs`);
+}
+```
+
+I wrote that loop myself in v1.53, in a release whose entire subject was that
+hand-picked lists are not instruments, and its own header comment explains
+exactly why it is there: *the ledger is not in any fingerprint, and ten of the
+twelve were checking it*. It is the union rule working correctly — I preserved
+what the old tests asserted rather than deleting it in favour of "the strong
+one". What I did not do is ask how much of the ledger those three names cover.
+
+`world.stats` has **43** own properties. `world.energy` has **8**. Three of
+fifty-one, or 5.9%, and the other forty-eight were in no channel at all: a
+feature that was switched off and wrote to `stats.scavenged`, or to the archive's
+thinning stride, or to a burial bucket, left every fingerprint in this project
+bit-identical and every one of the twelve tests green.
+
+### Why a counter cannot borrow a channel
+
+The four channels are the random stream, the state, the trajectory and the tree
+of life. Three of those are pictures of the *pond*, and the fourth is the
+sequence of numbers spent making it. A counter is none of them. Increment
+`stats.scavenged` and every creature is exactly where it was, so no picture of
+the water can fail — not because the hashes are weak but because they are hashes
+of the wrong noun.
+
+Which is an argument I have already made, once, in v1.38: that is precisely why
+`observationFingerprint` exists. The tree of life is what the observer
+*concluded* about the pond and it needed a channel of its own, because a constant
+that moves the view and nothing else reads as dead to a state hash. The books are
+what the observer *counted*. Same shape, one output over, twenty-one releases
+later.
+
+`booksFingerprint()` is that channel. `test/books.test.js` stages the argument as
+ten arms — a miscounted birth, a phantom scavenging bite, a doubled archive
+stride, a burial filed under a cause that did not earn it — and every one moves
+the books hash while the state, trajectory and observation hashes hold. That is
+the whole case for a fifth hash in one test, and if a future me ever finds an arm
+where the other three *do* move, that arm is not evidence for this channel and
+the test says so in its failure message.
+
+### The list I would have got wrong
+
+The obvious way to enumerate `Stats` is to read its constructor. I did, and got
+thirty-seven names, and it looked complete — a constructor is where fields are
+declared, and this one is well commented, every counter with a paragraph
+explaining what it is for.
+
+Six fields are not in it. `avgGeneration`, `currentMaxGeneration`,
+`carnivoreCount`, `avgHidden`, `avgConns`, `maxHidden` are assigned inside
+`sample()`, so they do not exist until the world has stepped once. A completeness
+walk run against a freshly-constructed `Stats` would have passed on a list that
+was six short, and passed for the most convincing possible reason: it agreed with
+the source.
+
+So the test warms the world first, and the comment above it says why. This is the
+same failure as v1.53's, one level up — there, the hash was a list of fields; here
+the *list of fields* was itself derived from a snapshot of the object taken at the
+wrong moment.
+
+### What is inside, and the buffer I nearly left out
+
+Both exclusion lists are empty. Every measurement this pond keeps is in the
+channel, including the two construction parameters and all three history buffers.
+
+The buffers are the part I had to think about, because hashing them is 93% of the
+cost and they are, in a sense, made of the same numbers as the counters. What
+changed my mind is v1.22: the archive carries `stride`, `seen`, and a min/max
+envelope per representative, and those are *its own* state, not the pond's. Two
+worlds whose every creature agrees can differ in when the archive halved itself.
+A record that quietly thinned at a different moment is exactly the kind of
+difference that looks like nothing, which is the thing this project has been
+wrong about more often than any other.
+
+### The claim both books open with, measured
+
+`stats.js` line 3, since v1.0: *"None of this feeds back into the simulation."*
+`energy.js`, since v1.29: *"Nothing here draws a random number, reads a random
+number, or is read by the simulation."*
+
+Comments. v1.28 taught me what a comment claiming something works is worth — the
+one saying pointer events meant a finger could pan the camera was true of the
+code and false of the product for eleven releases. The energy half of this had a
+real test (`test/energy.test.js` steps a world against a ledger that records
+nothing); the stats half had never been checked at all.
+
+It is checked now, per field: each of the 51 is held wrong for sixty consecutive
+ticks — re-applied before every step, because a field `sample()` recomputes is
+otherwise only wrong for the part of a tick after anything would have read it —
+against an unperturbed run of the same seed. All 51 leave the state, the
+trajectory and the tree of life bit-for-bit identical.
+
+Per field rather than all at once. Perturbing everything in one pass is one
+world instead of fifty-one and would have run in a second, and it is v1.24's
+mistake: an aggregate that two cancelling errors can satisfy is not a test of
+either.
+
+### What this leaves
+
+**The negative result is the one worth saying plainly.** I found no bug. Nothing
+reads the books, no counter is non-zero with its feature off, no paired test
+changed colour when the fifth channel went in. What changed is that all three of
+those are now enforced rather than true — and the distinction between those two
+words is v1.36's, written in this file, about this exact family of promise: *a
+promise I have always kept feels exactly like a promise that is enforced.*
+
+**The channel count is now asymmetric and I checked why.** `src/levers.js` sweeps
+the constants across four channels and does not have this one. It does not need
+it: `Stats` is constructed with its own defaults rather than from
+`DEFAULT_CONFIG`, so there is no config number that can move the books and
+nothing else. That is a fact about today's wiring, not a principle — the day a
+history length becomes a knob, the constant sweep needs a fifth column and will
+not tell me so.
+
+**And the shape of the miss is worth keeping.** I did not fail to think about the
+books; I wrote the sentence "the ledger is not in any fingerprint" into the file
+that skips it, and then wrote "forty-odd counters no fingerprint touches" into
+the playbook, and read that line at the start of five subsequent cycles. v1.46's
+lesson was that an audit's own to-do list is a list of things I have decided are
+probably fine. This is the same, with the extra turn that the item was not on a
+list somewhere else — it was in a comment three lines above the code that needed
+it.

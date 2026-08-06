@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.59.0] — 2026-08-06
+
+v1.53 replaced twelve hand-rolled determinism checks with one shared assertion
+over four channels, and quietly carried the thirteenth thing forward unexamined:
+a loop over three counters, because no fingerprint in this project touches a
+counter. `world.stats` has **43** own properties and `world.energy` **8**. Three
+of fifty-one. This release hashes the other forty-eight, and measures the claim
+both books have opened with since they were written — that nothing in the
+simulation reads them.
+
+### Added
+
+- **`booksFingerprint()` — the fifth channel.** Every counter, ledger field,
+  ring and history buffer the pond keeps. It exists for the same reason
+  `observationFingerprint` does, one output surface over: a counter is not a
+  *place*, so incrementing one moves no picture of the world and every
+  fingerprint here holds. `test/books.test.js` stages that as ten arms — a
+  miscounted birth, a phantom scavenging bite, a doubled archive stride, a
+  burial filed under the wrong cause — and each moves the books hash and none of
+  them moves the state, trajectory or observation hash.
+- **`STATS_HASHED` / `ENERGY_HASHED`, and a test that walks a live world against
+  them.** v1.53's rule was to fix the instances and then make the class
+  unrepresentable: a completeness walk means the *next* release's counter cannot
+  land outside the instrument. Both exclusion lists are empty on purpose, and
+  the shape is kept so that a field which should stay outside has somewhere to
+  be written down with its reason.
+- **A generic structural mixer** behind it. The three older hashes walk a fixed
+  shape; the books do not — half of a history point's keys are built by
+  `energyField()` and `buriedField()` from lists that grow. Object keys are
+  sorted, so the digest is a statement about what an object holds rather than
+  about the order some loop wrote it in, and each key is mixed *by name*, so a
+  field that appears, disappears or is renamed still moves it.
+
+### Measured
+
+- **Nothing in the books feeds back into the simulation.** `stats.js` has said
+  so since v1.0 and `energy.js` since v1.29, and both were comments. Each of the
+  51 fields held wrong for **60 consecutive ticks** — re-applied before every
+  step, so a field `sample()` recomputes is still wrong during the part of the
+  tick a reader would read it in — leaves the state, the trajectory and the tree
+  of life bit-for-bit identical. Per-field, not all at once: an aggregate two
+  cancelling errors can satisfy is not a test of either.
+- **Six of the 43 stats fields do not exist until the first `sample()`** —
+  `avgGeneration`, `currentMaxGeneration`, `carnivoreCount`, `avgHidden`,
+  `avgConns`, `maxHidden`. A list enumerated from the constructor, which is the
+  obvious way to write one, gets thirty-seven names and looks complete. The
+  completeness test walks a *stepped* world for exactly this reason.
+- **Every feature-specific counter reads exactly 0 with its feature off** over
+  1,500 ticks — the two barrier counters, the two collision counters, the six
+  disease counters, `groundBias`, `soilShare`, `avgLearning`, `avgVoice`,
+  `avgHeard`. The v1.20 bar, applied to the counters rather than to a claim.
+- **What the channel costs:** ~1.0 ms per digest against the state hash's
+  0.25 ms, walking 6,600 numbers on a 500-tick pond — about three ticks' worth,
+  twice per paired test. 93% of that walk is the two history buffers; the
+  counters themselves are 51 numbers. Suite wall clock unchanged within noise.
+
+### Changed
+
+- `test/support/paired.js` runs five channels. The three-counter loop is gone
+  and everything it asserted is inside the new one — by the v1.53 rule that
+  consolidating N approximations takes the union, not the strongest.
+- The archive's own thinning state (`stride`, `seen`, the min/max envelopes) is
+  now inside a determinism instrument. Two worlds whose every creature agrees
+  can differ there, and a record that halved itself at a different moment is
+  exactly the kind of difference that looks like nothing.
+- `src/levers.js` still has four channels, checked rather than assumed: `Stats`
+  is constructed from its own defaults and not from `DEFAULT_CONFIG`, so no
+  config constant can move only the books.
+
 ## [1.58.0] — 2026-08-05
 
 The population chart has had a caption naming two ends since v1.22, and the rule

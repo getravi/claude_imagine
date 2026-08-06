@@ -185,10 +185,14 @@ test("the paired assertion fails on each thing it promises to catch", () => {
     ["a stolen draw", (w) => w.rng.next()],
     ["a moved creature", (w) => (w.creatures[0].y += 1e-9)],
     // `hue` is carried from birth and never rewritten, is drawn and nothing
-    // else, and is therefore exactly the leak the other three channels cannot
+    // else, and is therefore exactly the leak the other four channels cannot
     // see: a feature that quietly rewrites a creature and changes no outcome.
     ["a field only the state hash sees", (w) => w.creatures.forEach((c) => (c.hue += 1))],
+    // The mirror of the line above, on the fifth channel: a counter is not a
+    // place, so no picture of the pond can fail on it. `test/books.test.js`
+    // stages nine more of these.
     ["a miscounted birth", (w) => (w.stats.births += 1)],
+    ["a miscount no fingerprint used to reach", (w) => (w.stats.scavenged += 1)],
   ];
   for (const [label, sabotage] of broken) {
     const a = new World(makeConfig({ seed: 21 }));
