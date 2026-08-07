@@ -203,6 +203,15 @@ export function deltaE(a, b, type = "normal") {
 export const MIN_DELTA_E = 25;
 
 /**
+ * The blood-dark tone both predator marks are drawn with. One constant, read by
+ * `predatorMark` and `predatorOutline` alike, so the eye and the silhouette
+ * cannot drift into two different darks — the sameness is a consequence rather
+ * than a pair of decisions that happen to agree today (v1.62).
+ */
+const PREDATOR_DARK_HSL = [8, 85, 12];
+const PREDATOR_DARK = `hsl(${PREDATOR_DARK_HSL[0]}, ${PREDATOR_DARK_HSL[1]}%, ${PREDATOR_DARK_HSL[2]}%)`;
+
+/**
  * The predator's mark — the thing that says *this one hunts*, which is the most
  * important sentence this pond speaks.
  *
@@ -232,7 +241,7 @@ export function predatorMark(carnivory) {
   const c = Math.max(0, Math.min(1, carnivory));
   return {
     disc: "hsl(30, 100%, 88%)",
-    rim: "hsl(8, 85%, 12%)",
+    rim: PREDATOR_DARK,
     // As a fraction of the body radius. The old core was a flat 0.55.
     radius: 0.4 + 0.2 * c,
   };
@@ -240,7 +249,75 @@ export function predatorMark(carnivory) {
 
 /** The two tones of the predator mark as RGB, for the audit. */
 export function predatorMarkTones() {
-  return { disc: hslToRgb(30, 100, 88), rim: hslToRgb(8, 85, 12) };
+  return { disc: hslToRgb(30, 100, 88), rim: hslToRgb(...PREDATOR_DARK_HSL) };
+}
+
+/**
+ * The predator's *silhouette* — the warm line around the chevron, which is the
+ * other half of what says "this one hunts" and the half the v1.25 audit did not
+ * touch. It replaced the core and left the stroke exactly where it was, so for
+ * forty-one releases this was `hsla(8, 90%, 60%, 0.35 + 0.5 * carnivory)`: one
+ * translucent warm tone whose opacity tracked the diet gene.
+ *
+ * Two things are wrong with that and the second is the interesting one.
+ *
+ * It is invisible. A single translucent tone over a background it does not
+ * control is the failure v1.25 found in the core, v1.34 in the halo and v1.43
+ * in the call rings, and it fails here the same way: measured against every
+ * body this pond can paint and every glow-lit patch of water outside one,
+ * **53.5% of those backgrounds sit below the bar and 3.9% below the
+ * just-noticeable difference** — 134 of the 360 lineage hues have a body state
+ * in which the line around a hunter cannot be seen at all.
+ *
+ * It fails at the *opposite* end of the energy axis from the core, though, and
+ * that is the part worth carrying forward: the core was additive, so a pale
+ * well-fed body clamped it to white; this one is `source-over`, so what defeats
+ * it is the middle — a mid-lightness warm body is almost exactly what the line
+ * composites to. 71.9% of starving bodies score under the bar against 16.8% of
+ * fed ones. Two marks that look like one decision are two decisions whenever
+ * they are composited differently.
+ *
+ * And the degree it was spending that contrast on was never there. The diet
+ * gene of a creature actually drawn as a predator runs 0.55–1.0, but 94.1% of
+ * predator-frames over twelve seeds sit under 0.80, so the opacity a watcher
+ * meets spans 0.63–0.74. Over that range the faintest outline and the loudest
+ * differ by **ΔE 1.7 on a warm body** — under the just-noticeable difference.
+ * The channel v1.34 forbids by name was not merely expensive here; it was
+ * empty. Carnivory is already in `predatorMark`'s *radius*, which is where it
+ * stays.
+ *
+ * So the line becomes opaque and two-toned, the house treatment: a dark
+ * hairline laid down slightly wider, the warm tone over it. The dark is the
+ * eye's own rim, and the warm is pinned between two measurements pulling in
+ * opposite directions — it has to clear `MIN_DELTA_E` against every background
+ * (which wants it lighter) and stay distinguishable from the eye's pale disc,
+ * so the silhouette does not read as a second copy of the mark it surrounds
+ * (which wants it darker). At hue 20 those two admit lightness 40–49 and
+ * nothing else; this is the middle of that band.
+ *
+ * A note for whoever moves it: the tone it replaces was hue 8, the *rim's own
+ * hue*, and that is why its admissible band was one step wide. A two-tone mark
+ * whose tones share a hue is separated in luminance alone, so a mid-luminance
+ * background of that hue defeats both halves at once — the warm mid-tone
+ * rgb(79, 65, 35) scored 24.9 against the light tone and 24.2 against the dark.
+ * Moving the light tone off the dark one's hue is what buys the second axis
+ * back, and the band goes from one step to ten.
+ */
+export function predatorOutline() {
+  return {
+    edge: "hsl(20, 90%, 45%)",
+    rim: PREDATOR_DARK,
+    // World units, the same width the warm line has always been. What the fix
+    // adds is the dark under it, not a heavier mark: `render.js` lays the rim
+    // down at `width + 1.1` the way `_twoToneRing` does, so the hairline is
+    // half a pixel either side of a line that has not changed size.
+    width: 1,
+  };
+}
+
+/** The predator outline's two tones as RGB, for the audit. */
+export function predatorOutlineTones() {
+  return { edge: hslToRgb(20, 90, 45), rim: hslToRgb(...PREDATOR_DARK_HSL) };
 }
 
 /**

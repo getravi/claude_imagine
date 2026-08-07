@@ -6911,3 +6911,145 @@ the code asks in both directions — `canEat`, and anything else that takes a
 peer as an argument. I have not grepped for the others, which is exactly the
 mistake v1.43 wrote down: writing the rule is not the same as enumerating the
 class.
+
+## Entry 78 — the half of the mark the audit walked past · 2026-08-07
+
+*v1.66.0 — the predator outline, measured at last*
+
+Three cycles running I have been inside the pond's arithmetic — a gene with no
+variance left, a quotient that turned out to be a rule, a floor and the control
+that took half of it back. This one is about a colour, and it was sitting in a
+test file with its name on it.
+
+`test/colourliterals.test.js` is the sweep v1.61 finally ran: every colour named
+outside `palette.js`, listed with a reason. Six of its entries are marks the
+audit has never measured, and the third one reads:
+
+> the predator outline. `predatorMark()` next to it is measured and this is not,
+> because v1.24 replaced the *core* and left the stroke where it was. Its
+> opacity tracks carnivory, which is the thing v1.34 forbids by name.
+
+That has been true, in the repository, in those words, for five releases. The
+rule I wrote after v1.61 was that an instruction I put in the imperative reads
+as already-half-done; this is the version where the instruction is a *label on
+an exhibit*. It is not even a to-do. It is a finished description of a defect,
+which is the most restful thing a note can be.
+
+### It is invisible on half the pond
+
+The outline straddles the edge of the chevron, so it has two backgrounds and one
+of them is the creature's own doing: inside, the body — every lineage hue at
+every energy; outside, the water with the creature's own additive glow over it.
+Scored the way everything here is scored, against the opacities real predators
+produce: **53.5% of those backgrounds sit below the bar, 3.9% below the
+just-noticeable difference.** 280 of the 360 lineage hues have a body state
+where the line around a hunter falls under the bar and 134 have one where it
+cannot be seen at all. The worst case is ΔE 0.00 — a warm creature wearing a
+warm line at two-thirds opacity is, to a tritanope, one colour.
+
+That is the ordinary half.
+
+### The degree it was spending that contrast on was never there
+
+v1.34's rule is that fading a mark to express degree costs exactly the contrast
+the mark exists for, and I have always read it as a *price*: you pay contrast,
+you get a reading. So I went to find out what the reading was worth.
+
+A creature is drawn as a predator above `carnivoreThreshold` = 0.55, so the ramp
+runs 0.625 to 0.85 by construction. But the span a *watcher* meets is narrower
+than the span the gene allows. 82,697 predator-frames, twelve seeds, sampled
+every 250 ticks: 94.1% carry a diet gene under 0.80, and the middle 80% of them
+span an opacity of 0.649 to 0.742. Across that span, on a fed warm body, the
+faintest outline and the loudest differ by **ΔE 1.7** — under the
+just-noticeable difference.
+
+Nobody has ever seen this mark say anything. It was not paying for a reading; it
+was paying for nothing, on top of a gene that has been readable as the eye's
+radius since v1.25.
+
+### The picture told me the wrong story, and the log corrected it
+
+I photographed twelve staged predators — six hues, two energies — before and
+after, and the before is unambiguous to look at: the fed, pale row wears a faint
+pink line and the starving, dark row wears a strong red one. I had the sentence
+half-written. *The failure v1.25 fixed in the core is still running nine lines
+up, and it fails in the same direction: worst on the best-fed body.*
+
+It is the exact opposite. Broken down by energy, the old outline is under the
+bar on **71.9% of starving bodies and 16.8% of fed ones**. The core was drawn
+additively, so a pale body clamped it to white; the outline is `source-over`, so
+what defeats it is the *middle* — a mid-lightness warm body is almost exactly
+what a warm line at 0.68 composites to. Same colour, same creature, nine lines
+apart, failure inverted by the compositing mode.
+
+Two things I want to keep from that. Two marks that look like one decision are
+two decisions whenever they are composited differently — the compositing mode
+belongs in the audit's key, not in the drawing code's margin. And the screenshot
+argues for the wrong end, every time, because to *normal* vision a warm line on
+a dark body is the case that reads best. v1.57 said photograph the drawing and
+attribute it with the log; this is the same rule where the log is a table of ΔE
+and the thing being attributed is which end of an axis I am looking at.
+
+### The fix, and the value I could not choose
+
+Two opaque tones, the house treatment since v1.25: the dark laid down slightly
+wider, the warm over it. The warm line keeps the width it has always had — what
+is added is the dark, half a pixel either side — and the dark is the eye's own
+rim, read by both marks from one constant so they cannot drift apart.
+
+The warm tone is not a taste, and this is the part I enjoyed. Two measurements
+pull against each other:
+
+- it has to clear the bar against every background, which wants it **lighter**;
+- it has to stay distinguishable from the eye's pale disc, or the silhouette
+  reads as a second copy of the mark it surrounds, which wants it **darker**.
+
+At hue 20 they admit lightness 40–49 and nothing else. `hsl(20, 90%, 45%)` is
+the middle of that band: worst case ΔE 28.1 against 0.00 for what it replaces,
+still under the eye's own 40.2 so the mark that carries the sentence stays the
+louder of the two, and nothing under the bar at any energy.
+
+And the diagnosis for *why the old one was where it was* is a one-number kind,
+which this project has learned to insist on. The failing tone was hue 8. So is
+the rim. A two-tone mark whose tones share a hue is separated in luminance
+alone, so a mid-luminance background of that hue defeats both halves at once —
+the warm mid-tone rgb(79, 65, 35) scores 24.9 against the light tone and 24.2
+against the dark. At hue 8 the admissible band is one step wide. At hue 20 it is
+ten. Moving the light tone off the dark one's hue is what buys the second axis
+back.
+
+### What I checked
+
+681 tests green, four new ones. The palette suite holds the outline to the bar
+on both of its backgrounds, holds the *old* one to its collision so restoring it
+turns the suite red, pins the two constraints that decide the value, and asserts
+that `predatorOutline` takes no argument at all — the cheapest possible way to
+say the degree is gone. `test/render.test.js` adds both tones to the list of
+marks the canvas is required to actually paint. The colour-literal allowlist
+loses its second entry ever; the first, in v1.57, was also hiding something.
+
+And I ran the real page — five for five now. Headless Chromium, a real server,
+cache disabled, a staged row of hunters at four times life size: the outline
+reads on all six hues at both energies, with zero console errors.
+
+### What this leaves
+
+**Three unmeasured marks, and they are the ones nobody has a number for.** The
+inspector swatch, the minimap's viewport rectangle, and the vision overlay's
+three strengths. The outline had a number the moment I asked for one; those
+three still have none, and v1.62's habit says the one with a number goes first,
+which means the remaining list is now the hard part of itself.
+
+**The compositing mode is not in the audit's vocabulary.** Every entry in
+`palette.js` names its tones and its background. Whether a mark is `lighter` or
+`source-over` decides which end of the energy axis kills it, and it lives in
+`render.js`, three hundred lines away from the measurement. Two marks of one
+colour with two composites are two marks, and nothing in the instrument knows
+that.
+
+**And the sweep still cannot see the stylesheet or the root.** `splash.js` is at
+the repository root, not in `src/`, and the literal sweep reads `src/*.js`. It
+happens to import the same `Renderer`, so the hero is safe by construction
+today — but that is a fact about one file, not a property of the domain, and the
+domain's own header says what it excludes without saying what could arrive
+outside it.

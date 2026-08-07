@@ -4,6 +4,69 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.66.0] — 2026-08-07
+
+`test/colourliterals.test.js` has carried the predator outline on its list of
+unmeasured marks since v1.61, with the reason written out beside it: v1.25
+replaced the predator's *core* and left the stroke where it was, and its opacity
+tracks carnivory, which is the thing v1.34 forbids by name. This release
+measures it. It is invisible on half the pond, the degree it was spending its
+contrast on was never readable, and it fails at the opposite end of the energy
+axis from the mark it sits nine lines below.
+
+### Changed
+
+- **The predator's outline is opaque, two-toned, and no longer fades**
+  (`predatorOutline()`, `src/palette.js`). It was
+  `hsla(8, 90%, 60%, 0.35 + 0.5 * carnivory)` — one translucent warm tone over a
+  background it does not control, which is the failure v1.25 found in the core,
+  v1.34 in the halo and v1.43 in the call rings. It is now the house treatment:
+  a dark hairline laid down slightly wider, the warm tone over it. The warm line
+  keeps the width it has always had; what is added is the dark half a pixel
+  either side of it.
+  - The dark is the eye's own rim, read by both marks from one constant, so the
+    silhouette and the eye cannot drift into two different darks.
+  - Carnivory is `predatorMark`'s radius and nothing else now.
+  - `test/palette.test.js` holds the new tone to the bar on both of the
+    outline's backgrounds *and* holds the old one to its collision, so restoring
+    the fading outline turns the suite red. The colour-literal sweep's allowlist
+    loses its second entry.
+
+### Measured
+
+- **The outline was below `MIN_DELTA_E` on 53.5% of the backgrounds it is drawn
+  on, and below the just-noticeable difference on 3.9%.** Its backgrounds are
+  both sides of the chevron's edge: the body inside, and outside it the water
+  with the creature's own glow on it. 280 of the 360 lineage hues have a body
+  state where it falls under the bar; 134 have one where it cannot be seen at
+  all, worst case a flat **ΔE 0.00**.
+- **The degree it was paying for was not there.** Over twelve seeds and 82,697
+  predator-frames, 94.1% of creatures drawn as predators carry a diet gene under
+  0.80, so the opacity a watcher meets spans 0.649–0.742 — and across that span
+  the faintest outline and the loudest differ by **ΔE 1.7 on a fed warm body**,
+  under the just-noticeable difference. The forbidden channel was not merely
+  expensive here; it was empty.
+- **It fails at the opposite end of the energy axis from the core v1.25 fixed.**
+  The core was additive, so a pale well-fed body clamped it to white. The
+  outline is `source-over`, so what defeats it is the *middle*: 71.9% of
+  starving bodies score under the bar against 16.8% of fed ones. The same
+  colour, nine lines apart in one file, with its failure inverted by the
+  compositing mode.
+- **The replacement is pinned between two measurements, not chosen.** It has to
+  clear the bar against every background (which wants it lighter) and stay
+  distinguishable from the eye's pale disc, or the silhouette reads as a second
+  copy of the mark it surrounds (which wants it darker). At hue 20 the two admit
+  lightness 40–49 and nothing else; `hsl(20, 90%, 45%)` is the middle. Worst
+  case **ΔE 28.1**, against 0.00 for the tone it replaces, and still below the
+  eye's own 40.2 — the mark that carries the sentence stays the louder of the
+  two.
+- **Why hue 8 was the worst possible place for it:** that is the rim's own hue,
+  so the pair was separated in luminance alone and a mid-luminance warm
+  background defeated both halves at once (24.9 against the light tone, 24.2
+  against the dark). Its admissible band was one step wide; at hue 20 it is ten.
+- `docs/SCIENCE.md` gains **The half of the predator mark the audit walked
+  past**, with the tables and the reproduction scripts.
+
 ## [1.65.0] — 2026-08-07
 
 v1.64 measured predation as a **floor** under body size and could not say how

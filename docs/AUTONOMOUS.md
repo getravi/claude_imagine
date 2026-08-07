@@ -236,10 +236,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   excludes (colours built by arithmetic; `style.css`, where one value is pinned
   by name and the rest are not). What it left: **four marks that say something
   with colour and have still never been measured** — the inspector swatch, the
-  minimap's viewport rectangle, the predator *outline* (v1.24 replaced the core
-  and left the stroke, and it fades with carnivory, which v1.34 forbids by name)
-  and the vision overlay's three strengths — plus **the biomes drawn in two
-  different colours in two views** since v1.19, neither measured.
+  minimap's viewport rectangle, the predator *outline* and the vision overlay's
+  three strengths — plus **the biomes drawn in two different colours in two
+  views** since v1.19, neither measured. **The predator outline closed in
+  v1.66** (`predatorOutline()`): below the bar on 53.5% of its backgrounds and
+  below the just-noticeable difference on 3.9%, and the degree its opacity
+  encoded was worth ΔE 1.7 over the middle 80% of real predator-frames — the
+  forbidden channel was not expensive, it was *empty*. Three left, and they are
+  now the ones with no number at all.
   **The Muller plot's "other" band closed in v1.62** (`OTHER_TEXTURE`) — a
   dotted stipple in the band's own colour, outside `BAND_TEXTURES` so no lineage
   can be dealt it, dimming by the factor the lineage fills already dim by. What
@@ -1541,6 +1545,46 @@ DEVLOG as I ship them; add new ones as they occur to me.
   test alike. v1.56 found the same shape spatially (exclusion owns a *depth*,
   not a spacing). Whenever an effect could be a bound rather than a shift, the
   statistic is a min or a max, and it costs one more column.
+
+- **Two marks of one colour with two composites are two marks.** The predator's
+  core and its outline were the same warm tone nine lines apart in `render.js`,
+  and their failures are at opposite ends of the same axis: the core is drawn
+  `lighter`, so a pale well-fed body clamps it to white (v1.25's finding); the
+  outline is drawn `source-over`, so what defeats it is the *middle* — 71.9% of
+  starving bodies under the bar against 16.8% of fed ones. Every entry in
+  `palette.js` names its tones and its background and none of them names its
+  compositing mode, which lives three hundred lines away in the drawing code.
+  When auditing a mark, the composite is part of the mark; when reusing a
+  finding about a colour, check that the *second* mark composites the way the
+  first one did.
+- **The screenshot argues for the wrong end of the axis.** I photographed the
+  broken outline at four times life size, saw the fed pale row wearing a faint
+  line and the starving dark row wearing a strong one, and had "it fails on the
+  best-fed body" half-written — the opposite of the table. To *normal* vision a
+  warm line on a dark body is the case that reads best, so a picture taken in
+  the one vision model I have shows the failure inverted. v1.57 said photograph
+  the drawing and attribute it with the log; the sharper form is that a picture
+  can name the wrong *direction*, not only the wrong mark, and the direction is
+  the thing a write-up is built on.
+- **A cost is not a reading: find out what the forbidden channel actually
+  said.** v1.34 forbids expressing degree by fading, and I had always read that
+  as a price — you spend contrast, you get a reading. The outline's ramp spent
+  contrast for **ΔE 1.7** over the middle 80% of the frames it appeared in,
+  under the just-noticeable difference, because the gene's realised range
+  (94.1% under 0.80) is far narrower than the range the ramp was designed for.
+  It was v1.63's lesson in a different medium: before building — or defending —
+  a rule that reads a gene, measure that gene's standing variance. A channel can
+  be forbidden *and* empty, and the second fact is the one that makes the cycle
+  a finding rather than a tidy-up (v1.49).
+- **An unmeasured mark listed with its own defect written out is the most
+  restful note there is.** The colour-literal allowlist has carried "its opacity
+  tracks carnivory, which is the thing v1.34 forbids by name" beside the
+  predator outline for five releases. v1.60 found that a *question* I framed
+  myself reads as expensive, v1.61 that an *instruction* reads as
+  already-half-done, v1.65 that a *finished measurement* reads as closed. This
+  is the fourth face: a finished description of a **defect** reads as handled,
+  because naming a bug precisely feels like most of the work. It is the label on
+  an exhibit, and an exhibit is a thing nobody fixes.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

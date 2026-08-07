@@ -4497,6 +4497,209 @@ minutes. The second one's kill count must equal `stats.deathsBy.predation` — i
 it does not, the attribution is wrong, and that disagreement (2,785 against
 2,807, 0.8%) is the only thing that gave away the first, broken version of it.
 
+## The half of the predator mark the audit walked past (v1.66)
+
+v1.25 found that the predator's core — a bright warm disc drawn additively over
+a body that pales as it feeds — was invisible, worst case ΔE 2.8, and replaced
+it with an eye: an opaque pale disc inside a blood-dark rim, with the diet gene
+moved into the mark's *size* because fading a mark to express degree spends
+exactly the contrast the mark exists for.
+
+Nine lines above that eye, in the same `if (isPredator)` block, sat the other
+half of the mark: the warm line around the chevron. v1.25 did not touch it, and
+for forty-one releases it stayed exactly what the core had been —
+
+```js
+ctx.strokeStyle = `hsla(8, 90%, 60%, ${0.35 + 0.5 * c.carnivory})`;
+```
+
+— one translucent warm tone over a background it does not control, with the diet
+gene in its opacity. `test/colourliterals.test.js` has listed it as unmeasured
+since v1.61, in those words, with "which is the thing v1.34 forbids by name"
+beside it. This is the measurement.
+
+### It is invisible on half the pond
+
+The outline straddles the edge of the body, so it has two backgrounds and one of
+them is the creature's own doing (v1.55): inside, the chevron — every lineage
+hue, at every energy and every signalling saturation; outside, the water with
+the creature's own additive glow over it, brighter still where bodies overlap.
+Scored the way every mark in this project is scored — the composited result
+against the background it was drawn on, under normal vision and the three
+dichromacies, at the opacities real predators actually produce:
+
+| | share of backgrounds |
+|---|---|
+| below `MIN_DELTA_E` (25) | **53.5%** |
+| below the just-noticeable difference (2.3) | **3.9%** |
+
+280 of the 360 lineage hues have a body state in which the outline falls under
+the bar, and 134 of them a state in which it cannot be seen at all. The worst
+case is a flat **ΔE 0.00**: a warm-hued creature wearing a warm line drawn at
+two-thirds opacity is, to a tritanope, one colour.
+
+And it fails at the **opposite end of the energy axis from the core v1.25
+fixed**, which is worth its own line, because I had the other sentence written
+before I checked. Body lightness rises with energy. The core was drawn
+additively, so a well-fed body — a pale pastel — clamped it to white and the
+best-fed predator wore the faintest mark. The outline is drawn `source-over`,
+so what defeats it is not the pale extreme but the *middle*: a mid-lightness
+warm body is very nearly the colour the line composites to.
+
+| body energy | worst ΔE | share of bodies under the bar |
+|---|---|---|
+| 0 (starving) | 0.01 | **71.9%** |
+| 0.5 | 0.00 | 68.0% |
+| 1 (fed) | 10.56 | 16.8% |
+
+The same colour, on the same creature, nine lines apart in the same file, with
+its failure inverted by the compositing mode. Two marks that look like one
+decision are two decisions whenever they are composited differently — and the
+screenshot argues for the wrong one of the two, because to normal vision a warm
+line over a dark body is the case that reads *best*.
+
+The replacement holds across the whole axis: worst ΔE 29.1 on a starving body,
+71.1 on a fed one, and nothing under the bar anywhere.
+
+### The degree it was spending that contrast on was not there
+
+That is the ordinary half of the finding. The interesting half is what the
+opacity ramp bought.
+
+A creature is drawn as a predator when its diet gene clears
+`carnivoreThreshold` (0.55), and the ramp `0.35 + 0.5 · carnivory` therefore
+runs from 0.625 to 0.85 — already a narrow span. But the span a *watcher* meets
+is narrower than the span the gene allows. Sampling every creature drawn as a
+predator every 250 ticks over 20,000 ticks on twelve seeds — 82,697
+predator-frames:
+
+| percentile | carnivory | outline opacity |
+|---|---|---|
+| p0 | 0.551 | 0.626 |
+| p10 | 0.598 | 0.649 |
+| p50 | 0.657 | 0.679 |
+| p90 | 0.785 | 0.742 |
+| p100 | 1.000 | 0.850 |
+
+94.1% of predator-frames sit below carnivory 0.80. The middle 80% of them span
+an opacity of 0.649 to 0.742, and over that span the faintest outline and the
+loudest differ by:
+
+| background | whole gene range | middle 80% of frames |
+|---|---|---|
+| a fed warm body (hue 20) | ΔE 4.0 | **ΔE 1.7** |
+| a fed cool body (hue 210) | ΔE 2.3 | ΔE 1.1 |
+| glow-lit water (hue 20) | ΔE 7.8 | ΔE 3.2 |
+| dark water | ΔE 12.7 | ΔE 5.3 |
+
+Against the body — which is half of what the line is drawn on, and the half a
+watcher is looking at — the difference between a marginal carnivore and a
+ninetieth-percentile one is **under the just-noticeable difference**. The
+channel v1.34 forbids was not merely expensive here. It was empty: the mark paid
+its contrast for a signal it never sent, on top of a gene that is already
+readable as the eye's radius.
+
+### The fix, and the two constraints that pin it
+
+The house treatment since v1.25 is two opaque tones — a very light one and a
+very dark one — because no background is close to both, and luminance is the one
+channel no colour vision deficiency touches. `render.js` already has the idiom
+for a line (`_twoToneRing`: the dark laid down slightly wider, the bright tone
+over it), so the outline becomes one call of each. The warm line keeps the width
+it has always had; what is added is a dark hairline half a pixel either side of
+it. The dark is the eye's own rim, read from one constant both marks share, so
+the two cannot drift into two different darks.
+
+The warm tone is not a taste. Two measurements pull against each other and
+between them they admit a band ten steps wide:
+
+- it has to clear the bar against every background, which wants it **lighter**;
+- it has to stay distinguishable from the eye's pale disc, or the silhouette
+  reads as a second copy of the mark it surrounds rather than an outline of it,
+  which wants it **darker**.
+
+At hue 20, saturation 90%:
+
+| lightness | worst vs any background | vs the eye's disc |
+|---|---|---|
+| 39 | 24.2 ✗ | 44.6 |
+| 40 | 25.2 | 42.8 |
+| **45** | **28.1** | **33.8** |
+| 49 | 29.8 | 26.8 |
+| 50 | 30.4 | 24.9 ✗ |
+
+`hsl(20, 90%, 45%)` is the middle of that band. Its worst case over every body
+and every glow-lit patch of water is **ΔE 28.1** (protanopia, a green-lit
+background), against **0.00** for the tone it replaces, and it stays below the
+eye's own worst case of 40.2 — the mark that carries the sentence is still the
+louder of the two on the background where each is weakest.
+
+### Why hue 8 was the worst place to put it
+
+The tone that failed was hue 8. So is the rim. That is the whole diagnosis, and
+it is the one-number kind: a two-tone mark whose tones share a hue is separated
+in **luminance alone**, so a mid-luminance background of that hue defeats both
+halves at once. Pairing the old warm with the dark rim and sweeping lightness,
+the warm mid-tone `rgb(79, 65, 35)` scores 24.9 against the light tone and 24.2
+against the dark — neither escapes, and the admissible band at hue 8 is *one
+step wide*. Moving the light tone off the dark one's hue buys the second axis
+back; at hue 20 the band is ten steps.
+
+The general form, for the next two-tone mark: check that the two tones differ in
+something besides lightness, or the pair is one tone with a dimmer switch.
+
+### Reproducing it
+
+The opacities the ramp actually takes, over twelve seeds:
+
+```bash
+node --input-type=module -e '
+  import * as W from "./src/world.js"; import * as C from "./src/config.js";
+  const all = [];
+  for (const seed of [314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026]) {
+    const w = new W.World(C.makeConfig({ seed })), t = w.config.carnivoreThreshold;
+    for (let i = 1; i <= 20000; i++) { w.step();
+      if (i % 250 === 0) for (const c of w.creatures)
+        if (!c.dead && c.carnivory >= t) all.push(c.carnivory); }
+  }
+  all.sort((a, b) => a - b);
+  const q = (p) => all[Math.floor(p * all.length)];
+  for (const p of [0, 0.1, 0.5, 0.9])
+    console.log(`p${p * 100}`, q(p).toFixed(3), "alpha", (0.35 + 0.5 * q(p)).toFixed(3));
+  console.log("under 0.80:", (all.filter((c) => c < 0.8).length / all.length * 100).toFixed(1), "%");'
+```
+
+The contrast, old against new, on both of the outline's backgrounds:
+
+```bash
+node --input-type=module -e '
+  import * as P from "./src/palette.js";
+  const bgs = [];
+  for (let h = 0; h < 360; h++) for (const e of [0, 0.25, 0.5, 0.75, 1])
+    for (const s of [-1, 0, 1]) bgs.push(P.hslToRgb(h, 60 + 25 * s, 45 + 45 * e));
+  const water = { r: 7, g: 12, b: 19 };
+  for (let h = 0; h < 360; h += 5) for (const e of [0, 0.5, 1]) for (const k of [0.15, 0.33, 0.5, 0.8])
+    bgs.push(P.addOver(water, P.hslToRgb(h, 70, 30 + 45 * e), k));
+  const old = P.hslToRgb(8, 90, 60), t = P.predatorOutlineTones();
+  let wOld = Infinity, wNew = Infinity, under = 0;
+  for (const bg of bgs) {
+    let o = Infinity, n = Infinity;
+    for (const v of P.VISION_MODELS) {
+      for (const a of [0.626, 0.679, 0.742, 0.85])
+        o = Math.min(o, P.deltaE(P.blendOver(bg, old, a), bg, v));
+      n = Math.min(n, P.markContrast([t.edge, t.rim], bg, v));
+    }
+    wOld = Math.min(wOld, o); wNew = Math.min(wNew, n); if (o < P.MIN_DELTA_E) under++;
+  }
+  console.log("old", wOld.toFixed(2), "new", wNew.toFixed(2),
+    "old under the bar:", (under / bgs.length * 100).toFixed(1), "%");'
+```
+
+The first takes about three and a half minutes; the second is instant. Both
+assertions ship as tests — `test/palette.test.js` holds the new tone to the bar
+*and* holds the old one to its collision, so restoring the fading outline turns
+the suite red rather than leaving it green.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

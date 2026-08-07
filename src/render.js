@@ -9,6 +9,7 @@ import { wrapDelta } from "./vec.js";
 import { Camera } from "./camera.js";
 import {
   predatorMark,
+  predatorOutline,
   detritusTint,
   hazardTint,
   sickHalo,
@@ -475,11 +476,27 @@ export class Renderer {
     ctx.fill();
 
     if (isPredator) {
-      // Warm outline whose intensity tracks how carnivorous it is...
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = `hsla(8, 90%, 60%, ${0.35 + 0.5 * c.carnivory})`;
+      // The silhouette: a warm line around the chevron, opaque and two-toned
+      // since v1.66. It used to be one translucent warm tone whose opacity rose
+      // with the diet gene — the failure v1.25 fixed in the core seven lines
+      // down and left here, so 53.5% of the backgrounds a hunter can be drawn
+      // on scored under the bar and 3.9% of them under the just-noticeable
+      // difference. The degree it was spending that contrast on was not there
+      // either: 94% of predator-frames sit inside an opacity span worth ΔE 1.7.
+      // Carnivory is the mark's radius and nothing else now. palette.js has the
+      // numbers and the two constraints that pin the warm tone.
+      //
+      // Round joins because the nose is a sharp vertex and a mitre on it draws
+      // a spike longer than the creature.
+      const outline = predatorOutline();
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = outline.rim;
+      ctx.lineWidth = outline.width + 1.1;
       ctx.stroke();
-      // ...plus the mark that actually carries "this one hunts": an opaque warm
+      ctx.strokeStyle = outline.edge;
+      ctx.lineWidth = outline.width;
+      ctx.stroke();
+      // Then the mark that carries "this one hunts" outright: an opaque warm
       // disc with a dark rim. Both tones are opaque and neither is additive,
       // because the bright core this replaced was drawn with `lighter` over a
       // body whose lightness rises with energy — so the best-fed predator in the

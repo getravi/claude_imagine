@@ -31,6 +31,7 @@ import {
   sickHalo,
   immuneRing,
   predatorMark,
+  predatorOutline,
   hazardTint,
   signalRing,
   attackFlash,
@@ -160,6 +161,7 @@ test("the marks the palette audit measured are the marks the canvas draws", () =
   const halo = sickHalo();
   const ring = immuneRing();
   const mark = predatorMark(hunter.carnivory);
+  const outline = predatorOutline();
   const tint = hazardTint();
   for (const [what, colour] of [
     ["the sick halo's bright tone", halo.ring],
@@ -168,6 +170,8 @@ test("the marks the palette audit measured are the marks the canvas draws", () =
     ["the immune ring's dark rim", ring.rim],
     ["the predator mark's disc", mark.disc],
     ["the predator mark's rim", mark.rim],
+    ["the predator outline's warm tone", outline.edge],
+    ["the predator outline's dark hairline", outline.rim],
     ["the contagious zone", `rgba(${tint.r}, ${tint.g}, ${tint.b}, ${tint.a})`],
   ]) {
     assert.ok(painted.has(colour), `${what} (${colour}) never reached the canvas`);

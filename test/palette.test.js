@@ -25,6 +25,8 @@ import {
   toLab,
   markContrast,
   predatorMark,
+  predatorOutline,
+  predatorOutlineTones,
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
@@ -260,6 +262,127 @@ test("how carnivorous a predator is moves the mark's size, not its opacity", () 
   assert.equal(predatorMark(5).radius, predatorMark(1).radius);
   assert.equal(predatorMark(-1).radius, predatorMark(0).radius);
   assert.ok(predatorMark(1).radius < 1);
+});
+
+// ---- The silhouette, which the v1.25 audit walked past ----
+//
+// The outline is the other half of the predator mark, and it was still the
+// pre-v1.25 shape until v1.66: one translucent warm tone over a background it
+// does not control, with the diet gene in its opacity. Its backgrounds are both
+// sides of the chevron's edge — the body inside, and outside it the water with
+// the creature's *own* glow on it, which is the one background a mark cannot
+// avoid (v1.55).
+
+/** The water under a creature, with its own additive glow over it. */
+function glowBackgrounds() {
+  const water = { r: 7, g: 12, b: 19 };
+  const out = [];
+  for (let hue = 0; hue < 360; hue += 5) {
+    for (const e of [0, 0.5, 1]) {
+      // The glow is a radial gradient from 0.5 at the centre to 0 at three
+      // radii; at the body's edge it is a third of that, and overlapping
+      // neighbours stack it higher.
+      for (const k of [0.15, 0.33, 0.5, 0.8]) {
+        out.push({ name: `glow hue ${hue} e ${e} k ${k}`, rgb: addOver(water, hslToRgb(hue, 70, 30 + 45 * e), k) });
+      }
+    }
+  }
+  return out;
+}
+
+/** Worst case over every body *and* every glow-lit patch of water outside one. */
+function sweepOutlineBackgrounds(score) {
+  const { worst, where } = sweepBodies(score);
+  let w = worst;
+  let at = where;
+  for (const bg of glowBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = score(bg.rgb, vision);
+      if (d < w) {
+        w = d;
+        at = `${bg.name}, ${vision}`;
+      }
+    }
+  }
+  return { worst: w, where: at };
+}
+
+test("the predator outline reads on both sides of the edge it is drawn on", () => {
+  const t = predatorOutlineTones();
+  const { worst, where } = sweepOutlineBackgrounds((bg, vision) =>
+    markContrast([t.edge, t.rim], bg, vision)
+  );
+  assert.ok(
+    worst >= MIN_DELTA_E,
+    `worst predator-outline contrast ΔE ${worst.toFixed(1)} at ${where}, below ${MIN_DELTA_E}`
+  );
+});
+
+test("the outline it replaces was invisible on half the pond — the failure, pinned", () => {
+  // `hsla(8, 90%, 60%, 0.35 + 0.5 * carnivory)`, at the opacities twelve seeds
+  // of real predators actually produce (p0 to p100: carnivory 0.551 to 1.0).
+  // Without this assertion the suite stays green if someone restores it.
+  const old = hslToRgb(8, 90, 60);
+  const alphas = [0.626, 0.656, 0.679, 0.702, 0.742, 0.85];
+  const score = (bg, vision) => {
+    let best = Infinity;
+    for (const a of alphas) best = Math.min(best, deltaE(blendOver(bg, old, a), bg, vision));
+    return best;
+  };
+  const { worst } = sweepOutlineBackgrounds(score);
+  assert.ok(worst < 1, `expected an outright collision, got ΔE ${worst.toFixed(2)}`);
+
+  // And the share, which is what made it worth a release rather than a note
+  // (v1.49): a rule violation is a lead, the finding is how much data lands in
+  // the broken part.
+  const all = [...glowBackgrounds().map((b) => b.rgb)];
+  for (let hue = 0; hue < 360; hue += 1) all.push(bodyColour(hue, 1, 0), bodyColour(hue, 0.25, -1));
+  let under = 0;
+  for (const bg of all) {
+    let w = Infinity;
+    for (const vision of VISION_MODELS) w = Math.min(w, score(bg, vision));
+    if (w < MIN_DELTA_E) under++;
+  }
+  assert.ok(under / all.length > 0.4, `only ${((under / all.length) * 100).toFixed(1)}% of backgrounds failed`);
+});
+
+test("the outline is pinned between two measurements, not chosen", () => {
+  // One wants it lighter: it has to clear the bar against every background.
+  // The other wants it darker: a silhouette that reads as the eye's pale disc
+  // is a second copy of the mark it surrounds rather than an outline of it.
+  // At hue 20 the two admit lightness 40..49 and nothing else, and this is the
+  // middle of that band — a value a future edit cannot quietly retune.
+  const t = predatorOutlineTones();
+  const disc = predatorMarkTones().disc;
+  for (const vision of VISION_MODELS) {
+    assert.ok(
+      deltaE(t.edge, disc, vision) >= MIN_DELTA_E,
+      `the outline reads as the eye's disc under ${vision}`
+    );
+  }
+  // And the ceiling: the eye carries the sentence, so the outline must not be
+  // the louder of the two on the background where each is weakest (v1.62).
+  const eye = sweepOutlineBackgrounds((bg, vision) =>
+    markContrast([predatorMarkTones().disc, predatorMarkTones().rim], bg, vision)
+  ).worst;
+  const line = sweepOutlineBackgrounds((bg, vision) => markContrast([t.edge, t.rim], bg, vision)).worst;
+  assert.ok(line < eye, `the outline (${line.toFixed(1)}) out-shouts the eye (${eye.toFixed(1)})`);
+});
+
+test("the outline carries no degree and no opacity, and shares the eye's dark", () => {
+  // The diet gene lives in `predatorMark`'s radius. It was in the outline's
+  // alpha too, which is the channel v1.34 forbids by name — and over the middle
+  // 80% of real predator-frames that alpha spanned ΔE 1.7 on a fed warm body,
+  // under the just-noticeable difference. It was paying for a signal it never
+  // sent.
+  const o = predatorOutline();
+  assert.equal(predatorOutline.length, 0, "the outline must not take a diet gene");
+  assert.ok(!/rgba|hsla/.test(o.edge + o.rim), "both tones must be opaque");
+  assert.equal(o.rim, predatorMark(0.7).rim, "the two predator marks must share one dark");
+  const t = predatorOutlineTones();
+  assert.ok(toLab(t.rim)[0] < 20, "the outline needs a dark tone");
+  assert.ok(toLab(t.edge)[0] > toLab(t.rim)[0] + 30, "and one far enough from it to be a second tone");
+  assert.ok(o.width > 0);
 });
 
 test("the minimap badge clears the threshold against every lineage hue", () => {

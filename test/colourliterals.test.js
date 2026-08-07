@@ -68,11 +68,11 @@ const ALLOWED = [
     literal: "rgba(226, 238, 255, 0.85)",
     why: "the viewport rectangle. A near-white stroke over anything the little map can draw, and the one mark on that surface v1.57's corpse sweep did not enumerate.",
   },
-  {
-    file: "render.js",
-    literal: "hsla(8, 90%, 60%, ${0.35 + 0.5 * c.carnivory})",
-    why: "the predator outline. `predatorMark()` next to it is measured and this is not, because v1.24 replaced the *core* and left the stroke where it was. Its opacity tracks carnivory, which is the thing v1.34 forbids by name (never express degree by fading a mark).",
-  },
+  // (The predator outline was here until v1.66, which measured it — 56.3% of
+  // its backgrounds under the bar — and moved it into `predatorOutline()`. It
+  // is the second item this list has struck off, and like the first it was
+  // hiding something: the opacity ramp it spent its contrast on encoded ΔE 1.7
+  // over 94% of the frames it appeared in.)
   {
     file: "render.js",
     literal: "rgba(120, 180, 255, 0.15)",
