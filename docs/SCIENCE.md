@@ -4057,6 +4057,155 @@ v1.26's rule is that a colour a test cannot reach will drift. A test that
 reaches for its own *copy* is worse: the drift happens inside the instrument and
 is reported as a pass.
 
+## A third job for a gene that had run out of room (v1.63)
+
+v1.56 made bodies solid and split every overlap exactly down the middle, on
+purpose: exclusion says two things cannot occupy one place and says nothing
+about which of them is inconvenienced. The release note left one question
+behind, and it was the interesting one — *a mass-weighted shove is untried, and
+it is the only version of this rule that would interact with a gene.* Body size
+is already selected on twice in this world: `sizeCostFactor` bills a big body
+every tick, and `preySizeRatio` decides what a body is allowed to eat. Making
+size decide who yields would give the same gene a third job, and this project
+has been wrong before about a number with two jobs (`energyMax`, v1.38).
+
+`massWeightedShove` is that rule. A pair splits its overlap in inverse
+proportion to mass, where mass is area — the only mass this world has — so the
+share a body gives up is the *other* body's `r²` over the sum of both. At the
+extremes the config allows (`bodyRadiusMin` 3.5 against `bodyRadiusMax` 8.0)
+that is 84% against 16%. Equal radii give exactly 0.5, to the last bit, because
+`x / (x + x)` is 0.5 in IEEE-754 for every finite non-zero `x`.
+
+### It is a redistribution, and that is measurable in one instant
+
+The cheapest strong control here is v1.50's: one pond, two rules, one instant.
+Run a pond with solid bodies *off* for 3,000 ticks so the overlaps are the ones
+the world actually makes rather than a shoved pond's residue, then apply each
+rule to the same frame.
+
+Both rules see the same pairs and move the same total distance — 380.4 px
+against 380.1 on seed 314, 576.5 against 575.6 on seed 13, under 0.2% apart on
+all eight seeds tried. Nobody is shoved who would not have been shoved; the rule
+only decides which of the two does the moving. Within a pair it does exactly
+what it says: on the isolated pairs, where a body's displacement is one ask and
+not a sum of several, the lighter body always gives up more and the heavier one
+always gives up less. `test/massWeightedShove.test.js` asserts that directly.
+
+What is startling is the size of it. Split each pond at its median radius and
+compare what the two halves were asked to give up: on seed 314 the light half
+moves 1.05× the heavy half under equal shares and 1.19× under mass weighting.
+On six of the other seven seeds the shift is between 2% and 8%.
+
+### Why: the gene had already run out of room
+
+A rule about mass ratios can only be as strong as the mass ratios it is handed,
+and this pond hands it almost none. Pooling every overlapping pair over twelve
+seeds at tick 8,000 — 254 of them — the *median* pair has a mass ratio of
+**1.021**. That is a 50.5 / 49.5 split. The rule advertised as "the bigger body
+shoves the smaller" hands out, in the median case, v1.56's rule.
+
+| percentile of overlapping pairs | mass ratio | split          |
+| ------------------------------- | ---------- | -------------- |
+| median                          | 1.021      | 50.5 / 49.5    |
+| p90                             | 1.110      | 52.6 / 47.4    |
+| p99                             | 1.467      | 59.5 / 40.5    |
+| max (seed 512)                  | 3.137      | 75.8 / 24.2    |
+| what the config allows          | 5.224      | 83.9 / 16.1    |
+
+3.1% of pairs split worse than 55/45 and 0.8% worse than 60/40.
+
+The reason is a distribution, not an accident. Body radius across eleven of the
+twelve seeds settles at **7.4–7.75 with a standard deviation of 0.09–0.45**, in
+a range that runs from 3.5 to 8.0. The pond is nearly monomorphic in the one
+gene this rule reads.
+
+And the reason for *that* is two constants sitting next to each other in
+`config.js` that nobody had multiplied together. `preySizeRatio` is 1.1: a
+predator must be more than 1.1× its prey's radius. `bodyRadiusMax` is 8.0. So
+any body over **8.0 / 1.1 = 7.273 px** cannot be prey to anything this world is
+capable of growing — it is a *refuge*, an absolute one, and it sits four fifths
+of the way up the size range. Measured at 20,000 ticks over twelve seeds, a mean
+of **75.7%** of the pond is above that line, seed by seed from 1.6% to 98.5%.
+Most ponds here have evolved past the point where predation exists for them.
+
+Seed 512 is the pond that has not — 1.6% in the refuge, a standing size spread
+of ±1.25 px, and the widest split anywhere in the sample (3.137). It is also,
+not coincidentally, the seed this project has repeatedly found interesting for
+other reasons.
+
+### And so it selects for nothing
+
+Twelve seeds, 20,000 ticks, two arms. Mean body radius over the run is higher
+with mass weighting on **seven seeds of twelve** — which is a coin toss — and
+the median difference is +0.054 px on a base of 7.3, or 0.7%. The mean across
+seeds is *negative*, −0.149 px, entirely because two ponds flipped regime: seed
+23 fell from 7.25 to 5.55 with its population dropping from 194 to 129, and seed
+512 from 5.81 to 5.21. Mean population moves −3.5%, which is the same coin toss
+in another column. This is v1.32's rule doing its job — a seed-matched pair is
+one coin toss, and a dozen of them is the minimum honest sample — and the answer
+is that nothing here is attributable to the rule.
+
+So the third job pays nothing, and it pays nothing for a reason that is not
+about the rule at all: **the gene was already at a wall put there by its second
+job.** A pressure needs somewhere to accumulate (v1.23) and a fix has to be
+about the same noun as the diagnosis (v1.33); this is the version of that where
+the *variance* is missing rather than the timescale. Selection cannot act on a
+difference the population no longer contains.
+
+### What is pinned, and what is only written down
+
+Following v1.33's rule about not pinning a null with a test that can only
+measure noise: the test file asserts the *exact* invariants — the staged split
+arithmetic, that equal bodies are shoved bit-identically under both rules, that
+the pass is still simultaneous under reversal, that it draws no random numbers,
+that a world without `bodyCollision` is bit-for-bit unaffected, and the
+per-pair direction on isolated pairs. The twelve-seed null and the refuge share
+are *not* asserted; they are trajectories, and they are here.
+
+### Reproducing it
+
+```bash
+# The refuge, and the size distribution that follows from it.
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const REFUGE = C.DEFAULT_CONFIG.bodyRadiusMax / C.DEFAULT_CONFIG.preySizeRatio;
+  console.log("refuge at", REFUGE.toFixed(3), "px");
+  for (const seed of [314,77,51,13,23,45,99,512,7,101,202,808]) {
+    const w = new W.World(C.makeConfig({ seed, bodyCollision: true }));
+    for (let i = 0; i < 20000; i++) w.step();
+    const rs = w.creatures.map((c) => c.radius);
+    const m = rs.reduce((a, b) => a + b, 0) / rs.length;
+    const sd = Math.sqrt(rs.reduce((t, r) => t + (r - m) ** 2, 0) / rs.length);
+    console.log(seed, m.toFixed(2), "+/-", sd.toFixed(2),
+      (rs.filter((r) => r > REFUGE).length / rs.length * 100).toFixed(1) + "% unpredatable");
+  }'
+
+# One pond, two rules, one instant: same pairs, same total, different bodies.
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const V = await import("./src/vec.js");
+  const w = new W.World(C.makeConfig({ seed: 314, bodyCollision: false }));
+  for (let i = 0; i < 3000; i++) w.step();
+  const snap = w.creatures.map((c) => ({ c, x: c.x, y: c.y, r: c.radius }));
+  const restore = () => snap.forEach((s) => { s.c.x = s.x; s.c.y = s.y; });
+  const arm = (byMass) => {
+    restore();
+    w.config.bodyCollision = true; w.config.massWeightedShove = byMass;
+    w._separate();
+    const d = snap.map((s) => V.torusDist(s.c.x, s.c.y, s.x, s.y, w.config.width, w.config.height));
+    w.config.bodyCollision = false; w.config.massWeightedShove = false; restore();
+    return d;
+  };
+  const half = arm(false), mass = arm(true);
+  const tot = (a) => a.reduce((t, x) => t + x, 0);
+  console.log("total displacement:", tot(half).toFixed(1), "vs", tot(mass).toFixed(1));'
+```
+
+For the two-arm null, run each seed twice with `massWeightedShove` false and
+true for 20,000 ticks and average the mean body radius over 100-tick samples;
+for the split table, walk every overlapping pair at one instant and record
+`max(r1,r2)² / min(r1,r2)²`.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

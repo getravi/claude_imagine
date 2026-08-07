@@ -255,16 +255,38 @@ export const DEFAULT_CONFIG = Object.freeze({
   // a pass, and unpiles over the next few ticks.
   //
   // Size does not enter: both bodies give up the same distance whether a
-  // newborn meets an adult or two adults meet. That is exclusion, not force. A
-  // mass-weighted version — the bigger body shoves the smaller — is a different
-  // rule with a different claim (it would hand predators, which are big, an
-  // advantage they have not earned), and it belongs to its own measurement.
+  // newborn meets an adult or two adults meet. That is exclusion, not force —
+  // and `massWeightedShove`, below, is the other rule.
   //
   // No new constant: the overlap a pair has to lose is `r1 + r2`, which the
   // bodies already carry. Zero random draws either way — the whole pass is
   // geometry — so a world with this off is bit-for-bit every earlier version's,
   // and a world with it on is still reproducible from its seed.
   bodyCollision: false,
+
+  // Mass-weighted shove (v1.63, opt-in, and inert unless `bodyCollision` is
+  // on). The v1.56 rule splits every overlap down the middle: a newborn shoves
+  // an adult exactly as far as the adult shoves it. Switch this on and a pair
+  // splits the overlap in inverse proportion to body *mass* — area, `r²`, the
+  // only mass this world has — so the small body gives up most of the ground
+  // and the large one barely moves. At the extremes of `bodyRadiusMin` and
+  // `bodyRadiusMax` that is 84% against 16%.
+  //
+  // Why it is a separate flag rather than a better version of the same rule:
+  // it makes a different claim. Exclusion says two things cannot be in one
+  // place; this says who has to leave, and answers with a gene. Size is already
+  // paid for twice — `sizeCostFactor` bills a big body every tick, and
+  // `preySizeRatio` decides what a body is allowed to eat — so a third job for
+  // the same gene is the sort of thing this pond has been wrong about before
+  // (`energyMax`, v1.38), and it wants measuring rather than assuming. The
+  // measurement, its mirror-image control (the *small* body wins) and what
+  // survived both are in docs/SCIENCE.md.
+  //
+  // Still no new constant and still no random draw. Equal radii give exactly
+  // 0.5 — `x / (x + x)` is 0.5 to the last bit in IEEE-754 — so this is a
+  // no-op in a pond of identically sized creatures rather than approximately
+  // one, and with it off the arithmetic is literally v1.56's.
+  massWeightedShove: false,
 
   // --- Senses ---
   visionRadius: 168, // how far a creature can see food/others

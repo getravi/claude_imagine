@@ -287,8 +287,9 @@ export class World {
    * in `step()`, which is why this is the one place the tick is simultaneous.
    *
    * A pair overlapping by `o` each gives up `o / 2`, along the line between
-   * them, whatever their sizes. Two things follow that are worth stating rather
-   * than discovering:
+   * them, whatever their sizes — unless `massWeightedShove` is on, in which
+   * case the split is inverse to `r²` and the smaller body gives up most of it
+   * (v1.63). Two things follow that are worth stating rather than discovering:
    *
    *   * A body in a crush takes the sum of what each of its neighbours asks of
    *     it, which can over- or under-shoot. This is a relaxation step, not a
@@ -320,6 +321,11 @@ export class World {
     // The widest two bodies that could possibly touch. Nothing beyond this can
     // overlap anything, so it is the exact reach of the question.
     const reach = cfg.bodyRadiusMax * 2;
+    // Who yields, and by how much. Off: half each, which is v1.56's rule and
+    // the arithmetic every earlier world was built on. On: inverse to mass,
+    // where mass is area — so the *other* body's `r²` is this body's share of
+    // the overlap, and a heavy neighbour is a wall while a light one is not.
+    const byMass = cfg.massWeightedShove;
     const n = live.length;
     const pushX = new Float64Array(n);
     const pushY = new Float64Array(n);
@@ -335,7 +341,13 @@ export class World {
         const sum = c.radius + o.radius;
         if (d2 >= sum * sum || d2 === 0) return;
         const d = Math.sqrt(d2);
-        const share = (sum - d) * 0.5;
+        // The two sides compute this independently and their shares sum to the
+        // overlap, because `mo/(mc+mo) + mc/(mc+mo)` is 1 — to within an ulp
+        // when the masses differ, and exactly when they do not.
+        const mine = byMass
+          ? (o.radius * o.radius) / (c.radius * c.radius + o.radius * o.radius)
+          : 0.5;
+        const share = (sum - d) * mine;
         pushX[i] -= (dx / d) * share;
         pushY[i] -= (dy / d) * share;
         visits++;

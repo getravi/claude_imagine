@@ -242,7 +242,14 @@ test("every opt-in feature is a lever when it is on", () => {
   // two arms in a *walled* pond. That is the same device `src/levers.js` uses for
   // every constant whose world has to be asked for, and it is a better answer
   // than a skip — the flag is still swept, in the only world it is defined in.
-  const NEEDS = { barrierOcclusion: { barriers: true } };
+  //
+  // massWeightedShove (v1.63) is the second of those and for the same reason:
+  // a rule about *how* an overlap is split cannot be a lever in a pond where
+  // no overlap is ever split, so its two arms run in a pond with solid bodies.
+  const NEEDS = {
+    barrierOcclusion: { barriers: true },
+    massWeightedShove: { bodyCollision: true },
+  };
   const skip = new Set(["kinRecognition", "deathIsFinal"]);
   for (const flag of OPT_IN_FLAGS) {
     if (skip.has(flag)) continue;

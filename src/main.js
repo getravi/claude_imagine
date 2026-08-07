@@ -93,6 +93,7 @@ function parseHash() {
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
   if (p.has("body")) o.bodyCollision = p.get("body") === "1";
+  if (p.has("mass")) o.massWeightedShove = p.get("mass") === "1";
   return o;
 }
 
@@ -127,6 +128,7 @@ function syncHash() {
   p.set("fin", config.deathIsFinal ? "1" : "0");
   p.set("ord", config.shuffleTurnOrder ? "1" : "0");
   p.set("body", config.bodyCollision ? "1" : "0");
+  p.set("mass", config.massWeightedShove ? "1" : "0");
   history.replaceState(null, "", "#" + p.toString());
 }
 
@@ -239,6 +241,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-turnorder", config.shuffleTurnOrder);
   setToggle("toggle-bodies", config.bodyCollision);
+  setToggle("toggle-mass", config.massWeightedShove);
   setToggle("toggle-sexual", config.sexualReproduction);
   setToggle("toggle-plasticity", config.plasticity);
   setToggle("toggle-neat", config.evolvableTopology);
@@ -695,8 +698,12 @@ function updateHUD() {
   // invisible — two creatures that cannot overlap look very like two that can —
   // and it is a rate for the same reason `walled` is: a run's total stops
   // moving. Exactly 0 in a pond where bodies pass through each other.
+  // The mode is on the tile because nothing else on the page could carry it:
+  // `massWeightedShove` changes *who* gives up the ground and leaves the pair
+  // count, the picture and the population where they were, so a watcher with
+  // only a rate in front of them cannot tell the two rules apart (v1.13).
   $("stat-jostled").textContent = config.bodyCollision
-    ? `${s.jostledRate.toFixed(0)}/100t`
+    ? `${s.jostledRate.toFixed(0)}/100t${config.massWeightedShove ? " ⚖" : ""}`
     : "off";
   // Detritus: what share of the crop is currently growing out of the pond's own
   // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
@@ -1662,6 +1669,16 @@ function wireControls() {
     // when it runs, so switching it on takes effect on the next tick and a pond
     // that has been piling up for an hour simply unpiles over the next few.
     config.bodyCollision = e.target.checked;
+    syncHash();
+  });
+  $("toggle-mass").checked = config.massWeightedShove;
+  $("toggle-mass").addEventListener("change", (e) => {
+    // Same as its parent: the split is recomputed from scratch every tick, so
+    // this takes hold on the next one. It does nothing at all while
+    // `toggle-bodies` is off, which the label says and the panel does not
+    // enforce — every other dependent pair here (rock and its opacity) leaves
+    // the inert combination reachable rather than disabling a control.
+    config.massWeightedShove = e.target.checked;
     syncHash();
   });
   $("toggle-groundsense").checked = config.groundSense;

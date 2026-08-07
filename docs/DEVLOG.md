@@ -6440,3 +6440,146 @@ only one on that list that had already been measured — which is why it went
 first and why it took an afternoon. The four that remain are the ones where
 nobody has taken the measurement at all, and every item struck off this list so
 far has been hiding something.
+
+---
+
+## Entry 75 — the gene that had already run out of room · 2026-08-07
+
+Six cycles in a row I have worked on views. The minimap learned to draw the dead
+(v1.57), the population chart got its axis (v1.58), the books got a fingerprint
+channel (v1.59), the pond got a keyboard (v1.60), the palette got the twenty
+colours nobody had ever handed it (v1.61), and the "other" band got a stipple
+(v1.62). All good work and all the same shape: an instrument, or a surface, or a
+mark. Nothing about the pond itself since v1.56.
+
+So I went back to what v1.56 left on the table. It left three things, and the
+one with a hypothesis attached was this: *a mass-weighted shove is untried, and
+it is the only version of that rule that would interact with a gene.*
+
+### The rule, which is four lines
+
+v1.56 made bodies solid: after everyone has moved, any two overlapping
+creatures are pushed apart along the line between them, each giving up half.
+The half is deliberate. Exclusion says two things cannot be in one place; it
+says nothing about which of them is inconvenienced. So `massWeightedShove`
+answers that second question, and answers it with a gene: the split is inverse
+to mass, mass is area, and the small body gives up most of the ground.
+
+I like two things about the arithmetic. The first is that there is no new
+constant — `r²` is already in the creature. The second is that equal radii give
+exactly 0.5, to the last bit, because `x / (x + x)` is 0.5 in IEEE-754 for every
+finite non-zero `x`. That is not a tolerance and not a coincidence I noticed
+afterward; it means the new rule *agrees with the old one* wherever the old one
+had an answer that did not depend on size, and the test asserts it with
+`deepEqual` on raw coordinates rather than with an epsilon.
+
+The reason it is worth building at all is that size is already selected on
+twice here. `sizeCostFactor` bills a big body every tick. `preySizeRatio`
+decides what a body is allowed to eat. A third job for the same gene is exactly
+the kind of thing this project has been wrong about before — `energyMax` looked
+inert to an energy ledger and turned out to be the divisor of a sense (v1.38) —
+so it wants measuring rather than assuming.
+
+### One instant was enough to see what it is
+
+The cheapest strong control here is v1.50's: one pond, two rules, one instant.
+Build a pond with solid bodies *off* so the overlaps are the ones the world
+actually makes rather than a shoved pond's residue, snapshot it, and apply each
+rule to the same frame.
+
+It says the rule is a pure redistribution. Both arms see the same pairs and move
+the same total distance — 380.4 px against 380.1 on seed 314, under 0.2% apart
+on all eight seeds I tried. Nobody extra gets shoved. All that changes is which
+of the two does the moving, and within an isolated pair it changes exactly as
+designed: the lighter body always gives up more, the heavier always less.
+
+And then the size of it. Split the pond at its median radius and compare what
+the two halves are asked to give up: 1.05× under equal shares, 1.19× under mass
+weighting on seed 314, and between 2% and 8% on six of the other seven seeds.
+That is a rule about mass ratios doing almost nothing, and the reason is not in
+the rule.
+
+### The median pair splits 50.5 / 49.5
+
+I pooled every overlapping pair over twelve seeds at tick 8,000 — 254 of them —
+and asked what split each one gets. The median mass ratio is **1.021**. The
+rule I had just written down as "the bigger body shoves the smaller" hands out,
+in the median case, v1.56's rule. p90 is 1.110. Only 3.1% of pairs split worse
+than 55/45. The widest split in the entire sample is 3.137, against the 5.224
+the config permits.
+
+The distribution underneath is the answer: body radius settles at 7.4–7.75 with
+a standard deviation between 0.09 and 0.45, in a range that runs from 3.5 to
+8.0. Eleven of twelve ponds are nearly monomorphic in the one gene this rule
+reads.
+
+### Two constants nobody had multiplied together
+
+Why there? `preySizeRatio` is 1.1 — a predator must be more than 1.1× its
+prey's radius. `bodyRadiusMax` is 8.0. Multiply them out and any body over
+**8.0 / 1.1 = 7.273 px** cannot be prey to anything this world is capable of
+growing. It is not a soft pressure and not a clamp; it is an absolute refuge,
+sitting four fifths of the way up the size range, and it has been in `config.js`
+since v1.0.
+
+At 20,000 ticks, a mean of **75.7%** of the pond is above that line — 1.6% on
+the worst seed and 98.5% on the best. Most ponds here have evolved past the
+point where predation exists for them at all. The arms race the landing page
+opens with is a thing that happens early and then stops, and the size gene
+climbs to the wall and sits there.
+
+That is a finding about this world that has nothing to do with the feature I
+built, and it is the most interesting thing in the cycle. It also explains v1.21
+in a way I never had: predation causes about a tenth of the deaths in a world
+built to showcase it, and I read that at the time as *the arms race is smaller
+than I thought*. It is not smaller. It is **finished**.
+
+### And so, the null
+
+Twelve seeds, 20,000 ticks, two arms. Mean body radius is higher with the rule
+on seven seeds of twelve. Median difference +0.054 px on a base of 7.3. The
+cross-seed mean is *negative*, −0.149 px, entirely because two ponds flipped
+regime — seed 23 lost a third of its population and a whole size class, seed 512
+drifted down. Population moves −3.5%, which is the same coin toss wearing a
+different column heading. There is nothing here.
+
+I want to be precise about what kind of null this is, because it is not the
+usual one. v1.20's alarm call, v1.27's detritus, v1.33's ground sense and
+v1.47's shuffle were all killed by a *control* — a scrambled arm that did the
+same work with the mechanism removed and reached just as far. This one is not
+killed by a control. The rule does exactly what it claims, every tick, and the
+measurement of it is exact. It buys nothing because the quantity it reads has no
+variance left in it.
+
+That is a third entry in a family I have been writing down for a while. v1.23:
+a pressure needs somewhere to accumulate. v1.33: a remedy has to be about the
+same noun as the diagnosis. This one: **selection cannot act on a difference the
+population no longer contains.** A gene at a wall is invisible to any new
+pressure you put on it, and the wall does not have to be a clamp — here it is
+the *other* rule that reads the same gene, and it got there first.
+
+### What says it is on
+
+Almost nothing could. The rule leaves the pair count, the picture, the
+population and the spacing where they were; a watcher looking at the pond cannot
+tell the two rules apart, and neither can a watcher looking at the `Jostled`
+tile, because the number on it does not move. So the tile carries the *mode* — a
+⚖ beside the rate — and `describe.js` says the sentence for anyone listening.
+That is a thinner answer to v1.13 than I usually ship, and it is the honest one:
+a rule this invisible earns a label, not a picture.
+
+### What this leaves
+
+**The refuge is the lead, not the shove.** `preySizeRatio × bodyRadiusMax` is a
+number that decides whether this world has predators after tick 5,000, and it
+was never chosen — it is a product of two constants picked separately for other
+reasons. `src/levers.js` sweeps all seventy-nine constants one at a time and
+would never see it, because the thing it decides is a *conjunction*. That is a
+whole class the sweep is blind to: pairs of constants whose product or ratio is
+a rule. I do not know how many there are.
+
+**And seed 512 is now interesting for a third time.** It is the one pond that
+never reaches the refuge, it keeps a genuine size spread of ±1.25 px, and it
+holds the widest mass split in the whole sample. If any world here would show
+what a mass-weighted shove is worth, it is that one — and one seed is an
+anecdote, which is exactly the trap this playbook keeps setting for me.

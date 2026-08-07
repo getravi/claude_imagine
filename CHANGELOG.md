@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.63.0] — 2026-08-07
+
+v1.56 made bodies solid and split every overlap exactly down the middle, then
+left one question behind: a mass-weighted shove is the only version of that rule
+that would interact with a gene. This is that rule, and the answer is no — for a
+reason that turns out to be about two constants nobody had multiplied together.
+
+### Added
+
+- **`massWeightedShove`** (opt-in, and inert unless `bodyCollision` is on). A
+  pair splits its overlap in inverse proportion to body mass — area, `r²`, the
+  only mass this world has — so the smaller body gives up most of the ground and
+  the larger one barely moves. At the extremes of `bodyRadiusMin` and
+  `bodyRadiusMax` that is 84% against 16%. No new constant, no random draw, and
+  equal radii give exactly 0.5 to the last bit (`x / (x + x)` is 0.5 in
+  IEEE-754), so it is a *no-op* in a pond of identically sized creatures rather
+  than approximately one.
+  - It is a **redistribution**, which one instant is enough to show (v1.50's
+    control — one pond, two rules, no second trajectory): both rules shove the
+    same pairs and move the same total ground, 380.4 px against 380.1 on seed
+    314 and under 0.2% apart on eight seeds. Nobody extra is moved; the rule
+    only decides which of the two does the moving.
+  - The `Jostled` tile carries a ⚖ when the split is by mass, and `describe.js`
+    says so in a sentence. Nothing else on the page could: the rule leaves the
+    pair count, the picture and the population where they were, so a watcher
+    with only a rate in front of them cannot tell the two rules apart (v1.13).
+  - `test/massWeightedShove.test.js` pins the arithmetic that cannot flake — the
+    staged split, the bit-identical agreement with v1.56 on equal bodies, the
+    simultaneity under array reversal, zero draws, bit-for-bit unaffected worlds
+    with the flag off — and the per-pair *direction* on isolated pairs, where a
+    body's displacement is one ask rather than a sum of several.
+
+### Measured
+
+- **The median overlapping pair in this pond has a mass ratio of 1.021** — a
+  50.5 / 49.5 split. Pooled over 254 pairs on twelve seeds: p90 1.110, p99
+  1.467, max 3.137, against the 5.224 the config allows. 3.1% of pairs split
+  worse than 55/45. The rule advertised as *the bigger body shoves the smaller*
+  hands out, in the median case, v1.56's rule.
+- **The gene had already run out of room.** Body radius settles at 7.4–7.75 with
+  a standard deviation of 0.09–0.45, in a range that runs 3.5 to 8.0, on eleven
+  of twelve seeds.
+- **Why, and it is two constants sitting next to each other in `config.js`.**
+  `preySizeRatio` is 1.1 and `bodyRadiusMax` is 8.0, so a body over
+  **8.0 / 1.1 = 7.273 px** cannot be prey to anything this world is capable of
+  growing. It is an absolute refuge, four fifths of the way up the size range,
+  and at 20,000 ticks a mean of **75.7%** of the pond is above it (1.6%–98.5%
+  across seeds). Most ponds here have evolved past the point where predation
+  exists for them at all.
+- **So it selects for nothing.** Twelve seeds, 20,000 ticks, two arms: mean body
+  radius is higher with the rule on **seven seeds of twelve**, median difference
+  +0.054 px on a base of 7.3. The cross-seed mean is negative (−0.149 px)
+  entirely because two ponds flipped regime. Population moves −3.5%, the same
+  coin toss in another column.
+- Seed 512 is the one pond that has *not* reached the refuge — 1.6% above the
+  line, a standing size spread of ±1.25 px — and it holds the widest split
+  anywhere in the sample.
+
+### Changed
+
+- `docs/SCIENCE.md` gains **A third job for a gene that had run out of room**,
+  with the split table, the refuge figure and both reproduction scripts.
+- The README's feature table gains the row, stating the null rather than the
+  feature.
+
 ## [1.62.0] — 2026-08-06
 
 v1.61 measured the "other" band — the churn of lineages too small to earn a name

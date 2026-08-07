@@ -179,7 +179,12 @@ export function describePond(world, config, camera = null) {
   if (config.bodyCollision && pop > 0) {
     out.push(
       "Bodies are solid: two creatures cannot stand in the same place, and the pond " +
-        `pushes ${s.jostledRate.toFixed(0)} overlapping pairs apart per hundred ticks.`
+        `pushes ${s.jostledRate.toFixed(0)} overlapping pairs apart per hundred ticks.` +
+        // Who yields is the only thing this flag changes, and it changes
+        // nothing a listener could otherwise infer from the rate.
+        (config.massWeightedShove
+          ? " The shove is weighted by mass: of any overlapping pair, the smaller body gives up most of the ground."
+          : "")
     );
   }
   if (camera) out.push(describeView(camera, config));

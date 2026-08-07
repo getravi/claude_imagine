@@ -414,13 +414,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   pond of 220) and its scrambled arm took back four of its six statistics —
   spacing, pile depth, lost meals, population. What exclusion turned out to own
   is a **depth**: the pond's deepest intrusion is 0.6–2.3 px against the null's
-  4.5–6.8 and 12.3–14.1 by default. Two things follow. A **mass-weighted** shove
-  is untried and is the only version of the rule that would interact with a gene
-  (body size already pays a metabolic bill; making it decide who yields gives it
-  a second job — see `energyMax`). And **the one statistic this release can
-  attribute is a distance nothing draws**, which is v1.34's complaint about
-  `mateRadius` and `patchRadius` arriving in a new place. Still free, and still
-  worth a look: a creature's memory of its own life ends at its weights.
+  4.5–6.8 and 12.3–14.1 by default. Two things followed. The **mass-weighted**
+  shove closed in v1.63 (`massWeightedShove`) and bought nothing, for a reason
+  that is not about the rule — see the lesson below, and the refuge it found.
+  And **the one statistic this release can attribute is a distance nothing
+  draws**, which is v1.34's complaint about `mateRadius` and `patchRadius`
+  arriving in a new place; still open. Still free, and still worth a look: a
+  creature's memory of its own life ends at its weights.
 - **Ask whether the thing I keep deferring is a change or a count.** "Energy
   appears from nothing" sat at the top of that free-gifts list for four cycles
   and I read it every time as *make food cost something* — a mechanic, a big
@@ -1696,3 +1696,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   Assert the *transport* first (`-w "%{http_code}"`, a non-zero size) and only
   then the content; and when the artifact is unreachable, say so and fall back to
   the run and its jobs rather than pretending the stronger evidence was gathered.
+
+- **Selection cannot act on a difference the population no longer contains.**
+  v1.63 gave the size gene a third job — `massWeightedShove`, where the smaller
+  body yields — and it selects for nothing: seven seeds of twelve, median +0.7%.
+  The rule is exact and fires every tick; what it has to read is gone. Body
+  radius settles at 7.4–7.75 ± 0.09–0.45 in a range of 3.5–8.0, so the *median
+  overlapping pair* has a mass ratio of 1.021 and gets v1.56's even split.
+  This is the third member of a family — v1.23 (a pressure needs somewhere to
+  accumulate), v1.33 (a remedy must be about the same noun as the diagnosis) —
+  and it is the one that is not killed by a control: no scrambled arm was
+  needed, because the treatment is arithmetically inert. **Before building a
+  rule that reads a gene, measure that gene's standing variance.** It is one
+  line and it decides whether the cycle is a feature or a null.
+- **A sweep of constants one at a time is blind to a rule that is a product of
+  two.** `preySizeRatio` (1.1) and `bodyRadiusMax` (8.0) have sat in
+  `config.js` since v1.0 and their quotient is **7.273 px** — the size above
+  which nothing this world can grow is able to eat you. It is an absolute
+  refuge, four fifths of the way up the size range, and a mean of 75.7% of the
+  pond is past it at 20,000 ticks. `src/levers.js` moves every constant
+  individually and cannot see this, because what the pair decides is a
+  *conjunction*. v1.38 asked whether every number is a lever; the unasked
+  question is which **pairs** of numbers are, and this one turns the headline
+  mechanic off partway through every run. It also re-reads v1.21: predation
+  causing a tenth of the deaths is not "the arms race is smaller than I
+  thought", it is "the arms race is **finished**".
+- **A rule whose whole effect is a redistribution needs a label, not a
+  picture.** v1.13 says a mechanic is not finished until a watcher can tell it
+  is happening, and every cycle since has read that as *draw something*.
+  `massWeightedShove` moves the same pairs the same total distance as the rule
+  it replaces (380.4 px against 380.1 on seed 314, under 0.2% on eight seeds) —
+  there is no count, no picture and no population figure that can move, by
+  construction. So the `Jostled` tile carries the mode and `describe.js` says
+  the sentence. When a feature's own measurement proves an aggregate cannot
+  change, stop hunting for the readout that would show it.
