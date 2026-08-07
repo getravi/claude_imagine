@@ -4,6 +4,65 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.65.0] — 2026-08-07
+
+v1.64 measured predation as a **floor** under body size and could not say how
+the floor works. It wrote down why not: "small creatures get eaten" is a
+plausible mechanism arriving before the search, which is the exact signature of
+the thing this project gets wrong. This release runs the search. The mechanism
+is real, it is the only size-selective death in the pond — and the second
+control says it is the eating rule's own threshold and nothing else.
+
+### Added
+
+- **Size at death** (`deathSizes`, and a third line under the mortality bar).
+  Every death now carries its own body radius and the mean radius of the pond
+  that *survived the tick it died in*. The difference is the size selection that
+  cause applies, in pixels, run-to-date and signed. The panel reads
+  `size vs the pond (px): −0.02 starved · +0.01 aged · −1.81 hunted`.
+  - The control is not a second run, a scrambled arm or a disabled flag — it is
+    the other two columns, on screen, always. Hunger and old age take a body the
+    size of the pond around it, so a watcher who reads two near-zeros and one
+    large negative has the finding without any prose (v1.20, v1.50).
+  - The pool is the survivors' mean, computed **once per tick** before the sweep
+    touches anything, so it is the same number for every body swept up together
+    and cannot depend on birth order (v1.47). A tick that leaves nobody standing
+    is counted in `deathsBy` and excluded from the sizes: `sizedBy` is the
+    divisor, and putting the dying into their own pool would bias every delta
+    toward zero by construction (v1.42). It has not yet come up — 0 of 21,328
+    deaths across twelve seeds.
+  - Three cumulative fields (`sizedBy`, `radiusSumBy`, `poolSumBy`) join the
+    books' fifth channel; `STATS_HASHED` is forty-seven, and `test/books.test.js`
+    sweeps fifty-five fields instead of fifty-two. `test/deathSize.test.js` pins
+    the arithmetic, the staged pool, the order-independence, the extinction
+    guard and the bounds — not the numbers, which would pin a trajectory (v1.44).
+
+### Measured
+
+- **Predation is the only cause of death in this pond that is about size.** Over
+  twelve seeds and 20,000 ticks the delta is starvation **−0.008 px** (min
+  −0.208, max +0.202), old age **+0.019** — and predation **−1.448**, negative
+  on **twelve seeds of twelve** and never weaker than −0.587. The floor v1.64
+  found has a mechanism and this is it.
+- **The pool has to be taken at the death.** Predation deaths cluster where the
+  pond is younger and smaller-bodied, so measuring the same victims against the
+  run-average pond reads −1.927 — half a pixel of overstatement, free, from the
+  baseline anyone would reach for first.
+- **And then the second control takes the interesting half back.** A hunter
+  takes the *nearest* body it is allowed to eat, not the smallest, and nothing
+  else in the code prefers small: `maxSpeed` is size-independent, metabolism
+  costs a large body *more*, and the bite reach is `hunter + prey + 2`, so a
+  bigger prey is easier to reach. That reads like selection in the chase. It is
+  not. Measured against the mean of each hunter's own **eligible set** —
+  everyone alive it could legally have taken — the victim sits **−0.092 px**
+  away, on 2,807 kills over twelve seeds, positive on eight of them. The whole
+  −1.448 is `preySizeRatio` arithmetic: the eligible set is by construction the
+  small tail of a pond bunched near the top of the size range, and who gets
+  caught inside it is not size-dependent at all.
+- `docs/SCIENCE.md` gains **How the floor works, and what the second control
+  took back**, with both tables and the reproduction scripts. The README's
+  readouts table gains the row.
+
 ## [1.64.0] — 2026-08-07
 
 v1.63 went looking for whether a mass-weighted shove gives the size gene a third

@@ -6720,3 +6720,194 @@ with a plausible mechanism arriving before the search, which this file says
 three times over is the exact signature of the thing I get wrong. The cheap
 version: count deaths by predation against body size, in one run, at one
 instant.
+
+## Entry 77 — the floor, and the second control · 2026-08-07
+
+*v1.65.0*
+
+I ended last cycle with a hypothesis and a warning about it. The hypothesis: the
+floor predation puts under body size — every one of twelve ponds with hunters
+above 6.469 px mean radius, four of twelve without them below 5.5 — works
+because small creatures get eaten. The warning: that is a plausible mechanism
+arriving before the search, which this playbook names three separate times as
+the exact signature of the thing I get wrong.
+
+So this cycle is the search. It took two controls, and the second one is the
+release.
+
+### The missing column
+
+The instrument is one line of bookkeeping. `recordDeath` has recorded a cause
+and an age since v1.21; it now also records the dying body's **radius** and the
+mean radius of everyone who **survived the tick it died in**. The difference is
+the size selection that cause of death applies, in pixels.
+
+I nearly wrote it as three fields on `recentDeaths` and reported it over the
+rolling window. It belongs run-to-date instead, for the reason the buried-energy
+line beside it is run-to-date: this is a per-body figure, not a mix, so
+averaging over more bodies makes it truer rather than staler. Three cumulative
+counters, `sizedBy` / `radiusSumBy` / `poolSumBy`, and `deathSizes()` does the
+division.
+
+Two small decisions worth writing down. The pool is computed **once per tick**,
+before the sweep touches anything, so every body swept up together is measured
+against the same pond — v1.47 found the sequential sweep quietly handing out
+4.5% of the pond's meals by seniority, and a statistic that moved under a
+permutation would be reporting birth order. And a tick that leaves nobody
+standing has no pool: those deaths are counted in `deathsBy` and excluded here,
+because inventing a pool by putting the dying into their own would bias every
+delta toward zero by construction. That guard is a decision about the undefined
+case (v1.42) and it is pinned by a test; in practice it has never fired, 0 of
+21,328 deaths across twelve seeds.
+
+### The first control is the other two columns
+
+The thing I like most about this measurement is that it arrives with its control
+already on screen. Starvation and old age are not supposed to care what size a
+body is. So the panel reads:
+
+```
+size vs the pond (px): −0.02 starved · +0.01 aged · −1.81 hunted
+```
+
+and a watcher has the finding without any prose. Over twelve seeds and 20,000
+ticks:
+
+| cause | deaths | delta |
+|---|---|---|
+| starvation | 15,360 | **−0.008 px** (min −0.208, max +0.202) |
+| old age | 3,161 | **+0.019 px** (min −0.087, max +0.159) |
+| predation | 2,807 | **−1.448 px**, negative on **12 of 12**, never weaker than −0.587 |
+
+Hunger takes a body the size of the pond around it to within a fiftieth of a
+pixel. Hunting takes one a pixel and a half smaller, on every seed. The
+mechanism is real and predation is the only size-selective death here.
+
+One free lesson on the way past: the baseline I would have reached for first —
+compare the victims against the pond's *time-average* body radius over the run —
+reads −1.927. Predation deaths cluster where the pond is younger and
+smaller-bodied, so half a pixel of that is a fact about *when* hunting happens.
+A pool taken at the run's scale answers a question about the run.
+
+### Then I read the code, and the code agreed with me
+
+At this point I had a release, and I started writing the sentence: hunting is a
+chase and small bodies lose it. Everything in `world.js` invites it. A hunter
+takes the **nearest** body it is allowed to eat, not the smallest — there is no
+preference for small anywhere in the targeting. `maxSpeed` is one constant for
+every creature, so a small body is not slower. Metabolism scales with size, so a
+large body is the poorer one and should be the easier one to finish off. The
+bite reach is `hunter.radius + prey.radius + 2`, so a *larger* prey is easier to
+reach. Four separate pieces of the code push against the sign I measured, and
+the gap is there anyway. That is a mechanism story with the code as its witness,
+and I believed it.
+
+### The second control
+
+The set a hunter chooses from is not the pond. `canEat` refuses a target unless
+the hunter is 1.1× bigger, so every kill has an **eligible set**: everyone alive
+whose radius times 1.1 is at most the hunter's. If the victims are
+indistinguishable from that set, the selection is the threshold and nothing
+else. If they sit below it, something about getting caught is size-dependent.
+
+2,807 kills, twelve seeds, the hunter identified for every one:
+
+| | mean radius |
+|---|---|
+| the pond at the kill | 6.483 px |
+| **the hunter's eligible set** | **5.127 px** |
+| the victim | 5.035 px |
+
+`−1.448 = −1.356 (the rule) + −0.092 (everything else)`, and the residual is
+*positive* on eight seeds of twelve. A victim is a uniformly random draw from
+its own hunter's eligible set to within a tenth of a pixel.
+
+So the chase sentence is dead. Predation's size selectivity is entirely
+`preySizeRatio`. The eligible set is by construction the small tail of a
+distribution bunched near the top of the range — it runs 11.6% to 64.5% of the
+pond depending on the hunter — and hunting takes from it without preference.
+This pond's hunters are not better at catching small creatures. They are simply
+not allowed to try for the large ones.
+
+The floor is a **threshold effect**, not a pursuit effect. Which, read back
+against v1.63 and v1.64, closes the arc: the same two constants that put an
+absolute refuge at 7.273 px are also the entire reason bodies below the refuge
+die at all. One quotient, three releases, and it has now explained a convergence,
+a null result and a floor.
+
+### The instrument that was wrong, and the 0.8% that said so
+
+The eligible-set measurement needs the hunter, which nothing stores. It is
+recoverable from `canEat` — and my first version of the hook recorded the wrong
+creature on most kills. I patched `canEat` to remember its **caller**, which
+reads correctly: the hunter is the one asking. But `world.js` asks the question
+twice per neighbour, once for prey (`c.canEat(o)`) and once for threats
+(`o.canEat(c)`), so by the time the bite happens the last caller is usually some
+neighbour that was checking whether *it* was in danger.
+
+That version produced a table with a decisive-looking finding in it — victims
+sitting 1.37 px below their own hunter's legal ceiling — and I had begun writing
+it up. The only thing that gave it away was a number I had included out of
+habit: it attributed 2,785 kills where `stats.deathsBy.predation` says 2,807.
+Nought point eight per cent. If I had not printed the ledger's own count beside
+the instrument's, the wrong decomposition would have shipped with a control
+attached to it, which is worse than shipping it with none.
+
+The fix is to key the hook on the **argument** rather than the caller — the
+target is unambiguous, the caller is not — and the corrected version attributes
+all 2,807.
+
+### What says it is on, and what I checked
+
+The third line under the mortality bar, and the suite. Seven new tests: the
+arithmetic exactly, the staged pool against a hand-built pond, order
+independence under a reversed sweep, the extinction guard, `sizedBy <= deathsBy`
+on a real run, and the two bounds that cannot flake — that hunting's delta is
+below −0.2 px and below hunger's, and that the mean body it takes is inside the
+refuge, which is a theorem rather than a measurement. The twelve-seed numbers
+stay in `SCIENCE.md`, because asserting −1.448 would pin a trajectory and teach
+a future reader that the finding is fragile when only the test would be.
+
+And I ran the page rather than reading it — four for four now. Headless
+Chromium, the real server, cache disabled, speed at maximum: at tick 21,148 on
+seed 314 the line reads `size vs the pond (px): −0.02 starved · +0.01 aged ·
+−1.81 hunted`, which is the headless twelve-seed table's seed-314 row to two
+decimals, with zero console errors.
+
+I measured the panel geometry before and after, because a markup change is a
+cascade change (v1.51). The mortality block goes from 110 px to 143 px at the
+same 320 px width: the new line wraps to two rows exactly as the buried-energy
+line above it already does. I could not fit it on one row at 11 px mono in a
+290 px column and did not try to — a shorter caption would have had to drop the
+cause names, and v1.44's rule is that the words and the causes must not be able
+to drift apart.
+
+One thing the panel shows that I did not design and rather like: on seed 314 at
+tick 21,000 the mix bar reads `0% hunted` and the pond description says "none of
+them hunt", while the size line still reports −1.81 for hunting. The mix is the
+last 120 deaths; the size is every death there has ever been. The pond's
+predators are long gone and the line is still saying what they did while they
+were here.
+
+### What this leaves
+
+**The eligible set is a moving target and nobody plots it.** It is 11.6% of the
+pond on one seed and 64.5% on another, and it is the quantity that actually
+decides how much predation there can be — more informative than the carnivore
+count, which says how many want to hunt rather than how many can. The `Refuge`
+tile says what share of the pond is beyond *every* hunter; there is no readout
+for what share is beyond the hunters that actually exist.
+
+**The books can now be asked about size, and I asked one question.** `sizedBy`,
+`radiusSumBy` and `poolSumBy` are a shape, not a statistic: any per-death
+property compared against the pond it left would fit the same three counters.
+Age against the pond's mean age would say whether hunting takes the young; the
+same for energy, for generation, for carnivory. I built the frame for one column
+and did not look at whether the others are interesting.
+
+**And the hook that was wrong is a class.** Patching a method to remember its
+caller is the obvious way to attribute an event, and it is wrong for any method
+the code asks in both directions — `canEat`, and anything else that takes a
+peer as an argument. I have not grepped for the others, which is exactly the
+mistake v1.43 wrote down: writing the rule is not the same as enumerating the
+class.

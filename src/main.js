@@ -20,6 +20,7 @@ import {
   wholePercents,
   mortalitySeries,
   deathCosts,
+  deathSizes,
   DEATH_CAUSES,
   POWER_WINDOW,
 } from "./stats.js";
@@ -814,6 +815,38 @@ function updateMortality(s) {
       `buried with each: ${per("starvation")}⚡ starved · ` +
       `${per("age")}⚡ aged · ${per("predation")}⚡ hunted`;
   }
+
+  // And what size of body each cause takes, measured against the pond standing
+  // at the instant it took it. Run-to-date for the same reason the costs above
+  // are: a per-body figure, not a mix. Signed, and the sign is the whole point
+  // — two of these three are the control (see docs/SCIENCE.md), and a watcher
+  // who reads −0.02, +0.02, −1.81 has the finding without any prose.
+  const size = deathSizes(s.sizedBy, s.radiusSumBy, s.poolSumBy);
+  if (size) {
+    // Only causes that have actually happened, unlike the costs: a delta is a
+    // comparison and 0.00 out of nothing invites being read as "no selection"
+    // rather than as "no deaths". A cause with an empty column simply waits.
+    const parts = [];
+    for (const [cause, word] of [
+      ["starvation", "starved"],
+      ["age", "aged"],
+      ["predation", "hunted"],
+    ]) {
+      const row = size.causes[cause];
+      if (row.n > 0) parts.push(`${signed(row.delta)} ${word}`);
+    }
+    $("mort-size").textContent = parts.length
+      ? `size vs the pond (px): ${parts.join(" · ")}`
+      : "";
+  }
+}
+
+/** Two decimals with an explicit sign, so the near-zero columns read as near-zero. */
+function signed(v) {
+  // `-0.00` is a true statement about a rounded number and reads as a bug, so
+  // the sign comes from the rounded value rather than from the raw one.
+  const r = Math.round(v * 100) / 100;
+  return `${r < 0 ? "−" : "+"}${Math.abs(r).toFixed(2)}`;
 }
 
 // ---- Live population chart ----

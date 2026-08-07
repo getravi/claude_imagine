@@ -667,11 +667,25 @@ export class World {
     // left behind holds meat proportional to the creature's body size —
     // recycling its biomass back into the food web.
     if (this.creatures.some((c) => c.dead)) {
+      // The pond each of this tick's dead is about to be compared against: the
+      // mean body radius of everyone who survives it. Computed once, before the
+      // sweep touches anything, so every body dying this tick is measured
+      // against the same pond however the loop happens to reach them — and only
+      // on ticks where something died, so a quiet tick pays nothing. Null when
+      // nothing survived, which is a pond with no size to have (see `sizedBy`).
+      let poolSum = 0;
+      let poolN = 0;
+      for (const c of this.creatures) {
+        if (c.dead) continue;
+        poolSum += c.radius;
+        poolN++;
+      }
+      const pool = poolN > 0 ? poolSum / poolN : null;
       const survivors = [];
       for (const c of this.creatures) {
         if (c.dead) {
           this.stats.deaths++;
-          this.stats.recordDeath(c);
+          this.stats.recordDeath(c, pool);
           // Whatever it still held goes with it, charged to what killed it —
           // the same label `recordDeath` just counted, so the two ledgers are
           // reading the same body. A creature that starved finishes a hair

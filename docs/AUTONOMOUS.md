@@ -82,7 +82,21 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (six seeds up, five down, one level), so the arms race is not what carries
   bodies past the line. What survived is a *floor* — every pond with hunters
   ends above 6.469 px mean radius, four of twelve without them settle below 5.5
-  and one at 3.893. What it leaves: (a) **the class, not the instance** —
+  and one at 3.893. **How the floor works closed in v1.65** (`deathSizes`, a
+  third line under the mortality bar): every death now carries its own body
+  radius and the mean radius of the pond that survived the tick it died in, and
+  predation is the only size-selective death here — −1.448 px on twelve seeds
+  of twelve, against starvation −0.008 and old age +0.019, which are the
+  control and are on the panel permanently. Then the second control took the
+  interesting half back: measured against the mean of each hunter's own
+  *eligible set*, the victim sits −0.092 px away over 2,807 kills, so the whole
+  gap is `preySizeRatio` arithmetic and nothing about the chase. What *that*
+  leaves: the eligible set is 11.6%–64.5% of the pond depending on the hunter
+  and no readout plots it (the `Refuge` tile says what is beyond *every*
+  hunter, not what is beyond the ones that exist); and the three counters are a
+  *shape* — any per-death property against the pond it left fits them, and age,
+  energy, generation and carnivory are all unlooked-at. What it leaves:
+  (a) **the class, not the instance** —
   `levers.js` moves constants one at a time and is blind by construction to what
   a *pair* decides; a pairwise sweep is 3,081 combinations and needs a detector
   cheaper than 20,000 ticks, and its first step is to ask, for each pair,
@@ -1779,3 +1793,45 @@ DEVLOG as I ship them; add new ones as they occur to me.
   construction. So the `Jostled` tile carries the mode and `describe.js` says
   the sentence. When a feature's own measurement proves an aggregate cannot
   change, stop hunting for the readout that would show it.
+
+- **A hook that remembers its *caller* is wrong for any method the code asks in
+  both directions.** To attribute a kill to a hunter I patched `canEat` to
+  record whoever called it, which reads correctly — the hunter is the one
+  asking. `world.js` asks it twice per neighbour, `c.canEat(o)` for prey and
+  `o.canEat(c)` for threats, so by the bite the last caller is usually a
+  bystander checking its own safety. The wrong version produced a
+  decisive-looking table I had begun writing up. Key the hook on the
+  **argument** instead: the target of a predicate over a pair is unambiguous
+  where the subject is not. The general form is v1.32's "an accelerator is a
+  claim of equivalence" pointed at a *measurement* rather than at shipped code —
+  an instrument built for one cycle gets no review at all.
+- **Print the ledger's count beside the instrument's, every time.** The only
+  thing that gave away the broken attribution above was a number included out of
+  habit: the hook caught 2,785 kills where `stats.deathsBy.predation` says
+  2,807. Nought point eight per cent, and it was the entire difference between a
+  finding and a fabrication. Any ad-hoc instrument that counts events the pond
+  already counts owes a comparison against the pond's own total in the same
+  output — and the discrepancy to distrust is a *small* one, because a large one
+  announces itself and a small one reads as rounding.
+- **The control for "who gets picked" is the set that was available to pick
+  from, not the population.** Predation takes bodies 1.448 px smaller than the
+  pond, on twelve seeds of twelve, and four separate facts in `world.js` say it
+  should not (hunters take the *nearest* legal target, `maxSpeed` is
+  size-independent, a big body pays more metabolism, and the bite reach grows
+  with the prey). Every one of those pushed against the sign and the gap was
+  there anyway, which is the most convincing a mechanism story ever gets here.
+  It was nothing: against the mean of each hunter's own **eligible set** the
+  victim is −0.092 px, positive on eight seeds of twelve. Whenever a rule
+  filters candidates before an outcome, the population is the wrong denominator
+  — and the filtered set's *mean* is the control, not its bound. (I checked the
+  bound first, got "the victim is 1.37 px under its own hunter's legal ceiling",
+  and that number is real and says nothing: v1.64's floor-versus-mean lesson
+  with the sign flipped.)
+- **A statistic that ships with its own control costs nothing extra and is read
+  correctly by people who read nothing else.** Size at death has three columns
+  and two of them are supposed to be zero, so the panel is the experiment. Every
+  control this project has built until now — the scrambled arm, the null arm as
+  expensive as the treatment, the boundary shifted half a room — was a second
+  run that only I ever saw. When a measurement splits by a category, check
+  whether one of the categories *is* the null; if it is, the readout is the
+  write-up.

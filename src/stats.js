@@ -94,6 +94,58 @@ export function deathCosts(deathsBy, buriedBy) {
 }
 
 /**
+ * What size of body each way out of this world takes, against the pond it was
+ * taken from.
+ *
+ * v1.64 measured predation as a **floor** under body size — every pond with
+ * hunters ends above 6.469 px mean radius, four of twelve without them settle
+ * below 5.5 — and could not say how the floor works. "Small creatures get
+ * eaten" is a plausible mechanism arriving before the search, which this
+ * project's playbook names three times over as the exact signature of the
+ * thing it gets wrong. So the books record the mechanism instead of assuming
+ * it, and they record its control in the same breath.
+ *
+ * `radius` is the mean body radius of the dead of one cause; `pool` is the mean
+ * body radius of everyone *still standing at the instant each of them died*.
+ * The difference is the size selection that cause applies, in pixels, and the
+ * two figures that matter are the ones that should be zero: starvation and old
+ * age take a body the size of the pond around it, so their deltas read −0.008
+ * and +0.019 over twelve seeds. Predation reads **−1.448**, negative on twelve
+ * seeds of twelve. The null arm is not a second run — it is the other two
+ * columns, always on screen beside the first (v1.20, v1.50).
+ *
+ * The pool has to be measured at the death rather than over the run: predation
+ * deaths cluster where the pond is younger and smaller-bodied, so comparing
+ * them against a run-average pond overstates the gap by about half a pixel.
+ *
+ * Run-to-date rather than over the death window, for the same reason
+ * `deathCosts` is: this is a per-body figure and not a mix, so averaging it
+ * over more bodies makes it truer rather than staler.
+ *
+ * Pure. Returns null until something has died somewhere the pool exists.
+ * @param {Record<string, number>} sizedBy deaths per cause that had a pool
+ * @param {Record<string, number>} radiusSumBy summed body radii, per cause
+ * @param {Record<string, number>} poolSumBy summed pool radii, per cause
+ * @returns {{n:number, causes:Record<string,
+ *   {n:number, radius:number, pool:number, delta:number}>}|null}
+ */
+export function deathSizes(sizedBy, radiusSumBy, poolSumBy) {
+  /** @type {Record<string, {n:number, radius:number, pool:number, delta:number}>} */
+  const causes = {};
+  let n = 0;
+  for (const c of DEATH_CAUSES) {
+    const k = sizedBy[c] ?? 0;
+    const r = k > 0 ? (radiusSumBy[c] ?? 0) / k : 0;
+    const p = k > 0 ? (poolSumBy[c] ?? 0) / k : 0;
+    // A cause nobody has died of reads zero across the row, like `deathCosts`:
+    // a true statement about an empty set, and one less case for the caller.
+    causes[c] = { n: k, radius: r, pool: p, delta: r - p };
+    n += k;
+  }
+  return n > 0 ? { n, causes } : null;
+}
+
+/**
  * Turn a run of history points into deaths-per-tick, split by cause: one
  * interval per adjacent pair of samples.
  *
@@ -222,6 +274,22 @@ export class Stats {
     /** @type {Array<{cause:string, age:number}>} newest last */
     this.recentDeaths = [];
     this.lifespanSum = 0; // total ticks lived, over every death so far
+    // What size of body each cause takes, and out of what pond — the mechanism
+    // under v1.64's floor, with its own control beside it. `radiusSumBy` sums
+    // the dead's own body radii; `poolSumBy` sums the mean radius of everyone
+    // who survived the tick each of them died in. Cumulative, so the panel can
+    // report a per-body mean that gets truer rather than staler, and so a
+    // future archive column would difference exactly (v1.35).
+    //
+    // `sizedBy` rather than reusing `deathsBy` as the divisor: a tick that
+    // leaves nobody standing has no pond to compare a body against, and
+    // inventing one — by counting the dying in their own pool — would bias
+    // every delta toward zero by construction. Those deaths are counted in
+    // `deathsBy` and excluded here, so `sizedBy <= deathsBy` always, and the
+    // gap is exactly the pond's extinctions.
+    this.sizedBy = { starvation: 0, age: 0, predation: 0 };
+    this.radiusSumBy = { starvation: 0, age: 0, predation: 0 };
+    this.poolSumBy = { starvation: 0, age: 0, predation: 0 };
     this.scavenged = 0; // total scavenging bites taken from corpses
     // What the turn order costs, in the two places it decides anything (v1.47).
     // `world.step()` sweeps `this.creatures` in array order and that array is
@@ -543,10 +611,19 @@ export class Stats {
    * survives. Draws no randomness and touches no creature, so a world that has
    * this bookkeeping is bit-for-bit the world that doesn't.
    * @param {import('./creature.js').Creature} creature
+   * @param {number|null} [pool] mean body radius of everyone who survived this
+   *   tick, or null where nobody did. Order-independent on purpose: it is the
+   *   same number for every body swept up in the same tick, so which of them
+   *   the loop reaches first cannot change any figure here (v1.47).
    */
-  recordDeath(creature) {
+  recordDeath(creature, pool = null) {
     const cause = creature.deathCause;
     if (cause in this.deathsBy) this.deathsBy[cause]++;
+    if (cause in this.sizedBy && pool !== null) {
+      this.sizedBy[cause]++;
+      this.radiusSumBy[cause] += creature.radius;
+      this.poolSumBy[cause] += pool;
+    }
     this.lifespanSum += creature.age;
     this.recentDeaths.push({ cause, age: creature.age });
     if (this.recentDeaths.length > this.deathWindow) this.recentDeaths.shift();

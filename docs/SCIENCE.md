@@ -4361,6 +4361,142 @@ node --input-type=module -e '
 
 The second script is 24 runs of 20,000 ticks and takes about ten minutes.
 
+## How the floor works, and what the second control took back (v1.65)
+
+The section above ends with a result and an admission. Predation puts a **floor**
+under body size in this pond — every one of twelve ponds with hunters ends above
+6.469 px mean radius, four of twelve without them settle below 5.5 — and nothing
+had measured *how*. The obvious answer is that small creatures get eaten. That
+is a plausible mechanism arriving before the search, which is the signature of
+the thing this project gets wrong most often, so it needed a number.
+
+### The instrument, and its control
+
+Every death now records two things: the dying body's own radius, and the mean
+radius of everyone who **survived the tick it died in**. The difference is the
+size selection that cause of death applies. It is cumulative and run-to-date,
+because this is a per-body figure and not a mix.
+
+The control is the table itself. Starvation and old age are not supposed to care
+what size a body is, so their columns are what a reading of zero looks like here
+— not a second run, not a scrambled arm, not a disabled flag, just the other two
+rows of the same instrument, visible on the panel at all times.
+
+Twelve seeds, 20,000 ticks, default configuration:
+
+| cause | deaths | mean body at death | the pond it left | **delta** |
+|---|---|---|---|---|
+| starvation | 15,360 | — | — | **−0.008 px** (min −0.208, max +0.202; negative on 9/12) |
+| old age | 3,161 | — | — | **+0.019 px** (min −0.087, max +0.159; negative on 3/12) |
+| predation | 2,807 | 5.035 px | 6.483 px | **−1.448 px** (min −0.587, max −2.944; negative on **12/12**) |
+
+Per seed, the predation column: 314 −1.812 · 77 −0.804 · 51 −2.944 · 13 −1.324 ·
+23 −1.889 · 45 −0.587 · 101 −1.951 · 202 −1.337 · 303 −0.690 · 404 −0.878 ·
+512 −1.840 · 777 −1.320.
+
+So the mechanism is real, and it is the *only* one of the three. A body that
+starves is the size of the pond around it to within a fiftieth of a pixel.
+
+### Why the pool has to be taken at the death
+
+The cheaper baseline — compare the victims against the pond's time-average body
+radius over the run — reads **−1.927 px** instead of −1.448. Predation deaths
+cluster where the pond is younger and smaller-bodied, so half a pixel of the
+apparent gap is a fact about *when* hunting happens rather than about who it
+takes. The pool is measured at the instant, per death, for that reason.
+
+### And then the second control takes the interesting half back
+
+The natural next sentence is that hunting is a *chase*, and small bodies lose it.
+Everything in the code invites that reading. A hunter takes the **nearest** body
+it is allowed to eat, not the smallest. `maxSpeed` is the same constant for every
+creature, so a small body is not slower. Metabolism scales with size, so a large
+body is the *poorer* one and should be easier to finish off. The bite reach is
+`hunter.radius + prey.radius + 2`, so a larger prey is easier to reach. Every one
+of those pushes against the observed sign.
+
+The control that settles it is the set the hunter was actually choosing from.
+`canEat` refuses a target unless the hunter is `preySizeRatio` (1.1) times
+bigger, so for each kill there is an **eligible set**: everyone alive whose
+radius times 1.1 is at most the hunter's. If victims are indistinguishable from
+that set, the selection is the threshold and nothing else; if they sit below it,
+something about getting caught is size-dependent.
+
+Over the same 2,807 kills, with the hunter identified for every one of them:
+
+| | mean radius |
+|---|---|
+| the pond at the kill | 6.483 px |
+| **the hunter's eligible set** | **5.127 px** |
+| the victim | 5.035 px |
+
+`−1.448 = −1.356 (the rule) + −0.092 (everything else)`. The residual is
+positive on eight seeds of twelve; the only one past ±0.15 is seed 51, which had
+exactly one kill in 20,000 ticks. A victim is a uniformly random draw from its
+own hunter's eligible set, to within a tenth of a pixel.
+
+So predation's size selectivity is entirely `preySizeRatio`. The eligible set is,
+by construction, the small tail of a distribution bunched near the top of the
+size range — it is 11.6%–64.5% of the pond depending on the hunter — and hunting
+takes from it without preference. The floor under body size is a **threshold
+effect**, not a pursuit effect, and this pond's hunters are not better at
+catching small creatures than at catching large ones. They are simply not allowed
+to try.
+
+### Reproducing it
+
+The instrument ships, so the first table is a read of the books:
+
+```bash
+node --input-type=module -e '
+  import * as W from "./src/world.js"; import * as C from "./src/config.js";
+  import * as S from "./src/stats.js";
+  for (const seed of [314, 77, 51, 13, 23, 45, 101, 202, 303, 404, 512, 777]) {
+    const w = new W.World(C.makeConfig({ seed }));
+    for (let i = 0; i < 20000; i++) w.step();
+    const d = S.deathSizes(w.stats.sizedBy, w.stats.radiusSumBy, w.stats.poolSumBy);
+    console.log(seed, ...["starvation","age","predation"].map(
+      (c) => `${c} n=${d.causes[c].n} ${d.causes[c].delta.toFixed(3)}`));
+  }'
+```
+
+The eligible-set control needs the hunter, which nothing stores. It is
+recoverable from `canEat`, but only if the hook keys on the **target** rather
+than on the caller: `world.js` asks the question twice per neighbour, once for
+prey (`c.canEat(o)`) and once for threats (`o.canEat(c)`), so a
+last-caller-wins hook records the wrong creature most of the time.
+
+```bash
+node --input-type=module -e '
+  import * as W from "./src/world.js"; import * as C from "./src/config.js";
+  import { Creature } from "./src/creature.js";
+  const canEat = Creature.prototype.canEat, die = Creature.prototype.die;
+  let eater = new WeakMap(), hook = null;
+  Creature.prototype.canEat = function (o) {
+    const ok = canEat.call(this, o); if (ok) eater.set(o, this); return ok; };
+  Creature.prototype.die = function (cause) {
+    if (cause === "predation" && !this.dead && hook) hook(this, eater.get(this));
+    return die.call(this, cause); };
+  for (const seed of [314, 77, 51, 13, 23, 45, 101, 202, 303, 404, 512, 777]) {
+    const w = new W.World(C.makeConfig({ seed })), r = w.config.preySizeRatio, k = [];
+    hook = (v, h) => { if (!h) return;
+      let s = 0, n = 0, es = 0, en = 0;
+      for (const o of w.creatures) { if (o.dead || o === v) continue;
+        s += o.radius; n++; if (o.radius * r <= h.radius) { es += o.radius; en++; } }
+      if (en) k.push([v.radius, es / en, s / n]); };
+    for (let i = 0; i < 20000; i++) w.step();
+    const m = (j) => k.reduce((a, x) => a + x[j], 0) / k.length;
+    console.log(seed, k.length, "victim", m(0).toFixed(3),
+      "eligible", m(1).toFixed(3), "pond", m(2).toFixed(3),
+      "| rule", (m(1) - m(2)).toFixed(3), "choice", (m(0) - m(1)).toFixed(3));
+  }'
+```
+
+Each script is twelve runs of 20,000 ticks and takes about three and a half
+minutes. The second one's kill count must equal `stats.deathsBy.predation` — if
+it does not, the attribution is wrong, and that disagreement (2,785 against
+2,807, 0.8%) is the only thing that gave away the first, broken version of it.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:
