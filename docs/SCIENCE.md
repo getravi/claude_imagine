@@ -4206,6 +4206,161 @@ true for 20,000 ticks and average the mean body radius over 100-tick samples;
 for the split table, walk every overlapping pair at one instant and record
 `max(r1,r2)² / min(r1,r2)²`.
 
+## The refuge, and what predation actually decides (v1.64)
+
+v1.63 was measuring something else entirely — whether a mass-weighted shove
+gives the size gene a third job — and found, on the way past, that two constants
+which have sat beside each other in `config.js` since v1.0 have a quotient that
+is a rule. `Creature.canEat` refuses a target unless the hunter is
+`preySizeRatio` (1.1) times bigger than it, and `bodyRadiusMax` (8.0) is the
+largest body a genome can express. So a creature at or above
+
+    bodyRadiusMax / preySizeRatio = 8.0 / 1.1 = 7.273 px
+
+cannot be eaten by anything this world is capable of growing. Not
+disadvantaged; ineligible. The size range starts at 3.5 px, so the refuge is the
+top 16% of it, and it is absolute.
+
+`src/levers.js` sweeps all seventy-nine constants one at a time and cannot see
+this, because what the pair decides is a *conjunction*: move either number alone
+and the sweep sees a lever with the effect it expects, while the boundary the
+two of them draw together is nowhere in its vocabulary. v1.38 asked whether
+every number here is a lever. Which **pairs** of them are is a different
+question and this is the first answer to it.
+
+### The pond is mostly inside it, early
+
+`Stats.refugeShare` counts the living at or above that radius. On the default
+seed it passes half at **tick 600** and 80% by tick 1,000 — under a minute of
+watching at 1× — and spends the rest of a 20,000-tick run between 88% and 100%.
+
+Over twelve seeds at 20,000 ticks the share runs the whole range: two ponds end
+under 3%, four end above 96%, and the mean is **52.0%** (median 48.8%). It is
+one of the widest-spread statistics in this project, so a single figure for it
+is a statement about a seed list — v1.63 reported a mean of 75.7% on its twelve
+seeds and this page reports 52.0% on a different twelve, and both are right.
+What travels is the shape: a pond is usually *decisively* inside the refuge or
+decisively outside it, and the ones inside get there in the first two thousand
+ticks. Five of twelve seeds hold the majority above the line unbroken from a
+crossing point onward (median tick 1,100, earliest 600).
+
+The reading this invites is that prey have evolved out of reach of predators —
+an arms race, won. That sentence is what the rest of this section is about.
+
+### The control: predation off
+
+The measurement to trust is the one that reads zero when the mechanism is off
+(v1.20). This one does not read zero, and it is not supposed to: switching
+`predation` off does not change a single body's size directly, it only removes
+the reason to care. So the honest control is the seed-matched pair — the same
+seed, 20,000 ticks, `predation: true` against `predation: false` — asking
+whether a pond with *nobody hunting in it* grows into the refuge anyway.
+
+It does.
+
+| seed | refuge share, predators | no predators | mean radius, predators | no predators |
+|---|---|---|---|---|
+| 314 | 90.8% | 69.1% | 7.581 | 7.434 |
+| 77 | 100.0% | 0.0% | 7.593 | 5.416 |
+| 51 | 19.7% | 95.6% | 7.237 | 7.493 |
+| 13 | 98.8% | 98.0% | 7.719 | 7.757 |
+| 23 | 9.7% | 93.5% | 6.469 | 7.560 |
+| 45 | 16.1% | 0.0% | 7.190 | 4.917 |
+| 99 | 2.7% | 5.4% | 6.893 | 6.925 |
+| 128 | 44.8% | 0.0% | 7.209 | 3.893 |
+| 256 | 48.8% | 81.4% | 7.179 | 7.406 |
+| 512 | 0.0% | 0.0% | 6.840 | 4.937 |
+| 777 | 96.2% | 1.2% | 7.686 | 6.042 |
+| 1024 | 96.8% | 100.0% | 7.573 | 7.954 |
+| **mean** | **52.0%** | **45.3%** | **7.264** | **6.478** |
+
+The refuge share is higher with predators on **six** seeds, lower on **five**
+and level on one, against a between-seed spread that covers the entire range
+from 0% to 100%. That is a coin toss (v1.32: a seed-matched pair is exactly as
+clean as one coin flip, and a dozen of them is the minimum for an opinion). So
+**the refuge is not something predation drives the pond into.** Bodies grow for
+their own reasons — the metabolic bill in `sizeCostFactor` against whatever
+being large is worth in a scramble for pellets — and the predation threshold is
+a line those bodies happen to walk past.
+
+### What predation does own is a floor
+
+The same table read down the radius columns says something the share columns
+do not. Sign-counted, mean body radius is also 6–6 — but the magnitudes are
+wildly asymmetric:
+
+- where predation **raises** the radius it raises it by a lot: +3.316, +2.273,
+  +2.177, +1.903, +1.644, +0.147 px;
+- where it **lowers** it, it barely does: −1.091, −0.381, −0.256, −0.227,
+  −0.038, −0.032 px.
+
+Mean over twelve seeds: **+0.786 px**. And the tell is in the minima. With
+predators, the smallest pond-average body over twelve seeds is **6.469 px**; with
+no predators at all it is **3.893 px**, and four ponds of twelve settle below
+5.5 px — creatures barely above the minimum the config allows.
+
+So predation does not push the pond up into the refuge. It stops the pond going
+*down*. Where a world without hunters is free to discover that small and cheap
+is a living, a world with hunters is not, and the floor it puts under body size
+is a fifth of the whole size range. The arms race is real; what it produces is
+not an escalation but a **lower bound**, and the escalation everybody would
+narrate from the same numbers is not there.
+
+That is also the sharper reading of v1.21 and v1.63. Predation causes about a
+tenth of the deaths in a world built to showcase it, and three quarters of a
+typical pond is beyond its reach — which reads as "the arms race is smaller than
+I thought", then as "the arms race is finished", and is really neither. It is a
+constraint that binds at the bottom of the range and is invisible at the top.
+
+### What is pinned, and what is only written down
+
+`test/refuge.test.js` pins the arithmetic, which cannot flake: that
+`inRefuge` agrees with `Creature.canEat` at *every* radius in the range when the
+hunter is as large as this world can grow, that the boundary is decided by the
+rule's own multiplication rather than by a division one ULP away, that the tile
+and the module compute the same number on a real pond, and that the chronicle
+line is one-shot, follows first blood and never fires for a pond that was never
+below the line.
+
+The twelve-seed result above is **not** in the suite, deliberately. It is a coin
+toss with a spread of a hundred percentage points; an assertion on it would pin
+one trajectory and teach a future reader that the finding is fragile when only
+the test would be (v1.33).
+
+### Reproducing it
+
+```bash
+# Where the refuge is, and how fast the default pond gets there.
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const R = await import("./src/refuge.js");
+  const cfg = C.makeConfig({ seed: 314 });
+  console.log("refuge at", R.refugeRadius(cfg).toFixed(3), "px");
+  const w = new W.World(cfg);
+  for (let t = 1; t <= 20000; t++) {
+    w.step();
+    if (t % 1000 === 0 || t === 600) console.log(t, (w.stats.refugeShare * 100).toFixed(0) + "%");
+  }'
+
+# The control: the same seeds with nobody hunting.
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  const R = await import("./src/refuge.js");
+  for (const seed of [314,77,51,13,23,45,99,128,256,512,777,1024]) {
+    const out = [];
+    for (const predation of [true, false]) {
+      const w = new W.World(C.makeConfig({ seed, predation }));
+      for (let i = 0; i < 20000; i++) w.step();
+      const rs = w.creatures.map((c) => c.radius);
+      out.push([(R.refugeShare(w.creatures, w.config) * 100).toFixed(1),
+                (rs.reduce((a, b) => a + b, 0) / rs.length).toFixed(3)]);
+    }
+    console.log(seed, "predators", out[0].join(" / "), " none", out[1].join(" / "));
+  }'
+```
+
+The second script is 24 runs of 20,000 ticks and takes about ten minutes.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

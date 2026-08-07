@@ -10,6 +10,7 @@
 import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
 import { hazardShare } from "./contagion.js";
+import { inRefuge } from "./refuge.js";
 import { ENERGY_SOURCES, LEDGER_FIELDS, energyField, buriedField } from "./energy.js";
 
 /**
@@ -275,6 +276,22 @@ export class Stats {
     this.maxGeneration = 0;
     this.maxPopEver = 0;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
+    // What share of the living nothing in this world is able to eat: bodies at
+    // or above `bodyRadiusMax / preySizeRatio`, which is 7.273 px of a range
+    // that stops at 8.0 (see `refuge.js`). It says how much of the pond the
+    // headline mechanic has stopped applying to, and on the default seed it is
+    // already past 80% by tick 1,000.
+    //
+    // Every other conditional readout in this class is zeroed when its feature
+    // is off, because a statistic that is non-zero with its mechanism disabled
+    // is not measuring the mechanism (v1.20). This one is deliberately not, and
+    // that is the finding rather than an oversight: a pond with `predation`
+    // switched off grows into the refuge just as readily — six seeds of twelve
+    // higher, five lower — so the size distribution is not a response to
+    // hunters and would be misdescribed by a number that vanished with them.
+    // The *surfaces* gate on `config.predation`, because a refuge from nobody
+    // is arithmetic rather than news.
+    this.refugeShare = 0;
     this.avgLearning = 0; // mean within-lifetime weight drift (plasticity on)
     this.avgVoice = 0; // mean |signal| across the pond (signalling on)
     this.avgHeard = 0; // mean strength of the call reaching each creature
@@ -305,6 +322,11 @@ export class Stats {
     let maxGen = 0;
     let sumGen = 0;
     let carnivores = 0;
+    // Bodies past the size at which nothing here can eat them. Counted in this
+    // loop rather than in a scan of its own: it is one comparison per creature
+    // against two config numbers, which is cheaper than the branch deciding
+    // whether to bother.
+    let safe = 0;
     const threshold = world.config.carnivoreThreshold;
     for (let i = 0; i < pop; i++) {
       const cr = world.creatures[i];
@@ -312,12 +334,14 @@ export class Stats {
       if (g > maxGen) maxGen = g;
       sumGen += g;
       if (cr.carnivory >= threshold) carnivores++;
+      if (inRefuge(cr.radius, world.config)) safe++;
     }
     if (maxGen > this.maxGeneration) this.maxGeneration = maxGen;
     this.avgGeneration = pop > 0 ? sumGen / pop : 0;
     this.currentMaxGeneration = maxGen;
     this.carnivoreFrac = pop > 0 ? carnivores / pop : 0;
     this.carnivoreCount = carnivores;
+    this.refugeShare = pop > 0 ? safe / pop : 0;
 
     // Learning: how far, on average, plastic brains have drifted from the
     // weights they were born with (0 when plasticity is off). A live readout of

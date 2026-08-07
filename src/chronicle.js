@@ -72,6 +72,8 @@ export class Chronicle {
     this._settleStreak = 0;
     this._soilFed = false;
     this._soilStreak = 0;
+    this._refugeCrossed = false;
+    this._sawBelowRefuge = false;
   }
 
   _push(tick, icon, cat, msg) {
@@ -135,6 +137,29 @@ export class Chronicle {
         }
       }
     }
+    // The moment most of the pond stops being edible. Three guards, and each
+    // one is a bug this project has already shipped once: the mechanic has to
+    // exist (`predation`), somebody has to have actually hunted (`_firstKill`,
+    // the same guard the carnivore milestones need), and the pond has to have
+    // been *below* the line at some point, or a founding population that
+    // happens to start large would announce a crossing that never happened —
+    // v1.16's burnout line, which narrated the end of an epidemic that had no
+    // beginning. Said once: the share drifts back and forth over a half by a
+    // few points for the rest of a run, and a line that re-fires on every
+    // wobble is noise rather than news.
+    if (this.config.predation && pop > 0) {
+      if (s.refugeShare < 0.5) this._sawBelowRefuge = true;
+      else if (this._firstKill && this._sawBelowRefuge && !this._refugeCrossed) {
+        this._refugeCrossed = true;
+        this._push(
+          tick,
+          "🔒",
+          "predation",
+          "Most of the pond has grown too big for anything here to eat."
+        );
+      }
+    }
+
     if ((s.carnivoreCount || 0) > 0) this._predsAlive = true;
     else if (this._predsAlive && (s.carnivoreCount || 0) === 0) {
       this._predsAlive = false;

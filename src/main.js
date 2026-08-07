@@ -38,6 +38,7 @@ import {
   brainNodeColours,
 } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
+import { refugeRadius } from "./refuge.js";
 import {
   describeChart,
   describeMuller,
@@ -664,6 +665,15 @@ function updateHUD() {
   const pct = pop > 0 ? Math.round((carn / pop) * 100) : 0;
   $("stat-carn").textContent = `${carn} (${pct}%)`;
   $("stat-kills").textContent = s.kills.toLocaleString();
+  // The refuge: what share of the pond is at or above the size nothing here can
+  // eat, and where that line is. Both halves are needed — the percentage is the
+  // news and the threshold is what makes it a fact rather than a mood — and the
+  // threshold is a config quotient, so it is printed rather than hard-coded.
+  // "off" without predation: the same bodies are the same size, but a refuge
+  // from nobody is arithmetic and not a readout.
+  $("stat-refuge").textContent = config.predation
+    ? `${Math.round(s.refugeShare * 100)}% ≥${refugeRadius(config).toFixed(1)}px`
+    : "off";
   // Contagion: the live sick / immune split (both "off" without a pathogen).
   $("stat-sick").textContent = config.disease
     ? `${s.infectedCount} (${pop > 0 ? Math.round((s.infectedCount / pop) * 100) : 0}%)`

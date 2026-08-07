@@ -349,7 +349,7 @@ function mixValue(h, v, depth = 0) {
  *
  * Six of these — the last six — do not exist until the first `sample()`. A list
  * written by reading the constructor, which is the obvious way to write one,
- * gets thirty-seven of the forty-three and looks complete. That is why the test
+ * gets thirty-eight of the forty-four and looks complete. That is why the test
  * that walks this list walks a *stepped* world.
  */
 export const STATS_HASHED = [
@@ -360,8 +360,8 @@ export const STATS_HASHED = [
   "infectedCount", "immuneCount", "peakInfected", "hazardShare", "power",
   "maxGeneration", "maxPopEver", "carnivoreFrac", "avgLearning", "avgVoice",
   "avgHeard", "groundBias", "soilShare", "_lastSpawned", "_lastSprouted",
-  "avgGeneration", "currentMaxGeneration", "carnivoreCount", "avgHidden",
-  "avgConns", "maxHidden",
+  "refugeShare", "avgGeneration", "currentMaxGeneration", "carnivoreCount",
+  "avgHidden", "avgConns", "maxHidden",
 ];
 
 /**
@@ -393,9 +393,9 @@ export const ENERGY_UNHASHED = {};
  *
  * The four channels below and above are the world, its representation, the
  * observer's tree, and the random stream — and none of them touches a counter.
- * `world.stats` carries forty-three own properties and `world.energy` eight;
+ * `world.stats` carries forty-four own properties and `world.energy` eight;
  * until v1.59 the shared paired assertion named **three** of them by hand, and a
- * feature that was switched off and wrote to any of the other forty-eight left
+ * feature that was switched off and wrote to any of the other forty-nine left
  * every fingerprint in this project bit-identical.
  *
  * That is not a hypothetical gap, it is the same gap `observationFingerprint`

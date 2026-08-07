@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.64.0] — 2026-08-07
+
+v1.63 went looking for whether a mass-weighted shove gives the size gene a third
+job, found it does not, and found *why* on the way past: two constants that have
+sat beside each other in `config.js` since v1.0 have a quotient that is a rule.
+This release makes that rule visible, and then runs the control on the sentence
+everybody would write next to it.
+
+### Added
+
+- **The refuge** (`src/refuge.js`, and a `Refuge 🔒` tile). `Creature.canEat`
+  refuses a target unless the hunter is `preySizeRatio` (1.1) times bigger, and
+  `bodyRadiusMax` (8.0) is the largest body a genome can express — so a body at
+  or above **8.0 / 1.1 = 7.273 px** cannot be eaten by anything this world is
+  capable of growing. Not disadvantaged: ineligible. The tile reads the share of
+  the living inside it and the threshold itself (`85% ≥7.3px`), `describe.js`
+  says it in a sentence for a screen reader, and the Chronicle marks the tick a
+  pond crosses half.
+  - `inRefuge` is written as the negation of the eating rule with the largest
+    possible hunter substituted in, *not* as `radius >= refugeRadius()`. The two
+    disagree by one ULP on a body sitting exactly on the line, and `creature.js`
+    multiplies, so the predicate multiplies; the reported threshold is a caption
+    on the rule rather than a second implementation of it.
+    `test/refuge.test.js` checks the predicate against `canEat` at every radius
+    in the range, and probes the boundary bit by bit.
+  - Nothing in the simulation reads any of it. `refugeShare` joins the books'
+    fifth channel (`STATS_HASHED`, now forty-four fields), and the sweep in
+    `test/books.test.js` — hold each field wrong for sixty ticks, check the pond
+    does not notice — was re-run over fifty-two fields instead of fifty-one.
+
+### Measured
+
+- **The pond is mostly inside the refuge, and gets there fast.** The default
+  seed passes half at **tick 600**, 80% by tick 1,000, and spends the rest of a
+  20,000-tick run between 88% and 100%. Across twelve seeds the share is
+  bimodal — two ponds end under 3%, four above 96% — with a mean of 52.0%.
+- **It is not something predation drives.** Twelve seed-matched pairs,
+  `predation` on against off, 20,000 ticks: the refuge share is higher with
+  predators on **six** seeds, lower on **five**, level on one, against a spread
+  that covers the whole range. A pond where nobody hunts grows into the refuge
+  just as readily. The tempting caption — *prey have evolved out of reach, the
+  arms race is won* — does not survive its own control.
+- **What predation owns is a floor, not an escalation.** Mean body radius is
+  also 6–6 by sign and wildly asymmetric by magnitude: where predators raise it
+  they raise it +1.6 to +3.3 px, where they lower it they lower it by under
+  1.1. Every one of twelve ponds *with* hunters ends above **6.469 px** average
+  body radius; without them, four of twelve settle below 5.5 and one at
+  **3.893**, barely above the config's minimum. Predation does not push the pond
+  up — it stops it going down, and the bound is a fifth of the size range.
+- This is the third reading of the same numbers. v1.21 measured predation at a
+  tenth of the deaths and called the arms race smaller than it looked; v1.63
+  found three quarters of a pond past the refuge and called it finished. It is
+  neither: it is a constraint that binds at the bottom of the range and is
+  invisible at the top.
+
+### Changed
+
+- `docs/SCIENCE.md` gains **The refuge, and what predation actually decides**,
+  with the twelve-seed control table and both reproduction scripts.
+- The README's readouts table gains the row, stating the control rather than the
+  headline.
+- `src/levers.js` is unchanged and now has a written-down blind spot: it moves
+  every constant individually, and what a *pair* of them decides is outside its
+  vocabulary. The refuge is the first known instance.
+
 ## [1.63.0] — 2026-08-07
 
 v1.56 made bodies solid and split every overlap exactly down the middle, then

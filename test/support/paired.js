@@ -30,9 +30,9 @@
 //   5. **The books**, added in v1.59. This was three hand-picked counters —
 //      `births`, `deaths`, `kills` — carried over because ten of the twelve
 //      tests had been checking them and no fingerprint covered them. Three of
-//      fifty-one: `world.stats` has forty-three own properties and
+//      fifty-two: `world.stats` has forty-four own properties and
 //      `world.energy` eight, and a feature that was off and wrote to any of the
-//      other forty-eight passed every channel here. It is the same shape as (4),
+//      other forty-nine passed every channel here. It is the same shape as (4),
 //      one output over — a counter is not a place, so moving one moves no
 //      picture of the pond.
 //

@@ -35,6 +35,7 @@
 // the same largest-remainder rounding the mortality caption uses, so a listener
 // and a reader are never told two different totals.
 import { wholePercents } from "./stats.js";
+import { refugeRadius } from "./refuge.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -118,6 +119,15 @@ export function describePond(world, config, camera = null) {
         carn === 0
           ? "None of them hunt."
           : `${count(carn, "of them hunts", "of them hunt")}, at ${percent(carn / pop)} of the pond.`
+      );
+      // And who is out of reach. The refuge is the one fact about predation
+      // here that no picture can carry: a body at 7.3 px looks exactly like a
+      // body at 7.2, and one of them cannot be eaten by anything this world is
+      // able to grow. Stated with its threshold, because the number is a
+      // quotient of two config constants rather than a rule anybody wrote.
+      out.push(
+        `${percent(s.refugeShare)} of them have grown past ${refugeRadius(config).toFixed(1)} ` +
+          "pixels, the size above which nothing here can eat them."
       );
     }
     out.push(`The deepest lineage has reached generation ${s.currentMaxGeneration}.`);

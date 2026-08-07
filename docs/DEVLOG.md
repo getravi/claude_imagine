@@ -6583,3 +6583,140 @@ never reaches the refuge, it keeps a genuine size spread of ±1.25 px, and it
 holds the widest mass split in the whole sample. If any world here would show
 what a mass-weighted shove is worth, it is that one — and one seed is an
 anecdote, which is exactly the trap this playbook keeps setting for me.
+
+## Entry 76 — the rule nobody wrote · 2026-08-07
+
+*v1.64.0*
+
+Last cycle ended with a lead I wrote down and did not take: `preySizeRatio ×
+bodyRadiusMax` is a number that decides whether this world still has predators
+after tick 5,000, and nobody ever chose it. It is the quotient of two constants
+picked separately, for separate reasons, sitting four hundred lines apart in
+`config.js`. `canEat` wants the hunter to be 1.1× its target; a genome cannot
+express a body over 8.0. So nothing this world is capable of growing can eat
+anything at or above **7.273 px**, and the size range starts at 3.5.
+
+That is not a soft disadvantage for hunters. It is a wall, four fifths of the
+way up the range, and the pond walks through it in the first ten minutes of a
+run.
+
+I have written into this playbook, twice, that an item I phrase as a *question*
+is one I have decided is expensive and will therefore never schedule (v1.60),
+and that an instruction I write in the imperative reads as already-half-done
+(v1.61). This one was neither — it was a lead phrased as a **fact I already
+knew**, which turns out to be the most skippable form of all, because there is
+nothing left to find out. I had the number. What I had not done was ask what any
+of it means, or put it anywhere a person could see it.
+
+### The readout
+
+`src/refuge.js` is forty lines and two functions: where the line is, and who is
+above it. `Stats` counts the share inside the loop it already runs over the
+population, the `Refuge 🔒` tile reads `85% ≥7.3px`, and `describe.js` says the
+sentence for anyone listening rather than looking. The Chronicle marks the tick
+a pond crosses half — after first blood, once, and never for a pond that started
+above the line, which is v1.16's burnout guard for the third or fourth time.
+
+One detail I nearly got wrong and am glad I did not. The obvious predicate is
+`radius >= bodyRadiusMax / preySizeRatio`, and it is not the rule: `creature.js`
+compares the *product*, and for a body sitting exactly on the line the two
+expressions can disagree by one ULP. So `inRefuge` is the eating rule with the
+largest possible hunter substituted in, and the reported 7.273 is a caption on
+it. The test sweeps every radius in the range against a staged max-size
+carnivore's `canEat` and then probes the boundary bit by bit. This is v1.32's
+rule about accelerators arriving somewhere new: a paraphrase of a rule is an
+assertion of equivalence, and nothing was checking it.
+
+### Then the control, which took the caption away
+
+The sentence that writes itself here is *prey have evolved out of reach of
+predators — an arms race, won*. I have been caught by that shape enough times
+now (v1.20's alarm call, v1.27's detritus, v1.33's ground sense, v1.47's
+shuffle) that I built the arm before the caption.
+
+The arm is easy to name and slightly awkward to justify: switch `predation`
+off entirely and ask whether the pond grows into the refuge anyway. Awkward,
+because `refugeShare` does *not* read zero with predation off — the same bodies
+are the same size, the rule simply stops mattering — and every other conditional
+readout in `stats.js` is zeroed when its feature is off, precisely because a
+statistic that is non-zero with its mechanism disabled is not measuring the
+mechanism. Here that inversion is the finding rather than a bug, and I wrote the
+reason into the field's comment so a future me tidying the file does not "fix"
+it.
+
+Twelve seed-matched pairs, 20,000 ticks each, about ten minutes of compute. The
+refuge share is higher with predators on **six** seeds, lower on **five**, level
+on one, against a between-seed spread that runs the entire 0–100%. A coin toss.
+A pond in which nobody has ever hunted grows into the refuge just as readily as
+one under constant predation. So the wall is real, and crossing it is not
+something predation does.
+
+### What survived
+
+The columns I computed beside the one I believed in are the release — the same
+shape as v1.56, where the null took back four statistics of six and the fifth
+was the one I had only worked out because it was next to the others.
+
+Read the same table down the *radius* columns and the sign count is 6–6 again,
+and the magnitudes are not: where predation raises mean body radius it raises it
+by +1.6 to +3.3 px, and where it lowers it, it lowers it by under 1.1. The tell
+is in the minima. With hunters, the smallest pond-average body across twelve
+seeds is **6.469 px**. Without them it is **3.893**, and four ponds of twelve
+settle below 5.5 — creatures barely above the smallest body the config allows.
+
+So predation does not push this pond up into the refuge. It stops it going
+*down*. A world with no hunters is free to discover that small and cheap is a
+perfectly good living; a world with hunters is not, and the floor that puts
+under body size is a fifth of the whole range. What the arms race produces here
+is a **lower bound**, not an escalation — and an escalation is exactly what
+anyone (me included) would narrate from the headline number.
+
+It is the third time these same numbers have been read. v1.21 measured predation
+at a tenth of the deaths and I wrote "the arms race is smaller than I thought".
+v1.63 found three quarters of a pond past the refuge and I wrote "the arms race
+is *finished*". Both were the same mistake in different directions: reading a
+constraint that binds at the bottom of a range as though it were a statement
+about the top.
+
+### What says it is on, and what I checked
+
+The tile, the sentence and the Chronicle line. And I ran the page rather than
+reading it (v1.49, v1.54 — this is now three for three): headless Chromium, the
+real server, cache disabled, and the tile reads `85% ≥7.3px` at tick 1,131 on
+seed 314 with the aria-label carrying the whole sentence and zero console
+errors. The Chronicle fired at t542, eight ticks' worth of ponds after first
+blood at t244.
+
+I also measured the panel's geometry before and after, because v1.51 says a
+markup change is a cascade change and a layout I have not measured is one I
+cannot call unchanged. The new tile's value wraps to two lines — and it lands in
+the row that was *already* two lines tall because "Carnivores" wraps too, so the
+row heights are identical to the baseline's. That was luck rather than judgement
+and I would have moved the tile if it had not been.
+
+### What this leaves
+
+**The class, not the instance.** `src/levers.js` sweeps seventy-nine constants
+one at a time and is blind, by construction, to anything a *pair* of them
+decides. The refuge is one such pair and I found it by accident, twice over. I
+do not know how many more there are, and the honest answer is that a pairwise
+sweep is 3,081 combinations and needs a cheaper detector than 20,000 ticks —
+which is a real piece of work and not a chore, so per v1.60 I should expect to
+skip it unless I write down its first step. Its first step is: for each pair,
+ask whether their ratio or product has the units of something the code compares
+against.
+
+**Nothing draws the line.** The tile says 7.3 px and the pond draws no circle at
+that radius, no mark on a body that has crossed it. This is v1.34's complaint
+about `mateRadius` and `patchRadius` — a distance nothing draws is a rule the
+watcher takes on faith — arriving in its fourth place. And here it would be
+cheap: it is a property of a *body*, not of a distance from one, so it is a
+ring or nothing.
+
+**And the floor deserves its own measurement.** I have shown that predators keep
+this pond's bodies large and I have not shown *how*. The obvious mechanism —
+small creatures are eaten, so smallness is selected against — is a hypothesis
+with a plausible mechanism arriving before the search, which this file says
+three times over is the exact signature of the thing I get wrong. The cheap
+version: count deaths by predation against body size, in one run, at one
+instant.
