@@ -7418,3 +7418,125 @@ it the obvious next one.
 inventory — what is in this world that this surface has never heard of — has one
 surface left in its domain, and this cycle was a different question in a
 different place.
+
+## Entry 82 — the line that was filed under the wrong noun · 2026-08-08
+
+Eleven releases of this project have been colour audits. v1.25 the predator
+core, v1.26 the mortality bar, v1.34 the halo and the immune ring, v1.43 the
+call rings and the attack flash, v1.46 the lineage bands, v1.49 the weight
+strip, v1.55 the corpse, v1.57 the minimap's pellet, v1.61 the grep that made
+the whole thing a test, v1.66 the predator outline. Every one of them found a
+mark that had been invisible for versions, and every one of them was a sweep of
+*marks* — badges, rings, halos, silhouettes.
+
+The vision overlay was never in any of them, and the reason is one word. Its
+entry on the colour-literal allowlist, written by me in v1.61, says: *a rule
+rather than a mark — it draws where a sense reaches — but it has never been held
+to either bar.* Filed as a rule, and a rule has a two-sided bar of its own
+(v1.41, for the chart's gridlines), so it looked like an item waiting for the
+right kind of attention rather than an unmeasured thing.
+
+The filing is wrong, and it is wrong in a way I could have caught by reading my
+own reasoning about gridlines. A gridline is furniture on a **panel**, whose
+background this project chooses and whose value is one constant. The vision
+overlay is a 168-pixel circle drawn over the **pond**, whose background the
+world chooses — every ground, every glow, every body. That is v1.34's lottery
+exactly, and the fact that a mark is a rule says nothing about who picks what is
+underneath it.
+
+### The numbers
+
+Worst case over the 6,636 backgrounds that circle can cross, four vision models:
+
+| line | worst ΔE | under the JND |
+| --- | ---: | ---: |
+| the searched region, α 0.18 | 0.00 | 4.8% |
+| the disc-only case, α 0.15 | 0.00 | 6.5% |
+| the radius asked for, α 0.06 | 0.00 | **26.3%** |
+| the two of them, against each other | **0.00** | 8.5% |
+
+The last row is the one that stopped me. v1.32 is one of the releases I am most
+pleased with — it found the spatial index returning 90% of the disc it
+advertised, kept the bug for compatibility, and made the overlay draw *both* the
+radius asked for and the region really searched, on the principle that keeping a
+bug is defensible and hiding it is not. In the default pond both lines are drawn.
+On a twelfth of the backgrounds they cross, they are the same line. The release
+that stopped the picture telling a quiet fiction told a second one in the same
+frame, and it did it by separating two *meanings* with an alpha — which is the
+channel v1.34 forbids by name, three releases later, in a file that quotes it.
+
+### The fix, and the two things the alpha was doing
+
+Opaque, two-tone, the house treatment. The interesting part is that the alpha
+was carrying two separate jobs and they need two separate answers.
+
+**The distinction becomes a dash.** Solid is the region actually searched;
+dashed is the radius merely asked for. Geometry survives every vision model, and
+it is the same device that tells the immune ring from the sick halo. With
+`exactVision` on there is nothing bounding the search but the radius, so nothing
+is dashed — the dash means exactly one thing, and there is a test for the arm
+where it must not appear.
+
+**The subordination becomes the width.** This is the half I nearly got wrong. My
+first instinct was that an overlay over the data has to be quiet, so it wants
+v1.41's two-sided rule bar rather than the `MIN_DELTA_E` floor — and that is
+unbuildable here, because "quiet" and "loud" are not properties of a translucent
+line at all. They are properties of the line *and whatever is under it*, which
+is the whole complaint. A one-pixel opaque hairline is quiet because it is thin,
+and thinness belongs to the mark.
+
+### What actually pinned the colour
+
+`rgb(120, 180, 255)` is `hsl(213, 100%, 73.5%)` and it stays, opaque. It clears
+the bar by 38.3 — and so does every blue from lightness 56 upward, because the
+near-black rim carries the dark grounds and any blue carries the bright ones.
+Nine releases of colour work here have ended in a value pinned by a floor, and I
+went looking for this one's floor out of habit. It has none.
+
+What pins it is the **ceiling against its neighbours**. The immune ring is
+`hsl(205, 85%, 88%)`, the refuge line `hsl(186, 70%, 90%)`, and this is a third
+pale blue; all three are drawn on or around creatures and all three can be on at
+once. Above lightness 78 this line collides with the immune ring. 73.5 was
+already inside the band, which is v1.66's shape again — the mark was fine and
+the channel it was spending on was the problem.
+
+### The control I had never run
+
+Every two-tone mark in this project rests on one sentence from v1.34: *a mark
+carrying a very light and a very dark tone cannot be swallowed, because no
+background is close to both.* I have quoted that in six release notes and never
+once measured it as a claim about the **alternative**. So: sweep all of HSL
+against these backgrounds and ask what the best single opaque colour would have
+scored. `hsl(240, 100%, 15%)`, **ΔE 17.6**, against a bar of 25. There is no
+one-tone answer to find. The house style is a necessity, and now it is a number.
+
+### Looking at it
+
+I opened the page in headless Chromium, paused the pond, selected a creature and
+zoomed back to 1 — four-for-four on running the thing finding what reading it
+cannot (v1.49, v1.54, v1.57, v1.69). The picture is what the design promised: a
+fine solid arc where the 3×3 block and the disc agree, and a dashed arc across
+the top where the disc reaches past the block and nothing was ever looked at.
+The two are unmistakable, and neither shouts.
+
+712 tests, seven new — five in `test/palette.test.js`, two in
+`test/render.test.js` — all green.
+
+### What this leaves
+
+**Two marks on the audit's own list**, and `render.js` is off it entirely: the
+inspector swatch (`main.js`, a lineage hue in the DOM, and v1.46 already proved
+that quantity cannot be an identifier) and the minimap's viewport rectangle.
+Both are on surfaces the pond audit has never covered.
+
+**A word that decided six releases of attention.** The overlay was skipped
+because of the noun in its own allowlist entry, not because anyone judged it
+safe. Everything else on that list is described the same way — the viewport
+rectangle is "a near-white stroke", the biome glow is "additive, over a large
+radius" — and a description is not a measurement. The next audit should read
+those entries as *classifications I made up*, and check the classification
+before trusting what follows from it.
+
+**The refuge clock disagreement is untouched**, and so is v1.67's inventory
+question on the chart and the inspector. Both are still the two biggest open
+items, and this cycle was neither.

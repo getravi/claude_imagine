@@ -4905,6 +4905,134 @@ length; the daylight column is `gaps.filter((g) => g >= 1).length / gaps.length`
 and 1 px is the right threshold because at zoom 1 the camera is the exact
 identity, so a world pixel is a CSS pixel.
 
+## The last translucent mark, and the filing that hid it (v1.70)
+
+Since v1.32 the **Show vision** overlay has drawn where a creature's senses
+reach, in three strengths of one pale blue: `rgba(120, 180, 255, α)` at 0.15
+when the radius is the whole story, and at 0.06 and 0.18 when it is not — the
+faint one the radius a sense *asks for*, the strong one the region the spatial
+index really searched. That pair is the entire content of v1.32, which found the
+grid returning 90% of the disc it advertised and decided that a bug you keep for
+compatibility is defensible but a picture that hides it is not.
+
+Eleven releases of colour work went past it. Every one of them was a sweep of
+*marks* — badges, rings, halos, outlines — and this was filed as a **rule**, a
+line saying where a radius ends. The filing is what hid it, and the filing is
+wrong: a gridline is furniture on a panel whose background this project chooses,
+and this is a 168-pixel circle over the pond, whose background the world
+chooses. That is v1.34's lottery, and the numbers are the worst recorded here.
+
+### Three strengths, and none of them survives the pond
+
+Over 6,636 backgrounds — the grounds rock is audited against (season, terrain,
+biomes, enriched ground, the contagious zone), the glow-lit water either
+epidemiological mark sits on, and every opaque body this pond can paint — under
+all four vision models:
+
+| line | worst ΔE | share under the JND (2.3) |
+| --- | ---: | ---: |
+| the searched region, α 0.18 | **0.00** | 4.8% |
+| the disc-only case, α 0.15 | **0.00** | 6.5% |
+| the radius asked for, α 0.06 | **0.00** | 26.3% |
+| **the two of them, against each other** | **0.00** | 8.5% |
+
+The last row is the one that matters. In the default pond both lines are drawn —
+`exactVision` is off, so the disc really is only an aspiration — and on a
+twelfth of the backgrounds they cross, the correction and the thing it corrects
+are the same line. The release that stopped this overlay telling a quiet fiction
+told a second one in the same frame, and it did it by separating two *meanings*
+with an alpha, which is the channel v1.34 forbids by name.
+
+### The fix, and what it costs
+
+Opaque, two-tone, the house treatment: `rgb(120, 180, 255)` over a near-black
+rim. The alpha was doing two jobs and both move to something a background cannot
+take back.
+
+- **The distinction becomes a dash.** The region actually searched is solid; the
+  radius merely asked for is dashed. Geometry survives every vision model — the
+  same device that tells the immune ring from the sick halo (v1.34).
+- **The subordination becomes the width.** A one-pixel hairline is quiet because
+  it is thin, and thinness is a property of the mark. Translucency is a property
+  of the mark *and whatever is under it*, which is the whole bug.
+
+### The colour was never wrong; the thing that pins it is not the floor
+
+`rgb(120, 180, 255)` is `hsl(213, 100%, 73.5%)`. Opaque over the rim it scores
+**38.3** worst-case against a bar of 25 — but so does every blue from lightness
+56 upward, because the rim carries the dark grounds and any blue carries the
+bright ones. Nine releases of colour work here have ended in a value pinned by a
+floor. This one is pinned by its **neighbours**:
+
+| against | ΔE | fails above lightness |
+| --- | ---: | ---: |
+| the immune ring `hsl(205, 85%, 88%)` | 34.8 | 78 |
+| the refuge line `hsl(186, 70%, 90%)` | 45.3 | 83 |
+
+All three are pale blues, all three are drawn on or around creatures, and all
+three can be on screen at once. 73.5 was already inside the band — which is the
+same shape as v1.66, where the predator outline's *hue* was fine and the channel
+it spent its contrast on was empty.
+
+### The control: no single tone would have done
+
+Every two-tone mark in this project rests on one sentence from v1.34 — *a mark
+carrying a very light and a very dark tone cannot be swallowed, because no
+background is close to both* — and that sentence has never been measured as a
+claim about the alternative. Sweeping all of HSL against these 6,636
+backgrounds, the best **single** opaque colour that exists anywhere is
+`hsl(240, 100%, 15%)` at **ΔE 17.6**, against a bar of 25. There is no one-tone
+answer to find; the pair is a necessity and not a house style.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  import * as P from "./src/palette.js";
+  import { independentAny } from "./src/contagion.js";
+  const veil = (p) => ({ r: Math.round(6 + 4 * p), g: Math.round(10 + 4 * p), b: Math.round(20 - 8 * p) });
+  const terr = (bg, r, c) => P.blendOver(bg, { r: 24 + 84 * r + (c ? 26 : 0), g: 42 + 76 * r + (c ? 34 : 0),
+    b: 54 + 84 * r + (c ? 40 : 0) }, c ? Math.min(0.34, 0.13 + 0.13 * r) : 0.03 + 0.13 * r);
+  const G = [];
+  for (const p of [0, 1]) { const v = veil(p);
+    for (const r of [0, 0.5, 1]) for (const c of [false, true]) {
+      const g = terr(v, r, c);
+      for (const b of [g, P.addOver(g, { r: 30, g: 78, b: 66 }, 0.16)]) {
+        const t = P.detritusTint(1), h = P.hazardTint();
+        G.push(b, P.blendOver(b, t, t.a), P.blendOver(b, h, independentAny(h.a, P.HAZARD_AUDIT_SOURCES)));
+      } }
+    G.push(v); }
+  for (const t of Object.values(P.barrierRockTones())) G.push(t);
+  const B = [...G];
+  for (const g of G) for (const h of [0, 60, 120, 200, 300]) for (const k of [0.1, 0.3, 0.6, 0.9])
+    B.push(P.addOver(g, P.hslToRgb(h, 80, 60), k));
+  for (let h = 0; h < 360; h += 5) for (const e of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) for (const s of [-1, -0.5, 0, 0.5, 1]) {
+    const c = P.hslToRgb(h, 60 + s * 25, 45 + e * 45); B.push(c, P.addOver(c, c, 0.5)); }
+  const old = { r: 120, g: 180, b: 255 }, t = P.visionReachTones();
+  const w = { 0.06: Infinity, 0.15: Infinity, 0.18: Infinity, pair: Infinity, now: Infinity };
+  let jnd = 0;
+  for (const bg of B) for (const v of P.VISION_MODELS) {
+    for (const a of [0.06, 0.15, 0.18]) w[a] = Math.min(w[a], P.deltaE(P.blendOver(bg, old, a), bg, v));
+    const d = P.deltaE(P.blendOver(bg, old, 0.06), bg, v); if (d < 2.3) jnd++;
+    w.pair = Math.min(w.pair, P.deltaE(P.blendOver(bg, old, 0.06), P.blendOver(bg, old, 0.18), v));
+    w.now = Math.min(w.now, P.markContrast([t.ring, t.rim], bg, v));
+  }
+  console.log(`backgrounds ${B.length}`, Object.fromEntries(Object.entries(w).map(([k, x]) => [k, +x.toFixed(2)])));
+  console.log("the faint line under the JND on", (100 * jnd / (B.length * 4)).toFixed(1), "% of them");
+  let best = { d: -1 };
+  for (let h = 0; h < 360; h += 10) for (let s = 0; s <= 100; s += 20) for (let l = 5; l <= 95; l += 5) {
+    const c = P.hslToRgb(h, s, l); let d = Infinity;
+    for (const bg of B) { for (const v of P.VISION_MODELS) { d = Math.min(d, P.deltaE(c, bg, v)); if (d <= best.d) break; } if (d <= best.d) break; }
+    if (d > best.d) best = { d, h, s, l }; }
+  console.log("best single opaque tone anywhere:", JSON.stringify(best));'
+```
+
+About a minute, all of it in the last sweep. Every number above ships as a test:
+`test/palette.test.js` holds the new pair to the bar, holds all three old
+strengths *and their difference* to their collisions, and asserts the overlay
+stays 25 away from the two other blue marks — so restoring the alpha, or
+drifting the lightness up into the immune ring, turns the suite red.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

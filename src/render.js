@@ -21,6 +21,7 @@ import {
   corpseMark,
   foodMote,
   refugeRing,
+  visionReach,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
@@ -696,22 +697,38 @@ export class Renderer {
         parts.push(() => visibilityPath(ctx, p.x, p.y, radii));
       }
 
-      if (parts.length === 1) {
-        ctx.strokeStyle = "rgba(120, 180, 255, 0.15)";
-        parts[0]();
+      // Both lines are the same two opaque tones (palette.js has the audit:
+      // three translucent strengths of one blue, the faintest of them under the
+      // just-noticeable difference on a quarter of the pond, and the pair of
+      // them ΔE 0.00 apart at worst). What separates a radius that was merely
+      // asked for from the region actually searched is the *dash*, not the
+      // alpha — the geometry v1.34 spends when colour has nowhere to live.
+      const mark = visionReach();
+      const stroke = (path, dashed) => {
+        ctx.setLineDash(dashed ? mark.dash.map((d) => d * hair) : []);
+        ctx.strokeStyle = mark.rim;
+        ctx.lineWidth = (mark.width + 1.1) * hair;
+        path();
         ctx.stroke();
+        ctx.strokeStyle = mark.ring;
+        ctx.lineWidth = mark.width * hair;
+        path();
+        ctx.stroke();
+      };
+
+      if (parts.length === 1) {
+        // Nothing is bounding the search but the radius, so the radius *is* the
+        // region searched: one solid line, and no second one to tell it from.
+        stroke(parts[0], false);
       } else {
         // Drawing the disc alone here would be the thirty-one versions of quiet
         // fiction this overlay told before v1.32, so draw both: the intended
-        // radius faintly, and the region actually searched at full strength.
-        // That region is the intersection of every part, and its boundary is
-        // each part's own outline clipped by all the others — clips compose,
-        // because `ctx.clip()` intersects with whatever is already clipped.
-        ctx.strokeStyle = "rgba(120, 180, 255, 0.06)";
-        circlePath(ctx, p.x, p.y, r);
-        ctx.stroke();
+        // radius dashed, and the region actually searched solid. That region is
+        // the intersection of every part, and its boundary is each part's own
+        // outline clipped by all the others — clips compose, because
+        // `ctx.clip()` intersects with whatever is already clipped.
+        stroke(() => circlePath(ctx, p.x, p.y, r), true);
 
-        ctx.strokeStyle = "rgba(120, 180, 255, 0.18)";
         for (let i = 0; i < parts.length; i++) {
           ctx.save();
           for (let j = 0; j < parts.length; j++) {
@@ -719,11 +736,11 @@ export class Renderer {
             parts[j]();
             ctx.clip();
           }
-          parts[i]();
-          ctx.stroke();
+          stroke(parts[i], false);
           ctx.restore();
         }
       }
+      ctx.setLineDash([]);
     }
     ctx.restore();
   }

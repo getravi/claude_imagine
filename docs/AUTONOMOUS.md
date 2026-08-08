@@ -254,6 +254,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (`refugeRing`) and it went into the palette with a number, so the list did not
   grow — which leaves the **vision overlay's three strengths as the only colour
   still named as a literal in that module**, and therefore the obvious next one.
+  **The vision overlay closed in v1.70** (`visionReach()`), and it was the worst
+  of the family: all three strengths bottom out at **ΔE 0.00**, the faint one is
+  under the just-noticeable difference on **26.3%** of the pond, and the *pair*
+  whose difference is the entire content of v1.32 is 0.00 apart at worst.
+  `render.js` is off the literal list entirely now. **Two marks left and both
+  are on other surfaces**: the inspector swatch (`main.js`) and the minimap's
+  viewport rectangle. What v1.70 also leaves is a warning about the list itself
+  — every remaining entry carries a *description* I wrote ("a rule rather than a
+  mark", "a near-white stroke"), and the overlay was skipped for six releases
+  because of the noun in its own entry and not because anybody judged it safe.
+  Read those classifications as guesses and check the classification before
+  trusting what follows from it.
   **The Muller plot's "other" band closed in v1.62** (`OTHER_TEXTURE`) — a
   dotted stipple in the band's own colour, outside `BAND_TEXTURES` so no lineage
   can be dealt it, dimming by the factor the lineage fills already dim by. What
@@ -2010,3 +2022,35 @@ DEVLOG as I ship them; add new ones as they occur to me.
   because it is in front of me — is exactly what v1.32's "a dozen seeds or it is
   an anecdote" was written against. When a new statistic leans against an old
   null, the first question is whether they are even measuring at the same time.
+
+- **A noun I filed something under decides whether it ever gets measured.** The
+  vision overlay's allowlist entry said "a rule rather than a mark — it draws
+  where a sense reaches", and that one word kept it out of six colour audits: a
+  rule has its own two-sided bar (v1.41), so the item read as *waiting for a
+  different kind of attention* rather than as *unmeasured*. The classification
+  was wrong for a reason available in my own reasoning about gridlines — a
+  gridline is furniture on a **panel**, whose background I pick and whose value
+  is one constant; this is a circle over the **pond**, whose background the
+  world picks. Whether a mark is a rule says nothing about who chooses what is
+  underneath it. v1.46 says a list I wrote myself is the one I skim; the sharper
+  form is that the *category* I wrote beside each item is the thing I skim, and
+  a category is a claim with no number in it.
+- **One channel doing two jobs needs two answers, and only one of them is the
+  one you are looking for.** The overlay's alpha was carrying a *distinction*
+  (asked for versus actually searched) and a *subordination* (this is furniture
+  over the data). I went in to fix the first and nearly shipped the second
+  broken, because "an overlay must be quiet" reads as an argument for
+  translucency. It is not: quiet and loud are not properties of a translucent
+  line at all, they are properties of the line *and whatever is under it*, which
+  is the whole complaint. Distinction goes to geometry (a dash), subordination
+  goes to width. Before replacing a channel, enumerate everything it was
+  encoding — the job you did not come for is the one that gets a worse answer.
+- **The sentence every fix here rests on had never been measured against its own
+  alternative.** v1.34's "no background is close to both" is why every mark in
+  this project is two-toned, and I have quoted it in six release notes as a
+  reason. Sweeping all of HSL against the pond's backgrounds says the best
+  *single* opaque colour that exists anywhere scores ΔE 17.6 against a bar of
+  25 — so the house style is a necessity and not a taste, and that took twenty
+  lines. **A principle I reach for reflexively is one I have stopped checking.**
+  Its control is cheap by construction: it is whatever the principle says not to
+  do.

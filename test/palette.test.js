@@ -29,6 +29,8 @@ import {
   predatorOutlineTones,
   refugeRing,
   refugeRingTones,
+  visionReach,
+  visionReachTones,
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
@@ -437,6 +439,121 @@ test("the refuge line carries no degree — a body is inside it or it is not", (
   // cheapest possible way to keep it that way.
   assert.equal(refugeRing.length, 0, "the refuge line must not take a parameter");
   assert.equal(refugeRingTones.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// The vision overlay (v1.32, audited in v1.70). The last translucent single
+// tone `render.js` drew, and the one the sweeps kept walking past because it
+// was filed as a *rule* — a line saying where a radius ends — rather than as a
+// mark. A gridline is furniture on a panel whose background this project picks;
+// this is a 168-pixel circle over the pond, whose background the world picks,
+// which is v1.34's lottery. Its domain is therefore everything: the grounds
+// rock is audited against, the glow-lit water either epidemiological mark sits
+// on, and the opaque bodies it crosses.
+
+/** Every ground, glow and body a `visionRadius` circle can be drawn over. */
+function visionBackgrounds() {
+  return [...rockBackgrounds(), ...ringBackgrounds(), ...bodyBackgrounds()];
+}
+
+/** The just-noticeable difference the `deltaE` calibration is written against. */
+const JND = 2.3;
+
+test("the vision overlay reads on every ground, glow and body its circle crosses", () => {
+  const t = visionReachTones();
+  let worst = { d: Infinity };
+  for (const bg of visionBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast([t.ring, t.rim], bg.rgb, vision);
+      if (d < worst.d) worst = { d, where: bg.name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `the vision overlay scores only ${worst.d.toFixed(1)} on ${worst.where} (${worst.vision})`
+  );
+});
+
+test("neither of its tones would have done on its own", () => {
+  // The reason every mark here is two-toned, as an assertion rather than as the
+  // sentence v1.34 wrote. The pair is not a house style: over this pond's
+  // backgrounds the bright tone alone and the dark tone alone each vanish
+  // somewhere, and it is not the same somewhere — the bright one dies on a
+  // well-fed body, the dark one on the water. (Swept over all of HSL, the best
+  // single opaque colour that exists anywhere scores 17.6 against a bar of 25;
+  // SCIENCE.md has that sweep. This is the cheap local form of it.)
+  const t = visionReachTones();
+  const worstAlone = { ring: Infinity, rim: Infinity };
+  for (const bg of visionBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      for (const tone of ["ring", "rim"]) {
+        worstAlone[tone] = Math.min(worstAlone[tone], deltaE(t[tone], bg.rgb, vision));
+      }
+    }
+  }
+  assert.ok(worstAlone.ring < MIN_DELTA_E, `the bright tone alone scores ${worstAlone.ring.toFixed(1)}`);
+  assert.ok(worstAlone.rim < MIN_DELTA_E, `the dark tone alone scores ${worstAlone.rim.toFixed(1)}`);
+});
+
+test("the three translucent strengths it replaces were a lottery — the failure, pinned", () => {
+  // `rgba(120, 180, 255, α)` at 0.06, 0.15 and 0.18, source-over, from v1.32 to
+  // v1.70. Without these assertions the suite stays green if someone puts the
+  // alpha back, and the reason it was wrong is nowhere in the code.
+  const line = { r: 120, g: 180, b: 255 };
+  const bgs = visionBackgrounds();
+  const worst = { 0.06: Infinity, 0.15: Infinity, 0.18: Infinity };
+  let pair = Infinity;
+  for (const bg of bgs) {
+    for (const vision of VISION_MODELS) {
+      for (const alpha of [0.06, 0.15, 0.18]) {
+        worst[alpha] = Math.min(worst[alpha], deltaE(blendOver(bg.rgb, line, alpha), bg.rgb, vision));
+      }
+      // The pair v1.32 added so the picture would stop being a quiet fiction:
+      // the radius asked for, under the region actually searched. Both are
+      // drawn in the same frame in the default pond, and their *difference* is
+      // the entire content of that release.
+      pair = Math.min(pair, deltaE(blendOver(bg.rgb, line, 0.06), blendOver(bg.rgb, line, 0.18), vision));
+    }
+  }
+  for (const alpha of [0.06, 0.15, 0.18]) {
+    assert.ok(worst[alpha] < JND, `the old overlay at ${alpha} scored ${worst[alpha].toFixed(2)} at worst`);
+  }
+  assert.ok(pair < JND, `the old pair differed by ${pair.toFixed(2)} at worst`);
+});
+
+test("the overlay is told apart from the other two blue marks this pond draws", () => {
+  // What actually pins this value. The floor does not: with a near-black rim
+  // under it, every blue from lightness 56 up clears 25 on every background, so
+  // the sweep is happy anywhere. The ceiling is the constraint — the immune
+  // ring and the refuge line are both pale blues, both drawn on creatures, and
+  // all three can be on screen at once. Above lightness 78 this line collides
+  // with the immune ring; the colour it has had since v1.32 sits at 73.5.
+  const t = visionReachTones();
+  for (const [name, other] of [["the immune ring", immuneRingTones().ring], ["the refuge line", refugeRingTones().ring]]) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(t.ring, other, vision);
+      assert.ok(d >= MIN_DELTA_E, `the vision overlay is ${d.toFixed(1)} from ${name} under ${vision}`);
+    }
+  }
+});
+
+test("the overlay spends geometry on its distinction, not opacity", () => {
+  // Two lines, one meaning "asked for" and one "actually looked at", and the
+  // thing that separates them must survive every vision model — so it is a
+  // dash, the same device that tells the immune ring from the sick halo. The
+  // subordination that the alpha used to buy is a *width* now: thinness is a
+  // property of the mark, translucency a property of the mark and whatever
+  // happens to be under it.
+  const m = visionReach();
+  assert.ok(!/rgba|hsla/.test(m.ring + m.rim), "both tones must be opaque");
+  assert.ok(Array.isArray(m.dash) && m.dash.length >= 2, "the aspiration line needs a dash pattern");
+  assert.ok(m.dash.every((d) => d > 0));
+  // A pitch fine enough to read as solid on a circle this size would spend the
+  // distinction it exists for: `visionRadius` is 168, so the circumference is
+  // over a thousand pixels.
+  assert.ok(m.dash[0] >= 4, "the dash reads as a solid line at this radius");
+  assert.ok(m.width > 0 && m.width <= 1.5, "the overlay stays a hairline");
+  assert.equal(visionReach.length, 0, "the overlay carries no degree");
 });
 
 test("the minimap badge clears the threshold against every lineage hue", () => {

@@ -39,6 +39,7 @@ import {
   corpseMark,
   CORPSE_FULL_MEAT,
   refugeRing,
+  visionReach,
 } from "../src/palette.js";
 
 /** A world with some history in it, so there is something to draw. */
@@ -456,6 +457,66 @@ test("the refuge line draws the palette's tones, in screen-pixel hairlines", () 
   const at4 = widths(4);
   assert.ok(at1.has(mark.width), `no line at the mark's own width: ${[...at1]}`);
   assert.ok(at4.has(mark.width / 4), "the hairline did not thin with the zoom");
+});
+
+test("the vision overlay says 'asked for' with a dash and 'looked at' with a solid line", () => {
+  // v1.32 put two lines in this overlay — the radius a sense asks for, and the
+  // region the index really searched — and separated them by opacity alone,
+  // which is the one channel v1.34 forbids and the one a background can take
+  // back. Measured, the pair was ΔE 0.00 apart at worst (palette.js has the
+  // audit). The distinction is a dash now, so this asserts the dash exists, is
+  // applied to exactly one of the two, and is cleared before anything else in
+  // the frame can inherit it.
+  const w = pond();
+  const mark = visionReach();
+  const ops = renderOps(w, null, (r) => {
+    r.showVision = true;
+    r.selected = w.creatures[0];
+  });
+  const drawn = new Set(styles(ops));
+  assert.ok(drawn.has(mark.ring), `the pale tone ${mark.ring} never reached the canvas`);
+  assert.ok(drawn.has(mark.rim), `the dark tone ${mark.rim} never reached the canvas`);
+
+  // The default pond runs the inexact index, so both lines are drawn: the dash
+  // is set once with a pattern and once back to nothing per solid stroke.
+  const dashes = opsNamed(ops, "setLineDash").map((o) => o.slice(2));
+  assert.ok(
+    dashes.some((d) => d.length > 0),
+    "nothing in the frame is dashed, so the two lines are told apart by nothing"
+  );
+  assert.deepEqual(dashes.filter((d) => d.length > 0)[0], mark.dash, "the dash is not the palette's");
+  assert.deepEqual(dashes.at(-1), [], "the frame left a dash set for whatever draws next");
+
+  // The pattern is a screen measurement like the width: at 4× the same dash
+  // covers a quarter of the world distance, so the picture is the same picture.
+  const at4 = opsNamed(
+    renderOps(w, null, (r) => {
+      r.showVision = true;
+      r.selected = w.creatures[0];
+      r.camera.zoom = 4;
+    }),
+    "setLineDash"
+  ).map((o) => o.slice(2));
+  assert.deepEqual(
+    at4.filter((d) => d.length > 0)[0],
+    mark.dash.map((d) => d / 4),
+    "the dash did not shrink with the zoom"
+  );
+});
+
+test("with nothing bounding the search, the overlay draws one solid line", () => {
+  // The other arm of the same rule, and the one that says what the dash means:
+  // when the radius *is* the region searched there is no aspiration to mark as
+  // unmet, so nothing is dashed. `exactVision` is the config that makes the
+  // disc honest, which is why it is the arm that has no dash in it.
+  const w = pond({ exactVision: true });
+  const ops = renderOps(w, null, (r) => {
+    r.showVision = true;
+    r.selected = w.creatures[0];
+  });
+  const dashed = opsNamed(ops, "setLineDash").filter((o) => o.length > 2);
+  assert.deepEqual(dashed, [], "an exact sense drew a line marked as merely asked for");
+  assert.ok(new Set(styles(ops)).has(visionReach().ring), "and it still drew the overlay");
 });
 
 test("drawing the refuge line changes nothing about the pond", () => {

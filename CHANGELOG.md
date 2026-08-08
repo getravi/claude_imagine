@@ -4,6 +4,62 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.70.0] — 2026-08-08
+
+The vision overlay has drawn where a sense reaches since v1.32, in three
+translucent strengths of one pale blue, and no colour audit has ever looked at
+it — because it was filed as a *rule* rather than as a mark. A gridline is
+furniture on a panel whose background this project picks; this is a 168-pixel
+circle over the pond, whose background the **world** picks. The filing was the
+whole bug, and the numbers underneath it are the worst recorded here.
+
+### Measured
+
+- **All three strengths bottom out at ΔE 0.00**, over the 6,636 grounds, glows
+  and bodies a `visionRadius` circle can cross, under four vision models. The
+  faint line — the radius a sense *asks for* — is under the just-noticeable
+  difference on **26.3%** of them. A quarter of the pond, invisible.
+- **And the pair cannot be told apart**: the aspiration line at α 0.06 and the
+  region actually searched at α 0.18 are **ΔE 0.00** apart at worst and under
+  the JND on **8.5%** of backgrounds. Both are drawn in the same frame in the
+  default pond, and their *difference* is the entire content of v1.32 — the
+  release that stopped this overlay telling a quiet fiction told a second one in
+  the same picture.
+- **No single tone would have done.** Swept over all of HSL against those
+  backgrounds, the best *single* opaque colour that exists anywhere scores
+  **17.6** against a bar of 25. v1.34's "no background is close to both" has
+  been the reason for every two-tone mark here and had never been measured as a
+  claim about the alternative.
+- **The colour itself was right, and what pins it is not the floor.**
+  `rgb(120, 180, 255)` is `hsl(213, 100%, 73.5%)`; opaque over a near-black rim
+  it clears the bar by **38.3** — and so does every blue from lightness 56 up,
+  because the rim carries the dark grounds. The constraint is the **ceiling
+  against its neighbours**: the immune ring (ΔE 34.8, colliding above lightness
+  78) and the refuge line (45.3, above 83), both pale blues drawn on creatures,
+  all three able to be on screen at once. 73.5 was already inside the band.
+
+### Changed
+
+- **`visionReach()`** (`src/palette.js`), replacing the last three colour
+  literals in `render.js`. Opaque, two-tone, and both jobs the alpha was doing
+  move to channels a background cannot take back: **the distinction becomes a
+  dash** (the region really searched is solid, the radius merely asked for is
+  dashed — the geometry v1.34 spends when colour has nowhere to live, and the
+  same device that tells the immune ring from the sick halo), and **the
+  subordination becomes the width** (a one-pixel hairline is quiet because it is
+  thin, which is a property of the mark; translucency is a property of the mark
+  *and whatever is under it*).
+- With `exactVision` on there is nothing bounding the search but the radius, so
+  the radius *is* the region searched and nothing is dashed. The dash means
+  exactly one thing: asked for, not looked at.
+
+### Fixed
+
+- `test/colourliterals.test.js` loses its three `render.js` entries — every
+  colour that module draws now comes from the palette with a number attached.
+  Two marks are left on that list: the inspector swatch and the minimap's
+  viewport rectangle, both outside `render.js`.
+
 ## [1.69.0] — 2026-08-08
 
 v1.64 found the refuge — the body size `bodyRadiusMax / preySizeRatio` puts

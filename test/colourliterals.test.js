@@ -73,13 +73,14 @@ const ALLOWED = [
   // is the second item this list has struck off, and like the first it was
   // hiding something: the opacity ramp it spent its contrast on encoded ΔE 1.7
   // over 94% of the frames it appeared in.)
-  {
-    file: "render.js",
-    literal: "rgba(120, 180, 255, 0.15)",
-    why: "the vision overlay at one radius (v1.32). A rule rather than a mark — it draws where a sense reaches — but it has never been held to either bar.",
-  },
-  { file: "render.js", literal: "rgba(120, 180, 255, 0.06)", why: "the same overlay's intended radius, drawn faintly under the region actually searched — the pair v1.32 added so the picture stops being a quiet fiction." },
-  { file: "render.js", literal: "rgba(120, 180, 255, 0.18)", why: "the same overlay's searched region at full strength: the third of the three, and the one a watcher is meant to read." },
+  // (The vision overlay's three strengths were here until v1.70. Their entries
+  // said the overlay is "a rule rather than a mark … never held to either bar",
+  // and the filing was the bug: a gridline's background is chosen by me, this
+  // one's is chosen by the world. Measured, the faintest of the three sat under
+  // the just-noticeable difference on 26.3% of the pond and the *pair* whose
+  // difference is the whole point of v1.32 was ΔE 0.00 apart at worst. They are
+  // one two-tone `visionReach()` now, told apart by a dash. Third item struck
+  // off this list, third one that was hiding something.)
 
   // ---- furniture: no distinction to carry, and nowhere for one to live ----
   {

@@ -367,6 +367,77 @@ export function refugeRingTones() {
 }
 
 /**
+ * The vision overlay: where a sense reaches, and where it *actually* looked
+ * (v1.32, audited here in v1.70).
+ *
+ * This is the last translucent single tone `render.js` drew, and it survived
+ * eleven releases of colour work because it was filed as a **rule** rather than
+ * a mark — a line saying where a radius ends, not a badge saying what a
+ * creature is — so neither the `MIN_DELTA_E` floor nor the two-sided rule bar
+ * was ever pointed at it. Filing decided the audit, and the filing was wrong:
+ * a gridline is furniture on a panel whose background *I* choose, and this is
+ * drawn over the pond, whose background the world chooses. That is v1.34's
+ * lottery, and the numbers are the worst this project has recorded:
+ *
+ *   - The searched region (`rgba(120, 180, 255, 0.18)`) bottoms out at
+ *     **ΔE 0.00** and is under the just-noticeable difference on **4.8%** of
+ *     the grounds, glows and bodies a 168-pixel circle crosses.
+ *   - The intended radius under it (the same blue at **0.06**) is under the JND
+ *     on **26.3%** of them — a quarter of the pond, invisible.
+ *   - And the two of them, which are drawn in one frame and whose *difference*
+ *     is the entire point of v1.32, are **ΔE 0.00** apart at worst and under
+ *     the JND on **8.5%** of backgrounds. The release that stopped this overlay
+ *     telling a quiet fiction told it in a second voice: on a twelfth of the
+ *     pond the correction and the thing it corrects are the same line.
+ *
+ * So the alpha goes, and with it both jobs it was doing. **The distinction
+ * moves to a dash** — the region really searched is solid, the radius merely
+ * asked for is dashed — which is the geometry v1.34 spends when colour has
+ * nowhere to live, and the same device that tells the immune ring from the sick
+ * halo. **Subordination moves to the width**: a one-pixel opaque hairline is
+ * quiet because it is thin, and thinness is a property of the mark, where
+ * translucency is a property of the mark *and its background*.
+ *
+ * The colour itself was never the bug. `rgb(120, 180, 255)` is
+ * `hsl(213, 100%, 73.5%)`, and opaque, over a near-black rim, it clears the bar
+ * by **38.3** on every one of the 6,636 backgrounds the overlay can cross. What
+ * pins the lightness is not that floor — the floor is satisfied at every
+ * lightness from 56 up, because the rim carries the dark grounds and any blue
+ * carries the bright ones — but the **ceiling against the two other blue marks
+ * this pond draws**: the immune ring (ΔE 34.8, and colliding above lightness
+ * 78) and the refuge ring (45.3, colliding above 83). Nine releases of colour
+ * work here have ended in a value pinned by a floor; this one is pinned by its
+ * neighbours, and 73.5 was already inside the band.
+ *
+ * The pair is not a stylistic choice. Sweeping every opaque tone in HSL against
+ * these backgrounds, the best *single* colour that exists — `hsl(240, 100%,
+ * 15%)` — scores **17.6** worst-case against a bar of 25. v1.34's "no
+ * background is close to both" has been the reason for every two-tone mark here
+ * and has never been measured as a claim about the alternative; over this
+ * pond's grounds there is no single tone that works, and that is why.
+ */
+export function visionReach() {
+  return {
+    ring: "rgb(120, 180, 255)",
+    rim: "hsl(232, 55%, 7%)",
+    // Screen pixels, divided back out of the zoom by `render.js`, like the
+    // selection ring this is drawn beside. The rim goes down at `width + 1.1`
+    // the way every two-tone ring here does.
+    width: 1,
+    // The pitch is read at the scale this is drawn at — a `visionRadius`
+    // circle is ~1,050 px around, so the immune ring's [2, 2.4] would read as a
+    // solid line at arm's length. Long enough to be a dash, short enough that a
+    // shadow's edge still lands on ink.
+    dash: [7, 5],
+  };
+}
+
+/** The vision overlay's two tones as RGB, for the audit. */
+export function visionReachTones() {
+  return { ring: { r: 120, g: 180, b: 255 }, rim: hslToRgb(232, 55, 7) };
+}
+
+/**
  * The same mark at minimap scale, where a creature is a single square of a few
  * pixels and there is no room for a rim drawn as a stroke.
  *
