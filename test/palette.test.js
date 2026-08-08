@@ -27,6 +27,8 @@ import {
   predatorMark,
   predatorOutline,
   predatorOutlineTones,
+  refugeRing,
+  refugeRingTones,
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
@@ -383,6 +385,58 @@ test("the outline carries no degree and no opacity, and shares the eye's dark", 
   assert.ok(toLab(t.rim)[0] < 20, "the outline needs a dark tone");
   assert.ok(toLab(t.edge)[0] > toLab(t.rim)[0] + 30, "and one far enough from it to be a second tone");
   assert.ok(o.width > 0);
+});
+
+// ---------------------------------------------------------------------------
+// The refuge line (v1.69). Audited with the predator outline's background set
+// rather than with `bodyBackgrounds()` alone, and for the same reason: this ring
+// is drawn *straddling* a body edge by construction — the median hunted body
+// sits 0.65–1.93 px inside its own refuge circle over a run — so part of every
+// ring lies on an opaque chevron and the rest on glow-lit water. Measuring it
+// against one of those is v1.25's mistake with a new subject.
+
+test("the refuge line reads on both sides of the edge it straddles", () => {
+  const t = refugeRingTones();
+  const { worst, where } = sweepOutlineBackgrounds((bg, vision) =>
+    markContrast([t.ring, t.rim], bg, vision)
+  );
+  assert.ok(
+    worst >= MIN_DELTA_E,
+    `worst refuge-line contrast ΔE ${worst.toFixed(1)} at ${where}, below ${MIN_DELTA_E}`
+  );
+});
+
+test("the refuge line is two opaque tones, and they do not share a hue", () => {
+  // The note v1.66 left on `predatorOutline`: a two-tone mark whose tones share
+  // a hue is separated in luminance alone, so a mid-luminance background of
+  // that hue defeats both halves at once. Held here as an assertion rather than
+  // as a comment, because this ring's whole job is to be seen over a background
+  // the world picks.
+  const m = refugeRing();
+  assert.ok(!/rgba|hsla/.test(m.ring + m.rim), "both tones must be opaque");
+  const t = refugeRingTones();
+  assert.ok(toLab(t.rim)[0] < 20, "the ring needs a dark tone");
+  assert.ok(toLab(t.ring)[0] > toLab(t.rim)[0] + 50, "and a very light one, far from it");
+  for (const vision of VISION_MODELS) {
+    // The single worst background a shared hue would hand it: the mid-luminance
+    // version of the dark tone's own hue.
+    const trap = hslToRgb(232, 55, 50);
+    assert.ok(
+      markContrast([t.ring, t.rim], trap, vision) >= MIN_DELTA_E,
+      `the pair collapses on its own hue at mid luminance under ${vision}`
+    );
+  }
+  assert.ok(m.width > 0);
+});
+
+test("the refuge line carries no degree — a body is inside it or it is not", () => {
+  // v1.25's rule, and the one the signal rings and the predator outline each
+  // broke in turn: fading a mark to express degree spends exactly the contrast
+  // the mark exists for. There is no degree to express here — the eating rule
+  // is a strict inequality — so the mark takes no argument at all, which is the
+  // cheapest possible way to keep it that way.
+  assert.equal(refugeRing.length, 0, "the refuge line must not take a parameter");
+  assert.equal(refugeRingTones.length, 0);
 });
 
 test("the minimap badge clears the threshold against every lineage hue", () => {

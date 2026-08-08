@@ -1596,6 +1596,15 @@ function wireControls() {
   $("toggle-vision").addEventListener("change", (e) => {
     renderer.showVision = e.target.checked;
   });
+  $("toggle-refuge").addEventListener("change", (e) => {
+    renderer.showRefuge = e.target.checked;
+    // The line is a fact about the eating rule, so with predation off there is
+    // nothing for it to be a line between and the renderer draws nothing. Say
+    // so once rather than leaving a ticked box with an empty pond under it.
+    if (e.target.checked && !config.predation) {
+      flash("The refuge line needs predation switched on — nothing hunts in this pond.");
+    }
+  });
   $("toggle-motion").addEventListener("change", (e) => {
     renderer.reducedMotion = e.target.checked;
   });

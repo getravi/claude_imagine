@@ -101,9 +101,16 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a *pair* decides; a pairwise sweep is 3,081 combinations and needs a detector
   cheaper than 20,000 ticks, and its first step is to ask, for each pair,
   whether their ratio or product has the units of something the code compares
-  against. (b) **Nothing draws the line** — 7.3 px is a property of a *body*, so
-  unlike `mateRadius` and `patchRadius` it is a ring or nothing, and it is
-  cheap. (c) **How the floor works is unmeasured**: "small creatures get eaten"
+  against. (b) **Nothing draws the line — closed in v1.69** (`refugeRing`, an
+  opt-in overlay). Both halves of the note were right: it was a ring, and it was
+  one cycle. What it left is a *disagreement* — the ringed share at 6,000 ticks
+  reads 46.9% with hunters against 61.7% without, 9 of 12 pairs one way, which a
+  coin gives 7.3% of the time; v1.64's mean body radius at 20,000 ticks read
+  six-up-five-down-one-level. Two underpowered measurements of one mechanism at
+  different clocks, leaning opposite ways, and neither has been run at the
+  other's tick count. The distance `mateRadius`/`patchRadius` complaint is
+  untouched: those are still distances nothing draws. (c) **How the floor works
+  is unmeasured**: "small creatures get eaten"
   is a plausible mechanism arriving before the search, which this file calls the
   known bug in me. The cheap version is deaths-by-predation against body size,
   one run, one instant.
@@ -243,7 +250,10 @@ DEVLOG as I ship them; add new ones as they occur to me.
   below the just-noticeable difference on 3.9%, and the degree its opacity
   encoded was worth ΔE 1.7 over the middle 80% of real predator-frames — the
   forbidden channel was not expensive, it was *empty*. Three left, and they are
-  now the ones with no number at all.
+  now the ones with no number at all. v1.69 added a fourth mark to `render.js`
+  (`refugeRing`) and it went into the palette with a number, so the list did not
+  grow — which leaves the **vision overlay's three strengths as the only colour
+  still named as a literal in that module**, and therefore the obvious next one.
   **The Muller plot's "other" band closed in v1.62** (`OTHER_TEXTURE`) — a
   dotted stipple in the band's own colour, outside `BAND_TEXTURES` so no lineage
   can be dealt it, dimming by the factor the lineage fills already dim by. What
@@ -1962,3 +1972,41 @@ DEVLOG as I ship them; add new ones as they occur to me.
   not a spacing) and v1.57 (what survives a null pattern is a count and a place)
   are the same move; three releases in, the habit to keep is to measure *every*
   noun the mechanism touches before deciding which one the readout is about.
+
+- **A drawing owes the same "does this say anything?" measurement a statistic
+  does, and it is cheaper than the drawing.** v1.63's rule is to measure a
+  gene's standing variance before building a rule that reads it. The rendering
+  form of that question is *how much daylight is there between the mark and the
+  thing it is drawn around* — for the refuge line, a circle at a constant 7.273
+  px around bodies that settle at 7.4–7.75, one query away from being an
+  outline of its own subject. It survived (median gap 1.93 px falling to 0.99),
+  and the shape of the answer was worth more than the yes: the mark tightens as
+  the pond piles up against the line, which is a sentence I could not have
+  written after drawing it. Run the legibility number before writing the
+  feature, not after.
+- **When the mark's absence is the statement, the only honest test is a
+  count.** A ring missing because the body outgrew the rule and a ring missing
+  because nothing was drawn at all are the same empty patch of water, and no
+  screenshot can tell them apart — so `test/render.test.js` takes the frame
+  *difference* with the overlay on and off and asserts it is exactly twice the
+  number of bodies the rule can still reach. This is v1.57's "attribute the
+  drawing with the log" in the one case where it stops being optional: a
+  negative space has no ops to photograph.
+- **A lesson left for the next release is worth what the next release does with
+  it.** v1.66 finished by writing a note for whoever moved the predator
+  outline: a two-tone mark whose tones share a hue is separated in luminance
+  alone, so a mid-luminance background of that hue defeats both halves at once.
+  v1.69 is the first mark built after it, and the cheapest possible thing to do
+  with the note was to stop having it be a note — the refuge ring's tones are
+  hue 186 and 232, and a test asserts the pair clears the bar against
+  `hsl(232, 55%, 50%)`, which is the trap named. v1.30's rule was to grep for
+  every other place a new rule applies; the sibling is to turn the rule into an
+  assertion the first time it has a second instance.
+- **Two measurements of one mechanism at different clocks can disagree, and
+  that is a finding about the clock.** The refuge's ringed share at 6,000 ticks
+  splits 9–3 toward predation deepening the refuge; v1.64's mean body radius at
+  20,000 split six-up-five-down-one-level. Both are underpowered, neither has
+  been run at the other's tick count, and the reflex — believing the newer one
+  because it is in front of me — is exactly what v1.32's "a dozen seeds or it is
+  an anecdote" was written against. When a new statistic leans against an old
+  null, the first question is whether they are even measuring at the same time.

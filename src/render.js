@@ -20,8 +20,10 @@ import {
   barrierRock,
   corpseMark,
   foodMote,
+  refugeRing,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
+import { refugeRadius, inRefuge } from "./refuge.js";
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -71,6 +73,11 @@ export class Renderer {
     // the one every earlier version drew.
     this.camera = new Camera(config);
     this.showVision = false;
+    // The refuge line (v1.69): a circle at the size nothing this world can grow
+    // is able to eat, drawn around everyone still under it. Off by default —
+    // it is an instrument, and the default view is the one every screenshot in
+    // this project was taken of.
+    this.showRefuge = false;
     this.showEnergy = true;
     this.selected = null; // a creature to highlight/inspect
     this.highlightSpeciesId = null; // when set, other species are dimmed
@@ -254,6 +261,8 @@ export class Renderer {
       this._drawCreature(ctx, c);
     }
     ctx.globalCompositeOperation = "source-over";
+
+    this._drawRefuge(ctx, world);
 
     if (this.selected && !this.selected.dead) {
       this._drawSelection(ctx, this.selected, world);
@@ -603,6 +612,47 @@ export class Renderer {
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
+  }
+
+  /**
+   * The refuge line, drawn around everyone still inside the size rule's reach.
+   *
+   * Every ring is the same circle — `bodyRadiusMax / preySizeRatio`, 7.273 px
+   * with the shipped constants — so what varies across the pond is how much of
+   * its own ring a body fills, and a creature that has grown past the line
+   * simply has no ring at all. That is the whole mark: **its absence is the
+   * statement**, which is why it is drawn for the complement rather than for
+   * the safe.
+   *
+   * Gated on `predation` for the reason `refugeShare` gives: the refuge is a
+   * fact about two constants and does not move when hunting is switched off, so
+   * a pond where nobody hunts has no refuge to be inside of and drawing one
+   * would be plotting arithmetic rather than the world. Off by default, and
+   * read-only like everything else here.
+   */
+  _drawRefuge(ctx, world) {
+    if (!this.showRefuge || !this.config.predation) return;
+    const radius = refugeRadius(this.config);
+    const mark = refugeRing();
+    // Screen pixels, like the selection ring and the vision cone: this is an
+    // overlay measured in the viewer's units, laid over a circle measured in
+    // the world's.
+    const hair = 1 / this.camera.zoom;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    for (const c of world.creatures) {
+      if (c.dead || inRefuge(c.radius, this.config)) continue;
+      const p = this.camera.nearest(c.x, c.y);
+      ctx.strokeStyle = mark.rim;
+      ctx.lineWidth = (mark.width + 1.1) * hair;
+      circlePath(ctx, p.x, p.y, radius);
+      ctx.stroke();
+      ctx.strokeStyle = mark.ring;
+      ctx.lineWidth = mark.width * hair;
+      circlePath(ctx, p.x, p.y, radius);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _drawSelection(ctx, c, world) {

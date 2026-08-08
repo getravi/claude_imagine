@@ -26,6 +26,7 @@ import { World } from "../src/world.js";
 import { Corpse } from "../src/food.js";
 import { makeConfig } from "../src/config.js";
 import { renderOps, renderFingerprint, hashOps } from "../src/rendershot.js";
+import { refugeRadius, inRefuge } from "../src/refuge.js";
 import { stateFingerprint, trajectoryFingerprint, observationFingerprint } from "../src/fingerprint.js";
 import {
   sickHalo,
@@ -37,6 +38,7 @@ import {
   attackFlash,
   corpseMark,
   CORPSE_FULL_MEAT,
+  refugeRing,
 } from "../src/palette.js";
 
 /** A world with some history in it, so there is something to draw. */
@@ -367,4 +369,104 @@ test("the vision overlay draws the shadows opaque rock actually casts", () => {
     }
   }
   assert.ok(shadowed > 3, `only ${shadowed} of 128 rays were cut short`);
+});
+
+// ---------------------------------------------------------------------------
+// The refuge line (v1.69). The mark whose *absence* is the statement, which is
+// the only thing here that cannot be checked by looking at what was drawn: a
+// ring missing because the body outgrew the rule and a ring missing because
+// nothing was drawn at all are the same empty patch of water. So every
+// assertion below is about the count, against the pond's own arithmetic.
+
+/** How many living creatures the size rule can still reach. */
+function edible(w) {
+  return w.creatures.filter((c) => !c.dead && !inRefuge(c.radius, w.config)).length;
+}
+
+/** Arcs drawn at exactly the refuge radius, whatever else the frame contains. */
+function refugeArcs(ops, radius) {
+  return opsNamed(ops, "arc").filter((o) => o[4] === radius).length;
+}
+
+test("the refuge line is drawn once around everyone the eating rule can reach", () => {
+  const w = pond();
+  const radius = refugeRadius(w.config);
+  const n = edible(w);
+  assert.ok(n > 0 && n < w.creatures.length, `nothing to compare: ${n} of ${w.creatures.length}`);
+
+  const off = renderOps(w);
+  const on = renderOps(w, null, (r) => {
+    r.showRefuge = true;
+  });
+  // Two strokes per ring — the dark rim and the pale tone over it — so the
+  // difference is the count doubled. Taken as a difference rather than as an
+  // absolute so a body arc that happens to land on 7.273 px cannot flatter it.
+  assert.equal(
+    refugeArcs(on, radius) - refugeArcs(off, radius),
+    2 * n,
+    "the number of rings is not the number of creatures still inside the rule"
+  );
+});
+
+test("nothing is drawn where there is no rule to draw the edge of", () => {
+  // Two ways for the line to be silent, and both have to be silent for the
+  // right reason. Off is the default view every screenshot in this project was
+  // taken of. Predation off is `refugeShare`'s own gate: the refuge is a fact
+  // about two constants and does not move when hunting stops, so a pond where
+  // nobody hunts has no refuge to be inside of.
+  const w = pond();
+  const radius = refugeRadius(w.config);
+  assert.equal(refugeArcs(renderOps(w), radius), refugeArcs(renderOps(w), radius));
+
+  const quiet = pond({ predation: false });
+  const qr = refugeRadius(quiet.config);
+  assert.ok(edible(quiet) > 0, "the sizes are there; only the rule that reads them is gone");
+  assert.equal(
+    refugeArcs(renderOps(quiet, null, (r) => (r.showRefuge = true)), qr),
+    refugeArcs(renderOps(quiet), qr),
+    "a pond with no hunters drew a refuge line"
+  );
+});
+
+test("the refuge line draws the palette's tones, in screen-pixel hairlines", () => {
+  // The v1.25 family of bug, asked of this mark: the audit measures the tones
+  // in palette.js and nothing until this line checks that render.js draws them.
+  const w = pond();
+  const mark = refugeRing();
+  const ops = renderOps(w, null, (r) => {
+    r.showRefuge = true;
+  });
+  const drawn = new Set(styles(ops));
+  assert.ok(drawn.has(mark.ring), `the pale tone ${mark.ring} never reached the canvas`);
+  assert.ok(drawn.has(mark.rim), `the dark tone ${mark.rim} never reached the canvas`);
+
+  // And the widths are the viewer's units, not the world's: the ring's radius
+  // is a world measurement and the line over it is a drawing, so zooming in
+  // shows more of the gap rather than a fatter mark.
+  const widths = (zoom) =>
+    new Set(
+      renderOps(w, null, (r) => {
+        r.showRefuge = true;
+        r.camera.zoom = zoom;
+      })
+        .filter((o) => o[1] === "set:lineWidth")
+        .map((o) => o[2])
+    );
+  const at1 = widths(1);
+  const at4 = widths(4);
+  assert.ok(at1.has(mark.width), `no line at the mark's own width: ${[...at1]}`);
+  assert.ok(at4.has(mark.width / 4), "the hairline did not thin with the zoom");
+});
+
+test("drawing the refuge line changes nothing about the pond", () => {
+  // The header's claim, asked of the newest thing to read `world.creatures`.
+  const w = pond();
+  const before = [stateFingerprint(w), trajectoryFingerprint(w), observationFingerprint(w)];
+  renderOps(w, null, (r) => {
+    r.showRefuge = true;
+  });
+  assert.deepEqual(
+    [stateFingerprint(w), trajectoryFingerprint(w), observationFingerprint(w)],
+    before
+  );
 });

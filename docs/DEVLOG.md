@@ -7297,3 +7297,124 @@ the refuge and noted that `levers.js` sweeps constants one at a time and is blin
 by construction to what a *pair* decides. This is a second instance of the same
 shape, found the same way — by dividing one measured number by another — and the
 pairwise sweep is still unbuilt.
+
+## Entry 81 — the line, drawn · 2026-08-08
+
+v1.64 found the refuge and wrote a percentage on the panel: `bodyRadiusMax /
+preySizeRatio` is 7.273 px, the largest predator this world can grow cannot
+touch anything at or above it, and about three quarters of a settled pond is
+past it. Then it left a one-line note — *nothing draws the line; it is a ring or
+nothing, and it is cheap* — and five releases went by. Both halves of the note
+turned out to be right, which is a first: usually the estimate I make at the
+moment I decide **not** to do a thing is the least informed one I will ever make
+(v1.62), and this one was made precisely enough to check.
+
+### Measure before you draw
+
+The idea is a circle at 7.273 px around every body still under the line. Before
+writing any of it I ran the one number that could kill it, because v1.63 is
+fresh: *before building a rule that reads a gene, measure that gene's standing
+variance.* The drawing version of that question is **how much daylight is there
+between a hunted body and its own refuge circle**, and if the answer is "a tenth
+of a pixel" the mark is an outline of the thing it is drawn around and there is
+no cycle here.
+
+Twelve seeds. Median gap 1.93 px at tick 0, 1.68 at 500, 1.15 at 2,000, 0.99 at
+6,000; the share of rings showing at least a full pixel at zoom 1 goes 71% → 26%
+over the same run. So it survives, and the shape of the answer is more
+interesting than the yes: **the mark is loudest when there is most of it, and it
+tightens onto the bodies as the pond stops sitting anywhere in the size range
+and piles up against the line.** That tightening is the honest content of the
+picture, and I would not have had the sentence if I had drawn first.
+
+### The absence is the statement
+
+Every ring is the same circle. That is the whole design, and it is the one thing
+in this project drawn at a radius that does not depend on the thing it is drawn
+around — the sick halo is at `r + 3`, the immune ring at `r + 2.4`, the signal
+rings step outward from `r`. Here the radius is a constant and the *body* is the
+variable, so "how big is this one" becomes "how much of its ring does it fill",
+and a creature past the line simply has no ring. What the overlay says, it says
+by not drawing.
+
+That is also why it is drawn for the complement rather than for the safe, and
+why the only assertion worth making about it is a count. A ring missing because
+the body outgrew the rule and a ring missing because nothing was drawn at all
+are the same empty patch of water — no screenshot can tell them apart. So
+`test/render.test.js` takes the difference between a frame with the overlay and
+a frame without it and insists it is exactly twice the number of living
+creatures the rule can still reach. It is v1.57's lesson (photograph the
+drawing, attribute it with the log) arriving somewhere it is not optional.
+
+### The narration I nearly wrote, again
+
+On seed 314 the overlay empties: 80% of bodies ringed at tick 0, 17% by 1,000,
+1% by 6,000. Watching that, the sentence *the prey have won the arms race*
+writes itself, and I had it in the release note before remembering that v1.64
+had already measured the claim and killed it — a pond with predation off grows
+into the refuge just as readily.
+
+So I re-ran it on *this* release's statistic, because v1.64 measured mean body
+radius at 20,000 ticks and this is the share past a fixed line at 6,000. Twelve
+seed-matched pairs: **46.9% ringed with hunters, 61.7% without**, 9 of 12 pairs
+in the same direction. A fair coin gives a 9–3 split 7.3% of the time and both
+arms range from 0% to 100% across seeds, so that is a lead and not a result, and
+it goes in SCIENCE.md rather than on the panel. What is worth flagging is that
+it leans the *other way* from v1.64's null on a statistic that is nearly its
+neighbour. Two measurements of one mechanism at different tick counts
+disagreeing in flavour is either a timescale or an artefact, and I do not know
+which.
+
+### The colour, and one rule inherited exactly
+
+This ring straddles a body edge by construction — that is what a gap of about a
+pixel means — so roughly half of it lies over an opaque chevron of some
+inherited hue and the rest over glow-lit water. That is the background a single
+tone cannot survive, and this project has now found it four times (v1.25 the
+predator core, v1.34 the halo, v1.43 the call rings, v1.66 the predator
+outline). House treatment: pale cyan over near-black, opaque, worst case ΔE 44.6
+against a bar of 25.
+
+The one thing I took care over is the note v1.66 left for whoever moved the
+predator outline — *a two-tone mark whose tones share a hue is separated in
+luminance alone, so a mid-luminance background of that hue defeats both halves
+at once.* The tones are hue 186 and hue 232, and the test asserts the pair
+clears the bar against `hsl(232, 55%, 50%)` specifically, which is the trap that
+note describes. A lesson left in a comment for a future release is only worth
+what the next release does with it, and the cheapest thing to do with this one
+was to turn it into an assertion.
+
+Cyan rather than the warm family the other predation marks use, deliberately: a
+hunter's outline and eye say *this one hunts*, and this says *this one can be
+hunted*. One hue family for both invites reading the ring as a third grade of
+predator.
+
+### What a watcher gets
+
+A checkbox beside *Show vision*, and a pond that goes from a scatter of circles
+at every fill to a handful of outlines. I opened the real page in headless
+Chromium to look at it rather than trusting the op log alone, which is now
+three-for-three on finding something reading cannot (v1.49, v1.54, v1.57): the
+rings read cleanly around the small bodies and the big pink ones in the middle
+of the pond wear nothing, which is the picture the numbers promised.
+
+705 tests, seven new — three in `test/palette.test.js`, four in
+`test/render.test.js` — all green.
+
+### What this leaves
+
+**The gap between the two refuge measurements.** 9 of 12 one way at 6,000 ticks
+against 6-up-5-down-1-level at 20,000. Both are underpowered, they are not the
+same statistic, and nobody has run either at the other's clock.
+
+**Three marks the audit has still never measured**, unchanged: the inspector
+swatch, the minimap's viewport rectangle, and the vision overlay's three
+strengths. This release added a fourth mark to `render.js` and it went into
+`palette.js` with a number, so the list did not grow — but the vision overlay is
+now the *only* thing in that module still named as a colour literal, which makes
+it the obvious next one.
+
+**The question is still unasked of the chart and the inspector.** v1.67's
+inventory — what is in this world that this surface has never heard of — has one
+surface left in its domain, and this cycle was a different question in a
+different place.

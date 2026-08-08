@@ -4811,6 +4811,100 @@ had one ad-hoc instrument miscount by 0.8% and produce a whole table of
 plausible nonsense (v1.65), and the two totals agreeing to the unit (104,987) is
 what says the hook caught every spawn.
 
+## Drawing the line, and what a picture of it can be used to say (v1.69)
+
+v1.64 found the refuge — the body size `bodyRadiusMax / preySizeRatio` puts
+beyond every hunter this world is capable of growing — and put a percentage on
+the panel. A percentage is a summary of a distribution, and the distribution is
+the interesting object here, so this release draws it: an opt-in overlay
+(**Show the refuge line**) puts the 7.273 px circle around every body still
+under it.
+
+It is the only mark in this project drawn at a radius that does not depend on
+the thing it is drawn around. Every ring in the pond is the same circle, so what
+varies is how much of its own ring a body fills, and a creature past the line
+has no ring at all. The mark's **absence** is the statement.
+
+### Does anybody see it? The mark's own measurement
+
+A ring drawn at a fixed radius around a body that is nearly that radius is a
+ring with nothing inside it to see. So the first number this release owes is not
+about the pond, it is about whether the drawing says anything — v1.13's rule
+("a mechanic is finished when a watcher can tell it is happening") asked as a
+quantity. Twelve seeds, the gap `7.273 − radius` for every ringed body:
+
+| tick | ringed share | median gap | share of rings with ≥1 px of daylight |
+| ---: | ---: | ---: | ---: |
+| 0 | 84.2% | 1.93 px | 71.4% |
+| 500 | 78.9% | 1.68 px | 66.1% |
+| 2,000 | 70.2% | 1.15 px | 43.1% |
+| 6,000 | 46.9% | 0.99 px | 25.7% |
+
+The mark is loudest exactly when there is most of it: a founder pond is a
+scatter of circles at every fill, and a settled one is mostly bodies wearing
+their own outline. That tightening is the honest content of the picture — the
+pond does not sit anywhere in the size range, it piles up against the line.
+
+### What the picture is *not* evidence of
+
+On the default seed the overlay empties out: 80% of bodies ringed at tick 0,
+57% at 500, 17% at 1,000, 3% at 4,000, **1% at 6,000**. Watching that happen it
+is very hard not to narrate an arms race being won, and v1.64 already measured
+that claim and killed it — a pond with `predation` off grows into the refuge
+just as readily.
+
+Re-run at this release's tick count, twelve seed-matched pairs at 6,000 ticks,
+the ringed share is **46.9%** with hunters and **61.7%** without, and the pairs
+split **9 of 12** in the same direction. A fair coin produces a 9–3 split 7.3%
+of the time, and both arms range from 0% to 100% across seeds. That is a lead
+and not a result, and it is written here rather than on the panel for that
+reason. What is worth noting is that it is a *different* statistic from v1.64's
+(the share past a fixed line at 6,000 ticks, against mean body radius at 20,000)
+and it leans the other way; whether the two disagree is unmeasured.
+
+### The colour, and why it is not warm
+
+The ring straddles a body edge by construction, so roughly half of it lies over
+an opaque chevron of some inherited hue and the rest over glow-lit water. That
+is the background a single tone cannot survive — v1.25 (the predator core),
+v1.34 (the halo), v1.43 (the call rings), v1.66 (the predator outline). It ships
+as the house two-tone, pale cyan over near-black, hues far apart so the pair is
+not separated in luminance alone; worst case over every body this pond can paint
+and every glow-lit patch outside one is **ΔE 44.6**, against a bar of 25.
+
+Cyan rather than the warm family the other predation marks use, on purpose. A
+hunter's outline and eye are warm because they say *this one hunts*. This says
+*this one can be hunted*, which is the complement, and one hue family for both
+statements invites reading the ring as a third grade of predator.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { DEFAULT_CONFIG } from "./src/config.js";
+import { refugeRadius, inRefuge } from "./src/refuge.js";
+const SEEDS = [314, 77, 51, 13, 23, 7, 101, 512, 999, 2, 44, 8080];
+const R = refugeRadius(DEFAULT_CONFIG);
+for (const predation of [true, false]) {
+  const shares = [];
+  for (const seed of SEEDS) {
+    const w = new World({ ...DEFAULT_CONFIG, seed, predation });
+    for (let t = 0; t < 6000; t++) w.step();
+    const live = w.creatures.filter((c) => !c.dead);
+    const gaps = live.filter((c) => !inRefuge(c.radius, w.config)).map((c) => R - c.radius);
+    shares.push(gaps.length / live.length);
+  }
+  const m = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+  console.log(`predation ${predation}: ringed ${(m(shares) * 100).toFixed(1)}%`);
+}'
+```
+
+About four minutes. Add the gap columns by keeping `gaps` rather than only its
+length; the daylight column is `gaps.filter((g) => g >= 1).length / gaps.length`,
+and 1 px is the right threshold because at zoom 1 the camera is the exact
+identity, so a world pixel is a CSS pixel.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

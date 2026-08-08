@@ -4,6 +4,63 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.69.0] — 2026-08-08
+
+v1.64 found the refuge — the body size `bodyRadiusMax / preySizeRatio` puts
+beyond every hunter this world is capable of growing — and put a percentage on
+the panel. This release draws it. Two constants have decided who can eat whom
+since v1.0 and **nothing has ever drawn the line between them**; it is the last
+item v1.64 left, it was filed as cheap, and it was.
+
+### Added
+
+- **The refuge line** (`refugeRing()`, `Renderer._drawRefuge`), an opt-in pond
+  overlay: the 7.273 px circle around every body the size rule can still reach,
+  and nothing at all around a body past it. It is the only mark in this project
+  drawn at a radius that does not depend on the thing it is drawn around, so
+  every ring in the pond is the same circle and what varies is how much of its
+  own ring a body fills. **The absence is the statement**, which is why it is
+  drawn for the complement rather than for the safe.
+- **A checkbox**, *Show the refuge line (who is still big enough to eat) 🔒*,
+  beside *Show vision*. Gated on `predation` for the reason the `Refuge 🔒`
+  tile is: the refuge is a fact about two constants and does not move when
+  hunting stops, so a pond with no hunters has no refuge to be inside of and
+  drawing one would be plotting arithmetic. Ticking it in such a pond says so
+  rather than leaving an empty overlay.
+
+### Measured
+
+- **Whether the drawing says anything**, which is the first number a mark owes
+  and is about the mark rather than the pond. The gap between a ringed body and
+  its own circle has a median of **1.93 px at tick 0 falling to 0.99 px at
+  6,000** over twelve seeds, and the share of rings showing at least one pixel
+  of daylight at zoom 1 falls from **71.4% to 25.7%**. The overlay is loudest
+  when there is most of it, and it tightens onto the bodies as the pond stops
+  sitting anywhere in the size range and piles up against the line.
+- **The default pond empties out**: 80% of bodies ringed at tick 0, 57% at 500,
+  17% at 1,000, 3% at 4,000, **1% at 6,000**.
+- **And that is not an arms race being won.** v1.64 measured that claim and
+  killed it. Re-run on this release's statistic — the ringed share at 6,000
+  ticks, twelve seed-matched pairs — it is **46.9%** with hunters and **61.7%**
+  without, splitting 9–3 in one direction, which a fair coin produces 7.3% of
+  the time against arms that both span 0% to 100%. A lead, written into
+  [SCIENCE.md](docs/SCIENCE.md) rather than onto the panel.
+- **The ring's two tones**, over every body this pond can paint and every
+  glow-lit patch of water outside one: worst case **ΔE 44.6** against a bar of
+  25. It straddles a body edge by construction — half of it over an opaque
+  chevron of some inherited hue, half over water — which is the background a
+  single tone cannot survive (v1.25, v1.34, v1.43, v1.66). Pale cyan and
+  near-black, hues far apart so the pair is not separated in luminance alone.
+  Cyan rather than the warm predation family on purpose: a hunter's outline
+  says *this one hunts* and this says *this one can be hunted*.
+
+### Changed
+
+- `src/render.js` imports `refuge.js`. The rule that decides who gets a ring is
+  the same `inRefuge` the tile, the sentence and the Chronicle already use —
+  the predicate is `canEat`'s size test with the largest possible predator
+  substituted in, so the picture cannot drift from the arithmetic.
+
 ## [1.68.0] — 2026-08-08
 
 The biomes arrived in v1.3 and have decided where every pellet falls since. They

@@ -321,6 +321,52 @@ export function predatorOutlineTones() {
 }
 
 /**
+ * The refuge line: the circle at `bodyRadiusMax / preySizeRatio`, drawn around
+ * every body the size rule can still reach (v1.69).
+ *
+ * Not a creature mark like the three above it — those say what a creature *is*,
+ * and this says where a **rule** stops. It is the only thing in this project
+ * drawn at a radius that does not depend on the thing it is drawn around: every
+ * ring in the pond is the same 7.273 px circle, so a body either fills its own
+ * or it does not, and the pond's size structure is one glance rather than a
+ * percentage. It is an overlay, off unless a watcher asks for it, and drawn in
+ * screen-pixel hairlines the way the selection ring and the vision cone are —
+ * the *radius* is a world measurement and the *line* is a drawing.
+ *
+ * The two tones are the house treatment and they are not decoration here. This
+ * ring is drawn straddling a body edge by construction — the gap between a
+ * hunted body and its own refuge circle has a median of 0.65–1.93 px over a run
+ * — so roughly half of every ring lies over an opaque chevron of some inherited
+ * hue and the rest over glow-lit water. A single tone measured against one of
+ * those is v1.25's mistake with a new subject. Pale cyan and near-black, hues
+ * far apart so the pair is not separated in luminance alone (the note v1.66
+ * left on `predatorOutline`): worst case over every body this pond can paint
+ * and every glow-lit patch outside one is ΔE 44.6.
+ *
+ * Cyan rather than the warm family the other predation marks use, deliberately.
+ * A hunter's outline and eye are warm because they say *this one hunts*; this
+ * says *this one can be hunted*, which is the complement, and putting the two
+ * statements in one hue family would invite reading the ring as a third grade
+ * of predator. It is also the one mark here whose *absence* is the signal.
+ */
+export function refugeRing() {
+  return {
+    ring: "hsl(186, 70%, 90%)",
+    rim: "hsl(232, 55%, 7%)",
+    // Screen pixels, divided back out of the zoom by `render.js`. The rim goes
+    // down at `width + 1.1` like every other two-tone ring here, so the whole
+    // mark is under three pixels wide at any zoom and a viewer who zooms in to
+    // read the gap gets a thinner line rather than a fatter one.
+    width: 0.9,
+  };
+}
+
+/** The refuge ring's two tones as RGB, for the audit. */
+export function refugeRingTones() {
+  return { ring: hslToRgb(186, 70, 90), rim: hslToRgb(232, 55, 7) };
+}
+
+/**
  * The same mark at minimap scale, where a creature is a single square of a few
  * pixels and there is no room for a rim drawn as a stroke.
  *
