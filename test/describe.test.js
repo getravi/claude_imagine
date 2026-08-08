@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 import { Camera } from "../src/camera.js";
+import { Corpse } from "../src/food.js";
 import {
   describePond,
   describePower,
@@ -63,9 +64,103 @@ test("a mechanic that is off is not mentioned", () => {
   assert.doesNotMatch(text, /\b(Day|Night|Dawn|Dusk)\b/);
   assert.doesNotMatch(text, /hunt/i);
   assert.doesNotMatch(text, /sick|immune/i);
+  // The three v1.67 additions, whose flags are all off by default. Each of the
+  // quantities behind them reads exactly 0 in this world — no corpse is ever
+  // pushed, `soilShare` and `avgVoice` are zeroed by `Stats` itself — so this
+  // asserts the sentence is absent rather than merely harmless.
+  assert.doesNotMatch(text, /corpse/i);
+  assert.doesNotMatch(text, /calling/i);
+  assert.doesNotMatch(text, /sprouting/i);
   // ...and the things that are always true are still there.
   assert.match(text, /creature/);
   assert.match(text, /food pellet/);
+});
+
+test("the dead are counted, and only in a world that keeps them", () => {
+  // v1.8 gave the pond corpses; until v1.67 nothing on the page said how many
+  // there were — no tile, no caption, only pixels. On twelve seeds a scavenging
+  // pond holds a mean of 7.7 of them at once and up to 43, against the pellet
+  // count the listener is told in the sentence before.
+  //
+  // Staged rather than waited for (the v1.45 rule): a corpse rots away in a
+  // couple of hundred ticks, so whether one happens to be lying there on tick
+  // 600 is a fact about this seed's death rate, not about the sentence.
+  const world = new World(makeConfig({ seed: 2024, scavenging: true, predation: true }));
+  for (let i = 0; i < 200; i++) world.step();
+  world.corpses = [new Corpse(100, 100, 30), new Corpse(300, 220, 12)];
+  assert.match(describePond(world, world.config), /\b2 corpses lie where creatures died/);
+
+  world.corpses = [new Corpse(100, 100, 30)];
+  assert.match(describePond(world, world.config), /\b1 corpse lies where creatures died/);
+
+  // An instant with nothing dead is not news — the v1.16 rule, which the
+  // contagion sentence already follows one block down.
+  world.corpses = [];
+  assert.doesNotMatch(describePond(world, world.config), /corpse/i);
+
+  // And with scavenging off the count is 0 by construction: nothing in
+  // `world.js` ever pushes a corpse, so there is no state in which this
+  // sentence could appear in a pond where bodies simply vanish.
+  const none = new World(makeConfig({ seed: 2024, scavenging: false, predation: true }));
+  for (let i = 0; i < 600; i++) none.step();
+  assert.equal(none.corpses.length, 0);
+  assert.doesNotMatch(describePond(none, none.config), /corpse/i);
+});
+
+test("the dead are still counted in a pond with nothing alive", () => {
+  // The one sentence here that is deliberately not gated on the population: a
+  // pond that has just died is exactly when the meat lying in it is worth
+  // hearing about, and "nothing is alive" alone would describe an empty stage.
+  const world = new World(makeConfig({ seed: 2024, scavenging: true, predation: true }));
+  for (let i = 0; i < 200; i++) world.step();
+  world.creatures = [];
+  world.corpses = [new Corpse(100, 100, 30), new Corpse(300, 220, 12)];
+  const text = describePond(world, world.config);
+  assert.match(text, /nothing is alive\./);
+  assert.match(text, /2 corpses lie where creatures died/);
+});
+
+test("the voices are spoken with the distance they carry", () => {
+  // Signalling has been drawn as rings since v1.20 — a picture, plus half of it
+  // in the `Heard` tile. The volume the pond speaks at had no text form at all.
+  const world = new World(makeConfig({ seed: 23, signalling: true, predation: true }));
+  for (let i = 0; i < 400; i++) world.step();
+  const text = describePond(world, world.config);
+  assert.match(text, /Creatures are calling to one another across 120 pixels:/);
+  assert.match(
+    text,
+    new RegExp(
+      `voices average ${world.stats.avgVoice.toFixed(2)} out of 1, and the loudest call ` +
+        `reaching each of them ${world.stats.avgHeard.toFixed(2)}\\.`
+    )
+  );
+
+  const quiet = new World(makeConfig({ seed: 23, signalling: false, predation: true }));
+  for (let i = 0; i < 400; i++) quiet.step();
+  assert.equal(quiet.stats.avgVoice, 0);
+  assert.equal(quiet.stats.avgHeard, 0);
+  assert.doesNotMatch(describePond(quiet, quiet.config), /calling/i);
+});
+
+test("the soil is spoken as the Soil tile's own fraction", () => {
+  // Two readouts of one quantity drift the moment they do their own arithmetic
+  // (v1.31, in its narration form). The tile rounds `soilShare` to a whole
+  // percent; so does this, through the same helper every other share here uses.
+  const world = new World(makeConfig({ seed: 13, detritus: true, terrain: true }));
+  for (let i = 0; i < 1500; i++) world.step();
+  // Comfortably over half a percent, so the tile's rounding and this module's
+  // `<1%` floor cannot disagree about which branch they are in.
+  assert.ok(world.stats.soilShare > 0.02, "expected this pond's crop to owe the dead something");
+  const pct = Math.round(world.stats.soilShare * 100);
+  assert.match(
+    describePond(world, world.config),
+    new RegExp(`${pct}% of new food is sprouting from ground where something died\\.`)
+  );
+
+  const bare = new World(makeConfig({ seed: 13, detritus: false, terrain: true }));
+  for (let i = 0; i < 1500; i++) bare.step();
+  assert.equal(bare.stats.soilShare, 0);
+  assert.doesNotMatch(describePond(bare, bare.config), /sprouting/i);
 });
 
 test("a mechanic that is on is mentioned", () => {

@@ -4,6 +4,61 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.67.0] — 2026-08-08
+
+v1.57 asked the minimap not *what is this view lying about* but **what is in the
+world that it has never heard of**, and the answer was the oldest feature in the
+project. This release asks the same question of `describe.js` — the surface a
+visitor who cannot see the canvas actually meets — and gets the same shape of
+answer. Twelve nouns have a place in this pond; the description knew eight of
+them.
+
+### Added
+
+- **The dead are spoken** (`describePond`, `src/describe.js`). Corpses have lain
+  in this pond since v1.8 and *nothing anywhere on the page has ever counted
+  them*: no stat tile, no caption, no sentence — only pixels, and since v1.57 a
+  mark on the minimap. A listener could not tell a scavenging world from one
+  where a body simply vanishes. The sentence is a count and what a corpse is,
+  and it is deliberately not gated on the population: a pond that has just died
+  is exactly when the meat lying in it is worth hearing about.
+- **The voices are spoken.** Signalling (v1.20) is drawn as rings around a body
+  and half-carried by the `Heard` tile; the volume the pond is actually speaking
+  at had no text form anywhere. Stated with `signalRadius`, because a call that
+  carries a tenth of the pond is a different mechanic from one that carries all
+  of it — and because that is one of the distances nothing here draws.
+- **The soil is spoken.** `soilShare` — the share of newly sprouting food that
+  grew out of nutrient a body left (v1.27) — read at the Soil tile's own
+  fraction, so a reader and a listener are told the same thing.
+
+Each is silent where its rule is off, and all three quantities are exactly zero
+there by construction, so the guard is a formality rather than a mask.
+
+### Measured
+
+- **The dead are 3.3% of the pond's edible things, and were 0% of its text.**
+  Over twelve seeds at 6,000 ticks with scavenging on, a mean of **7.7 corpses**
+  lie in the water at any moment (peak 43 on seed 256, range 1.3–17.3 by seed)
+  against a mean of 265 pellets — 0.2% to 8.4% of the pond's food-by-count,
+  depending on the seed. v1.57 shipped the minimap's corpse mark on 6.9%; this
+  is the same magnitude, on a surface that had *no* number rather than a
+  misleading one.
+- **The crop owes the dead 9.9%.** `soilShare` over the same twelve seeds runs
+  2.9%–17.5%. Voices average 0.843 of a possible 1 and the loudest call reaching
+  a creature averages 0.668.
+- **The off-arm is exactly zero on every one of them.** Twelve seeds, same
+  ticks, the three flags off: maximum corpses 0, maximum `soilShare` 0, maximum
+  `avgVoice` 0, maximum `avgHeard` 0, total scavenging bites 0. The v1.20 rule
+  — the measurement to trust is the one reading exactly zero with the mechanism
+  off — holds for all three without a threshold anywhere.
+
+### Left open
+
+- **The biomes.** The fertility field has shaped where food falls since v1.3, is
+  drawn in two views, and is described by **no number anywhere in this project**.
+  Unlike the three above there was nothing to read: a sentence about it needs a
+  statistic that does not exist, which is a different size of job than this one.
+
 ## [1.66.0] — 2026-08-07
 
 `test/colourliterals.test.js` has carried the predator outline on its list of

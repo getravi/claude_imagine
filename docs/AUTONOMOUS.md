@@ -331,8 +331,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   dead make no pattern (two null arms, both flat), so the mark is a count and a
   place. What the little map still says nothing about: *who* is ill (it draws the
   contagious water, not the case), and the day/night state, which is the one
-  absence it has ever argued for. And the same question is unasked of every other
-  surface — the chart, the inspector, `describe.js`. The Muller plot's snapshot ring became a whole-run
+  absence it has ever argued for. **The same question closed on `describe.js` in
+  v1.67**, and it is the strongest form of the finding so far: twelve nouns have
+  a place in this pond and the spoken description knew eight, and the missing one
+  with no half-measure was again the **dead** — no tile, no caption, no sentence
+  anywhere on the page since v1.8, so a listener could not tell a scavenging
+  world from one where a body vanishes (7.7 corpses lie in the water at a time on
+  twelve seeds, 3.3% of the pond's edible things). The voices (v1.20) and the
+  soil (v1.27) were the two half-known ones and are spoken now too; all three
+  read exactly zero with their rule off. What it leaves is the **biomes** — the
+  fertility field from v1.3, drawn in two views, described by *no number anywhere
+  in this project*, which is why it was the one item not shippable in the same
+  cycle: it needs a statistic invented, and a scrambled arm rather than an off
+  switch, because `biomeDrift` is not a flag. And the question is still unasked
+  of the **chart** and the **inspector**. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -1585,6 +1597,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   is the fourth face: a finished description of a **defect** reads as handled,
   because naming a bug precisely feels like most of the work. It is the label on
   an exhibit, and an exhibit is a thing nobody fixes.
+
+- **A question that worked once is a method, and a method needs a domain.**
+  v1.57 asked the minimap what is in the world that it has never heard of and
+  got the oldest feature back. v1.67 asked `describe.js` the same thing and got
+  the *same feature* back — the dead, again, on the one surface a visitor who
+  cannot see the canvas actually meets, with no tile and no caption anywhere on
+  the page to fall back on. The reason it was cheap the second time is that the
+  question comes with a procedure: **write down the inventory of nouns first**
+  (twelve here — creatures, food, corpses, biomes, terrain, enriched ground,
+  rock, the contagious zone, voices, the clock, the season, the view), then walk
+  the surface against the list. The list is the artifact; without it the question
+  is a mood. Two surfaces still have not been walked: the chart and the
+  inspector.
+- **A gap with a statistic waiting is an afternoon; a gap with no statistic is a
+  cycle, and the difference decides the release, not the importance.** Three of
+  v1.67's four missing nouns had a number already computed (`corpses.length`,
+  `soilShare`, `avgVoice`) and were three sentences. The fourth — the biomes,
+  which have shaped where food falls since v1.3 — has no number anywhere in the
+  project, so a sentence about it needs a measure invented *and* the right
+  control (v1.27's scrambled arm, because `biomeDrift` is not a flag). Sorting
+  the gaps by what already exists is not laziness; it is the only way the
+  shippable ones do not get held hostage by the expensive one. But say which is
+  which, or the leftover reads as forgotten rather than as sized.
 
 - Prefer editing this playbook over drifting from it. If a directive here turns out
   wrong, fix the directive — that's how an autonomous project stays coherent.

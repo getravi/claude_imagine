@@ -7053,3 +7053,110 @@ happens to import the same `Renderer`, so the hero is safe by construction
 today — but that is a fact about one file, not a property of the domain, and the
 domain's own header says what it excludes without saying what could arrive
 outside it.
+
+---
+
+## Entry 79 — twelve nouns, and the eight the pond could say · 2026-08-08
+
+v1.57 is the entry I keep coming back to. The minimap had been corrected four
+times — terrain, enriched ground, the contagious zone, rock — and every one of
+those corrections was triggered by a *new* feature arriving, so the sweep only
+ever looked at what had just changed. The thing it had never drawn was the
+**oldest** one: corpses, from v1.8, for thirty-eight releases. The question that
+found it was not *what is this view lying about* but *what is in the world that
+it has never heard of*, and I wrote at the time that the same question was
+unasked of every other surface — the chart, the inspector, `describe.js`.
+
+Three of those are pictures. The fourth is the only thing a visitor who cannot
+see the canvas gets at all. So I asked it there.
+
+### The inventory
+
+Twelve nouns have a place in this pond: creatures, food, corpses, biomes,
+terrain, enriched ground, rock, the contagious zone, voices, the clock, the
+season, and where the camera is pointed. `describePond` knew eight of them.
+
+The four it did not are not evenly bad. Two are half-known — signalling has the
+`Heard` tile, detritus has the `Soil` tile — so a listener could go and read
+them, at the cost of leaving the pond and walking a panel of thirty. One has no
+statistic anywhere in the project. And one is the same answer v1.57 got: the
+dead, from v1.8, with **no tile, no caption and no sentence anywhere on the
+page**. Only pixels. A listener could not tell a scavenging world from one where
+a body simply vanishes.
+
+That is a stronger version of v1.57's finding, and it took less work to find,
+because by now I have a method for it: take the inventory of what is *in* the
+world, then ask each surface which items it has ever heard of. It is not the
+same question as "did I remember to update the narration this time".
+
+### How much is in the part that was silent
+
+The rule since v1.49 is to find out what share of the real data lands in the
+broken part before deciding whether a violation is a finding or a tidy-up.
+Twelve seeds, 6,000 ticks, scavenging and detritus and signalling all on,
+sampled every 250 ticks:
+
+| | mean | range across seeds |
+|---|---|---|
+| corpses lying at once | **7.7** | 1.3 – 17.3 (peak 43) |
+| pellets | 265 | 179 – 510 |
+| corpses as a share of edible things | **3.3%** | 0.2% – 8.4% |
+| share of new food sprouting from the dead | **9.9%** | 2.9% – 17.5% |
+| mean voice / loudest call heard | 0.843 / 0.668 | — |
+
+v1.57 shipped the minimap's corpse mark on the strength of 6.9%. This is the
+same magnitude — and on a surface that had *no* number for it rather than a
+misleading one, which I think is the worse of the two cases.
+
+The control is the cheap kind, and it is total: the same twelve seeds with the
+three flags off give maximum corpses 0, maximum `soilShare` 0, maximum
+`avgVoice` 0, maximum `avgHeard` 0, and zero scavenging bites. All three
+sentences are guarded by their flag anyway, but the guard is a formality — the
+quantities behind them cannot be non-zero in a world where their rule is off, so
+this passes v1.20's test without a threshold anywhere in it.
+
+### What I wrote
+
+Three sentences, in the module's existing house style, each silent where its
+rule is off and silent where the rule is on but has produced nothing yet (the
+v1.16 rule: never narrate the state of a thing that has not started).
+
+> *8 corpses lie where creatures died: meat that rots away, and that anything
+> close enough can eat.*
+
+> *Creatures are calling to one another across 120 pixels: voices average 0.84
+> out of 1, and the loudest call reaching each of them 0.67.*
+
+> *9% of new food is sprouting from ground where something died.*
+
+Two small decisions I want on the record. The corpse sentence is the only one
+here **not** gated on the population being non-zero, because a pond that has
+just died is exactly the moment the meat lying in it is worth hearing about, and
+"nothing is alive" on its own describes an empty stage rather than a wake. And
+the voices carry `signalRadius` in words, because the radius *is* the rule — a
+call that reaches a tenth of the pond is a different mechanic from one that
+reaches all of it, and this is one of the distances this project has never
+drawn. The refuge sentence set that precedent in v1.64.
+
+The tests are staged rather than waited for (v1.45): a corpse rots away in a
+couple of hundred ticks, so whether one happens to be lying there on tick 600 is
+a fact about a seed's death rate and not about the sentence. Two hand-placed
+corpses assert the count, the singular, and the empty case in a millisecond.
+
+685 tests green, five new.
+
+### What this leaves
+
+**The biomes.** The fertility field has decided where food falls since v1.3, is
+drawn in two views, and is described by **no number anywhere in this project**.
+That is why it is not in this release: the other three had a statistic waiting
+and this one needs one invented. The shape of it is not obvious either — a
+biome is a smooth field, so "how clumped is the crop" wants a concentration
+measure rather than a share, and the honest control is v1.27's scrambled arm
+(the same pellets, placed uniformly) rather than an off switch, because
+`biomeDrift` is not a flag. That is a cycle, not a sentence.
+
+**And the two remaining surfaces.** The chart and the inspector have still never
+been asked what they have never heard of. The inventory above is now written
+down, which is the part that makes the question cheap to ask again — though
+v1.46 warns that a list I wrote myself is the one I skim.

@@ -30,6 +30,10 @@
 // Both follow the rule the rest of the HUD follows: a mechanic that is switched
 // off is not mentioned. A description that says "0 sick" in a world with no
 // pathogen is the spoken form of a readout showing a steady, plausible zero.
+//
+// v1.67 asked this surface the question v1.57 asked the minimap — not *what is
+// this view lying about* but *what is in the world that it has never heard of*.
+// The inventory is at `describePond`, along with the one item it leaves open.
 
 // The one thing this module borrows: shares that are spoken as percentages get
 // the same largest-remainder rounding the mortality caption uses, so a listener
@@ -92,6 +96,23 @@ export function timeOfDayLabel(tick, config) {
  * it possible to be looking at a corner of the pond without knowing it — where
  * the camera is pointed.
  *
+ * **The inventory (v1.67).** That paragraph describes what this function was
+ * *aimed* at, which is not the same as what it covers, and the way to find the
+ * difference is v1.57's question: list what is in the world, then ask this
+ * surface which of the items it has ever heard of. Twelve nouns have a place in
+ * the pond — creatures, food, corpses, biomes, terrain, enriched ground, rock,
+ * the contagious zone, voices, the clock, the season and the view — and this
+ * function knew eight of them. The dead have lain here since v1.8 with no tile,
+ * no caption and no sentence anywhere on the page; the voices (v1.20) are rings
+ * an eye can see and half a tile; the soil (v1.27) is a tile and a wash. All
+ * three are spoken now, each silent where its rule is off.
+ *
+ * What the sweep leaves is the **biomes** — the fertility field this pond has
+ * had since v1.3, drawn in two views, described by no number anywhere in the
+ * project. Unlike the other three there is nothing to read: a sentence about
+ * them needs a statistic that does not exist, which is a different size of job
+ * and is written up rather than half-done here.
+ *
  * @param {import('./world.js').World} world
  * @param {object} config
  * @param {import('./camera.js').Camera} [camera] optional; the view, if any
@@ -133,6 +154,35 @@ export function describePond(world, config, camera = null) {
     out.push(`The deepest lineage has reached generation ${s.currentMaxGeneration}.`);
   }
 
+  // The dead. Corpses have lain in this pond since v1.8 and nothing on the page
+  // has ever counted them — no stat tile, no caption, no sentence, only pixels
+  // and (since v1.57) a mark on the minimap — so a listener could not tell a
+  // scavenging world from one where a body simply vanishes. Not gated on `pop`:
+  // a pond that has just died still has meat in it, and that is exactly when
+  // the count is worth hearing. `world.corpses` is empty by construction with
+  // the rule off, and an instant with nothing dead is not news, so this stays
+  // quiet in both cases.
+  if (config.scavenging && world.corpses.length > 0) {
+    out.push(
+      `${count(world.corpses.length, "corpse lies", "corpses lie")} where creatures died: ` +
+        "meat that rots away, and that anything close enough can eat."
+    );
+  }
+  // The voices. Signalling (v1.20) is drawn as rings around a body — a picture
+  // and nothing else — and the `Heard` tile carries half of it, while the
+  // volume the pond is actually speaking at has never been stated anywhere.
+  // Both numbers are exactly 0 with the channel closed. The radius goes in
+  // because it *is* the rule: a call that carries a tenth of the pond is a
+  // different mechanic from one that carries all of it, and this is one of the
+  // distances nothing here draws.
+  if (config.signalling && pop > 0) {
+    out.push(
+      `Creatures are calling to one another across ${config.signalRadius} pixels: ` +
+        `voices average ${s.avgVoice.toFixed(2)} out of 1, and the loudest call reaching ` +
+        `each of them ${s.avgHeard.toFixed(2)}.`
+    );
+  }
+
   if (config.seasons) {
     const season = seasonLabel(world.tick, config);
     out.push(`${season.name} of year ${season.year}.`);
@@ -163,6 +213,17 @@ export function describePond(world, config, camera = null) {
         : `The living are on ground ${pct}% ${
             s.groundBias < 0 ? "smoother" : "rougher"
           } than the landscape average.`
+    );
+  }
+  // The ground the dead leave. `soilShare` is the share of *newly sprouted*
+  // pellets that grew out of nutrient a body left, averaged over the last few
+  // hundred ticks — the Soil tile's own fraction, at the percentage rounding
+  // this module uses everywhere, so a reader and a listener are told the same
+  // thing about the same quantity. Exactly 0 without a nutrient field, and a
+  // crop that owes the dead nothing yet says nothing.
+  if (config.detritus && s.soilShare > 0) {
+    out.push(
+      `${percent(s.soilShare)} of new food is sprouting from ground where something died.`
     );
   }
   // The rock. A wall is a fact about the shape of the world rather than a
