@@ -9,6 +9,7 @@
 
 import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
+import { patchBias } from "./environment.js";
 import { hazardShare } from "./contagion.js";
 import { inRefuge } from "./refuge.js";
 import { ENERGY_SOURCES, LEDGER_FIELDS, energyField, buriedField } from "./energy.js";
@@ -368,6 +369,18 @@ export class Stats {
     // Exactly 0 in every world without terrain — a statistic that is non-zero
     // with its mechanism off is not measuring the mechanism.
     this.groundBias = 0;
+    // Biomes: how much more fertile the ground under the living is than the
+    // pond's own average. The fertility field has shaped where food falls since
+    // v1.3 and, until v1.68, no number anywhere in this project described it.
+    //
+    // Left live in a world with `foodPatches` off, where `groundBias` would be
+    // zeroed — because the field is still there, still drawn nowhere, and this
+    // is a measurement of a *consequence* rather than of a rule's operation
+    // (v1.64's refuge distinction). It reads the null there and was measured
+    // reading it: +0.000 mean over twelve seeds, seven of twelve positive,
+    // against +0.089 and twelve of twelve with the patches on. The tile and the
+    // spoken description gate on the flag; this number does not need to.
+    this.patchBias = 0;
     // Detritus: what share of the crop is currently growing out of the pond's
     // own dead, smoothed over roughly `SOIL_HORIZON` ticks. Exactly 0 in every
     // world without detritus, because no pellet can ever sprout from a field
@@ -510,6 +523,14 @@ export class Stats {
     // frame instead of leaving the last landscape's number sitting there.
     if (!world.terrain) this.groundBias = 0;
     else if (this.tick % 4 === 0) this.groundBias = groundBias(world.terrain, world.creatures);
+
+    // And where the pond is standing relative to where the food *falls*. Same
+    // throttle as the ground scan and for the same reason: it is a pass over
+    // every creature against four Gaussians, which is worth doing four times
+    // less often than the tick. Zeroed with nobody alive rather than left at
+    // the last population's number — an empty pond is not sitting anywhere.
+    if (world.creatures.length === 0) this.patchBias = 0;
+    else if (this.tick % 4 === 0) this.patchBias = patchBias(world.environment, world.creatures);
 
     // How much of the crop is growing out of the pond's own dead. Both counters
     // are cumulative, so differencing them gives exactly this tick's spawns —

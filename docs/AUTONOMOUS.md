@@ -339,12 +339,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   world from one where a body vanishes (7.7 corpses lie in the water at a time on
   twelve seeds, 3.3% of the pond's edible things). The voices (v1.20) and the
   soil (v1.27) were the two half-known ones and are spoken now too; all three
-  read exactly zero with their rule off. What it leaves is the **biomes** — the
-  fertility field from v1.3, drawn in two views, described by *no number anywhere
-  in this project*, which is why it was the one item not shippable in the same
-  cycle: it needs a statistic invented, and a scrambled arm rather than an off
-  switch, because `biomeDrift` is not a flag. And the question is still unasked
-  of the **chart** and the **inspector**. The Muller plot's snapshot ring became a whole-run
+  read exactly zero with their rule off. **The biomes closed in v1.68**
+  (`patchBias`, a `Biome 🌿` tile and a sentence), which finishes the
+  inventory: all twelve nouns are spoken. It cost a cycle rather than a
+  sentence for the reason v1.67 gave — the statistic had to be invented, and
+  its denominator (a max of Gaussians, so no elementary integral) was most
+  of the work. Two things came out of it. The claim I would have shipped
+  died: the *standing crop* reads +0.024 and is inside the scatter of the
+  same pellets placed uniformly on ten seeds of twelve, while the crop is
+  *sown* at +0.092 and the **living** sit at +0.089 on twelve of twelve —
+  fertile ground is where a pellet is eaten fastest, not where food piles
+  up. And the off switch this file said did not exist is `foodPatches`, in
+  the panel since v1.3, which is the naming lesson below. **The question is
+  still unasked of the chart and the inspector**, and they are now the whole
+  remaining domain. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -1914,3 +1922,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   run that only I ever saw. When a measurement splits by a category, check
   whether one of the categories *is* the null; if it is, the readout is the
   write-up.
+
+- **A flag named for its effect is invisible to a search organised by its
+  subject.** v1.67's inventory is a list of *nouns* — creatures, food, corpses,
+  biomes — and the way I ask whether one has an off switch is to grep for the
+  noun. The biomes' flag is `foodPatches`: named for what it does to the food,
+  sitting in the panel two rows above the `biomeDrift` toggle I did find, in
+  every permalink as `bio=0`, consulted twice in `food.js`. I wrote "there is no
+  off switch" into this file and into a release note, then found it while
+  updating a README table for an unrelated reason. This project names things by
+  effect constantly (`deathIsFinal`, `shuffleTurnOrder`, `massWeightedShove`),
+  so the inventory needs a second column: for each noun, **what would its flag
+  be called if it were named after what it changes rather than after itself?**
+- **The weak control is the one that is a statement about the instrument.** I
+  had planned v1.27's scrambled arm for the biomes — the same pellets placed
+  uniformly — and it is nearly worthless here: a uniform scatter reads ~0
+  against *any* field, in any pond, so it tests the arithmetic of `patchBias`
+  and nothing about the world. The control that says something is the world
+  where the mechanism is inert and the instrument is untouched
+  (`foodPatches: false` — the field still built, still averaged, still measured
+  by the same line). Before running a control, ask which of the two it
+  constrains: if swapping in a different pond would not change its answer, it is
+  a unit test wearing an experiment's clothes.
+- **Sizing a gap is a deliverable, and this is the first time an estimate of
+  mine held.** v1.62 found that an estimate made at the moment I decide *not* to
+  do a thing is the least informed one I will ever make ("this needs a design
+  cycle" turned out to be an afternoon). v1.67 sized the biomes as "a cycle, not
+  a sentence" and that was exact — because the sizing named the *missing
+  artifact* (a statistic, and a control for it) rather than a feeling about
+  difficulty. An estimate that names what is absent can be checked; one that
+  names how hard something feels cannot.
+- **When the readout is about the wrong noun, the control tells you which noun.**
+  The question was "are the biomes real?" and the obvious subject was the food.
+  The food's own bias is a quarter of what it is sown with and does not clear
+  its null on ten seeds of twelve; the *creatures* clear theirs on twelve of
+  twelve at 3.3–8.6 sigma. Both facts are one mechanism — fertile ground is
+  where a pellet's life expectancy is shortest — and the one that can be put on
+  a panel is the one the control left standing. v1.56 (exclusion owns a depth,
+  not a spacing) and v1.57 (what survives a null pattern is a count and a place)
+  are the same move; three releases in, the habit to keep is to measure *every*
+  noun the mechanism touches before deciding which one the readout is about.

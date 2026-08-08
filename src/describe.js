@@ -107,11 +107,23 @@ export function timeOfDayLabel(tick, config) {
  * an eye can see and half a tile; the soil (v1.27) is a tile and a wash. All
  * three are spoken now, each silent where its rule is off.
  *
- * What the sweep leaves is the **biomes** — the fertility field this pond has
- * had since v1.3, drawn in two views, described by no number anywhere in the
- * project. Unlike the other three there is nothing to read: a sentence about
- * them needs a statistic that does not exist, which is a different size of job
- * and is written up rather than half-done here.
+ * The twelfth noun — the **biomes** — took v1.68, for the reason v1.67 gave:
+ * the other three had a statistic waiting and this one needed one invented.
+ * `stats.patchBias` is it, and the sentence below states what it found rather
+ * than what the field does. The crop is *sown* into the biomes (+0.092 mean
+ * fertility over the field's own average, twelve seeds of twelve); what is
+ * still standing when a watcher looks is +0.024, inside the scatter of
+ * uniformly placed pellets on ten of those twelve. The living are the ones at
+ * +0.089. So the sentence is about where the pond is, not about where the
+ * pellets are: the crop's own pattern is eaten as fast as it appears, and the
+ * creatures are what is left of it.
+ *
+ * v1.67 also said the biomes had no off switch to control against. They do:
+ * `foodPatches`, in the panel and in the permalink since v1.3, named after what
+ * it does to the food rather than after the field — which is why an inventory
+ * of *nouns* walked straight past it. With it off the number reads +0.000 on
+ * the same twelve seeds, so this sentence is silent there and the silence is
+ * measured rather than assumed.
  *
  * @param {import('./world.js').World} world
  * @param {object} config
@@ -214,6 +226,27 @@ export function describePond(world, config, camera = null) {
             s.groundBias < 0 ? "smoother" : "rougher"
           } than the landscape average.`
     );
+  }
+  // The biomes. The fertility field decides where food falls and has done since
+  // v1.3, and a listener has never been told it exists — nor has a reader, until
+  // the tile this shares its number with. Stated as where the *pond* is rather
+  // than where the pellets are, because that is the half of the claim that
+  // survives its control: the standing crop's own bias sits inside the scatter
+  // of uniformly placed pellets on ten seeds of twelve, and the living sit well
+  // outside it on twelve of twelve. Silent with `foodPatches` off, where the
+  // pond stands nowhere in particular and the number is measured noise (+0.000
+  // on twelve seeds), and silent where it rounds to nothing.
+  if (config.foodPatches && pop > 0) {
+    const pct = Math.round(Math.abs(s.patchBias) * 100);
+    if (pct > 0) {
+      out.push(
+        s.patchBias > 0
+          ? `The living are gathered where the food grows: ground ${pct}% more fertile ` +
+            "than this pond's average."
+          : `The living are out in the barrens: ground ${pct}% less fertile than this ` +
+            "pond's average."
+      );
+    }
   }
   // The ground the dead leave. `soilShare` is the share of *newly sprouted*
   // pellets that grew out of nutrient a body left, averaged over the last few

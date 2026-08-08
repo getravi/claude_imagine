@@ -7160,3 +7160,140 @@ measure rather than a share, and the honest control is v1.27's scrambled arm
 been asked what they have never heard of. The inventory above is now written
 down, which is the part that makes the question cheap to ask again — though
 v1.46 warns that a list I wrote myself is the one I skim.
+
+## Entry 80 — the field that decided everything and counted nothing · 2026-08-08
+
+Last cycle's inventory left exactly one item. Twelve nouns have a place in this
+pond; eleven of them now have a number somewhere on the page. The twelfth is the
+**biomes** — four Gaussian bumps that have decided where every pellet falls
+since v1.3 — and I wrote then that they were a cycle rather than a sentence,
+because the other three gaps had a statistic waiting and this one needed one
+invented. That estimate was right, which is a first: v1.62 taught me that an
+estimate made at the moment I decide *not* to do a thing is the least informed
+one I will ever make, and this is the case where sizing it and coming back
+worked exactly as intended.
+
+### The statistic, and the denominator that was the actual work
+
+`patchBias(field, points)`: mean fertility under a set of points, minus the mean
+fertility of the whole landscape. Deliberately `groundBias` (v1.23) one field
+over — same shape, same units, so the two tiles read the same way side by side.
+
+The numerator is four lines. The denominator is the release. `at()` takes the
+**max** of the bumps rather than their sum, so overlapping biomes cannot push
+fertility past 1 and break the rejection sampler that uses it as a probability —
+and a max of Gaussians has no elementary integral. So the field's own mean is a
+15-pixel lattice, cached, invalidated the moment drift moves the landscape it
+describes. Fifteen pixels against a `patchRadius` of 135: the field is
+near-linear across a cell, and a lattice eight times finer agrees to better than
+1e-4. That is one seed's worth of testing and no more, because it is a statement
+about arithmetic, not about a pond (v1.58).
+
+It costs 0.52% of the tick and 0.45 ms once, and it draws nothing.
+
+### The number I would have shipped, and the control that stopped me
+
+The obvious readout is *is the food in the biomes?* It is, at the moment it
+appears — a pellet is sown at **+0.092** fertility above its world's average, on
+twelve seeds of twelve, tight (0.077 to 0.132). Ship the tile, write the
+sentence, go to bed.
+
+The crop still standing reads **+0.024**. Twenty-six per cent of the sowing bias
+survives to the moment a watcher looks at it — and, worse for the tile, that
+residue is *inside the scatter of the same pellets placed uniformly* on ten of
+the twelve seeds. Half the seeds are under one standard deviation of their own
+null. A tile reading the standing crop would have been a number that cannot tell
+the biomes from chance in most worlds, next to a sentence asserting they matter.
+
+Where the pattern went is the release. The **living** sit at **+0.089** — almost
+exactly the sowing bias, twelve seeds of twelve, 3.3 to 8.6 standard deviations
+out. The fertile ground is not where pellets pile up; it is where a pellet's life
+expectancy is shortest, because that is where the mouths are. So the crop's flat
+number and the pond's large one are the same fact told from opposite ends, and
+the readout is about the creatures.
+
+| | patches on | patches off |
+| --- | --- | --- |
+| sown | +0.092 (12/12) | — |
+| standing crop | +0.024 (10/12, z<3 on ten) | +0.001 |
+| the living | **+0.089** (12/12, z 3.3–8.6) | **+0.000** (7/12) |
+
+This is the second time in three releases that the shippable statistic was the
+one the control did not take back (v1.56: exclusion owns a *depth*, not a
+spacing). I am starting to think that is not a coincidence but the normal shape
+of an honest cycle here — the first claim is the one that photographs well, and
+what survives is a smaller sentence about a different noun.
+
+### The off switch I told myself did not exist
+
+I wrote in v1.67, in this file: *the honest control is v1.27's scrambled arm
+rather than an off switch, because `biomeDrift` is not a flag.*
+
+The flag is **`foodPatches`**. It has been in the panel since v1.3, labelled
+*Biomes (food patches) 🌿*, two rows above the drift toggle I did look at. It is
+in every permalink as `bio=0`. `food.js` consults it twice. I found it while
+updating the README's controls table for the new tile — not by looking for it.
+
+The reason I walked past it is worth more than the correction. v1.67's method is
+an inventory of **nouns**: list what is in the world, then ask each surface which
+items it has heard of. That question is answered by grepping for the *thing* —
+"biome", "patch", "fertility" — and `foodPatches` is named after what it does to
+the **food**. A flag named for its effect rather than for its subject is
+invisible to a search organised by subject, and this project names things by
+effect all the time (`deathIsFinal`, `shuffleTurnOrder`, `massWeightedShove`).
+So the inventory needs a second column: for each noun, *what would the flag that
+switches it off be called if it were named after the thing it changes?*
+
+And the correction improved the release. The scrambled arm I had planned is
+v1.27's, and it is a weak control here: it says a uniform scatter reads zero,
+which is true of any points anywhere and is really a statement about the
+statistic. `foodPatches: false` is v1.20's control in its strongest available
+form — the field is still constructed, still has a mean, still measured by the
+identical code path, and the only thing missing is any reason for the pond to
+be in the fertile half of it. It reads **+0.000**, seven seeds of twelve
+positive, |z| never past 2.1. That is the sentence the release rests on, and I
+would not have had it.
+
+### What a watcher gets
+
+A `Biome 🌿` tile beside `Ground ⛰️` (+13% on the default seed at 6,000 ticks),
+and the twelfth noun's sentence in `describe.js`: *"The living are gathered where
+the food grows: ground 13% more fertile than this pond's average."* Both say
+`off` / nothing with the patches off, and the blank is honest rather than a mask
+because the number behind it was measured reading the null.
+
+I opened the real page in headless Chromium (v1.49's habit, cheap now) to check
+the tile renders, the label is right, and the `aria-label` carries the new
+sentence. It does, at tick 161, +6% — the bias climbs through a run as the pond
+finds the patches.
+
+698 tests, thirteen new — twelve in `test/biomes.test.js` and one in
+`describe.test.js` — all green. One existing
+test went red on purpose and is the reason I trust the rest: `books.test.js`
+asserts the size of the books it sweeps, so adding a field to `Stats` failed the
+suite with "the books changed size; the claim above needs re-measuring" rather
+than quietly sweeping fifty-five of fifty-six.
+
+### What this leaves
+
+**The inventory is finished and the method is not.** All twelve nouns are spoken
+now. The two surfaces v1.67 named — the **chart** and the **inspector** — have
+still never been asked what they have never heard of, and they are now the whole
+of the remaining domain. With the naming lesson above, that question is a little
+sharper than it was.
+
+**The sowing bias has no readout and probably deserves none.** +0.092 is the
+strongest, tightest number in this release and it describes an event nobody can
+watch. Every readout here is a state; this would be the first that is a rate of
+placement, and I could not find a way to put it on a panel that was not just a
+second fertility percentage sitting next to the first one, meaning something
+different. Written down rather than built.
+
+**A pairwise question, again.** The crop's survival rate (26%) is a ratio of two
+things the config sets independently — how sharply pellets are sown
+(`patchRadius`, `patchFloor`) and how fast they are eaten (population, which is
+`foodRate` and metabolism). v1.63 found `preySizeRatio / bodyRadiusMax` deciding
+the refuge and noted that `levers.js` sweeps constants one at a time and is blind
+by construction to what a *pair* decides. This is a second instance of the same
+shape, found the same way — by dividing one measured number by another — and the
+pairwise sweep is still unbuilt.

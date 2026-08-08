@@ -434,6 +434,34 @@ test("the caption describes the same rates the strip is drawn from", () => {
   assert.match(label, /^Power over time: /);
 });
 
+test("the biomes get a sentence, and a flat landscape gets silence", () => {
+  // The twelfth noun (v1.68). The fertility field has decided where food falls
+  // since v1.3, and until this release nothing anywhere on the page — spoken or
+  // written — carried a number about it.
+  //
+  // The sentence is about where the *pond* is, not where the pellets are: the
+  // standing crop's own bias sits inside the scatter of uniformly placed
+  // pellets on ten seeds of twelve, and the living sit well outside it on
+  // twelve of twelve. Saying "the food is in the biomes" would have been the
+  // claim the control killed.
+  const world = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 400; i++) world.step();
+  assert.match(
+    describePond(world, world.config),
+    /The living are gathered where the food grows: ground \d+% more fertile than this pond's average\./
+  );
+
+  // A pond nothing sows into says nothing about biomes. `foodPatches` is the
+  // off switch v1.67 thought this feature did not have — it is named after the
+  // food rather than after the field, which is how an inventory of nouns walked
+  // past it — and the field is still there and still measurable with it off, so
+  // the silence is a decision about what is worth saying rather than an absence
+  // of data (v1.16).
+  const off = new World(makeConfig({ seed: 314, foodPatches: false }));
+  for (let i = 0; i < 400; i++) off.step();
+  assert.doesNotMatch(describePond(off, off.config), /fertile/i);
+});
+
 test("the rock gets a sentence, and only where there is rock", () => {
   // v1.31's rule: which sense is this claim available to? A wall is the most
   // visual thing this project has ever added, and a listener would otherwise be

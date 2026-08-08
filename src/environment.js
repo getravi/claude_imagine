@@ -12,6 +12,13 @@
 //   - seasonalFactor(): a time-varying multiplier on how fast food appears.
 
 /**
+ * Spacing, in pixels, of the lattice `FertilityField.mean()` integrates over.
+ * Named here rather than inlined because it is the one number deciding how
+ * closely the mean tracks the field, and `test/biomes.test.js` refers to it.
+ */
+const LATTICE_STEP = 15;
+
+/**
  * A smooth fertility landscape built from a few Gaussian "bumps" (biomes) on the
  * torus. Fertility is high near a biome centre and falls to a floor far from any
  * centre, so food concentrates in patches without leaving the rest of the world
@@ -39,6 +46,47 @@ export class FertilityField {
       const a = i * 2.399963; // golden angle in radians
       return { x: Math.cos(a), y: Math.sin(a) };
     });
+    // Cached whole-torus mean fertility, computed on demand rather than here:
+    // a world that never asks never pays, and a drifting one pays again only
+    // when the landscape it describes has actually moved.
+    this._mean = null;
+  }
+
+  /**
+   * Mean fertility over the whole torus, in [floor, 1].
+   *
+   * This is the denominator of every claim about where the crop stands: a
+   * pellet is only *in* a biome relative to how fertile this world is on
+   * average, and with four Gaussians on a 900×620 torus that average is a
+   * property of where the seed happened to put them, not a constant.
+   *
+   * Estimated on a fixed lattice rather than in closed form, because `at()`
+   * takes the *max* of the bumps and the max of overlapping Gaussians has no
+   * elementary integral. `LATTICE_STEP` is an order of magnitude under
+   * `patchRadius`, so the field is near-linear across a cell and the trapezoid
+   * error is far below anything a readout shows; `test/biomes.test.js` pins it
+   * against a lattice eight times finer.
+   *
+   * Deterministic and draw-free: the lattice is derived from the config, so
+   * asking a world this question cannot move it.
+   */
+  mean() {
+    if (this._mean !== null) return this._mean;
+    const { width, height } = this.config;
+    const cols = Math.max(1, Math.round(width / LATTICE_STEP));
+    const rows = Math.max(1, Math.round(height / LATTICE_STEP));
+    let sum = 0;
+    // Cell centres, not corners: a torus has no edge to include twice, and
+    // sampling the midpoint of each cell is the estimator that stays exact for
+    // a field that is linear across one.
+    for (let j = 0; j < rows; j++) {
+      const y = ((j + 0.5) / rows) * height;
+      for (let i = 0; i < cols; i++) {
+        sum += this.at(((i + 0.5) / cols) * width, y);
+      }
+    }
+    this._mean = sum / (cols * rows);
+    return this._mean;
   }
 
   /**
@@ -49,6 +97,12 @@ export class FertilityField {
    */
   update(driftPerTick) {
     if (!driftPerTick) return;
+    // The landscape is about to change shape, so the mean of the old one is a
+    // number about a world that no longer exists. Dropped rather than guarded:
+    // a cache in front of a moving thing is where this project's favourite bug
+    // lives (v1.22's chart buffer, v1.23's Ground readout), and a null cannot
+    // be served stale.
+    this._mean = null;
     const { width, height } = this.config;
     for (let i = 0; i < this.centres.length; i++) {
       const c = this.centres[i];
@@ -101,6 +155,40 @@ export class FertilityField {
     }
     return { x: rng.range(0, width), y: rng.range(0, height) };
   }
+}
+
+/**
+ * Mean fertility under a set of points, minus the mean fertility of the whole
+ * landscape. Positive means the things counted are standing on better ground
+ * than scattering them at random would give — the signature of the biomes
+ * actually concentrating something.
+ *
+ * In [floor − mean, 1 − mean], so it is an absolute displacement along the same
+ * 0..1 fertility scale `at()` returns, exactly as `groundBias` is a
+ * displacement along the roughness scale. Not a ratio: the ceiling moves with
+ * the seed (it is `1 − mean()`, and where the four biomes fell decides that),
+ * so a percentage-of-maximum would be measured against a different maximum in
+ * every world.
+ *
+ * Exactly 0 with no field and exactly 0 with nothing to count, and — measured,
+ * not by construction — 0 to three decimals in a world with `foodPatches` off,
+ * which is the v1.20 control this statistic turns out to be owed after all.
+ * v1.67 filed the biomes as the one noun here with no flag behind it; the flag
+ * is `foodPatches` and has been in the panel since v1.3, named after what it
+ * does to the food rather than after the field it consults. Two further zeroes
+ * are available and both are structural rather than evidential: `patchFloor: 1`
+ * flattens the landscape so every point *is* the mean, and any set of points
+ * scattered uniformly reads ~0 whatever the pond is doing (v1.27's arm).
+ *
+ * @param {FertilityField|null|undefined} fertility
+ * @param {Array<{x:number,y:number}>} points
+ * @returns {number}
+ */
+export function patchBias(fertility, points) {
+  if (!fertility || points.length === 0) return 0;
+  let sum = 0;
+  for (const p of points) sum += fertility.at(p.x, p.y);
+  return sum / points.length - fertility.mean();
 }
 
 /**

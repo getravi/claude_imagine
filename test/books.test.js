@@ -200,7 +200,7 @@ test("nothing in the simulation reads the books", () => {
   // `stats.js` has opened with "none of this feeds back into the simulation"
   // since v1.0 and `energy.js` with "nor is read by the simulation" since v1.29.
   // Both are comments, and a comment is not a measurement (v1.28). So: hold each
-  // of the fifty-five fields wrong for sixty consecutive ticks and check the pond
+  // of the fifty-six fields wrong for sixty consecutive ticks and check the pond
   // does not notice. Per-field rather than all at once, because an aggregate two
   // cancelling errors can satisfy is not a test of either (v1.24).
   const reference = new World(makeConfig({ seed: 21 }));
@@ -230,5 +230,5 @@ test("nothing in the simulation reads the books", () => {
     }
   }
   assert.equal(swept, STATS_HASHED.length + ENERGY_HASHED.length);
-  assert.equal(swept, 55, "the books changed size; the claim above needs re-measuring");
+  assert.equal(swept, 56, "the books changed size; the claim above needs re-measuring");
 });

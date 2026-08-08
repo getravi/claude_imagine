@@ -4700,6 +4700,117 @@ assertions ship as tests — `test/palette.test.js` holds the new tone to the ba
 *and* holds the old one to its collision, so restoring the fading outline turns
 the suite red rather than leaving it green.
 
+## The oldest field in the pond, finally counted (v1.68)
+
+Biomes arrived in v1.3. Four Gaussian bumps on the torus, a fertility in
+`[0.15, 1]` at every point, and a rejection sampler that turns that fertility
+into an acceptance probability for a new pellet: food falls where the ground is
+good. Sixty-five releases later they were drawn in two views, mentioned in the
+README, wired to a checkbox — and described by **no number anywhere in this
+project**. Every other noun in the pond has a readout. This one had a glow.
+
+v1.67 found the gap by inventory (list what is in the world, then ask a surface
+which items it has ever heard of) and could not close it in the same cycle,
+because the other three gaps it found had a statistic already computed and this
+one needed one invented.
+
+### The statistic
+
+`patchBias(field, points)` — mean fertility under a set of points, minus the
+mean fertility of the whole landscape. It is `groundBias` (v1.23) one field
+over, and the shape is deliberate: both are displacements along a 0..1 scale,
+so *the pond is on ground 9% more fertile than average* reads the same way as
+*the pond is on ground 3% flatter than average*.
+
+The denominator is the interesting half. `at()` takes the **max** of the bumps
+rather than their sum — so that overlapping biomes cannot push fertility past 1
+and break the sampler — and a max of Gaussians has no elementary integral, so
+the field's own mean is estimated on a 15-pixel lattice (`patchRadius` is 135,
+so the field is near-linear across a cell; a lattice eight times finer agrees to
+better than 1e-4, which `test/biomes.test.js` pins). It is cached, and dropped
+when drift moves the landscape — a cache in front of a moving thing being where
+this project's favourite bug lives.
+
+### Three zeroes, and only one of them is evidence
+
+| control | what it gives | worth |
+| --- | --- | --- |
+| `patchFloor: 1` | bit-exact 0 | structural — a flat field makes every point the mean |
+| uniform scatter of the same count | ~0 | v1.27's arm; true of any points anywhere |
+| **`foodPatches: false`** | **+0.000, measured** | the real one |
+
+The third is the one v1.67 said did not exist. It has been in the panel since
+v1.3 as **Biomes (food patches)**, and in the permalink as `bio=0`. The field is
+still built with it off, still has a mean, and is still measured by exactly the
+same code — what is missing is any reason for the pond to be in the fertile half
+of it. That is v1.20's test in its strongest available form: not a statistic
+zeroed by a guard, but the same measurement of a world where the mechanism is
+inert.
+
+### What twelve seeds say
+
+Seeds 314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026, at 6,000 ticks. All
+figures are fertility displacements against each world's own field mean (which
+is itself 0.514–0.599 depending on where the four biomes landed, so the ceiling
+— every point at a centre — is 0.40–0.49).
+
+| what is being measured | patches on | patches off |
+| --- | --- | --- |
+| fertility where each pellet was **sown** | **+0.092** (0.077 … 0.132) | — |
+| fertility under the **standing crop** | +0.024 (−0.001 … 0.059) | +0.001 |
+| fertility under the **living** | **+0.089** (0.051 … 0.138) | **+0.000** (−0.032 … 0.023) |
+| seeds with the living above zero | 12 of 12 | 7 of 12 |
+| z against 400 uniform replicates of the same count | 3.3 … 8.6 | −2.1 … +1.5 |
+
+Two findings, and they are the same finding from opposite ends.
+
+**The crop's own pattern is nearly gone by the time anyone looks.** Pellets are
+sown at +0.092 and the ones still standing sit at +0.024 — **26% of the sowing
+bias survives** — and that residue is inside the scatter of uniformly placed
+pellets on ten of the twelve seeds (z under 3, and under 1 on five of them). A
+tile reading the standing crop's fertility would have been decoration: it cannot
+tell the biomes from chance on most worlds.
+
+**The living are where the pattern went.** At +0.089 the pond sits almost exactly
+where the pellets were sown, on every seed, at 3.3 to 8.6 standard deviations of
+its own null. The crop is not concentrated because it is *eaten* concentrated;
+the fertile ground is where a pellet's life expectancy is shortest. So the
+readout is about the creatures, which is the half of the claim its control
+leaves standing.
+
+That is the second time in three releases that the honest statistic was the one
+the control did not take back (v1.56: exclusion owns a depth, not a spacing).
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { DEFAULT_CONFIG } from "./src/config.js";
+import { patchBias } from "./src/environment.js";
+import { RNG } from "./src/rng.js";
+const SEEDS = [314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026];
+for (const patches of [true, false]) {
+  const pond = [], crop = [];
+  for (const seed of SEEDS) {
+    const w = new World({ ...DEFAULT_CONFIG, seed, foodPatches: patches });
+    for (let t = 0; t < 6000; t++) w.step();
+    pond.push(patchBias(w.environment, w.creatures));
+    crop.push(patchBias(w.environment, w.food.items));
+  }
+  const m = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+  console.log(`patches ${patches}: living ${m(pond).toFixed(3)}`,
+    `(${pond.filter((x) => x > 0).length}/12 up), crop ${m(crop).toFixed(3)}`);
+}'
+```
+
+About three minutes. The sown column needs one more line — wrap
+`world.food.spawnOne` and read `world.environment.at()` at each new pellet — and
+when you do, print `world.food.spawned` beside your own count: this project has
+had one ad-hoc instrument miscount by 0.8% and produce a whole table of
+plausible nonsense (v1.65), and the two totals agreeing to the unit (104,987) is
+what says the hook caught every spawn.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

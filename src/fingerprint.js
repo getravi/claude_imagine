@@ -360,7 +360,7 @@ export const STATS_HASHED = [
   "jostled", "jostledRate", "_jostledRing", "infections", "recoveries",
   "infectedCount", "immuneCount", "peakInfected", "hazardShare", "power",
   "maxGeneration", "maxPopEver", "carnivoreFrac", "avgLearning", "avgVoice",
-  "avgHeard", "groundBias", "soilShare", "_lastSpawned", "_lastSprouted",
+  "avgHeard", "groundBias", "patchBias", "soilShare", "_lastSpawned", "_lastSprouted",
   "refugeShare", "avgGeneration", "currentMaxGeneration", "carnivoreCount",
   "avgHidden", "avgConns", "maxHidden",
 ];

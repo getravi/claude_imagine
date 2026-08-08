@@ -698,6 +698,22 @@ function updateHUD() {
   $("stat-ground").textContent = config.terrain
     ? `${s.groundBias <= 0 ? "−" : "+"}${Math.abs(Math.round(s.groundBias * 100))}%`
     : "off";
+  // Biomes: how much more fertile the ground under the living is than this
+  // pond's own average. The fertility field has decided where food falls since
+  // v1.3 and no number on this page has ever described it — the tile beside
+  // this one measures the pond against the *terrain*, and until v1.68 there was
+  // no equivalent for the thing that actually moves the crop.
+  //
+  // "off" without `foodPatches`, and the number behind it stays live there: a
+  // field the spawner never consults is a landscape nothing is standing in
+  // *because of*, so the tile is the wrong place for its noise — and the noise
+  // is what it reads (+0.000 over twelve seeds, against +0.089 with the patches
+  // on), which is the measurement that makes the blank honest rather than a
+  // mask. Same shape as the Refuge tile, which is a real number in a pond with
+  // nobody hunting and says "off" anyway.
+  $("stat-biome").textContent = config.foodPatches
+    ? `${s.patchBias < 0 ? "−" : "+"}${Math.abs(Math.round(s.patchBias * 100))}%`
+    : "off";
   // Barriers: how often the rock is refusing a move, per hundred ticks over the
   // trailing window. The walls are visible and the detours are not, so this is
   // the number that says what the layout is actually costing — and it is a rate

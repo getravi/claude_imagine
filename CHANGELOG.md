@@ -4,6 +4,67 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.68.0] — 2026-08-08
+
+The biomes arrived in v1.3 and have decided where every pellet falls since. They
+are drawn in the pond and on the minimap, they have a checkbox and a permalink
+flag — and until this release **no number anywhere in this project described
+them**. v1.67's inventory found that gap and could not close it in the same
+cycle: the other three missing nouns had a statistic already computed, and this
+one needed one invented. Here it is, with the control that decides what it can
+be used to say.
+
+### Added
+
+- **`patchBias`** (`src/environment.js`). Mean fertility under a set of points
+  minus the mean fertility of the whole landscape — `groundBias` (v1.23) one
+  field over, and the same shape deliberately, so "9% more fertile than average"
+  reads like "3% flatter than average". The denominator needed building too:
+  `at()` takes the *max* of the bumps so overlapping biomes cannot break the
+  sampler, and a max of Gaussians has no elementary integral, so
+  `FertilityField.mean()` integrates a 15-pixel lattice — cached, and dropped
+  the moment drift moves the landscape it describes.
+- **A `Biome 🌿` tile**, beside `Ground ⛰️`, reading how much more fertile the
+  ground under the living is than this pond's own average (about +13% on the
+  default seed at 6,000 ticks). `off` with the patches switched off, where the
+  number behind it stays live and reads the null.
+- **A spoken sentence** (`describePond`), so the twelfth and last noun in v1.67's
+  inventory has a text form on the surface a visitor who cannot see the canvas
+  actually meets: *"The living are gathered where the food grows: ground 13%
+  more fertile than this pond's average."*
+
+### Measured
+
+- **The crop is sown in the biomes and does not stay there.** Over twelve seeds
+  at 6,000 ticks, a pellet is sown at **+0.092** fertility above its world's
+  average — and the crop still standing sits at **+0.024**, so **26% of the
+  sowing bias survives**. That residue is inside the scatter of uniformly placed
+  pellets on ten of the twelve seeds, which is why the readout is not about the
+  food: a tile that cannot tell the biomes from chance on most worlds is
+  decoration.
+- **The living are where the pattern went**, at **+0.089** — almost exactly the
+  sowing bias, on **twelve seeds of twelve**, at 3.3 to 8.6 standard deviations
+  of its own null. Fertile ground is not where pellets accumulate; it is where a
+  pellet's life expectancy is shortest.
+- **The control reads +0.000.** With `foodPatches` off the field is still built,
+  still has a mean, and is still measured by the same code — and the pond reads
+  the null (seven seeds of twelve positive, |z| under 2.1 throughout). Full
+  tables and a runnable script in [SCIENCE.md](docs/SCIENCE.md).
+
+### Fixed
+
+- **The off switch v1.67 said did not exist.** That release recorded the biomes
+  as the one mechanic here with no flag to control against, having looked for
+  one and found only `biomeDrift`, a speed. The flag is **`foodPatches`** — in
+  the panel since v1.3 as *Biomes (food patches)*, and in every permalink as
+  `bio=0`. It is named after what it does to the *food*, not after the field it
+  consults, which is exactly how an inventory of nouns walks past a thing.
+
+### Changed
+
+- `test/books.test.js` sweeps fifty-six fields rather than fifty-five, the count
+  it asserts to catch a book growing without the claim above it being re-run.
+
 ## [1.67.0] — 2026-08-08
 
 v1.57 asked the minimap not *what is this view lying about* but **what is in the
