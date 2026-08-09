@@ -63,16 +63,21 @@ const ALLOWED = [
     literal: "hsl(${c.hue},70%,55%)",
     why: "the inspector swatch: a lineage hue in the DOM, and the last mark on the audit's own to-do list. v1.46 proved this exact quantity cannot be an identifier, on the Muller bands; nobody has measured it on this surface, and its sibling — the ancestry pips — is painted from style.css, which is outside every sweep this project has.",
   },
-  {
-    file: "minimap.js",
-    literal: "rgba(226, 238, 255, 0.85)",
-    why: "the viewport rectangle. A near-white stroke over anything the little map can draw, and the one mark on that surface v1.57's corpse sweep did not enumerate.",
-  },
   // (The predator outline was here until v1.66, which measured it — 56.3% of
   // its backgrounds under the bar — and moved it into `predatorOutline()`. It
   // is the second item this list has struck off, and like the first it was
   // hiding something: the opacity ramp it spent its contrast on encoded ΔE 1.7
   // over 94% of the frames it appeared in.)
+  // (The viewport rectangle and the selection square were here until v1.73 —
+  // the last two entries on this list, one filed as a mark nobody had measured
+  // and one as furniture, and the second filing was the interesting one. Both
+  // are two-tone cased strokes now (`minimapViewport`, `minimapSelection`).
+  // Measured, both bottomed out at ΔE 0.00–0.01 against the little map's own
+  // crop: v1.57 gave the pellet the pond's *additive* mote, and four of them in
+  // one minimap pixel paint `rgb(222, 255, 255)`. The entry that read "the
+  // loudest thing available" had been false for two releases and for a reason
+  // recorded in this very file. Fourth and fifth items struck off, and both
+  // were hiding something — which is now five for five.)
   // (The vision overlay's three strengths were here until v1.70. Their entries
   // said the overlay is "a rule rather than a mark … never held to either bar",
   // and the filing was the bug: a gridline's background is chosen by me, this
@@ -83,11 +88,6 @@ const ALLOWED = [
   // off this list, third one that was hiding something.)
 
   // ---- furniture: no distinction to carry, and nowhere for one to live ----
-  {
-    file: "minimap.js",
-    literal: "rgba(255, 255, 255, 0.9)",
-    why: "the selection square. White at 0.9 over a near-black map is the loudest thing available and carries no distinction beyond 'this one' — there is nothing to compare it against.",
-  },
   { file: "render.js", literal: "rgba(255, 255, 255, 0.8)", why: "the selection ring in the pond: the same mark as above, in the big view." },
   {
     file: "render.js",

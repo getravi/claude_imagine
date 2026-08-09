@@ -26,6 +26,8 @@ import {
   minimapWater,
   minimapBiomeWash,
   minimapPreyDot,
+  minimapViewport,
+  minimapSelection,
   foodMote,
   rgbCss,
   detritusTint,
@@ -373,22 +375,42 @@ export function drawMinimap(ctx, world, camera, opts = {}) {
   }
 
   // The inspected creature, so a click in the pond tells you where in the pond.
+  // Cased, like the frame below it and for the same reason — see `cased()`.
   const sel = opts.selected;
   if (sel && !sel.dead) {
     const p = worldToMinimap(sel.x, sel.y, layout, config);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(p.x - 2.5, p.y - 2.5, 5, 5);
+    const box = minimapSelection();
+    cased(ctx, p.x - box.size / 2, p.y - box.size / 2, box.size, box.size, box);
   }
 
   // The viewport last, on top of everything, in one or more pieces.
-  ctx.strokeStyle = "rgba(226, 238, 255, 0.85)";
-  ctx.lineWidth = 1;
+  const frame = minimapViewport();
   for (const r of viewportRects(camera, config)) {
-    ctx.strokeRect(r.x * s, r.y * s, r.w * s, r.h * s);
+    cased(ctx, r.x * s, r.y * s, r.w * s, r.h * s, frame);
   }
 
   return layout;
+}
+
+/**
+ * A two-tone rectangle: the casing stroked one pixel outside the pale line, so
+ * the mark holds a light tone and a dark one and no background can swallow both
+ * (v1.34's rule, arriving on this surface in v1.73).
+ *
+ * A *ring* rather than a wider stroke under a narrower one. `render.js` cases
+ * its rings by laying the rim down at `width + 1.1`, which leaves half a pixel
+ * of dark either side — fine at pond scale, where a pixel is a fraction of a
+ * body, and wrong here, where the whole map is 180 pixels across and half a
+ * pixel of anything composites to a grey. Two crisp hairlines a pixel apart is
+ * the same idea at a scale that can hold it, and it is what the hunter badge
+ * and the corpse already do with squares.
+ */
+function cased(ctx, x, y, w, h, mark) {
+  ctx.lineWidth = mark.width;
+  ctx.strokeStyle = mark.casing;
+  ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+  ctx.strokeStyle = mark.line;
+  ctx.strokeRect(x, y, w, h);
 }
 
 // A filled circle, repeated across whichever seams it overlaps. Biomes are the

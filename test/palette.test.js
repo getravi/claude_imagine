@@ -35,6 +35,12 @@ import {
   minimapPredatorMark,
   minimapPredatorTones,
   minimapCorpseMark,
+  minimapViewport,
+  minimapViewportTones,
+  minimapSelection,
+  minimapSelectionTones,
+  MINIMAP_PELLET_STACK,
+  MINIMAP_PREY_ALPHA,
   minimapWater,
   minimapBiomeWash,
   minimapPreyDotRgb,
@@ -1254,6 +1260,162 @@ test("and the colours could not have carried that distinction — which is why t
     `the two pale tones score ${worst.toFixed(1)} — if that clears the bar the inversion is optional`
   );
   assert.equal(minimapCorpseMark().rimSize < minimapPredatorMark().rimSize, true, "and the corpse is the smaller badge");
+});
+
+// ---- The two marks drawn last (v1.73) ----
+//
+// The frame that says where the camera is pointed and the square that says
+// which creature is selected are the top two layers of this map, and both were
+// single translucent near-whites that no audit had ever measured — the last two
+// entries on v1.61's list. The reasons they survived are the *sentences* that
+// list carried, which is v1.70's finding one entry earlier: the frame was "a
+// near-white stroke over anything the little map can draw" and the square was
+// filed under furniture, "the loudest thing available … carries no distinction
+// beyond 'this one'". Near-white is a claim about the mark; loudest is a claim
+// about the map. Neither is a number, and the second one stopped being true in
+// v1.57, when the pellet became the pond's *additive* mote.
+//
+// Their domain is everything, because they are drawn last: every ground, every
+// field over it, and every mark the map paints — at this scale the marks are
+// each other's backgrounds (v1.57), and the topmost mark's backgrounds are all
+// of them.
+
+/** Everything the little map can leave under a mark drawn last. */
+function minimapTopBackgrounds() {
+  const out = [];
+  const base = [];
+  for (const { name, rgb } of minimapGrounds()) {
+    base.push({ name, rgb });
+    base.push({ name: `${name} +zone`, rgb: hazardOver(rgb, HAZARD_AUDIT_SOURCES) });
+  }
+  out.push(...base);
+  out.push({ name: "rock", rgb: barrierRockTones().fill });
+  out.push({ name: "rock edge", rgb: barrierRockTones().edge });
+  const corpse = minimapCorpseMark();
+  out.push({ name: "corpse rim", rgb: rgbToneOf(corpse.rim) });
+  out.push({ name: "corpse core", rgb: rgbToneOf(corpse.core) });
+  for (const [n, rgb] of Object.entries(minimapPredatorTones())) out.push({ name: `hunter ${n}`, rgb });
+  // The crop, stacked. `minimap.js` draws pellets additively, so a fed biome
+  // pushes a pixel far past the colour one pellet makes — which is the whole
+  // bug, and it is invisible to a sweep that composites a single mote.
+  const mote = foodMote();
+  for (const g of base) {
+    let c = g.rgb;
+    for (let k = 1; k <= MINIMAP_PELLET_STACK; k++) {
+      c = addOver(c, mote, mote.a);
+      out.push({ name: `${g.name} +${k} pellet`, rgb: c });
+    }
+  }
+  // And a prey dot in every lineage hue, over every ground: the dot is 85%
+  // opaque, so its composite depends on what it is standing on.
+  for (const g of base) {
+    for (let hue = 0; hue < 360; hue += 5) {
+      out.push({ name: `${g.name} +prey ${hue}`, rgb: blendOver(g.rgb, hslToRgb(hue, 65, 70), MINIMAP_PREY_ALPHA) });
+    }
+  }
+  return out;
+}
+
+/**
+ * The worst a two-tone mark scores over that domain. Best-of-tones against a
+ * common background, which is the model every cased mark here has been scored
+ * by since v1.66 — the casing is drawn a pixel away rather than under the line,
+ * so this asks whether *some* tone of the mark survives the colour beneath it.
+ */
+function worstOnTop(tones) {
+  let worst = { d: Infinity };
+  for (const { name, rgb } of minimapTopBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast(tones, rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+    }
+  }
+  return worst;
+}
+
+test("the frame and the selection square read against everything drawn under them", () => {
+  for (const [what, tones] of [
+    ["frame", minimapViewportTones()],
+    ["selection", minimapSelectionTones()],
+  ]) {
+    const worst = worstOnTop(Object.values(tones));
+    assert.ok(
+      worst.d >= MIN_DELTA_E,
+      `the ${what} scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+    );
+  }
+});
+
+test("the single near-whites did not — a fed biome erased both of them", () => {
+  // The failure, pinned (v1.25's rule). Translucent, so the score is the
+  // composite against the ground, the way the contagious zone is scored.
+  const domain = minimapTopBackgrounds();
+  const washed = (rgb, tone, alpha) =>
+    Math.min(...VISION_MODELS.map((v) => deltaE(blendOver(rgb, tone, alpha), rgb, v)));
+  for (const [what, tone, alpha, bar] of [
+    ["frame", { r: 226, g: 238, b: 255 }, 0.85, 0.2],
+    ["selection", { r: 255, g: 255, b: 255 }, 0.9, 0.2],
+  ]) {
+    const scores = domain.map((g) => washed(g.rgb, tone, alpha));
+    const worst = Math.min(...scores);
+    assert.ok(worst < bar, `the old ${what} scored ${worst.toFixed(2)} — not the collision this was`);
+    // Not one background: a sixth of the domain, as a lower bound. A future
+    // domain can only be larger, and the marks it adds will be brighter.
+    const failed = scores.filter((d) => d < MIN_DELTA_E).length;
+    assert.ok(failed / domain.length > 0.15, `only ${((failed / domain.length) * 100).toFixed(1)}% of backgrounds failed`);
+  }
+  // And the reason, which is the thing worth keeping: the map's own crop, four
+  // deep, is brighter than either of them.
+  const mote = foodMote();
+  let bright = minimapWater();
+  for (let k = 0; k < MINIMAP_PELLET_STACK; k++) bright = addOver(bright, mote, mote.a);
+  assert.ok(toLab(bright)[0] > 90, `a stacked patch is only L* ${toLab(bright)[0].toFixed(0)} — the premise has moved`);
+});
+
+test("a single tone would have cleared this bar, and the pair is still the mark", () => {
+  // v1.70 swept HSL against the pond's backgrounds and found the best single
+  // opaque colour anywhere scored 17.6 against a bar of 25 — so two tones were
+  // a necessity there. This surface is the first where that is *not* true: the
+  // little map's darkest ground is nearly black and its brightest pixel is
+  // nearly white, but a saturated blue splits them, and hsl(240, 100%, 52%)
+  // clears every background here by 56.9. The pair ships anyway, and this test
+  // is the honest half of that choice — a future me is entitled to know the
+  // single tone existed, and that the argument for the pair is durability
+  // (this domain has grown in v1.24, v1.27, v1.34, v1.48 and v1.57) rather
+  // than a number.
+  const single = worstOnTop([hslToRgb(240, 100, 52)]);
+  assert.ok(single.d > MIN_DELTA_E, `even the best single tone scores ${single.d.toFixed(1)} — v1.70's case, not this one`);
+  // Neither half of the shipped mark works alone, which is what makes it a pair
+  // rather than a line with a decoration on it.
+  const { line, casing } = minimapViewportTones();
+  assert.ok(worstOnTop([line]).d < 1, `the pale tone alone scores ${worstOnTop([line]).d.toFixed(2)}`);
+  assert.ok(worstOnTop([casing]).d < MIN_DELTA_E, `the casing alone scores ${worstOnTop([casing]).d.toFixed(2)}`);
+});
+
+test("both marks are opaque, two-toned, and share their tones", () => {
+  const frame = minimapViewport();
+  const box = minimapSelection();
+  for (const css of [frame.line, frame.casing, box.line, box.casing]) {
+    assert.ok(!/rgba|hsla/.test(css), `${css} is translucent — a cased mark carries a dark tone, not an alpha`);
+  }
+  // One pale and one dark, or the casing is decoration.
+  const L = (rgb) => toLab(rgb)[0];
+  const { line, casing } = minimapViewportTones();
+  assert.ok(L(line) > 90, `the pale tone is only L* ${L(line).toFixed(1)}`);
+  assert.ok(L(casing) < 10, `the casing is L* ${L(casing).toFixed(1)} — not dark enough to be one`);
+  // The two marks are the same pair on purpose: the frame is drawn *over* the
+  // square, so where they cross the only thing between them is the casing, and
+  // that separation is a property of the pair rather than of two near-whites
+  // three ΔE apart — which is what they used to be.
+  assert.deepEqual(minimapSelectionTones(), minimapViewportTones());
+  const old = Math.max(...VISION_MODELS.map((v) => deltaE({ r: 226, g: 238, b: 255 }, { r: 255, g: 255, b: 255 }, v)));
+  assert.ok(
+    old < MIN_DELTA_E,
+    `the two old tones were ${old.toFixed(1)} apart at best — if that clears the bar they were telling themselves apart`
+  );
+  let apart = Infinity;
+  for (const v of VISION_MODELS) apart = Math.min(apart, deltaE(line, casing, v));
+  assert.ok(apart >= MIN_DELTA_E, `the pale and the casing are only ${apart.toFixed(1)} apart`);
 });
 
 // ---- The energy bar (v1.29) ----

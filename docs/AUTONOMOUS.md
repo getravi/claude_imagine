@@ -270,14 +270,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   of the family: all three strengths bottom out at **ΔE 0.00**, the faint one is
   under the just-noticeable difference on **26.3%** of the pond, and the *pair*
   whose difference is the entire content of v1.32 is 0.00 apart at worst.
-  `render.js` is off the literal list entirely now. **Two marks left and both
-  are on other surfaces**: the inspector swatch (`main.js`) and the minimap's
-  viewport rectangle. What v1.70 also leaves is a warning about the list itself
-  — every remaining entry carries a *description* I wrote ("a rule rather than a
-  mark", "a near-white stroke"), and the overlay was skipped for six releases
-  because of the noun in its own entry and not because anybody judged it safe.
-  Read those classifications as guesses and check the classification before
-  trusting what follows from it.
+  `render.js` is off the literal list entirely now. What v1.70 also leaves is a
+  warning about the list itself — every remaining entry carries a *description*
+  I wrote ("a rule rather than a mark", "a near-white stroke"), and the overlay
+  was skipped for six releases because of the noun in its own entry and not
+  because anybody judged it safe. Read those classifications as guesses and
+  check the classification before trusting what follows from it.
+  **The minimap's last two closed in v1.73** (`minimapViewport()`,
+  `minimapSelection()`), and taking that warning at its word is the whole
+  reason: the frame's entry said "a near-white stroke over anything the little
+  map can draw" and the square's said "the loudest thing available … over a
+  near-black map", and the second is a claim about the *map* that this project
+  falsified itself in v1.57 by making the pellet additive. Four pellets stack in
+  one minimap pixel and the brightest pixel it paints is `rgb(222, 255, 255)`;
+  both marks bottom out at ΔE 0.00–0.01 over the 5,088 colours the map can leave
+  under a mark drawn last. **One entry left on the whole list**: the inspector
+  swatch in `main.js`, whose sibling the ancestry pips are painted from
+  `style.css` where no sweep here can reach. Five items struck off and five were
+  hiding something. What v1.73 leaves in turn is bigger than what it closed —
+  see the two frequency lessons below, and note that the eighty-line rasteriser
+  that produced them lives in a scratch directory and nothing in the suite can
+  ask its question.
   **The Muller plot's "other" band closed in v1.62** (`OTHER_TEXTURE`) — a
   dotted stipple in the band's own colour, outside `BAND_TEXTURES` so no lineage
   can be dealt it, dimming by the factor the lineage fills already dim by. What
@@ -2173,3 +2186,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   place where the answer is stable. **A change to the world that happens to
   flatter the instrument I shipped this cycle needs a reason that would have
   applied before I built it.**
+
+- **An enumeration says how many backgrounds defeat a mark; it cannot say how
+  often that happens.** Every colour audit in this project since v1.25 reports a
+  worst case and a share of a hand-written list, in which a background nobody
+  ever sees weighs the same as one that is half the map. v1.73 pointed
+  `rendershot.js`'s recorder at the minimap, rasterised the op stream into a
+  pixel buffer, and asked the second question for the first time: the frame
+  failed on **0.61%** of the pixels it is really drawn on and the selection
+  square on **2.08%**, against 28.9% and 19.8% of the enumeration. Both numbers
+  are needed and they mean different things — the enumeration says the mark is
+  *broken*, the frequency says whether anyone is *hitting* it — and the pond
+  view has never had the second one at all. The recorder has been able to
+  answer this since v1.40 and had only ever been asked for hashes.
+- **A mark's background can be correlated with its own placement, and the
+  correlation can come from its subject rather than from its mechanic.** v1.55's
+  rule is that if a mark's own mechanic puts something underneath it, that is the
+  first background. The minimap's selection square fails three times as often as
+  the viewport frame, and nothing about the square puts anything under it: it is
+  drawn around a *creature*, and creatures are where the food is, and the food is
+  what defeats it. Before sampling a mark's backgrounds, ask what decides where
+  the mark goes — and if the answer is "a thing in the world", sample every one
+  of them, because the first pass here measured 36 placements, found zero
+  failures, and would have shipped "that one was fine".
+- **A necessity measured on one surface is a taste everywhere else until it is
+  measured again.** v1.70 swept all of HSL against the pond's backgrounds, found
+  the best single opaque colour anywhere scored 17.6 against a bar of 25, and
+  gave v1.34's "no background is close to both" its first number. On the minimap
+  the same sweep says **56.9** — a single tone would have worked. The pair
+  shipped anyway on a durability argument (this map's background set has grown
+  five times in fifteen releases, and an enumeration that keeps growing has to be
+  re-searched), and the argument is written down *as* an argument with a test
+  asserting the single tone cleared. A principle that has been measured once is
+  the easiest thing in this file to quote as though it were measured always.

@@ -5307,6 +5307,167 @@ About four minutes. For the two distance distributions, take
 at each birth. For the sweep, pass `speciationDistance` in the config: nothing
 else changes, so the same pond can be re-read at every row.
 
+## The two marks drawn last, and the crop that outshone them (v1.73)
+
+The minimap paints two things after everything else: the rectangle showing where
+the camera is pointed (v1.17), and the small square around the creature you
+clicked. Both were single translucent near-whites — `rgba(226, 238, 255, 0.85)`
+and `rgba(255, 255, 255, 0.9)` — and both were the last two entries on v1.61's
+list of colours no audit had ever measured.
+
+What kept them there was the *prose* beside them, which is v1.70's finding one
+list-item earlier. The frame's entry read "a near-white stroke over anything the
+little map can draw". The square's was filed under **furniture**: "the loudest
+thing available … carries no distinction beyond 'this one' — there is nothing to
+compare it against."
+
+Both sentences are claims about the *mark*. Whether a near-white reads is a
+claim about the *map*, and that claim — this map's brightest pixel is dark —
+stopped being true in v1.57, in this project's own release notes. v1.57 gave the
+minimap pellet the pond's `foodMote()` **drawn additively**, precisely so it
+would survive a bright background. Additive marks stack.
+
+### How bright the little map actually gets
+
+Counted over twelve ponds at 6,000 ticks with every mechanic switched on, by
+the number of pellets whose centres land in the same minimap pixel:
+
+| pellets in one pixel | share of occupied pixels |
+| ---: | ---: |
+| 1 | 93.4% |
+| 2 | 5.9% |
+| 3 | 0.6% |
+| 4 | 0.1% |
+
+Four is the observed maximum, and the brightest pixel this map has been seen to
+paint is **`rgb(222, 255, 255)`** — two channels clipped at the top. The old
+default pond is thinner (three deep) and still reaches `rgb(250, 232, 210)`,
+which is not the crop at all: it is a hunter's own badge.
+
+### The two marks, measured
+
+The domain is everything, because these two are drawn last: every ground, every
+field over it, the contagious zone, rock, corpses, hunter badges, prey dots in
+all 360 lineage hues, and the crop stacked one to four deep — 5,088 colours,
+under all four vision models. At this scale the marks are each other's
+backgrounds (v1.57), and the topmost mark's backgrounds are all of them.
+
+| mark | worst ΔE | under the bar (25) | under the JND (2.3) |
+| --- | ---: | ---: | ---: |
+| the frame, `rgba(226, 238, 255, 0.85)` | **0.01** | 28.9% | 1.22% |
+| the selection square, `rgba(255, 255, 255, 0.9)` | **0.00** | 19.8% | 1.97% |
+| both, cased | **48.2** | 0% | 0% |
+
+An enumeration weights every background equally, so it says how many colours
+defeat the mark and not how often that happens. For that, the minimap's own
+recorded drawing commands were rasterised into a pixel buffer, and the marks
+scored against the colours actually under them:
+
+| mark | pixels | worst ΔE | under the bar |
+| --- | ---: | ---: | ---: |
+| the frame (12 ponds × 3 zooms) | 15,334 | **0.14** | 0.61% |
+| the selection square (every living creature, 12 ponds) | 21,710 | **3.73** | 2.08% |
+
+Rare, total, and landing where a viewer is most likely to be looking, because a
+fed biome is where the pond is.
+
+**The square's rate is three times the frame's, and that is not noise.** A frame
+is a line laid across the map wherever the camera happens to be. A selection
+square is drawn *around a creature*, and creatures are where the food is — its
+background is correlated with its own placement. This is v1.55's rule with the
+correlation arriving from the mark's subject rather than from the mark's own
+mechanic, and it is also a lesson about sample size: the first pass measured one
+selected creature per pond per zoom, 36 placements, found nothing at all, and
+would have shipped *"the square was fine"*.
+
+### The fix, and the thing this surface says that the pond does not
+
+Both marks are opaque and two-toned now: the pale line `rgb(226, 238, 255)` —
+the exact colour v1.17 chose — with the house casing `hsl(232, 55%, 7%)` stroked
+one pixel outside it. The colour was never the bug. Alone, that pale scores 0.02
+and the casing scores 3.36; together they clear the bar by 48.2. Neither half
+works and the pair does.
+
+The casing is a *ring*, not a wider stroke under a narrower one. `render.js`
+cases its rings by laying the rim down at `width + 1.1`, which leaves half a
+pixel of dark either side — fine where a pixel is a fraction of a body, and
+wrong on a map 180 pixels across, where half a pixel of anything composites to
+exactly the grey the mark is trying not to be. Two crisp hairlines a pixel apart
+is the same idea at a scale that can hold it, and it is what the hunter badge
+and the corpse already do with squares.
+
+Then the honest part. v1.70 swept all of HSL against the *pond's* backgrounds
+and found the best single opaque colour anywhere scored **17.6** against a bar
+of 25 — so two tones were a necessity there, and v1.34's "no background is close
+to both" had a number behind it for the first time. The same sweep here says
+something different:
+
+| surface | best single opaque tone | worst-case ΔE |
+| --- | --- | ---: |
+| the pond (v1.70) | `hsl(240, 100%, 15%)` | 17.6 |
+| the little map (v1.73) | `hsl(240, 100%, 52%)` | **56.9** |
+
+**A single tone would have worked here.** The map's darkest ground is nearly
+black and its brightest pixel is nearly white, but a saturated blue splits them
+with room to spare. The pair ships anyway, on a durability argument rather than
+a number: this domain has grown in v1.24 (terrain), v1.27 (enriched ground),
+v1.34 (the contagious zone), v1.48 (rock) and v1.57 (corpses, and the additive
+pellet that caused this bug), and a value pinned by an enumeration that keeps
+growing has to be re-searched every time the map learns to draw something. A
+light tone and a dark tone cannot both be swallowed by whatever arrives next.
+
+That argument is a choice, not a measurement, and it is recorded as one — a test
+asserts the single tone would have cleared, so a future me cannot mistake the
+house style for a necessity on this surface.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  import * as P from "./src/palette.js";
+  import { terrainBandFill, TERRAIN_BANDS } from "./src/minimap.js";
+  const rgbOf = (c) => { const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return { r: +m[1], g: +m[2], b: +m[3] }; };
+  const anyOf = (a, n) => 1 - (1 - a) ** n, base = [];
+  const water = P.minimapWater(), grounds = [water];
+  for (let b = 0; b < TERRAIN_BANDS; b++) {
+    const m = terrainBandFill(b).match(/rgba?\(([^)]+)\)/)[1].split(",").map(Number);
+    const g = P.blendOver(water, { r: m[0], g: m[1], b: m[2] }, m[3]), w = P.minimapBiomeWash();
+    grounds.push(g, P.blendOver(g, w, w.a));
+    for (const r of [0.5, 1]) { const t = P.detritusTint(r); grounds.push(P.blendOver(g, t, t.a)); } }
+  const hz = P.hazardTint();
+  for (const g of grounds) base.push(g, P.blendOver(g, hz, anyOf(hz.a, P.HAZARD_AUDIT_SOURCES)));
+  const D = [...base, P.barrierRockTones().fill, P.barrierRockTones().edge,
+    rgbOf(P.minimapCorpseMark().rim), rgbOf(P.minimapCorpseMark().core),
+    ...Object.values(P.minimapPredatorTones())];
+  const mote = P.foodMote();
+  for (const g of base) { let c = g; for (let k = 0; k < P.MINIMAP_PELLET_STACK; k++) { c = P.addOver(c, mote, mote.a); D.push(c); } }
+  for (const g of base) for (let h = 0; h < 360; h += 5) D.push(P.blendOver(g, P.hslToRgb(h, 65, 70), P.MINIMAP_PREY_ALPHA));
+  const wash = (t, a) => { let w = Infinity, n = 0, j = 0;
+    for (const bg of D) { let d = Infinity;
+      for (const v of P.VISION_MODELS) d = Math.min(d, P.deltaE(P.blendOver(bg, t, a), bg, v));
+      w = Math.min(w, d); if (d < P.MIN_DELTA_E) n++; if (d < 2.3) j++; }
+    return [w.toFixed(2), (100 * n / D.length).toFixed(1) + "%", (100 * j / D.length).toFixed(2) + "%"]; };
+  const pair = (tones) => { let w = Infinity;
+    for (const bg of D) for (const v of P.VISION_MODELS) w = Math.min(w, P.markContrast(tones, bg, v));
+    return w.toFixed(2); };
+  console.log(D.length, "backgrounds");
+  console.log("old frame    ", ...wash({ r: 226, g: 238, b: 255 }, 0.85));
+  console.log("old selection", ...wash({ r: 255, g: 255, b: 255 }, 0.9));
+  const t = P.minimapViewportTones();
+  console.log("cased pair   ", pair(Object.values(t)), "| pale alone", pair([t.line]), "| casing alone", pair([t.casing]));
+  let best = { d: -1 };
+  for (let h = 0; h < 360; h += 6) for (let s = 0; s <= 100; s += 10) for (let l = 0; l <= 100; l += 4) {
+    const c = P.hslToRgb(h, s, l); let d = Infinity;
+    for (const bg of D) { for (const v of P.VISION_MODELS) { d = Math.min(d, P.deltaE(c, bg, v)); if (d <= best.d) break; } if (d <= best.d) break; }
+    if (d > best.d) best = { d: +d.toFixed(2), h, s, l }; }
+  console.log("best single opaque tone anywhere:", JSON.stringify(best));'
+```
+
+Under five seconds, all four tables' headline numbers. Every one of them ships
+as a test in `test/palette.test.js`, including both old
+collisions — a suite that only knows the new numbers stays green while somebody
+restores the old ones.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

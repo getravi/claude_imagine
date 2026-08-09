@@ -4,6 +4,100 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.73.0] — 2026-08-09
+
+The minimap draws two marks after everything else: the rectangle showing where
+the camera is pointed, and the little square around the creature you clicked.
+Both were single translucent near-whites, and both were the last two entries on
+v1.61's list of colours the audit had never measured. The frame's entry called
+it *"a near-white stroke over anything the little map can draw"*; the square's
+filed it under **furniture** — *"the loudest thing available … carries no
+distinction beyond 'this one'"*.
+
+Neither sentence is a number, and the second stopped being true in v1.57, when
+the pellet became the pond's *additive* mote. Four pellets land in one minimap
+pixel in a fed biome, and the brightest pixel this map has been observed to
+paint is `rgb(222, 255, 255)` — two channels clipped at the top. A near-white
+stroke over that is not faint. It is gone.
+
+### Measured
+
+Over the **5,088** colours the map can leave under a mark drawn last — every
+ground, every field over it, the contagious zone, rock, and every mark the map
+paints, because at this scale the marks are each other's backgrounds — under
+all four vision models:
+
+| mark | worst ΔE | under the bar (25) | under the JND (2.3) |
+| --- | ---: | ---: | ---: |
+| the frame, `rgba(226, 238, 255, 0.85)` | **0.01** | 28.9% | 1.22% |
+| the selection square, `rgba(255, 255, 255, 0.9)` | **0.00** | 19.8% | 1.97% |
+| both, cased | **48.2** | 0% | 0% |
+
+And over the pixels the marks are really drawn on — twelve ponds at 6,000 ticks
+with every mechanic switched on — the frame failed on **0.61%** of 15,334 pixels
+and vanished outright on 0.04%, while the selection square, drawn around every
+living creature in turn, failed on **2.08%** of 21,710. That is the honest size
+of the bug and also why it survived fifty-six releases: rare, total, and landing
+exactly where a viewer is most likely to be looking.
+
+The square's rate being three times the frame's is the part worth keeping. A
+frame is a line laid across the map wherever the camera happens to be; a
+selection square is drawn *around a creature*, and creatures are where the food
+is. Its background is correlated with its own placement — v1.55's rule (ask what
+the world puts underneath a mark, and if the mark's own mechanic puts something
+there, that is the first background) with the correlation coming from the
+subject rather than from the mechanic.
+
+### Changed
+
+- **`minimapViewport()` and `minimapSelection()`** (`src/palette.js`) — both
+  marks are two-tone and opaque now: the pale line `rgb(226, 238, 255)`, which
+  is the exact colour v1.17 chose, with the house casing `hsl(232, 55%, 7%)`
+  stroked one pixel outside it. The colour was never the bug; what the fix adds
+  is the dark under it. Alone the pale scores 0.02 and the casing 3.36 — neither
+  half works and the pair clears the bar by 48.2, which is v1.34's rule arriving
+  on the one surface it had never been applied to.
+- **A casing, not a wider stroke.** `render.js` cases its rings by laying the
+  rim down at `width + 1.1`, which leaves half a pixel of dark either side —
+  fine where a pixel is a fraction of a body, wrong on a map 180 pixels across,
+  where half a pixel of anything composites to the grey the mark is trying not
+  to be. `minimap.js` strokes the same rectangle inflated by one pixel first, so
+  each mark is two crisp hairlines. Same idiom the hunter badge and the corpse
+  already use with squares.
+- **The two marks now share one pair of tones.** They were 13.9 ΔE apart at
+  best, which is under the bar this audit tells two marks apart by and far
+  enough to look deliberate. What separates them is their size — the channel
+  v1.34 says costs nothing and survives every vision model — and the casing,
+  which matters because the frame is drawn *over* the square.
+- **`MINIMAP_PELLET_STACK`**, exported with its measurement: of the occupied
+  minimap pixels over twelve ponds, 93.4% hold one pellet, 5.9% two, 0.6% three
+  and 0.1% four. Four is a count, not a round number.
+
+### Added
+
+- **Four tests** in `test/palette.test.js`: the pair clears the bar on the whole
+  domain; both old near-whites are pinned *at* their collisions and on at least
+  a sixth of it (v1.25's rule — a suite that only knows the new numbers stays
+  green while someone restores the old ones); both tones are opaque and one is
+  pale and one dark; and the honest half of the design choice — a single
+  saturated blue would also have cleared, at 56.9.
+- **A test in `test/minimap.test.js`** that the module lays both tones down,
+  casing first, exactly one pixel outside the line. `palette.test.js` measures
+  the tones; this checks the drawing.
+
+### Note
+
+Unlike the pond, **this surface admits a single tone.** v1.70 swept all of HSL
+against the pond's backgrounds and the best single opaque colour anywhere scored
+17.6 against a bar of 25, which made two tones a necessity. Here the best single
+tone is `hsl(240, 100%, 52%)` at **56.9** — it would have worked. The pair ships
+anyway, because a value pinned by an enumeration is a value that has to be
+re-searched every time the map learns to draw something, and this map's domain
+has grown in v1.24, v1.27, v1.34, v1.48 and v1.57. That is a durability argument
+and not a measurement, and it is recorded as one.
+
+Rendering only — no simulation state is touched and no fingerprint moves.
+
 ## [1.72.0] — 2026-08-09
 
 The Tree of Life is the view this project's landing copy leads with, and the

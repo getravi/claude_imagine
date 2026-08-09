@@ -529,6 +529,140 @@ export function minimapPreyDotRgb(hue) {
 }
 
 /**
+ * The near-black the little map's two topmost marks are cased in — the same
+ * `hsl(232, 55%, 7%)` the refuge ring and the vision overlay use, so the house
+ * dark is one value rather than three copies of a taste.
+ */
+const MINIMAP_CASING_HSL = [232, 55, 7];
+const MINIMAP_CASING = `hsl(${MINIMAP_CASING_HSL[0]}, ${MINIMAP_CASING_HSL[1]}%, ${MINIMAP_CASING_HSL[2]}%)`;
+
+/**
+ * The pale half of both — `rgb(226, 238, 255)`, the exact colour `minimap.js`
+ * has stroked the viewport with since v1.17, now opaque and carrying a dark
+ * tone instead of an alpha.
+ */
+const MINIMAP_FRAME_RGB = { r: 226, g: 238, b: 255 };
+const MINIMAP_FRAME = rgbCss(MINIMAP_FRAME_RGB);
+
+/**
+ * The viewport rectangle: where the camera is pointed, drawn last and over
+ * everything (v1.17, audited here in v1.73).
+ *
+ * This was the last item on v1.61's list of marks the audit had never
+ * measured, and its entry there said what kept it off the list for twelve
+ * releases — *"a near-white stroke over anything the little map can draw"*.
+ * That sentence is a description, not a number, which is v1.70's finding one
+ * item further down the same list: the category I wrote beside an entry is the
+ * thing I skim. Near-white is a claim about the mark. What decides whether it
+ * reads is the claim nobody wrote down — that this map's brightest pixel is
+ * dark — and the map has been painting `rgb(222, 255, 255)` for two releases,
+ * because v1.57 gave the pellet the pond's *additive* mote and four of them
+ * land in one minimap pixel in a fed biome. That is the brightest pixel the map
+ * has been observed to paint, and two of its three channels are clipped.
+ *
+ * Measured over the 5,088 colours this map can leave under its topmost mark,
+ * the old `rgba(226, 238, 255, 0.85)` bottoms out at **ΔE 0.01** and is under
+ * the bar on **28.9%** of them; the selection square below was worse still
+ * (**0.00**, under the bar on 19.8% and under the *just-noticeable difference*
+ * on 2.0%). Over the pixels the frame is really drawn on — twelve ponds, three
+ * zooms, everything switched on — it fails on 0.61% and vanishes outright on
+ * 0.04%, which is the honest size of the bug and also the reason it survived
+ * for fifty-six releases: the failure is rare, total, and lands exactly where a
+ * viewer is most likely to be looking, because a fed biome is where the pond is.
+ *
+ * The colour was never the bug. Opaque, `rgb(226, 238, 255)` paired with the
+ * house casing clears the bar by **48.2** on every one of those backgrounds —
+ * so the pale tone is the one v1.17 chose, and what the fix adds is the dark
+ * under it. Alone that pale scores 0.02 and the casing alone scores 3.36:
+ * neither half works and the pair does, which is v1.34's rule restated in the
+ * one place it had never been applied.
+ *
+ * And one thing this surface says that the pond does not. Swept over all of
+ * HSL, the best *single* opaque tone here scores **56.9** — v1.70 ran the same
+ * search against the pond's backgrounds and got 17.6, which is why two tones
+ * were a necessity there and are a *choice* here. The choice is made on
+ * durability rather than on the number: this domain has grown in v1.24, v1.27,
+ * v1.34, v1.48 and v1.57, and a value pinned by an enumeration that keeps
+ * growing has to be re-searched every time the map learns to draw something.
+ *
+ * `width` is in minimap pixels and the casing is a *ring*, not a wider line:
+ * `minimap.js` strokes the same rectangle inflated by one pixel first, so the
+ * mark is two crisp hairlines rather than a two-and-a-bit-pixel smear. At a
+ * fifth of the pond's scale a sub-pixel casing composites to a grey, which is
+ * the tone the mark is trying not to be.
+ */
+export function minimapViewport() {
+  return { line: MINIMAP_FRAME, casing: MINIMAP_CASING, width: 1 };
+}
+
+/**
+ * How deep the little map's pellets are stacked for the audit.
+ *
+ * Not a taste. `minimap.js` draws the crop with `globalCompositeOperation =
+ * "lighter"`, so two pellets landing in one of the map's 180×120 pixels add
+ * rather than cover, and the ceiling is whatever the pond's densest patch
+ * manages. Counted over twelve ponds at 6,000 ticks with every mechanic
+ * switched on: of the occupied minimap pixels, 93.4% hold one pellet, 5.9%
+ * two, 0.6% three and 0.1% **four** — so four is the measured maximum and not a
+ * round number, and the brightest pixel this map has been observed to paint is
+ * `rgb(222, 255, 255)`, a channel clipped at the top. The old default pond is
+ * thinner (three deep at worst) and still reaches `rgb(250, 232, 210)`, which
+ * is not the crop at all but a hunter's own badge.
+ */
+export const MINIMAP_PELLET_STACK = 4;
+
+/** The viewport rectangle's two tones as RGB, for the audit. */
+export function minimapViewportTones() {
+  return { line: { ...MINIMAP_FRAME_RGB }, casing: hslToRgb(...MINIMAP_CASING_HSL) };
+}
+
+/**
+ * The selection square: the inspected creature, so a click in the pond tells
+ * you where in the pond.
+ *
+ * `rgba(255, 255, 255, 0.9)`, and v1.61's list filed it under *furniture* —
+ * "the loudest thing available … carries no distinction beyond 'this one'".
+ * Both halves of that were wrong in the same way. It is not the loudest thing
+ * available on a map whose pellets stack additively past it; and a mark with no
+ * distinction to carry still has to be *seen*, which is v1.25's whole lesson —
+ * the predator core that started this audit also carried no distinction and was
+ * invisible to everyone.
+ *
+ * It is also the *worse* of the two in practice, which is the finding to keep.
+ * Drawn around every living creature in twelve ponds — 21,710 pixels — the old
+ * white failed on **2.08%** of them against the frame's 0.61%, because a frame
+ * is a line laid wherever the camera happens to be and this is drawn around a
+ * creature, and creatures are where the food is. Its background is correlated
+ * with its own placement. A first pass measured 36 placements, found nothing,
+ * and would have shipped "the square was fine" — 36 coin flips at a rate under
+ * one in fifty.
+ *
+ * So it gets the same treatment, in the idiom this surface already uses for
+ * the hunter and the corpse: a dark square with a bright one inside it, except
+ * that here both are strokes because the thing in the middle is the creature.
+ * `size` is the bright square's side in minimap pixels and the casing is drawn
+ * one pixel outside it.
+ *
+ * The pale tone is the frame's, not white, and that is the one deliberate
+ * change of colour here: the two marks are drawn on the same map and the
+ * viewport rectangle is drawn *over* this one, so where a selection sits on the
+ * frame the only thing separating them is the casing between. The two old
+ * near-whites were **ΔE 13.9** apart at best — a difference too small to tell
+ * two marks apart by the bar this audit judges by, and large enough to look
+ * like it was meant to. One pale tone and one dark says what was always true:
+ * these two are told apart by their size, which is the channel v1.34 says
+ * costs nothing and survives every vision model.
+ */
+export function minimapSelection() {
+  return { line: MINIMAP_FRAME, casing: MINIMAP_CASING, size: 5, width: 1 };
+}
+
+/** The selection square's two tones as RGB, for the audit. */
+export function minimapSelectionTones() {
+  return { line: { ...MINIMAP_FRAME_RGB }, casing: hslToRgb(...MINIMAP_CASING_HSL) };
+}
+
+/**
  * The three ways out of this world, as colours.
  *
  * The mortality bar has said *starved / aged / hunted* in gold, grey and orange

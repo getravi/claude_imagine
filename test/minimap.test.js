@@ -20,7 +20,7 @@ import {
   drawMinimap,
 } from "../src/minimap.js";
 import { DetritusField } from "../src/detritus.js";
-import { minimapPredatorMark, minimapCorpseMark, foodMote } from "../src/palette.js";
+import { minimapPredatorMark, minimapViewport, minimapSelection, minimapCorpseMark, foodMote } from "../src/palette.js";
 import { recordingContext } from "../src/rendershot.js";
 import { Camera } from "../src/camera.js";
 import { World } from "../src/world.js";
@@ -190,7 +190,52 @@ test("drawing paints the pond and never emits a NaN", () => {
   // so the count is stated as what it is rather than fudged with a tolerance.
   const rects = called(ops, "fillRect").length;
   assert.equal(rects, 1 + world.food.items.length + world.creatures.length + predatorCount(world));
-  assert.equal(called(ops, "strokeRect").length, 4 + 1);
+  // Both stroked marks are cased since v1.73 — a dark rectangle a pixel
+  // outside a pale one — so each is two `strokeRect`s: four viewport pieces
+  // over the seam, plus the selection square.
+  assert.equal(called(ops, "strokeRect").length, 2 * (4 + 1));
+});
+
+test("the frame and the selection square are each two rectangles, dark outside pale", () => {
+  // v1.34's rule, asserted on the drawing rather than on the palette: a mark
+  // that carries only one tone can be swallowed whole, and the map's own crop
+  // stacks additively past a near-white. `palette.test.js` measures the tones;
+  // this checks the module lays both of them down, outer one first, a pixel
+  // apart — a casing drawn *under* the line at a wider stroke would composite
+  // to a grey at a fifth of the pond's scale.
+  const world = new World(makeConfig({ seed: 8 }));
+  for (let i = 0; i < 200; i++) world.step();
+  const cam = new Camera(world.config);
+  cam.zoom = 4;
+  cam.x = world.config.width / 2;
+  cam.y = world.config.height / 2;
+
+  const { ctx, ops } = recorder();
+  drawMinimap(ctx, world, cam, { selected: world.creatures[0] });
+
+  const frame = minimapViewport();
+  const box = minimapSelection();
+  // Every stroked rectangle in the log, with the colour that was live for it.
+  const strokes = [];
+  let colour = null;
+  for (const op of ops) {
+    if (op[1] === "set:strokeStyle") colour = op[2];
+    if (op[1] === "strokeRect") strokes.push({ colour, r: op.slice(2) });
+  }
+  assert.equal(strokes.length, 2 * (1 + 1), "one viewport piece and one selection, cased");
+  for (const [outer, inner] of [
+    [strokes[0], strokes[1]],
+    [strokes[2], strokes[3]],
+  ]) {
+    const mark = outer === strokes[0] ? box : frame;
+    assert.equal(outer.colour, mark.casing, "the casing is not laid down first");
+    assert.equal(inner.colour, mark.line, "the pale line is not laid down second");
+    assert.equal(outer.r[0], inner.r[0] - 1, "the casing is not one pixel outside");
+    assert.equal(outer.r[1], inner.r[1] - 1);
+    assert.equal(outer.r[2], inner.r[2] + 2);
+    assert.equal(outer.r[3], inner.r[3] + 2);
+  }
+  assert.equal(strokes[1].r[2], box.size, "the selection square is not the size the palette gives");
 });
 
 test("a predator on the minimap is a badge, not a coloured dot", () => {

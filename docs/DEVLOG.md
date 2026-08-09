@@ -7848,3 +7848,160 @@ will be that spread in every world this project ever runs. Which means the
 `populationStart` — it is a constant with a percentage sign. That is exactly
 what makes it a good control and exactly why it should never be reported as a
 finding.
+
+## Entry 85 — the two marks drawn last, and the crop that outshone them · 2026-08-09
+
+`test/colourliterals.test.js` has held a list of colours the audit had never
+measured since v1.61. Three have come off it — the predator outline (v1.66),
+the vision overlay's three strengths (v1.70), and each of them was hiding
+something. Two were left, and both are on the minimap: the rectangle that says
+where the camera is pointed, and the small square around the creature you
+clicked. They are the last two things this map paints.
+
+The reason they were still there is the sentence I wrote beside each of them.
+
+> the viewport rectangle. A near-white stroke over anything the little map can
+> draw.
+
+> the selection square. White at 0.9 over a near-black map is the loudest thing
+> available and carries no distinction beyond 'this one' — there is nothing to
+> compare it against.
+
+v1.70's whole finding was that a category I write beside an entry is the thing I
+skim, and here it is again, twice, in the same file, one line apart. Both
+sentences are claims about the *mark*. Whether a near-white reads is a claim
+about the *map* — and the second entry states that claim outright ("over a
+near-black map"), which is the part that had been false for two releases.
+
+### The bug is in my own release notes
+
+v1.57 audited corpses on the minimap and found the pellet there was a hand-copy
+of the pond's mote colour with the pond's arithmetic left behind — a flat wash,
+legible against water and against almost nothing else. So it became
+`foodMote()`, drawn the way the pond draws it: **additive**. I wrote at the
+time that this was "both what makes it survive a bright background and what
+makes a dense patch glow".
+
+A dense patch glows. Counting how much, over twelve ponds at 6,000 ticks with
+everything switched on, by pellets landing in the same minimap pixel: 93.4% of
+occupied pixels hold one, 5.9% two, 0.6% three, 0.1% **four**. The brightest
+pixel this map has been observed to paint is `rgb(222, 255, 255)`, two channels
+clipped at the ceiling.
+
+A near-white stroke over that is not faint. It is gone.
+
+### Two numbers, because an enumeration and a pond answer different questions
+
+The domain for these two is everything, because they are drawn last — every
+ground, every field over it, the zone, rock, corpses, hunter badges, prey dots
+in all 360 hues, and the crop one to four deep. 5,088 colours, four vision
+models:
+
+| mark | worst ΔE | under the bar (25) | under the JND (2.3) |
+| --- | ---: | ---: | ---: |
+| the frame | **0.01** | 28.9% | 1.22% |
+| the selection square | **0.00** | 19.8% | 1.97% |
+
+That says how many colours defeat them, not how often it happens. For the
+second question I pointed `rendershot.js`'s recorder at the minimap and
+rasterised its op stream into a pixel buffer — the recorder has been able to
+answer *what does this module actually draw* since v1.40, and this is the first
+time anything has asked it for pixels rather than for a hash. Scored against
+the colours really underneath:
+
+| mark | pixels | worst ΔE | under the bar |
+| --- | ---: | ---: | ---: |
+| the frame, 12 ponds × 3 zooms | 15,334 | 0.14 | **0.61%** |
+| the square, every living creature | 21,710 | 3.73 | **2.08%** |
+
+Rare, total, and landing where a viewer is most likely to be looking.
+
+### The thing I nearly got wrong about the square
+
+My first pass measured the selection square the same way as the frame: one
+selected creature per pond per zoom. Thirty-six placements. It came back
+**0.00% under the bar** — never failed once — and I had begun writing that the
+furniture entry had been half right after all.
+
+Thirty-six coin flips at a rate of one in fifty. Drawing the square around
+*every* living creature instead gives 2.08%, which is three times the frame's
+rate, and the reason is not sampling: a frame is a line laid across the map
+wherever the camera happens to be, and a selection square is drawn **around a
+creature**, and creatures are where the food is. Its background is correlated
+with its own placement.
+
+That is v1.55's rule arriving from a new direction. v1.55 said if a mark's own
+mechanic puts something underneath it, that is the first background, not an edge
+case. Here nothing about the *mark* puts anything underneath it — the
+correlation comes from its **subject**. Same consequence, and I would not have
+found it by asking v1.55's question.
+
+### The fix, and the sentence this surface refuses to support
+
+Both marks are opaque and two-toned now: the pale line `rgb(226, 238, 255)` —
+the exact colour v1.17 picked — with the house casing `hsl(232, 55%, 7%)`
+stroked one pixel outside. Alone the pale scores 0.02 and the casing 3.36;
+together, 48.2. The colour was never the bug. What the fix adds is the dark
+under it, which is the third release running where that has been the answer.
+
+The casing is a ring rather than a wider stroke beneath a narrower one, and
+that is the one thing I could not lift from `render.js`. Its rings lay the rim
+down at `width + 1.1`, leaving half a pixel of dark either side — fine where a
+pixel is a fraction of a body, and wrong on a map 180 pixels across, where half
+a pixel of anything composites to exactly the grey the mark is trying not to be.
+(v1.58's lesson: what you port when you reuse a helper is its preconditions.)
+
+And then the finding I did not expect, which is about the house style itself.
+v1.70 swept all of HSL against the pond's backgrounds, found the best single
+opaque colour anywhere scored 17.6 against a bar of 25, and gave "no background
+is close to both" its first number — a necessity, not a taste. The same sweep
+here:
+
+| surface | best single opaque tone | worst-case ΔE |
+| --- | --- | ---: |
+| the pond (v1.70) | `hsl(240, 100%, 15%)` | 17.6 |
+| the little map (v1.73) | `hsl(240, 100%, 52%)` | **56.9** |
+
+**A single tone would have worked here.** I shipped the pair anyway, and the
+reason is not a number: this map's background set has grown in v1.24, v1.27,
+v1.34, v1.48 and v1.57, and a value pinned by an enumeration that keeps growing
+has to be re-searched every time the map learns to draw something. A light tone
+and a dark tone cannot both be swallowed by whatever arrives next.
+
+That is a durability argument, and durability arguments are exactly the kind of
+thing this project has caught itself dressing up as measurement — v1.72 nearly
+moved a constant to flatter a readout, v1.20's alarm-call line was written
+before its control. So a test asserts the single tone *would* have cleared. A
+future me is entitled to know the house style was a choice on this surface, and
+not to inherit "two tones are necessary" as a fact about every surface because
+it was measured on one.
+
+741 tests, five new, all green. Rendering only: no simulation state is touched
+and no fingerprint moves.
+
+### What this leaves
+
+**The colour-literal list is down to one entry.** The inspector swatch —
+`hsl(${c.hue}, 70%, 55%)` beside "Creature #n" in `main.js`, the lineage hue
+v1.46 proved cannot be an identifier, on the DOM surface, with its sibling the
+ancestry pips painted from `style.css` where no sweep this project has can
+reach. Five items struck off this list and five were hiding something. It would
+be a strange release that broke the run.
+
+**The recorder can produce pixels, and only a scratch script knows it.** The
+rasteriser that produced the second table is eighty lines over `rendershot.js`'s
+op stream and it answers a question nothing in the suite can currently ask:
+*what colour is actually under this mark, in a real pond, at this frequency?*
+Every colour test here works on an enumeration I wrote by hand, and an
+enumeration weights a background nobody ever sees the same as one that is half
+the map. It lives in a scratch directory and it should not.
+
+**And the pond view has never had the second table at all.** Every audit in
+this project — v1.25, v1.34, v1.43, v1.55, v1.66, v1.70 — reports *how many of
+these backgrounds defeat the mark*, and not one reports *how often*. v1.66 came
+closest, weighting predator frames by the diet gene's real distribution, and
+that was about the mark's own state rather than about its background. The
+frequencies here (0.61%, 2.08%) are the first of their kind, and they are the
+number that says whether a failure is a curiosity or a thing people are
+hitting.
+
