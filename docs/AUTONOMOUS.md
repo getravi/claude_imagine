@@ -2106,3 +2106,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   two ways to be true and a sweep with no reader-map cannot tell them apart. Of
   any check that passes by asserting an absence, ask whether the mechanism it is
   watching is even connected.
+- **Step 9, third occurrence: name the endpoint that is not the cache.** v1.42
+  cross-checked a stale run against its jobs; v1.48 found *both* stale and said
+  to reach for a different *kind* of evidence; v1.71 hit it again — for seven
+  minutes `list_workflow_runs` and `list_workflow_jobs` returned **byte-identical**
+  responses with `updated_at` frozen at 00:43:02, while the run had in fact gone
+  green at 00:47:14. The tell is the one v1.48 wrote down (nothing at all moving
+  in any field) and the way out is now concrete rather than a principle:
+  **`get_check_run` on the job's `check_run` id is a different API path and was
+  not cached** — it said `completed / success` immediately — and `get_workflow_run`
+  on the single run id was fresh where the *list* endpoints were not. So the
+  order to try is: the single-resource endpoint, then the check run, then usage.
+  The deployed artifact is still unreachable from this sandbox (`CONNECT tunnel
+  failed, 403` on `getravi.github.io`, exactly as in v1.60), so it is not the
+  fallback and pretending otherwise is the failure v1.60 named.
