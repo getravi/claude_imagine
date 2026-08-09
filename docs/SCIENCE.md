@@ -5191,6 +5191,122 @@ table covers every numeric constant and nothing else, the algebra cancels, the
 three filters are strictly nested and each one bites, the refuge survives all of
 them, and a constant no module reads fails the suite.
 
+## Forty of the forty-five species were dealt, not evolved (v1.72)
+
+The Tree of Life is the figure the landing page leads with, and the caption
+under it has read `N species alive · M ever · K extinct` since v1.6. On twelve
+seeds at 6,000 ticks, `M` is 41–50.
+
+Forty of them are tick 0.
+
+### Why a founder is a species by construction
+
+`phylogeny.js` groups creatures by a single number: the mean absolute
+difference between two genomes, weights and body genes together. A newborn
+joins the nearest living species whose *representative* is within
+`speciationDistance` (0.15), and founds a new species otherwise. So the count
+of species is entirely a question of how that 0.15 compares to the distances
+the pond actually produces.
+
+There are two such distributions, and they do not overlap.
+
+| distance | n | min | median | max |
+| --- | --- | --- | --- | --- |
+| founder against founder | 9,360 | **0.8709** | 1.1144 | 1.3080 |
+| newborn against nearest living representative | 7,499 | 0.0039 | 0.0753 | **0.1774** |
+
+Twelve seeds, 6,000 ticks each. Not one of the 9,360 founder pairs is within
+0.15 of another — the closest is 5.8× the threshold. Forty random genomes are
+forty species and would be at any threshold below 0.87, which means the plot's
+band count at tick 0 is `populationStart` and is not a measurement of anything.
+At the other end, 55 of 7,499 births — 0.73% — land beyond 0.15 of every living
+representative, and those are the branches.
+
+### Sweeping the threshold: a cliff and a plateau
+
+Totals over twelve seeds × 3,000 ticks, with `speciationDistance` moved and
+nothing else (the tree never feeds back, so the pond is bit-for-bit the same
+world at every row — only the observer's reading of it changes):
+
+| `speciationDistance` | founding species | evolved species |
+| --- | --- | --- |
+| 0.05 | 480 | 653 |
+| 0.10 | 480 | 99 |
+| **0.15** (default) | **480** | **13** |
+| 0.18 | 480 | 1 |
+| 0.20 | 480 | 0 |
+| 0.40 | 480 | 0 |
+| 0.80 | 480 | 0 |
+| 0.90 | 478 | 1 |
+| 1.00 | 402 | 14 |
+| 1.20 | 19 | 2 |
+| 1.40 | 12 | 0 |
+
+This closes a lead v1.38's constant sweep left open for thirty-four releases.
+That sweep found five speciation events at 0.15, zero at 0.20, and a flat
+stretch across a twentyfold range above it, and concluded that *the headline
+view is observed from the edge of its instrument's range*.
+
+It is not an edge. It is a cliff with a plateau behind it, and both ends of the
+plateau are in the table above. Above 0.1774 — the largest distance any birth
+in this pond has ever managed — no newborn can branch at all, which is why 0.20
+and 0.80 read identically. The plateau ends at 0.87, the closest two founders
+have ever been, where the *deal* starts collapsing instead: 478 species at 0.90,
+402 at 1.00, 19 at 1.20, and at 1.40 exactly 12 — one per seed, every founder in
+the same species, which is what a threshold past the 1.3080 maximum has to mean.
+(Evolved climbing back to 14 at 1.00 is the same mechanism from the other side —
+once founders share a representative, a descendant can drift past one it was
+never near to begin with.)
+
+So 0.15 is not near a boundary of the instrument. It is sitting in an empty gap
+between two clouds of distances, close to the top of the lower one. Everything
+between 0.18 and 0.87 gives the identical answer, and the default's real
+property is that it is the last value at which descent registers at all.
+
+### What ships, and why it is a caption rather than a claim
+
+The split is derived, not stored: `parentId` is null exactly for a genome that
+came from outside a lineage, and `birthTick` separates the opening deal from a
+stranger posted in later. Both fields have been on every species since the tree
+existed and no surface had ever read them. The caption now says
+
+```
+45 species alive · 45 ever (40 founding, 5 evolved) · 5 extinct
+```
+
+which is v1.65's rule one view over: two of the three arms are supposed to be
+the boring one, so the panel is the experiment and a reader who reads nothing
+else still gets the finding. And the Chronicle says a branch out loud when one
+reaches four members — the size at which the Muller plot gives a lineage a band
+— so the sentence and the picture agree about what a lineage is.
+
+**What this does not say.** That the pond does not evolve: it plainly does, and
+the 55 branches are real descent. That 0.15 is wrong: a threshold in the gap is
+arguably the right place for one, since it is the only region where the answer
+is stable against small changes. What it says is narrower and was invisible
+before the split — the *number* on the Tree of Life is a fact about
+`populationStart`, and the quantity a visitor should be watching is 0–10 rather
+than 41–50.
+
+### Reproducing it
+
+```js
+import { World } from "./src/world.js";
+import { DEFAULT_CONFIG } from "./src/config.js";
+
+for (const seed of [314, 1, 7, 13, 23, 42, 51, 77, 99, 128, 512, 2024]) {
+  const w = new World({ ...DEFAULT_CONFIG, seed });
+  for (let i = 0; i < 6000; i++) w.step();
+  console.log(seed, w.phylogeny.originTally());   // { founding: 40, arrived: 0, evolved: 5 }
+}
+```
+
+About four minutes. For the two distance distributions, take
+`c.genome.distance(other.genome)` over the founders at tick 0, and wrap
+`phylogeny.assign` to record `min(genome.distance(s.rep))` over living species
+at each birth. For the sweep, pass `speciationDistance` in the config: nothing
+else changes, so the same pond can be re-read at every row.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

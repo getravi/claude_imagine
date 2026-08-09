@@ -12,6 +12,7 @@
 // worlds therefore write identical chronicles.
 
 import { RNG } from "./rng.js";
+import { MULLER_MIN_PEAK, speciesOrigin } from "./phylogeny.js";
 
 /**
  * Consecutive observations the population must spend on smoother-than-average
@@ -58,6 +59,7 @@ export class Chronicle {
     this._wasDark = false;
     this._lastKills = 0;
     this._reportedExtinct = new Set();
+    this._reportedBranch = new Set();
     this._dieoff = false;
     this._outbreak = false;
     this._epidemic = false;
@@ -443,6 +445,30 @@ export class Chronicle {
         const pct = Math.round((top.count / pop) * 100);
         this._push(tick, "👑", "lineage", `Species ${top.id} now dominates the pond (${pct}%).`);
       }
+    }
+    // A branch — the one event the Tree of Life is actually about, and the one
+    // it has never said out loud. Forty of the tree's forty-five species are
+    // the genomes tick 0 dealt out, so "a new species" is not news by itself;
+    // what is news is a newborn that drifted past `speciationDistance` from
+    // every living representative, which happens 0–10 times in 6,000 ticks.
+    //
+    // Two guards, and the second is the v1.16 rule. `speciesOrigin` is the
+    // "did this really happen?" test: a founder and a reseeded stranger both
+    // start a species without anything having evolved, and only a branch
+    // carries a parent lineage. And it waits for `MULLER_MIN_PEAK` members, so
+    // the line fires exactly when the plot beside it grows a band — a lineage
+    // of one that dies the same afternoon is churn, and the picture already
+    // agrees that it is.
+    for (const sp of ph.species) {
+      if (sp.peak < MULLER_MIN_PEAK || this._reportedBranch.has(sp.id)) continue;
+      if (speciesOrigin(sp) !== "evolved") continue;
+      this._reportedBranch.add(sp.id);
+      this._push(
+        tick,
+        "🌿",
+        "lineage",
+        `Species ${sp.id} has branched off species ${sp.parentId} — a new lineage, evolved here.`
+      );
     }
     // Notable extinctions: a species that once grew large has just died out.
     for (const sp of ph.species) {

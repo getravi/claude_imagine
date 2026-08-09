@@ -559,6 +559,41 @@ export function describeMuller(shares, span = null) {
   );
 }
 
+/**
+ * The tally under the Tree of Life (v1.72).
+ *
+ * The caption said "45 species alive · 45 ever · 5 extinct" from v1.6, and
+ * every one of those numbers is dominated by the opening deal: forty founders
+ * are forty species by construction, so "ever" is mostly `populationStart`
+ * wearing an evolutionary word. This splits it by `speciesOrigin` — the two
+ * columns that are the null (dealt at the start, posted in later) beside the
+ * one that is the plot's actual subject.
+ *
+ * Written here rather than in `main.js` for the reason the rest of the wording
+ * is: a string built in the render loop is a string no test can read. It is a
+ * caption rather than a spoken sentence, and `describeMuller` deliberately does
+ * not repeat it — that function's stated scope is the part of the figure with
+ * no text form anywhere else, and as of this release the origins have one.
+ *
+ * @param {{founding:number, arrived:number, evolved:number}} tally
+ * @param {number} living species with members right now
+ * @param {number} extinct species whose last member has died
+ */
+export function describeLineages(tally, living, extinct) {
+  const ever = tally.founding + tally.arrived + tally.evolved;
+  const parts = [`${tally.founding.toLocaleString()} founding`];
+  // An arm that reads zero in the default pond is worth showing (it is the
+  // control), but only once the pond has ever needed it — a permanent "0
+  // arrived" is furniture, and the reseed is a safety valve most runs never
+  // trip.
+  if (tally.arrived > 0) parts.push(`${tally.arrived.toLocaleString()} arrived`);
+  parts.push(`${tally.evolved.toLocaleString()} evolved`);
+  return (
+    `${living.toLocaleString()} species alive · ${ever.toLocaleString()} ever ` +
+    `(${parts.join(", ")}) · ${extinct.toLocaleString()} extinct`
+  );
+}
+
 /** An energy rate, at the one decimal place the strip's numbers are worth. */
 function rate(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });

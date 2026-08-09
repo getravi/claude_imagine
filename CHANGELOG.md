@@ -4,6 +4,73 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.72.0] — 2026-08-09
+
+The Tree of Life is the view this project's landing copy leads with, and the
+caption under it has read `N species alive · M ever · K extinct` since v1.6.
+`M` is 41–50 on twelve seeds. **Forty of them are tick 0.** Two random genomes
+are 0.87–1.31 apart on the distance metric that defines a species and
+`speciationDistance` is 0.15, so every founder is its own species *by
+construction* — the plot's band count is `populationStart` wearing an
+evolutionary word. The thing the view is named after happens 0–10 times in
+6,000 ticks, and nothing on the page has ever distinguished the two.
+
+### Added
+
+- **`speciesOrigin()` and `Phylogeny.originTally()`** (`src/phylogeny.js`) — the
+  three ways a species can start, split apart: `founding` (dealt at tick 0),
+  `arrived` (a random genome posted into a running pond by `autoReseed`, the
+  seed-life button, or a re-clustered save), and `evolved` (a newborn that
+  drifted past the threshold from every living representative — the only one
+  that is descent with modification). Read off `parentId` and `birthTick`, two
+  fields every species has carried since the tree existed and that no surface
+  had ever read.
+- **The caption says which is which.** `45 species alive · 45 ever (40
+  founding, 5 evolved) · 5 extinct`. Two of the three arms are the null, so the
+  panel is the experiment — v1.65's rule, one view over. The `arrived` arm is
+  shown only once a pond has actually tripped the reseed valve; a permanent
+  zero is furniture. Wording in `describe.js` (`describeLineages`), not in
+  `main.js`, because a string built in the render loop is one no test can read.
+- **A Chronicle line for a branch** (`🌿`, `lineage`) — *"Species 63 has branched
+  off species 12 — a new lineage, evolved here."* The one event this view is
+  about and the one it never said out loud. Two guards: `speciesOrigin` must
+  say `evolved` (a founder and a reseeded stranger both start a species without
+  anything having evolved), and the lineage must reach `MULLER_MIN_PEAK`
+  members, so the sentence fires exactly when the plot beside it grows a band.
+- **`MULLER_MIN_PEAK`**, exported, replacing the bare `4` that was
+  `displaySpecies`'s default — the Chronicle fires on the same number, and a
+  hand-copied literal is v1.61's colour one module over.
+- **`test/speciation.test.js`** — ten tests. The partition is total and sums to
+  the species list; the founder gap is pinned rather than the count it produces;
+  a stranger posted mid-run is not a branch; the branch line fires once per
+  band-sized branch and never at tick 0.
+
+### Measured
+
+- **480 founding, 4 arrived, 55 evolved**, twelve seeds × 6,000 ticks. Founding
+  is exactly 40 on every seed, which is `populationStart` and not an
+  observation. Evolved is 0–10 (median 5), and 39 of the 55 ever reach the four
+  members that earn a band.
+- **The threshold sits in a gap, and that is the whole explanation.** The
+  quantity it judges — a newborn against the nearest living representative —
+  runs 0.0039 to **0.1774** over 7,499 births, median 0.075. The quantity that
+  splits the founders — random genome against random genome — runs **0.8709**
+  to 1.3080 over 9,360 pairs, and *not one pair* is within the threshold.
+  0.15 lies between two populations of distances with nothing in between, at
+  the 99.3rd percentile of the lower one.
+- **Which closes a lead left open since v1.38.** The sweep then found "five
+  events at 0.15, zero at 0.20, flat across a twentyfold range above that" and
+  filed the headline view as *observed from the edge of its instrument's
+  range*. It is not an edge, it is a cliff with a plateau behind it: above
+  0.1774 no birth in this pond can branch at all, and the plateau runs until
+  0.87, where the founders themselves begin to merge.
+
+### Changed
+
+- The species caption under the Tree of Life. Nothing else — the tree is a pure
+  observer, the split is derived from fields it already carried, and no
+  fingerprint moves.
+
 ## [1.71.0] — 2026-08-09
 
 `src/levers.js` has moved every number in `config.js` one at a time since v1.38

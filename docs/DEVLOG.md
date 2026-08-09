@@ -7704,3 +7704,147 @@ release opens with eighty-four categories I wrote in an afternoon. `learnRate`
 as `gdist/tick`, `signalCost` as `energy/tick`, `carnivoreMetabolicCost` as
 `energy/(tick*gene)` — each is a reading of one line of code, each is checkable,
 and none has been checked by anything except the screen agreeing with itself.
+
+## Entry 84 — forty species nobody speciated · 2026-08-09
+
+The landing page leads with the Tree of Life. It is the figure I point at when
+I want to say what this project is: lineages branching, rising, sweeping,
+dying. Under it there is a caption I wrote in v1.6 and have not looked at
+since:
+
+```
+45 species alive · 45 ever · 5 extinct
+```
+
+Forty of those forty-five are tick 0.
+
+### The arithmetic I never did
+
+`phylogeny.js` groups creatures by one number — the mean absolute difference
+between two genomes. A newborn joins the nearest living species whose
+representative is within `speciationDistance` (0.15) and founds a new one
+otherwise. So the whole question is how 0.15 compares to the distances this
+pond actually produces, and I had never printed either distribution.
+
+There are two of them and they do not overlap:
+
+- **Founder against founder**, 9,360 pairs over twelve seeds: 0.8709 to 1.3080.
+  The *closest* two random genomes have ever been is 5.8× the threshold. Not
+  one pair in 9,360 is within it.
+- **Newborn against the nearest living representative**, 7,499 births: 0.0039
+  to 0.1774, median 0.075.
+
+Forty founders are forty species by construction. They would be at any
+threshold below 0.87. The number on the headline view is `populationStart` in
+evolutionary clothing, and it has been since v1.6.
+
+The thing the view is actually named after — a newborn drifting past every
+living representative — happens 55 times in twelve runs of 6,000 ticks. Zero to
+ten per pond, median five. Thirty-nine of the 55 ever grow to four members.
+
+### The lead this closes, and how badly I had read it
+
+v1.38 swept every constant and left a note I have re-read in the playbook a
+dozen times since: five speciation events at 0.15, zero at 0.20, flat across a
+twentyfold range above that, so *the headline view is observed from the edge of
+its instrument's range*.
+
+I filed that as "the threshold is precariously placed" and never went back. It
+is the opposite. Sweeping it properly:
+
+| `speciationDistance` | founding | evolved |
+| --- | --- | --- |
+| 0.05 | 480 | 653 |
+| 0.10 | 480 | 99 |
+| **0.15** | **480** | **13** |
+| 0.18 | 480 | 1 |
+| 0.20 → 0.80 | 480 | 0 |
+| 0.90 | 478 | 1 |
+| 1.00 | 402 | 14 |
+| 1.20 | 19 | 2 |
+| 1.40 | 12 | 0 |
+
+It is not an edge. It is a **cliff with a plateau behind it**, and both ends of
+the plateau are exactly the two numbers in the table above it. Above 0.1774 —
+the largest distance any birth in this pond has ever managed — nothing can
+branch, which is why 0.20 and 0.80 are the same row. The plateau ends at 0.87,
+the closest two founders have ever been, where the deal itself starts
+collapsing: 19 species at 1.20, and at 1.40 exactly twelve, one per seed, every
+founder in the same box.
+
+v1.38's flat twentyfold range was not a property of the instrument being badly
+placed. It was the *gap between the two distributions*, and if I had printed
+them I would have predicted the flat stretch and both of its ends rather than
+recording it as a curiosity. **A flat region in a sweep is not a null result;
+it is the width of a gap, and a gap has two edges that are each a real
+quantity.** I had a shape with no mechanism and I wrote down the shape.
+
+### What shipped
+
+`speciesOrigin()` splits a species three ways — `founding` (dealt at tick 0),
+`arrived` (a random genome posted into a running pond by `autoReseed`, the
+seed-life button, or a re-clustered save), `evolved` (descent). It is
+*derived*, not stored: `parentId` is null exactly for a genome that came from
+outside a lineage, and `birthTick` separates the deal from a stranger. Both
+fields have been on every species since the tree existed. Nothing had ever read
+them.
+
+That is the part worth keeping. This is not a measurement I had to build an
+instrument for, the way v1.65 or v1.71 were — the pond had already written it
+down, in a field named `parentId`, and forty releases of looking at that figure
+never asked what was in it. The question that found it is one I have asked of
+the minimap (v1.57) and of the spoken description (v1.67): *what is in this
+thing that no surface has heard of?* The playbook says that question's
+remaining domain is the chart and the inspector. It should have said the chart,
+the inspector, and every field on every object those views summarise.
+
+The caption reads
+
+```
+45 species alive · 45 ever (40 founding, 5 evolved) · 5 extinct
+```
+
+and the `arrived` arm only appears once a pond has tripped the reseed valve,
+because a permanent zero is furniture. Two of the three arms are the null, so
+the panel is the experiment — v1.65's rule, one view over, and it cost four
+lines here because the split was already in the data.
+
+And the Chronicle finally says a branch out loud:
+
+> 🌿 Species 63 has branched off species 12 — a new lineage, evolved here.
+
+Two guards. `speciesOrigin` has to say `evolved`, which is the "did this really
+happen?" test in its cheapest possible form — a founder and a reseeded stranger
+both start a species without anything having evolved, and a founder announcing
+itself on tick 0 is v1.16's burnout line again. And the lineage has to reach
+four members, which is `MULLER_MIN_PEAK`, the size at which the plot beside it
+gives a lineage a band. That number is now exported and used by both, because a
+hand-copied `4` in `chronicle.js` would let the sentence and the picture
+disagree about what a lineage is — v1.61's colour literal, one module over.
+
+736 tests, ten new, all green. The tree is a pure observer and the split is
+derived from fields it already carried, so no fingerprint moves.
+
+### What this leaves
+
+**The other captions have the same shape.** "N species ever" was a number
+dominated by an event that is not the one the word names. `Stats` has
+forty-three fields and several are counts of things whose composition nobody
+has split — and the test is cheap: for any total on the panel, ask what the
+largest single contributor is and whether it is the thing the label says.
+
+**0.15 is fine and I nearly said it was wrong.** A threshold in the middle of
+an empty gap is arguably the best place for one — it is the only region where
+the answer is stable against small changes. What is wrong is not the constant,
+it is that the view built on it reports a number whose variance is entirely in
+the arm nobody could see. I had a paragraph drafted recommending 0.10 (99
+branches instead of 13) before I noticed I was proposing to change the pond's
+headline figure to make my new statistic look busier.
+
+**The founder distances are a fact about `_randomCreature`, not about
+evolution.** 0.87 to 1.31 is the spread of independent uniform draws, and it
+will be that spread in every world this project ever runs. Which means the
+`founding` arm of the new caption can never say anything except
+`populationStart` — it is a constant with a percentage sign. That is exactly
+what makes it a good control and exactly why it should never be reported as a
+finding.

@@ -42,6 +42,7 @@ import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import { refugeRadius } from "./refuge.js";
 import {
   describeChart,
+  describeLineages,
   describeMuller,
   describePond,
   describePower,
@@ -520,9 +521,14 @@ function drawPhylogeny(world) {
   });
   setMullerLabel(describeMuller(shares, ph.snapshotSpan()));
 
-  $("phylo-info").textContent =
-    `${ph.livingCount()} species alive · ${ph.species.length} ever · ` +
-    `${ph.species.filter((s) => s.extinctTick >= 0).length} extinct`;
+  // "45 ever" is mostly the opening deal, so the caption says which is which —
+  // the split lives in `phylogeny.js` and the wording in `describe.js`, because
+  // a number assembled here is a number no test can read.
+  $("phylo-info").textContent = describeLineages(
+    ph.originTally(),
+    ph.livingCount(),
+    ph.species.filter((s) => s.extinctTick >= 0).length
+  );
 
   updateMullerAxis(ph, canvas.width);
 

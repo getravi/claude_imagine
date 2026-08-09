@@ -19,6 +19,17 @@
 // This is O(living species) per birth — cheap, because only a handful of species
 // coexist at once.
 
+/**
+ * Members a lineage must have held at once before the Muller plot gives it a
+ * band of its own; everything below it is folded into the grey "other" churn.
+ *
+ * Named and exported because the Chronicle now fires its branch line on the
+ * same number, so the sentence and the picture cannot disagree about what
+ * counts as a lineage worth mentioning. A hand-copied 4 in the other module
+ * would be the v1.61 colour literal one surface over.
+ */
+export const MULLER_MIN_PEAK = 4;
+
 export class Phylogeny {
   constructor(config) {
     this.config = config;
@@ -222,16 +233,68 @@ export class Phylogeny {
   }
 
   /**
+   * How many branches of the tree came from each of the three ways a species
+   * can start. See `speciesOrigin` for what the three mean and why the split
+   * matters more than the total does.
+   *
+   * @returns {{founding:number, arrived:number, evolved:number}}
+   */
+  originTally() {
+    const tally = { founding: 0, arrived: 0, evolved: 0 };
+    for (const s of this.species) tally[speciesOrigin(s)]++;
+    return tally;
+  }
+
+  /**
    * The species to actually draw, chosen as those whose peak abundance reached
    * `minPeak`; everything else is folded into a synthetic "other" bucket so the
    * plot stays legible amid the churn of tiny short-lived lineages. Returned in
    * birth order (older lineages first) for stable stacking.
    */
-  displaySpecies(minPeak = 4) {
+  displaySpecies(minPeak = MULLER_MIN_PEAK) {
     const shown = this.species.filter((s) => s.peak >= minPeak);
     shown.sort((a, b) => a.birthTick - b.birthTick || a.id - b.id);
     return shown;
   }
+}
+
+/**
+ * Which of the three ways a species started — read off the two fields every
+ * species has carried since the tree existed, and read by nothing until v1.72.
+ *
+ *   * `founding` — one of the genomes the world was dealt at tick 0. Forty of
+ *     them by default, and they are forty species *by construction*: two random
+ *     genomes are 0.87–1.31 apart on this metric and `speciationDistance` is
+ *     0.15, so no pair of founders has ever landed in the same species and no
+ *     threshold below 0.87 would let them.
+ *   * `arrived` — a random genome posted into a running pond: `autoReseed`
+ *     topping up a near-extinction, the "seed life" button, or a loaded save
+ *     re-clustered from scratch. Same random draw as a founder, later.
+ *   * `evolved` — the only kind that is descent with modification: a newborn
+ *     that drifted further than `speciationDistance` from every living
+ *     representative, so its lineage is a *branch* rather than a fresh draw.
+ *     Its parent species is recorded, which is exactly what makes it tellable
+ *     from the other two.
+ *
+ * The split is the point. The tree's headline number is "species ever", and on
+ * twelve seeds over 6,000 ticks that number is 41–50, of which **40 are the
+ * opening deal** and 0–10 are evolution — see docs/SCIENCE.md, which measures
+ * the gap the threshold sits in.
+ *
+ * `parentId` is null exactly for a genome that arrived from outside a lineage,
+ * so `evolved` is exact. The line between `founding` and `arrived` is the tick,
+ * and the two genuinely merge in one case: a pond started below `reseedFloor`
+ * is topped up during its own first step, while `world.tick` is still 0, and
+ * those creatures are counted as founding. They are founders in every way that
+ * can be measured — a random genome, no lineage, tick 0 — so the merge is the
+ * honest reading rather than a rounding of one.
+ *
+ * @param {{parentId:number|null, birthTick:number}} species
+ * @returns {"founding"|"arrived"|"evolved"}
+ */
+export function speciesOrigin(species) {
+  if (species.parentId != null) return "evolved";
+  return species.birthTick === 0 ? "founding" : "arrived";
 }
 
 /**

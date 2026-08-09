@@ -432,11 +432,25 @@ DEVLOG as I ship them; add new ones as they occur to me.
   pond, because seed 314 evolves predators that hunt genetic strangers. A feature
   can work perfectly and be mute in the only world anybody looks at — and v1.38
   found its threshold constant is muter still, inert on seed 314 at *ten times*
-  its default. Two leads the constant sweep left behind: `speciationDistance` is
-  one third below the value at which the Tree of Life stops recording any
-  speciation at all (five events at 0.15, zero at 0.20, flat across a twentyfold
-  range above that), so the headline view is observed from the edge of its
-  instrument's range. (The second lead — `foodRadius`, a *drawing* radius,
+  its default. Two leads the constant sweep left behind: `speciationDistance`
+  looked like it sat one third below the value at which the Tree of Life stops
+  recording any speciation at all (five events at 0.15, zero at 0.20, flat
+  across a twentyfold range above that), which read as *the headline view is
+  observed from the edge of its instrument's range*. **Closed in v1.72, and the
+  reading was backwards.** It is not an edge, it is a cliff with a plateau
+  behind it, and both ends of the plateau are real quantities: no birth in this
+  pond has ever been more than **0.1774** from the nearest living
+  representative (7,499 births), so nothing can branch above that; and no two
+  founders have ever been closer than **0.8709** (9,360 pairs), so the *deal*
+  is untouched until there. Everything between is the empty gap. What that
+  bought is bigger than the lead: forty of the tree's forty-five species are
+  the tick-0 draw, so the headline number is `populationStart` in evolutionary
+  clothing, and descent happens 0–10 times per 6,000 ticks. The caption splits
+  it now (`speciesOrigin`, `originTally`) and the Chronicle says a branch out
+  loud. **What it leaves:** the `founding` arm can never say anything but
+  `populationStart` — it is a constant with a percentage sign, which is what
+  makes it a good control and a bad finding; and the same audit is unrun on
+  every other total this project puts on a panel (see the lesson below). (The second lead — `foodRadius`, a *drawing* radius,
   silently setting a scavenger's reach — was closed in v1.40: the rule has its
   own `scavengeRadius` at the same value, the sweep has a fourth channel for the
   picture, and the reach turns out to be worth nothing measurable over twelve
@@ -2120,3 +2134,42 @@ DEVLOG as I ship them; add new ones as they occur to me.
   The deployed artifact is still unreachable from this sandbox (`CONNECT tunnel
   failed, 403` on `getravi.github.io`, exactly as in v1.60), so it is not the
   fallback and pretending otherwise is the failure v1.60 named.
+
+- **A flat region in a sweep is not a null result — it is the width of a gap,
+  and a gap has two edges that are each a real quantity.** v1.38 moved
+  `speciationDistance` and recorded "zero speciation from 0.20 upward, flat
+  across a twentyfold range", then filed the default as *precariously placed at
+  the edge of the instrument's range*. It is the opposite: 0.15 sits in an empty
+  corridor between two distributions that do not overlap — births reach 0.1774
+  from the nearest representative and founder pairs start at 0.8709 — and the
+  flat stretch is exactly the distance between them. I had a shape with no
+  mechanism, and I wrote down the shape and a wrong story about it. Both edges
+  were one `console.log` away for thirty-four releases. **When a sweep goes
+  flat, print the distribution of the quantity the constant is compared
+  against**; the flat region will have a name at each end.
+- **A headline number can be dominated by an event the word does not name.**
+  "45 species ever" is forty founders — forty random genomes that are forty
+  species by construction, at any threshold below 0.87 — plus five actual
+  branches. The figure the landing page leads with had its variance entirely in
+  the arm nobody could see, and the fix was four lines because the split was
+  already in the data. The general audit, and it is cheap: **for every total on
+  a panel, ask what its largest single contributor is and whether that is the
+  thing the label says.** `Stats` has forty-three fields and most have never
+  been asked.
+- **"What has no surface heard of?" has to be asked of fields, not only of
+  nouns.** v1.57 asked it of the minimap and found corpses; v1.67 asked it of
+  the spoken description and found corpses again; this file then recorded the
+  remaining domain as "the chart and the inspector", which is a list of
+  *views*. v1.72's answer was not a view and not a noun in the world — it was
+  `parentId`, a field on an object those views summarise, unread by anything
+  for forty releases while the summary above it was published as the project's
+  headline. Take the inventory one level down: for each view, list the fields of
+  the objects it aggregates, and ask which of them the aggregate erases.
+- **Notice when the remedy would make the new statistic look busier.** I had a
+  paragraph drafted recommending `speciationDistance: 0.10`, which turns 13
+  branches into 99, before noticing that I was proposing to move the pond's
+  headline figure so the readout I had just built would have more to say. The
+  constant is fine — a threshold in the middle of an empty gap is the only
+  place where the answer is stable. **A change to the world that happens to
+  flatter the instrument I shipped this cycle needs a reason that would have
+  applied before I built it.**
