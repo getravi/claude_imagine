@@ -41,8 +41,18 @@
 // See `chartAxis`, and note that the mark-building `mullerAxis` has used since
 // v1.54 lives here now, because two figures wanting round numbers under them is
 // one definition of "a number a reader can hold", not two.
+//
+// v1.74 asks the question v1.57 and v1.67 asked of the minimap and of the
+// spoken description — *what is in this world that this view has never heard
+// of?* — and the answer here is the one thing the figure is made of. Both axes
+// are marked now, and the x is *time*, and this pond's time has a season on it:
+// `seasonalFactor` has swung the food spawn rate by ±30% on a 2,600-tick year
+// since v1.3, by default, and the line plotting the standing crop has never
+// said which half of the year it is drawing. So a crash in a lean winter and a
+// crash in high summer are the same picture, which is v1.21's complaint about
+// the mortality ledger one figure over. See `seasonBands`.
 
-import { chartLines, chartBands, axisRule } from "./palette.js";
+import { chartLines, chartBands, axisRule, seasonBand } from "./palette.js";
 
 /** How many labelled lines the axis aims for. Three is what 90 pixels holds. */
 export const AXIS_LINES = 3;
@@ -249,8 +259,96 @@ export function chartAxis(hist, width = 0) {
   return { from, to, step, marks };
 }
 
+// ---- The clock ----
+
 /**
- * The grid: one rule per labelled value, under everything else.
+ * The narrowest a band may be drawn, in pixels of the figure's own width.
+ *
+ * Below this the winters and summers of a long run stop being regions and
+ * become a stripe pattern, and a stripe pattern at this pitch is a wash whose
+ * *mean* is the only thing a reader can see — which says the pond is in some
+ * average season, permanently, which is the one thing that is never true. Three
+ * pixels is where a band still reads as a place rather than as texture.
+ */
+export const MIN_BAND_PX = 3;
+
+/**
+ * Winter, as fractions of the figure: the stretches on screen where
+ * `seasonalFactor` is below 1 and food arrives more slowly than the config's
+ * nominal rate.
+ *
+ * This is the one thing on the chart that needs no history at all. Every other
+ * series here is sampled, archived and thinned; the season is
+ * `sin(2πt / seasonLength)`, a pure function of the world's own clock, so the
+ * boundaries are exactly the half-year multiples and no amount of decimation can
+ * move them. What *does* have to come from the history is where a tick sits,
+ * because the whole-run scope is not linear in time (see `tickFrac`) — the same
+ * map the x-axis marks use, for the same reason: two pieces of furniture on one
+ * axis disagreeing about where tick 8,000 is would be worse than either.
+ *
+ * The state is reported rather than left to be inferred from an empty list,
+ * because the absence of a band is ambiguous in a way this figure cannot afford:
+ * no shading means "it is summer" *and* "there are no seasons in this world",
+ * and those are different worlds (v1.69 — when the mark's absence is the
+ * statement, the absence needs a count or a word beside it). `main.js` puts the
+ * word into the caption under the figure on `ok` and takes it away otherwise.
+ *
+ *   - `off` — `seasons` is false, or the amplitude is zero so the factor is
+ *     exactly 1 all year and there is no lean half to shade. Reads zero with the
+ *     mechanism off, by construction (v1.20).
+ *   - `short` — under two samples, or a window with no width: no figure yet.
+ *   - `aliased` — a half-year is under `MIN_BAND_PX` of this figure. At the
+ *     default 2,600-tick year and a 300-pixel backing store that is a run past
+ *     130,000 ticks, which is about half an hour of watching.
+ *   - `ok` — the bands are drawn.
+ *
+ * @param {Array<{tick:number}>} hist the samples the figure is drawn from
+ * @param {object} config the world's config — `seasons`, `seasonLength`,
+ *   `seasonAmplitude`
+ * @param {number} width the figure's width in pixels, for the aliasing test
+ * @returns {{state:string, bands:Array<{from:number,to:number,x0:number,x1:number}>}}
+ */
+export function seasonBands(hist, config, width = 0) {
+  const off = { state: "off", bands: [] };
+  if (!config || !config.seasons || !(config.seasonAmplitude > 0)) return off;
+  const period = config.seasonLength;
+  if (!(period > 0)) return off;
+
+  const n = hist.length;
+  if (n < 2) return { state: "short", bands: [] };
+  const from = hist[0].tick;
+  const to = hist[n - 1].tick;
+  if (!(to > from)) return { state: "short", bands: [] };
+
+  if (width > 0 && (period / 2 / (to - from)) * width < MIN_BAND_PX) {
+    return { state: "aliased", bands: [] };
+  }
+
+  const bands = [];
+  // Winter is the half of the cycle where sin() is negative: tick modulo the
+  // year lands in (period/2, period). Walking whole years from the one the
+  // window starts in keeps the arithmetic exact — these are the same multiples
+  // `seasonalFactor` crosses zero at, not a scan for sign changes.
+  for (let k = Math.floor(from / period); k * period < to; k++) {
+    const a = Math.max(k * period + period / 2, from);
+    const b = Math.min((k + 1) * period, to);
+    if (b > a) bands.push({ from: a, to: b, x0: tickFrac(hist, a), x1: tickFrac(hist, b) });
+  }
+  return { state: "ok", bands };
+}
+
+/**
+ * The seasons, under everything — including the grid, which is a rule about the
+ * population and has no business being interrupted by one about the calendar.
+ */
+function drawSeasons(ctx, W, H, season) {
+  if (!season || season.state !== "ok" || !season.bands.length) return;
+  ctx.fillStyle = seasonBand();
+  for (const b of season.bands) ctx.fillRect(b.x0 * W, 0, (b.x1 - b.x0) * W, H);
+}
+
+/**
+ * The grid: one rule per labelled value, over the seasons and under the data.
  *
  * A rule is not a mark. It has to be present without being read as data, so its
  * contrast is checked from *both* sides in `test/palette.test.js` — above the
@@ -305,9 +403,9 @@ function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {
 }
 
 /**
- * Draw the whole figure. The grid goes down first, then the whole-run
- * envelopes, then the two lines — so nothing the pond did is ever hidden under
- * a piece of furniture.
+ * Draw the whole figure. Winter goes down first, then the grid, then the
+ * whole-run envelopes, then the two lines — so nothing the pond did is ever
+ * hidden under a piece of furniture.
  *
  * @param {object} ctx a 2D context
  * @param {number} W backing width
@@ -318,9 +416,11 @@ function drawBand(ctx, hist, W, H, lowOf, highOf, fill) {
  * @param {{top: number, ticks: number[]}} opts.axis the population scale
  * @param {number} opts.foodMax the food scale, which is a constant
  * @param {boolean} [opts.whole] whole-run scope, so the envelopes are drawn
+ * @param {ReturnType<typeof seasonBands>} [opts.season] where winter is
  */
-export function drawChart(ctx, W, H, hist, { axis, foodMax, whole = false }) {
+export function drawChart(ctx, W, H, hist, { axis, foodMax, whole = false, season = null }) {
   ctx.clearRect(0, 0, W, H);
+  drawSeasons(ctx, W, H, season);
   drawGrid(ctx, W, H, axis);
   if (hist.length < 2) return;
 

@@ -397,9 +397,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   *sown* at +0.092 and the **living** sit at +0.089 on twelve of twelve —
   fertile ground is where a pellet is eaten fastest, not where food piles
   up. And the off switch this file said did not exist is `foodPatches`, in
-  the panel since v1.3, which is the naming lesson below. **The question is
-  still unasked of the chart and the inspector**, and they are now the whole
-  remaining domain. The Muller plot's snapshot ring became a whole-run
+  the panel since v1.3, which is the naming lesson below. **The chart was
+  walked in v1.74 and the inspector is the last one.** The chart's answer was
+  not a noun: a chart is a time series of global quantities, so most of the
+  twelve nouns are places it has no business drawing, and what it had never
+  heard of was the **axis** — its x is time, this pond's time has a ±30% season
+  on it by default, and the figure whose green line *is* the standing crop had
+  never said which half of the year it was in (`seasonBands`, a darker ground,
+  a word in the caption, a clause in the spoken form). So the inventory needs a
+  third pass: for each view, list the nouns, list the *fields* those nouns carry
+  (v1.72), **and then ask what its own axes and scales are made of** — the
+  coordinate a figure is drawn against is the thing least likely to be on any
+  list, because it is not in the world, it is in the picture. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -2219,3 +2228,61 @@ DEVLOG as I ship them; add new ones as they occur to me.
   re-searched), and the argument is written down *as* an argument with a test
   asserting the single tone cleared. A principle that has been measured once is
   the easiest thing in this file to quote as though it were measured always.
+
+- **A view's inventory has three levels, and the third one is not in the
+  world.** v1.57 asked the minimap what it had never heard of and got a noun
+  (corpses); v1.72 said take it one level down, to the *fields* of the objects a
+  view aggregates, and got `parentId`. v1.74 asked it of the chart and the
+  answer was neither: it was the **x-axis**. A chart is a time series, its
+  coordinate is time, and this pond's time has a ±30% season on it that is on by
+  default and had never been drawn — so the figure whose green line is the
+  standing crop could not tell a lean winter from high summer, while the README
+  told visitors to watch it "pulse with the year". Nouns and fields are things
+  in the world and an inventory finds them; a *coordinate* is a thing in the
+  picture, so it is on no list of what the world contains. Ask of every figure:
+  what are its axes made of, and does anything say so?
+- **The infeasibility reflex's fifth appearance is the cheapest one yet.** Every
+  mark on the chart is lighter than the panel, so a darker ground can only help
+  them — I had that sentence before I had any number, which is the tell v1.48,
+  v1.56 and v1.63 all name. Three of the five lose contrast over the band (the
+  grid 8.00 → 7.21, the food line 38.15 → 38.07, the food envelope 27.46 →
+  26.97). Nothing broke, and that is the point: the reasoning was wrong in a
+  case where being wrong cost nothing, which is exactly where it goes unnoticed.
+  A composite's *direction* is not something to derive from the arithmetic in my
+  head when the measurement is one line.
+- **A darkening of a saturated ground is a chromatic move, and a lightening is
+  not.** The whole darkening direction against `#0c131c` is worth ΔE 9.01 —
+  that is *pure black*, so the top of the furniture window is unreachable from
+  below — and the feasible alphas are 0.42–0.47, five hundredths wide, because
+  taking light out of a navy takes mostly blue out of it and tritanopia scores
+  that at nearly twice what normal vision does. The same sweep in white agrees
+  across all four models to within 0.1 ΔE and has four times the room. Before
+  choosing to shade rather than to lift, run both: on a coloured background they
+  are not mirror images, and the dark direction is the one with a hard ceiling.
+- **v1.53's cascade rule is not about tags, it is about rows.** "Any change of
+  *tag* is a change of *cascade*; capture the before-numbers first" was written
+  after turning a `div` into a `button`. Adding one `<span>` to a flex legend is
+  not a change of tag and it did the same thing: the legend went from 16 to 26
+  pixels tall, the food scale wrapped onto two lines and the series dots shrank
+  from 8 pixels to 6, at 1,280 CSS pixels *and* at 390. Any change to a
+  **flex or grid row** is a change to every sibling in it. Measure the row
+  before and after, in a browser — it is the same ten minutes v1.49 costed.
+- **A legend cannot introduce furniture.** The word beside a shaded region has
+  to be a word and not a swatch, and that is forced rather than chosen: a piece
+  of furniture is measured to sit *below* the bar a mark has to clear, so an
+  8-pixel chip of it is by construction a legend entry nobody can see. A colour
+  quiet enough to sit under the data cannot introduce itself in the grammar the
+  data uses. Wherever a quiet layer needs naming, the name goes in prose — and
+  the caption is usually the better home anyway, because a caption is where a
+  figure already says what its coordinates mean.
+- **A two-bucket split is blind to a phase lag, and "no effect" is the wrong
+  word for what it returns.** Winter-half mean against summer-half mean says the
+  standing crop is 40.4% thinner in winter on twelve seeds of twelve, and says
+  the population splits 7–6, which reads as *the season moves the food and not
+  the animals*. It cannot say that: a half-period mean cancels a quarter-period
+  lag **exactly**, and a consumer tracking a resource that winters is the
+  textbook delayed response. v1.32's rule is a dozen seeds or it is an anecdote;
+  this is the other axis — before reading a periodic effect as absent, ask what
+  lag the statistic is blind to, and whether the mechanism has a reason to sit
+  there. The instrument that can answer is a cross-correlation over lag, and it
+  is one column wider than the one I ran.

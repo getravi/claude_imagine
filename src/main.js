@@ -15,7 +15,7 @@ import { SCENARIOS } from "./scenarios.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
-import { drawChart, popAxis, axisLabels, chartAxis } from "./chart.js";
+import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.js";
 import {
   wholePercents,
   mortalitySeries,
@@ -909,10 +909,16 @@ function updateChart(world) {
   const axis = popAxis(world.stats.maxPopEver);
   const foodMax = Math.max(10, config.foodMax);
 
-  drawChart(ctx, W, H, hist, { axis, foodMax, whole });
+  // Winter, behind everything (v1.74). The width handed over is the *backing*
+  // store's, not the rendered one: the figure is stretched to the column, so
+  // this is the narrower of the two in the sidebar and the aliasing guard is
+  // conservative where it matters.
+  const season = seasonBands(hist, config, W);
+
+  drawChart(ctx, W, H, hist, { axis, foodMax, whole, season });
   updateChartAxis(axis, H, foodMax);
-  updateChartRange(world, hist);
-  setChartLabel(describeChart(hist, axis, foodMax));
+  updateChartRange(world, hist, season);
+  setChartLabel(describeChart(hist, axis, foodMax, season));
   return hist;
 }
 
@@ -985,18 +991,33 @@ function setChartLabel(text) {
 // The caption under the chart: which stretch of time is on screen, and — in
 // whole-run mode — how much each pixel of it is standing in for. A chart whose
 // x-axis silently changes meaning is worse than one with no axis at all.
-function updateChartRange(world, hist) {
+function updateChartRange(world, hist, season) {
   const el = $("chart-range");
-  let text = "";
+  const parts = [];
   if (chartScope === "whole") {
     const span = world.stats.runHistory.span();
     if (span) {
       const each = world.stats.runHistory.stride * 4;
-      text = `ticks ${span.from.toLocaleString()}–${span.to.toLocaleString()} · 1 point per ${each} ticks`;
+      parts.push(`ticks ${span.from.toLocaleString()}–${span.to.toLocaleString()}`);
+      parts.push(`1 point per ${each} ticks`);
     }
   } else if (hist.length > 1) {
-    text = `ticks ${hist[0].tick.toLocaleString()}–${hist[hist.length - 1].tick.toLocaleString()}`;
+    parts.push(`ticks ${hist[0].tick.toLocaleString()}–${hist[hist.length - 1].tick.toLocaleString()}`);
   }
+  // The word for the shading (v1.74), here rather than in the legend above. Two
+  // reasons, and the first is not about space: the band is furniture, measured
+  // to sit *under* the bar a mark has to clear, so an 8-pixel chip of it beside
+  // the two series' dots would be a legend entry nobody can see — a colour
+  // quiet enough to sit below the data cannot introduce itself in the grammar
+  // the data uses. The second is that one more item in that row wraps the food
+  // scale onto a second line at 1,280 pixels and at 390 (measured before and
+  // after, which is v1.53's rule about a markup change being a cascade change).
+  //
+  // It comes and goes, because the absence of shading is ambiguous: no band
+  // means summer *and* means a world with no seasons in it, and the word is
+  // what separates them.
+  if (season && season.state === "ok") parts.push("shaded: winter");
+  const text = parts.join(" · ");
   if (el.textContent !== text) el.textContent = text;
 }
 

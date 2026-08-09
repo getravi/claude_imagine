@@ -8005,3 +8005,193 @@ frequencies here (0.61%, 2.08%) are the first of their kind, and they are the
 number that says whether a failure is a curiosity or a thing people are
 hitting.
 
+## Entry 86 — the axis the figure is drawn against · 2026-08-09
+
+Two surfaces in this project had never been asked v1.57's question. The question
+is *what is in this world that this view has never heard of?*, it found corpses
+on the minimap after thirty-eight releases, it found corpses again in the spoken
+description after fifty-nine, and the playbook has carried "the chart and the
+inspector" as its remaining domain ever since.
+
+So I took the inventory to the chart, expecting to find a noun. Twelve things
+have a place in this pond and the chart draws two of them — the creatures and
+the crop — which is not an omission, because a chart is a time series of global
+quantities and most of the twelve are places rather than numbers.
+
+The thing it had never heard of was not on the list at all. It was the *axis*.
+
+The x-axis of this figure is time. This pond's time has a season on it:
+
+```js
+export function seasonalFactor(tick, config) {
+  if (!config.seasons) return 1;
+  const phase = (2 * Math.PI * tick) / config.seasonLength;
+  return 1 + config.seasonAmplitude * Math.sin(phase);
+}
+```
+
+±30% on the food spawn rate, on a 2,600-tick year, **on by default since v1.3**.
+The figure whose green line *is* the standing crop has drawn that line for
+seventy-four releases without ever saying which half of the year it was in. A
+crash in a lean winter and a crash in high summer are the same picture.
+
+And the README has been telling visitors to *"watch the population/food chart
+pulse with the year — crashing in winter, blooming in summer"* the whole time,
+on a figure with no year on it.
+
+### What shipped
+
+`seasonBands()` returns the stretches of the window where the factor is below 1,
+and `drawChart` lays them down as a darker ground before anything else. Three
+things about it are worth writing down.
+
+**It needs no history.** Every other series here is sampled, archived, thinned
+and enveloped, and the season is a sine of the tick — so the boundaries are the
+exact half-year multiples and no amount of decimation can move them. What *does*
+come from the history is where a tick sits, and that is `tickFrac`, the same map
+the x-axis marks have used since v1.58. Two pieces of furniture on one axis
+disagreeing about where tick 8,000 is would have been worse than either.
+
+**The absence had to be spoken.** No shading means "it is summer" and it means
+"this world has no seasons", and those are different worlds. So the function
+returns a state — `off`, `short`, `aliased`, `ok` — the caption says
+`shaded: winter` exactly on `ok`, and `describeChart` says which half of the
+year the newest tick is in for a listener who cannot see the ground at all. That
+is v1.69's rule, which I wrote about a ring: when the mark's absence is the
+statement, the absence needs a count or a word beside it.
+
+**It refuses to draw rather than alias.** A half-year has to be worth three
+pixels of the figure. Past a run of 130,000 ticks it is not, and stripes at that
+pitch are read as their mean — a pond in some permanent average season, which is
+never true. That is about half an hour of watching, so it is reachable, and the
+caption says so when it happens.
+
+### The colour, which was decided by its ceiling
+
+v1.62's rule is that the twenty-line sweep goes *first*, before the fix is
+designed, and it changed what this fix was.
+
+The band is furniture — it carries no value, it says where you are — so it is
+held to the grid's two-sided window, ΔE 5 to 10, under all four vision models.
+The direction is dark, because brightness reads as magnitude and this is the
+lean half of the year. And then:
+
+| | |
+| --- | ---: |
+| the whole darkening direction (pure black over the panel, normal vision) | **9.01** |
+| feasible alphas for a black band | **0.42–0.47** |
+| the band shipped, `rgba(0, 0, 0, 0.45)`, normal / prot / deut / **trit** | 5.32 / 5.42 / 5.68 / **9.56** |
+| the same sweep in white, spread across the four models | **< 0.1** |
+
+Two things fall out of that table. The top of the furniture window is *not
+reachable by shading at all* — black is all there is, and black is a 9. And the
+feasible strip is five hundredths of an alpha wide because tritanopia scores
+this darkening at nearly twice what normal vision does: `#0c131c` is a navy, so
+taking light out of it takes mostly *blue* out of it, and a darkening of a
+saturated ground is a chromatic move in a way a lightening is not. A pale band
+would have had four times the room and been model-neutral. I kept the dark one
+and wrote the constraint into the test, which is the only honest version of a
+choice made on taste against a measurement.
+
+### The thing I was wrong about, and it was the cheap thing
+
+Every mark on this figure is lighter than the panel. So a darker ground can only
+help them — obviously, and I had the sentence before I had the numbers, which is
+the tell this file has named four times now.
+
+| over the panel | over winter | |
+| --- | --- | --- |
+| grid 8.00 | 7.21 | **loses** |
+| population line 72.89 | 77.25 | gains |
+| food line 38.15 | 38.07 | **loses** |
+| population envelope 53.21 | 56.48 | gains |
+| food envelope 27.46 | 26.97 | **loses** |
+
+Three of five lose. Everything still clears its own bar — the food envelope is
+the tightest at 26.97 against 25 — and the test now re-runs all five over the
+band rather than asserting the direction I assumed, because a new background is
+a new audit of everything drawn on it (v1.34), and *which way* it moves each of
+them is not something to reason about from the composite arithmetic.
+
+### And the legend, which was a cascade change
+
+The word went into the legend first, beside the two series dots. It has to be a
+word rather than a swatch, and that is forced rather than chosen: furniture is
+measured to sit *below* the bar a mark has to clear, so an 8-pixel chip of this
+band is by construction a legend entry nobody can see. A colour quiet enough to
+sit under the data cannot introduce itself in the grammar the data uses.
+
+Then I measured it, which is v1.53's rule about a change of markup being a
+change of cascade — and the rule I had only ever applied to changing a *tag*:
+
+| | without the note | with it |
+| --- | --- | --- |
+| legend height | 16px | **26px** |
+| food scale `0–520` | one line, 33px | **two lines** |
+| series dots | 8px | 6px |
+
+At 1,280 CSS pixels and at 390. The legend had no room and I would not have
+known without opening a browser. The word lives in the caption under the stack
+now — `ticks 0–3,096 · 1 point per 16 ticks · shaded: winter` — which is where
+this figure already talks about time, and is the better home for a reason that
+has nothing to do with pixels.
+
+### And then the measurement the shading invites
+
+A shaded figure wants a sentence, and the sentence is *the crashes are winters*.
+This project has been burned by exactly that shape four times — v1.20's alarm
+call, v1.27's detritus, v1.33's ground sense, v1.47's shuffle — so: twelve
+seeds, 12,000 ticks, the first year thrown away as the opening transient, the
+winter-half mean of a quantity against its summer-half mean. The control is the
+same pond with `seasons: false` cut by the same calendar, where the halves are
+two arbitrary sets of ticks.
+
+| | seasons on | control |
+| --- | ---: | ---: |
+| standing crop, winter − summer | **−57.7 pellets** | −6.7 |
+| seeds with a thinner winter crop | **12 / 12** | 9 / 12 |
+| share of each pond's own mean crop | **−40.4%** | −4.8% |
+| population, winter − summer | +0.9 | +0.0 |
+| seeds with a smaller winter population | **7 / 12** | 8 / 12 |
+| share of each pond's own mean | +0.7% | −0.3% |
+
+The crop row is about as clean as anything measured here: every seed, same
+direction, eight times the control's magnitude, 40% thinner in the shaded half.
+The control reading −4.8% rather than 0 is the part worth keeping — a pond has
+slow dynamics of its own and any fixed partition of a run catches some of them,
+which is why the arm exists.
+
+The population row is where I had to stop myself twice. 7 of 12 is a coin, and
+the tempting write-up is "the seasons move the food and not the animals" — which
+would be a *finding* about the pond made from a design that cannot see the thing
+it would be denying. A half-year mean cancels a quarter-year lag exactly. A
+consumer tracking a resource that winters is the textbook lagged response, and
+this statistic is blind to it by construction.
+
+So the caption the chart ships says the thing that survived: the shaded half is
+where the crop is thin. The README has said "crashing in winter" since v1.3 and
+now says what is measured and what is not. And what is left is a specific next
+measurement — a cross-correlation of population against the season over lag —
+rather than a mood.
+
+### What this leaves
+
+**The inspector is the last unwalked surface**, and the chart's answer changes
+what to ask it. The inventory has been nouns (v1.57, v1.67) and then fields
+(v1.72); the chart's gap was neither, it was a *coordinate* — the axis the
+figure is drawn against, which is in the picture rather than in the world and is
+therefore on no list of what the world contains.
+
+**The other clock is undrawn.** `dayNightCycle` is off by default and its day is
+900 ticks, so at the recent window's 1,920 it would be two full cycles across
+the figure and at any real whole-run scope it aliases immediately — the
+`MIN_BAND_PX` floor bites at 45,000 ticks rather than 130,000. One clock is
+drawn, the other is measured and sized, and stacking two furniture layers behind
+two data lines is a design question I have not answered.
+
+**And the lag.** One column, one afternoon: population against `seasonalFactor`
+at every lag from 0 to a full year, twelve seeds. If the peak sits near a
+quarter-year the boom-and-bust story on this page has its first number in
+seventy-four releases; if it is flat, then the pond's population really is
+governed by something other than the calendar, and that is a bigger finding than
+the band.

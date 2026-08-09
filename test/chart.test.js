@@ -36,11 +36,14 @@ import {
   chartAxis,
   tickFrac,
   drawChart,
+  seasonBands,
+  MIN_BAND_PX,
 } from "../src/chart.js";
 import { Archive } from "../src/archive.js";
 import { recordingContext } from "../src/rendershot.js";
 import { describeChart } from "../src/describe.js";
-import { chartLines } from "../src/palette.js";
+import { chartLines, seasonBand } from "../src/palette.js";
+import { seasonalFactor } from "../src/environment.js";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 import { stateFingerprint } from "../src/fingerprint.js";
@@ -381,4 +384,177 @@ test("the spoken chart says nothing it cannot know", () => {
   for (const n of [0, 1]) {
     assert.match(describeChart(history(n), popAxis(0), 520), /not enough history/);
   }
+});
+
+// ---- the clock (v1.74) ----
+//
+// The figure's x-axis is time and its two scales are both marked, and the pond's
+// time has a season on it that neither of them mentions. `seasonalFactor` swings
+// the food spawn rate ±30% on a 2,600-tick year by default, so the line plotting
+// the standing crop has been drawing a quantity whose driver is off-picture since
+// v1.3. Four claims: the shading is exactly the mechanism it names, it lands on
+// the same map the x-marks use, it reads nothing at all with seasons off, and it
+// refuses to draw rather than alias when a year gets too narrow to be a place.
+
+/** A window of `span` ticks, sampled the way `Stats` samples: one point per 4. */
+const seasonHistory = (span, start = 0) =>
+  history(Math.floor(span / 4) + 1).map((h) => ({ ...h, tick: h.tick + start }));
+
+const seasonCfg = (over = {}) => ({
+  seasons: true,
+  seasonLength: 2600,
+  seasonAmplitude: 0.3,
+  ...over,
+});
+
+test("the shaded stretch is exactly where food arrives more slowly", () => {
+  // The v1.20 bar: a readout about a mechanism has to be the mechanism. Walk
+  // every tick of a three-year window and check membership of a band against
+  // `seasonalFactor` itself, which is the function the pond actually runs.
+  const cfg = seasonCfg();
+  const hist = seasonHistory(3 * cfg.seasonLength);
+  const { state, bands } = seasonBands(hist, cfg, 300);
+  assert.equal(state, "ok");
+  const inBand = (t) => bands.some((b) => t > b.from && t < b.to);
+  for (let t = hist[0].tick; t <= hist[hist.length - 1].tick; t += 7) {
+    const lean = seasonalFactor(t, cfg) < 1;
+    assert.equal(inBand(t), lean, `tick ${t}: shaded ${inBand(t)}, factor ${seasonalFactor(t, cfg)}`);
+  }
+});
+
+test("the winters are the half-year multiples, whole and in order", () => {
+  const cfg = seasonCfg();
+  const hist = seasonHistory(3 * cfg.seasonLength);
+  const { bands } = seasonBands(hist, cfg, 300);
+  assert.equal(bands.length, 3, "three years, three winters");
+  let last = -Infinity;
+  for (const b of bands) {
+    assert.ok(b.from > last, "the bands are out of order or overlap");
+    last = b.to;
+    // Every edge is a zero crossing of the season, not a sampled sign change.
+    const k = Math.round((b.from - cfg.seasonLength / 2) / cfg.seasonLength);
+    assert.equal(b.from, k * cfg.seasonLength + cfg.seasonLength / 2);
+    assert.equal(b.to, (k + 1) * cfg.seasonLength);
+    assert.equal(b.to - b.from, cfg.seasonLength / 2, "a whole winter is half a year");
+  }
+  // Half the year, so half the figure — the arithmetic the picture asserts.
+  const shaded = bands.reduce((s, b) => s + (b.x1 - b.x0), 0);
+  assert.ok(Math.abs(shaded - 0.5) < 0.02, `${shaded} of the figure is shaded`);
+});
+
+test("a band is placed by the same map as the x-axis marks", () => {
+  // Two pieces of furniture on one axis disagreeing about where a tick sits
+  // would be worse than either of them (v1.58: what you port is the
+  // preconditions). The whole-run scope is the case where the naive division
+  // and `tickFrac` come apart, so use a history with an uneven last column.
+  const cfg = seasonCfg();
+  const hist = seasonHistory(2 * cfg.seasonLength);
+  hist.push({ tick: hist[hist.length - 1].tick + 37, pop: 100, food: 100 });
+  const { bands } = seasonBands(hist, cfg, 300);
+  assert.ok(bands.length >= 2);
+  for (const b of bands) {
+    assert.equal(b.x0, tickFrac(hist, b.from));
+    assert.equal(b.x1, tickFrac(hist, b.to));
+    assert.ok(b.x0 >= 0 && b.x1 <= 1 && b.x1 > b.x0, `a band ran outside the figure: ${b.x0}–${b.x1}`);
+  }
+});
+
+test("a world with no season shades nothing, and says so", () => {
+  const hist = seasonHistory(3 * 2600);
+  for (const cfg of [seasonCfg({ seasons: false }), seasonCfg({ seasonAmplitude: 0 })]) {
+    const s = seasonBands(hist, cfg, 300);
+    assert.equal(s.state, "off");
+    assert.equal(s.bands.length, 0);
+    // And the factor really is flat, so there is nothing being hidden.
+    for (let t = 0; t < 3000; t += 100) assert.equal(seasonalFactor(t, cfg), 1);
+  }
+});
+
+test("a window too short or too compressed to be a place is not drawn", () => {
+  const cfg = seasonCfg();
+  for (const n of [0, 1]) assert.equal(seasonBands(history(n), cfg, 300).state, "short");
+  assert.equal(seasonBands([{ tick: 5 }, { tick: 5 }], cfg, 300).state, "short");
+
+  // The threshold, stated: a half-year has to be worth MIN_BAND_PX of the
+  // figure. At 300 pixels and a 2,600-tick year that is a run of 130,000 ticks.
+  const limit = (cfg.seasonLength / 2 / MIN_BAND_PX) * 300;
+  assert.equal(limit, 130000);
+  assert.equal(seasonBands(seasonHistory(limit - 4000), cfg, 300).state, "ok");
+  assert.equal(seasonBands(seasonHistory(limit + 4000), cfg, 300).state, "aliased");
+  assert.equal(seasonBands(seasonHistory(limit + 4000), cfg, 300).bands.length, 0);
+  // A wider figure holds more of them: the same window is fine at three times
+  // the width, which is what the phone layout gives this canvas.
+  assert.equal(seasonBands(seasonHistory(limit + 4000), cfg, 900).state, "ok");
+});
+
+test("winter goes down before the grid, and the grid before the data", () => {
+  const cfg = seasonCfg();
+  const hist = seasonHistory(2 * cfg.seasonLength).map((h) => ({
+    ...h,
+    min: { pop: h.pop - 10, food: h.food - 20 },
+    max: { pop: h.pop + 10, food: h.food + 20 },
+  }));
+  const season = seasonBands(hist, cfg, W);
+  const ops = draw(hist, { axis: popAxis(237), foodMax: 520, whole: true, season });
+
+  const fills = ops.filter(([, name]) => name === "fillRect");
+  assert.equal(fills.length, season.bands.length, "one rectangle per winter, and no more");
+  const bandFill = ops.findIndex(([, name, v]) => name === "set:fillStyle" && v === seasonBand());
+  const firstGrid = ops.findIndex(([, name, v]) => name === "set:strokeStyle" && String(v).startsWith("rgba(255, 255, 255"));
+  const firstData = ops.findIndex(([, name, v]) => name === "set:strokeStyle" && !String(v).startsWith("rgba(255, 255, 255"));
+  assert.ok(bandFill >= 0, "the winter band is not the colour the audit measures");
+  assert.ok(bandFill < firstGrid, "the season was drawn over the grid");
+  assert.ok(firstGrid < firstData, "furniture was drawn over the pond's data");
+
+  // Each rectangle is its band, full height, in figure pixels.
+  for (let i = 0; i < fills.length; i++) {
+    const [, , x, y, w, h] = fills[i];
+    const b = season.bands[i];
+    assert.ok(Math.abs(x - b.x0 * W) < 1e-9 && Math.abs(w - (b.x1 - b.x0) * W) < 1e-9);
+    assert.equal(y, 0);
+    assert.equal(h, H);
+  }
+});
+
+test("no season, no ink — the absence is a count, not a look", () => {
+  // v1.69's rule: a mark missing because the rule is off and a mark missing
+  // because nothing was drawn are the same empty picture, so the test is a
+  // count. A world with seasons off must leave the figure byte-identical to one
+  // that was never told about seasons at all.
+  const hist = seasonHistory(3 * 2600);
+  const opts = { axis: popAxis(237), foodMax: 520 };
+  const bare = draw(hist, opts);
+  for (const cfg of [seasonCfg({ seasons: false }), seasonCfg({ seasonAmplitude: 0 })]) {
+    const ops = draw(hist, { ...opts, season: seasonBands(hist, cfg, W) });
+    assert.deepEqual(ops, bare);
+    assert.equal(ops.filter(([, name]) => name === "fillRect").length, 0);
+  }
+});
+
+test("the spoken chart says which half of the year it is drawing", () => {
+  const cfg = seasonCfg();
+  const axis = popAxis(237);
+  // A window ending deep in winter, and one ending deep in summer.
+  const winter = seasonHistory(300, 2 * cfg.seasonLength - 400);
+  const summer = seasonHistory(300, 2 * cfg.seasonLength + 700);
+  const saidWinter = describeChart(winter, axis, 520, seasonBands(winter, cfg, W));
+  const saidSummer = describeChart(summer, axis, 520, seasonBands(summer, cfg, W));
+  assert.match(saidWinter, /newest tick is in winter, when food arrives more slowly/);
+  assert.match(saidSummer, /newest tick is in summer/);
+  // The all-summer window shades nothing, and the sentence carries the share a
+  // reader gets from the picture for free.
+  assert.match(saidWinter, /100% of this window is winter/);
+  assert.match(saidSummer, /0% of this window is winter/);
+  assert.ok(seasonalFactor(winter[winter.length - 1].tick, cfg) < 1);
+  assert.ok(seasonalFactor(summer[summer.length - 1].tick, cfg) > 1);
+
+  // Silent where there is nothing to say, and honest where it cannot say it.
+  const off = seasonBands(winter, seasonCfg({ seasons: false }), W);
+  assert.equal(describeChart(winter, axis, 520, off), describeChart(winter, axis, 520));
+  assert.doesNotMatch(describeChart(winter, axis, 520), /winter|summer|season/);
+  const long = seasonHistory(200000);
+  assert.match(
+    describeChart(long, axis, 520, seasonBands(long, cfg, W)),
+    /too long to show the seasons/
+  );
 });

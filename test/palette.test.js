@@ -76,6 +76,9 @@ import {
   axisRuleTone,
   MIN_RULE_DELTA_E,
   MAX_RULE_DELTA_E,
+  seasonBand,
+  seasonBandTone,
+  SEASON_BAND_ALPHA,
   signalRing,
   corpseMark,
   corpseMarkTones,
@@ -1719,6 +1722,119 @@ test("the grid the canvas strokes is the grid that was measured", () => {
   const rgb = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
   assert.deepEqual(blendOver(panelBackground(), rgb, Number(m[4])), axisRuleTone());
   // A neutral on purpose: a tinted rule reads as belonging to one of the series.
+  assert.equal(rgb.r, rgb.g);
+  assert.equal(rgb.g, rgb.b);
+});
+
+// ---- winter, behind the figure (v1.74) ----
+//
+// The second piece of furniture on this chart and the first that is an area.
+// It is held to the grid's two-sided window — visible, and never data — and
+// then, because it is a *background* and not a mark, every colour already drawn
+// on this figure is re-scored over it. v1.34's rule: a new layer is a new audit
+// of everything that lands on it.
+
+/** Every mark this figure draws, as a function of what it is drawn over. */
+const CHART_MARKS = {
+  pop: (bg) => blendOver(bg, { r: 120, g: 190, b: 255 }, 0.95),
+  food: (bg) => blendOver(bg, { r: 90, g: 200, b: 140 }, 0.5),
+  popBand: (bg) => blendOver(bg, { r: 120, g: 190, b: 255 }, Number((0.95 * CHART_BAND_SCALE).toFixed(4))),
+  foodBand: (bg) => blendOver(bg, { r: 90, g: 200, b: 140 }, Number((0.5 * CHART_BAND_SCALE).toFixed(4))),
+};
+
+test("winter is present, and is never a third series", () => {
+  const tone = seasonBandTone();
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(tone, panelBackground(), vision);
+    assert.ok(d >= MIN_RULE_DELTA_E, `the winter band is ΔE ${d.toFixed(1)} from the panel under ${vision}`);
+    assert.ok(d <= MAX_RULE_DELTA_E, `the winter band is ΔE ${d.toFixed(1)} from the panel — that is data, not furniture`);
+  }
+  // Quieter than every line it sits behind, under every model — the same claim
+  // the grid makes, on a mark that covers half the figure rather than 1% of it.
+  for (const [name, line] of Object.entries(chartLineTones())) {
+    for (const vision of VISION_MODELS) {
+      const back = deltaE(tone, panelBackground(), vision);
+      const data = deltaE(line, panelBackground(), vision);
+      assert.ok(back < data, `winter is louder than the ${name} line under ${vision}`);
+    }
+  }
+});
+
+test("the ceiling: the whole darkening direction is worth nine", () => {
+  // The measurement that decided the alpha, pinned as the failure and not only
+  // as the fix (v1.24). Pure black — everything there is in this direction —
+  // scores 9.01 against this panel under normal vision, so the top of the rule
+  // window cannot be reached by shading at all, and the feasible alphas are a
+  // five-hundredth-wide strip. A future me widening the band has to move the
+  // panel, not the number.
+  const black = deltaE({ r: 0, g: 0, b: 0 }, panelBackground(), "normal");
+  assert.ok(black < MAX_RULE_DELTA_E, `pure black scores ${black.toFixed(2)} — the sweep's premise has moved`);
+  assert.ok(Math.abs(black - 9.01) < 0.05, `the ceiling is ${black.toFixed(2)}, not 9.01`);
+  // And the strip: 0.42 is the first alpha that clears the floor under every
+  // model, 0.47 the last that stays under the ceiling. The band is inside it.
+  const at = (a) => {
+    const t = blendOver(panelBackground(), { r: 0, g: 0, b: 0 }, a);
+    return VISION_MODELS.map((v) => deltaE(t, panelBackground(), v));
+  };
+  assert.ok(Math.min(...at(0.41)) < MIN_RULE_DELTA_E, "0.41 was expected to be too faint");
+  assert.ok(Math.max(...at(0.48)) > MAX_RULE_DELTA_E, "0.48 was expected to be too loud");
+  assert.ok(SEASON_BAND_ALPHA >= 0.42 && SEASON_BAND_ALPHA <= 0.47);
+  // Tritanopia is what makes the strip that narrow: darkening this navy takes
+  // away mostly blue, so it is a chromatic move and the four models disagree
+  // about it by a factor the same sweep in white does not produce.
+  const dark = at(SEASON_BAND_ALPHA);
+  assert.ok(Math.max(...dark) / Math.min(...dark) > 1.5, "the models agree — re-read the sweep");
+  const pale = (a) => {
+    const t = blendOver(panelBackground(), { r: 255, g: 255, b: 255 }, a);
+    return VISION_MODELS.map((v) => deltaE(t, panelBackground(), v));
+  };
+  const light = pale(0.05);
+  assert.ok(Math.max(...light) - Math.min(...light) < 0.2, "a lightening is not model-neutral after all");
+});
+
+test("everything drawn over winter still clears its own bar", () => {
+  // The claim I went in with — every mark here is lighter than the panel, so a
+  // darker background can only help them — is a mechanism arriving before the
+  // search (v1.48), and it is false. Three of the five lose contrast over the
+  // band. All of them still clear, and that is the assertion.
+  const band = seasonBandTone();
+  const panel = panelBackground();
+  for (const [name, mark] of Object.entries(CHART_MARKS)) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(mark(band), band, vision);
+      assert.ok(d >= MIN_DELTA_E, `the ${name} is ΔE ${d.toFixed(1)} from the winter band under ${vision}`);
+    }
+  }
+  // The grid is furniture over furniture, and stays inside its own window.
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(blendOver(band, { r: 255, g: 255, b: 255 }, 0.07), band, vision);
+    assert.ok(d >= MIN_RULE_DELTA_E && d <= MAX_RULE_DELTA_E, `the grid is ΔE ${d.toFixed(1)} over winter under ${vision}`);
+  }
+  // And the pair of series stays apart over it: tritanopia is the model that
+  // nearly loses them (25.9 over the panel), so a new background under both is
+  // exactly where that margin would go.
+  for (const vision of VISION_MODELS) {
+    const d = deltaE(CHART_MARKS.pop(band), CHART_MARKS.food(band), vision);
+    assert.ok(d >= MIN_DELTA_E, `the two lines are ΔE ${d.toFixed(1)} apart over winter under ${vision}`);
+  }
+  // Pinning the direction, so the wrong intuition cannot come back as a
+  // comment: the food envelope is the tightest of them and it *falls* over the
+  // band, from 27.5 to 27.0.
+  const worst = (a, b) => Math.min(...VISION_MODELS.map((v) => deltaE(a, b, v)));
+  assert.ok(
+    worst(CHART_MARKS.foodBand(band), band) < worst(CHART_MARKS.foodBand(panel), panel),
+    "the food envelope was expected to lose contrast over a darker ground"
+  );
+});
+
+test("the winter the canvas fills is the winter that was measured", () => {
+  const m = seasonBand().match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/);
+  assert.ok(m, `the winter band is not a plain rgba() this test can parse: ${seasonBand()}`);
+  const rgb = { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) };
+  assert.equal(Number(m[4]), SEASON_BAND_ALPHA);
+  assert.deepEqual(blendOver(panelBackground(), rgb, Number(m[4])), seasonBandTone());
+  // A neutral, for the grid's reason: a tinted ground would read as belonging
+  // to one of the two series.
   assert.equal(rgb.r, rgb.g);
   assert.equal(rgb.g, rgb.b);
 });

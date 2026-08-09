@@ -407,6 +407,66 @@ boom-and-bust ecology playing out from individual agents, not equations. (Tuning
 this so it stays dramatic without simply dying out is a story in the
 [devlog](DEVLOG.md).)
 
+### Does the pond actually follow the year? (v1.74)
+
+The chart shades the lean half of the year now, and a shaded figure invites a
+sentence — *the crashes are winters* — which is exactly the kind of claim this
+project has learned to measure before writing (v1.20's alarm call, v1.27's
+scrambled arm). So: twelve seeds, 12,000 ticks each, the first year discarded as
+the pond's opening transient, and the winter-half mean of a quantity against its
+summer-half mean. The control is the same pond with `seasons: false`, partitioned
+by the same calendar — where the two halves are two arbitrary sets of ticks.
+
+| | seasons on | control (`seasons: false`) |
+| --- | ---: | ---: |
+| standing crop, winter − summer | **−57.7 pellets** | −6.7 |
+| seeds where the crop is lower in winter | **12 / 12** | 9 / 12 |
+| as a share of each pond's own mean crop | **−40.4%** | −4.8% |
+| population, winter − summer | +0.9 | +0.0 |
+| seeds where the population is lower in winter | **7 / 12** | 8 / 12 |
+| as a share of each pond's own mean | +0.7% | −0.3% |
+
+**The crop follows the calendar and the head-count does not — at this
+statistic.** The first row is about as clean as anything measured here: every
+seed, in the same direction, at eight times the control's magnitude, on a
+quantity that is 40% thinner in the shaded half. The control being −4.8% rather
+than 0 is worth keeping: a pond has slow dynamics of its own, and any fixed
+partition of a run will catch some of them.
+
+The population rows are **not** a null result, and calling them one would be the
+mistake this page exists to avoid. A half-year mean cancels a quarter-year lag
+*exactly*: a consumer tracking a resource that winters is the textbook case of a
+delayed response, and a delayed response is invisible to this design by
+construction. What the table licenses is the caption the chart actually ships —
+the shaded half is where the crop is thin — and what it leaves open is whether
+the blue line lags the shading, which wants a cross-correlation over lag rather
+than a two-bucket split.
+
+### Reproducing it
+
+```js
+// node this from the repo root: does the pond follow the season, or is that the
+// shading talking? The control is the same clock over a world with no seasons.
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+
+for (const seasons of [true, false]) {
+  for (const seed of [314, 77, 51, 13, 7, 23, 45, 99, 128, 256, 512, 1024]) {
+    const config = makeConfig({ seed, seasons });
+    const w = new World(config);
+    let winter = 0, nW = 0, summer = 0, nS = 0;
+    for (let t = 0; t < 12000; t++) {
+      w.step();
+      if (t < config.seasonLength || t % 10) continue; // skip the opening transient
+      const lean = Math.sin((2 * Math.PI * t) / config.seasonLength) < 0;
+      if (lean) { winter += w.food.items.length; nW++; }
+      else { summer += w.food.items.length; nS++; }
+    }
+    console.log(seasons ? "on " : "off", seed, (winter / nW - summer / nS).toFixed(1));
+  }
+}
+```
+
 ## Contagion: epidemics, acquired immunity, and the cost of crowding
 
 Predation is not the only way one creature's existence can be bad for another's.

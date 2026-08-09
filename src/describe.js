@@ -475,11 +475,19 @@ export function describePower(series) {
  * *scales* they sit on, because a population of 214 means nothing without the
  * ceiling it is 214 of.
  *
+ * v1.74 adds the season, and it is the clause a listener needs most: the shading
+ * is the only thing on this figure that carries no number, so a reader can see
+ * where winter is and a listener had no way to ask. It is built from the same
+ * object the canvas is painted from rather than from the config, so the sentence
+ * and the picture cannot come apart (v1.61 — when a fixture rebuilds what the
+ * shipped code builds, ask which of the two is the source).
+ *
  * @param {Array} hist the history on screen
  * @param {{top: number}} axis the population scale
  * @param {number} foodMax the food scale
+ * @param {{state:string, bands:Array}} [season] `seasonBands()` for this window
  */
-export function describeChart(hist, axis, foodMax) {
+export function describeChart(hist, axis, foodMax, season = null) {
   if (hist.length < 2) {
     return "Population and food over time: not enough history yet.";
   }
@@ -488,7 +496,30 @@ export function describeChart(hist, axis, foodMax) {
   return (
     `Population and food over time, ticks ${from.toLocaleString()} to ${last.tick.toLocaleString()}: ` +
     `${count(last.pop, "creature")} on a scale to ${axis.top.toLocaleString()}, ` +
-    `${count(last.food, "food pellet")} of ${foodMax.toLocaleString()}.`
+    `${count(last.food, "food pellet")} of ${foodMax.toLocaleString()}.` +
+    describeSeason(season, last.tick)
+  );
+}
+
+/**
+ * The season clause of `describeChart`. Silent when there are no seasons to
+ * report — a world with them switched off says nothing about them, the same
+ * rule the other eleven nouns follow here.
+ */
+function describeSeason(season, tick) {
+  if (!season) return "";
+  if (season.state === "aliased") {
+    return " This window is too long to show the seasons.";
+  }
+  // An all-summer window has no bands and still has a season worth saying: for
+  // a listener, "0% of this window is winter" is the sentence the *absence* of
+  // shading gives an eye for free.
+  if (season.state !== "ok") return "";
+  const share = season.bands.reduce((sum, b) => sum + (b.x1 - b.x0), 0);
+  const now = season.bands.some((b) => b.to >= tick);
+  return (
+    ` The newest tick is in ${now ? "winter, when food arrives more slowly" : "summer"}; ` +
+    `${Math.round(share * 100)}% of this window is winter.`
   );
 }
 

@@ -895,6 +895,60 @@ export const MIN_RULE_DELTA_E = 5;
 export const MAX_RULE_DELTA_E = 10;
 
 /**
+ * Winter, on the population chart (v1.74) — the second piece of furniture in
+ * this figure, and the first that is an *area* rather than a line.
+ *
+ * `seasonalFactor` has swung the food spawn rate by ±30% on a 2,600-tick year
+ * since v1.3, and the figure that plots the standing crop has never said which
+ * half of the year it is drawing. The band shades the half where that factor is
+ * below 1. It is furniture by the same argument as the grid — it carries no
+ * value, it says where you are — so it is held to the same two-sided window,
+ * `MIN_RULE_DELTA_E`..`MAX_RULE_DELTA_E`, under every vision model.
+ *
+ * Three measurements decided the number, and only one of them was the one I
+ * went looking for.
+ *
+ *   - **The direction.** Darker, because brightness reads as magnitude and this
+ *     is the lean half of the year; a paler winter would say "more".
+ *   - **The ceiling, first (v1.62).** The whole darkening direction is worth
+ *     ΔE **9.01**: that is *pure black* against this panel under normal vision,
+ *     so the top of the rule window is not reachable from below at all. The
+ *     feasible alphas are **0.42–0.47** — five hundredths of a unit interval —
+ *     because tritanopia scores a darkening of this navy roughly *twice* what
+ *     normal vision does (9.56 against 5.32 at the value shipped), while the
+ *     same sweep in white agrees across all four models to within 0.1 ΔE and
+ *     has four times the room. Removing light from `#0c131c` mostly removes
+ *     *blue*, which is a chromatic move; adding white is not. The band is dark
+ *     anyway and the window is a measured constraint rather than a taste, which
+ *     is what pins it against a future tidy-up.
+ *   - **The coverage (v1.62 again).** A gridline is 1% of the figure and this is
+ *     half of it, and a reader sees an area as its own loudness rather than as a
+ *     line's. So the value sits at the *bottom* of the window (5.32) rather than
+ *     in the middle, where the same ΔE spread over half a canvas would stop
+ *     being furniture.
+ *
+ * What the audit does not get to assume is that darkening is free. Every mark
+ * in this column is lighter than the panel, so "a darker background can only
+ * help them" is a mechanism arriving before the search (v1.48), and it is
+ * false: over the band the grid falls 8.00 → 7.21, the food line 38.15 → 38.07
+ * and the food envelope 27.46 → 26.97. All still clear their own bars — the
+ * tightest is the food envelope at 26.97 against 25 — and `test/palette.test.js`
+ * re-runs every one of them over the band, because a new background is a new
+ * audit of everything drawn on it (v1.34).
+ */
+export function seasonBand() {
+  return `rgba(0, 0, 0, ${SEASON_BAND_ALPHA})`;
+}
+
+/** How much of the panel the winter band takes away — see `seasonBand()`. */
+export const SEASON_BAND_ALPHA = 0.45;
+
+/** The winter band as it is actually composited over the panel. */
+export function seasonBandTone() {
+  return blendOver(panelBackground(), { r: 0, g: 0, b: 0 }, SEASON_BAND_ALPHA);
+}
+
+/**
  * The power strip (v1.39): what the pond mints per tick, and what it spends.
  *
  * Two lines that must be told apart, in a column that already spends eight

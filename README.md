@@ -163,10 +163,13 @@ could have fixed it.
   orange and turns amber as the prey learn to run; the chronicle marks the
   handover. Turn on *Regrowth* for the bleakest version — dying of old age
   practically stops happening once a herd can strip its own pasture.
-- **Ride the seasons.** Watch the population/food chart pulse with the year —
-  crashing in winter, blooming in summer. In a predator world the winters get
-  genuinely dangerous. Toggle *Seasons* off to see the difference a constant
-  climate makes.
+- **Ride the seasons.** Since v1.74 the chart says where the year is: the lean
+  half is shaded behind the lines. Watch the green food line fall into the
+  shading — that much is measured, a 40% thinner standing crop in winter on
+  twelve seeds of twelve. Whether the *population* follows is the part the
+  measurement will not yet say (see [SCIENCE.md](docs/SCIENCE.md)), so watch the
+  blue line yourself and judge. Toggle *Seasons* off to see the difference a
+  constant climate makes — and the shading goes with it.
 - **Watch the biomes.** Creatures pile into the fertile glowing patches and
   leave the barren stretches empty; the emptiness becomes a risky crossing.
 - **Turn on Drifting biomes** and watch the fertile patches slide across the

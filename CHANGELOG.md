@@ -4,6 +4,104 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.74.0] — 2026-08-09
+
+The population chart has two marked axes and one of them is time. This pond's
+time has a season on it: `seasonalFactor` has swung the food spawn rate by ±30%
+on a 2,600-tick year since v1.3, **on by default**, and the figure plotting the
+standing crop has never said which half of the year it is drawing. A crash in a
+lean winter and a crash in high summer are the same picture.
+
+That is v1.57's question — *what is in this world that this view has never heard
+of?* — asked of the chart, which is one of the two surfaces this project's
+playbook still listed as unwalked. The answer was not a noun in the pond. It was
+the axis the figure is drawn against.
+
+### Added
+
+- **`seasonBands()` (`src/chart.js`)** — the stretches on screen where the food
+  rate is below its nominal value, as fractions of the figure, drawn as a
+  darker ground behind everything else. It needs no history: the season is
+  `sin(2πt / seasonLength)`, a pure function of the world's own clock, so the
+  edges are the exact half-year multiples and no amount of the archive's
+  thinning can move them. *Where* a tick sits does come from the history —
+  `tickFrac`, the same map the x-axis marks use, because two pieces of furniture
+  on one axis disagreeing about where tick 8,000 is would be worse than either.
+- **A reported state rather than an empty list.** No shading means "it is
+  summer" *and* means "this world has no seasons", and those are different
+  worlds. `seasonBands` returns `off` / `short` / `aliased` / `ok`, the caption
+  under the figure says `shaded: winter` exactly on `ok`, and the spoken form
+  carries the season for a listener who cannot see the ground at all.
+- **An aliasing floor, `MIN_BAND_PX = 3`.** Past a run of 130,000 ticks a
+  half-year is under three pixels of a 300-pixel figure and the bands stop being
+  regions and become a stripe pattern, whose *mean* is the only thing a reader
+  can see — a picture of a pond in some average season, permanently, which is
+  never true. It refuses to draw instead, and says so.
+
+### Measured
+
+- **The colour ceiling first (v1.62), and it decided the value.** The whole
+  darkening direction against this panel is worth ΔE **9.01** — that is *pure
+  black* — so the top of the furniture window (`MAX_RULE_DELTA_E` = 10) cannot
+  be reached by shading at all. The feasible alphas are **0.42–0.47**, five
+  hundredths of a unit interval, because tritanopia scores a darkening of this
+  navy at roughly twice what normal vision does (9.56 against 5.32 at the value
+  shipped): removing light from `#0c131c` mostly removes *blue*, which is a
+  chromatic move. The same sweep in white agrees across all four models to
+  within 0.1 ΔE and has four times the room. The band is dark anyway — brightness
+  reads as magnitude and this is the lean half of the year — and it sits at the
+  *bottom* of the window, because a gridline is 1% of the figure and this is
+  half of it (v1.62: a cue drawn as a region is as loud as its coverage).
+- **Darkening is not free, which is what I went in assuming.** Every mark on
+  this figure is lighter than the panel, so "a darker ground can only help them"
+  arrives as a mechanism before any search (v1.48), and three of the five lose
+  contrast over the band: the grid 8.00 → 7.21, the food line 38.15 → 38.07, the
+  food envelope 27.46 → 26.97. All still clear their own bars, the tightest at
+  26.97 against 25, and `test/palette.test.js` re-runs every one of them over the
+  band — a new background is a new audit of everything drawn on it (v1.34).
+- **The legend had no room, and I found that out the way v1.53 says to.** The
+  word went into the legend first. It is a word and not a swatch by necessity —
+  furniture is measured *below* the bar a mark must clear, so a chip of it would
+  be a legend entry nobody can see — and one more item in that row wrapped the
+  food scale onto a second line and squeezed the series dots from 8 pixels to 6,
+  at 1,280 CSS pixels *and* at 390. Measured before and after in a real browser,
+  not guessed. It lives in the caption under the figure now, which is where this
+  figure already talks about time.
+- **And the measurement the shading invites, before the sentence it invites.**
+  Twelve seeds, 12,000 ticks, first year discarded as the pond's opening
+  transient, winter-half mean against summer-half mean — and a control arm with
+  `seasons: false` partitioned by the same calendar, where the halves mean
+  nothing.
+
+  | | seasons on | control |
+  | --- | ---: | ---: |
+  | standing crop, winter − summer | **−57.7 pellets**, 12/12 seeds down | −6.7, 9/12 |
+  | as a share of each pond's own mean crop | **−40.4%** | −4.8% |
+  | population, winter − summer | +0.9, **7/12** down | +0.0, 8/12 |
+  | as a share of each pond's own mean | +0.7% | −0.3% |
+
+  The crop follows the calendar decisively and the head-count does not follow it
+  *at this statistic* — 7 of 12 is a coin. That is a caveat and not a null: a
+  half-year mean cancels a quarter-year lag exactly, and a population feeding on
+  a resource that winters is the textbook case of a lagged response. So the
+  honest claim is the one the picture supports — **the shaded half is where the
+  crop is thin** — and the README's older "crashing in winter" is now marked as
+  the thing a cross-correlation at lag would have to settle.
+
+### Changed
+
+- `drawChart` takes a `season` and lays it down before the grid.
+- `describeChart` takes the same object and says which half of the year the
+  newest tick is in, and what share of the window is winter.
+- The caption under the stack reads `ticks 0–3,096 · 1 point per 16 ticks ·
+  shaded: winter`.
+
+Rendering and narration only: no simulation state is touched, no random number
+is drawn, and no fingerprint moves. A world with `seasons: false` — or with the
+amplitude at zero, where the factor is exactly 1 all year — draws a
+**byte-identical** figure to one that was never told about seasons, which is a
+count and not a look (v1.69).
+
 ## [1.73.0] — 2026-08-09
 
 The minimap draws two marks after everything else: the rectangle showing where
