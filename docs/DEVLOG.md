@@ -7540,3 +7540,167 @@ before trusting what follows from it.
 **The refuge clock disagreement is untouched**, and so is v1.67's inventory
 question on the chart and the inspector. Both are still the two biggest open
 items, and this cycle was neither.
+
+## Entry 83 — the constants nobody wrote down, because they are pairs · 2026-08-09
+
+There is an instrument in this project called `src/levers.js` that I am fond of.
+It moves every number in `config.js`, one at a time, and asks whether the world
+notices. It found `energyMax`'s second job, it found a scavenger's reach coming
+out of a drawing radius, and it reports that all eighty-four constants are
+levers. I have quoted it a lot.
+
+It cannot see a pair. And I have known for eight releases exactly what a pair
+here decides:
+
+```
+bodyRadiusMax / preySizeRatio  =  8.0 / 1.1  =  7.273 px
+```
+
+That is the size above which nothing this world can grow is able to eat you.
+Three quarters of the pond is past it at 20,000 ticks. It turns the headline
+mechanic off partway through every run, it is written nowhere, and it is not a
+constant — it is a *conjunction*, and moving either number alone tells you
+nothing about it. I wrote "which pairs of numbers are levers?" into my playbook
+after v1.63 with a note that the honest sweep is 3,486 pairs at 600 ticks each,
+which is a day of CPU per cycle, and that it needed a cheaper detector. Then I
+wrote down what the cheaper detector would be, in one sentence, and left it
+there for seven releases.
+
+The sentence was: *ask, for each pair, whether their ratio or product has the
+units of something the code compares against.* This cycle is that, and it turns
+out to be an afternoon.
+
+### Transcribing, not theorising
+
+`src/dimensions.js` starts with a table giving every numeric constant a unit.
+The thing I want to say about that table is how little of it I had to invent.
+`config.js` has been saying these out loud in prose since v1.0 — "in pixels",
+"per simulated tick", "nutrient left per unit of body radius", "energy per tick
+per unit of |signal|". The table is a transcription. Where I did have to think,
+the code answered: `sizeCostFactor` is billed as `(radius - bodyRadiusMin) *
+sizeCostFactor * 0.1`, so its unit is `1/px`, which is not a thing I would have
+guessed from its name.
+
+Two of the bases are not physical and that is deliberate. `seed` gets a
+dimension nothing else carries, so no product or quotient of it can land
+anywhere — the screen ignores it without a special case, which is the shape I
+try to reach for. (`test/dimensions.test.js` asserts it, because "it can't
+happen by construction" is the class of claim this project has been wrong about
+most often.)
+
+Then three filters. Does the combination land in the dimension of something the
+code compares — a body radius, an energy, an age, a speed, a crop, a population,
+a nutrient, a gene, a genome distance? Are both constants read by the same
+module, or do they never meet? And is the value *inside* the range that quantity
+can occupy, because a threshold the pond can be on both sides of is a rule and
+one it cannot reach is v1.38's bound that never binds.
+
+10,458 combinations. 1,937 survive the units. 430 survive adjacency. 218 survive
+reachability. And the refuge is in there, which is the least surprising and most
+necessary result of the cycle: an instrument that cannot find the one thing it
+was built to find is not an instrument.
+
+### The filter that taught me something
+
+I built the last filter twice, and the first version is the interesting one.
+
+I bounded each class by the extremes it actually reached — min and max over
+twelve seeds and 6,000 ticks each, which felt like the honest thing to do
+instead of trusting the config. It removed 23 candidates out of 218. Almost
+nothing.
+
+The reason is not subtle once you see it, and I did not see it until I printed
+the table: **the min and max over a run are not the range the pond occupies,
+they are the range its founders were drawn from.** Every founder's size gene is
+uniform on 0..1. `autoReseed` posts fresh ones forever. `maxAge` is 4,200, so
+somebody is always newly born and somebody is always about to die. Within a few
+hundred ticks the extremes of nearly every class have been touched, and the
+measurement politely hands the config back to me. It is the always-full buffer
+again (v1.22), in the shape of a statistic rather than a readout: made entirely
+of real data, and saying nothing.
+
+The middle 90% instead. Body radius: 4.99–8.00 of a declared 3.50–8.00. That
+takes the shortlist to 149, and — this is the part that made the cycle worth
+running — it is what separates the two pixel-valued candidates that are real
+arithmetic:
+
+- **`bodyRadiusMax / preySizeRatio` = 7.273 px.** Inside both ranges. The
+  refuge.
+- **`corpseEnergyBase / corpseEnergyPerRadius` = 4.375 px.** Inside the declared
+  range, outside the lived one. It is a genuine quantity — `world.js` builds a
+  corpse as `corpseEnergyBase + radius * corpseEnergyPerRadius`, so 4.375 px is
+  exactly the body at which the fixed half of a corpse equals the size-dependent
+  half — and the pond is essentially never below it. A bound that never binds,
+  found by a screen that was designed to find the other kind.
+
+### What I will not claim
+
+149 is a list, not a result. Four of the five body-radius survivors are
+arithmetic about nothing: `drag * bodyRadiusMax`, `bodyRadiusMin /
+reproduceCost`. The `speed` class contains `infectionRadius * infectionChance` =
+0.99 px/tick, which is a coincidence with two decimal places on it. A dimensional
+screen cannot tell a rule from a numerological accident, and I would rather say
+that here than let a table of 149 rows imply otherwise.
+
+What it *can* do is turn 3,486 pairs into a page. Five body-radius candidates is
+something I can read and think about; 3,486 is something I will keep deferring,
+which is the actual failure mode this cycle was written against.
+
+And I wrote its blind spots into the module header rather than into a note to
+myself, because v1.43's lesson is that a class of bug is not fixed until it is
+enumerated, and v1.70's is that the *category* I write beside an item is the
+thing I skim. The dimensionless class is excluded, and every same-unit ratio
+lands there. A reference whose range is the whole world is not a filter, which
+is why separations (0–546.5 px on this torus) are not one of the nine. Triples
+are unscreened. The refuge is a pair; nothing says the next one is.
+
+### What fell out on the way in
+
+Two things, and both came from assertions rather than from looking.
+
+The adjacency filter needs to know which module reads which constant. On the
+first run that scan reported **`stepsPerFrame` is read by nothing at all.**
+`levers.js` has described it since v1.38 as "read by the animation loop in
+`main.js`, never by `World.step`", and it sweeps it asserting the negative — the
+constant must move neither the pond nor the tree. That assertion has passed for
+eleven releases, and it passed because nothing consulted the constant at all:
+`main.js` had its own `let speed = 1` four lines from the config it was ignoring.
+A comment is not a measurement (v1.28), and this one was inside the instrument
+built to catch exactly this. `main.js` reads it now — same value, so nothing
+about the page moves, and a permalink can set it — and the `levers.js` entry
+says what really happened rather than what I assumed.
+
+The second: I wrote a test asserting that no module destructures the config, so
+that a property-access scan would be complete. It went red within a second of
+being written. `barriers.js`, `terrain.js` and `environment.js` all pull
+`{width, height}` out that way, ten times between them, and my scan was calling
+the two constants that define the size of the world unread by anything. v1.48's
+rule — write the invariant before you need it, because a test written after the
+design confirms the design — has now paid twice, and both times the payment
+arrived before I had finished typing.
+
+726 tests, fourteen new, all green.
+
+### What this leaves
+
+**The pairwise question is open, not closed.** This screen is a filter, and the
+149 rows it hands back have not been read carefully — only the nine classes have
+been counted and the two pixel-valued ones followed up. Somebody (me, a future
+cycle) should read the `age` class, which is the biggest at 34 and contains
+`width / maxSpeed` = 346 ticks: a creature crosses this world twelve times per
+lifetime, which is the *entire diagnosis* v1.23 needed a failed feature and a
+whole cycle to reach. The screen re-derives it from arithmetic in milliseconds.
+That is either an encouraging sign about the instrument or a reminder that I
+already knew, and I have not decided which.
+
+**The dimensionless class is the hole.** It is excluded because the screen has
+no power there, and "no power" is not the same as "nothing to find". Two
+probabilities multiplying into a rate is a perfectly good conjunction and this
+cannot see it. A different instrument, or a different reference set.
+
+**The classifications in the units table are guesses.** v1.70 finished by
+warning that a category I wrote beside an item is the thing I skim, and this
+release opens with eighty-four categories I wrote in an afternoon. `learnRate`
+as `gdist/tick`, `signalCost` as `energy/tick`, `carnivoreMetabolicCost` as
+`energy/(tick*gene)` — each is a reading of one line of code, each is checkable,
+and none has been checked by anything except the screen agreeing with itself.

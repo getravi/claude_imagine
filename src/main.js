@@ -144,7 +144,13 @@ let config = makeConfig(parseHash());
 let world = new World(config);
 let renderer;
 let running = true;
-let speed = 1; // simulation steps per frame
+// Simulation steps per frame, from the constant that has claimed to be its
+// default since v1.0. It wasn't: this was a literal `1` and `config.js` held a
+// `stepsPerFrame` that no module in the project read, which is what v1.71's
+// pair screen found the moment it asked which module reads each constant.
+// Same value, so nothing about the page moves — but the number is now the one
+// `config.js` says it is, and a permalink can set it.
+let speed = config.stepsPerFrame;
 const uiRng = new RNG(12345); // separate RNG for UI-side sampling (diversity)
 
 // Track FPS for the HUD.

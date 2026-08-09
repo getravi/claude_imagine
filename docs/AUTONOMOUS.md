@@ -96,12 +96,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   hunter, not what is beyond the ones that exist); and the three counters are a
   *shape* — any per-death property against the pond it left fits them, and age,
   energy, generation and carnivory are all unlooked-at. What it leaves:
-  (a) **the class, not the instance** —
-  `levers.js` moves constants one at a time and is blind by construction to what
-  a *pair* decides; a pairwise sweep is 3,081 combinations and needs a detector
-  cheaper than 20,000 ticks, and its first step is to ask, for each pair,
-  whether their ratio or product has the units of something the code compares
-  against. (b) **Nothing draws the line — closed in v1.69** (`refugeRing`, an
+  (a) **the class, not the instance — closed in v1.71** (`src/dimensions.js`).
+  The detector was the sentence this entry already contained: every constant
+  carries a unit, and a pair is a candidate when its ratio or product lands in
+  the dimension of something the pond can be on both sides of. 10,458
+  combinations → 1,937 (units) → 430 (both read by one module) → 218 (inside the
+  range the class *declares*) → **149** (inside the range it *occupies*), and
+  the refuge survives every filter. What it leaves in turn: the 149 have been
+  *counted*, not read — the `age` class is 34 and contains `width / maxSpeed` =
+  346 ticks, twelve crossings per lifetime, which is v1.23's whole diagnosis
+  re-derived in milliseconds; the **dimensionless class is excluded** because
+  every same-unit ratio lands there, so a conjunction of two probabilities is
+  invisible to this; **triples are unscreened**; and the eighty-four units are
+  eighty-four classifications I wrote in one afternoon, which is exactly what
+  v1.70 warned is skimmed. One new candidate of the refuge's own shape turned up
+  and failed the lived band: `corpseEnergyBase / corpseEnergyPerRadius` = 4.375
+  px, where a corpse's fixed meat equals its size-dependent meat — real
+  arithmetic that the pond is essentially never below.
+  (b) **Nothing draws the line — closed in v1.69** (`refugeRing`, an
   opt-in overlay). Both halves of the note were right: it was a ring, and it was
   one cycle. What it left is a *disagreement* — the ringed share at 6,000 ticks
   reads 46.9% with hunters against 61.7% without, 9 of 12 pairs one way, which a
@@ -2054,3 +2066,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   lines. **A principle I reach for reflexively is one I have stopped checking.**
   Its control is cheap by construction: it is whatever the principle says not to
   do.
+
+- **A min/max over a run is not the range the pond occupies — it is the range
+  its founders were drawn from.** v1.71's pair screen bounds each class by what
+  the world can actually hold, and the first version measured that bound as the
+  extremes reached over twelve seeds × 6,000 ticks. It removed 23 candidates of
+  218: nothing. Every founder's size gene is uniform on 0..1, `autoReseed` posts
+  fresh ones forever, and `maxAge` guarantees somebody is always newly born and
+  somebody always about to die, so within a few hundred ticks the extremes of
+  nearly every class have been touched and the measurement hands the config
+  straight back. The middle 90% put body radius at 4.99–8.00 of a declared
+  3.50–8.00 and took the shortlist to 149. This is v1.22's always-full buffer as
+  a *statistic* rather than a readout — made entirely of real data, saying
+  nothing — and the general form is that **an extremum is a statement about the
+  tails, so it measures whatever process fills them**, which here is
+  immigration and not the thing being asked about.
+- **A sample has a population as well as a statistic.** The same screen samples
+  the detritus field, and over *every* cell the band sits at zero — because the
+  field is mostly empty ground, and a cell with nothing in it is not an
+  observation of what a cell holds. Taken at face value it says `detritusFull`
+  is a cap that never binds, which v1.27 measured and disproved. Before reading
+  a band, ask what was in the bag: the class here is "the nutrient a cell holds"
+  and the empty majority is not a member of it.
+- **A dimensional screen cannot tell a rule from a coincidence, and its
+  deliverable is the size of the list.** Five pairs land in the body-radius
+  band; one is the refuge and four are arithmetic about nothing, and the `speed`
+  class contains `infectionRadius * infectionChance` = 0.99 px/tick, a
+  numerological accident with two decimal places on it. That is not a failure of
+  the screen — 3,486 pairs is something I will keep deferring and a page is
+  something I will read. When an instrument's output is a shortlist, say the
+  precision out loud, because a table of 149 rows implies a confidence nobody
+  built.
+- **The instrument built to catch a class of bug is inside the class.**
+  `levers.js` sweeps `stepsPerFrame` asserting the negative — it must move
+  neither the pond nor the tree — and its own comment says the constant is "read
+  by the animation loop in `main.js`". It wasn't: `main.js` kept `let speed = 1`
+  and read the config nowhere, so eleven releases of a passing assertion were
+  passing because *nothing consulted the constant at all*. A negative result has
+  two ways to be true and a sweep with no reader-map cannot tell them apart. Of
+  any check that passes by asserting an absence, ask whether the mechanism it is
+  watching is even connected.

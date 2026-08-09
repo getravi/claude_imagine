@@ -4,6 +4,74 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.71.0] — 2026-08-09
+
+`src/levers.js` has moved every number in `config.js` one at a time since v1.38
+and reported that all eighty-four are levers. It is blind by construction to
+what a **pair** decides — and this project already knew one thing a pair decides
+that it never saw: `bodyRadiusMax / preySizeRatio` is 7.273 px, the size above
+which nothing this world can grow is able to eat you. Neither constant is that
+number. This release is the cheap screen for the rest of them.
+
+### Added
+
+- **`src/dimensions.js`** — the pair screen. Every constant carries a unit,
+  transcribed from what `config.js` already says in prose, and every pair is
+  asked whether its ratio or product lands in the dimension of something the
+  pond can be on both sides of. It never steps a world; the whole sweep is
+  milliseconds.
+- **`test/dimensions.test.js`** — fourteen tests, and they pin the instrument
+  rather than its output. The units table has to cover every numeric constant
+  and nothing else, so a constant added in a later release fails here the day it
+  lands. The three filters have to be strictly nested and each has to remove
+  something. The refuge has to survive all of them, checked bit-for-bit against
+  `refugeRadius()` rather than to three decimals.
+
+### Measured
+
+- **10,458 combinations → 149.** Dimensional agreement leaves 1,937; both
+  constants being read by the same module leaves 430; a value inside the range
+  its class *declares* leaves 218; inside the range the pond actually *occupies*
+  leaves **149**. The refuge survives every filter.
+- **A declared range is not a lived range, and a min/max is not a lived range
+  either.** Bounding each class by the extremes it reached over twelve seeds ×
+  6,000 ticks removed almost nothing (218 → 195), because founders are drawn
+  uniformly across the declared range and `autoReseed` posts fresh ones forever
+  — so a min/max hands the config straight back. The middle 90% puts body radius
+  at 4.99–8.00 of a declared 3.50–8.00, and takes the shortlist to 149.
+- **One new candidate of the refuge's exact shape, and it fails the lived
+  band.** `corpseEnergyBase / corpseEnergyPerRadius` = **4.375 px** is where a
+  corpse's fixed meat equals its size-dependent meat — real arithmetic, inside
+  the declared size range, and outside the one the pond lives in. A bound that
+  never binds, one level up from v1.38's.
+- **What the screen cannot do**, stated as its domain: the dimensionless class
+  is excluded (every same-unit ratio lands there), a reference whose range is
+  the whole world is not a filter (separations, 0–546.5 px), triples are not
+  screened, and a survivor is a candidate rather than a finding — four of the
+  five body-radius survivors are arithmetic about nothing.
+
+### Fixed
+
+- **`stepsPerFrame` was read by nothing at all.** The adjacency scan found it on
+  its first run. `levers.js` has described it since v1.38 as "read by the
+  animation loop in `main.js`" and asserts the negative — that it moves neither
+  the pond nor the tree — and that negative held for eleven releases because
+  `main.js` kept its own `let speed = 1` and never consulted the config.
+  `main.js` reads the constant now; the value is unchanged, so nothing about the
+  page moves, and a permalink can set it. The `levers.js` entry says what
+  actually happened.
+- The reader scan sees a destructured read. The test asserting there were none
+  went red on its first run: `barriers.js`, `terrain.js` and `environment.js`
+  pull `{width, height}` out that way ten times between them, so a dot-only scan
+  called the two constants that define the size of the world unread by anything.
+
+### Unchanged
+
+- **No world moves.** Nothing in this release is consulted by `World.step`; the
+  screen is arithmetic over the config and a read-only sample of a live world.
+  726 tests green, fourteen of them new, including the golden fingerprints that
+  have pinned the default pond since v1.3.0.
+
 ## [1.70.0] — 2026-08-08
 
 The vision overlay has drawn where a sense reaches since v1.32, in three

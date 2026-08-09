@@ -211,7 +211,10 @@ export const SPECIAL = {
     to: 4,
     why:
       "read by the animation loop in main.js, never by World.step. Its claim is the negative one: " +
-      "how often a caller steps the world is not a property of the world",
+      "how often a caller steps the world is not a property of the world. Note that this sweep " +
+      "passed for eleven releases for the wrong reason — until v1.71 `main.js` kept its own " +
+      "`let speed = 1` and read this constant *nowhere*, so the negative held because nothing " +
+      "consulted it at all. `src/dimensions.js` found that by asking which module reads which key",
   },
 };
 

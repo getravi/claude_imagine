@@ -5033,6 +5033,164 @@ strengths *and their difference* to their collisions, and asserts the overlay
 stays 25 away from the two other blue marks — so restoring the alpha, or
 drifting the lightness up into the immune ring, turns the suite red.
 
+## The constants nobody wrote down, because they are pairs (v1.71)
+
+`src/levers.js` (v1.38) moves every number in `config.js` one at a time and asks
+whether the world notices. All eighty-four are levers. That sweep is blind by
+construction to what a **pair** decides, and this project already knows one
+thing a pair decides that it never saw:
+
+```
+bodyRadiusMax / preySizeRatio  =  8.0 / 1.1  =  7.273 px
+```
+
+the size above which nothing this world can grow is able to eat you (v1.63).
+Neither constant is that number. It sits four fifths of the way up the body-size
+range, three quarters of the pond is past it at 20,000 ticks, and it turns the
+headline mechanic off partway through every run. A sweep that moves one number
+at a time cannot see it, because what the pair decides is a *conjunction*.
+
+The obvious remedy — move both, 3,486 pairs, 600 ticks each — is a day of CPU
+and would still only report *that* something moved. `src/dimensions.js` is the
+cheap screen instead, and it never steps a world: **ask, for each pair, whether
+their ratio or product has the units of something the pond can be on both sides
+of.**
+
+### Three filters
+
+Every constant carries a unit, transcribed from what `config.js` already says in
+prose ("in pixels", "per tick", "per unit of body radius"). Then:
+
+| filter | asks | combinations left |
+| --- | --- | --- |
+| — | every pair, three forms each (`a/b`, `b/a`, `a*b`) | **10,458** |
+| dimensional | does it land in the dimension of something the code compares? | 1,937 |
+| adjacent | are both constants read by the same module? | 430 |
+| reachable | is the value inside the range that quantity declares? | **218** |
+| lived | inside the range the pond *occupies*? | **149** |
+
+Nine reference classes: body radius, energy carried, age, speed, standing crop,
+population, cell nutrient, a trait gene, genome distance. Every declared bound
+is read out of the config (`bodyRadiusMin`..`bodyRadiusMax`, `0`..`maxAge`,
+`0`..`energyMax`, …), so "inside the range" is a claim about the world rather
+than about my taste.
+
+**The screen finds the thing it was built to rediscover.** `bodyRadiusMax /
+preySizeRatio` survives all four filters, and `test/dimensions.test.js` asserts
+it bit-for-bit against `refugeRadius()` — an instrument that agreed to three
+decimals would be a second implementation, not a check.
+
+### A declared range is not a lived range
+
+The first version of the last filter used the min and max each quantity reached
+over twelve seeds × 6,000 ticks, and it removed almost nothing: 218 → 195. The
+reason is worth more than the filter. **A min/max over a run is not the range
+the pond occupies, it is the range its founders were drawn from.** Every founder
+gets a size gene uniform on 0..1, `autoReseed` posts fresh ones forever, and a
+`maxAge` of 4,200 means somebody is always newly born and somebody is always
+about to die — so the extremes of nearly every class are touched within a few
+hundred ticks and the measurement hands the config straight back.
+
+The middle 90% instead (nearest-rank, pooled over twelve seeds, sampled every
+200 ticks):
+
+| class | declared | middle 90% |
+| --- | --- | --- |
+| body radius | 3.50 .. 8.00 | **4.99 .. 8.00** |
+| energy carried | 0 .. 220 | 17.4 .. 139.0 |
+| age | 0 .. 4,200 | 66 .. 3,032 |
+| speed | 0 .. 2.60 | 0.02 .. 1.30 |
+| trait gene | 0 .. 1 | 0.02 .. 0.88 |
+| standing crop | 0 .. 520 | 47 .. 520 |
+| population | 0 .. 650 | 18 .. 335 |
+| cell nutrient | 0 .. 8.00 | 0.00 .. **0.93** |
+
+That band takes 218 down to 149, and it is the filter that separates the two
+`px` candidates worth naming:
+
+- **`bodyRadiusMax / preySizeRatio` = 7.273 px** — inside both. The refuge.
+- **`corpseEnergyBase / corpseEnergyPerRadius` = 4.375 px** — inside the
+  declared range, outside the lived one. It is real arithmetic (`world.js` line
+  705 builds a corpse as `corpseEnergyBase + radius * corpseEnergyPerRadius`, so
+  4.375 px is exactly where a corpse's fixed meat equals its size-dependent
+  meat) and the pond is essentially never below it. A threshold nothing crosses
+  is v1.38's *bound that never binds*, one level up.
+
+`cell nutrient` is the class where the band is measuring something else, and it
+is flagged rather than believed: sampled over the cells that hold nutrient at
+all, 95% of them hold under 0.93 of a possible 8.0 — because a cell decays at
+0.997 per tick and keeps a residue for thousands of ticks after the burial that
+filled it. That says nothing about whether `detritusFull` binds; v1.27 measured
+that it does, at the instant of a death.
+
+### What the screen cannot do, stated as its domain
+
+- **The dimensionless class is excluded.** Every ratio of two same-unit
+  constants lands in it, so a reference for it would admit hundreds and rank
+  none. Two probabilities multiplying into a rate is exactly the kind of
+  conjunction this cannot find.
+- **A reference whose range is the whole world is not a filter.** The pond
+  compares separations in pixels constantly and a separation on this torus runs
+  0 to 546.5 px, which every pixel-valued candidate is inside. Left out for that
+  reason, not because distances do not matter.
+- **Three constants.** The refuge is a pair. Nothing says the next one is.
+- **A survivor is a candidate, not a finding.** The body-radius class has five
+  members and four of them are arithmetic about nothing (`drag * bodyRadiusMax`,
+  `bodyRadiusMin / reproduceCost`, …). The screen's product is a list short
+  enough to read by hand, and reading it is still the work. Five is that; 3,486
+  was not.
+
+### The one thing it found on the way in
+
+The adjacency filter needs to know which module reads which constant, and that
+scan reported that **`stepsPerFrame` is read by nothing at all**. `levers.js`
+had described it since v1.38 as "read by the animation loop in `main.js`, never
+by `World.step`", and its sweep asserts the negative — that the constant moves
+neither the pond nor the tree. The negative held for eleven releases for the
+wrong reason: `main.js` kept its own `let speed = 1` and never consulted the
+config. `main.js` reads the constant now (same value, so nothing about the page
+moves, and a permalink can set it), and the `levers.js` entry says what actually
+happened. v1.28's rule — *a comment is not a measurement* — with the comment
+sitting inside the instrument that was supposed to catch this.
+
+The other thing the scan found is in the test that was written to say it
+couldn't happen. "No module destructures the config, so a property-access scan
+is complete" went red within a second of being written: `barriers.js`,
+`terrain.js` and `environment.js` all pull `{width, height}` out that way, ten
+times between them, and a dot-only scan called the two constants that define the
+size of the world unread by anything.
+
+### Reproducing it
+
+```js
+import { readdirSync, readFileSync } from "node:fs";
+import { readersFromSources, screenPairs, latentThresholds,
+         sampleQuantities, mergeSamples, bands } from "./src/dimensions.js";
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+
+const sources = Object.fromEntries(readdirSync("src")
+  .filter(f => f.endsWith(".js")).map(f => [f, readFileSync(`src/${f}`, "utf8")]));
+const readers = readersFromSources(sources);
+
+let acc = {};
+for (const seed of [314, 77, 51, 13, 23, 101, 202, 303, 404, 505, 606, 707]) {
+  const w = new World(makeConfig({ seed, scavenging: true, detritus: true }));
+  for (let t = 0; t < 6000; t++) { w.step(); if (t % 200 === 0) acc = mergeSamples(acc, sampleQuantities(w)); }
+}
+console.log(screenPairs({}).length,                            // 1937
+            latentThresholds({ readers }).length,              // 218
+            latentThresholds({ readers, ranges: bands(acc) })  // 149
+              .filter(f => f.reference === "body radius"));
+```
+
+About four minutes, all of it in the twelve runs; the screen itself is
+milliseconds. The instrument ships with fourteen tests
+(`test/dimensions.test.js`) that pin its shape and not its output: the units
+table covers every numeric constant and nothing else, the algebra cancels, the
+three filters are strictly nested and each one bites, the refuge survives all of
+them, and a constant no module reads fails the suite.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:
