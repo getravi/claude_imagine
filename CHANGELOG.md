@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.77.0] — 2026-08-10
+
+The inspector was the last surface this project had never walked. It is also
+the only one whose subject is a single object, so "what is in the world that
+this view has never heard of?" has an exact answer here rather than an
+inventory: a creature carries **33 own properties and the panel reported 13**.
+
+Two of the silences were whole mechanics — contagion (v1.16) and signalling
+(v1.20), each with an off switch, a chronicle line, a tile and a mark on the
+canvas. The sharper half is that `describeSelection()` has said "sick" and
+"immune" about the **same selection** since v1.31: a listener has been told
+something a reader was not, on one page, for forty-six releases. v1.67 found the
+spoken description missing what the panel had; this is the same gap with the
+surfaces swapped, and it was available the whole time in the diff that opened
+the first one.
+
+### Added
+
+- **`src/inspect.js`** — the fact grid, as data. Every row's wording, its order,
+  whether a switched-off mechanic removes it, and whether it ticks. `main.js`
+  builds markup from the list and patches the live rows by key, so the panel's
+  content is finally reachable by `node --test`: the module `main.js` is still
+  the only one the suite cannot open, and there is now less of it in there.
+- **A `Health 🦠` row** (disease on): `susceptible — never infected`,
+  `sick — 214 ticks to recover`, or `immune — recovered at age 431`. The
+  countdown is derived from the same comparison `world._stepDisease` recovers
+  on, and the last frame of an illness reads **`sick — recovering`** rather than
+  "0 ticks": recovery is judged at the top of the next tick, against the age the
+  panel was rendered with, so zero would name a creature that is still ill.
+- **A `Voice 📣` row** (signalling on): what this creature is saying and the
+  loudest thing it can hear. `heard` is exactly 0 when nobody is in earshot,
+  which is a state rather than a measurement, so it reads `hears nothing`.
+- **`test/inspect.test.js`** — eight tests. The coverage table is walked against
+  a live creature's own properties in both directions (a field with no entry
+  fails; an entry naming a field no creature carries fails); the `live` flags are
+  checked against what *actually* moved over 600 ticks rather than taken on
+  trust; the three states of contagion are staged rather than waited for; and
+  reading the panel every tick for 900 ticks leaves the pond bit-for-bit —
+  with plasticity **on**, because the Underfoot row runs the creature's brain.
+
+### Measured
+
+- **What the panel was silent about, in a pond that has it switched on.**
+  Twelve seeds, 6,000 ticks, sampled every 100: the living are **65.9%
+  susceptible, 8.8% sick, 25.3% immune** on average, with immunity ranging from
+  2.2% (seed 512, where the epidemic never took) to 39.7%. A third of the pond
+  was in a state the inspector had no word for.
+- **A voice is almost never alone.** With signalling on, **96.3%** of creatures
+  hear somebody at any instant (91.3%–98.1% across the same twelve seeds), so
+  `hears nothing` is the rare reading and not the default one.
+- **The control reads exactly zero.** With both flags off: 0.0% sick, 0.0%
+  immune, 0.0% hearing anyone, on every seed — and the rows are absent, not
+  blank.
+
+### Changed
+
+- The panel's rebuild key is read off the row set instead of naming the one
+  toggle that changed it by hand. v1.76 finished by warning that its audit's
+  list of query sites was hand-typed; this is the same fix one surface over —
+  the next row cannot be forgotten here, because nothing lists them twice.
+
+### Deliberately not changed
+
+Two fields stay unreported and are named as such in `FIELD_SILENT` rather than
+filed among the ones with an argument behind them: `walled` (rock refused this
+creature's last move — v1.48, and it reaches `stats.walled` and no per-creature
+surface) and `phase` (the internal oscillator, a brain input nothing on the page
+has ever shown).
+
 ## [1.76.0] — 2026-08-10
 
 Four comments in this repository said a `forEachNear` query reaches one cell.

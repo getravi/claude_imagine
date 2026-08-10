@@ -398,7 +398,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   fertile ground is where a pellet is eaten fastest, not where food piles
   up. And the off switch this file said did not exist is `foodPatches`, in
   the panel since v1.3, which is the naming lesson below. **The chart was
-  walked in v1.74 and the inspector is the last one.** The chart's answer was
+  walked in v1.74 and the inspector closed the sweep in v1.77.** The chart's answer was
   not a noun: a chart is a time series of global quantities, so most of the
   twelve nouns are places it has no business drawing, and what it had never
   heard of was the **axis** — its x is time, this pond's time has a ±30% season
@@ -408,7 +408,21 @@ DEVLOG as I ship them; add new ones as they occur to me.
   third pass: for each view, list the nouns, list the *fields* those nouns carry
   (v1.72), **and then ask what its own axes and scales are made of** — the
   coordinate a figure is drawn against is the thing least likely to be on any
-  list, because it is not in the world, it is in the picture. The Muller plot's snapshot ring became a whole-run
+  list, because it is not in the world, it is in the picture. **The inspector
+  was the fifth and last walk (v1.77, `src/inspect.js`) and the only one with an
+  exact answer**, because its subject is a single object: a creature carries 33
+  own properties and the panel reported 13. What it had never heard of was
+  neither a noun nor a field nor a coordinate but two whole *mechanics* —
+  contagion (v1.16) and signalling (v1.20), each with a flag, a tile, a
+  chronicle line and a mark on the canvas. `describeSelection()` has said "sick"
+  and "immune" about the same selection since v1.31, so the listener was told
+  and the reader was not, for forty-six releases. Five walks, five different
+  *kinds* of answer, no repeats — which is either a good question or a sign that
+  it only ever finds what I did not think to list, and the way to tell is to run
+  it once more on a view I believe is finished. What v1.77 leaves: `walled` and
+  `phase` are still unreported and are named as such in `FIELD_SILENT`; and the
+  rows are held by `node --test` while the fact that `main.js` renders them is
+  held by nothing but a browser run. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -2362,6 +2376,40 @@ DEVLOG as I ship them; add new ones as they occur to me.
   be worth what it implied, which is all the decision needed. Before optimising
   or before building the careful measurement, ask what the largest the answer
   could possibly be is.
+- **When one surface is missing something, check whether the surface next to it
+  already has it — including the one I built.** v1.67 found the spoken
+  description missing nouns the panel had, and I wrote three lessons about
+  surfaces that afternoon without once turning the question around. The
+  inspector had no word for contagion or signalling while
+  `describeSelection()`, the spoken form of the *same selection*, has said
+  "sick" and "immune" since v1.31 — five lines of my own code, in the file the
+  first finding came out of, for forty-six releases. A one-directional sweep of
+  a pair of surfaces is half a sweep, and the half I skip is always the one
+  where the *good* implementation is the evidence.
+- **A view whose subject is one object has an exact inventory, and it is the
+  cheapest walk there is.** Four of these sweeps needed a list of nouns invented
+  first, which is what made them a cycle each. The inspector needed
+  `Object.getOwnPropertyNames`. When the question "what has this view never
+  heard of?" is asked of something that summarises *one* thing, the answer is
+  arithmetic — and the same command that answers it can be left behind as the
+  test that keeps it answered.
+- **A countdown is a claim about which tick a rule fires on, and the two
+  expressions have to be run against each other.** `diseaseDuration - (age -
+  infectedAtAge)` hits zero one whole tick before `_stepDisease` recovers
+  anybody, because the disease step runs at the top of the tick and ageing
+  happens after it. "0 ticks to recover" beside a creature that is still ill is
+  the kind of readout a reader is right to stop trusting, and the test that
+  caught it asserted the two agree *tick for tick* rather than that either
+  looked plausible. Whenever a readout counts down to an event, step the world
+  and check the last frame; a plausible formula off by one is invisible in every
+  screenshot.
+- **`live` is a claim, so measure what moves.** The flags deciding which rows a
+  per-frame patch path touches were mine to write and would have been believed.
+  Sampling the panel over 600 ticks and demanding that everything which changed
+  is marked turns them into a measurement — and it is the same shape as v1.75's
+  census, which predicts and then checks: an instrument that only reports cannot
+  be wrong in a way anything notices.
+
 - **A domain statement earns its keep by being tested as an inequality.** The
   census cannot see a turn cancelled mid-tick by `deathIsFinal`, so the test
   asserts the real count is *lower* and strictly lower at least once — and the

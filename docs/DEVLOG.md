@@ -8505,3 +8505,141 @@ That is the same hand-made inventory v1.70 warned about and v1.67 turned into a
 finding — *what is in the world that this list has never heard of?* The honest
 answer is that I do not know, and a list of query sites is something a test
 could derive rather than something I should type.
+
+## Entry 89 — the reader was not told · 2026-08-10
+
+This file has said "the chart and the inspector" for three releases, as the two
+views nobody had walked. v1.74 took the chart and found something that is not
+in the world at all — its x-axis. That left one, and I have been reading the
+leftover as a chore for exactly as long, which v1.46 already told me is what I
+do with a list I wrote myself.
+
+The inspector turns out to be the easiest of the five walks and the only one
+where the question has an *exact* answer. v1.57 asked the minimap what is in
+the world that it has never heard of and had to build an inventory of nouns
+first; v1.67 asked `describe.js` the same and used the same list; v1.72 said
+take it one level down, to the fields of the objects a view aggregates. The
+inspector aggregates nothing. Its subject is one object, and that object has 33
+own properties.
+
+The panel reported 13 of them.
+
+### The two mechanics it had never heard of
+
+Contagion shipped in v1.16 and signalling in v1.20. Each has an off switch in
+the panel, a chronicle line, a tile, a sentence in the spoken description and a
+mark on the canvas. Neither had a word in the one view whose entire job is to
+tell you about the creature you clicked. Click a creature ringed in sulphur —
+the mark v1.34 measured and fixed *because* it was invisible — and the panel
+would tell you its metabolism.
+
+The half that stings is a diff I wrote myself. `describeSelection()` in
+`describe.js`, the spoken form of the *same selection*, has said this since
+v1.31:
+
+```js
+if (config.disease) {
+  if (c.infected) bits.push("sick");
+  else if (c.immune) bits.push("immune");
+}
+```
+
+A listener has been told something a reader was not, on one page, for
+forty-six releases. v1.67's finding was the mirror of it — the spoken form
+missing what the panel had — and I wrote three lessons about surfaces that
+afternoon without once turning the question around.
+
+### What the silence was worth
+
+Twelve seeds, 6,000 ticks, disease on, sampled every hundred ticks so the
+answer is a share of the run rather than of an instant:
+
+| | susceptible | sick | immune |
+| --- | ---: | ---: | ---: |
+| mean of twelve seeds | 65.9% | 8.8% | 25.3% |
+| range | 45.7–96.4% | 1.4–14.9% | 2.2–39.7% |
+
+A third of the pond is in a state the panel had no word for, and the state with
+no mark on the canvas at all — susceptible — is two thirds of it. Immunity
+ranges from 2.2% on seed 512, where the epidemic never really took, to 39.7% on
+seed 42. With the flag off all three read exactly 0.0%, which is what the rows
+being *absent* rather than blank is the display form of.
+
+The voice came with a number I did not expect. With signalling on, **96.3%** of
+creatures can hear somebody at any instant (91.3%–98.1% over the same twelve
+seeds). I had written `hears nothing` as the interesting case and it is the rare
+one; what the row mostly says is that the pond is noisy.
+
+### The off-by-one that got a word instead of a number
+
+The sick row wants a countdown, and the countdown is where the release nearly
+shipped a wrong number. `_stepDisease` runs at the *top* of the tick, before
+anybody ages, so the age a panel is rendered with is the age recovery will next
+be judged against. `diseaseDuration - (age - infectedAtAge)` therefore reaches
+zero one full tick before the creature recovers, and "0 ticks to recover" beside
+a creature that is still ill is exactly the kind of readout a reader is right to
+stop trusting. The last frame says `sick — recovering`.
+
+I found this because the test asserted the two expressions agree tick for tick
+rather than that either looked plausible — it failed with the message
+`recovered out of nowhere: the row said "sick — 0 ticks to recover" the tick
+before`, which is a better description of the bug than I would have written.
+
+### The list is derived, which is the point
+
+v1.76 ended by warning that its audit's list of query sites was hand-typed and
+that deriving it was the next honest step. This is that step on a different
+surface. `src/inspect.js` owns the rows, so:
+
+- `main.js` builds its rebuild key out of the row *set* instead of naming the
+  one toggle that used to change it. A future row cannot be forgotten there,
+  because nothing lists them twice.
+- `FIELD_REPORTS` and `FIELD_SILENT` between them account for every own property
+  of a creature, and the test walks a **live** one (v1.59: enumerate a class
+  from the object, not from the source that declares it) in both directions — a
+  field with no entry fails, and an entry naming a field no creature carries
+  fails too, which is the v1.61 failure where an instrument keeps a copy of
+  something that has moved and prints `ok` for it.
+- The `live` flags are not taken on trust. The panel is sampled over 600 ticks
+  of a real pond and anything that moved must be marked, because a row that
+  changes and is never patched freezes at the value it was built with — real
+  data, wrong number, no tell, which is this project's favourite bug.
+
+And because `main.js` is still the only module `node --test` cannot open, the
+useful side effect is that there is less of it in there. The wording, the
+gating, the arithmetic and the coverage are all in a module now; what is left in
+`main.js` is markup and two figures.
+
+I ran the page anyway. Headless Chromium, the app at `#dis=1&sig=1&feel=1&pla=1`,
+Tab into the pond and press an arrow — v1.60's keyboard route, which is the
+cheapest way to select a creature without hunting for one with a synthetic
+click. The rows render, the voice moves between frames, and stepping the
+selection around until the epidemic handed me a sick one gave
+`sick — 329 ticks to recover` counting down live. Two releases ago I would have
+called that "sanity-checked by hand" and meant *read twice*.
+
+### What this leaves
+
+**Two fields with no argument behind them, named as such.** `walled` (rock
+refused this creature's last move, v1.48 — it reaches `stats.walled` and no
+per-creature surface) and `phase` (the internal oscillator, a brain input
+nothing on the page has ever shown). They sit in `FIELD_SILENT` with the word
+UNREPORTED in front of them, because v1.66 taught me that a defect described
+precisely reads as handled, and the least I can do is not let the description
+be a soothing one.
+
+**The inventory question has now been answered on every view, and it has given
+a different *kind* of answer each time**: a noun (the minimap, corpses), a noun
+again (the spoken description, corpses again), a field (`parentId`), a
+coordinate (the chart's x-axis), and now a *mechanic* — two of them, on the one
+surface whose subject is small enough to enumerate exactly. Five walks, five
+categories, no repeats. That is either a good question or a sign that I keep
+finding whatever I did not think to list, and the way to tell would be to run
+it once more on something I believe is complete.
+
+**The panel is now the only place a visitor can read three of these fields, and
+it has no test that it is on screen.** `test/markup.test.js` reads the shipped
+HTML, but the inspector's rows are built at runtime from `innerHTML`, so what
+`node --test` holds is the row *list* and not the fact that `main.js` renders
+it. That gap is the same one every DOM panel here has, and the browser run above
+is the only thing standing in it.

@@ -10,7 +10,8 @@ import { World } from "./world.js";
 import { Renderer } from "./render.js";
 import { RNG } from "./rng.js";
 import { drawMuller, mullerShares, mullerAxis, textureCss, otherTextureCss } from "./mullerplot.js";
-import { buildBrainFor, groundSway } from "./creature.js";
+import { buildBrainFor } from "./creature.js";
+import { creatureFacts } from "./inspect.js";
 import { SCENARIOS } from "./scenarios.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
@@ -1256,9 +1257,12 @@ function applyInspectorColours() {
 // while everything in it was text, but a *button* replaced 60× a second can't
 // be clicked: a human click spans several frames, and the element it started on
 // is detached before the mouse comes up. So the structure is now rebuilt only
-// when it actually changes — a different creature, or an ancestry chain that
-// gained a link or lost a lineage — and the handful of fields that tick (age,
-// energy, children, learned weights) are patched in place.
+// when it actually changes — a different creature, an ancestry chain that
+// gained a link or lost a lineage, or a toggle that adds a row — and the fields
+// that tick are patched in place. What the rows *are* lives in `inspect.js`, so
+// the panel's wording, its coverage of a creature's fields and its idea of what
+// moves are all reachable by `node --test`; this file is the markup and the
+// two figures.
 let inspKey = "";
 function updateInspector() {
   const panel = $("inspector");
@@ -1275,14 +1279,19 @@ function updateInspector() {
   }
 
   const chain = world.phylogeny.ancestry(c.speciesId);
+  const facts = creatureFacts(c, config);
   // The key decides when the panel's *structure* is rebuilt, so anything that
   // adds or removes a row belongs in it — otherwise flipping the toggle leaves
-  // a panel with no Underfoot row to patch, or one nothing updates.
-  const key = c.id + "|" + chain.map((s) => s.id).join(",") + "|" + (config.groundSense ? "f" : "");
+  // a panel with no Underfoot row to patch, or one nothing updates. It used to
+  // name the one toggle that did that by hand; `inspect.js` owns the row set
+  // now, so the key is read off the rows themselves and a future row cannot be
+  // forgotten here.
+  const key =
+    c.id + "|" + chain.map((s) => s.id).join(",") + "|" + facts.map((f) => f.key).join(",");
   if (key !== inspKey) {
     inspKey = key;
     panel.classList.remove("empty");
-    panel.innerHTML = inspectorHTML(c, chain);
+    panel.innerHTML = inspectorHTML(c, chain, facts);
     const link = document.getElementById("insp-species");
     if (link) {
       link.addEventListener("click", (e) => {
@@ -1295,19 +1304,14 @@ function updateInspector() {
     }
   }
 
-  // Live fields, patched without disturbing anything clickable.
-  $("insp-age").textContent = c.age;
-  $("insp-energy").textContent = Math.round((c.energy / config.energyMax) * 100) + "%";
-  $("insp-children").textContent = c.children;
-  const foot = document.getElementById("insp-foot");
-  if (foot) {
-    // "roughness here — how much of its turn and thrust that is worth". The
-    // second number is a hypothetical put to this creature's own brain, not a
-    // claim that the ground is steering the pond; docs/SCIENCE.md measures what
-    // selection does with it, which is nothing.
-    foot.textContent = `${Math.round(c.groundFeel * 100)}% rough — sways steering ${groundSway(
-      c
-    ).toFixed(2)}`;
+  // Live fields, patched without disturbing anything clickable. Which rows
+  // those are is `inspect.js`'s answer, checked there against what actually
+  // moves over 600 ticks — a row that changes and is not patched freezes at the
+  // value it was built with, which is real data and the wrong number.
+  for (const f of facts) {
+    if (!f.live) continue;
+    const cell = document.getElementById("insp-" + f.key);
+    if (cell) cell.textContent = f.value;
   }
   const learned = document.getElementById("insp-learned");
   // Repainted every frame, so it needs the name every frame: a figure that is
@@ -1323,32 +1327,23 @@ function updateInspector() {
   }
 }
 
-function inspectorHTML(c, chain) {
-  const isPred = c.carnivory >= config.carnivoreThreshold;
-  const dietLabel = isPred
-    ? `🔺 carnivore ${c.carnivory.toFixed(2)}`
-    : c.carnivory < 0.25
-    ? `🌿 herbivore ${c.carnivory.toFixed(2)}`
-    : `◦ omnivore ${c.carnivory.toFixed(2)}`;
+function inspectorHTML(c, chain, facts) {
+  // The rows come from `inspect.js` — their wording, their order, which of them
+  // a switched-off mechanic removes, and which of them tick. This function's
+  // job is the part that is markup: the heading, the swatch, the two figures,
+  // and the ancestry, none of which is a fact about a field.
+  const rows = facts
+    .map(
+      (f) =>
+        `<div${f.wide ? ' class="insp-wide"' : ""}><dt>${f.term}</dt>` +
+        `<dd id="insp-${f.key}">${f.value}</dd></div>`
+    )
+    .join("\n      ");
   return `
     <div class="insp-row"><span class="swatch" style="background:hsl(${c.hue},70%,55%)"></span>
       <strong>Creature #${c.id}</strong></div>
     <dl class="insp-grid">
-      <div><dt>Generation</dt><dd>${c.generation}</dd></div>
-      <div><dt>Age</dt><dd id="insp-age">${c.age}</dd></div>
-      <div><dt>Energy</dt><dd id="insp-energy">—</dd></div>
-      <div><dt>Children</dt><dd id="insp-children">${c.children}</dd></div>
-      <div><dt>Size</dt><dd>${c.radius.toFixed(1)}</dd></div>
-      <div><dt>Metabolism</dt><dd>${c.metabolismScale.toFixed(2)}×</dd></div>
-      <div class="insp-wide"><dt>Diet</dt><dd>${dietLabel}</dd></div>
-      ${
-        // The ground sense, per creature: what it is standing on, and how much
-        // of its steering that fact is deciding right now. Both are live, so
-        // they are patched rather than rebuilt (see the v1.15 lesson).
-        config.groundSense
-          ? `<div class="insp-wide"><dt>Underfoot 👣</dt><dd id="insp-foot">—</dd></div>`
-          : ""
-      }
+      ${rows}
       <div class="insp-wide"><dt>Species</dt>
         <dd><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></dd></div>
       ${ancestryRow(c, chain)}
