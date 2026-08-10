@@ -424,12 +424,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   ends *on this figure only* — the day the chart grows a still-filling last
   column the caption does not count, they part here as they already do on the
   Tree of Life.)
-- **Performance:** render batching, so bigger worlds stay 60fps. The spatial
-  grid was audited in v1.32 and turned out to be a *correctness* problem, not a
-  speed one (see the lesson below); exact vision costs a quarter of the tick
-  rate, so making the disc query cheaper is now a real target — the tick's time
-  goes mostly into the two neighbour scans and the closure per creature per
-  query they each allocate.
+- **Performance — measured in v1.75 (`src/workload.js`), and the guess that was
+  here is struck.** This entry used to read "the tick's time goes mostly into
+  the two neighbour scans and the closure per creature per query they each
+  allocate". The first half holds: `--prof` puts the scans at ~46% of the tick,
+  the creature scan's callback alone at 28.7%. The second half is now bounded —
+  *every* garbage collection of every kind is **3.6%** of the run, so removing
+  the per-query closure cannot buy what that sentence implies. What the census
+  says instead: the 3x3 block is **22.5%** of the pond, so the index is a
+  **3.99x constant factor** that does not improve as the pond fills (3.92–4.04x
+  from 75 creatures to 650), and **sensing is quadratic**. `exactVision` offers
+  42% more candidates for 18% of the tick rate. The one thing that would change
+  the 0.25 is the cell size, and that is `visionRadius * 0.75` in `world.js` —
+  not in `config.js`, so `levers.js` has never swept it, and not a knob either,
+  because with `exactVision` off the block *is* what a creature can find and
+  0.70/0.80 run different worlds. So a faster pond needs a cheaper *visit* (the
+  28.7%, untouched) or a world that admits a smaller block, which is a redesign.
+  Render batching is still untried and is a different axis from all of this.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
 - **The instruments' own instruments.** v1.36 gave the project a bit-exact
@@ -2286,3 +2297,46 @@ DEVLOG as I ship them; add new ones as they occur to me.
   lag the statistic is blind to, and whether the mechanism has a reason to sit
   there. The instrument that can answer is a cross-correlation over lag, and it
   is one column wider than the one I ran.
+
+- **When the honest measurement would be a fact about the machine, measure the
+  work instead.** Performance is the one thing here I never instrumented, and
+  the reason was real: a wall-clock number cannot be a test, cannot be compared
+  against next month, and would put a laptop in `SCIENCE.md`. The way out was
+  not a better stopwatch, it was a different quantity — the *candidates a tick's
+  queries are offered* is deterministic, is a `(seed, config)` fact like every
+  other number pinned here, and is what the time is actually spent on. Sixteen
+  tests hold it. **Before deciding a thing is unmeasurable, check whether what
+  makes it unmeasurable is the quantity or the subject**; usually it is the
+  quantity, and there is a deterministic one next to it.
+- **The prediction can run before the thing it predicts, and that is what makes
+  it exact.** The census counts the coming tick, not the last one, because the
+  index is built from where everybody is standing and the queries are decided by
+  the same positions. That turns a measurement into an *assertion* — the test
+  predicts, then runs the tick with the grids wrapped in counters, and demands
+  the numbers match tick for tick on nine configurations. An instrument that
+  only reports cannot be wrong in a way anything notices; one that predicts
+  fails the day the thing it models changes.
+- **A sweep of the config is blind to a constant that is not in the config.**
+  `levers.js` reads its key list out of `config.js` precisely so a constant
+  added later is swept the day it lands — and the number that decides what every
+  sense in the default pond can find is `visionRadius * 0.75` in `world.js`. It
+  has never been swept, it is not a performance knob (0.70 and 0.80 run
+  different worlds), and it was found by asking what sets a *geometry* rather
+  than by reading a list. v1.71's hole was the pair; this is the simpler one
+  underneath it, and the general question is **which numbers decide the
+  simulation from outside the file that is supposed to hold them**.
+- **An upper bound is the cheapest disproof there is, and I keep not reaching
+  for it.** "The closures cost a lot" would have taken a day to attack properly
+  — hoist them, restructure the state, re-run the fingerprints. `--trace-gc`
+  bounds *every allocation of every kind* at 3.6% of the run in one flag and one
+  minute. It does not prove the closures are cheap; it proves the claim cannot
+  be worth what it implied, which is all the decision needed. Before optimising
+  or before building the careful measurement, ask what the largest the answer
+  could possibly be is.
+- **A domain statement earns its keep by being tested as an inequality.** The
+  census cannot see a turn cancelled mid-tick by `deathIsFinal`, so the test
+  asserts the real count is *lower* and strictly lower at least once — and the
+  once turned out to be 8 ticks in 2,000, which is v1.45's "the dead barely act"
+  re-measured from a direction nobody was looking from. An exclusion written as
+  prose is a hedge; the same exclusion written as a strict inequality is a
+  measurement, and it fails the day it stops being necessary.

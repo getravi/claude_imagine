@@ -4,6 +4,78 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.75.0] — 2026-08-10
+
+Seventy-four releases and this project had never measured its own performance.
+It had *described* it: `docs/AUTONOMOUS.md` said the tick's time goes mostly
+into the two neighbour scans and the closure each allocates per creature per
+query, and `world.js` said its grid cells are sized "so each cell is about one
+vision radius across". Both read like results. Neither has a number in it, and
+v1.28's rule is that a comment is not a measurement.
+
+The instrument is deliberately not a stopwatch. A wall-clock number is a fact
+about the machine that produced it, so no test can hold it and no later cycle
+can compare against it. The **work** — how many index queries a tick makes and
+how many candidates they are offered — is a `(seed, config)` fact like every
+other number pinned here, and it can be counted *before* the tick runs.
+
+### Added
+
+- **`src/workload.js`** — the work census. `sensingWorkload(world)` predicts
+  every index query the coming tick will make and every candidate it will be
+  offered, from an index rebuilt the way step 1 rebuilds it. It counts by
+  running `forEachNear`/`forEachWithin` with an incrementing callback, so it
+  cannot drift from the geometry it measures (v1.32's accelerator rule, pointed
+  at a measurement rather than at shipped code). Read-only, draws no randomness,
+  not imported by `main.js` — an instrument, like `levers.js` and
+  `dimensions.js`.
+- **A `brute` arm on every tally**, which is what turns a count into a factor:
+  the same questions asked of everything, with no index at all.
+- **`indexGeometry(grid)`** — cells, block size and the geometric share of the
+  pond a `forEachNear` query can reach.
+- **`test/workload.test.js`** — sixteen tests. Nine configurations assert the
+  census is exact tick for tick against a run whose three grids have been
+  wrapped in counters; the narrowing and the block occupancy are pinned across a
+  28-fold range of population; and the cell size is asserted to change the
+  trajectory fingerprint in both directions.
+
+### Measured
+
+- **The index is worth 3.99x on the default pond**, and it is a constant. 443
+  queries a tick offer 16,978 candidates where no index would offer 67,694. The
+  3x3 block is nine cells of forty — 22.5% of the pond — and that share does not
+  shrink as the pond fills: across food rates from 0.6 to 8.0, population 75 to
+  650, the narrowing reads 3.92x–4.04x and each creature is offered a quarter of
+  the pond. **Sensing is quadratic and the grid divides it by four.**
+- **The cell size is part of the world, not a knob.** It is
+  `Math.max(40, visionRadius * 0.75)`, written in `world.js` and not in
+  `config.js`, so `src/levers.js` has never swept it — and with `exactVision`
+  off the 3x3 block *is* the definition of what a creature can find, so 0.70 and
+  0.80 run different ponds (`2a04b3f7` / `1054d09a` / `b1f042ec` at 300 ticks).
+  v1.71 found a sweep of single constants blind to what a pair decides; this is
+  the hole underneath it — a sweep of the config is blind to a constant that is
+  not in the config.
+- **Half the playbook's sentence held and half is now bounded.** `--prof` puts
+  the two neighbour scans at ~46% of the tick (the creature scan's callback
+  alone at 28.7%), so the scans really are where the time goes. But
+  `--trace-gc` puts *every* collection at 278 collections and 190 ms of 5,270 —
+  **3.6%** — which is the ceiling on what removing the per-query closure could
+  buy.
+- **`exactVision` offers 42% more candidates and costs 18% of the tick rate.**
+  Work and clock disagree in magnitude and agree in sign, which is what the
+  corroboration is for.
+- **A turn is cancelled by `deathIsFinal` on 8 ticks in 2,000** — a by-product
+  of stating what the census cannot predict, and a second reading of v1.45's
+  finding that the dead barely act.
+
+### Changed
+
+- `docs/SCIENCE.md` gains "The index that is a constant, and the constant that
+  is a world", with every table above and a script that reproduces them.
+- `docs/ARCHITECTURE.md` lists the new module; `docs/AUTONOMOUS.md`'s
+  performance entry is rewritten from a guess into the measurement, and its
+  closure claim struck.
+
 ## [1.74.0] — 2026-08-09
 
 The population chart has two marked axes and one of them is time. This pond's

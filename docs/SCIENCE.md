@@ -5528,6 +5528,166 @@ as a test in `test/palette.test.js`, including both old
 collisions — a suite that only knows the new numbers stays green while somebody
 restores the old ones.
 
+## The index that is a constant, and the constant that is a world (v1.75)
+
+Seventy-four releases and this project had never measured its own performance.
+It had *described* it, twice, in prose that reads like a finding:
+
+> the tick's time goes mostly into the two neighbour scans and the closure per
+> creature per query they each allocate — `docs/AUTONOMOUS.md`
+
+> Grids sized so each cell is about one vision radius across — that keeps the
+> 3x3 query window a good match for what a creature can actually see —
+> `world.js`
+
+Both are comments, and v1.28's rule is that a comment is not a measurement.
+
+### Work, not time
+
+The obvious instrument is a stopwatch and it is the wrong one. A wall-clock
+number is a fact about the machine that produced it: no test can assert it, no
+future self can compare against it, and this file would be quoting a laptop.
+What *is* a property of the world is the **work** — how many queries a tick
+makes of the spatial index, and how many candidates those queries are offered.
+That number is deterministic, it is what the time is being spent on, and it can
+be counted *before* the tick runs, because the index is already built and the
+queries are already decided.
+
+`src/workload.js` counts it, and it counts by running the grid's own
+`forEachNear` with a callback that only increments — no paraphrase of the
+geometry, so no second implementation to keep in step (v1.32's accelerator rule,
+pointed at a measurement). On the default pond, mean over 2,000 ticks after a
+1,000-tick warm-up:
+
+| | |
+| --- | ---: |
+| population | 222 |
+| index queries per tick | 443 |
+| candidates offered per tick | **16,978** |
+| candidates per creature | 76.6 |
+| the same questions with no index at all | 67,694 |
+| what the index is worth | **3.99x** |
+
+### The index is a constant factor, not a neighbourhood
+
+The 3x3 block is nine cells of forty — **22.5% of the pond** — and that share
+does not shrink as the pond fills. Sweeping `foodSpawnRate` to move the
+carrying capacity, 2,000 ticks after 1,500 of warm-up:
+
+| food rate | population | candidates/tick | per creature | creature scan alone | narrowing |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.6 | 75 | 2,532 | 33.8 | 21.3 | 4.04x |
+| 1.2 | 142 | 7,679 | 54.0 | 38.8 | 3.94x |
+| **1.8** | **206** | **15,103** | **73.5** | **55.3** | **3.92x** |
+| 3.0 | 344 | 37,970 | 110.3 | 90.5 | 3.95x |
+| 5.0 | 551 | 91,080 | 165.2 | 144.0 | 3.92x |
+| 8.0 | 650 | 125,330 | 192.9 | 162.8 | 4.02x |
+
+Nearly nine times the population and the index is worth the same four. The
+creature scan alone offers each creature 0.25–0.28 of the pond whatever the
+pond's size, so its cost per creature is proportional to the population and the
+tick's is proportional to its **square**. The grid does not make sensing
+sub-quadratic; it divides the quadratic by four.
+
+That is not a criticism of the grid — a 4x constant is the difference between
+650 creatures at 60fps and 650 creatures at 15 — but it is a different claim
+from the one the word *index* carries, and it says where the ceiling is. A pond
+of 2,000 would not be four times the work of 500; it would be sixteen.
+
+### The number that sets it is not in `config.js`
+
+The cell is `Math.max(40, config.visionRadius * 0.75)`, written in `world.js`.
+`src/levers.js` (v1.38) sweeps every number in `config.js` and asks whether the
+world notices; it has never seen this one, because this one is not in the
+config. And it is not a performance knob either. With `exactVision` off — the
+default — `forEachNear`'s block *is* the definition of what a creature can find
+(v1.32), so re-sizing the index runs a different pond. Three hundred ticks from
+the default seed:
+
+| cell | grid | block | trajectory |
+| ---: | :--- | ---: | :--- |
+| `vision * 0.70` = 118 | 8x6 | 18.8% | `2a04b3f7` |
+| **`vision * 0.75` = 126** | **8x5** | **22.5%** | **`1054d09a`** |
+| `vision * 0.80` = 134 | 7x5 | 25.7% | `b1f042ec` |
+
+Three different worlds. The tuning parameter of the accelerator is a term in
+the physics, which is v1.32's finding — the pond's sight was grid-shaped for
+thirty-one versions — arriving from the other direction: the shape was fixed by
+giving the *radius* a meaning, and the cell size that decides the block is
+still a simulation constant that no sweep here can reach.
+
+### The stopwatch, run once, for corroboration
+
+Node 22 on the machine that ran this cycle, seed 314, 4,000 ticks after 200 of
+warm-up. Not asserted anywhere — it is here to say whether the work count is
+measuring the thing the time is spent on.
+
+| | |
+| --- | ---: |
+| default pond | ~810 ticks/s |
+| `--prof`: the creature scan's callback | 28.7% |
+| `step()` itself | 16.5% |
+| `nn.js` `forward` — the brains | 15.2% |
+| `forEachNear` | 8.9% |
+| the food scan's callback | 7.9% |
+| **the two neighbour scans, together** | **~46%** |
+| every garbage collection, of every kind | **3.6%** |
+
+So the first half of the playbook's sentence holds — the scans are the largest
+thing in the tick by a distance — and the second half is now bounded rather
+than believed. *Every* allocation the tick makes, closures included, is worth
+at most 3.6%, because that is the whole of the collector's time: 278
+collections, 190 ms of 5,270. Eliminating the per-query closure entirely cannot
+buy what the sentence implies it costs.
+
+And the other number the same instrument gives, which is the one worth having:
+`exactVision` offers **42%** more candidates (24,167 against 16,978) and costs
+**18%** of the tick rate (622 ticks/s against 759, back-to-back on the same
+machine). The
+work count and the clock disagree in magnitude and agree in sign, which is what
+a corroboration is for.
+
+### What the census will not tell you
+
+Two opt-in rules move the real count away from the prediction, and the module
+names both rather than rounding them off:
+
+- **`bodyCollision`** builds a *second* index halfway through the tick, out of
+  positions that do not exist when the census is taken. The real count is
+  higher, on every tick of a pond with two bodies in it.
+- **`deathIsFinal`** cancels the whole turn of a creature killed earlier in the
+  same tick, so its scans never happen. The real count is lower — on **8 ticks
+  in 2,000** of the default seed, which is a second measurement of v1.45's
+  finding that the dead barely act at all.
+
+Both bounds are asserted in `test/workload.test.js`, in the strict direction:
+a domain exclusion that has quietly stopped being necessary fails the suite.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  import { World } from "./src/world.js";
+  import { DEFAULT_CONFIG } from "./src/config.js";
+  import { sensingWorkload, indexGeometry } from "./src/workload.js";
+  for (const rate of [0.6, 1.2, 1.8, 3.0, 5.0, 8.0]) {
+    const w = new World({ ...DEFAULT_CONFIG, foodSpawnRate: rate });
+    for (let i = 0; i < 1500; i++) w.step();
+    let pop = 0, visits = 0, brute = 0, cv = 0;
+    for (let i = 0; i < 2000; i++) {
+      const c = sensingWorkload(w);
+      pop += c.creatures; visits += c.visits; brute += c.brute; cv += c.byGrid.creature.visits;
+      w.step(); }
+    console.log(rate, "pop", (pop / 2000).toFixed(0), "visits/t", (visits / 2000).toFixed(0),
+      "per creature", (visits / pop).toFixed(1), "narrowing", (brute / visits).toFixed(2) + "x",
+      "block occupancy", (cv / pop / (pop / 2000)).toFixed(3)); }
+  console.log(indexGeometry(new World(DEFAULT_CONFIG).creatureGrid));'
+```
+
+About two minutes, and the dense arms are most of it. The wall-clock rows come
+from `node --prof` and `node --trace-gc` over the same script with the census
+removed.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

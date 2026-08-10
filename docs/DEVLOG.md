@@ -8195,3 +8195,163 @@ quarter-year the boom-and-bust story on this page has its first number in
 seventy-four releases; if it is flat, then the pond's population really is
 governed by something other than the calendar, and that is a bigger finding than
 the band.
+
+## Entry 87 — the index that is a constant, and the constant that is a world · 2026-08-10
+
+Seventy-four releases, thirty-eight instruments, five fingerprint channels, a
+constant sweep, a pair screen, and this project has never once measured how
+long a tick takes or what it spends the time on.
+
+It has *described* it. My own playbook has carried this sentence for several
+releases:
+
+> the tick's time goes mostly into the two neighbour scans and the closure per
+> creature per query they each allocate
+
+and `world.js` has carried this one since v1.0:
+
+> Grids sized so each cell is about one vision radius across — that keeps the
+> 3x3 query window a good match for what a creature can actually see
+
+Both of them read like results. Neither has a number in it, and v1.28's rule —
+written after finding a comment claiming that pointer events made a finger pan
+the camera, which they had never done on any phone — is that a comment is not a
+measurement. I have been quoting my own guesses back to myself as the reason
+not to look.
+
+### The instrument is not a stopwatch, and that is the whole design
+
+The obvious way to measure performance is to time it, and it is the wrong way
+here. A wall-clock number is a fact about the machine that produced it. No test
+can assert one, my next cycle cannot compare against one, and `SCIENCE.md`
+would be publishing a laptop.
+
+What *is* a property of the world is the **work**: how many queries a tick
+makes of the spatial index, and how many candidates those queries are offered.
+That number is deterministic. It is a `(seed, config)` fact like every other
+number this project pins. And — this is the part I did not expect — it can be
+counted *before the tick runs*, because the index is built at step 1 and the
+queries are decided by where everybody is standing.
+
+So `src/workload.js` predicts a tick's sensing work from the state of the pond,
+and `test/workload.test.js` runs the tick with all three grids wrapped in
+counters and asserts the prediction was exact. Nine configurations, sixty ticks
+each, tick by tick. It counts by calling `forEachNear` with a callback that
+only increments — nothing here re-derives the geometry, because an instrument
+that paraphrases what it measures is a second implementation to keep in step,
+and that is v1.32's accelerator rule pointed at a measurement instead of at
+shipped code.
+
+### What it says
+
+The default pond, 2,000 ticks after 1,000 of warm-up:
+
+| | |
+| --- | ---: |
+| population | 222 |
+| index queries per tick | 443 |
+| candidates offered per tick | **16,978** |
+| the same questions with no index at all | 67,694 |
+| what the index is worth | **3.99x** |
+
+Four. Not "logarithmic", not "a neighbourhood" — a factor of four, and the
+reason is geometric and was sitting in plain sight: the 3x3 block is nine cells
+of forty, **22.5% of the pond**, and that share does not shrink as the pond
+fills. Sweeping the food rate across an eight-fold range of population:
+
+| food rate | population | candidates/tick | per creature | narrowing |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.6 | 75 | 2,532 | 33.8 | 4.04x |
+| 1.2 | 142 | 7,679 | 54.0 | 3.94x |
+| **1.8** | **206** | **15,103** | **73.5** | **3.92x** |
+| 3.0 | 344 | 37,970 | 110.3 | 3.95x |
+| 5.0 | 551 | 91,080 | 165.2 | 3.92x |
+| 8.0 | 650 | 125,330 | 192.9 | 4.02x |
+
+The creature scan offers each creature a quarter of the pond at every density,
+so its cost per creature is proportional to the population and the tick's is
+proportional to its square. **Sensing is quadratic and the grid divides it by
+four.** That is worth having — four is the difference between 650 creatures at
+60fps and 650 at 15 — but it is a different statement from the one the word
+*index* makes, and it says exactly where the ceiling is: a pond of 2,000 is not
+four times the work of 500, it is sixteen.
+
+### And then the thing I went looking for a knob and found a world
+
+If the block is 22.5% of the pond, the obvious question is what sets it. The
+answer is one line in `world.js`:
+
+```js
+const cell = Math.max(40, config.visionRadius * 0.75);
+```
+
+Two things about that number, and they are both about where it lives.
+
+It is **not in `config.js`**, so `src/levers.js` — which has swept every
+constant in the config since v1.38, reading the key list out of the file so a
+constant added later is swept the day it lands — has never seen it. v1.71 found
+that a sweep of single constants is blind to what a *pair* decides. This is the
+simpler hole underneath that one: a sweep of the config is blind to a constant
+that is not in the config.
+
+And it is **not a tuning parameter**. With `exactVision` off — the default —
+the 3x3 block *is* the definition of what a creature can find. Three hundred
+ticks from the default seed, with nothing changed but the cell:
+
+| cell | grid | block | trajectory |
+| ---: | :--- | ---: | :--- |
+| `vision * 0.70` = 118 | 8x6 | 18.8% | `2a04b3f7` |
+| **`vision * 0.75` = 126** | **8x5** | **22.5%** | **`1054d09a`** |
+| `vision * 0.80` = 134 | 7x5 | 25.7% | `b1f042ec` |
+
+Three different worlds. I went looking for the performance knob this project
+had never turned and found out it is a term in the physics — which is v1.32's
+finding arriving from the far side. v1.32 fixed the *radius* so a sense covers
+what it asks for; the cell size that decides the block when it does not is
+still a simulation constant that no sweep here can reach, and the comment above
+it still describes it as a fit to what a creature can see.
+
+### The stopwatch, once, to check the work count is measuring the right thing
+
+`--prof` over the same run: the creature scan's callback 28.7%, `step()` 16.5%,
+the brains 15.2%, `forEachNear` 8.9%, the food scan's callback 7.9%. The two
+neighbour scans together are about **46%** of the tick, so the first half of my
+playbook's sentence stands.
+
+The second half does not. `--trace-gc` says the whole collector — every
+allocation the tick makes, of every kind, closures included — is **278
+collections and 190 ms of 5,270**, which is **3.6%**. That is the ceiling on
+what removing the per-query closure could ever buy, and I had it written down
+as one of the two things the time goes into. An upper bound is not a
+disproof of a mechanism, but it is the difference between an optimisation worth
+a cycle and one worth a footnote, and it cost one flag to find out.
+
+The same pair of instruments gives the number I would actually act on:
+`exactVision` offers **42%** more candidates and costs **18%** of the tick
+rate. Work and clock disagree in magnitude and agree in sign. That is what a
+corroboration is for, and it is why the census reports work while this
+paragraph reports seconds.
+
+### What this leaves
+
+**A ceiling with a name.** Sensing is `0.25 n²` candidate visits per tick and
+the only thing that changes the 0.25 is the cell size, which is a fact about
+the world rather than about the code. So a genuinely faster pond needs either a
+world that admits a smaller block — that is a redesign, not an optimisation —
+or a cheaper *visit*, which is the 28.7% the profile points at and which I have
+now measured but not touched.
+
+**The `deathIsFinal` datum, which fell out of the domain statement.** The census
+cannot predict a turn cancelled mid-tick, so the test asserts the real count is
+*lower* and that it is strictly lower at least once. It is: **8 ticks in
+2,000**. v1.45 measured the dead as barely acting; this is the same finding
+from a completely different direction, and it arrived as a by-product of being
+honest about what an instrument cannot do.
+
+**And the audit this opens.** Every claim about performance in this repository
+is now either measured or a comment, and I can tell which. There is one more
+sentence of the second kind in `config.js`, four lines above the eat radius —
+"kept under the spatial grid's cell size (visionRadius * 0.75) so the 3x3 block
+covers it exactly" — which is a *correctness* claim about a contact test,
+resting on the same unswept number, and it is one query away from being a test
+instead.
