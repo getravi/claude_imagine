@@ -40,6 +40,7 @@
 // and a reader are never told two different totals.
 import { wholePercents } from "./stats.js";
 import { refugeRadius } from "./refuge.js";
+import { readable } from "./seasonlag.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -198,6 +199,24 @@ export function describePond(world, config, camera = null) {
   if (config.seasons) {
     const season = seasonLabel(world.tick, config);
     out.push(`${season.name} of year ${season.year}.`);
+    // …and how far behind that year the pond itself is running (v1.78). The
+    // clock above says where the *world* is; this says where the *animals*
+    // are, which is not the same place and is the finding this release exists
+    // for: a population peaks about a fifth of a year after the rate food
+    // arrives at does, and a winter-half against summer-half mean cannot see it,
+    // because a two-bucket split cancels a quarter-period delay exactly.
+    //
+    // Silent until the record can support a number and silent where the pond
+    // is not keeping time — one predicate for that, shared with the tile.
+    const lag = readable(s.seasonLag);
+    if (lag) {
+      const ticks = Math.abs(Math.round(lag.lag)).toLocaleString();
+      out.push(
+        lag.lag < 0
+          ? `The pond runs ${ticks} ticks ahead of its year.`
+          : `The pond runs ${ticks} ticks behind its year: the population peaks that long after the season's high point.`
+      );
+    }
   }
   if (config.dayNightCycle) out.push(`${timeOfDayLabel(world.tick, config).name}.`);
   // Contagion, and only once there is a contagion to report: a pathogen that has

@@ -41,6 +41,7 @@ import {
 } from "./palette.js";
 import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
 import { refugeRadius } from "./refuge.js";
+import { readable } from "./seasonlag.js";
 import {
   describeChart,
   describeLineages,
@@ -733,6 +734,23 @@ function updateHUD() {
   // rather than the run's total, which would stop moving by tick 3,000. Reads
   // exactly 0 with no walls in the pond, so it says "off" instead.
   $("stat-walled").textContent = config.barriers ? `${s.walledRate.toFixed(1)}/100t` : "off";
+  // How far the pond is running behind its own year. Three states, and the
+  // middle one is the point: "off" in a world with no seasons, "…" while the
+  // record is still shorter than the three years the estimate needs (which is
+  // tick 10,400 — measured, see docs/SCIENCE.md), and the lag once there is
+  // one. A number here before the record can support it would be v1.22's
+  // always-full buffer with a clock on it, so the wait is stated rather than
+  // filled in.
+  //
+  // The bar between a reading and a shrug is `readable()`, in the module, so
+  // this tile and the spoken description cannot come to different views about
+  // whether the pond is keeping time.
+  const lag = readable(s.seasonLag);
+  $("stat-lag").textContent = !config.seasons
+    ? "off"
+    : lag
+      ? `${Math.abs(Math.round(lag.lag)).toLocaleString()}t ${lag.lag < 0 ? "ahead" : "behind"}`
+      : "…";
   // Solid bodies: how many pairs the pond is pushing apart, per hundred ticks
   // over the same window. This is the only readout of a rule that is almost
   // invisible — two creatures that cannot overlap look very like two that can —

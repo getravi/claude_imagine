@@ -51,6 +51,15 @@ function warm(ticks = 120, overrides = {}) {
  */
 function nudgeIn(book, key) {
   const v = book[key];
+  // A field standing empty is still a field, and the hash has to notice it
+  // filling. `seasonLag` is the first of these: it holds `null` until the run
+  // is long enough to say how far behind its year the pond is, and a book that
+  // could not see the moment it stops being null would be blind to the whole
+  // readout for the first ten thousand ticks of every run.
+  if (v === null || v === undefined) {
+    book[key] = 1;
+    return () => (book[key] = v);
+  }
   if (typeof v === "number") {
     book[key] = v + 1;
     return () => (book[key] = v);
@@ -200,8 +209,8 @@ test("nothing in the simulation reads the books", () => {
   // `stats.js` has opened with "none of this feeds back into the simulation"
   // since v1.0 and `energy.js` with "nor is read by the simulation" since v1.29.
   // Both are comments, and a comment is not a measurement (v1.28). So: hold each
-  // of the fifty-six fields wrong for sixty consecutive ticks and check the pond
-  // does not notice. Per-field rather than all at once, because an aggregate two
+  // of the fifty-eight fields wrong for sixty consecutive ticks and check the
+  // pond does not notice. Per-field rather than all at once, because an aggregate two
   // cancelling errors can satisfy is not a test of either (v1.24).
   const reference = new World(makeConfig({ seed: 21 }));
   for (let i = 0; i < 100; i++) reference.step();
@@ -230,5 +239,5 @@ test("nothing in the simulation reads the books", () => {
     }
   }
   assert.equal(swept, STATS_HASHED.length + ENERGY_HASHED.length);
-  assert.equal(swept, 56, "the books changed size; the claim above needs re-measuring");
+  assert.equal(swept, 58, "the books changed size; the claim above needs re-measuring");
 });

@@ -442,6 +442,11 @@ the shaded half is where the crop is thin — and what it leaves open is whether
 the blue line lags the shading, which wants a cross-correlation over lag rather
 than a two-bucket split.
 
+**Closed in v1.78, and the lag is real: 632 ticks, 12 seeds of 12.** See *The
+pond runs a quarter of a year behind*, below, which also puts a null on the
+table above — one seasonless seed reads −21.8% on the crop row and +9.2% on the
+population row, so the control here is noisier than its two averages suggest.
+
 ### Reproducing it
 
 ```js
@@ -5825,6 +5830,188 @@ node -e '
     for (const r of a.rules) console.log(r.name, r.reach, r.query, r.covered, r.margin);
   });'
 ```
+
+## The pond runs a quarter of a year behind (v1.78)
+
+v1.74 drew the season on the population chart and measured what it does with
+the cheapest statistic available — the mean of the winter halves against the
+mean of the summer halves. The crop came back 40.4% thinner in winter on twelve
+seeds of twelve. The population came back lower in winter on seven of those
+twelve, which reads as *the season moves the food and not the animals*, and the release note said so while
+writing down, in the same paragraph, why it could not:
+
+> a half-period mean cancels a quarter-period lag **exactly**, and a consumer
+> tracking a resource that winters is the textbook delayed response.
+
+That is not a caveat. It is a hole with a shape, and the shape says where to
+look. The population of this pond peaks a **median of 632 ticks** after the
+food-spawn rate does — 0.243 of a 2,600-tick year, which is a quarter period to
+within one part in twenty-five, sitting in the one place the previous
+instrument is blind by construction.
+
+### The instrument
+
+`src/seasonlag.js`. The reference is not another measured series: this world's
+year is `sin(2πt / seasonLength)`, a pure function of the tick with no state and
+no randomness in it, so a series can be projected straight onto it.
+
+Fit `value ≈ intercept + slope·i + a·sin(ωt) + b·cos(ωt)` over the whole record
+at the season's own frequency, and read three things off the fit:
+
+| | |
+| --- | --- |
+| **lag** | `atan2(−b, a) / ω`, wrapped into ±half a year. Positive is *behind*. |
+| **swing** | `hypot(a, b)` over the series' mean — how far it moves with the year. |
+| **r** | Pearson between the detrended series and the season at that lag. |
+
+Three things about it are worth stating, because each was a decision:
+
+**The line is part of the fit, not something removed first.** Over a window
+that is not a whole number of years the season is correlated with a straight
+line, so subtracting the best-fit line takes a bite out of the sinusoid too.
+Detrending and *then* reading the phase is out by 13 ticks on a synthetic pond
+made of nothing but a season; on a pond that is also growing, at a slope of one
+creature per twenty ticks, it is out by **576**. The fit is exact for a line
+plus a sinusoid; the test pins both the fix and that failure.
+
+**The closed form is checked against the search it replaces.** A grid over lags
+is what a cross-correlation normally means, and the phase is a shortcut —
+v1.32's rule is that a shortcut is an assertion of equivalence, and one nothing
+checks is a claim nothing checks. `correlogram()` is the brute-force curve and
+the two agree to within one grid step on a noisy synthetic series.
+
+**A world with no seasons returns `null`, not a small number.** The reference is
+a constant there, so the answer is not "weakly correlated", it is that the
+question has no subject. That is the exact structural zero v1.20 asks for.
+
+### Twelve seeds, 20,000 ticks
+
+Full-resolution series (one sample per 4 ticks), first year discarded as
+warm-up. `split` is v1.74's winter-half-against-summer-half statistic, in
+percent, for the same run.
+
+| seed | pop lag | pop r | pop swing | pop split | food lag | food swing | pop − food |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 314 | 499 | 0.990 | 30.8% | −12.0% | −298 | 30.7% | 797 |
+| 7 | 636 | 0.958 | 27.2% | −0.3% | −217 | 46.4% | 853 |
+| 21 | 885 | 0.711 | 21.5% | +18.1% | −68 | 39.0% | 953 |
+| 42 | 627 | 0.942 | 21.8% | −1.3% | −201 | 34.6% | 828 |
+| 51 | 583 | 0.987 | 27.8% | −4.5% | −253 | 32.9% | 837 |
+| 77 | 555 | 0.985 | 31.1% | −7.4% | −256 | 43.6% | 812 |
+| 99 | 679 | 0.897 | 20.6% | +2.8% | −181 | 38.0% | 860 |
+| 128 | 743 | 0.620 | 21.7% | +8.8% | +24 | 39.8% | 719 |
+| 256 | 576 | 0.969 | 26.1% | −5.6% | −256 | 38.6% | 831 |
+| 512 | 803 | 0.798 | 25.8% | +13.5% | −38 | 44.6% | 840 |
+| 1024 | 537 | 0.988 | 27.6% | −8.1% | −268 | 32.3% | 805 |
+| 2026 | 798 | 0.541 | 18.0% | +9.5% | −141 | 15.9% | 939 |
+| **median** | **632** | **0.950** | **26.0%** | **−0.8%** | **−209** | **38.3%** | **834** |
+
+Read across one row and the two instruments are looking at the same run. Seed 7:
+its population tracks the year at r = 0.96, swinging 27% of its own mean, and
+v1.74's split calls it **−0.3%** — nothing at all. Seed 21 is worse than
+nothing: the split reads **+18.1%**, *more* creatures in winter, on a pond whose
+population is a clean seasonal wave 885 ticks behind the sun.
+
+Three findings the table carries:
+
+**The pond is behind on 12 of 12 seeds**, 499–885 ticks, and the sign test the
+split cannot pass is trivial here. The half-split's own sign count on the same
+runs is 7–5, which is a coin.
+
+**The standing crop is *ahead* of the year on 11 of 12** (median −209 ticks),
+and that is not a paradox. A stock rises while inflow beats outflow, so it turns
+over at the crossing rather than at the inflow's peak, and the outflow — the
+eating — is the thing that is late. So the population trails the standing crop
+by a median of **834 ticks**, a third of a year, on 12 of 12.
+
+**Nobody has to average over the year to see this.** The lag is the whole reason
+the pond looks alive: the crop recovers first, the animals follow, and the
+overshoot they arrive with is what makes the next winter bite.
+
+### The control, and what it changed about the readout
+
+The same twelve seeds with `seasons: false`, asked about a year they do not
+have. (The module refuses this by design; the control has to reach around it
+with a season-bearing config, which is the point of a control.)
+
+| | with a year | with none |
+| --- | ---: | ---: |
+| pop r at 20,000 ticks | 0.54 – 0.99 | 0.11 – 0.39 |
+| pop swing at 20,000 ticks | 18.0% – 31.1% | 0.7% – 6.1% |
+| v1.74's pop split, range | −12.0% – +18.1% | −2.2% – +9.2% |
+| v1.74's food split, range | −48.0% – −22.2% | −21.8% – +0.2% |
+
+Two things fall out of the right-hand column, and neither was what I went
+looking for.
+
+**`r` is not the separator, and I had assumed it would be.** At the run lengths
+this ships at, a pond with no seasons correlates with a year it cannot feel at
+up to **r = 0.62** (seed 51, three years of record) — because the pond has oscillations of
+its own and one of them lands near 2,600 ticks. What a seasonless pond cannot do
+is *move*: its population swings **0.7%–8.0%** of its mean at every span the
+instrument will answer at, against 18.0%–31.1% with a year in it. So the bar the
+page reports through (`MIN_SWING`, 0.15) is an amplitude and `r` rides along as a
+description. A correlation says how *tidy* a relationship is; only an amplitude
+says whether there is one.
+
+**v1.74's own null is not zero.** The crop being 40.4% thinner in winter is real
+in the median — the seasonal arm runs −22.2% to −48.0% and the seasonless one
+−21.8% to +0.2% — but one seasonless seed reads **−21.8%**, inside the seasonal
+range, and a seasonless *population* reads **+9.2%**. A half-split of a pond
+with internal cycles is noisy in exactly the units the finding was reported in,
+and v1.74 quoted a twelve-of-twelve sign count without one. The number stands;
+the confidence it was written with does not.
+
+### When the readout can answer
+
+The estimate needs whole years, and the panel needs to know how many before it
+says anything. Measured against each seed's own 20,000-tick answer, from the
+thinned whole-run archive the page actually reads:
+
+| record spans, past the warm-up | worst error | median error |
+| --- | ---: | ---: |
+| 2 years | 256 ticks | 30 ticks |
+| 3 years | 124 ticks | 25 ticks |
+| 4 years | 45 ticks | 9 ticks |
+| 5 years | 22 ticks | 4 ticks |
+
+Three is where the curve flattens, so `minYears` is 3 and the `Lag ⏳` tile is
+`…` until about tick 10,500 — a wait stated rather than filled in, because a
+number the record cannot support is v1.22's always-full buffer with a clock on
+it.
+
+And the archive is enough: at 20,000 ticks its answer (one point per 128 ticks,
+min/max envelopes discarded) differs from the full-resolution series by −6 to +3
+ticks across the twelve seeds. The thinning that v1.22 built to protect the
+peaks turns out to preserve a phase as well, which is not obvious and is
+therefore a test.
+
+### Reproducing it
+
+```sh
+node -e '
+  const N = 20000;
+  Promise.all([import("./src/world.js"), import("./src/config.js"),
+               import("./src/seasonlag.js")]).then(([W, C, L]) => {
+    for (const seed of [314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026]) {
+      const cfg = C.makeConfig({ seed });
+      const w = new W.World(cfg);
+      const rows = [];
+      for (let t = 0; t < N; t++) {
+        w.step();
+        if (w.tick % 4 === 0) rows.push({ tick: w.tick, pop: w.creatures.length,
+                                          food: w.food.items.length });
+      }
+      const p = L.seasonLag(rows, "pop", cfg), f = L.seasonLag(rows, "food", cfg);
+      console.log(seed, "pop", p.lag.toFixed(0), "r", p.r.toFixed(3),
+                  "swing", (p.swing * 100).toFixed(1) + "%",
+                  "| food", f.lag.toFixed(0), "| behind food", (p.lag - f.lag).toFixed(0));
+    }
+  });'
+```
+
+Swap `seasons: false` into `makeConfig` and pass `C.makeConfig({ seasons: true })`
+as the config argument to `seasonLag` for the control arm.
 
 ## What this model deliberately leaves out
 

@@ -12,6 +12,7 @@ import { groundBias } from "./terrain.js";
 import { patchBias } from "./environment.js";
 import { hazardShare } from "./contagion.js";
 import { inRefuge } from "./refuge.js";
+import { seasonLag } from "./seasonlag.js";
 import { ENERGY_SOURCES, LEDGER_FIELDS, energyField, buriedField } from "./energy.js";
 
 /**
@@ -38,6 +39,19 @@ export const SOIL_HORIZON = 240;
  * last sample, where a single pellet is worth six energy per tick.
  */
 export const POWER_WINDOW = 30;
+
+/**
+ * How often the season lag is recomputed, in ticks.
+ *
+ * The scan is a pass over the whole-run archive — 240 rows and a handful of
+ * trigonometric calls each — and what it measures moves by a few ticks per
+ * year, so a hundred and twenty-eight ticks is a refresh rate no watcher can
+ * tell from continuous. It decides nothing about the simulation: this is
+ * the rate a *readout* is redrawn at, which is why it lives here rather than
+ * in `config.js` where `src/levers.js` would sweep it for an effect on the
+ * pond and correctly find none.
+ */
+export const SEASON_LAG_EVERY = 128;
 
 /**
  * The history-point field carrying the *cumulative* number of deaths of one
@@ -259,6 +273,18 @@ export class Stats {
       capacity: runLength,
       fields: ["pop", "food", energyField("standing"), energyField("residual")],
     });
+    // The pond against its own year: `{lag, r, swing, years, samples}` once the
+    // record is long enough to say, `null` until then and in any world with no
+    // seasons in it. Held whole rather than pre-filtered — see `sample()`.
+    this.seasonLag = null;
+    /**
+     * How often the above is recomputed. An instance field rather than the
+     * constant so a test can set it beyond reach and get an arm that never
+     * measures at all: the measurement is a pure read of the archive and
+     * cannot move a world, and `test/seasonlag.test.js` is what says so
+     * instead of me.
+     */
+    this.seasonLagEvery = SEASON_LAG_EVERY;
     this.tick = 0;
     this.births = 0;
     this.deaths = 0;
@@ -545,6 +571,22 @@ export class Stats {
     if (!world.detritus) this.soilShare = 0;
     else if (spawned > 0) {
       this.soilShare += (sprouted / spawned - this.soilShare) / SOIL_HORIZON;
+    }
+
+    // How far the pond is running behind its own year (v1.78). Nulled outright
+    // in a world with no seasons — the same shape as the four readouts above,
+    // and for the same reason: switching the year off has to clear the number
+    // in the same frame rather than leave the last world's lag sitting there
+    // looking live. The scan is the throttled half, hard, because it walks the
+    // whole-run archive and what it measures moves by a few ticks a year.
+    //
+    // The result is kept whole, including readings too small to state: the bar
+    // is `readable()` in `src/seasonlag.js` and it belongs to the surfaces, so
+    // that the panel and the spoken description cannot disagree about what
+    // counts as an answer while the books still carry what was measured.
+    if (!world.config.seasons || !(world.config.seasonAmplitude > 0)) this.seasonLag = null;
+    else if (this.tick % this.seasonLagEvery === 0) {
+      this.seasonLag = seasonLag(this.runHistory.series(), "pop", world.config);
     }
 
     // Record a history point every 4 ticks.

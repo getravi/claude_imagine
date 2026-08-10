@@ -68,8 +68,10 @@ test("every id an attribute points at exists on the same page", () => {
 test("every label labels something", () => {
   // The v1.51 finding, pinned. A `<label>` with no `for` and no control inside
   // it is not a label at all — it is text that happens to sit above a number,
-  // and the pairing exists only in the layout. There were thirty-five: the
-  // twenty-two stat tiles, and thirteen more the inspector generated.
+  // and the pairing exists only in the layout. There were thirty-five at the
+  // time: twenty-two stat tiles, and thirteen more the inspector generated.
+  // (Both numbers have grown since; the test above is what keeps the page's own
+  // count of the first one honest.)
   const CONTROL = /<(input|select|textarea|button|meter|progress|output)\b/i;
   for (const file of [...PAGES, "src/main.js"]) {
     const src = read(file);
@@ -83,6 +85,30 @@ test("every label labels something", () => {
       );
     }
   }
+});
+
+test("the page's own count of its stat tiles is the number of stat tiles", () => {
+  // v1.52 found the README claiming a number of scenarios that had been wrong
+  // for sixteen releases, and wrote down the general form: anything stated as a
+  // number in prose about a collection in code is drifting. The comment over
+  // this list said "twenty-two name/value pairs" while the list held
+  // twenty-five, which is the same bug on the surface the rule was written on —
+  // and it is the count v1.51's `<label>` finding is quoted with, so the wrong
+  // number has been travelling into other files. Read the word, count the
+  // tiles, compare. It cannot drift again without failing here.
+  const WORDS = {
+    twenty: 20, "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
+    "twenty-four": 24, "twenty-five": 25, "twenty-six": 26, "twenty-seven": 27,
+    "twenty-eight": 28, "twenty-nine": 29, thirty: 30, "thirty-one": 31,
+    "thirty-two": 32,
+  };
+  const src = read("app/index.html");
+  const claim = src.match(/<!--\s*([A-Za-z-]+) name\/value pairs\./);
+  assert.ok(claim, "the stats list has lost the comment that counts it");
+  const said = WORDS[claim[1].toLowerCase()];
+  assert.ok(said, `"${claim[1]}" is not a number this test knows how to read`);
+  const actual = (src.match(/<div class="stat">/g) || []).length;
+  assert.equal(said, actual, `the comment says ${claim[1]} stat tiles; there are ${actual}`);
 });
 
 test("nothing jumps the queue with a positive tabindex", () => {

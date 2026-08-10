@@ -4,6 +4,79 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.78.0] — 2026-08-10
+
+v1.74 shaded the lean half of the year behind the population chart and measured
+what the year does: the standing crop is 40.4% thinner in winter on twelve seeds
+of twelve, and the population comes back lower in winter on seven of those
+twelve, which reads as *the season moves the food and not the animals*. The same
+release note wrote down why that reading was not available — **a half-period
+mean cancels a quarter-period lag exactly** — and then the project moved on for
+three releases.
+
+It is a quarter-period lag. The population of this pond peaks a **median of 632
+ticks** after the rate food arrives at does, on **twelve seeds of twelve**, which
+is 0.243 of a 2,600-tick year: the delay sits within one part in twenty-five of
+the one place the previous instrument is blind by construction. Seed 7 is the
+whole release in one row — its population tracks the year at r = 0.96, swinging
+27% of its own mean, and v1.74's statistic calls it −0.3%.
+
+### Added
+
+- **`src/seasonlag.js`** — the cross-correlation over lag that v1.74 named and
+  did not build. The reference is not another measured series: this world's year
+  is `sin(2πt / seasonLength)`, a pure function of the tick, so a history column
+  is fitted straight against it as `intercept + slope·i + a·sin(ωt) + b·cos(ωt)`
+  and the phase of `(a, b)` is the shift. All four terms at once, because
+  removing the trend *first* takes a bite out of the sinusoid on any window that
+  is not a whole number of years — 13 ticks out on a synthetic pond made of
+  nothing but a season, **576** on one that is also growing. `correlogram()` is
+  the brute-force curve the closed form is checked against, because a shortcut
+  is an assertion of equivalence (v1.32).
+- **A `Lag ⏳` tile** and a sentence in the spoken description of the pond:
+  `632t behind`, or `…` until the record spans three years past its opening
+  transient, or `off` where there is no year to be behind. Three states because
+  the middle one is a decision — a phase estimate off two years of record is out
+  by as much as 256 ticks, and a number the record cannot support is v1.22's
+  always-full buffer with a clock on it.
+- **`test/seasonlag.test.js`** — ten tests. The phase against six known shifts
+  in both directions; the closed form against the grid search on a noisy series;
+  the trend bug pinned as well as fixed; every absence (`seasons: false`, a zero
+  amplitude, too short a record, a flat series, a column the history does not
+  carry) asserted as `null` rather than as a small number; the thinned archive
+  against the full-resolution series; and the wiring, where a pond that measures
+  itself every 128 ticks is bit-for-bit a pond whose `Stats` never did.
+- **A test that keeps the page's own count of its stat tiles honest**
+  (`test/markup.test.js`). The comment over the list said "twenty-two
+  name/value pairs" and there were twenty-five — v1.52's rule (a number stated
+  in prose about a collection in code is drifting) on the surface it was written
+  about, and the wrong number had already travelled into another test file.
+
+### Measured
+
+- **Twelve seeds, 20,000 ticks, seasons on.** Population lag 499–885 ticks,
+  **positive on 12 of 12**; correlation 0.54–0.99; the fitted swing 18.0%–31.1%
+  of each pond's own mean. v1.74's winter-half statistic on the same runs splits
+  7–5, which is a coin.
+- **The crop is *ahead* of the year** (median −209 ticks, 11 of 12), which is
+  what a stock does when the thing draining it is late: it turns over at the
+  crossing, not at the inflow's peak. So the population trails the standing crop
+  by a median of **834 ticks**, a third of a year, on 12 of 12.
+- **The control changed the readout.** Twelve seasonless seeds asked about a
+  year they do not have correlate with it at up to **r = 0.62** — this pond has
+  cycles of its own and one lands near 2,600 ticks — so `r` does not separate
+  the arms and the bar the page reports through is an *amplitude*: 0.7%–8.0%
+  without a year against 18.0%–31.1% with one.
+- **v1.74's own null is not zero.** One seasonless seed reads −21.8% on the crop
+  row, inside the seasonal arm's −22.2%–−48.0%, and a seasonless population
+  reads +9.2%. The finding stands; the confidence it was written with does not.
+- **What the panel needs before it speaks**, from the thinned archive the page
+  actually reads: two years of record is out by up to 256 ticks, three by 124
+  (median 25), four by 45, five by 22. Hence three, and a first reading at about
+  tick 10,500. At 20,000 the archive and the full-resolution series differ by −6
+  to +3 ticks — the decimation v1.22 built to protect peaks preserves a phase
+  too, which is not obvious and is therefore a test.
+
 ## [1.77.0] — 2026-08-10
 
 The inspector was the last surface this project had never walked. It is also

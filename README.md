@@ -109,7 +109,7 @@ could have fixed it.
 | **Live parameters** | Tune food rate, metabolism, and mutation rate *while it runs* and watch the ecosystem respond. |
 | **Predation** | Toggle whether carnivores can hunt. On by default — turn it off for a pure-herbivore world. |
 | **Scavenging** | Toggle whether dead creatures leave corpses that carnivores can feed on — a nutrient cycle and a scavenger niche. Off by default. |
-| **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. |
+| **Seasons** | Toggle the yearly food cycle. On by default — turn it off for a constant climate. Watch the *Lag* stat: how far behind the year the pond itself is running, measured against the season's own sine wave rather than by averaging halves of it. It reads `off` without a year to be behind and `…` until the run spans three years past its opening transient, because a phase estimate needs whole cycles and a number the record cannot support is worse than no number. |
 | **Biomes** | Toggle whether food concentrates in fertile patches. On by default — turn it off for evenly-scattered food. Watch the *Biome* stat — how much more fertile the ground under the living is than this pond's own average, and exactly `off` when nothing is sowing into the patches. The pond sits at about **+0.089** there on twelve seeds of twelve, which is almost exactly the bias a pellet is *sown* with (+0.092) — while the crop still standing reads +0.024, inside the noise of the same pellets scattered at random on ten of the twelve. Fertile ground is not where food piles up; it is where a pellet is eaten fastest. The three-arm measurement is in [SCIENCE.md](docs/SCIENCE.md). |
 | **Drifting biomes** | Toggle whether the fertile patches slowly roam, so the food landscape keeps shifting and creatures must migrate to follow it. Off by default. |
 | **Regrowth** | Toggle food that grows from food: most new pellets are seeded next to an existing one, and the crop grows fastest when there is most of it. A herd can strip a patch bare and then has to wait for it to grow back, so the pond swings through boom-and-bust cycles. Off by default. Watch the *Food* stat. |
@@ -166,10 +166,13 @@ could have fixed it.
 - **Ride the seasons.** Since v1.74 the chart says where the year is: the lean
   half is shaded behind the lines. Watch the green food line fall into the
   shading — that much is measured, a 40% thinner standing crop in winter on
-  twelve seeds of twelve. Whether the *population* follows is the part the
-  measurement will not yet say (see [SCIENCE.md](docs/SCIENCE.md)), so watch the
-  blue line yourself and judge. Toggle *Seasons* off to see the difference a
-  constant climate makes — and the shading goes with it.
+  twelve seeds of twelve. The blue line follows it, **late**: v1.78 measured the
+  population peaking a median of 632 ticks after the year does, on twelve seeds
+  of twelve, which is very nearly a quarter of a 2,600-tick year and is why the
+  half-year averages v1.74 ran could not see it at all. The *Lag ⏳* stat is
+  that number, live, once a run is long enough to have one. Toggle *Seasons* off
+  to see the difference a constant climate makes — the shading goes with it, and
+  so does the lag.
 - **Watch the biomes.** Creatures pile into the fertile glowing patches and
   leave the barren stretches empty; the emptiness becomes a risky crossing.
 - **Turn on Drifting biomes** and watch the fertile patches slide across the
@@ -377,6 +380,7 @@ src/
   energy.js         the pond's books: every unit made, spent, wasted or buried
   stats.js          rolling population/lineage measurements, and what kills them
   archive.js        the whole run at falling resolution, extremes kept exact
+  seasonlag.js      how far behind its own year the pond is running (observation only)
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
   world.js          the simulation: steps everything forward

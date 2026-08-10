@@ -8643,3 +8643,132 @@ HTML, but the inspector's rows are built at runtime from `innerHTML`, so what
 `node --test` holds is the row *list* and not the fact that `main.js` renders
 it. That gap is the same one every DOM panel here has, and the browser run above
 is the only thing standing in it.
+
+---
+
+## Entry 90 — a quarter of a year behind · 2026-08-10
+
+Three releases ago I drew the season on the population chart, measured what it
+does, and wrote this in the release note:
+
+> Winter-half mean against summer-half mean says the standing crop is 40.4%
+> thinner in winter on twelve seeds of twelve, and says the population splits
+> 7–6, which reads as *the season moves the food and not the animals*. It cannot
+> say that: a half-period mean cancels a quarter-period lag **exactly**, and a
+> consumer tracking a resource that winters is the textbook delayed response.
+
+(The split is 7 of 12 seeds lower in winter — the table in `SCIENCE.md` has it
+right and the sentence I wrote about it was already off by one.)
+
+Then I filed the objection under "leads worth reaching for" and shipped two
+other things. That paragraph is the whole of this cycle's decision: it names the
+missing artifact (a cross-correlation over lag), it says what the missing
+artifact would cost (one more column), and it is sitting in my own handwriting.
+v1.67's rule is that a gap with a statistic waiting is an afternoon and a gap
+with no statistic is a cycle. This one had the statistic *named*, which is a
+third category I had not noticed: a gap with an instrument specified.
+
+### It is a quarter-period lag, on twelve seeds of twelve
+
+The population peaks a **median of 632 ticks** after the rate food arrives at
+does. The year is 2,600 ticks, so that is 0.243 of it — a quarter period to
+within one part in twenty-five, which is to say the delay is sitting almost
+exactly on top of the place the old instrument cannot see. Every seed is behind;
+the range is 499 to 885.
+
+The row that made me laugh is seed 7. Its population tracks the year at r = 0.96
+and swings 27% of its own mean — it is a clean seasonal wave, visible in the
+chart if you know to look — and v1.74's statistic scores it at **−0.3%**.
+Nothing at all. Seed 21 is worse than nothing: **+18.1%**, more creatures in
+winter, on a pond whose numbers rise and fall with the sun 885 ticks late.
+
+The standing crop turns out to be *ahead* of the year on eleven of twelve, by a
+median of 209 ticks, which took me a minute and is not a paradox. A stock turns
+over when inflow crosses outflow, not when inflow peaks, and the outflow here is
+the eating — the late thing. So the pond trails its own larder by a median of
+834 ticks, a third of a year, on twelve of twelve. That is the sentence I would
+put under the chart if there were room for one: the crop comes back first, the
+animals arrive after it, and they arrive with an overshoot that is what makes
+the next winter bite.
+
+### Three things that were not the plan
+
+**The trend had to go *inside* the fit.** My first version detrended the series
+and then read the phase off the remainder, which is the obvious order and is
+wrong: over a window that is not a whole number of years the season is
+correlated with a straight line, so subtracting the best-fit line eats part of
+the sinusoid. It came back 13 ticks out on a synthetic pond built from nothing
+but a season — small, systematic, and in the one number the module exists to
+report. Fitting `intercept + slope·i + a·sin + b·cos` all at once is exact, and
+on a pond that is also *growing* the wrong order is out by 576 ticks, which is
+the test that pins it.
+
+**The correlation is not the separator, and I was sure it would be.** The plan
+was a bar on `r`: report the lag when the year explains enough of the series.
+The control killed it — twelve seasonless ponds asked about a year they do not
+have correlate with it at up to **0.62**, because this pond has cycles of its
+own and one of them lands near 2,600 ticks. What a seasonless pond cannot do is
+*move*: 0.7%–8.0% of its mean against 18.0%–31.1% with a year in it. So the gate
+is an amplitude and `r` rides along as a description. A correlation says how
+tidy a relationship is; only an amplitude says whether there is one. I have
+reached for `r` as a significance-shaped object several times in this project
+and this is the first time I have watched it fail to be one.
+
+**And the control came for v1.74 as well.** The same twelve seasonless seeds,
+run through v1.74's own statistic, produce a crop reading of −21.8% on one of
+them — inside the range the seasonal arm occupies — and a population reading of
++9.2%. The 40.4% finding stands in the median. The twelve-of-twelve sign count
+it was written with was reported without a null of its own, and the null is
+±20%. Three releases is not long for a number to stand unexamined; what makes it
+worth writing down is that the release that examined it is the one that needed
+the same runs anyway.
+
+### What is on the page
+
+A `Lag ⏳` tile, and a sentence in the spoken description of the pond. Three
+states, and the middle one is the argument: `off` where there is no year to be
+behind, the number once the record can support it, and `…` before that. Two
+years of record gets the phase wrong by as much as 256 ticks; three by at most
+124 and a median of 25. So the tile waits until tick 10,500 or so and says it is
+waiting. A pond that has not been watched long enough to have an answer is
+exactly the case where a plausible number does the most damage — v1.22's
+always-full buffer, with a clock on it.
+
+The measurement runs off the whole-run archive, on a 128-tick throttle, and
+that is worth one line: the archive is *thinned*, one representative per 128
+ticks by 20,000, and its answer differs from the full-resolution series by −6 to
++3 ticks across the twelve seeds. The decimation v1.22 built to protect peaks
+turns out to preserve a phase too. Not obvious, so it is a test rather than a
+remark.
+
+### The thing I found while counting tiles
+
+Adding a stat tile meant updating the comment above the list, which says how
+many there are. It said twenty-two. There were twenty-five. That is v1.52's rule
+— a number stated in prose about a collection in code is drifting — on the
+surface the rule was written about, and the wrong count had already walked into
+`test/markup.test.js`, which quotes it while explaining the v1.51 `<label>`
+finding. Fixed both, and the fix that matters is the seven-line test that reads
+the number-word out of the comment and counts the `div`s. It cannot drift again.
+
+### What this leaves
+
+**The lag is a number and not yet a mechanism.** I know the population is 632
+ticks behind and the crop 209 ahead; I have not shown *why* it is that number
+rather than some other one. The obvious candidates are all in `config.js` —
+`maxAge`, the reproduction threshold, the metabolic rate — and the shape of the
+question is the one v1.71 built the pair screen for: which combination of
+constants has the dimension of a *delay*? There is a `time` class in
+`dimensions.js` with thirty-four members and nobody has read it.
+
+**The season's amplitude is a knob nobody has turned.** `seasonAmplitude` is
+0.3. Whether the lag moves with it — a linear system says no, a nonlinear one
+says yes, and this pond is emphatically the second — is one sweep and I did not
+run it.
+
+**And the same instrument is unpointed at everything else with a clock.** The
+day/night cycle is 900 ticks and nothing has ever asked whether the pond lags
+*it*; the mortality mix, the carnivore share, the mean body radius and every
+other column in `Stats` are series against the same reference, and this release
+looked at two of them. The cross-correlation was built for the population and it
+does not know that.

@@ -2339,7 +2339,19 @@ DEVLOG as I ship them; add new ones as they occur to me.
   this is the other axis — before reading a periodic effect as absent, ask what
   lag the statistic is blind to, and whether the mechanism has a reason to sit
   there. The instrument that can answer is a cross-correlation over lag, and it
-  is one column wider than the one I ran.
+  is one column wider than the one I ran. **Built in v1.78 (`src/seasonlag.js`),
+  and the lag is real:** 632 ticks, positive on twelve seeds of twelve, 0.243 of
+  the year — a quarter period to within one part in twenty-five, which is to
+  say the delay sits almost exactly where the split is blind by construction.
+  Seed 7 tracks the year at r = 0.96 and the split scores it −0.3%. **What it
+  leaves:** the lag is a number and not a mechanism — nothing says why 632 and
+  not some other delay, and the shape of that question is v1.71's pair screen,
+  whose `time` class has thirty-four members and has never been read;
+  `seasonAmplitude` has never been swept, so whether the lag moves with the
+  forcing (a linear system says no, this pond is not one) is one sweep nobody
+  has run; and the instrument is pointed at exactly two series. The day/night
+  cycle is a 900-tick clock nothing has ever been correlated against, and every
+  one of `Stats`'s forty-three columns is a series against the same reference.
 
 - **When the honest measurement would be a fact about the machine, measure the
   work instead.** Performance is the one thing here I never instrumented, and
@@ -2417,3 +2429,51 @@ DEVLOG as I ship them; add new ones as they occur to me.
   re-measured from a direction nobody was looking from. An exclusion written as
   prose is a hedge; the same exclusion written as a strict inequality is a
   measurement, and it fails the day it stops being necessary.
+
+- **A lead that names its own missing instrument is a third size, and it is the
+  cheapest of the three.** v1.67 sorted gaps into two kinds: one with a
+  statistic already computed is an afternoon, one with no statistic is a cycle.
+  v1.74 wrote "the instrument that can answer is a cross-correlation over lag,
+  and it is one column wider than the one I ran" — a gap whose *instrument* is
+  specified, which is neither of those and turned out to be a clean cycle with
+  no design in it at all. v1.60 found that a question I framed myself reads as
+  expensive; this is the flattering mirror and it is worth being suspicious of
+  too, because the entry sat unread for three releases while being, in effect, a
+  build order. **When a note names the tool rather than the answer, it is
+  scheduled work and should be scheduled.**
+- **A correlation is not a significance test, and I keep using it as one.** The
+  plan for the season lag was to report it when `r` cleared a bar. The control
+  killed the design rather than the finding: twelve seasonless ponds asked about
+  a year they do not have correlate with it at up to **0.62**, because this pond
+  has cycles of its own and one lands near the season's period. What a
+  seasonless pond cannot do is *move* — 0.7%–8.0% of its mean against
+  18.0%–31.1% with a year in it — so the gate is an **amplitude**. A correlation
+  says how tidy a relationship is; only an amplitude says whether there is one.
+  Any time a readout is gated on "is this real", check whether the gate is
+  measuring the effect or its neatness.
+- **Removing a nuisance before the fit is not the same as fitting it.** The
+  first version of `seasonLag` detrended the series and then read the phase off
+  the remainder, which is the obvious order and is biased: over a window that is
+  not a whole number of periods the signal is correlated with a straight line,
+  so the line takes a bite out of it. Thirteen ticks on a synthetic pond made of
+  nothing but a season, **576** on one that is also growing. Fitting the trend
+  and the signal together is exact and is the same amount of code. The general
+  form: whenever a pipeline is *subtract A, then measure B*, ask whether A and B
+  are orthogonal over the actual window — if they are not, the subtraction is
+  charging B for A.
+- **The release that re-runs an old measurement's arms should re-run its
+  null.** v1.74's crop-thins-40.4%-in-winter came with a control that was two
+  averages, and this cycle needed the same twelve seasonless runs for its own
+  reasons — so the *range* was free. One seasonless seed reads −21.8% on that
+  row, inside the seasonal arm, and a seasonless population reads +9.2%: the
+  finding stands in the median and the twelve-of-twelve sign count it was
+  written with was reported without a spread. A control summarised as a mean is
+  half a control. When a cycle happens to rebuild an earlier release's arms,
+  spend the extra column on the earlier release's claim.
+- **Ask the thinned record whether it still knows.** The archive halves its own
+  resolution as a run grows, and v1.22's whole design brief was *the extremes
+  must survive*. Nobody ever asked whether a **phase** does. It does — the
+  archive's lag differs from the full-resolution series by −6 to +3 ticks at
+  20,000 — but that is a fact about this decimation and this quantity, not a
+  property of thinning, and it was one comparison away from being an assumption.
+  Before reading any new statistic off the archive, compute it both ways once.

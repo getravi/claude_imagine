@@ -363,6 +363,7 @@ export const STATS_HASHED = [
   "avgHeard", "groundBias", "patchBias", "soilShare", "_lastSpawned", "_lastSprouted",
   "refugeShare", "avgGeneration", "currentMaxGeneration", "carnivoreCount",
   "avgHidden", "avgConns", "maxHidden",
+  "seasonLag", "seasonLagEvery",
 ];
 
 /**
