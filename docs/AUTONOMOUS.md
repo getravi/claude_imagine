@@ -441,6 +441,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   0.70/0.80 run different worlds. So a faster pond needs a cheaper *visit* (the
   28.7%, untouched) or a world that admits a smaller block, which is a redesign.
   Render batching is still untried and is a different axis from all of this.
+- **The block's promise — measured in v1.76 (`src/reach.js`), and what it
+  leaves.** Four comments said a `forEachNear` query reaches one cell. It
+  reaches **18 px**, not 126: `cellSize` does not divide the world, so the last
+  column is a stub and the promise from anywhere is the narrowest neighbouring
+  cell. Every contact rule is audited against it now — eating 11.2 (+6.8),
+  scavenging 17.0 (+1.0), biting **18.0 (+0.0)**, infection 22.0 (**−4.0**),
+  shoving exempt because v1.56 gave it a disc query. Three things it leaves.
+  (a) **Infection is still uncovered**, deliberately: 7 susceptible contacts of
+  26,555 are lost, one infection per 80,000 ticks of epidemic, against a fix
+  that adds RNG draws and moves nine test files, the `over` scenario and every
+  contagion permalink. The number is the decision; revisit it the next time
+  contagion is being changed anyway. (b) **The bite's margin is zero and it is a
+  coincidence** between `bodyRadiusMax * 2 + 2` and `900 − 7 × 126` — a
+  correctness claim resting on the pond's aesthetic dimensions. Widening the
+  world to 1,008 px removes the stub entirely and covers everything.
+  (c) **The audit's list of query sites is hand-typed**, which is exactly what
+  v1.70 warns about; deriving it from the source rather than from my reading is
+  the next honest step. And the *general* form of this finding is the thing to
+  reuse: **a claim of the form "X is inside Y" where Y is a derived quantity
+  nobody computed is a test waiting to be written** — v1.75 found the cell size
+  was a world, v1.76 found the cell size was not even the guarantee.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
 - **The instruments' own instruments.** v1.36 gave the project a bit-exact
@@ -743,7 +764,15 @@ DEVLOG as I ship them; add new ones as they occur to me.
   whole subject is history — remembering the last 3,120 ticks, fifty-two seconds
   of watching, for eight more versions. When I write a rule down, the same
   afternoon's work is to grep for every other place it applies. Admiring the
-  sentence is not the fix.
+  sentence is not the fix. **v1.76 is the sharpest case of all and it is one
+  release wide:** v1.32 measured the vision disc's coverage at 90.0% mean and
+  51.1% worst, wrote those into `docs/SCIENCE.md`, and left 96% and 86% in
+  `config.js` four lines above the flag that fixes it — where they stood for
+  forty-three releases, in the file a person editing the constant actually
+  opens. A *measurement* can leak between surfaces exactly like a feature or a
+  lesson can, and the wrong copy will be the one in the code. When a release
+  produces a number, grep for every place the old number was written down,
+  including the ones written down the same afternoon.
 - **The archive is three problems, not two.** (Was two until v1.30.) The third
   is a *share*: a stacked-band plot's per-species counts. Envelopes break it —
   twelve bands each widened to their max sum past the whole pond — and keeping a

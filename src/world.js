@@ -37,7 +37,7 @@
 // entire future — a property the tests and the "share a seed" feature rely on.
 
 import { RNG } from "./rng.js";
-import { SpatialGrid } from "./grid.js";
+import { SpatialGrid, indexCellSize } from "./grid.js";
 import { FoodField, Food, Corpse } from "./food.js";
 import { Creature } from "./creature.js";
 import { Genome } from "./genome.js";
@@ -117,7 +117,7 @@ export class World {
 
     // Grids sized so each cell is about one vision radius across — that keeps
     // the 3x3 query window a good match for what a creature can actually see.
-    const cell = Math.max(40, config.visionRadius * 0.75);
+    const cell = indexCellSize(config);
     this.creatureGrid = new SpatialGrid(config.width, config.height, cell);
     this.foodGrid = new SpatialGrid(config.width, config.height, cell);
     // Corpses (scavenging). Empty and unused unless the feature is on.
@@ -420,9 +420,14 @@ export class World {
     // ...and, for the creature scan, the widest of the three questions it
     // answers in one pass: sight, earshot — which deliberately does not shrink
     // at night, so on a dark tick it is the longest reach in the world — and a
-    // mate search. Contact tests elsewhere (eating at 8px, biting, infection at
-    // 22px) are far inside one cell, so the plain 3x3 block covers them exactly
-    // and they are left alone.
+    // mate search. Contact tests elsewhere take their candidate from these same
+    // scans and are left alone, which `src/reach.js` audits: against the block's
+    // real guarantee of 18 px — not the 126 of one cell, which is what this
+    // comment used to say — eating reaches 11.2 and scavenging 17.0, and a bite
+    // reaches `bodyRadiusMax * 2 + 2` = 18.0, clearing it by exactly nothing.
+    // Infection at 22 px does not clear it, and it is the one contact rule with
+    // a neighbour query of its own (`_stepDisease`), so it is the one this line
+    // cannot speak for.
     const nearbyR = Math.max(
       sightR,
       cfg.signalling ? cfg.signalRadius : 0,
@@ -798,6 +803,15 @@ export class World {
     for (const c of this.creatures) {
       if (!c.infected) continue;
       sick++;
+      // The only neighbour query in the pond that is not a sense scan, and
+      // therefore the only rule `exactVision` cannot straighten out. The block
+      // guarantees 18 px and `infectionRadius` is 22, so about one susceptible
+      // contact in 3,800 — 7 of 26,555 over eight seeds — happens in the 0.9%
+      // of standing positions beside the grid's seam and is silently not a
+      // contact at all (`src/reach.js`, docs/SCIENCE.md). Left as it is on
+      // purpose: this query is inside the RNG's draw order, so covering the
+      // disc the way v1.56's `_separate` does moves every world with contagion
+      // on, and that is a change to write down before it is a change to make.
       this.creatureGrid.forEachNear(c.x, c.y, (o) => {
         if (o === c || o.infected || o.immune || o.dead) return;
         const d2 = torusDist2(c.x, c.y, o.x, o.y, cfg.width, cfg.height);

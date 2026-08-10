@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.76.0] — 2026-08-10
+
+Four comments in this repository said a `forEachNear` query reaches one cell.
+It reaches **18 px**, not 126. `cellSize` does not divide the world, so the last
+column of the default pond is an 18-px stub, and the distance the 3x3 block can
+promise from anywhere is the width of the narrowest neighbouring cell.
+
+v1.32 measured exactly this seam — for *sight*, and only in `docs/SCIENCE.md`.
+The same release left "a guaranteed 126 px (one cell)" in `config.js`, four
+lines above the flag that fixes it, along with two coverage figures (96%, 86%)
+that are not the ones its own page records (90.0%, 51.1%). The correction
+reached the page a reader reads and not the file a person editing the constant
+reads, and stood there for forty-three releases. What nobody asked in the
+meantime is the same question about the rules where a missed candidate is not a
+blurred sense but a rule that does not fire.
+
+### Added
+
+- **`src/reach.js`** — the guarantee, and the audit. `blockReach(grid)` computes
+  what the block promises from every standing position; `reachAt` reads it off
+  `grid.nearBounds` rather than re-deriving the geometry (v1.32's accelerator
+  rule); `strandedShare(grid, radius)` sizes the hole a given radius leaves; and
+  `contactAudit(config)` measures every contact and sense radius in the world
+  against it. Read-only, draws no randomness, not imported by `main.js` — an
+  instrument, like `levers.js`, `dimensions.js` and `workload.js`.
+- **`indexCellSize(config)` in `grid.js`**, so the number `world.js` had inlined
+  and the number the audit checks against are one definition.
+- **`test/reach.test.js`** — eleven tests. The guarantee is checked against the
+  real `forEachNear` by inserting probes (found at exactly 18 px from every
+  position tried; missed somewhere at 18.5), the default pond's cell extents and
+  both stubs are pinned, every rule's verdict and margin is asserted, and the
+  failing exposure is built by hand at the seam and confirmed against
+  `forEachWithin`.
+
+### Measured
+
+- **The block guarantees 18 px, and 189 from the luckiest spot.** The default
+  index is 8 x 5 in cells of 126, with a stub column of 18 and a stub row of
+  116.
+- **Three contact rules clear it, one clears it by exactly zero, and one
+  fails.** Eating reaches 11.2 px (+6.8), scavenging 17.0 (+1.0), biting **18.0
+  (+0.0)** and infection 22.0 (**−4.0**). The bite's margin is a coincidence
+  between `bodyRadiusMax * 2 + 2` and `900 − 7 × 126`, and the test pins it as a
+  lever: `bodyRadiusMax: 8.1` and predation's contact test becomes unanswerable
+  by the index.
+- **Infection is the only rule `exactVision` cannot straighten.** The other
+  three take their candidate from the sense scan, so the flag moves them onto a
+  disc query; `_stepDisease` is the only rule in the pond with a neighbour query
+  of its own.
+- **What the hole costs: 7 susceptible contacts of 26,555**, on two seeds of
+  eight over 3,000 ticks each — one roll in 3,800, in the 0.889% of standing
+  positions beside the seam. About one infection per 80,000 ticks of epidemic.
+
+### Changed
+
+- The four comments now say what is true, in `grid.js`, `world.js` and twice in
+  `config.js` — including v1.32's real coverage figures.
+- `docs/SCIENCE.md` gains "Eighteen pixels, not one hundred and twenty-six",
+  with the tables above, the per-seed count and a script that reproduces the
+  audit. `docs/ARCHITECTURE.md` lists the new module.
+
+### Deliberately not changed
+
+The disease scan still calls `forEachNear`. Covering its radius adds random
+draws inside the tick, so it moves every world with contagion switched on —
+nine test files, the `over` scenario on seed 101, and any permalink anybody has
+kept. One infection per 80,000 ticks is not yet worth that, and the point of
+this release is that the trade is now a number instead of a guess.
+
 ## [1.75.0] — 2026-08-10
 
 Seventy-four releases and this project had never measured its own performance.

@@ -5688,6 +5688,144 @@ About two minutes, and the dense arms are most of it. The wall-clock rows come
 from `node --prof` and `node --trace-gc` over the same script with the census
 removed.
 
+## Eighteen pixels, not one hundred and twenty-six (v1.76)
+
+Four comments in this repository stated the reach of a `forEachNear` query as
+*one cell*:
+
+> the 3x3 block covers a disc of `cellSize` around the query point, and no more
+> — `grid.js`
+
+> covers a guaranteed 126 px (one cell) of the configured 168 — `config.js`,
+> beside `exactVision`
+
+> kept under the spatial grid's cell size … so the existing 3x3 neighbour query
+> already covers everything in earshot — `config.js`, beside `signalRadius`
+
+> contact tests elsewhere … are far inside one cell, so the plain 3x3 block
+> covers them exactly — `world.js`
+
+The guarantee is not one cell. It is **18 px**.
+
+### Why
+
+`cellSize` is `visionRadius * 0.75` = 126, and the world is 900 x 620. Neither
+divides: the grid is 8 x 5 with a **stub** column 18 px wide and a stub row of
+116. A query point sitting `t` into a cell of width `W` whose neighbours are
+`wL` and `wR` wide has the block reaching `t + wL` behind it and `(W − t) + wR`
+ahead. At `t = 0` that first term is exactly `wL` — so the promise for the whole
+axis is *the narrowest cell on it*, and it is attained rather than approached.
+
+| | |
+| --- | ---: |
+| columns | 126 x 7, then **18** |
+| rows | 126 x 4, then 116 |
+| guaranteed reach, x | **18 px** |
+| guaranteed reach, y | 116 px |
+| guaranteed reach, from anywhere | **18 px** |
+| reach from the luckiest standing spot | 189 px |
+
+v1.32 knew this for *sight*: the section above on grid-shaped vision names the
+18-px stub, measures the mean share of the vision disc a creature actually
+searches at 90.0% and the worst standing spot at 51.1%, and draws the dark band
+down one edge of the world. The comment beside the flag that fixes it says 96%
+and 86%, which are neither of those numbers. **The correction shipped to the
+page a reader reads and not to the file a person editing the constant reads**,
+and it stood for forty-three releases. That is v1.30's lesson — a rule has
+surfaces too — with the two surfaces inside a single commit.
+
+### The question nobody asked: the contact rules
+
+Blurred sight is an approximation with a switch. A contact rule that cannot see
+its own radius is a rule that **does not fire**. There are five in the pond, and
+against a promise of 18 px they read:
+
+| rule | reach | expression | margin | query |
+| --- | ---: | --- | ---: | --- |
+| eating | 11.2 px | `eatRadius + radius * 0.4` | +6.8 | block |
+| scavenging | 17.0 px | `radius + scavengeRadius + 6` | +1.0 | block |
+| **biting** | **18.0 px** | `radius + prey.radius + 2` | **+0.0** | block |
+| **infection** | **22.0 px** | `infectionRadius` | **−4.0** | block |
+| shoving | 16.0 px | `bodyRadiusMax * 2` | exempt | disc |
+
+Three hold, one holds by exactly nothing, and one fails.
+
+The zero is the one to look at twice. A bite reaches `bodyRadiusMax * 2 + 2`,
+which is 18.0 because `bodyRadiusMax` is 8.0 — and the stub is 18 px because
+900 is 7x126 + 18. Those two numbers have never been in the same sentence
+before this one, and the correctness of predation's contact test is currently
+resting on their coincidence. `test/reach.test.js` pins it as a lever: one tenth
+of a pixel on the biggest body this world grows, and the index can no longer
+answer the question predation asks it.
+
+Shoving is exempt for a reason worth repeating: v1.56 gave `_separate` a
+`forEachWithin` query on the stated grounds that *what two bodies touching means
+cannot depend on a sight setting*. It is the only contact rule that took that
+advice, and it stays exact at any body size.
+
+### The rule that fails, and how much it costs
+
+Infection is the only rule in the pond with a neighbour query of its own —
+`_stepDisease` calls `forEachNear` directly rather than through `_scan` — so it
+is the only one `exactVision` cannot straighten out. Eating, scavenging and
+biting take their candidate from the sense scan, so that flag moves all three
+onto a disc query; infection stays block-shaped in every world there is.
+
+The hole is a strip 4 px wide at each side of the seam — 8 px of 900, **0.889%
+of standing positions**. Within it only the sliver of the disc past the block is
+lost, so the share of *contacts* lost is far smaller. Eight seeds, 3,000 ticks
+each, contagion on, counting the neighbours the rule would actually have rolled
+a die against (susceptible, not immune, not dead):
+
+| seed | susceptible contacts | lost |
+| ---: | ---: | ---: |
+| 314 | 6,740 | 1 |
+| 1 | 1,754 | 0 |
+| 7 | 4,470 | 0 |
+| 42 | 5,359 | 6 |
+| 99 | 641 | 0 |
+| 13 | 1,569 | 0 |
+| 51 | 6,021 | 0 |
+| 23 | 1 | 0 |
+| **total** | **26,555** | **7** |
+
+One roll in 3,800, on two seeds of eight. At `infectionChance` 0.045 that is
+about **one infection lost per 80,000 ticks of epidemic** — real, and almost
+nothing.
+
+That number is the reason this release does not fix it. The disease query sits
+inside the RNG's draw order, so covering the disc adds draws and moves every
+world with contagion switched on: nine test files, a curated scenario (`over`,
+seed 101), and any permalink anybody has kept. Paying that for one infection in
+80,000 ticks is a trade to write down before it is a trade to make — and the
+first half of writing it down is knowing the size of it, which nobody did until
+now.
+
+### What is pinned
+
+`src/reach.js` computes the guarantee from the cell extents and reads the block
+off `grid.nearBounds`, so it cannot drift from the geometry it describes
+(v1.32's accelerator rule). `test/reach.test.js` checks it against the real
+`forEachNear` by inserting probes rather than by re-deriving anything: a target
+at exactly 18 px is found from every position tried, one at 18.5 is missed from
+somewhere, and the audit's verdict for each rule is asserted with its margin.
+The failing exposure is built by hand at the seam — a host two pixels into
+column 0, a susceptible 21 px behind it in column 6 — and confirmed against
+`forEachWithin`, so the day the disease scan is corrected, the test says which
+behaviour changed.
+
+Reproduce the audit:
+
+```sh
+node -e '
+  import("./src/reach.js").then(async (R) => {
+    const { DEFAULT_CONFIG } = await import("./src/config.js");
+    const a = R.contactAudit({ ...DEFAULT_CONFIG, disease: true, scavenging: true });
+    console.log(a.cols + "x" + a.rows, "cell", a.cellSize, a.reach);
+    for (const r of a.rules) console.log(r.name, r.reach, r.query, r.covered, r.margin);
+  });'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

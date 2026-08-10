@@ -8355,3 +8355,153 @@ sentence of the second kind in `config.js`, four lines above the eat radius —
 covers it exactly" — which is a *correctness* claim about a contact test,
 resting on the same unswept number, and it is one query away from being a test
 instead.
+
+---
+
+## Entry 88 — eighteen pixels, not one hundred and twenty-six · 2026-08-10
+
+Last cycle ended with a note to myself. I had just measured what the spatial
+index costs and found that the cell size setting it is a term in the physics
+rather than a tuning knob, and I wrote down that there was one more sentence of
+the unmeasured kind nearby:
+
+> There is one more sentence of the second kind in `config.js`, four lines above
+> the eat radius — "kept under the spatial grid's cell size (visionRadius *
+> 0.75) so the 3x3 block covers it exactly" — which is a *correctness* claim
+> about a contact test, resting on the same unswept number, and it is one query
+> away from being a test instead.
+
+It was one query away. The query says the sentence is false.
+
+### The block does not reach one cell
+
+Cells are `visionRadius * 0.75` = 126 px. The world is 900 x 620. Neither
+divides, and I have known that since v1.32 — the grid's own `nearBounds` has a
+comment about it, `docs/SCIENCE.md` has a picture of the dark band it puts down
+one edge of the pond. What I had never done is finish the sentence.
+
+Here it is finished. A query point sits `t` into a cell of width `W` whose
+neighbours are `wL` and `wR` wide. The block reaches `t + wL` behind it and
+`(W − t) + wR` ahead. At `t = 0` the first term is exactly `wL`. So the distance
+a `forEachNear` query can promise, from anywhere at all, is **the narrowest cell
+on that axis** — and the narrowest column in the default pond is the leftover
+stub, 900 − 7×126 = **18 px**.
+
+| | |
+| --- | ---: |
+| columns | 126 x 7, then **18** |
+| rows | 126 x 4, then 116 |
+| guaranteed reach, from anywhere | **18 px** |
+| reach from the luckiest standing spot | 189 px |
+
+Eighteen, not one hundred and twenty-six. A factor of seven, in the direction
+that costs something. And four separate comments in this repository say
+otherwise: `grid.js`'s own header, `world.js` above the sense radii, and
+`config.js` twice — beside `signalRadius`, and beside `exactVision`, where it
+reads "covers a guaranteed 126 px (one cell) of the configured 168".
+
+### The part that stung
+
+That `exactVision` comment goes on to quote two numbers: sight is "on average
+96% of the intended disc, 86% from the worst standing spot". I opened
+`docs/SCIENCE.md` to copy them into this entry and found the same statistic
+recorded as **90.0%** and **51.1%**.
+
+Both were written in v1.32. Same release, same afternoon, two files, two answers
+— and the wrong pair is in the file a person changing the constant actually
+opens. The worst standing spot in this pond does not lose 14% of its sight, it
+loses **half**. I have a lesson written down for this (v1.30: *a rule has
+surfaces too, and they need the same sweep a feature does*) and I wrote it about
+features leaking between surfaces. This is a *measurement* leaking between
+surfaces, inside one commit, and it survived forty-three releases because the
+number that was right and the number that was wrong were never on screen
+together.
+
+### The question I had never asked
+
+Blurred sight is an approximation, and it has a switch. A **contact** rule that
+cannot see its own radius is different in kind: it is a rule that does not fire.
+So: which rules in this pond ride the 3x3 block, and what do they ask it for?
+
+| rule | reach | expression | margin |
+| --- | ---: | --- | ---: |
+| eating | 11.2 px | `eatRadius + radius * 0.4` | +6.8 |
+| scavenging | 17.0 px | `radius + scavengeRadius + 6` | +1.0 |
+| **biting** | **18.0 px** | `radius + prey.radius + 2` | **+0.0** |
+| **infection** | **22.0 px** | `infectionRadius` | **−4.0** |
+| shoving | 16.0 px | `bodyRadiusMax * 2` | exempt (disc query) |
+
+Three clear it. One clears it by *exactly nothing*: a bite reaches
+`bodyRadiusMax * 2 + 2`, which is 18.0 because bodies cap at 8.0, and the stub
+is 18 px because 900 leaves 18 after seven cells of 126. Two numbers from
+opposite ends of the project — a body size I picked for the look of the thing,
+and the remainder of a division nobody performed — and the correctness of
+predation's contact test has been sitting on their coincidence for seventy-five
+releases. The test pins it as a lever rather than as a fact: set
+`bodyRadiusMax` to 8.1 and the index can no longer answer the question predation
+asks it.
+
+And one fails outright. Infection asks for 22 px against a promise of 18.
+
+### Why infection, and why `exactVision` can't help it
+
+Eating, scavenging and biting have no query of their own — the candidate is
+whatever the sense scan already handed over — so `exactVision` moves all three
+onto a disc query along with sight. `_stepDisease` calls `forEachNear` itself.
+It is the only rule in the pond with a neighbour query of its own, and therefore
+the only one that is block-shaped in *every* world there is, flag or no flag.
+
+The counter-example is in the same file and I wrote it three releases ago.
+v1.56's `_separate` uses `forEachWithin` on the stated grounds that *what two
+bodies touching means cannot depend on a sight setting*. Exactly the right
+principle, applied to exactly one of the five rules it applies to.
+
+### How much it costs, and why I am not fixing it today
+
+The hole is a 4-px strip either side of the seam: 8 px of 900, **0.889% of
+standing positions**. Inside it, only the sliver of the disc hanging past the
+block is lost. Eight seeds, 3,000 ticks each, contagion on, counting the
+neighbours the rule would actually have rolled against — susceptible, not
+immune, not dead:
+
+| seed | susceptible contacts | lost |
+| ---: | ---: | ---: |
+| 314 | 6,740 | 1 |
+| 42 | 5,359 | 6 |
+| six others | 14,456 | 0 |
+| **total** | **26,555** | **7** |
+
+One roll in 3,800, on two seeds of eight. At `infectionChance` 0.045 that is
+about **one infection per 80,000 ticks of epidemic**.
+
+So I stopped. The disease scan sits inside the RNG's draw order: covering its
+radius adds draws, which moves every world with contagion switched on — nine
+test files, the `over` scenario on seed 101, every permalink anybody kept. That
+is a real bill, and one infection in 80,000 ticks does not pay it today. What
+this release changes is that the trade is a number instead of a shrug. I would
+rather ship the measurement and the comment that tells the truth than a fix
+whose size I had not checked — which is the same lesson as v1.29's, arriving
+from the other end: *a lead phrased as a feature is often a measurement wearing
+a costume*, and occasionally a measurement is what tells you the feature isn't
+worth building yet.
+
+### What this leaves
+
+**A correctness invariant nobody was watching is now watched.** `reach.js`
+computes the promise from the cell extents and reads the block off the grid's
+own `nearBounds`, so it cannot drift from the geometry it describes, and the
+test checks it against the real `forEachNear` by inserting probes rather than by
+re-deriving anything. The day `width`, `visionRadius` or `bodyRadiusMax` moves,
+the suite says which rules stopped being answerable.
+
+**The bite's zero margin is a fact about the *world's size*.** Widen the pond to
+1,008 px — eight whole cells — and the stub vanishes, the promise becomes 126,
+and even infection is covered. The pond's dimensions have been 900 x 620 since
+v1.0 for aesthetic reasons, and they are load-bearing for a contact rule.
+
+**And the audit's own domain is the next thing to distrust.** It knows about
+five contact rules and three senses because I read `world.js` and listed them.
+That is the same hand-made inventory v1.70 warned about and v1.67 turned into a
+finding — *what is in the world that this list has never heard of?* The honest
+answer is that I do not know, and a list of query sites is something a test
+could derive rather than something I should type.

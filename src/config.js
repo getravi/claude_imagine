@@ -295,11 +295,14 @@ export const DEFAULT_CONFIG = Object.freeze({
   // Exact vision (v1.32, opt-in). `visionRadius` is what this world *intends* a
   // creature to see. What it has actually seen since v1.0 is whatever the
   // spatial index handed over: the 3x3 block of grid cells around it, which
-  // covers a guaranteed 126 px (one cell) of the configured 168 and reaches
-  // farther only in whichever directions the creature's position inside its
-  // cell happens to favour. Sight was therefore grid-aligned and anisotropic —
-  // on average 96% of the intended disc, 86% from the worst standing spot, and
-  // 1.5% of glances at food landed on the wrong nearest pellet. Switch this on
+  // guarantees **18 px** of the configured 168 — not the 126 of one cell, which
+  // is what this comment claimed until v1.76 and what `docs/SCIENCE.md` had
+  // already corrected in the same release that wrote it. `cellSize` does not
+  // divide the world, so the last column is an 18-px stub and the block's
+  // promise is the narrowest neighbouring cell (`src/reach.js`). Sight was
+  // therefore grid-aligned and anisotropic — on average 90.0% of the intended
+  // disc, 51.1% from the worst standing spot, and 1.5% of glances at food
+  // landed on the wrong nearest pellet. Switch this on
   // and every sense query covers the radius it asks for, so `visionRadius`
   // means what it says and the overlay circle is the truth.
   //
@@ -406,8 +409,12 @@ export const DEFAULT_CONFIG = Object.freeze({
   // dark. Off by default; while off the ear genes are undrawn, unmutated and
   // unread, so default worlds are bit-for-bit unchanged.
   signalling: false,
-  // Kept under the spatial grid's cell size (visionRadius * 0.75) so the
-  // existing 3x3 neighbour query already covers everything in earshot.
+  // Under the spatial grid's cell size (visionRadius * 0.75), which is not the
+  // same thing as covered: the 3x3 block guarantees 18 px, not 126, so a voice
+  // at 120 px is heard on a grid-shaped subset of its range exactly as sight is
+  // (`src/reach.js`, and v1.32 for the sight it copies). Earshot rides the same
+  // creature scan as sight and is inside it by default, so `exactVision` covers
+  // this radius too; with that flag off, hearing is as clipped as looking.
   signalRadius: 120, // how far a voice carries, in pixels
   signalCost: 0.022, // energy per tick per unit of |signal| — honesty's price
 

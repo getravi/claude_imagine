@@ -7,13 +7,31 @@
 // On a torus the neighbourhood wraps, so cell indices are taken modulo the grid
 // dimensions.
 //
-// The 3x3 block covers a disc of `cellSize` around the query point, and no
-// more: past that the answer depends on where in its cell the asker happens to
-// stand. That is a fine approximation for contact tests (eating, biting,
-// infection — all a few pixels) and it is *not* an approximation of anything
-// when the radius asked for is larger than a cell, which is why `forEachWithin`
-// exists. See docs/SCIENCE.md — the pond's sight was grid-shaped for thirty-one
-// versions because this distinction wasn't drawn.
+// The 3x3 block covers *at most* a disc of `cellSize` around the query point,
+// and past that the answer depends on where in its cell the asker happens to
+// stand. What it **guarantees** is smaller, and for four releases this comment
+// said otherwise: `cellSize` rarely divides the world, so the last column and
+// row are stubs, and the block's promise from anywhere is the width of the
+// narrowest neighbouring cell — 18 px in the default pond's cells of 126. See
+// `src/reach.js`, which computes it and audits every rule against it, and
+// docs/SCIENCE.md, where v1.32 measured the same seam for sight. When a radius
+// asked for is larger than that, `forEachNear` is not an approximation of
+// anything, which is why `forEachWithin` exists.
+
+/**
+ * The cell size a world of this config indexes at.
+ *
+ * Lives here rather than in `config.js` because it is derived, and it is
+ * exported rather than inlined at its one call site in `world.js` because
+ * `reach.js` audits contact rules against it — two copies of this expression
+ * would be two things to keep in step. Note what v1.75 found about it: with
+ * `exactVision` off the 3x3 block *is* what a creature can find, so this is a
+ * term in the physics rather than a tuning knob, and `levers.js` has never
+ * swept it because it is not a config key.
+ */
+export function indexCellSize(config) {
+  return Math.max(40, config.visionRadius * 0.75);
+}
 
 export class SpatialGrid {
   /**
@@ -95,10 +113,12 @@ export class SpatialGrid {
    * Callers do their own precise distance test; the grid only narrows the
    * candidate set. `fn` may return `true` to stop early.
    *
-   * **This only finds everything within `cellSize`.** A query for something
-   * farther away than one cell is answered by a grid-aligned, position-
-   * dependent subset of the disc it asked for — see `forEachWithin`, which
-   * takes the radius it is meant to cover.
+   * **This only finds everything within the narrowest neighbouring cell** —
+   * 18 px in the default pond, not the 126 of `cellSize`, because the last
+   * column is a stub (`blockReach` in `src/reach.js` computes it). A query for
+   * anything farther away is answered by a grid-aligned, position-dependent
+   * subset of the disc it asked for — see `forEachWithin`, which takes the
+   * radius it is meant to cover.
    */
   forEachNear(x, y, fn) {
     const cx = Math.floor(x / this.cellSize);
