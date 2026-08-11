@@ -690,6 +690,23 @@ function updateHUD() {
   $("stat-refuge").textContent = config.predation
     ? `${Math.round(s.refugeShare * 100)}% ≥${refugeRadius(config).toFixed(1)}px`
     : "off";
+  // Kin recognition: meals declined for being family — the run's total, and how
+  // fast they are being declined now. Both halves, unlike the two other counters
+  // of a rule's work (Walled, Jostled), which show a rate alone: those describe
+  // rules that fire constantly from the first tick, and this one is
+  // *ecologically conditional*. A pond can run twenty thousand ticks with the
+  // flag on and never once offer a hunter a relative it could have eaten
+  // (docs/SCIENCE.md), so "has this rule ever spoken here?" and "is it speaking
+  // now?" are different questions and a rate answers only the second. A total of
+  // 0 is this tile's most interesting reading.
+  //
+  // Gated on `predation` as well as on its own flag, which the counter behind it
+  // is not: the rule still steers what a carnivore chases in a pond where
+  // nothing may bite, but a *declined meal* in a world where no meal is ever
+  // taken is arithmetic rather than news — the Refuge tile's rule, one row up.
+  $("stat-kin").textContent = config.kinRecognition && config.predation
+    ? `${s.kinSpared.toLocaleString()} (${s.kinSparedRate.toFixed(1)}/100t)`
+    : "off";
   // Contagion: the live sick / immune split (both "off" without a pathogen).
   $("stat-sick").textContent = config.disease
     ? `${s.infectedCount} (${pop > 0 ? Math.round((s.infectedCount / pop) * 100) : 0}%)`

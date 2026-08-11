@@ -209,8 +209,10 @@ DEVLOG as I ship them; add new ones as they occur to me.
   gave the rock its door on seed 51 (64-seed sweep, isolation +0.807 against a
   shifted-lines control of +0.052) and added the second half of that rule: score
   on **persistence, not the peak** — see the lesson below. Still doorless:
-  `groundSense`, `exactVision`, `kinRecognition` (which v1.36 measured as mute on
-  most seeds — its doorway would have to be seed 23 or nothing), `deathIsFinal`,
+  `groundSense`, `exactVision`, `kinRecognition` (v1.80 measured which seeds it
+  speaks on rather than guessing: three of twelve — 23, 512 and 7 — and it starts
+  between t1,983 and t4,910, so the doorway is now a choice between three
+  candidates and the missing half is the *claim*, not the seed), `deathIsFinal`,
   `shuffleTurnOrder`, and `dayNightCycle` × `disease` together; four of those six
   are corrections rather than features, which is probably why. The count of
   scenarios lived in README prose while the scenarios lived in an array and was
@@ -520,7 +522,19 @@ DEVLOG as I ship them; add new ones as they occur to me.
   pond, because seed 314 evolves predators that hunt genetic strangers. A feature
   can work perfectly and be mute in the only world anybody looks at — and v1.38
   found its threshold constant is muter still, inert on seed 314 at *ten times*
-  its default. Two leads the constant sweep left behind: `speciationDistance`
+  its default. **v1.80 gave it a counter, a tile, a sentence and a chronicle
+  line** — sixty-nine releases after it shipped, because the rule takes effect
+  inside a hunter's senses and therefore leaves no trace any surface could have
+  been audited for. Two things came out of it. "Mute" was too weak: on nine of
+  twelve seeds a rule that never fires draws nothing and perturbs nothing, so
+  those ponds are the arm without the flag **bit-for-bit**, which is a claim a
+  test can hold and now does. And the ecology the three firing seeds appear to
+  show is not attributable — a third arm declining meals at random at the same
+  rate scatters wider than the rule's own arm departs — which leaves one lead
+  (diversity, above every random draw on two seeds of three) and one rule worth
+  keeping: **a perturbation's size cannot be held fixed in a world that
+  reorganises around it**, so a matched null is matched on an input, never on a
+  dose. Two leads the constant sweep left behind: `speciationDistance`
   looked like it sat one third below the value at which the Tree of Life stops
   recording any speciation at all (five events at 0.15, zero at 0.20, flat
   across a twentyfold range above that), which read as *the headline view is

@@ -516,9 +516,25 @@ export class World {
           const heard = o.prevSignal * (1 - Math.sqrt(d2) / cfg.signalRadius);
           if (Math.abs(heard) > Math.abs(loudest)) loudest = heard;
         }
-        if (d2 < preyD2 && c.canEat(o)) {
-          preyD2 = d2;
-          prey = o;
+        if (d2 < preyD2) {
+          if (c.canEat(o)) {
+            preyD2 = d2;
+            prey = o;
+          } else if (cfg.kinRecognition && c.sparesKin(o)) {
+            // The one moment kin recognition (v1.10) is audible: a hunter had a
+            // nearer meal than anything it had found so far, and declined it for
+            // being family. Counted here rather than at the bite because a
+            // spared target is never approached — the rule takes effect in the
+            // senses, so the bite it prevents leaves no trace anywhere else.
+            //
+            // Restricted to candidates nearer than the best so far, which is the
+            // set that could have changed this turn's target: the alternative is
+            // a genome distance against every neighbour in the block, and what
+            // it would buy is a count of kin the hunter was ignoring in favour
+            // of a closer stranger it was ignoring too. One boolean test in
+            // every pond that has left the flag alone, and no draw either way.
+            this.stats.kinSpared++;
+          }
         }
         if (d2 < threatD2 && o.canEat(c)) {
           threatD2 = d2;

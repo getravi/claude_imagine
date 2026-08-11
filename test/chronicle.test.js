@@ -92,6 +92,36 @@ test("no night events when the day/night cycle is off", () => {
   );
 });
 
+test("the first spared relative is reported once, and only where it happens", () => {
+  // Staged rather than waited for: the earliest seed measured takes 2,055 ticks
+  // to offer a hunter a relative it could eat, and most seeds never do. The
+  // counter *is* the event — it rises on the tick the rule speaks and is 0 in
+  // every world without it — so no "did this really happen?" guard is needed
+  // beyond the one the counter already provides (v1.16).
+  const world = new World(makeConfig({ seed: 42, kinRecognition: true }));
+  for (let i = 0; i < 200; i++) world.step();
+  const kin = () => world.chronicle.events.filter((e) => e.msg.includes("its own family"));
+  assert.equal(kin().length, 0, "nothing spared, nothing said");
+
+  world.stats.kinSpared = 1;
+  world.chronicle.observe(world, world.tick);
+  assert.equal(kin().length, 1, "the first sparing is reported");
+  world.stats.kinSpared = 40;
+  world.chronicle.observe(world, world.tick + 1);
+  assert.equal(kin().length, 1, "and only the first — it is a one-shot");
+});
+
+test("a pond without kin recognition never mentions family", () => {
+  const world = new World(makeConfig({ seed: 42 }));
+  for (let i = 0; i < 6000; i++) world.step();
+  assert.equal(world.stats.kinSpared, 0, "the counter is exactly 0 with the rule off");
+  assert.equal(
+    world.chronicle.events.filter((e) => e.msg.includes("family")).length,
+    0,
+    "a world where nobody spares anybody has nothing to say about it"
+  );
+});
+
 test("event history stays bounded", () => {
   const world = new World(makeConfig({ seed: 5 }));
   for (let i = 0; i < 12000; i++) world.step();

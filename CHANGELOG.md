@@ -4,6 +4,86 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.80.0] — 2026-08-11
+
+Kin recognition has been a toggle since v1.10: a predator whose target is within
+`kinRecognitionDistance` = 0.05 of its own genome lets it go. It has a unit
+test, a permalink parameter and a checkbox, and for sixty-nine releases it had
+**no readout of any kind** — no tile, no sentence, no chronicle line, nothing on
+the canvas. The reason is where the rule lives. It takes effect inside a
+hunter's *senses*, so a spared relative is never approached, never bitten and
+never marked: a pond where the rule fires constantly and a pond where it has
+never been offered a relative look identical, and until now they read identical
+too.
+
+v1.38 already knew the second world existed and wrote it into `docs/SCIENCE.md`
+as a paragraph. A paragraph is not an instrument. On twelve seeds run 20,000
+ticks with the flag on, **nine never spare a single relative** — and a rule that
+never fires draws nothing and perturbs nothing, so those nine ponds are not
+merely similar to their controls, they are the **same world, hash for hash**.
+The flag is not quiet in nine ponds of twelve; it is a no-op. The pond on the
+landing page is one of the nine.
+
+### Added
+
+- **`stats.kinSpared` / `stats.kinSparedRate`** — meals declined for being
+  family, cumulative and as a rate per hundred ticks, the third counter of a
+  rule's own work after `walled` (v1.48) and `jostled` (v1.56). Counted in the
+  creature scan where the rule actually takes effect. Exactly 0 in every world
+  that leaves the flag off, and — unlike the other two — routinely exactly 0
+  with it on, which is the reading.
+- **A `Kin 👪` tile**, showing the run's total *and* the rate. The other two
+  counters show a rate alone because they describe rules that fire from the
+  first tick; this one is ecologically conditional, so *has this rule ever
+  spoken here?* and *is it speaking now?* are different questions and a rate
+  answers only the second. Reads `off` without predation, like the Refuge tile
+  above it: the counter behind it keeps running there, but a declined meal in a
+  world where no meal is ever taken is arithmetic rather than news.
+- **A sentence in the spoken description**, in three states — the rule absent,
+  the rule present and never yet offered a relative, and the rule at work with a
+  count and a rate. The middle one is the point: two of those states have
+  sounded identical since v1.10.
+- **A Chronicle line** the first time a hunter turns away from its own family.
+  It needs no "did this really happen?" guard (v1.16) because the counter *is*
+  the event.
+- **`Creature.sparesKin()`**, with `canEat` split into the size-and-diet half and
+  the kinship half. The two now partition exactly the meals the bodies allow, so
+  what the counter counts is a decomposition a test states rather than a second
+  copy of the thresholds.
+- **Seven tests.** The partition as a property over a field of pairs; the event
+  staged rather than waited for (one hunter, one undersized clone, one declined
+  meal per tick) and the same pair taken in a pond without the rule; the two
+  chronicle silences; the three spoken states; and the finding itself, pinned —
+  seed 314 with kin recognition **on** is bit-for-bit seed 314, through the
+  shared five-channel assertion.
+- **`docs/SCIENCE.md`**: *Nine ponds of twelve are the same pond with the rule
+  on (v1.80)*, and the tile's row in the README, where kin recognition had never
+  been mentioned at all.
+
+### Measured
+
+- **Twelve seeds, 20,000 ticks, both arms.** Sparings: 0 on nine seeds, 86 on
+  seed 7, 8,800 on seed 512, 19,598 on seed 23. The three that fire start early
+  (t1,983–t4,910) and hard (seed 23 peaks at 798 per hundred ticks), so which
+  world you get is settled by whether the founders' descendants split into
+  predator and prey lineages or stay clonal and eat each other.
+- **The control says the ecology is not attributable.** A third arm declines
+  meals *at random* at the kin arm's own refusal rate, from a private generator.
+  On all three firing seeds the kin arm's kill count lands inside the random
+  arm's scatter (seed 23: 389, against 15 / 120 / 518 and a control of 265). The
+  tile therefore reports what the rule **did** and this project declines to say
+  what it **caused**.
+- **One column does not behave, and is filed as a lead.** On two of the three
+  seeds the kin arm's diversity is above *all three* random draws. Two seeds,
+  three draws, and no agreement on sign against their own controls — but a
+  mechanism is attached, because an arbitrary refusal spares whoever is near
+  while this one spares a family.
+- **A perturbation's size cannot be held fixed in a world that reorganises
+  around it.** The random arm is matched on rate because rate is all there is to
+  match: on seed 23 the kin arm's senses answered "edible" 8.1 million times and
+  the random arms between 0.18 and 2.5 million, so the delivered refusal counts
+  differ from the target by up to fiftyfold.
+
 ## [1.79.0] — 2026-08-11
 
 The last colour named outside `src/palette.js` was the inspector's swatch: the

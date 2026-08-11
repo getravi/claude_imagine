@@ -6059,6 +6059,148 @@ node -e '
 Swap `seasons: false` into `makeConfig` and pass `C.makeConfig({ seasons: true })`
 as the config argument to `seasonLag` for the control arm.
 
+## Nine ponds of twelve are the same pond with the rule on (v1.80)
+
+Kin recognition shipped in v1.10: a predator whose target is within
+`kinRecognitionDistance` = 0.05 of its own genome declines to treat it as prey.
+It has a unit test, a permalink parameter and a checkbox. For **sixty-nine
+releases it had no readout of any kind** — no tile, no sentence, no chronicle
+line, nothing on the canvas. That is not an oversight of the same size as the
+others this project has closed, because of *where* the rule lives: it takes
+effect inside a hunter's senses, so a spared relative is never approached, never
+bitten and never marked. A pond where the rule fires constantly and a pond where
+it has never once been offered a relative look identical, and until now they
+also *read* identical.
+
+v1.38 knew the second world existed — it measured 8.2 million eligible pairs on
+seed 23 and zero sparings on seed 314 — and wrote it into this file as a
+paragraph. A paragraph is not an instrument. `world.stats.kinSpared` is: it
+rises on the tick a hunter turns down a relative it could have eaten, it is
+exactly 0 in every pond that leaves the flag alone, and the `Kin 👪` tile shows
+the run's total beside its rate because *has this rule ever spoken here?* and
+*is it speaking now?* are different questions.
+
+### What the counter counts
+
+The creature scan already asks `c.canEat(o)` of every neighbour nearer than the
+best prey found so far. `canEat` is now the size-and-diet test *and not kin*;
+`sparesKin` is the same test *and* kin, so the two partition exactly the meals
+the diet and the bodies allow, and the counter increments on the second. It is
+asked only where `canEat` has already said no and only where the flag is on, so
+a default pond pays one boolean test per candidate and no genome distance at
+all.
+
+It counts *candidates nearer than the best so far*, not every relative in the
+block. The alternative is a genome distance against every neighbour, and what it
+would buy is a tally of kin a hunter was ignoring in favour of a closer stranger
+it was ignoring too.
+
+### Twelve seeds, 20,000 ticks, both arms
+
+| Seed | Spared | First at | Peak rate | Kills off → on | Mean pop off → on | Trajectory hash |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | **0** | — | — | 30 → 30 | 198.5 → 198.5 | **identical** |
+| 5 | **0** | — | — | 15 → 15 | 266.3 → 266.3 | **identical** |
+| 7 | 86 | t2,055 | 57.5/100t | 298 → 197 | 181.1 → 175.7 | differs |
+| 11 | **0** | — | — | 58 → 58 | 285.4 → 285.4 | **identical** |
+| 13 | **0** | — | — | 16 → 16 | 244.2 → 244.2 | **identical** |
+| 23 | 19,598 | t4,910 | 798.3/100t | 265 → 389 | 209.6 → 185.5 | differs |
+| 42 | **0** | — | — | 122 → 122 | 240.5 → 240.5 | **identical** |
+| 64 | **0** | — | — | 8 → 8 | 302.9 → 302.9 | **identical** |
+| 101 | **0** | — | — | 14 → 14 | 229.0 → 229.0 | **identical** |
+| 314 (the landing page) | **0** | — | — | 30 → 30 | 206.9 → 206.9 | **identical** |
+| 512 | 8,800 | t1,983 | 300.0/100t | 362 → 303 | 189.6 → 173.1 | differs |
+| 777 | **0** | — | — | 164 → 164 | 173.9 → 173.9 | **identical** |
+
+Nine of twelve never spare a single relative in 20,000 ticks, and the right-hand
+column is the sharper form of that: a rule that never fires draws nothing and
+perturbs nothing, so those nine ponds are not *similar* to their controls, they
+are the **same world, hash for hash**. The flag is not quiet in nine ponds of
+twelve. It is a no-op.
+
+Which world you get is the one v1.38 named: a pond that splits into predator and
+prey lineages offers the rule nothing to spare, because the hunters were never
+related to what they hunt, while a pond that stays largely clonal and eats itself
+offers it a great deal. The three that fire do so hard — seed 23 spares nineteen
+thousand meals and touches 798 per hundred ticks — and they start early, between
+t1,983 and t4,910, so the transition is a property of the founding population's
+fate rather than a slow accumulation.
+
+`test/kinRecognition.test.js` pins seed 314's row with the shared bit-for-bit
+assertion. It is a contingent fact, deliberately: if a future change makes the
+landing page's pond spare so much as one relative, that test fails, and the
+character of the world every screenshot is taken from will have changed.
+
+### What the three firing seeds do *not* show
+
+The tempting sentence is next door: sparing family lowers the kill count by a
+third on seed 7. The control kills it.
+
+Arm three declines meals at random — `canEat` says no to a fraction *p* of the
+targets it would otherwise allow, drawn from a private generator so the world's
+own stream is untouched — with *p* set to the kin arm's own refusal rate.
+
+| | Kills | Diversity |
+| --- | --- | --- |
+| **Seed 7**, rule off | 298 | 0.293 |
+| kin (86 refusals, p = 1.1 × 10⁻⁴) | 197 | 0.191 |
+| random, three draws | 270 / 137 / 361 | 0.173 / 0.187 / 0.205 |
+| **Seed 23**, rule off | 265 | 0.573 |
+| kin (19,598 refusals, p = 2.4 × 10⁻³) | 389 | 0.409 |
+| random, three draws | 15 / 120 / 518 | 0.246 / 0.178 / 0.128 |
+| **Seed 512**, rule off | 362 | 0.319 |
+| kin (8,800 refusals, p = 5.0 × 10⁻³) | 303 | 0.676 |
+| random, three draws | 684 / 274 / 290 | 0.238 / 0.187 / 0.294 |
+
+On all three seeds the kin arm's kill count sits **inside** the scatter of the
+random arm. Eighty-six flipped decisions in three quarters of a million
+reorganise seed 7 by more than the rule's own effect can be told apart from, and
+on seed 23 the random arm reaches both 15 kills and 518 against a control of
+265. So the tile reports what the rule **did**, and this file declines to say
+what it **caused** — which is not a failure of the measurement but what a
+chaotic pond does to any between-arms comparison at n = 3, and the same trap
+v1.20's alarm call fell into.
+
+**One column does not behave, and it is left as a lead.** On seed 23 and seed
+512 the kin arm's diversity is higher than *all three* random draws (0.409
+against 0.246 / 0.178 / 0.128; 0.676 against 0.238 / 0.187 / 0.294), and on seed
+7 it is inside them. Two seeds of three, three draws each, and the two disagree
+about the sign relative to their own controls — that is a lead and not a
+finding, and it is worth stating only because it has a mechanism attached that
+could be tested directly: an arbitrary refusal spares whoever happens to be
+near, while this one spares a *family*, and a rule that systematically protects
+relatives is the one perturbation of this size that is not neutral with respect
+to who is related to whom. The measurement that would settle it is not more
+seeds of this comparison but a within-run one — the genetic distance between a
+hunter and the pond it hunts in, in both arms.
+
+One methodological note worth keeping. The random arm is matched on the
+*rate*, and the rate is the only thing that can be matched: on seed 23 the kin
+arm's senses answered "edible" 8,112,248 times over the run and the random arms'
+answered between 181,527 and 2,477,329, because a pond that loses its hunters
+early stops generating the pairs the rate applies to. **A perturbation's size
+cannot be held fixed in a world that reorganises around it** — the target
+count and the delivered count differed by fifty-fold here.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { trajectoryFingerprint } from "./src/fingerprint.js";
+for (const seed of [7, 23, 314, 512]) {
+  const arms = [false, true].map((kin) => {
+    const w = new World(makeConfig({ seed, kinRecognition: kin }));
+    for (let i = 0; i < 20000; i++) w.step();
+    return w;
+  });
+  console.log(seed, "spared", arms[1].stats.kinSpared,
+    "kills", arms[0].stats.kills, "->", arms[1].stats.kills,
+    trajectoryFingerprint(arms[0]) === trajectoryFingerprint(arms[1]) ? "IDENTICAL" : "differs");
+}'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

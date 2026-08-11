@@ -353,6 +353,18 @@ export class Stats {
     this.jostledRate = 0;
     /** @type {Array<{tick:number, v:number}>} the ring the rate reads. */
     this._jostledRing = [];
+    // Meals declined for being family, cumulative (v1.10, `kinRecognition`).
+    // Exactly 0 in every world that leaves the flag off — and, unlike the two
+    // counters above, routinely exactly 0 with it *on*: the rule is
+    // ecologically conditional (docs/SCIENCE.md, v1.38), and a pond that splits
+    // into predator and prey lineages never offers it a relative to spare. That
+    // silence is the reading, which is why it needed a number rather than a
+    // paragraph.
+    this.kinSpared = 0;
+    /** The same counter as a rate: meals declined per hundred ticks. */
+    this.kinSparedRate = 0;
+    /** @type {Array<{tick:number, v:number}>} the ring the rate reads. */
+    this._kinSparedRing = [];
     this.infections = 0; // cumulative cases of the disease (contagion on)
     this.recoveries = 0; // cumulative recoveries, each one a new immune creature
     this.infectedCount = 0; // currently sick
@@ -645,6 +657,10 @@ export class Stats {
       // counter that is 0 in every world but one does not earn a column in
       // every export.
       this.jostledRate = this._perHundred(this._jostledRing, this.jostled);
+      // And how often the pond's hunters are letting their own family go, on
+      // the same window and by the same differencing. Its own ring for the
+      // third time and the same reason.
+      this.kinSparedRate = this._perHundred(this._kinSparedRing, this.kinSpared);
     }
   }
 

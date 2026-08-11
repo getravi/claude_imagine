@@ -163,6 +163,31 @@ export function describePond(world, config, camera = null) {
         `${percent(s.refugeShare)} of them have grown past ${refugeRadius(config).toFixed(1)} ` +
           "pixels, the size above which nothing here can eat them."
       );
+      // And who is spared rather than out of reach. Kin recognition (v1.10) has
+      // never been reported anywhere on this page: it takes effect inside a
+      // hunter's senses, so a spared relative is not approached, not marked and
+      // not counted — the pond simply looks like one where that hunter had
+      // nothing nearby worth chasing. Both readings are worth saying out loud,
+      // and the silent one most of all: a rule that has been offered no family
+      // to spare is not the same as a rule switched off, and until now the two
+      // sounded identical.
+      //
+      // Inside the `predation` block, like the refuge above but for the opposite
+      // reason. The refuge is a quotient of two constants and is a true fact in
+      // a pond with nobody hunting; "a meal it was able to take" is *not* true
+      // there, because with the biting off no meal is ever taken. The counter
+      // behind this keeps running in such a world — it measures the rule, which
+      // still changes what a carnivore chases — and this sentence is the wrong
+      // place for a number whose words would be false (v1.68's Biome tile).
+      if (config.kinRecognition) {
+        out.push(
+          s.kinSpared === 0
+            ? "Hunters spare their own family here, though none has yet come across " +
+              "a relative it was able to eat."
+            : `Hunters have passed over ${count(s.kinSpared, "relative")} they were able ` +
+              `to eat, ${s.kinSparedRate.toFixed(1)} per hundred ticks lately.`
+        );
+      }
     }
     out.push(`The deepest lineage has reached generation ${s.currentMaxGeneration}.`);
   }

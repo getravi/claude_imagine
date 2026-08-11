@@ -189,19 +189,46 @@ export class Creature {
    * in config.js) is spared even when otherwise eligible.
    */
   canEat(other) {
-    if (
-      this.carnivory < this.config.carnivoreThreshold ||
-      this.radius <= other.radius * this.config.preySizeRatio
-    ) {
-      return false;
-    }
-    if (
+    return this._edible(other) && !this._isKin(other);
+  }
+
+  /**
+   * The half of `canEat` that is about diet and bodies: carnivorous enough to
+   * bother, and big enough by `preySizeRatio` to manage it. Everything the rule
+   * decides *before* it asks who anybody is related to.
+   */
+  _edible(other) {
+    return (
+      this.carnivory >= this.config.carnivoreThreshold &&
+      this.radius > other.radius * this.config.preySizeRatio
+    );
+  }
+
+  /**
+   * The other half: close enough in the genome to be immediate family. Exactly
+   * `false` in a world without kin recognition, so `canEat` is the size-and-diet
+   * test alone there and no genome distance is ever computed.
+   */
+  _isKin(other) {
+    return (
       this.config.kinRecognition &&
       this.genome.distance(other.genome) < this.config.kinRecognitionDistance
-    ) {
-      return false;
-    }
-    return true;
+    );
+  }
+
+  /**
+   * True when kinship is the *only* thing standing between this creature and a
+   * meal — the moment the rule actually does something, as opposed to the far
+   * more common case of a target that was never edible anyway.
+   *
+   * Split out rather than folded into `canEat` because the world counts these
+   * (`stats.kinSpared`) and a predicate that returns "no, and here is why" would
+   * put the reason on the hot path of every candidate in every pond. This is
+   * asked only where `canEat` has already said no, and only where the flag is
+   * on.
+   */
+  sparesKin(other) {
+    return this._edible(other) && this._isKin(other);
   }
 
   /**

@@ -46,6 +46,7 @@ export class Chronicle {
     this._carnCrossed = new Set();
     this._hiddenMax = 0;
     this._firstKill = false;
+    this._firstSpared = false;
     this._learned = false;
     this._predsAlive = false;
     this._inCrash = false;
@@ -122,6 +123,17 @@ export class Chronicle {
     if (!this._firstKill && s.kills > 0) {
       this._firstKill = true;
       this._push(tick, "🔺", "predation", `First blood — a lineage has begun to hunt.`);
+    }
+    // The first time kin recognition speaks. A one-shot, and it needs no
+    // "did this really happen?" guard (v1.16) because the counter *is* the
+    // event: `stats.kinSpared` rises on the tick a hunter turns down a relative
+    // it could have eaten, and is exactly 0 in every other world and every
+    // earlier tick of this one. Worth a line precisely because it is the rule's
+    // only trace — nothing on the canvas changes when a meal is declined — and
+    // because on most seeds this line is never written at all.
+    if (!this._firstSpared && s.kinSpared > 0) {
+      this._firstSpared = true;
+      this._push(tick, "👪", "predation", "A hunter turns away from its own family.");
     }
     // Carnivore-fraction milestones, but only once real hunting has begun — the
     // founding population has random diet genes, which would otherwise trip this

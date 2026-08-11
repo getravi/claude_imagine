@@ -76,6 +76,34 @@ test("a mechanic that is off is not mentioned", () => {
   assert.match(text, /food pellet/);
 });
 
+test("the two silences of kin recognition sound different", () => {
+  // A rule that has never fired and a rule that is not there at all have said
+  // exactly the same thing — nothing — since v1.10. They are different worlds,
+  // and on most seeds the first one is the world you are in: the pond splits
+  // into predator and prey lineages and no hunter is ever offered a relative it
+  // could eat (docs/SCIENCE.md). So the sentence exists in three states, and
+  // two of them are the point.
+  const world = new World(makeConfig({ seed: 7, kinRecognition: true, predation: true }));
+  for (let i = 0; i < 200; i++) world.step();
+  assert.equal(world.stats.kinSpared, 0);
+  assert.match(describePond(world, world.config), /spare their own family here, though none/);
+
+  // Staged rather than waited for: the seeds that spare anything take thousands
+  // of ticks to do it, and what is under test is the wording, not the ecology.
+  world.stats.kinSpared = 1;
+  world.stats.kinSparedRate = 0.4;
+  assert.match(describePond(world, world.config), /passed over 1 relative they were able to eat/);
+  world.stats.kinSpared = 2410;
+  assert.match(describePond(world, world.config), /passed over 2,410 relatives/);
+
+  // And with the flag off there is no sentence at all, in a pond whose hunters
+  // are otherwise identical.
+  const none = new World(makeConfig({ seed: 7, predation: true }));
+  for (let i = 0; i < 200; i++) none.step();
+  assert.equal(none.stats.kinSpared, 0);
+  assert.doesNotMatch(describePond(none, none.config), /family|relative/i);
+});
+
 test("the dead are counted, and only in a world that keeps them", () => {
   // v1.8 gave the pond corpses; until v1.67 nothing on the page said how many
   // there were — no tile, no caption, only pixels. On twelve seeds a scavenging

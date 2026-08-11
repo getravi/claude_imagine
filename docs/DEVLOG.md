@@ -8913,3 +8913,150 @@ paints three different quantities in one visual language and never says which is
 which. That is a legibility audit of a kind this project has not run — not *can
 you see the mark*, but *does the mark mean what its neighbour means*. The
 sixth item is off the list and the list has stopped being the interesting object.
+
+## Entry 92 — the rule that is, nine ponds in twelve, exactly nothing · 2026-08-11
+
+Six releases in a row now have been audits of surfaces: what a view has never
+heard of, what a colour is drawn on, what an axis is made of. This one starts
+from the other end — a *mechanic* that has been shipped and correct and
+unreported since v1.10 — and it ends up in the same place, which is the part
+worth writing down.
+
+Kin recognition: a predator whose target is within `kinRecognitionDistance` =
+0.05 of its own genome declines to eat it. Sixteen lines of config comment, a
+unit test, a permalink parameter, a checkbox in the panel. Sixty-nine releases,
+and **not one number, sentence, mark or chronicle line anywhere on the page**
+about whether it had ever happened.
+
+That absence has a cause, and it is not that I forgot. Every other rule here
+leaves a trace somewhere: a bite flashes, a wall turns somebody back, a shove
+moves two bodies apart. This rule takes effect **inside a hunter's senses**. A
+spared relative is not chased, not bitten, not marked; the pond simply looks
+like one where that hunter had nothing nearby worth chasing. A world where the
+rule fires eight hundred times per hundred ticks and a world where it has never
+once been offered a relative are, to a watcher, the same world. Until this
+cycle they were also the same *readout*, because both were nothing.
+
+### The thing I had already written down
+
+v1.38 swept every constant to check it was a lever, found this flag was the one
+that changed no world within its budget, and instrumented `canEat` offline to
+find out why: 8.2 million eligible pairs on seed 23 and 39,616 sparings; on seed
+314, the pond on the landing page, **zero** in 20,000 ticks, with the closest
+predator/prey pair the rule was ever offered sitting 0.227 apart — four times
+the threshold. It went into `SCIENCE.md` as a paragraph, and this file's own
+lesson for it was *a feature can work perfectly and be mute in the only world
+anybody looks at*.
+
+A paragraph is not an instrument. It cannot tell you which world you are in
+right now, it does not run when I change the pond, and it is not in the app.
+This is the same shape as "ask whether the thing I keep deferring is a change or
+a count" — except that here I had *already done the count*, once, offline, and
+then filed it instead of shipping it.
+
+### What shipped
+
+`stats.kinSpared`, cumulative, plus a rate on the same trailing window `walled`
+and `jostled` use; a `Kin 👪` tile; a sentence in the spoken description; and a
+chronicle line the first time a hunter turns away from its own family.
+
+Two decisions in there are the whole design.
+
+**The tile shows a total as well as a rate**, which the other two counters of a
+rule's work do not. They describe rules that fire from the first tick, where a
+run-to-date total is a number that has stopped moving (the v1.35 rule). This one
+is *ecologically conditional*: "has this rule ever spoken here?" and "is it
+speaking now?" are genuinely different questions, and a total of **0** is this
+tile's most interesting possible reading.
+
+**The spoken form has three states, not two.** The rule absent; the rule present
+and never yet offered a relative; the rule at work, with a count and a rate. The
+middle state is the one that has never existed on this page in any form, and it
+is the state most ponds are in.
+
+`canEat` split in half to make the counting honest — the size-and-diet test, and
+the kinship test — so `canEat` is the first *and not* the second and `sparesKin`
+is the first *and* the second. They partition exactly the meals the bodies
+allow, which a test now states rather than a second copy of the thresholds
+sitting somewhere waiting to drift.
+
+### Nine ponds of twelve are the same pond
+
+Twelve seeds, 20,000 ticks, both arms:
+
+| | |
+| --- | --- |
+| Never spare a relative | **9 of 12** (1, 5, 11, 13, 42, 64, 101, 314, 777) |
+| Spare a great many | seed 7 (86), seed 512 (8,800), seed 23 (19,598) |
+| First sparing | t1,983 – t4,910 |
+| Peak rate | 798 per hundred ticks (seed 23) |
+
+(v1.38's offline figure for seed 23 was 39,616, counted over *every* candidate
+the scan touched; the shipped counter is the narrower one — only candidates
+nearer than the best prey found so far, which is the set that could have changed
+what the hunter chased. Same rule, two denominators, and the one in the code is
+the one whose meaning survives being read off a tile.)
+
+And then the column I did not expect to be able to write. A rule that never
+fires draws no randomness and perturbs nothing, so on those nine seeds the arm
+with the flag **on** is not merely similar to the arm with it off — it is
+bit-for-bit the same world, trajectory hash for trajectory hash, twenty thousand
+ticks in. The flag is not quiet in nine ponds of twelve. It is a **no-op**, and
+that is a sharper and more checkable statement than "mute", which is what I had
+been saying since v1.36.
+
+It is checkable, so it is checked: `test/kinRecognition.test.js` now asserts
+that seed 314 with kin recognition on is seed 314, through the same five-channel
+assertion every "bit-for-bit unaffected" test in this suite runs through. That
+pins a *contingent* fact on purpose. If some future change makes the landing
+page's pond spare one single relative, that test goes red — and the news it
+carries is that the character of the world in every screenshot has changed.
+
+### The control, which took the interesting half back
+
+Seed 7 hands you the sentence: kills 298 without the rule, 197 with it, a third
+of the predation gone. Seed 23 hands you the opposite sentence, 265 → 389. Seed
+512 moves diversity from 0.319 to 0.676 while the other two move it down.
+
+Three seeds, three directions, which is already the tell. The control makes it
+explicit: a third arm that declines meals **at random** at the kin arm's own
+refusal rate, drawn from a private generator so the world's own stream is
+untouched. On all three seeds the kin arm's kill count lands inside the random
+arm's scatter — on seed 23 the random draws are 15, 120 and 518 against a
+control of 265. Eighty-six flipped decisions out of three quarters of a million
+reorganise seed 7 by more than the rule's own effect can be told apart from.
+
+So the tile says what the rule **did**, and nothing anywhere says what it
+**caused**. This is the v1.20 discipline arriving before the release note
+instead of after it, and it cost the release its headline, which is the correct
+price.
+
+One column refused to behave, and I am leaving it as a lead rather than dressing
+it up: on two of the three seeds the kin arm's diversity is above *all three*
+random draws. Two seeds and three draws is nothing, but the mechanism is at
+least the right shape — an arbitrary refusal spares whoever happens to be near,
+while this one spares a *family*, so it is the one perturbation of this size
+that is not neutral about who is related to whom. The measurement that would
+settle it is not more of this comparison; it is a within-run one, the genetic
+distance between a hunter and the pond it hunts in, in both arms.
+
+### What this cycle leaves
+
+**A methodological note I want to keep.** The random arm is matched on the
+*rate*, because the rate is the only thing that can be matched. On seed 23 the
+kin arm's senses answered "edible" 8,112,248 times over the run; the random arms
+answered between 181,527 and 2,477,329, because a pond that loses its hunters
+early stops generating the pairs the rate applies to. The delivered refusal
+count missed the target by up to fiftyfold. **A perturbation's size cannot be
+held fixed in a world that reorganises around it** — which means every
+matched-null control this project runs is matched on an input, never on a dose.
+
+**And the doorway is still missing.** This file has listed `kinRecognition`
+among the doorless features — no curated scenario — for a long time, on the
+grounds that "its doorway would have to be seed 23 or nothing". That is now
+measured rather than guessed, and it is three seeds rather than one: 23, 512 and
+7. A scenario needs more than a seed that fires, though. It needs a claim, and
+the only claim this release can support is *watch a pond turn cannibal, and
+watch the rule start speaking around tick two thousand* — which is a story about
+the tile I have just built rather than about the pond, so the door is a cycle
+away and no longer a guess.
