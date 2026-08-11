@@ -4,6 +4,18 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.80.1] — 2026-08-11
+
+### Fixed
+
+- **The `Kin 👪` tile hung 8 px outside the panel.** These tiles are an 80-pixel
+  column and they wrap, so what has to fit is a value's longest *unbreakable*
+  token — and `(0.0/100t)` is one, 96 px of it. The value is two tokens with a
+  separator now (`0 · 0/100t`), which wraps inside the column at every width the
+  counter can reach, up to `19,598 · 798/100t`. Found by opening the page in a
+  browser and measuring the element against its panel, which is the only way
+  anything in `main.js` is ever checked.
+
 ## [1.80.0] — 2026-08-11
 
 Kin recognition has been a toggle since v1.10: a predator whose target is within

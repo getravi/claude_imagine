@@ -9051,6 +9051,16 @@ count missed the target by up to fiftyfold. **A perturbation's size cannot be
 held fixed in a world that reorganises around it** — which means every
 matched-null control this project runs is matched on an input, never on a dose.
 
+**And a tile is not shipped until it has been looked at.** The counter, the
+sentence, the chronicle line and seven tests all went green, and then I opened
+the page in a browser — which is the only way anything in `main.js` is ever
+checked — and the value hung eight pixels outside the panel. These tiles are an
+80-pixel column and they wrap, so what has to fit is not the string, it is the
+longest **unbreakable token** in it, and `(0.0/100t)` is one 96-pixel word.
+`0 · 0/100t` is three, and wraps. v1.80.1. The general form is worth keeping
+because it is not about parentheses: a layout that wraps is tested by its
+longest atom, not by its total length, and I had reasoned about the total.
+
 **And the doorway is still missing.** This file has listed `kinRecognition`
 among the doorless features — no curated scenario — for a long time, on the
 grounds that "its doorway would have to be seed 23 or nothing". That is now

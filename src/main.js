@@ -704,8 +704,14 @@ function updateHUD() {
   // is not: the rule still steers what a carnivore chases in a pond where
   // nothing may bite, but a *declined meal* in a world where no meal is ever
   // taken is arithmetic rather than news — the Refuge tile's rule, one row up.
+  //
+  // Two tokens with a separator rather than `total (rate/100t)`: these tiles are
+  // an 80-pixel column and they wrap, so a value's longest *unbreakable* token
+  // is what has to fit. `(0.0/100t)` is one such token, 96 px wide, and it hung
+  // 8 px outside the panel — measured in a browser, because `main.js` is the one
+  // module `node --test` cannot open.
   $("stat-kin").textContent = config.kinRecognition && config.predation
-    ? `${s.kinSpared.toLocaleString()} (${s.kinSparedRate.toFixed(1)}/100t)`
+    ? `${s.kinSpared.toLocaleString()} · ${s.kinSparedRate.toFixed(0)}/100t`
     : "off";
   // Contagion: the live sick / immune split (both "off" without a pathogen).
   $("stat-sick").textContent = config.disease
