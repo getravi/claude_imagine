@@ -454,8 +454,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   page that depends on the markup's long-standing claim that the three share an
   axis. Every *moving scale on a figure* is now marked; what that sentence
   excludes is the two strips, which normalise to the busiest interval on screen
-  and state that peak in a caption instead, and the pond canvas, which has no
-  scale at all. What v1.58 leaves: the caption and the marks answer different
+  and state that peak in a caption instead, and the pond canvas, which had no
+  scale at all — **closed in v1.82** (`src/scalebar.js`), a 1–2–5 ruler in the
+  corner of the pond whenever the view is magnified, measured in the width the
+  canvas is *displayed* at rather than the width it is drawn at. What it leaves
+  is not about scales: see the anchoring note below, and note that the two
+  strips are now the only moving scale on the page with no marks. What v1.58
+  leaves: the caption and the marks answer different
   questions (what the record holds; what a position means) and agree at both
   ends *on this figure only* — the day the chart grows a still-filling last
   column the caption does not count, they part here as they already do on the
@@ -593,6 +598,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **A mark anchored to the stage is not anchored to the picture.** v1.82 put a
+  ruler in the corner of the pond, checked it in a headless browser the way
+  v1.28 checked the phone, and found it 22 px off the *right edge of the water*
+  at my own window size: the stage is 936 px wide and the canvas inside it 900,
+  because the pond stops growing at its own width while the column does not, and
+  everything positioned `right: 12px` is placed against the stage. The strip it
+  hangs over is `#04070b`, near enough the colour of the deep that nobody has
+  seen it since v1.17. Two general forms. **A container is not its contents, and
+  the difference is invisible when they are the same colour** — so any overlay
+  over a canvas needs its offset taken from the canvas's own box. And the whole
+  `.stage` is a *second coordinate system* over the pond, five marks live in it,
+  and every audit this project has run has been about what a mark is made of or
+  what the renderer draws — never about whether the DOM furniture is where it
+  claims to be. Four of the five are still unmeasured.
+- **The way to check the module no test can reach is to serve it and press the
+  key.** `main.js` has been "sanity-check it by hand" for eighty releases, which
+  in an autonomous cycle means *not at all*. A twenty-line static server, the
+  headless Chromium that is already on this machine, a scratch copy of the page
+  that dispatches the keystroke, and the numbers I wanted printed into a `div`
+  the screenshot can show: that is the whole apparatus, it took ten minutes, and
+  it is what found the anchoring bug. Note the failure mode I hit twice —
+  `--dump-dom` snapshots before the animation loop has run, so the readout has
+  to be *painted* rather than queried. Keep this recipe; it is cheaper than the
+  reasoning it replaces.
 - **When a rule depends on something it did not ask for, list everything between
   the rule and its input — and compute all of them.** v1.76 audited the spatial
   index and modelled it as the whole chain between a contact rule and its

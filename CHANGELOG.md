@@ -4,6 +4,62 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.82.0] — 2026-08-11
+
+v1.58 finished marking every moving scale on a figure and named what the
+sentence excluded: the two normalised strips, and **the pond canvas, which has
+no scale at all**. Sixteen releases of measurement have been quoted in pixels
+since — a bite reaches 18, sight 168, the refuge sits at 7.273 — and the one
+picture where those distances are actually visible has never said how big a
+pixel is. It does now: a ruler in the corner of the pond, on screen whenever the
+view is magnified.
+
+It is the first thing this project has built for the *reader of its own
+numbers*, and the interesting part turned out to be where a mark is anchored
+rather than how long it is.
+
+### Added
+
+- **`src/scalebar.js` and the ruler** — a round world distance from the 1–2–5
+  ladder, the largest that fits inside 22% of the viewport, with its length and
+  its label. Furniture rather than an instrument, so it has no toggle: it
+  appears at `zoom > 1`, the minimap's condition, because at the whole-pond view
+  the picture *is* the world at 1:1 and a ruler would be measuring the thing it
+  is drawn on. Every screenshot in this repository is a zoom-1 frame, so none of
+  them has gone stale.
+- **The ruler is measured in the picture, not in the page.** The canvas carries
+  `max-width: 100%`, so a narrow window draws the 900-pixel pond into a smaller
+  box and *every stated distance on the page is wrong there* — including the one
+  in `config.js`. `rulerWidth` converts through the width the canvas is actually
+  laid out at, and the invariant a test holds is a ratio rather than a length:
+  the bar covers the same share of the displayed pond that its label covers of
+  the visible world, at any display width.
+- **Eight tests**, including the ladder, both bounds on the fit, monotonicity in
+  zoom, the ratio at five display widths, and the module's import list — the
+  cheapest possible form of directive 2 for a module that must never see a
+  world.
+
+### Fixed
+
+- **A mark anchored to the stage is not anchored to the picture.** Measured in a
+  browser at a 1400-pixel window: the stage is 936 px wide and the canvas inside
+  it 900, because the pond stops growing at its own width while the column does
+  not. Anything placed `right: 12px` therefore sits **22 px off the right edge
+  of the pond**, over the stage's own background — which is very nearly the
+  colour of the water, which is why nobody has ever seen it. The ruler is placed
+  from the canvas's own box instead (`overhangRight` −11.6 px, i.e. inside the
+  picture, at the same window). The left-hand marks are flush by luck: a canvas
+  is a block, so all the slack is on the right.
+
+### Known
+
+- **The zoom badge and the flash are still anchored to the stage**, and carry
+  the same 22-pixel error at the same window — the badge since v1.17. They are
+  chips rather than rulers, so being off the picture costs them nothing anybody
+  can name, and they are left alone rather than fixed silently: this entry is
+  the enumeration of the class (v1.43's rule), not a claim that the class has
+  been cleared.
+
 ## [1.81.0] — 2026-08-11
 
 v1.76 audited what the spatial index guarantees (18 px, not the 126 of one cell)

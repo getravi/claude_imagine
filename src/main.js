@@ -55,6 +55,7 @@ import {
   timeOfDayLabel,
 } from "./describe.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
+import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -274,6 +275,7 @@ function loop(now) {
   renderer.draw(world);
   updateViewBadge();
   updateMinimap();
+  updateScaleBar();
   // The three figures that share one x-axis, and then the axis itself — drawn
   // last because it labels all three and belongs to none of them.
   const chartHist = updateChart(world);
@@ -419,6 +421,48 @@ function updateViewBadge() {
   badge.innerHTML =
     `<span class="icon">🔍</span> ${cam.zoom.toFixed(1)}×` +
     (cam.target ? ` <span class="following">🎯 #${cam.target.id}</span>` : "");
+}
+
+// ---- Scale bar ----
+// The pond's ruler (v1.82). `scalebar.js` chooses the length and the words; all
+// that happens here is the DOM.
+//
+// Two things it does *not* do. It does not rebuild any markup — the elements
+// are in the page and only a width and a string are patched, which is v1.15's
+// rule about anything inside a per-frame render. And it does not skip the frame
+// when the zoom has not changed, because the other input is the width the
+// stylesheet is displaying the canvas at, and that moves when the *window*
+// does, with no camera event to hang a refresh on. So the measurement is taken
+// every frame and the DOM is written only when one of the two answers changes.
+/** The gap between the ruler and the corner of the picture, in CSS pixels. */
+const RULER_EDGE = 12;
+let rulerSig = "";
+function updateScaleBar() {
+  const cam = renderer.camera;
+  const box = $("scale-bar");
+  const show = showsRuler(cam.zoom);
+  box.classList.toggle("hidden", !show);
+  if (!show) return;
+  const canvas = $("world");
+  const span = scaleSpan(cam.zoom, config.width);
+  const px = rulerWidth(span, Math.round(canvas.clientWidth) || config.width, config.width);
+  // Where the picture's right edge is, in the coordinates an absolutely
+  // positioned child of the stage is placed in. Not the same as the stage's
+  // own edge, which is what `right: 12px` would have meant: the canvas carries
+  // an inline `width: 900px` and `max-width: 100%`, so on any viewport wide
+  // enough for the column to exceed the pond it stops filling the stage — 936
+  // against 900 at a 1400-pixel window, measured — and a mark anchored to the
+  // stage hangs 22 px off the right edge of the thing it is a ruler for. The
+  // left-hand marks (the season badge, the minimap) are flush by luck: a canvas
+  // is a block, so the slack is all on the right.
+  const edge = canvas.offsetLeft + canvas.offsetWidth;
+  const sig = span.label + "|" + px.toFixed(2) + "|" + edge;
+  if (sig === rulerSig) return;
+  rulerSig = sig;
+  $("scale-bar-rule").style.width = px.toFixed(2) + "px";
+  $("scale-bar-label").textContent = span.label;
+  box.style.right = "auto";
+  box.style.left = Math.round(edge - box.offsetWidth - RULER_EDGE) + "px";
 }
 
 // ---- Minimap ----

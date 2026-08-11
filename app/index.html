@@ -77,6 +77,17 @@
             title="The whole pond — click, or use the arrow keys, to move the view"
             aria-label="Minimap of the whole pond; click or use the arrow keys to move the view"
           ></canvas>
+          <!-- The pond's ruler (v1.82). On screen only while the view is
+               magnified, opposite the minimap, and measured in the picture
+               rather than in the page: the line's width is set from the
+               camera's zoom *and* the width the stylesheet is actually
+               displaying the canvas at, so it stays a true ruler on a phone
+               where every stated distance on this page is wrong. -->
+          <div id="scale-bar" class="scale-bar hidden">
+            <span id="scale-bar-rule" class="rule"></span>
+            <span class="sr-only">Scale:</span>
+            <span id="scale-bar-label" class="label">100 px</span>
+          </div>
           <div id="flash" class="flash"></div>
           <!-- The pond's spoken channel: the Chronicle's newest line, announced
                politely to a screen reader. Hidden from sight because the feed

@@ -893,6 +893,53 @@ details .field {
   display: none;
 }
 
+/* ---- Scale bar ---- */
+/* The pond's ruler (v1.82), opposite the minimap and on screen under the same
+   condition: only once the view stops being the whole world, because at zoom 1
+   the picture is the pond at 1:1 and there is nothing to state.
+
+   It is a chip rather than a bare line on purpose. A mark drawn over water
+   whose colour the simulation chooses is a lottery no single tone wins (v1.25,
+   v1.34) — but that lesson is about the canvas, where the background is dealt
+   to a mark. In the DOM a mark can lay its own ground (v1.79, which found that
+   rule the expensive way round), so this one does: the same plate as the zoom
+   badge, and the line on top of it is `--ink` over a background I picked, which
+   is the one arrangement here whose contrast cannot be argued with. */
+.scale-bar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: rgba(8, 14, 22, 0.72);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 6px 10px 5px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--mono);
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+.scale-bar.hidden {
+  display: none;
+}
+/* Three sides of a box: the ruler's line, with a tick down at each end. The
+   width is the only thing JS sets, and it arrives in CSS pixels of the canvas
+   as it is actually being displayed. */
+.scale-bar .rule {
+  display: block;
+  height: 6px;
+  border: 1px solid var(--ink);
+  border-top: none;
+  border-radius: 0 0 1px 1px;
+}
+.scale-bar .label {
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
 /* ---- Flash message ---- */
 .flash {
   position: absolute;

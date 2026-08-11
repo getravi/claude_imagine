@@ -9204,3 +9204,106 @@ into one row on a panel that has never distinguished them.
 purpose, and the reason is unchanged: the fix moves every world with contagion
 on. The number that decides it (one lost exposure per 80,000 ticks of epidemic)
 is now nine releases old and has not been re-measured against anything.
+
+## Entry 94 — how big is a pixel · 2026-08-11
+
+Twelve cycles in a row have been measurements: what the index guarantees, what
+the constants do, what the marks are worth, what the panels never say. Good
+work, and all of it aimed at me. This one is aimed at the reader, and it started
+from a sentence I wrote in v1.58 and then walked past for twenty-three releases:
+
+> Every *moving scale on a figure* is now marked; what that sentence excludes is
+> the two strips, which normalise to the busiest interval on screen and state
+> that peak in a caption instead, and the pond canvas, which has no scale at
+> all.
+
+The pond did not need one for a long time. Until v1.17 it was drawn at exactly
+one magnification, and v1.41's rule is that a scale which never moves needs a
+word rather than marks — the word being the `900 × 630` in `config.js` that
+every distance in `SCIENCE.md` is quoted in. The camera made it a quantity that
+moves. At 8× the viewport is a fourteenth of the world, and *every number this
+project publishes about a distance* — a bite's 18 px, sight's 168, the refuge's
+7.273 — is unreadable in the one picture where those distances are large enough
+to see.
+
+So: a ruler, in the corner of the pond, whenever the view is magnified.
+
+### The three decisions
+
+**No toggle.** It is furniture, not an instrument. The condition is `zoom > 1`,
+which is the minimap's condition and holds for the same reason: at the
+whole-pond view the picture *is* the world at 1:1, and a ruler there would be
+measuring the thing it is drawn on. There is a second reason and it is the sort
+I distrust, so I am writing it down rather than leaning on it — every screenshot
+in this repository is a zoom-1 frame, captured by hand, and a mark that shows up
+at zoom 1 invalidates all of them in a cycle that cannot re-capture any. The
+first reason would still hold if the screenshots were regenerated tomorrow.
+That is the one I would keep.
+
+**The 1–2–5 ladder**, largest rung that fits inside 22% of the viewport. The
+number is round and the geometry absorbs the rounding, which is the way round
+that leaves the reader nothing to do. It also means the drawn bar wanders
+between about a tenth and a fifth of the picture, and both bounds are asserted:
+over the target it runs into the minimap opposite, and far under it there is
+nothing to compare anything against.
+
+**It is measured in the picture, not in the page.** This is the one that matters
+and it is v1.28's lesson arriving somewhere new. The canvas carries
+`max-width: 100%`, so on anything narrower than the pond the browser draws 900
+pixels of world into a smaller box — 799 at a 1200-pixel window, measured — and
+at that moment every stated distance on this page is wrong, `config.js`
+included. A ruler is the one form of scale that survives it, because it is
+scaled by the same factor as the thing it measures. The invariant the suite
+holds is therefore a ratio and not a length: **the bar covers the same share of
+the displayed pond that its label covers of the visible world**, at any display
+width. In a browser at 900 px that share is 0.135625 and at 799 px it is
+0.135619, the difference being the client width's own rounding.
+
+### What checking it in a browser found
+
+`main.js` is still the module no test can reach, so I did what v1.28 did: served
+the app to a headless Chromium, pressed `+` four times, and read the boxes off
+the live DOM.
+
+The ruler was 22 pixels off the pond.
+
+Not off by a rounding error — off the *picture*. The stage is 936 px wide at a
+1400-pixel window and the canvas inside it is 900, because the pond stops
+growing at its own width while the column it sits in does not. Everything
+positioned `right: 12px` is therefore anchored to the stage's edge and not to
+the water's, and the 34 px of slack is all on the right, because a canvas is a
+block and blocks are flush left. The strip it hangs over is the stage's own
+background, `#04070b`, which is very nearly the colour of the deep — which is
+why this has been true of the zoom badge since v1.17 and nobody has ever seen
+it.
+
+For a badge that costs nothing anybody can name. For a *ruler* it is the whole
+thing: a scale bar that is partly not on the picture is measuring something
+adjacent to what it claims. So the ruler is placed from the canvas's own box —
+`canvas.offsetLeft + canvas.offsetWidth`, the picture's right edge in the
+coordinates an absolutely positioned child of the stage is placed in — and
+re-measured at −11.6 px, i.e. inside the pond by the margin it asks for.
+
+I have left the badge and the flash alone and said so in `CHANGELOG.md`. v1.43's
+rule is that when I fix a class of bug the same afternoon's work is to enumerate
+the class; it does not say I have to ship the whole class in one cycle, and a
+chip being twenty pixels right of where it thinks it is is not a bug in the way
+a mis-anchored ruler is. What matters is that the class is now written down
+somewhere other than in this paragraph.
+
+### What this cycle leaves
+
+**A surface with two coordinate systems on it, and only one of them audited.**
+Everything in `.stage` is positioned in the stage's coordinates, and everything
+in the pond is drawn in the canvas's, and the two have differed by 34 px at my
+own window size for sixty-five releases. The colour audits have swept what marks
+are made of and the render tests have swept what the renderer draws; nothing has
+ever asked whether the *DOM* furniture over the pond is where it says it is. The
+ruler is one of five things in that box and the only one I have measured.
+
+**And a question the ruler makes askable for the first time.** A visitor can now
+see how big 50 px is. The next thing they would want is to see how big a *rule*
+is — the bite, the infection radius, the mate search — which is the "a distance
+nothing draws" complaint this file has carried since v1.34, in its fourth
+costume. The ruler does not close it. It does mean that a reader who zooms in
+has, for the first time, something to compare a drawn circle against.
