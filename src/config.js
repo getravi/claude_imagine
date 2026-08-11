@@ -373,9 +373,19 @@ export const DEFAULT_CONFIG = Object.freeze({
   // no new sense or gene required. Off by default, and the factor is a
   // constant 1 whenever it's off, so default worlds are bit-for-bit
   // unaffected (see environment.js#dayNightVisionFactor).
+  // This factor has a floor with teeth, measured in v1.81 and written here
+  // rather than only in `src/reach.js`, because this is the file somebody
+  // changing the number opens. Eating, scavenging and biting have no neighbour
+  // query of their own: they fire on whatever the sense scan *selected*, and
+  // that selection is made against sight. So sight is also the reach of every
+  // contact rule, and shrinking it at midnight shrinks them — below 11.2/168 a
+  // creature cannot eat the pellet it is sitting on, below 17/168 a scavenger
+  // cannot reach a corpse inside its own mouth, and below 18/168 = **0.107** a
+  // hunter cannot bite what it is standing on top of. `exactVision` does not
+  // move any of that; it is a fix for the index, and this is not the index.
   dayNightCycle: false,
   dayLength: 900, // ticks for one full day/night cycle
-  nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1)
+  nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1; under 0.107 predation stalls at night)
 
   // Contagion (opt-in): a pathogen that spreads by proximity. A susceptible
   // creature near an infected one can catch it; being sick burns extra energy

@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.81.0] — 2026-08-11
+
+v1.76 audited what the spatial index guarantees (18 px, not the 126 of one cell)
+and left three leads. The third was that **its own list of query sites was
+hand-typed** — I read the pond, wrote down the rules I found, and audited those,
+which is exactly what v1.70 warns is skimmed. It is derived now. And deriving it
+turned up what the list had been hiding: the index is not the only thing between
+a rule and its candidate.
+
+Eating, scavenging and biting have no neighbour query of their own. v1.76 said
+so and read it as a statement about *windows*. What they also inherit is the
+scan's **answer**: `world.js#step` picks a nearest pellet and a nearest prey
+against distances that start at `visionR2`, and the contact tests fire on those
+selections. **A creature can only bite what it has already seen.** Sight is
+therefore the second reach of every carried contact rule — 168 px against a
+bite's 18 in the pond as it ships, which is why nobody noticed, and it is the
+one radius here that *shrinks*.
+
+### Added
+
+- **`QUERY_SITES` and `scanQuerySites` (`src/reach.js`)** — the census, declared
+  and derived. Nine neighbour queries in `src/`: three sense scans, two rules
+  with a query of their own, the `_scan` dispatcher's two arms, and two in
+  `workload.js` that are instruments rather than pond. The suite compares the
+  declaration against the source both ways, so a query added anywhere fails a
+  test until somebody says which rules ride it, and a declaration nothing
+  matches fails too. All five of the pond's are in `world.js`, which is also now
+  a fact a test will report the day it stops being one.
+- **`ruleGate`, and `binds` on every audited rule.** The audit measures a rule
+  against the smaller of what its query *offers* and what the sweep's own
+  distance test *lets through*, and says which of the two it was. `index` is
+  v1.76's subject and is unchanged in the default pond; `gate` is new; `self` is
+  a rule that hands its own query its own reach — the shove since v1.56, and
+  every sense under `exactVision`.
+- **Eight tests**, including the scanner's stated domain on a synthetic module,
+  the floors in both arms, and the failure staged in the pond itself: one
+  carnivore, one small neighbour half a pixel inside its jaws, unbitten at
+  midnight and eaten at noon with nothing else changed.
+
+### Measured
+
+- **The gate's floors.** With the day/night cycle on, sight falls to
+  `nightVisionFactor` of itself at midnight exactly. Below **0.1071** (18/168) a
+  hunter cannot bite the creature it is standing on top of; below 0.1012 a
+  scavenger cannot reach a corpse inside its own mouth; below 0.0667 a grazer
+  cannot eat the pellet it is sitting on. Nothing that ships is near it — the
+  default is 0.35 (a margin of 40.8 px on the bite) and the darkest scenario in
+  the project is 0.28 — so this is a margin nobody had measured rather than a
+  bug.
+- **`exactVision` does not move it**, which corrects a sentence in `reach.js`'s
+  own header. That flag replaces the block with a disc covering the radius the
+  scan asked for, and in the dark the scan asks for 8.4 px, because that is what
+  sight is. It is a fix for the index; this is not the index.
+- **The coupling that is not there.** The creature scan asks for the widest of
+  sight, earshot and a mate search, and earshot deliberately does not shrink at
+  night — so a pond with voices offers candidates out to `signalRadius` = 120 px
+  against a sight of 1.68 px, a seventyfold wider offer that looks exactly like
+  predation being carried through the dark by other creatures' shouting. The
+  gate throws every one of them away. Pinned as a negative result.
+
+### Changed
+
+- **`config.js` carries the floor beside `nightVisionFactor`**, and `world.js`
+  beside the sense radii — v1.76's own lesson about a measurement that never
+  reached the file a person editing the constant would open, applied the same
+  afternoon this measurement was made rather than forty-three releases later.
+- `docs/SCIENCE.md`: *A creature can only bite what it has seen (v1.81)*, with
+  the two-constraint table, the floors, the negative result and a snippet that
+  prints the audit for any night.
+
 ## [1.80.1] — 2026-08-11
 
 ### Fixed

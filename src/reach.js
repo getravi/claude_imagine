@@ -65,6 +65,60 @@
 // the RNG's draw order, so covering the disc moves every world with contagion
 // switched on, and that is a change to write down before it is a change to
 // make.
+//
+// ---- v1.81: the list, derived — and the second thing in the way ----
+//
+// v1.76 left three leads and the third was that **the list of query sites above
+// is hand-typed**. I read the pond, wrote down the rules I found, and audited
+// those; v1.70's warning is that a classification I wrote in one afternoon is
+// the one I skim. It is derived now: `scanQuerySites` reads a module's text and
+// returns every neighbour query in it, `QUERY_SITES` declares the nine this
+// project has, and the suite compares the two. A query added anywhere in `src/`
+// is a failing test until somebody says which rules ride it.
+//
+// Deriving it turned up something the count did not: **the index is not the
+// only thing between a rule and its candidate.** Eating, scavenging and biting
+// have no query of their own — the entry above says so — and what that means is
+// not only that they inherit the scan's *window*. They inherit its *answer*.
+// The sweep picks a nearest pellet and a nearest prey by walking candidates
+// against distances that start at `visionR2`, and the contact tests below fire
+// on those selections. A creature can only bite what it has already seen.
+//
+// So a carried rule sits behind two constraints and this module had computed
+// one of them:
+//
+//   * the **index**, which decides who is offered — v1.76's whole subject, 18 px;
+//   * the **gate**, which decides who is chosen — `visionRadius` times whatever
+//     the day/night cycle has done to it, and nothing had ever compared a
+//     contact reach to a *sense* radius, because they do not look like the same
+//     kind of quantity. In the default pond they are 18 and 168 and the gate has
+//     never bound anything.
+//
+// It binds in the dark. Sight is the one radius here that shrinks — to
+// `nightVisionFactor` of itself at midnight — so below a factor of 18/168 =
+// 0.107 a hunter cannot bite the creature it is standing on top of, below
+// 17/168 a scavenger cannot reach a corpse inside its own mouth, and below
+// 11.2/168 a grazer cannot eat the pellet it is sitting on. Nothing that ships
+// is near it: the darkest scenario in this project sets 0.28, and the deepest
+// night it can produce still reaches 47 px against a bite's 18. The finding is
+// not a bug, it is that the margin was never measured and is not made of what
+// the audit thought it was made of.
+//
+// And it corrects a sentence in this file's own header. "Switching that flag on
+// moves them onto a disc query that covers them" is true, and in the one regime
+// where anything binds it changes nothing at all: the disc covers the radius
+// sight asked for, and in the dark sight asks for 8.4 px. `exactVision` is a
+// fix for the index. There is no flag for the gate, because the gate is not a
+// mistake — it is the pond saying a predator hunts what it can see.
+//
+// (The coupling I expected to find here and did not: the creature scan asks for
+// the widest of sight, earshot and a mate search, so a pond with voices in it
+// offers candidates out to `signalRadius` = 120 px at every hour. I had a
+// paragraph written about predation being carried through the night by other
+// creatures' shouting. The gate throws those candidates away — prey is chosen
+// against `visionR2` and nothing else — so the pond does not have the mechanism
+// the arithmetic suggested. v1.20's rule, arriving before the release note this
+// time rather than after it.)
 
 import { SpatialGrid, indexCellSize } from "./grid.js";
 
@@ -202,12 +256,253 @@ export function strandedShare(grid, radius) {
 }
 
 /**
+ * Every neighbour query in this project, declared: where it is, what it asks
+ * of, and which rules ride it.
+ *
+ * The point of writing it down is that `scanQuerySites` reads the same list out
+ * of the source, so this is checked rather than believed. Four fields identify
+ * a site — the module, the enclosing function, the call, and the grid it is
+ * made on — and none of them is a line number, because a line number is a fact
+ * about an afternoon's editing rather than about the pond.
+ *
+ * Three kinds:
+ *
+ *   - `rule` — a query a rule makes for itself. Two of them: the epidemic's
+ *     (block-shaped, and the hole this module found in v1.76) and the shove's
+ *     (a disc, handed its own reach, which is what the other one should be).
+ *   - `sense` — the three scans in the sweep. Every remaining contact rule in
+ *     the pond takes its candidate from one of these rather than asking for
+ *     anything itself, which is why `carries` is where the interesting entries
+ *     are: a scan is answering questions that are not its own.
+ *   - `dispatch` — `_scan` itself, which is both queries and no site. Listed so
+ *     the census is a partition and not a filter (v1.61: a sweep that quietly
+ *     drops what it cannot classify has annexed it).
+ *   - `instrument` — `workload.js` counting candidates. Not in the pond; here
+ *     so that adding a query to an instrument is also a change somebody has to
+ *     acknowledge.
+ *
+ * `request` names what the site asks for, as an expression this module can
+ * evaluate against a config (`siteRequest`) — `null` where the query is a block
+ * and the radius is not read at all.
+ */
+export const QUERY_SITES = [
+  {
+    name: "food",
+    kind: "sense",
+    module: "world.js",
+    fn: "step",
+    call: "_scan",
+    grid: "foodGrid",
+    request: "sightR",
+    carries: ["sight", "eat"],
+  },
+  {
+    name: "creature",
+    kind: "sense",
+    module: "world.js",
+    fn: "step",
+    call: "_scan",
+    grid: "creatureGrid",
+    request: "nearbyR",
+    carries: ["sight", "earshot", "mate", "bite"],
+  },
+  {
+    name: "corpse",
+    kind: "sense",
+    module: "world.js",
+    fn: "step",
+    call: "_scan",
+    grid: "corpseGrid",
+    request: "sightR",
+    carries: ["sight", "scavenge"],
+  },
+  {
+    name: "infection",
+    kind: "rule",
+    module: "world.js",
+    fn: "_stepDisease",
+    call: "forEachNear",
+    grid: "creatureGrid",
+    request: null,
+    carries: ["infect"],
+  },
+  {
+    name: "separation",
+    kind: "rule",
+    module: "world.js",
+    fn: "_separate",
+    call: "forEachWithin",
+    grid: "creatureGrid",
+    request: "shove",
+    carries: ["shove"],
+  },
+  {
+    name: "scan-disc",
+    kind: "dispatch",
+    module: "world.js",
+    fn: "_scan",
+    call: "forEachWithin",
+    grid: "grid",
+    request: null,
+    carries: [],
+  },
+  {
+    name: "scan-block",
+    kind: "dispatch",
+    module: "world.js",
+    fn: "_scan",
+    call: "forEachNear",
+    grid: "grid",
+    request: null,
+    carries: [],
+  },
+  {
+    name: "load-block",
+    kind: "instrument",
+    module: "workload.js",
+    fn: "nearLoad",
+    call: "forEachNear",
+    grid: "grid",
+    request: null,
+    carries: [],
+  },
+  {
+    name: "load-disc",
+    kind: "instrument",
+    module: "workload.js",
+    fn: "withinLoad",
+    call: "forEachWithin",
+    grid: "grid",
+    request: null,
+    carries: [],
+  },
+];
+
+/**
+ * Every neighbour query in one module's source text, read out of the text.
+ *
+ * A line scanner, not a parser, and its domain is worth stating exactly because
+ * a sweep that does not name what it excludes has annexed it (v1.61):
+ *
+ *   - it sees `<grid>.forEachNear(`, `<grid>.forEachWithin(` and
+ *     `this._scan(this.<grid>` — a *receiver* is required, so the definitions
+ *     in `grid.js` and the dozens of prose mentions in comments across this
+ *     repository are not sites and do not register;
+ *   - it skips whole-line comments (`//`, ` * `) and nothing else, so a query
+ *     written inside a trailing comment would be counted as real. That is the
+ *     safe direction: the census fails loudly rather than quietly missing a
+ *     query, which is the failure this whole module exists to be about;
+ *   - it attributes a site to the nearest preceding class method or top-level
+ *     function, which is how this codebase is written and is not a general
+ *     truth about JavaScript;
+ *   - it sees *lookups*. `regrowthRadius` (v1.18) is a distance the pond
+ *     writes rather than one it reads — a seed is placed near its parent, and
+ *     nothing ever asks who is nearby — so it is not a query and is not here.
+ *     Neither is `nearBounds`, which is geometry the renderer and this module
+ *     read; it offers no candidates.
+ *
+ * @param {string} source - the module's text
+ * @param {string} module - its file name, carried through onto every site
+ */
+export function scanQuerySites(source, module) {
+  const found = [];
+  let fn = "(module)";
+  const lines = source.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const named =
+      line.match(/^(?:export )?(?:async )?function ([A-Za-z_$][\w$]*)\s*\(/) ||
+      line.match(/^ {2}(?:static )?(?:async )?([A-Za-z_$][\w$]*)\s*\(/);
+    if (named) fn = named[1];
+    const text = line.trim();
+    if (text.startsWith("//") || text.startsWith("*") || text.startsWith("/*")) continue;
+    const direct = line.match(/(?:this\.)?([A-Za-z_$][\w$]*)\.(forEachNear|forEachWithin)\s*\(/);
+    if (direct) found.push({ module, fn, call: direct[2], grid: direct[1], line: i + 1 });
+    const scan = line.match(/this\._scan\(\s*this\.([A-Za-z_$][\w$]*)/);
+    if (scan) found.push({ module, fn, call: "_scan", grid: scan[1], line: i + 1 });
+  }
+  return found;
+}
+
+/** A site's four identifying fields, as one string, for comparing two lists. */
+export function siteKey(site) {
+  return `${site.module} ${site.fn} ${site.call} ${site.grid}`;
+}
+
+/**
+ * The narrowest radius a site ever asks for, over a whole run of this config.
+ *
+ * The worst case, not the typical one, because the two sense radii here are not
+ * constants: sight is multiplied by the day/night cycle, which bottoms out at
+ * exactly `nightVisionFactor` (a cosine that reaches −1), so a pond with the
+ * cycle on spends part of every day at its floor. Earshot deliberately does not
+ * shrink (`world.js`) and a mate search is a plain constant, so the creature
+ * scan's request is the largest of the three and can be wider than sight — it
+ * is offering candidates for three questions at once. Note that this widens the
+ * *offer* only; what a hunter may then bite is settled by `ruleGate`, which is
+ * the distinction this cycle exists to draw.
+ *
+ * `null` for a block query, where the radius is not read at all.
+ * @param {object} site - an entry of `QUERY_SITES`
+ * @param {object} config
+ */
+export function siteRequest(site, config) {
+  const dark = config.dayNightCycle ? config.nightVisionFactor : 1;
+  const sightR = config.visionRadius * dark;
+  switch (site.request) {
+    case "sightR":
+      return sightR;
+    case "nearbyR":
+      return Math.max(
+        sightR,
+        config.signalling ? config.signalRadius : 0,
+        config.sexualReproduction ? config.mateRadius : 0
+      );
+    case "shove":
+      return config.bodyRadiusMax * 2;
+    default:
+      return null;
+  }
+}
+
+/**
+ * The distance the sweep itself lets a candidate through at, before the rule
+ * gets to fire — `null` where there is no such test.
+ *
+ * The half of a carried rule v1.76 did not look at. `world.js#step` chooses a
+ * nearest pellet and a nearest prey by walking the scan's candidates against
+ * squared distances that both start at `visionR2`, and every contact test after
+ * that runs on those *selections*. So a pellet outside sight is not eaten
+ * however close it is, and a creature outside sight is not bitten however far a
+ * bite reaches: the rule is gated by the sense that carries it, at whatever
+ * radius the sense has this tick.
+ *
+ * Infection and the shove have no gate — each walks its own query's candidates
+ * and applies its own distance test, which is what having a query of your own
+ * means. A sense is not gated either: it *is* the gate.
+ * @param {object} rule - an entry of `contactRules`
+ * @param {object} config
+ */
+export function ruleGate(rule, config) {
+  if (rule.gate !== "sight") return null;
+  return config.visionRadius * (config.dayNightCycle ? config.nightVisionFactor : 1);
+}
+
+/**
  * Every distance this world asks a neighbour query for, and which query answers
  * it.
  *
  * `block` is `forEachNear` — the 3x3 window, whose promise is `blockReach`.
- * `disc` is `forEachWithin`, which covers whatever radius it is handed and is
- * therefore exempt by construction.
+ * `disc` is `forEachWithin`, which covers whatever radius it is handed — and
+ * that is a fact about the *query*, not about the rule. `sites` is the half
+ * v1.76 left out: the entry of `QUERY_SITES` a rule takes its candidates from.
+ * A rule that queries for itself hands the disc its own reach and is exempt by
+ * construction; a rule *carried* by a sense scan is covered only while the
+ * scan is asking for at least as much as the rule needs, which is a quantity
+ * (`siteRequest`) rather than a construction, and one that moves with the hour.
+ *
+ * `sight` names three sites because the sweep runs three scans, and the rule is
+ * covered by whichever of them asks for least.
  *
  * The `contact` rules are the ones where a missed candidate means a rule that
  * did not fire: a meal not eaten, a bite not taken, an exposure that did not
@@ -232,6 +527,8 @@ export function contactRules(config) {
       name: "eat",
       kind: "contact",
       query: sensed,
+      gate: "sight",
+      sites: ["food"],
       reach: config.eatRadius + body * 0.4,
       source: "eatRadius + radius * 0.4",
       active: true,
@@ -240,6 +537,8 @@ export function contactRules(config) {
       name: "scavenge",
       kind: "contact",
       query: sensed,
+      gate: "sight",
+      sites: ["corpse"],
       reach: body + config.scavengeRadius + 6,
       source: "radius + scavengeRadius + 6",
       active: config.scavenging,
@@ -248,6 +547,8 @@ export function contactRules(config) {
       name: "bite",
       kind: "contact",
       query: sensed,
+      gate: "sight",
+      sites: ["creature"],
       reach: body * 2 + 2,
       source: "radius + prey.radius + 2",
       active: config.predation,
@@ -256,6 +557,8 @@ export function contactRules(config) {
       name: "infect",
       kind: "contact",
       query: "block",
+      gate: null,
+      sites: ["infection"],
       reach: config.infectionRadius,
       source: "infectionRadius",
       active: config.disease,
@@ -264,6 +567,8 @@ export function contactRules(config) {
       name: "shove",
       kind: "contact",
       query: "disc",
+      gate: null,
+      sites: ["separation"],
       reach: body * 2,
       source: "bodyRadiusMax * 2",
       active: config.bodyCollision,
@@ -272,6 +577,8 @@ export function contactRules(config) {
       name: "sight",
       kind: "sense",
       query: sensed,
+      gate: null,
+      sites: ["food", "creature", "corpse"],
       reach: config.visionRadius,
       source: "visionRadius",
       active: true,
@@ -280,6 +587,8 @@ export function contactRules(config) {
       name: "earshot",
       kind: "sense",
       query: sensed,
+      gate: null,
+      sites: ["creature"],
       reach: config.signalRadius,
       source: "signalRadius",
       active: config.signalling,
@@ -288,6 +597,8 @@ export function contactRules(config) {
       name: "mate",
       kind: "sense",
       query: sensed,
+      gate: null,
+      sites: ["creature"],
       reach: config.mateRadius,
       source: "mateRadius",
       active: config.sexualReproduction,
@@ -299,25 +610,70 @@ export function contactRules(config) {
  * The audit: this world's index, its guarantee, and every rule measured against
  * it.
  *
- * A rule is `covered` when the query answering it cannot miss anything it is
- * entitled to — always true of a `disc` query, and true of a `block` query only
- * while its reach is inside the guarantee. `margin` is how much room is left,
- * and a margin of zero is a passing rule that any change to the pond's size,
- * its vision radius or its bodies can turn into a failing one.
+ * A rule is `covered` when nothing it is entitled to can be missed, and there
+ * are two ways to miss something, which is the correction this release makes to
+ * the release that wrote this function:
+ *
+ *   - **the offer.** What the query covers: the block's guarantee for a
+ *     `forEachNear`, and the radius the call was handed for a `forEachWithin`.
+ *   - **the gate.** What the sweep lets through before the rule runs at all
+ *     (`ruleGate`) — sight, for the three contact rules that take their
+ *     candidate from a sense scan, and nothing for the two that query for
+ *     themselves.
+ *
+ * `coverage` is the smaller of the two present, `binds` says which one it was,
+ * and `margin` is `coverage − reach`. In the default pond the index binds every
+ * carried rule (18 px against a sight of 168) and this is v1.76's audit
+ * unchanged; in a dark pond the gate binds instead, and no setting of
+ * `exactVision` moves it, because the disc a scan covers is the radius sight
+ * asked for.
+ *
+ * A margin of zero under `binds: "index"` is a passing rule that any change to
+ * the pond's size, its vision radius or its bodies can turn into a failing one.
+ * A margin of zero under `binds: "self"` is the opposite: a rule handing its own
+ * query its own reach, which is what the shove has done since v1.56 and what
+ * every sense does under `exactVision`.
+ *
+ * Two reporting notes. A *block* query is handed a radius and ignores it, so a
+ * rule can report an `offer` of 18 beside a request of 168; that gap is v1.32's
+ * subject. And a sense can report a `reach` larger than its own offer, because
+ * `reach` is the radius the config intends while the offer is the one the
+ * day/night cycle left it with — sight shrinking at midnight is the feature
+ * working, not a hole, which is why senses are exempt from `binds: "gate"`
+ * entirely: a sense *is* the gate.
  * @param {object} config
  */
 export function contactAudit(config) {
   const cellSize = indexCellSize(config);
   const grid = new SpatialGrid(config.width, config.height, cellSize);
   const reach = blockReach(grid);
+  const byName = Object.fromEntries(QUERY_SITES.map((s) => [s.name, s]));
   const rules = contactRules(config).map((rule) => {
     const blocked = rule.query === "block";
-    const covered = !blocked || rule.reach <= reach.radius;
+    // What the queries this rule rides ask for, at their narrowest: a rule is
+    // only as covered as the stingiest scan that could be the one to offer it a
+    // candidate. `null` where every site of the rule is a block query.
+    const asks = rule.sites
+      .map((name) => siteRequest(byName[name], config))
+      .filter((r) => r !== null);
+    const request = asks.length ? Math.min(...asks) : null;
+    // A rule whose own query is the disc it hands its reach to — every sense
+    // under `exactVision`, and the shove in every world since v1.56.
+    const self = !blocked && (rule.kind === "sense" || rule.name === "shove");
+    const offer = blocked ? reach.radius : self ? rule.reach : request;
+    const gate = ruleGate(rule, config);
+    const coverage = gate === null ? offer : Math.min(offer, gate);
+    const binds = self ? "self" : gate !== null && gate <= offer ? "gate" : "index";
     return {
       ...rule,
       guarantee: reach.radius,
-      margin: blocked ? reach.radius - rule.reach : Infinity,
-      covered,
+      request,
+      offer,
+      gateAt: gate,
+      coverage,
+      binds,
+      margin: coverage - rule.reach,
+      covered: rule.reach <= coverage,
       stranded: blocked ? strandedShare(grid, rule.reach).any : 0,
     };
   });

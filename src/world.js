@@ -428,6 +428,14 @@ export class World {
     // Infection at 22 px does not clear it, and it is the one contact rule with
     // a neighbour query of its own (`_stepDisease`), so it is the one this line
     // cannot speak for.
+    //
+    // What this comment left out until v1.81: those three rules inherit the
+    // scan's *answer* as well as its window. `nf` and `prey` below are chosen
+    // against `visionR2`, and the contact tests fire on the selections, so a
+    // creature can only bite what it has already seen. Sight is therefore the
+    // second, softer reach of every carried contact rule — wider than the index
+    // by an order of magnitude here, and narrower than a bite below a
+    // `nightVisionFactor` of 0.107 (`src/reach.js`, `contactAudit().binds`).
     const nearbyR = Math.max(
       sightR,
       cfg.signalling ? cfg.signalRadius : 0,

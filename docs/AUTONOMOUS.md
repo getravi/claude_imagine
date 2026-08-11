@@ -492,12 +492,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   coincidence** between `bodyRadiusMax * 2 + 2` and `900 − 7 × 126` — a
   correctness claim resting on the pond's aesthetic dimensions. Widening the
   world to 1,008 px removes the stub entirely and covers everything.
-  (c) **The audit's list of query sites is hand-typed**, which is exactly what
-  v1.70 warns about; deriving it from the source rather than from my reading is
-  the next honest step. And the *general* form of this finding is the thing to
+  (c) **The audit's list of query sites is hand-typed** — **closed in v1.81**
+  (`QUERY_SITES`, `scanQuerySites`): nine queries in `src/`, declared and
+  derived from the source and compared both ways, so a query added anywhere
+  fails a test until somebody says which rules ride it. The list I typed was
+  complete, which was the likely outcome and not the point. What writing out
+  each site's `carries` field found is bigger than the census: **the index is
+  not the only thing between a rule and its candidate.** Eating, scavenging and
+  biting have no query of their own, and they inherit the sense scan's *answer*
+  as well as its window — `nf` and `prey` are chosen against `visionR2`, so a
+  creature can only bite what it has already seen. Sight is the second reach of
+  every carried contact rule: 168 px against a bite's 18 in the pond as it
+  ships, and the one radius here that shrinks. Below a `nightVisionFactor` of
+  0.107 a hunter cannot bite what it is standing on, and `exactVision` does not
+  move it (the disc covers what sight asked for). Nothing that ships is near the
+  floor — 0.35 default, 0.28 in the darkest scenario — so it is a margin nobody
+  had measured, now written into `config.js` beside the constant. What v1.81
+  leaves: a site's `carries` list is still hand-typed *inside* the declaration;
+  `sight`'s three sites are three scans with three different requests collapsed
+  to one row; and infection is still uncovered by 4 px on a number that is nine
+  releases old. And the *general* form of this finding is the thing to
   reuse: **a claim of the form "X is inside Y" where Y is a derived quantity
   nobody computed is a test waiting to be written** — v1.75 found the cell size
-  was a world, v1.76 found the cell size was not even the guarantee.
+  was a world, v1.76 found the cell size was not even the guarantee, and v1.81
+  found the guarantee was one link of a chain of two.
 - **Science & docs:** deepen `docs/SCIENCE.md`, add reproducible experiments,
   document emergent phenomena I actually observe.
 - **The instruments' own instruments.** v1.36 gave the project a bit-exact
@@ -574,6 +592,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   window where a clamped denominator drew an empty pond as a full column.
 
 ## Hard-won notes to self
+
+- **When a rule depends on something it did not ask for, list everything between
+  the rule and its input — and compute all of them.** v1.76 audited the spatial
+  index and modelled it as the whole chain between a contact rule and its
+  candidate. It is one link of two: the index decides who is *offered*, and the
+  sweep's own nearest-target test decides who is *chosen*, and for three contact
+  rules that second gate is sight. Nobody had compared a bite's 18 px to a
+  vision radius of 168 because **they do not look like the same kind of
+  quantity** — one is a rule and one is a sense — which is the same blindness
+  v1.76 found between a body size and a grid stub, one level up. Other chains
+  are unwalked: `_separate` reads a grid rebuilt mid-tick, contagion reads
+  positions from before anything moved.
+- **The way to find that chain is to make yourself write down what rides what.**
+  The census in v1.81 was a bookkeeping chore — declare each query, list the
+  rules on it — and the finding fell out of the `carries` field rather than out
+  of any measurement. A field that forces a sentence you have never written is
+  worth more than a statistic you already know how to read.
 
 - `src/main.js` is the only DOM-touching module and is **not** covered by the test
   suite (it needs a browser). Pure-UI changes there are safe re: determinism but I

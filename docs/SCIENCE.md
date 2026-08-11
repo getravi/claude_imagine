@@ -5877,6 +5877,98 @@ node -e '
   });'
 ```
 
+## A creature can only bite what it has seen (v1.81)
+
+v1.76 asked what the spatial index guarantees and audited every rule against
+it. The audit's list of query sites was hand-typed, and closing that lead — the
+census is derived from the source now, nine sites, and a query added anywhere in
+`src/` fails a test until somebody says which rules ride it — turned up the
+thing the list itself had been hiding: **the index is not the only thing between
+a rule and its candidate.**
+
+Eating, scavenging and biting have no neighbour query of their own. v1.76 said
+so, and read it as a statement about *windows*: they inherit the sense scan's
+3x3 block, which `exactVision` can widen into a disc. What they also inherit is
+the scan's **answer**. `world.js#step` picks a nearest pellet and a nearest prey
+by walking candidates against squared distances that both start at `visionR2`,
+and every contact test below runs on those selections. A pellet outside sight is
+not eaten however close it is; a creature outside sight is not bitten however
+far a bite reaches.
+
+So a carried rule sits behind two constraints:
+
+| | decides | default pond |
+| --- | --- | ---: |
+| the index | who is *offered* | 18 px |
+| the gate | who is *chosen* | 168 px |
+
+In the pond as it ships the index is far the tighter of the two, which is why
+forty-eight releases never noticed the second one: a bite reaches 18 px and
+sight reaches 168, and those two numbers had never been in the same sentence
+because they do not look like the same kind of quantity. One is a rule and one
+is a sense.
+
+### Where it binds
+
+Sight is the one radius in this world that shrinks. With the day/night cycle on
+it falls to `nightVisionFactor` of itself at midnight, exactly (the cosine
+reaches −1), and at that moment the gate is what every carried rule reaches:
+
+| rule | reach | fails below a night factor of |
+| --- | ---: | ---: |
+| eat | 11.2 px | 0.0667 |
+| scavenge | 17.0 px | 0.1012 |
+| bite | 18.0 px | **0.1071** |
+
+Nothing that ships is near it. The default is 0.35 (sight 58.8 px at midnight,
+a margin of 40.8 px on the bite), and the darkest curated scenario in the
+project sets 0.28 (47.0 px). The finding is not a bug; it is that the margin was
+never measured, and is not made of what the audit thought it was made of.
+
+`exactVision` does not move any of it. That flag replaces the block with a disc
+covering the radius the scan asked for — and in the dark the scan asks for 8.4
+px, because that is what sight is. It is a fix for the index, and this is not
+the index. There is no flag for the gate, because the gate is not a mistake: it
+is the pond saying a predator hunts what it can see.
+
+### The coupling that is not there
+
+The creature scan asks for the widest of sight, earshot and a mate search, and
+earshot deliberately does not shrink at night (a voice carries in the dark).
+So in a pond with signalling on, that scan offers candidates out to
+`signalRadius` = 120 px at every hour of the night, against a sight of 1.68 px
+at a night factor of 0.01 — a seventyfold wider offer. It reads exactly like
+predation being carried through the dark by other creatures' voices, and there
+was a paragraph written about it here.
+
+The gate throws every one of those candidates away. Prey is chosen against
+`visionR2` and nothing else, so the bite's coverage in that pond is 1.68 px with
+voices and 1.68 px without. v1.20's rule — build the control before the
+narration — arriving before the release note this time rather than after it.
+The widening is real and it is not about the bite; it is pinned as a negative
+result in `test/reach.test.js`.
+
+### What is pinned
+
+The census, both directions: every neighbour query in `src/` is declared and
+every declaration is a query, with the scanner's domain (receivers, not prose)
+checked on a synthetic module. Every rule rides a declared site and every site
+of the pond carries a rule. The gate's floors are computed for each rule in both
+arms. And the failure is staged in the pond rather than argued from arithmetic:
+one carnivore, one small neighbour half a pixel inside its jaws, unbitten at
+midnight and eaten at noon with nothing else changed.
+
+```sh
+node -e '
+  import("./src/reach.js").then(async (R) => {
+    const { makeConfig } = await import("./src/config.js");
+    const cfg = makeConfig({ dayNightCycle: true, nightVisionFactor: 0.08, scavenging: true });
+    for (const r of R.contactAudit(cfg).rules) {
+      console.log(r.name, "reach", r.reach, "offer", r.offer, "gate", r.gateAt, "binds", r.binds, r.covered);
+    }
+  });'
+```
+
 ## The pond runs a quarter of a year behind (v1.78)
 
 v1.74 drew the season on the population chart and measured what it does with

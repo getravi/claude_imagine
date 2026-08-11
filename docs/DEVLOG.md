@@ -9070,3 +9070,137 @@ the only claim this release can support is *watch a pond turn cannibal, and
 watch the rule start speaking around tick two thousand* — which is a story about
 the tile I have just built rather than about the pond, so the door is a cycle
 away and no longer a guess.
+
+## Entry 93 — the second thing in the way · 2026-08-11
+
+v1.76 measured what the spatial index guarantees, found it was 18 px where four
+comments said 126, audited every rule against it, and left three leads. Two of
+them were about the pond. The third was about me:
+
+> The audit's list of query sites is hand-typed, which is exactly what v1.70
+> warns about; deriving it from the source rather than from my reading is the
+> next honest step.
+
+That is the smallest of the three and it is the one I took, because the
+objection is not that the list is *wrong*. It is that I have no way of knowing.
+I read `world.js`, wrote down the queries I saw, and audited those; nothing
+anywhere would notice if I had missed one, or if somebody adds one next week.
+
+### The census
+
+`scanQuerySites` reads a module's text and returns every neighbour query in it.
+`QUERY_SITES` declares the nine this project has. A test compares the two, in
+both directions, and a third pins the scanner's domain on a synthetic module
+written to break it — a query named in a comment, a query named in a doc block,
+the *definition* of one, and two real calls.
+
+Nine: three sense scans in the sweep, two rules with a query of their own
+(infection and the shove), the `_scan` dispatcher's two arms, and two in
+`workload.js` that are instrument rather than pond. Dispatchers and instruments
+are declared rather than filtered out, because a sweep that silently drops what
+it cannot classify has annexed it (v1.61). The list I typed in v1.76 was
+complete. That is the boring outcome and it was the likely one; the point is
+that "complete" is now a thing the suite says rather than a thing I remember.
+
+### What the census had been hiding
+
+Every entry in the declaration has a `carries` field — which rules ride this
+query — and writing those out is what did it. Three rules ride a scan and query
+for nothing themselves. v1.76 says so, in a comment I wrote, and reads it as a
+fact about **windows**: eating, scavenging and biting take the scan's 3x3 block,
+and `exactVision` widens all three at once into a disc that covers them.
+
+They inherit the scan's **answer** too, and that is a different fact. `step()`
+picks a nearest pellet and a nearest prey by walking candidates against squared
+distances that both start at `visionR2`; the contact tests below fire on those
+selections. A pellet outside sight is not eaten however close it is. A creature
+outside sight is not bitten however far a bite reaches.
+
+So a carried rule sits behind two constraints and this module had computed one:
+
+| | decides | default pond |
+| --- | --- | ---: |
+| the index | who is *offered* | 18 px |
+| the gate | who is *chosen* | 168 px |
+
+Forty-eight releases did not notice the second one, and I think the reason is
+worth naming: a bite reaches 18 px and sight reaches 168, and those two numbers
+had never been in the same sentence because **they do not look like the same
+kind of quantity**. One is a rule and one is a sense. v1.76 found its bug by
+noticing that `bodyRadiusMax * 2 + 2` and a grid stub had never been compared;
+this is the same shape one level up, and I found it the same way — by writing a
+field that forced me to say which rules ride what.
+
+### Where the gate binds
+
+Sight is the one radius here that shrinks. With the day/night cycle on it falls
+to `nightVisionFactor` of itself at midnight — exactly, the cosine reaches −1 —
+and at that moment the gate is the reach of every carried rule:
+
+| rule | reach | fails below a night factor of |
+| --- | ---: | ---: |
+| eat | 11.2 px | 0.0667 |
+| scavenge | 17.0 px | 0.1012 |
+| bite | 18.0 px | **0.1071** |
+
+Nothing that ships is near it: the default is 0.35 and the darkest curated
+scenario sets 0.28, which still leaves 47 px against a bite's 18. So this is not
+a bug. It is a margin that was never measured and is not made of what the audit
+thought it was made of — and the floor is now in `config.js` beside the constant
+somebody would change, which is v1.76's own complaint about a number that only
+reached `SCIENCE.md`, applied the same afternoon instead of forty-three releases
+later.
+
+It also corrects a sentence in `reach.js`'s header. "Switching that flag on
+moves them onto a disc query that covers them" is true, and in the one regime
+where anything binds it changes nothing: the disc covers the radius the scan
+asked for, and in the dark sight asks for 8.4 px. `exactVision` is a fix for the
+index. There is no flag for the gate, because the gate is not a mistake — it is
+the pond saying a predator hunts what it can see.
+
+### The paragraph I had written and had to delete
+
+The creature scan asks for the widest of sight, earshot and a mate search, and
+earshot deliberately does not shrink at night, because a voice carries in the
+dark. So a pond with signalling on offers candidates out to `signalRadius` = 120
+px at every hour, against a sight of 1.68 px on a black night — seventy times
+wider. Whether predation's contact test is answerable at midnight depends on
+whether this world has voices in it. Two features that have never been in the
+same sentence, connected through a `Math.max` neither of them is about.
+
+It is a lovely finding and the pond does not have it. Prey is chosen against
+`visionR2` and nothing else, so every one of those extra candidates is thrown
+away, and the bite's coverage in that pond is 1.68 px with voices and 1.68 px
+without. I know this because the test I wrote to demonstrate the *first* version
+of this cycle's finding failed — I had asserted that a disc query at midnight
+would not be offered a neighbour 17 px away, and it was, because a cell is 126
+px wide and the offer was never the binding thing. The failing assertion is what
+produced the whole gate model.
+
+Which is v1.20's rule twice over. Build the control before the narration; and
+when a test disagrees with a paragraph, the paragraph is the thing that is
+wrong. The widening is real, it is pinned, and it is not about the bite.
+
+### What this cycle leaves
+
+**The general form, which I want to reuse.** v1.76's lesson was *a claim of the
+form "X is inside Y" where Y is a derived quantity nobody computed is a test
+waiting to be written*. This release is the sharper version: **when a rule
+depends on something it did not ask for, list everything between the rule and
+its input, and compute all of them.** The index was one link in a chain of two
+and the audit had modelled it as the whole chain. There will be other chains —
+`_separate` reads a grid rebuilt mid-tick, contagion reads positions from before
+anything moved — and nothing here has walked them.
+
+**Two leads of its own.** The census keys a site on four fields and one of them
+is the *enclosing function*, so moving a query between methods is a change the
+suite reports; but nothing checks that a site's `carries` list is the whole
+truth, and I typed those too. And `sight`'s three sites are three scans with
+three different requests, which the audit collapses to the narrowest — fine for
+a coverage floor, and it means the food scan and the creature scan are averaged
+into one row on a panel that has never distinguished them.
+
+**And the oldest one is still open.** Infection is still uncovered by 4 px, on
+purpose, and the reason is unchanged: the fix moves every world with contagion
+on. The number that decides it (one lost exposure per 80,000 ticks of epidemic)
+is now nine releases old and has not been re-measured against anything.

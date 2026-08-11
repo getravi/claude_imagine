@@ -31,6 +31,27 @@
 //     the three contact rules that ride the sense scan move onto a disc with
 //     `exactVision` while infection does not, because it is the only rule in
 //     the pond with a neighbour query of its own.
+//
+// v1.81 adds the two halves the audit had been taking on trust.
+//
+//   - **the list of sites is derived** rather than read off by me. `QUERY_SITES`
+//     declares the nine neighbour queries in `src/`; `scanQuerySites` finds them
+//     in the source; the first test below compares the two, so a query added
+//     anywhere fails until somebody says which rules ride it. The scanner's
+//     domain is pinned too, on a synthetic module, because a sweep is only worth
+//     what its stated exclusions are.
+//   - **the index is not the only thing between a rule and its candidate.**
+//     Eating, scavenging and biting have no query of their own, so they inherit
+//     the sense scan's *answer* as well as its window: a creature can only bite
+//     what it has already seen. That gate is `visionRadius` times the day/night
+//     cycle, and it binds below a night factor of 18/168 — in both arms, because
+//     `exactVision` is a fix for the index and this is not the index. The floors
+//     are computed, the default night is measured (a margin of 40.8 px, not a
+//     construction), and the failure is staged in the pond itself: one hunter,
+//     one neighbour inside its jaws, unbitten at midnight and eaten at noon.
+//     The coupling that looked real and is not — a pond with voices offers
+//     candidates out to `signalRadius` at every hour — is pinned as a negative
+//     result, because the gate throws every one of them away.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -41,15 +62,33 @@ import { Genome } from "../src/genome.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
 import { SpatialGrid, indexCellSize } from "../src/grid.js";
 import { RNG } from "../src/rng.js";
+import { dayNightVisionFactor } from "../src/environment.js";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
+  QUERY_SITES,
   blockReach,
   cellSpans,
   contactAudit,
   contactRules,
   reachAt,
+  scanQuerySites,
+  siteKey,
+  siteRequest,
   strandedShare,
 } from "../src/reach.js";
 import { trajectoryFingerprint } from "../src/fingerprint.js";
+
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
+
+/** Every neighbour query in the shipped sources, read out of the sources. */
+function sweepSources() {
+  return readdirSync(SRC)
+    .filter((n) => n.endsWith(".js"))
+    .sort()
+    .flatMap((n) => scanQuerySites(readFileSync(join(SRC, n), "utf8"), n));
+}
 
 const defaultGrid = () =>
   new SpatialGrid(DEFAULT_CONFIG.width, DEFAULT_CONFIG.height, indexCellSize(DEFAULT_CONFIG));
@@ -268,6 +307,253 @@ test("an exposure inside infectionRadius that the pond cannot see", () => {
   });
   assert.equal(block, 0, "the query the epidemic runs does not find the contact");
   assert.equal(disc, 1, "the query that covers its radius does");
+});
+
+test("every neighbour query in `src/` is declared, and every declaration is one", () => {
+  const found = sweepSources();
+  assert.deepEqual(
+    found.map(siteKey).sort(),
+    QUERY_SITES.map(siteKey).sort(),
+    "the census and the source disagree — a query was added, moved or renamed"
+  );
+  assert.equal(
+    new Set(QUERY_SITES.map(siteKey)).size,
+    QUERY_SITES.length,
+    "two sites sharing all four identifying fields would be one entry hiding another"
+  );
+
+  // The shape of it, stated as a number so the next query has to change this
+  // line as well as the list: nine, and only five of them are the pond.
+  const kinds = {};
+  for (const s of QUERY_SITES) kinds[s.kind] = (kinds[s.kind] || 0) + 1;
+  assert.deepEqual(kinds, { sense: 3, rule: 2, dispatch: 2, instrument: 2 });
+  assert.equal(QUERY_SITES.length, 9);
+
+  // And the pond's five are all in one module. `world.js` is the only file that
+  // asks the index anything; that is worth knowing and worth being told when it
+  // stops being true.
+  const pond = QUERY_SITES.filter((s) => s.kind === "sense" || s.kind === "rule");
+  assert.deepEqual([...new Set(pond.map((s) => s.module))], ["world.js"]);
+});
+
+test("every rule rides a declared site, and every site of the pond carries a rule", () => {
+  const cfg = makeConfig({
+    disease: true,
+    scavenging: true,
+    bodyCollision: true,
+    signalling: true,
+    sexualReproduction: true,
+  });
+  const rules = contactRules(cfg);
+  const named = new Set(QUERY_SITES.map((s) => s.name));
+  for (const r of rules) {
+    assert.ok(r.sites.length > 0, `${r.name} rides nothing`);
+    for (const s of r.sites) assert.ok(named.has(s), `${r.name} rides an undeclared site ${s}`);
+  }
+
+  // Both directions. A site nobody rides is a query this audit has never asked
+  // a question about, which is the hole v1.76 closed for the rules and left
+  // open for the sites.
+  for (const s of QUERY_SITES) {
+    const riders = rules
+      .filter((r) => r.sites.includes(s.name))
+      .map((r) => r.name)
+      .sort();
+    if (s.kind === "sense" || s.kind === "rule") {
+      assert.ok(riders.length > 0, `${s.name} carries nothing`);
+      assert.deepEqual(riders, [...s.carries].sort(), `${s.name}'s manifest`);
+    } else {
+      assert.deepEqual(riders, [], `${s.name} is a dispatcher or an instrument`);
+    }
+  }
+});
+
+test("the census reads receivers, not prose", () => {
+  // The scanner's stated domain, on a module written to break it: a query named
+  // in a comment, a query named in a doc block, the *definition* of one (no
+  // receiver, so not a site), and two real calls.
+  const source = [
+    "// this.creatureGrid.forEachNear() here is prose about a query",
+    "/**",
+    " * ...and `forEachWithin` in a doc block is prose too.",
+    " */",
+    "export function realOne(x) {",
+    "  grid.forEachWithin(x, 4, () => {});",
+    "}",
+    "class G {",
+    "  forEachNear(x, y, fn) {",
+    "    return fn;",
+    "  }",
+    "  method() {",
+    "    this._scan(this.foodGrid, 1, 2, 3, () => {});",
+    "  }",
+    "}",
+  ].join("\n");
+
+  assert.deepEqual(scanQuerySites(source, "synthetic.js").map(siteKey), [
+    "synthetic.js realOne forEachWithin grid",
+    "synthetic.js method _scan foodGrid",
+  ]);
+
+  // A trailing comment *does* register, and that is the deliberate direction of
+  // the error: a census that over-reports fails loudly, and one that
+  // under-reports is the bug this whole module is about.
+  assert.equal(scanQuerySites("  foo(); // g.forEachNear(x, y)", "t.js").length, 1);
+});
+
+test("a disc covers what it was handed, which is not the same as covering a rule", () => {
+  const audit = contactAudit(
+    makeConfig({ exactVision: true, disease: true, scavenging: true, bodyCollision: true })
+  );
+  const by = Object.fromEntries(audit.rules.map((r) => [r.name, r]));
+
+  // The three carried rules ask for nothing. With `exactVision` on, the query
+  // that offers them a candidate covers 168 px — and so does the sense test
+  // that then chooses one, which is what actually stands between the rule and
+  // its candidate. The exemption v1.76 wrote is a number now, and the number is
+  // somebody else's radius.
+  for (const name of ["eat", "scavenge", "bite"]) {
+    assert.equal(by[name].binds, "gate", `${name} is limited by the sense that carries it`);
+    assert.equal(by[name].offer, 168);
+    assert.equal(by[name].gateAt, 168);
+    assert.equal(by[name].covered, true);
+  }
+  assert.equal(by.bite.margin, 150);
+
+  // The two rules that query for themselves, and the senses. A margin of zero
+  // here means the opposite of the bite's zero in the block arm: the rule is
+  // asking for exactly what it needs, in every pond, at every hour.
+  assert.equal(by.shove.binds, "self");
+  assert.equal(by.shove.offer, by.shove.reach);
+  assert.equal(by.shove.margin, 0);
+  assert.equal(by.shove.gateAt, null, "a rule with its own query has no gate");
+  assert.equal(by.infect.gateAt, null);
+  for (const name of ["sight", "earshot", "mate"]) {
+    assert.equal(by[name].binds, "self", `a sense cannot be gated: it is the gate`);
+  }
+
+  // And in the pond as it ships, the index is still the tighter of the two —
+  // 18 px against a sight of 168 — so v1.76's audit is unchanged where it was
+  // measured. The gate has been there all along and has never bound anything.
+  const block = Object.fromEntries(
+    contactAudit(makeConfig({ disease: true, scavenging: true })).rules.map((r) => [r.name, r])
+  );
+  for (const name of ["eat", "scavenge", "bite"]) {
+    assert.equal(block[name].binds, "index");
+    assert.equal(block[name].gateAt, 168);
+    assert.equal(block[name].offer, 18);
+  }
+  assert.equal(block.bite.margin, 0);
+});
+
+test("the gate binds in the dark, and no flag moves it", () => {
+  const at = (nightVisionFactor, extra = {}) =>
+    contactAudit(
+      makeConfig({ dayNightCycle: true, nightVisionFactor, scavenging: true, ...extra })
+    );
+  const rule = (audit, name) => audit.rules.find((r) => r.name === name);
+
+  // The default night. Sight bottoms out at 58.8 px, which is still wider than
+  // the index, so nothing about the audit changes and every carried rule holds.
+  const dusk = at(DEFAULT_CONFIG.nightVisionFactor);
+  assert.ok(Math.abs(rule(dusk, "bite").gateAt - 58.8) < 1e-12, "midnight is the factor exactly");
+  assert.equal(rule(dusk, "bite").binds, "index");
+  assert.equal(rule(dusk, "bite").margin, 0);
+  // ...and with the index taken out of the way, what is left is the gate, in
+  // pixels rather than in a construction.
+  const exact = at(DEFAULT_CONFIG.nightVisionFactor, { exactVision: true });
+  assert.ok(Math.abs(rule(exact, "bite").margin - 40.8) < 1e-12);
+  assert.ok(Math.abs(rule(exact, "eat").margin - 47.6) < 1e-12);
+  assert.ok(Math.abs(rule(exact, "scavenge").margin - 41.8) < 1e-12);
+
+  // The floor: the night factor at which each rule stops being answerable at
+  // all, which is its reach as a share of the vision radius. A bite goes first,
+  // at 0.107 — and it goes in *both* arms, because `exactVision` is a fix for
+  // the index and this is not the index.
+  for (const name of ["eat", "scavenge", "bite"]) {
+    const floor = rule(dusk, name).reach / DEFAULT_CONFIG.visionRadius;
+    for (const eye of [false, true]) {
+      const opt = { exactVision: eye };
+      assert.equal(rule(at(floor, opt), name).covered, true, `${name} holds at its floor`);
+      const under = rule(at(floor * 0.999, opt), name);
+      assert.equal(under.covered, false, `${name} fails below it, exactVision ${eye}`);
+      assert.equal(under.binds, "gate", "and it is sight that took it, not the index");
+    }
+  }
+  assert.ok(Math.abs(18 / DEFAULT_CONFIG.visionRadius - 0.1071) < 5e-5, "a bite's floor");
+});
+
+test("voices widen the offer and do not carry the bite — the coupling that is not there", () => {
+  // A negative result, pinned (v1.20). The creature scan asks for the widest of
+  // sight, earshot and a mate search, so in a pond where anybody can shout it
+  // offers candidates out to `signalRadius` = 120 px at every hour of the
+  // night. It looks exactly like predation being carried through the dark by
+  // other creatures' voices. It is not: prey is chosen against `visionR2` and
+  // nothing else, so every one of those extra candidates is thrown away.
+  const dark = { exactVision: true, dayNightCycle: true, nightVisionFactor: 0.01 };
+  const by = (cfg) => Object.fromEntries(contactAudit(cfg).rules.map((r) => [r.name, r]));
+  const quiet = by(makeConfig(dark));
+  const loud = by(makeConfig({ ...dark, signalling: true }));
+
+  assert.equal(quiet.bite.offer, 1.68, "with no voices the scan asks for sight alone");
+  assert.equal(loud.bite.offer, 120, "with voices it asks for earshot");
+  assert.equal(loud.bite.gateAt, quiet.bite.gateAt, "and the gate does not hear a thing");
+  assert.equal(quiet.bite.covered, false);
+  assert.equal(loud.bite.covered, false, "a seventyfold wider offer changes nothing");
+  assert.equal(loud.bite.binds, "gate");
+
+  // The site's request is where the widening lives, so the two halves of the
+  // finding are separable: this one is real, and it is not about the bite.
+  const site = QUERY_SITES.find((s) => s.name === "creature");
+  assert.equal(siteRequest(site, makeConfig({ ...dark, signalling: true })), 120);
+  assert.equal(siteRequest(QUERY_SITES.find((s) => s.name === "food"), makeConfig(dark)), 1.68);
+});
+
+test("a bite at midnight the pond does not take", () => {
+  // The failure itself, in the pond rather than in the arithmetic (v1.25: pin
+  // the failure, not only the fix). One carnivore, one small neighbour inside
+  // its jaws, and a night dark enough that the gate is under the gap. The bite
+  // does not happen — and the same pair at noon, one line apart, is eaten.
+  const stage = (visionFactor) => {
+    const cfg = makeConfig({
+      seed: 1,
+      predation: true,
+      dayNightCycle: true,
+      nightVisionFactor: 0.05,
+      foodStart: 0,
+    });
+    const rng = new RNG(13);
+    const world = new World(cfg);
+    world.food.items = [];
+    const g = Genome.random(rng);
+    g.data[g.data.length - 4] = 1; // the biggest body this world grows
+    g.data[g.data.length - 1] = 0.95; // ...and a carnivore's diet
+    const pred = new Creature(g, cfg, 100, 100, rng);
+    const prey = new Creature(Genome.random(rng), cfg, 100, 100, rng);
+    prey.radius = pred.radius * 0.5;
+    const reach = pred.radius + prey.radius + 2;
+    prey.x = 100 + reach - 0.5; // inside a bite, by half a pixel
+    world.creatures = [pred, prey];
+    world.tick = cfg.dayLength / 2; // midnight, so the clock agrees with the arm
+    world.visionFactor = visionFactor;
+    return { world, pred, prey, reach };
+  };
+
+  // A bite stamps `lastBiteAge`, which is the one signal here that no other
+  // part of a tick moves — a prey's energy falls to metabolism whether or not
+  // anything ate it, which is the reading that would have made this test pass
+  // by accident.
+  const dark = stage(0.05);
+  assert.ok(dark.reach > 0.05 * DEFAULT_CONFIG.visionRadius, "the gap is outside the gate");
+  dark.world.step();
+  assert.equal(dark.pred.lastBiteAge, -1000, "unseen, and so unbitten");
+  assert.equal(dark.world.stats.kills, 0);
+
+  const noon = stage(1);
+  const full = noon.prey.energy;
+  noon.world.step();
+  assert.ok(noon.pred.lastBiteAge > -1000, "the same pair, the same gap, in daylight");
+  assert.ok(noon.prey.energy < full - 1, "and the prey pays for it");
 });
 
 test("the audit is an instrument: it leaves the world exactly as it found it", () => {
