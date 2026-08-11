@@ -8772,3 +8772,144 @@ day/night cycle is 900 ticks and nothing has ever asked whether the pond lags
 other column in `Stats` are series against the same reference, and this release
 looked at two of them. The cross-correlation was built for the population and it
 does not know that.
+
+## Entry 91 — the glow that named the paragraph · 2026-08-11
+
+There has been a list in `test/colourliterals.test.js` since v1.61: every colour
+this project names outside `src/palette.js`, each with a reason beside it, split
+into furniture and *marks the audit has never measured*. The second half opened
+with four entries. v1.66 took the predator's outline, v1.70 the vision overlay's
+three strengths, v1.73 the minimap's frame and selection square. Every one of
+them was hiding something, which is four for four and by now less a streak than
+a prior.
+
+One was left, and it had been left the longest: the inspector's swatch. The
+14-pixel square beside *Creature #n*. Two releases ago I walked the inspector
+field by field and wrote down, in `FIELD_REPORTS`, that this square is where the
+panel reports a creature's hue. So it is a mark with a job, on a list of marks
+with no numbers, and this cycle was going to be twenty minutes.
+
+### It passes, and that is not an answer
+
+Swept over all 360 lineage hues and all four vision models, against the panel it
+sits on, the swatch's worst case is **ΔE 35.8** against a bar of 25. Nothing is
+close. I had the paragraph half-written — *the sixth item was fine, an audit
+that only reports problems is not an audit, see v1.55* — which is a sentence
+this project has legitimately earned before and which I have learned to distrust
+in exactly this position.
+
+The thing that stopped me was a line of CSS I had scrolled past:
+
+```css
+.swatch { …; box-shadow: 0 0 8px currentColor; }
+```
+
+A `box-shadow` with no offset is the element's silhouette blurred, and the blur
+runs from full strength to nothing across the blur radius **centred on the
+element's edge**. The square is opaque and covers the inner half. So the first
+pixel outside the mark — the one the eye actually reads the mark's boundary
+against — is the shadow at *half* strength.
+
+And `currentColor` in an `.insp-row` is not the swatch's colour. The span has a
+`background` and no `color` of its own, so it inherits the paragraph's ink,
+`--ink` `#dce7f2`. The swatch's real surround has been `rgb(116, 125, 135)` — a
+mid slate, near-white at half strength over a near-black panel, **identical for
+every creature in every pond** — since v1.0.
+
+Measured against the ground it actually lies on:
+
+| | normal | protanopia | deuteranopia | tritanopia |
+| --- | --- | --- | --- | --- |
+| over the panel | 65.6 | 35.8 | 51.3 | 37.8 |
+| over its own halo | 33.9 | **10.6** | **5.0** | **9.1** |
+
+Under the bar on **55 of the 360 hues, 15.3%**, in two contiguous bands: 260–268,
+the blue-violets, and **311–356**, the entire magenta-to-red arc. Over twelve
+seeds and 32,269 creature-frames, **9.56%** of the creatures a visitor could
+click on wear a swatch that fails for some reader. The mark's own rule laid the
+ground the mark was then illegible against.
+
+### The control was nine hundred lines further down the same file
+
+I went looking for other `currentColor` glows before deciding what to do, which
+is v1.30's rule — when you write a lesson down, the same afternoon's work is to
+grep for every other place it applies. There is exactly one:
+
+```css
+.legend .chip .dot { …; box-shadow: 0 0 6px currentColor; }
+```
+
+The species legend's dot. Same 14-pixel chip, same idiom, same property. And it
+is *fine*, because `main.js` writes `color:${lineageFill(s.hue, "dot")}` onto
+that span, so its `currentColor` is the lineage's own fill and its halo is a
+dimmer shade of itself. It clears the panel by 35.83 or better on every hue.
+
+One idiom, two instances, and the difference between them is a single
+declaration — on the instance nobody had a test for. That is the whole fix: the
+swatch names itself now, `palette.js` owns both values, and the glow being the
+fill is asserted rather than coincidental. No new colour was chosen. The colour
+was never the bug, which is now the third time in this audit I have written that
+sentence.
+
+### What I think the real finding is
+
+Every mark this audit has ever measured lives on the canvas, and on the canvas a
+mark's background is chosen by the *world*: a predator's body as it feeds, a
+biome full of pellets, the ground a corpse happens to lie on. The whole
+discipline built up since v1.25 is about that — measure the composited result
+against the full range of states the background can take, because you do not get
+to choose it.
+
+**In the DOM you do.** A mark can paint its own background — with a shadow, a
+border, a `::before`, an outline — and when it does, the surface an audit
+reaches for out of habit is the one surface the mark is not on. The panel
+measurement was not wrong. It was a measurement of a different thing.
+
+So the rule going into the playbook is small and mechanical: before measuring a
+DOM mark against the panel, read its own rule for what it puts underneath
+itself. I would rather have a mechanical check than a lesson, and I do not have
+one — the swatch was found by reading six lines of CSS, and there is no test in
+this suite that could have found it.
+
+### The pips, which are the control for the control
+
+The swatch's entry on the list named its own blind spot: *its sibling — the
+ancestry pips — is painted from `style.css`, which is outside every sweep this
+project has.* Striking the swatch off and leaving that sentence sitting under a
+closed list is precisely v1.66's most expensive kind of note, so the pips were
+swept in the same pass. The filled pip clears the panel by **43.4** at worst,
+its dark label clears its own fill by **43.9**, and a dead ancestor's hollow pip
+clears the panel by **47.9**. They pass, comfortably, at every hue.
+
+That matters more than it sounds. Five of the six items on this list were hiding
+something, and a list where everything is a bug is a list I should suspect of
+being a lens rather than an instrument. The sixth's sibling is clean. The values
+stay in the stylesheet — the hue arrives as a custom property, so a module can
+only own the fixed part — and are pinned by name, the way the minimap's water
+and the Tree of Life's canvas have been since v1.62.
+
+### Two things this leaves, and they are the same shape
+
+**The swatch reports a hue; the creature is not a hue.** A body in the pond is
+`hsl(hue, 60 + signal·25, 45 + energy·45)`, so its saturation and lightness both
+move while you watch it. The swatch is a fixed 70%/55%. Over those same 32,269
+frames it sits a median **ΔE 20.5** from the creature it names, and over the bar
+on **43.2%** of them. Nothing is illegible; the square just is not the animal.
+And there is no lightness that fixes it, because the body's is a variable — the
+honest options are to make the swatch move with the creature (and stop being a
+lineage colour) or to say somewhere that it is the lineage and not the body.
+
+**And the swatch and the pip beside it are two quantities wearing one colour.**
+The swatch is `c.hue`, an individual's, which mutates. The pips are `s.hue`, the
+species founder's, frozen at speciation. They sit four rows apart in one panel
+at `hsl(h, 70%, 55%)` and `hsl(h, 70%, 62%)` — **ΔE 2.0–4.0** apart at the same
+hue, under the just-noticeable difference for a protanope. Measured across
+twelve ponds the drift between the two is a median of **0°** and a maximum of
+**85.9°**: nine times in ten they are one colour saying two things, and the rest
+of the time they visibly disagree and the panel offers no account of why.
+
+Both are the same complaint, which is not about contrast at all: this panel
+paints three different quantities in one visual language and never says which is
+which. That is a legibility audit of a kind this project has not run — not *can
+you see the mark*, but *does the mark mean what its neighbour means*. The
+sixth item is off the list and the list has stopped being the interesting object.

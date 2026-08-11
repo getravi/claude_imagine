@@ -33,6 +33,7 @@ import {
   lineageFill,
   rgbCss,
   inspectorTrack,
+  inspectorSwatch,
   brainGraphBackground,
   weightMark,
   weightMarkTones,
@@ -1357,8 +1358,16 @@ function inspectorHTML(c, chain, facts) {
         `<dd id="insp-${f.key}">${f.value}</dd></div>`
     )
     .join("\n      ");
+  // The swatch carries its own `color`, exactly as the species legend's dot has
+  // since v1.46, and for a reason that took until v1.79 to measure: the
+  // stylesheet glows it with `currentColor`, and a span with a background and
+  // no colour of its own inherits the paragraph's ink. The halo was near-white
+  // for all 360 hues, it is the surface the mark is actually read against, and
+  // 15.3% of lineage hues were under the bar against it. `palette.js` has the
+  // numbers and the two bands.
+  const sw = inspectorSwatch(c.hue);
   return `
-    <div class="insp-row"><span class="swatch" style="background:hsl(${c.hue},70%,55%)"></span>
+    <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
       <strong>Creature #${c.id}</strong></div>
     <dl class="insp-grid">
       ${rows}

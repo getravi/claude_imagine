@@ -4,6 +4,79 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.79.0] — 2026-08-11
+
+The last colour named outside `src/palette.js` was the inspector's swatch: the
+14-pixel square beside *Creature #n*, and — since v1.77 wrote the panel's field
+map down — the only place on the page a creature's own hue is reported. Measured
+against the panel it sits on, it passes on all 360 lineage hues under all four
+vision models, worst case **ΔE 35.8**. That measurement is right and it is not a
+measurement of this mark, because the swatch is not drawn on the panel.
+
+`style.css` has glowed it with `box-shadow: 0 0 8px currentColor` since v1.0. A
+zero-offset blur is the silhouette faded out across the blur radius *centred on
+the edge*, so the pixel the eye reads the boundary against is at half strength —
+and `currentColor` on a span with a background and no colour of its own is the
+**paragraph's** ink. The swatch's real surround was `rgb(116, 125, 135)`, a mid
+slate, the same for every creature in every pond, and against it the swatch is
+under the bar on **55 of 360 hues (15.3%)** — two contiguous bands, the
+blue-violets and the whole magenta-to-red arc — bottoming out at **ΔE 5.04**.
+Over twelve seeds, **9.56%** of the creatures a visitor could click on wore one.
+
+### Changed
+
+- **The swatch names itself** (`inspectorSwatch()`, `src/palette.js`). No new
+  colour: the fix is the declaration its sibling has always had. The species
+  legend's dot is the same 14-pixel chip with the same
+  `box-shadow: 0 0 Npx currentColor` nine hundred lines down the same
+  stylesheet, and `main.js` sets `color` on that span to the lineage's own fill,
+  so its halo *is* its mark and it clears the panel by 35.83 or better on every
+  hue. One idiom, two instances, and the difference between them is one line.
+  `glow` is returned separately from `fill` so that *the swatch's halo is its
+  own colour* is a thing a test states rather than an equality nobody would
+  notice breaking.
+
+### Added
+
+- **`DOM_HALO_ALPHA`** — 0.5, with the derivation. Not a taste and not a
+  colour: it is the answer to *what is this mark drawn on* for a mark whose
+  background is painted by its own rule.
+- **`ancestryPip()` / `ancestryPipTones()`** — the swatch's sibling four rows
+  down, and the blind spot its own entry on the list named ("painted from
+  `style.css`, which is outside every sweep this project has"). Striking the
+  swatch off without them would leave a known gap filed under a closed list.
+  They stay in the stylesheet, because the hue arrives as a custom property, and
+  are *pinned* by name in `test/colourliterals.test.js` the way the minimap's
+  water and the Tree of Life's canvas are (v1.62).
+- **Five tests in `test/palette.test.js`**: the glow-is-the-fill invariant; the
+  sweep over all 360 hues; the old near-white halo **pinned as a failure**
+  alongside the control that it passed on the panel all along (v1.24 — a suite
+  that only knows the new numbers stays green while someone restores the old
+  ones); the legend dot as the working instance of the same idiom; and the pips.
+- **A self-check on this file's own count of its stylesheet pins**
+  (`test/colourliterals.test.js`) — v1.52's rule, on the third surface in three
+  releases to produce it.
+- **`docs/SCIENCE.md`**: *The glow that named the paragraph (v1.79)*.
+
+### Measured
+
+- **The list is closed.** Six items struck off since v1.61, five of them hiding
+  something — and the sixth's sibling clears every bar it is held to by 43 or
+  better, which is the control that makes the other five mean anything. `main.js`
+  is off the literal list entirely, the second module to leave it after
+  `render.js` in v1.70.
+- **What it leaves.** The swatch reports a *hue*; the body it names is
+  `hsl(hue, 60 + signal·25, 45 + energy·45)`, which moves. Over 32,269
+  creature-frames the swatch sits a median **ΔE 20.5** from the creature it
+  stands for and over the bar on **43.2%** of them — not a contrast bug, and not
+  fixable by choosing a lightness, because the body's is a variable.
+- **And a second silence.** The swatch and the *current* ancestry pip are two
+  different quantities — an individual's hue, and its species' founder's — drawn
+  **ΔE 2.0–4.0** apart, under the just-noticeable difference for a protanope.
+  The individual's hue drifts from the founder's by a median of 0° and by as
+  much as **85.9°**, so nine times in ten they are the same colour saying two
+  things, and the rest of the time they visibly disagree with nothing to say why.
+
 ## [1.78.0] — 2026-08-10
 
 v1.74 shaded the lean half of the year behind the population chart and measured

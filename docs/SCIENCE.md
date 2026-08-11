@@ -1401,6 +1401,52 @@ bar, the legend swatches and the chart strip cannot drift apart, and so the test
 measures the colour that is actually drawn.
 
 
+### The glow that named the paragraph (v1.79)
+
+The last colour named outside `src/palette.js` was the inspector's swatch — the
+14-pixel square beside *Creature #n*, and, since v1.77 wrote the panel's field
+map down, the only place on the page a creature's own hue is reported. Measured
+the way every mark in this audit had been measured, against the panel it sits
+on, it passes on all 360 lineage hues under all four vision models, worst case
+**ΔE 35.8**. That measurement is correct, and it is not a measurement of this
+mark, because the swatch is not drawn on the panel.
+
+`style.css` had glowed it with `box-shadow: 0 0 8px currentColor` since v1.0. A
+zero-offset blur is the shape's silhouette faded out across the blur radius,
+centred on the edge, so the pixel the eye reads the mark's boundary against sits
+at **half strength** — and `currentColor` on a span that has a background and no
+colour of its own is the *paragraph's* text colour, `--ink` `#dce7f2`. The
+swatch's real surround was `rgb(116, 125, 135)`, a mid slate, identical for every
+creature in every pond.
+
+| the swatch, over… | normal | protanopia | deuteranopia | tritanopia |
+| --- | --- | --- | --- | --- |
+| the panel (what was measured) | 65.6 | 35.8 | 51.3 | 37.8 |
+| its own halo (what is there) | 33.9 | **10.6** | **5.0** | **9.1** |
+
+Under `MIN_DELTA_E` on **55 of the 360 hues — 15.3%** — in two contiguous bands,
+260–268 (the blue-violets, for a tritanope) and **311–356**, the whole
+magenta-to-red arc. Over twelve seeds and 32,269 creature-frames, **9.56%** of
+the creatures a visitor could click on wore a failing swatch.
+
+The control is nine hundred lines further down the same stylesheet.
+`.legend .chip .dot` is the same 14-pixel chip with the same
+`box-shadow: 0 0 Npx currentColor`, and `main.js` sets `color` on that span to
+the lineage's own fill — so its halo *is* its mark, and it clears the panel by
+35.8 or better on every hue. One idiom, two instances, and the difference is a
+single declaration. The swatch does the same thing now; the colour was never the
+bug, and no new colour was chosen.
+
+The generalisation is the reason this took until v1.79. Every mark audited
+before it lives on the canvas, where the background is chosen by the world: a
+predator's body, a fed biome, the ground a corpse lies on. **A DOM mark can
+paint its own background**, and when it does, the surface an audit reaches for
+by habit is the one surface the mark is not on. The swatch's sibling four rows
+below it — the ancestry pips, `hsl(var(--anc-hue), 70%, 62%)` in the stylesheet
+— was swept in the same pass and clears every bar it is held to by 43 or better.
+That is the control for the control: five of the six items on this list were
+hiding something, and the sixth's neighbour is not.
+
 ### Running it yourself
 
 Ten lines, no dependencies, reproducing the headline number — the v1.24 core

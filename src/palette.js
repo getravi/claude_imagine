@@ -1583,6 +1583,127 @@ export function brainGraphBackground() {
   return { r: 0x05, g: 0x08, b: 0x0d };
 }
 
+/**
+ * What a `box-shadow: 0 0 Npx C` actually leaves against the shape's own edge.
+ *
+ * A zero-offset box-shadow is the element's silhouette blurred, and a blur of
+ * `N` runs from full strength to nothing across `N` pixels *centred on the
+ * silhouette's boundary*. The shape is opaque and covers the inner half, so the
+ * first pixel outside the mark — the one the eye reads the mark's edge against
+ * — sits at half strength, falling to zero `N/2` pixels out.
+ *
+ * This is the number the whole of v1.79 turns on, and it is not a colour: it is
+ * the answer to *what is this mark drawn on*, for a mark whose background is
+ * painted by its own rule. Every audit in this file before it took the surface
+ * underneath as given, because on the canvas it is — `render.js` draws a mark
+ * over a pond it did not choose. In the DOM a mark can lay its own ground and
+ * then be measured against the one it isn't on.
+ */
+export const DOM_HALO_ALPHA = 0.5;
+
+/**
+ * The inspector's swatch — the 14-pixel square beside *Creature #n*, and the
+ * only place on the page a creature's own hue is reported (v1.77 wrote that
+ * down in `FIELD_REPORTS`; this measures it).
+ *
+ * It was the last entry on v1.61's list of colours named outside this file, and
+ * the last of the six to be measured. Against the panel it is safe and always
+ * was — worst **ΔE 35.80** over all 360 hues and all four vision models, no hue
+ * within a factor of anything of the bar — which is the measurement an audit
+ * of this project's usual shape would have made, and it would have struck the
+ * entry off with "the swatch was fine".
+ *
+ * The swatch is not drawn on the panel. `style.css` has given it
+ * `box-shadow: 0 0 8px currentColor` since v1.0, and `currentColor` in a
+ * `.insp-row` is `--ink`, `#dce7f2` — the paragraph's text colour, because the
+ * span has a background and no colour of its own. So the mark's actual
+ * surround is the panel with near-white at `DOM_HALO_ALPHA` over it,
+ * `rgb(116, 125, 135)`, a mid slate; and against *that* the swatch is under
+ * `MIN_DELTA_E` on **55 of the 360 lineage hues (15.3%)** — 29 for a
+ * protanope, 31 for a deuteranope, 9 for a tritanope — bottoming out at
+ * **ΔE 5.04** at hue 326. Two bands, and neither is exotic: 260–268, the
+ * blue-violets, and **311–356**, which is the whole magenta-to-red arc. Over
+ * twelve seeds and 32,269 creature-frames, **9.56%** of the creatures a visitor
+ * could click on have a swatch that fails for some reader.
+ *
+ * The glow is what the rule was reaching for and not what it got. Every
+ * creature in the pond is drawn with a radial gradient in its own hue
+ * (`render.js#_drawCreature`), so a small glowing square is the panel restating
+ * the canvas — and the property that was supposed to name the creature named
+ * the paragraph instead. The proof is nine hundred lines down the same
+ * stylesheet: `.legend .chip .dot` is the same 14-pixel chip with the same
+ * `box-shadow: 0 0 6px currentColor`, and `main.js` sets `color` on that span
+ * to the lineage's own fill, so its halo *is* its mark. Measured, the dot
+ * clears the bar on every hue by 35.83 or better. One idiom, twice, one of them
+ * naming itself — and the one that did not is the one no test had reached.
+ *
+ * So the fix is the sibling's, not a new colour: the swatch names itself, the
+ * glow becomes the fill by construction rather than by coincidence, and the
+ * mark is read against the panel again, where it always scored. `glow` is
+ * returned separately from `fill` so that the invariant *the swatch's halo is
+ * its own colour* is a thing a test can state, rather than an equality nobody
+ * would notice breaking.
+ *
+ * What this does **not** claim, since a victory sentence that does not name
+ * what it excludes annexes it: the swatch reports a *hue*, and the body it
+ * stands for is `hsl(hue, 60 + signal·25, 45 + energy·45)`, which moves. Over
+ * the same 32,269 frames the swatch sits a median of **ΔE 20.5** from the
+ * creature it names and over the bar on **43.2%** of them. That is not a
+ * contrast bug — nothing is illegible — and it is not fixable by choosing a
+ * lightness, because the body's is a variable. It is a lead, and it is written
+ * up in `docs/DEVLOG.md` rather than pinned here.
+ *
+ * @param {number} hue 0..360
+ */
+export function inspectorSwatch(hue) {
+  const fill = `hsl(${hue}, 70%, 55%)`;
+  return { fill, glow: fill, blur: 8 };
+}
+
+/** The swatch's fill and the halo it now lays, as RGB, for the audit. */
+export function inspectorSwatchTones(hue) {
+  const fill = hslToRgb(hue, 70, 55);
+  return { fill, halo: blendOver(panelBackground(), fill, DOM_HALO_ALPHA) };
+}
+
+/**
+ * The ancestry pips — one rounded chip per species in a creature's descent,
+ * `style.css` since v1.9, and the swatch's sibling in every sense that matters:
+ * a 14-ish-pixel chip carrying an inherited hue, four rows below it in the same
+ * panel. v1.61's entry for the swatch named these as the reason it could not
+ * finish the job — *"its sibling is painted from style.css, which is outside
+ * every sweep this project has"* — so striking the swatch off without them
+ * would leave a known gap filed under a closed list, which v1.66 calls the most
+ * expensive kind of note.
+ *
+ * They pass, and comfortably. Over all 360 hues and all four vision models:
+ * the filled pip clears the panel by **43.39** at worst (hue 345, protanopia);
+ * its dark label clears its own fill by **43.95**; and an extinct ancestor's
+ * hollow pip — 45% saturation, no fill, a dashed border — clears the panel by
+ * **47.92**. Nothing here needs changing, and that is the finding: five of the
+ * six items on v1.61's list were hiding something and the sixth's sibling is
+ * not, which is what a control is for.
+ *
+ * The values stay in the stylesheet rather than moving here, because the pip's
+ * hue arrives as a custom property and the chip is painted before any module
+ * runs — the same case as the minimap's water and the Tree of Life's canvas.
+ * So they are *pinned* by name in `test/colourliterals.test.js` rather than
+ * deduplicated (v1.62), and this function is what they are pinned to.
+ */
+export function ancestryPip() {
+  return { sat: 70, light: 62, goneSat: 45, label: "#06121c" };
+}
+
+/** A pip's tones at one hue, for the audit. */
+export function ancestryPipTones(hue) {
+  const p = ancestryPip();
+  return {
+    fill: hslToRgb(hue, p.sat, p.light),
+    gone: hslToRgb(hue, p.goneSat, p.light),
+    label: { r: 0x06, g: 0x12, b: 0x1c },
+  };
+}
+
 /** `{r,g,b}` → a CSS colour, for the places the DOM is painted from this file. */
 export function rgbCss({ r, g, b }) {
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;

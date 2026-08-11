@@ -109,6 +109,11 @@ import {
   BRAIN_EDGE_ALPHA,
   brainNodeColours,
   brainNodeTones,
+  inspectorSwatch,
+  inspectorSwatchTones,
+  ancestryPip,
+  ancestryPipTones,
+  DOM_HALO_ALPHA,
 } from "../src/palette.js";
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
@@ -2624,6 +2629,144 @@ test("a connection's magnitude is its width, and its opacity is a constant", () 
     deltaE(a, b, "protanopia") < MIN_DELTA_E,
     "expected the old faded edge sign to fail under protanopia"
   );
+});
+
+// ---- the inspector swatch, and the ground its own rule lays (v1.79) ----
+//
+// The last of the six marks on v1.61's list of colours named outside the
+// palette, and the one that needed a different question. Every audit before it
+// asked "does this mark clear the surface underneath it", and on the canvas
+// that surface is chosen by the world. In the DOM a mark can paint its own,
+// which is what `box-shadow: 0 0 8px currentColor` had been doing here since
+// v1.0 — in the paragraph's ink, because the span had a background and no
+// colour of its own.
+
+/** The near-white the swatch used to glow with: `--ink` in `style.css`. */
+const PANEL_INK = { r: 0xdc, g: 0xe7, b: 0xf2 };
+
+/** Worst `score(hue, vision)` over every lineage hue and all four models. */
+function sweepHues(score) {
+  let worst = Infinity;
+  let n = 0;
+  for (const vision of VISION_MODELS) {
+    for (let hue = 0; hue < 360; hue++) {
+      const d = score(hue, vision);
+      worst = Math.min(worst, d);
+      if (d < MIN_DELTA_E) n++;
+    }
+  }
+  return { worst, failures: n };
+}
+
+test("the swatch's glow is its own colour, by construction", () => {
+  // Not an equality anybody would notice breaking, which is why it is stated:
+  // `main.js` writes `color` from `glow` and the stylesheet glows with
+  // `currentColor`, so this one assertion is what stops the halo drifting back
+  // into being a second colour the mark has to survive.
+  for (const hue of [0, 90, 207, 326, 359]) {
+    const s = inspectorSwatch(hue);
+    assert.equal(s.glow, s.fill, `hue ${hue}: the halo is not the mark's colour`);
+    assert.match(s.fill, /^hsl\(/);
+    assert.ok(s.blur > 0, "a glow with no blur is not a glow");
+  }
+  const tones = inspectorSwatchTones(207);
+  assert.deepEqual(tones.fill, hslToRgb(207, 70, 55), "the audit and the CSS are one value");
+  assert.deepEqual(
+    tones.halo,
+    blendOver(panelBackground(), tones.fill, DOM_HALO_ALPHA),
+    "the halo is the fill at the edge strength, over the panel"
+  );
+});
+
+test("the swatch reads on every lineage hue, against the ground it lays", () => {
+  const swept = sweepHues((hue, vision) =>
+    deltaE(inspectorSwatchTones(hue).fill, panelBackground(), vision)
+  );
+  assert.equal(swept.failures, 0, "some hue's swatch is under the bar against the panel");
+  assert.ok(swept.worst > 35, `worst case ΔE ${swept.worst.toFixed(2)}, expected > 35`);
+
+  // And the mark against its own halo, which is now a shade of itself rather
+  // than a competitor: the two are close on purpose, so this asserts the sign
+  // of the difference rather than a bar. A halo brighter than its mark is the
+  // bug coming back in a new colour.
+  for (let hue = 0; hue < 360; hue += 7) {
+    const t = inspectorSwatchTones(hue);
+    assert.ok(
+      toLab(t.fill)[0] > toLab(t.halo)[0],
+      `hue ${hue}: the glow is lighter than the square it surrounds`
+    );
+  }
+});
+
+test("the near-white halo the swatch used to draw is pinned as a failure", () => {
+  // v1.24's rule: a suite that only knows the new numbers stays green while
+  // someone restores the old ones. The old halo is what `currentColor` resolved
+  // to in an `.insp-row`, and it is not a colour this file can reach by
+  // accident — it is the paragraph's ink, so it is written out here.
+  const oldHalo = blendOver(panelBackground(), PANEL_INK, DOM_HALO_ALPHA);
+  const swept = sweepHues((hue, vision) => deltaE(hslToRgb(hue, 70, 55), oldHalo, vision));
+  assert.ok(
+    swept.worst < 6,
+    `expected the old halo to swallow a swatch outright, got ΔE ${swept.worst.toFixed(2)}`
+  );
+
+  // 55 of the 360 hues failed for some reader — two contiguous bands, the
+  // blue-violets and the whole magenta-to-red arc — and 9.56% of the creatures
+  // in twelve ponds wore one. The count is asserted loosely because the bands'
+  // edges move with the ΔE model; the bands themselves are the finding.
+  const failing = new Set();
+  for (const vision of VISION_MODELS) {
+    for (let hue = 0; hue < 360; hue++) {
+      if (deltaE(hslToRgb(hue, 70, 55), oldHalo, vision) < MIN_DELTA_E) failing.add(hue);
+    }
+  }
+  assert.ok(failing.size > 40, `expected the old failure to be broad, got ${failing.size} hues`);
+  for (const hue of [265, 326, 342]) {
+    assert.ok(failing.has(hue), `hue ${hue} was one of the worst and is no longer counted`);
+  }
+
+  // The control, and the whole reason this took until v1.79: measured against
+  // the panel — the surface an audit of this project's usual shape would have
+  // reached for — the very same swatch passes everywhere.
+  const onPanel = sweepHues((hue, vision) => deltaE(hslToRgb(hue, 70, 55), panelBackground(), vision));
+  assert.equal(onPanel.failures, 0, "the swatch was always safe on the panel; that was never the question");
+});
+
+test("the species legend's dot is the same rule, and always named itself", () => {
+  // The sibling that got it right: `main.js` sets `color` on the dot span, so
+  // `.legend .chip .dot`'s `box-shadow: 0 0 6px currentColor` glows in the
+  // lineage's own fill. This is the control for the finding above — one idiom,
+  // two instances, and the difference between them is a single declaration.
+  const swept = sweepHues((hue, vision) =>
+    deltaE(hslToRgb(hue, 68, 55), panelBackground(), vision)
+  );
+  assert.equal(swept.failures, 0);
+  assert.ok(swept.worst > 35, `worst case ΔE ${swept.worst.toFixed(2)}`);
+  assert.equal(lineageFill(0, "dot"), "hsl(0, 68%, 55%)", "the dot's fill is still the band's");
+});
+
+test("the ancestry pips clear every bar they are held to", () => {
+  // The swatch's sibling four rows down, and the reason v1.61 could not finish:
+  // painted from `style.css`, outside every sweep this project had. Brought in
+  // here rather than left named-but-unmeasured under a closed list.
+  const fill = sweepHues((hue, vision) => deltaE(ancestryPipTones(hue).fill, panelBackground(), vision));
+  assert.equal(fill.failures, 0, "a filled pip disappears into the panel at some hue");
+  assert.ok(fill.worst > 40, `filled pip worst ΔE ${fill.worst.toFixed(2)}`);
+
+  // Its label is dark text on that fill — the pip's actual content, and the
+  // only one of these three that carries a word rather than a colour.
+  const label = sweepHues((hue, vision) => {
+    const t = ancestryPipTones(hue);
+    return deltaE(t.label, t.fill, vision);
+  });
+  assert.equal(label.failures, 0, "a species number vanishes into its own pip");
+  assert.ok(label.worst > 40, `pip label worst ΔE ${label.worst.toFixed(2)}`);
+
+  // An extinct ancestor: hollow, so the hue is carried by the text and the
+  // dashed border, at 45% saturation against the panel itself.
+  const gone = sweepHues((hue, vision) => deltaE(ancestryPipTones(hue).gone, panelBackground(), vision));
+  assert.equal(gone.failures, 0, "a dead ancestor's pip is unreadable at some hue");
+  assert.ok(gone.worst > 40, `hollow pip worst ΔE ${gone.worst.toFixed(2)}`);
 });
 
 test("the inspector's plates come from the palette, not from the stylesheet", () => {

@@ -284,10 +284,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   falsified itself in v1.57 by making the pellet additive. Four pellets stack in
   one minimap pixel and the brightest pixel it paints is `rgb(222, 255, 255)`;
   both marks bottom out at ΔE 0.00–0.01 over the 5,088 colours the map can leave
-  under a mark drawn last. **One entry left on the whole list**: the inspector
-  swatch in `main.js`, whose sibling the ancestry pips are painted from
-  `style.css` where no sweep here can reach. Five items struck off and five were
-  hiding something. What v1.73 leaves in turn is bigger than what it closed —
+  under a mark drawn last. **The list closed in v1.79** (`inspectorSwatch()`),
+  and its last entry needed a question the audit had never asked. Six struck
+  off; five were hiding something, and the sixth's *sibling* — the ancestry
+  pips, the blind spot that entry named — is the control, clearing every bar by
+  43 and showing what a clean one looks like. The swatch failed on **15.3% of
+  lineage hues** and **9.56% of lived creature-frames**, and passed on all 360
+  against the panel: `box-shadow: 0 0 8px currentColor` on a span with a
+  background and no `color` of its own glowed it in the *paragraph's* ink, so
+  the mark's own rule laid the ground it was then illegible against. **The rule
+  to carry forward: on the canvas a mark's background is chosen by the world;
+  in the DOM a mark can paint its own** — so before measuring a DOM mark
+  against the panel, read its `box-shadow`, its border and its `::before`. The
+  fix was the sibling's single missing declaration (`.legend .chip .dot` has
+  always set `color`), not a new colour. What it leaves: the swatch reports a
+  hue while the body it names is `hsl(hue, 60+signal·25, 45+energy·45)`, so it
+  sits a median **ΔE 20.5** from the creature it stands for and over the bar on
+  43.2% of frames — a fidelity question no choice of lightness answers, because
+  the body's is a variable; and the swatch and the *current* ancestry pip are
+  two different quantities (an individual's hue; its species' founder's) drawn
+  **ΔE 2.0–4.0 apart**, under the just-noticeable difference for a protanope,
+  with the individual's hue drifting from the founder's by as much as 85.9° in
+  the ponds measured. Two marks that agree nine times in ten and silently
+  disagree the rest is the next thing on this surface.
+  What v1.73 leaves in turn is bigger than what it closed —
   see the two frequency lessons below, and note that the eighty-line rasteriser
   that produced them lives in a scratch directory and nothing in the suite can
   ask its question.

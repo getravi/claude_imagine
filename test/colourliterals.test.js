@@ -26,10 +26,12 @@
 //     `minimap.js#terrainBandFill` does on purpose (a ramp is a formula, not a
 //     value), so a channel computed from constants passes through unnoticed.
 //   - It reads `src/*.js`. The stylesheet is not source it can parse, and the
-//     colours that live in both are checked by name at the bottom — two of
-//     them as of v1.62, which is the shape to expect: a surface that paints
-//     before any module runs needs its background in the CSS *and* in the
-//     palette, so the pair gets pinned rather than deduplicated.
+//     colours that live in both are checked by name at the bottom — three of
+//     them as of v1.79, and that count is itself checked below, because a
+//     number stated in prose about a collection in code drifts (v1.52, v1.78).
+//     A surface that paints before any module runs, or one whose colour arrives
+//     as a custom property, needs its value in the CSS *and* in the palette, so
+//     the pair gets pinned rather than deduplicated.
 //   - It says nothing about whether a colour is *good*. That is
 //     `test/palette.test.js`; this file only asks whether the palette knows
 //     about it. A literal on this list is a colour that has never been
@@ -41,7 +43,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { minimapWater, mullerBackground, rgbCss } from "../src/palette.js";
+import { ancestryPip, minimapWater, mullerBackground, rgbCss } from "../src/palette.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
@@ -57,12 +59,21 @@ const SRC = join(ROOT, "src");
  * I wrote myself is the one I skim.
  */
 const ALLOWED = [
-  // ---- marks the audit has still never measured (v1.61's open list) ----
-  {
-    file: "main.js",
-    literal: "hsl(${c.hue},70%,55%)",
-    why: "the inspector swatch: a lineage hue in the DOM, and the last mark on the audit's own to-do list. v1.46 proved this exact quantity cannot be an identifier, on the Muller bands; nobody has measured it on this surface, and its sibling — the ancestry pips — is painted from style.css, which is outside every sweep this project has.",
-  },
+  // ---- marks the audit has still never measured ----
+  // (Empty as of v1.79. v1.61 opened this half of the list with four entries
+  // and every one of them was hiding something; the last was the inspector
+  // swatch, and it needed a question this project had not asked. Its entry read
+  // "nobody has measured it on this surface" and the surface turned out to be
+  // the finding: a DOM mark can paint its own background, and this one did —
+  // `box-shadow: 0 0 8px currentColor` on a span with no colour of its own, so
+  // the halo was the *paragraph's* ink and 15.3% of lineage hues were under the
+  // bar against it. Against the panel, which is what an audit here would have
+  // measured, it passed on all 360. `main.js` is off this list entirely now,
+  // the second module to leave it after `render.js` in v1.70; the entry's
+  // named blind spot — the ancestry pips, in `style.css` — is pinned at the
+  // bottom of this file and swept in `test/palette.test.js`. Six struck off,
+  // five were hiding something, and the sixth's sibling is the control that
+  // says so.)
   // (The predator outline was here until v1.66, which measured it — 56.3% of
   // its backgrounds under the bar — and moved it into `predatorOutline()`. It
   // is the second item this list has struck off, and like the first it was
@@ -202,4 +213,49 @@ test("the stylesheet and the palette agree about the Tree of Life's canvas", () 
   assert.match(hex, /^#[0-9a-f]{6}$/i, `#muller's background is ${hex}, which this test cannot compare`);
   const { r, g, b } = mullerBackground();
   assert.equal(hex.toLowerCase(), "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join(""));
+});
+
+test("the stylesheet and the palette agree about the ancestry pips", () => {
+  // The third pin, and the one that closes the top half of the list above. The
+  // swatch's entry named these as the reason it could not be finished — a
+  // lineage hue in the DOM, painted from a stylesheet no sweep here can parse —
+  // and striking the swatch off without them would leave a known gap filed
+  // under a closed list, which is the note v1.66 calls the most expensive kind.
+  //
+  // They stay in the CSS for the reason the two colours above do: the hue
+  // arrives as a custom property per pip, so the fixed part is all a module can
+  // own. Pinned rather than deduplicated (v1.62), and the values are swept over
+  // all 360 hues in `test/palette.test.js`, where they pass by 40 or better.
+  const css = readFileSync(join(ROOT, "style.css"), "utf8");
+  const p = ancestryPip();
+  const rule = css.match(/^\.anc\s*\{[^}]*\}/m);
+  assert.ok(rule, "no .anc rule in style.css");
+  const bg = rule[0].match(/background:\s*([^;]+);/);
+  assert.ok(bg, "the .anc rule no longer sets a background");
+  assert.equal(bg[1].trim(), `hsl(var(--anc-hue), ${p.sat}%, ${p.light}%)`);
+  const ink = rule[0].match(/color:\s*([^;]+);/);
+  assert.ok(ink, "the .anc rule no longer sets a label colour");
+  assert.equal(ink[1].trim(), p.label);
+
+  // The hollow pip: an ancestor that has died out carries its hue in the text
+  // and the border instead of in a fill, at a lower saturation.
+  const goneRule = css.match(/\.anc\.gone\s*\{[^}]*\}/);
+  assert.ok(goneRule, "no .anc.gone rule in style.css");
+  assert.equal(
+    goneRule[0].match(/color:\s*([^;]+);/)?.[1].trim(),
+    `hsl(var(--anc-hue), ${p.goneSat}%, ${p.light}%)`
+  );
+});
+
+test("this file's own count of its stylesheet pins is honest", () => {
+  // v1.52's rule on the surface that keeps producing it: the header above says
+  // how many colours are pinned by name, and a sentence saying "two" over three
+  // tests is the same drift this project has now found in a README, a comment
+  // over a list of stat tiles, and here.
+  const self = readFileSync(fileURLToPath(import.meta.url), "utf8");
+  const WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
+  const claimed = self.match(/checked by name at the bottom — (\w+) of\b/);
+  assert.ok(claimed, "the header no longer states how many pins there are");
+  const pins = [...self.matchAll(/^test\("the stylesheet and the palette agree about /gm)].length;
+  assert.equal(WORDS[claimed[1]], pins, `the header says ${claimed[1]}; there are ${pins}`);
 });
