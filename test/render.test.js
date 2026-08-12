@@ -40,7 +40,9 @@ import {
   CORPSE_FULL_MEAT,
   refugeRing,
   visionReach,
+  selectionMark,
 } from "../src/palette.js";
+import { Trail } from "../src/trail.js";
 
 /** A world with some history in it, so there is something to draw. */
 function pond(over = {}, ticks = 300) {
@@ -517,6 +519,126 @@ test("with nothing bounding the search, the overlay draws one solid line", () =>
   const dashed = opsNamed(ops, "setLineDash").filter((o) => o.length > 2);
   assert.deepEqual(dashed, [], "an exact sense drew a line marked as merely asked for");
   assert.ok(new Set(styles(ops)).has(visionReach().ring), "and it still drew the overlay");
+});
+
+// ---------------------------------------------------------------------------
+// The trail (v1.84)
+
+/** A trail holding `ticks` of a real creature's path through a real pond. */
+function walked(w, ticks = 120) {
+  const trail = new Trail();
+  const subject = w.creatures.find((c) => !c.dead);
+  for (let i = 0; i < ticks; i++) {
+    w.step();
+    trail.record(subject, w.tick);
+  }
+  return { trail, subject };
+}
+
+test("the trail draws the selection mark's tones, tapering toward its oldest end", () => {
+  const w = pond();
+  const { trail, subject } = walked(w);
+  const mark = selectionMark();
+  const ops = renderOps(w, null, (r) => {
+    r.showTrail = true;
+    r.trail = trail;
+    r.selected = subject;
+  });
+  const drawn = new Set(styles(ops));
+  assert.ok(drawn.has(mark.ring), `the pale tone ${mark.ring} never reached the canvas`);
+  assert.ok(drawn.has(mark.rim), `the dark tone ${mark.rim} never reached the canvas`);
+
+  // The fade is a width, not an opacity — the whole point of the release that
+  // measured this mark. So the frame must set several distinct widths inside
+  // the trail's band and never touch globalAlpha to do it.
+  const widths = new Set(
+    ops.filter((o) => o[1] === "set:lineWidth").map((o) => Number(o[2]).toFixed(6))
+  );
+  const full = mark.trailWidth;
+  const thinnest = mark.trailWidth * mark.trailTaper;
+  assert.ok(widths.has(full.toFixed(6)), `no line at the trail's full width: ${[...widths]}`);
+  assert.ok(
+    [...widths].some((v) => Number(v) < full && Number(v) >= thinnest - 1e-9),
+    "the trail never thinned, so nothing says which end is now"
+  );
+  const alphas = ops.filter((o) => o[1] === "set:globalAlpha").map((o) => o[2]);
+  assert.deepEqual(alphas, [], `the trail faded with opacity after all: ${alphas}`);
+});
+
+test("a trail is drawn only for the creature it belongs to", () => {
+  // Three ways of asking for a line that would be a lie, and all three draw
+  // nothing: the overlay switched off, no trail at all, and a trail recorded
+  // from somebody other than the selection.
+  const w = pond();
+  const { trail, subject } = walked(w);
+  const other = w.creatures.find((c) => !c.dead && c.id !== subject.id);
+  // Each arm is compared against the *same selection* with no trail in it, so
+  // the only difference either frame can carry is the line.
+  const traces = (who, tune) => {
+    const before = hashOps(renderOps(w, null, (r) => (r.selected = who)));
+    return hashOps(renderOps(w, null, (r) => {
+      r.selected = who;
+      tune(r);
+    })) !== before;
+  };
+  assert.ok(
+    traces(subject, (r) => {
+      r.showTrail = true;
+      r.trail = trail;
+    }),
+    "the trail drew nothing when everything was in place"
+  );
+  assert.ok(!traces(subject, (r) => (r.trail = trail)), "the trail drew with the overlay switched off");
+  assert.ok(!traces(subject, (r) => (r.showTrail = true)), "a renderer with no trail drew one");
+  assert.ok(
+    !traces(other, (r) => {
+      r.showTrail = true;
+      r.trail = trail;
+    }),
+    "somebody else's path was drawn under this creature"
+  );
+});
+
+test("the trail is drawn in world coordinates and its ink in screen pixels", () => {
+  // The same split every overlay here keeps: the *path* is a world measurement,
+  // so zooming in spreads it out, and the *line over it* is a drawing, so
+  // zooming in thins it. A trail whose width did not divide out of the zoom
+  // would be a rope at 8×.
+  const w = pond();
+  const { trail, subject } = walked(w);
+  const mark = selectionMark();
+  const widths = (zoom) =>
+    renderOps(w, null, (r) => {
+      r.showTrail = true;
+      r.trail = trail;
+      r.selected = subject;
+      r.camera.zoom = zoom;
+    })
+      .filter((o) => o[1] === "set:lineWidth")
+      .map((o) => Number(o[2]));
+  assert.ok(widths(1).includes(mark.trailWidth));
+  assert.ok(widths(4).includes(mark.trailWidth / 4), "the trail did not thin with the zoom");
+});
+
+test("drawing a trail changes nothing about the pond, or about the trail", () => {
+  // The header's claim, asked of the newest thing to read state — and of the
+  // one piece of state a renderer has ever been handed that it could plausibly
+  // want to write to.
+  const w = pond();
+  const { trail, subject } = walked(w);
+  const before = [stateFingerprint(w), trajectoryFingerprint(w), observationFingerprint(w)];
+  const path = JSON.stringify(trail.points());
+  renderOps(w, null, (r) => {
+    r.showTrail = true;
+    r.trail = trail;
+    r.selected = subject;
+  });
+  assert.deepEqual(
+    [stateFingerprint(w), trajectoryFingerprint(w), observationFingerprint(w)],
+    before,
+    "a frame with a trail in it moved the world"
+  );
+  assert.equal(JSON.stringify(trail.points()), path, "drawing the path rewrote it");
 });
 
 test("drawing the refuge line changes nothing about the pond", () => {

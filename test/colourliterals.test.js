@@ -99,7 +99,19 @@ const ALLOWED = [
   // off this list, third one that was hiding something.)
 
   // ---- furniture: no distinction to carry, and nowhere for one to live ----
-  { file: "render.js", literal: "rgba(255, 255, 255, 0.8)", why: "the selection ring in the pond: the same mark as above, in the big view." },
+  // (The pond's selection ring was here until v1.84 — the first entry ever
+  // struck off the *furniture* half of this list, and the six above it are the
+  // reason to have looked. Its reason read "the same mark as above, in the big
+  // view", which was true and was not a measurement. Translucent white over the
+  // pond bottoms out at ΔE 0.00 and is under the just-noticeable difference on
+  // a fifth of the backgrounds it can be drawn on, because a well-fed body is
+  // `hsl(hue, 60..85%, 90%)` under its own additive glow and the pond is full
+  // of near-white; opaque white is no better, so the ceiling is the colour
+  // itself. It is a cased two-tone stroke now (`selectionMark`), shared with
+  // the trail v1.84 added. Seven struck off, six were hiding something — and
+  // the filing that protected this one for eighty-four releases said it carried
+  // no distinction, when it carries the only one on the canvas that is about
+  // the *watcher* rather than about the world.)
   {
     file: "render.js",
     literal: "rgba(30, 78, 66, 0.16)",

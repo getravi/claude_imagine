@@ -6432,6 +6432,75 @@ distance reads as geometry, and geometry reads as something a precondition
 cannot touch. Whenever a rule's reach is a function of two objects, ask whether
 the rule lets both of them be extreme.
 
+## The safe half of the list (v1.84)
+
+`test/colourliterals.test.js` (v1.61) reads every colour named outside
+`palette.js` and demands a reason beside each one. Its list has two halves. The
+top half is *marks the audit has still never measured*, and it is empty as of
+v1.79 — six entries struck off, five of which were hiding a mark that failed.
+The bottom half is **furniture**: "no distinction to carry, and nowhere for one
+to live". Nothing on the bottom half had ever been measured, because that is
+what the heading means.
+
+The pond's selection ring — the circle around whatever creature a watcher has
+clicked — was on the bottom half, drawn in `rgba(255, 255, 255, 0.8)` since
+v1.0.
+
+### The measurement
+
+The domain is `visionBackgrounds()`, the same 4,388 colours the vision overlay
+is audited against: every ground rock can border, the glow-lit water either
+epidemiological mark sits on, and every opaque body this pond can paint, each
+under all four vision models.
+
+| the selection ring | worst ΔE | under the bar (25) | under the JND (2.3) |
+| --- | ---: | ---: | ---: |
+| `rgba(255, 255, 255, 0.8)`, as shipped | **0.00** | 51.8% | **21.76%** |
+| the same white, opaque | **0.00** | — | **21.24%** |
+| white over a near-black rim, cased | **48.9** | 0% | 0% |
+
+The failure is not a handful of unlucky grounds; it is arithmetic. A creature's
+body is `hsl(hue, 60 + 25·signal, 45 + 45·energy)` and `render.js` lays the same
+hue over it as an additive glow, so a well-fed creature under its own light is
+very nearly white — and white over white is nothing. The second row is the one
+that decides the fix: raising the opacity buys 0.5 percentage points, because
+the ceiling is the colour and not its strength.
+
+The cased pair scores higher than any other two-tone mark measured here (the
+minimap's, 48.2; the refuge line's, 44.6; the vision overlay's, 38.3 — each on
+its own background set). That is not craft. White and near-black are the two
+ends of the one axis all four vision models agree about, so a neutral mark is
+the easiest thing there is to case; every other pair in this project has to pick
+a hue and live with what a dichromat does to it.
+
+### What the finding is about
+
+Not the colour. The entry excusing this mark read "no distinction to carry", and
+the ring carries the only distinction on the canvas that is about the **watcher**
+rather than about the world. Every other mark says what a creature *is* — this
+one hunts, this one is ill, this one is beyond the size rule. This one says
+*this is the one you asked about*.
+
+v1.70 left the general form after the vision overlay, which was skipped for six
+releases because its own list entry called it "a rule rather than a mark": the
+descriptions on that list are guesses, so check the classification before
+trusting what follows from it. v1.79 said the same thing about a different
+noun. This is the first time the mis-filing was the *heading* rather than the
+entry — and the heading is load-bearing, because it is the reason nobody looks.
+
+### Reproducing it
+
+```bash
+node --test test/palette.test.js
+```
+
+Three tests hold it: the cased pair clears `MIN_DELTA_E` on every background,
+the old white is pinned as a failure on all three rows above (so the suite goes
+red if anyone puts the single tone back), and the trail's fade is asserted to be
+a **width** rather than an opacity — the whole point being that a translucent
+mark's legibility depends on a background it does not control, which is what the
+first row measures.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

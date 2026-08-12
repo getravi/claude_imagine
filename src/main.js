@@ -15,6 +15,7 @@ import { creatureFacts } from "./inspect.js";
 import { SCENARIOS } from "./scenarios.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
+import { Trail } from "./trail.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.js";
 import {
@@ -157,6 +158,12 @@ let running = true;
 // `config.js` says it is, and a permalink can set it.
 let speed = config.stepsPerFrame;
 const uiRng = new RNG(12345); // separate RNG for UI-side sampling (diversity)
+// Where the selected creature has been (v1.84). Recorded whenever there is a
+// selection, whether or not the overlay is drawing it, so ticking the box shows
+// the path already taken rather than starting a new one — and read by the
+// spoken description, which has no overlay to be switched on. A pure observer:
+// it is written from this loop and never read by the simulation.
+const trail = new Trail();
 
 // Track FPS for the HUD.
 let lastFrame = performance.now();
@@ -170,6 +177,7 @@ const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 function boot() {
   const canvas = $("world");
   renderer = new Renderer(canvas, config);
+  renderer.trail = trail;
   renderer.reducedMotion = motionQuery.matches;
   $("toggle-motion").checked = renderer.reducedMotion;
   motionQuery.addEventListener("change", (e) => {
@@ -266,7 +274,16 @@ function loop(now) {
   fpsSmooth += ((1000 / Math.max(dt, 1)) - fpsSmooth) * 0.1;
 
   if (running) {
-    for (let i = 0; i < speed; i++) world.step();
+    for (let i = 0; i < speed; i++) {
+      world.step();
+      // Inside the step loop, not once a frame: at 20× a frame is twenty ticks
+      // and a path sampled per frame would be a fifth of the corners.
+      trail.record(renderer.selected, world.tick);
+    }
+  } else {
+    // Paused, so the tick guard makes this a no-op — except on the frame after
+    // a fresh selection, where it gives the path its first point.
+    trail.record(renderer.selected, world.tick);
   }
 
   // The camera catches up to whatever it is following before anything is drawn,
@@ -1727,6 +1744,23 @@ function wireControls() {
       flash("The refuge line needs predation switched on — nothing hunts in this pond.");
     }
   });
+  $("toggle-trail").addEventListener("change", (e) => {
+    renderer.showTrail = e.target.checked;
+    if (!e.target.checked) return;
+    const c = renderer.selected;
+    // The overlay is about one creature, so a ticked box over a pond with
+    // nothing selected draws nothing at all. Say so once — the same courtesy
+    // the refuge line gets when predation is off.
+    if (!c || c.dead) {
+      flash("Click a creature (or press an arrow key) to give the trail somebody to follow.");
+      return;
+    }
+    // This is the one moment the spoken form of the path is worth saying: the
+    // watcher has just asked to see it. Announcing it on the arrow keys instead
+    // would announce nothing — a step lands on a creature whose path has not
+    // been recorded yet, by construction.
+    announce(describeSelection(c, config, trail.id === c.id ? trail.stats(config) : null));
+  });
   $("toggle-motion").addEventListener("change", (e) => {
     renderer.reducedMotion = e.target.checked;
   });
@@ -2074,7 +2108,11 @@ function wireCanvas(canvas) {
         // clicking somebody else while following does.
         if (cam().target) cam().setTarget(next);
         else if (cam().zoom > MIN_ZOOM) cam().moveTo(next.x, next.y);
-        announce(describeSelection(next, config));
+        // The path belongs to whoever the trail is currently recording, so a
+        // step onto somebody new says nothing about a path yet — `Trail.stats`
+        // is read *after* the reassignment above, and `record` has already
+        // cleared it by the next tick.
+        announce(describeSelection(next, config, trail.id === next.id ? trail.stats(config) : null));
       }
       e.preventDefault();
       return;

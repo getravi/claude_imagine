@@ -31,6 +31,9 @@ import {
   refugeRingTones,
   visionReach,
   visionReachTones,
+  selectionMark,
+  selectionMarkTones,
+  SELECTION_OLD_INK,
   predatorMarkTones,
   minimapPredatorMark,
   minimapPredatorTones,
@@ -568,6 +571,111 @@ test("the overlay spends geometry on its distinction, not opacity", () => {
   assert.ok(m.dash[0] >= 4, "the dash reads as a solid line at this radius");
   assert.ok(m.width > 0 && m.width <= 1.5, "the overlay stays a hairline");
   assert.equal(visionReach.length, 0, "the overlay carries no degree");
+});
+
+// ---------------------------------------------------------------------------
+// The selection mark (v1.0, audited in v1.84). The ring around the creature a
+// watcher chose, and the trail behind it. Its domain is `visionBackgrounds()`
+// for the same reason the overlay's is: both are drawn over the pond, and the
+// pond picks their background, not this project.
+//
+// This one was not on the "never measured" half of `colourliterals`'s list. It
+// was on the *furniture* half — "no distinction to carry, and nowhere for one
+// to live" — which is the half whose entries are supposed to be safe, and it
+// was the worst-scoring mark this project has put a number on.
+
+test("the selection mark reads on every ground, glow and body it can be drawn over", () => {
+  const t = selectionMarkTones();
+  let worst = { d: Infinity };
+  for (const bg of visionBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = markContrast([t.ring, t.rim], bg.rgb, vision);
+      if (d < worst.d) worst = { d, where: bg.name, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `the selection mark scores only ${worst.d.toFixed(1)} on ${worst.where} (${worst.vision})`
+  );
+});
+
+test("the white it was drawn in for eighty-four releases — the failure, pinned", () => {
+  // `rgba(255, 255, 255, 0.8)`, source-over, from v1.0 to v1.84. Without this
+  // the suite stays green if someone puts the single tone back, and the reason
+  // it was wrong is nowhere in the code.
+  //
+  // The shape of the failure is what makes it worth keeping: it is not a near
+  // miss on a handful of unlucky grounds. A creature's body is
+  // `hsl(hue, 60..85%, 45 + 45·energy%)` and `render.js` lays the same hue over
+  // it as an additive glow, so a well-fed body under its own light is very
+  // nearly white — and white over white is nothing at all.
+  const bgs = visionBackgrounds();
+  const white = SELECTION_OLD_INK.rgb;
+  let worst = Infinity;
+  let under = 0;
+  let underJnd = 0;
+  let opaqueUnderJnd = 0;
+  for (const bg of bgs) {
+    let here = Infinity;
+    let opaque = Infinity;
+    for (const vision of VISION_MODELS) {
+      const ink = blendOver(bg.rgb, white, SELECTION_OLD_INK.alpha);
+      here = Math.min(here, deltaE(ink, bg.rgb, vision));
+      opaque = Math.min(opaque, deltaE(white, bg.rgb, vision));
+    }
+    worst = Math.min(worst, here);
+    if (here < MIN_DELTA_E) under++;
+    if (here < JND) underJnd++;
+    if (opaque < JND) opaqueUnderJnd++;
+  }
+  assert.ok(worst < 0.01, `expected an outright collision, got ΔE ${worst.toFixed(3)}`);
+  assert.ok(under / bgs.length > 0.4, `only ${((under / bgs.length) * 100).toFixed(1)}% were under the bar`);
+  assert.ok(
+    underJnd / bgs.length > 0.15,
+    `only ${((underJnd / bgs.length) * 100).toFixed(2)}% were under the just-noticeable difference`
+  );
+  // And the fix that suggests itself first — turn the opacity up — is not one.
+  // The ceiling is the colour, so this has to fail too or the two-tone pair
+  // above is decoration.
+  assert.ok(
+    opaqueUnderJnd / bgs.length > 0.15,
+    `opaque white was fine after all (${((opaqueUnderJnd / bgs.length) * 100).toFixed(2)}% under the JND)`
+  );
+});
+
+test("the selection mark spends width on its trail, not opacity", () => {
+  // The lesson v1.70 wrote, applied in the release that measured the mark it
+  // was written about: the trail says a quieter thing than the ring, and it
+  // says it by being thinner. Both tones stay opaque along the whole path, so
+  // the contrast measured above holds at the old end as well as the new.
+  const m = selectionMark();
+  assert.ok(!/rgba|hsla/.test(m.ring + m.rim), "both tones must be opaque");
+  assert.ok(m.trailWidth > 0 && m.trailWidth < m.width, "the trail is quieter than the ring");
+  assert.ok(m.trailTaper > 0 && m.trailTaper < 1, "the taper is a fraction of the trail's width");
+  // A taper that runs to a hair is a fade by another name: the oldest end still
+  // has to be a line somebody can see.
+  assert.ok(m.trailWidth * m.trailTaper >= 0.4, "the oldest end tapers away to nothing");
+  assert.equal(selectionMark.length, 0, "the selection mark carries no degree");
+  assert.equal(selectionMarkTones.length, 0);
+});
+
+test("the selection mark is told apart from the pale marks it can be drawn beside", () => {
+  // The ring, the refuge line and the immune ring can all be on one creature at
+  // once, and all three are near-white or near-white-blue. This is the ceiling
+  // that pins the neutral: white is as far from the two pale blues as the axis
+  // allows, which is not far, so what separates them here is *geometry* — a
+  // ring at the body's own radius, a ring at a fixed 7.273 px, a dashed circle
+  // at 168 — and the colours are only required not to collide outright.
+  const t = selectionMarkTones();
+  for (const [name, other] of [
+    ["the refuge line", refugeRingTones().ring],
+    ["the immune ring", immuneRingTones().ring],
+  ]) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(t.ring, other, vision);
+      assert.ok(d >= JND, `the selection ring is ${d.toFixed(2)} from ${name} under ${vision}`);
+    }
+  }
 });
 
 test("the minimap badge clears the threshold against every lineage hue", () => {

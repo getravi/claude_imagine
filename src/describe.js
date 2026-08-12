@@ -389,10 +389,23 @@ export function regionOf(x, y, config) {
  * listener hears cannot drift apart. (That clamp is unreachable in practice —
  * see v1.29 — so the share is a low number by construction and not a bug.)
  *
+ * The path (v1.84) is the one clause here a reader gets as a *picture* instead:
+ * the trail overlay draws where the creature has been, and this is the same
+ * fact as a sentence, because a line on a canvas is the one kind of readout
+ * that cannot be spoken by being read out. A path shorter than
+ * `MIN_TRAIL_TICKS` gets no verdict at all — a freshly selected creature has
+ * been nowhere, and calling that "working one patch" is the v1.16 failure of
+ * narrating a thing before it has happened. And it is deliberately two facts
+ * rather than one: the word comes from `straightness`, which is a ratio of two
+ * distances and therefore says nothing about *how far*, so the distance is
+ * spoken beside it.
+ *
  * @param {object|null} c - the selected creature, or null for a cleared selection
  * @param {object} config
+ * @param {{ticks:number, travelled:number, displacement:number, straightness:number}} [path]
+ *   `Trail.stats()` for this creature, when a trail is being recorded
  */
-export function describeSelection(c, config) {
+export function describeSelection(c, config, path = null) {
   if (!c) return "Selection cleared.";
   const bits = [`generation ${c.generation}`];
   // Diet only where it decides something, the same guard `describePond` uses on
@@ -407,7 +420,43 @@ export function describeSelection(c, config) {
     else if (c.immune) bits.push("immune");
   }
   const where = `in ${regionOf(c.x, c.y, config)} of the pond`;
-  return `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
+  const said = `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
+  const track = pathPhrase(path);
+  return track ? `${said} ${track}` : said;
+}
+
+/**
+ * How long a path has to be before it is worth a word. Fifty ticks is about a
+ * seventh of the time it takes to cross this pond at full speed, which is the
+ * shortest window in which "it doubled back" and "it went straight" are
+ * different sentences rather than two readings of the same jitter.
+ */
+export const MIN_TRAIL_TICKS = 50;
+
+/**
+ * The trail as a clause, or "" if there is not enough of one to describe.
+ *
+ * The bands are the ratio of net displacement to ground covered. A creature
+ * working a biome turns constantly and lands near where it started; one
+ * crossing the pond, or running something down, spends nearly every pixel it
+ * swims on getting somewhere. The thresholds are the same shape as
+ * `regionOf`'s: three named bands and no fourth, because a spoken readout that
+ * needs a legend is not a spoken readout.
+ *
+ * @param {{ticks:number, travelled:number, displacement:number, straightness:number}|null} path
+ */
+export function pathPhrase(path) {
+  if (!path || path.ticks < MIN_TRAIL_TICKS) return "";
+  const how =
+    path.straightness < 0.25
+      ? "working one patch"
+      : path.straightness < 0.6
+        ? "wandering"
+        : "heading somewhere";
+  return (
+    `In the last ${path.ticks} ticks it swam ${Math.round(path.travelled)} pixels ` +
+    `and ended ${Math.round(path.displacement)} from where it began — ${how}.`
+  );
 }
 
 /**

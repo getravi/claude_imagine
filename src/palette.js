@@ -438,6 +438,66 @@ export function visionReachTones() {
 }
 
 /**
+ * The selection mark: the ring around the creature a watcher has chosen, and
+ * (v1.84) the line showing where it has been.
+ *
+ * This colour was `rgba(255, 255, 255, 0.8)` in `render.js` from v1.0 to v1.84,
+ * and `test/colourliterals.test.js` filed it under **"furniture: no distinction
+ * to carry, and nowhere for one to live"** — the half of that list whose entries
+ * are supposed to be safe. It was the most-failed mark this project has
+ * measured. Translucent white over the pond bottoms out at **ΔE 0.00**, is under
+ * the just-noticeable difference on **21.76%** of the 4,388 backgrounds it can
+ * be drawn on and under the bar on **51.8%**, and the reason is arithmetic
+ * rather than bad luck: a well-fed creature is `hsl(hue, 60..85%, 90%)` and
+ * `render.js` lays its own glow over it additively, so the pond is *full* of
+ * near-white, and white on white is nothing. Going opaque does not rescue it
+ * (still 0.00, still 21.24% under the JND) — the ceiling is white itself.
+ *
+ * So the mark takes the house treatment every other overlay here has had since
+ * v1.34: two tones, hues far apart so the pair is not separated in luminance
+ * alone, drawn as a cased stroke. Worst case over every ground, glow and body
+ * the pond can paint is **ΔE 48.9** (a dim crimson body under a neighbour's
+ * glow, to a protanope), the best of the family — which is what a neutral buys,
+ * since white and near-black are the two ends of the one axis every vision
+ * model agrees about.
+ *
+ * The entry that excused it read "no distinction to carry". It carries the only
+ * distinction on the canvas that is about the *watcher* rather than about the
+ * world: this is the one you asked about. That is why the filing was wrong, and
+ * the general form is v1.70's — the descriptions on that list are guesses.
+ */
+export function selectionMark() {
+  return {
+    ring: "hsl(0, 0%, 100%)",
+    rim: "hsl(232, 55%, 7%)",
+    // Screen pixels, divided back out of the zoom by `render.js`. 1.5 is the
+    // width the ring has always been drawn at; the rim goes down at
+    // `width + 1.1` like every other two-tone mark here.
+    width: 1.5,
+    // The trail is the same mark saying a quieter thing, so it is the same pair
+    // at two thirds the width rather than the same pair at a lower opacity —
+    // v1.70's rule, in the release that gave this pair its number. Thinness is
+    // a property of the mark; translucency is a property of the mark *and* the
+    // background it happens to be over, which is how the old white got away
+    // with vanishing.
+    trailWidth: 1,
+    // How far the trail thins toward its oldest end. A taper reads as direction
+    // (this end is now) without spending any of the contrast that was the whole
+    // finding above, and the far end is still a whole screen pixel of cased
+    // stroke rather than a ghost.
+    trailTaper: 0.45,
+  };
+}
+
+/** The selection mark's two tones as RGB, for the audit. */
+export function selectionMarkTones() {
+  return { ring: hslToRgb(0, 0, 100), rim: hslToRgb(232, 55, 7) };
+}
+
+/** The white this mark used to be, kept so the test that failed it can run. */
+export const SELECTION_OLD_INK = Object.freeze({ rgb: { r: 255, g: 255, b: 255 }, alpha: 0.8 });
+
+/**
  * The same mark at minimap scale, where a creature is a single square of a few
  * pixels and there is no room for a rim drawn as a stroke.
  *

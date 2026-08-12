@@ -58,7 +58,21 @@ class RecordingContext {
     this.id = id;
     this.ops = ops;
     this._gradients = 0;
-    for (const prop of ["fillStyle", "strokeStyle", "lineWidth", "globalAlpha", "globalCompositeOperation"]) {
+    // `lineCap` and `lineJoin` joined the list in v1.84. They are the same kind
+    // of thing as the five above — a property whose value changes the picture —
+    // and `render.js` has been setting `lineJoin` since v1.48 where nothing
+    // could see it, which is v1.50's warning about this module in its own
+    // words: the recorder is a claim of equivalence like any other accelerator,
+    // so sweep it when `render.js` learns a new call.
+    for (const prop of [
+      "fillStyle",
+      "strokeStyle",
+      "lineWidth",
+      "lineCap",
+      "lineJoin",
+      "globalAlpha",
+      "globalCompositeOperation",
+    ]) {
       let value = null;
       Object.defineProperty(this, prop, {
         get: () => value,

@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.84.0] — 2026-08-12
+
+`FIELD_SILENT` in `inspect.js` excuses a creature's `x` with a sentence that is
+true and incomplete: "a place is a picture: the pond and the minimap draw it,
+and `describeSelection()` speaks the region". Both pictures draw where a
+creature *is*. Nothing on this page has ever drawn where it **was** — and a
+position is the one field whose meaning is a history. A body at (400, 300) says
+nothing; a body that has spent four hundred ticks inside forty pixels of
+(400, 300) is grazing a patch.
+
+### Added
+
+- **The trail** (`src/trail.js`, the `Show the trail` toggle): the selected
+  creature's last 300 ticks, drawn as one line ending under its body. 300 is a
+  little under one crossing of the pond (`width / maxSpeed` = 346), so a forager
+  loops visibly inside a biome and a hunter's charge reads as a straight line.
+  A pure observer — recorded from the animation loop, read by the renderer, and
+  bit-for-bit invisible to the pond on all five channels of the shared
+  assertion.
+- **It owns the torus.** Two consecutive positions 890 px apart on a 900 px pond
+  are 10 px of swimming. `offsets()` accumulates each tick's shortest toroidal
+  step backwards from the newest point, so the line runs off the edge of the
+  canvas instead of snapping across it — the pond canvas's own convention since
+  v1.17, and the opposite of the minimap's.
+- **A spoken form**, said when a listener ticks the box: *"In the last 299 ticks
+  it swam 353 pixels and ended 127 from where it began — wandering."* The
+  straightness bands are a ratio, so the distance is spoken beside them: a
+  creature that shuffled four pixels in a line and one that crossed the pond
+  score the same. Announced on the toggle rather than on the arrow keys, because
+  a step lands on a creature whose path has not been recorded yet, by
+  construction.
+
+### Fixed
+
+- **The selection ring was the most-failed mark this project has measured, and
+  it was on the safe half of the list.** `test/colourliterals.test.js` filed
+  `rgba(255, 255, 255, 0.8)` under *"furniture: no distinction to carry, and
+  nowhere for one to live"*. Over the 4,388 grounds, glows and bodies the pond
+  can paint it bottoms out at **ΔE 0.00**, sits under the just-noticeable
+  difference on **21.76%** of them and under the bar on **51.8%**. The reason is
+  arithmetic: a well-fed body is `hsl(hue, 60..85%, 90%)` with its own hue laid
+  over it additively, so the pond is full of near-white. Opaque white is no
+  better (0.00, 21.24% under the JND) — the ceiling is the colour.
+- **It is a cased two-tone mark now** (`selectionMark()`), shared by the ring
+  and the trail: worst case **ΔE 48.9**, the best of the family, which is what a
+  neutral buys when white and near-black are the two ends of the one axis every
+  vision model agrees about. Seven items struck off that list, six of them
+  hiding something — and this is the first from the *furniture* half.
+- **The trail fades in width, not in opacity**, which is v1.70's rule applied in
+  the release that measured the mark it was written about. Both tones stay
+  opaque along the whole path, so the number above holds at the old end too.
+
+### Changed
+
+- **`rendershot.js` records `lineCap` and `lineJoin`.** They change the picture
+  exactly as much as the five properties it already watched, and `render.js` has
+  been setting `lineJoin` since v1.48 where nothing could see it — v1.50's own
+  warning about this module, which says to sweep it whenever `render.js` learns
+  a new call.
+
+### Known
+
+- **The apparatus is the finding as much as the mark is.** v1.82 left a recipe
+  for checking `main.js`, the one module `node --test` cannot reach: serve the
+  page, drive a headless Chromium, read the numbers back. This cycle drove the
+  *shipped* page instead of a scratch copy — Node 22 has a global `WebSocket`,
+  so the DevTools protocol needs no dependency — and the run above (arrow key,
+  tick the box, read the live region) is what the spoken sentence in this entry
+  was copied from.
+- **The trail is one creature's.** Nothing draws where a *population* has been,
+  and the pond has a nutrient map (v1.27) that is exactly that and is drawn as a
+  stain rather than as paths. Whether a crowd's tracks are a picture or a mess
+  is unmeasured.
+
 ## [1.83.0] — 2026-08-12
 
 v1.76 audited every contact rule against the spatial index's real 18-px

@@ -22,6 +22,8 @@ import {
   seasonLabel,
   timeOfDayLabel,
   MAX_SPOKEN,
+  pathPhrase,
+  MIN_TRAIL_TICKS,
 } from "../src/describe.js";
 import { energySeries, energyField } from "../src/energy.js";
 
@@ -537,6 +539,37 @@ test("the keyboard's selection says who it landed on, and only what is decided",
   assert.match(survived, /immune/);
 
   assert.equal(describeSelection(null, config), "Selection cleared.");
+});
+
+test("the path is spoken only once there is one, and says how far as well as how straight", () => {
+  // The clause a reader gets as a picture (the v1.84 trail overlay) and a
+  // listener gets as a sentence. Two guards, both of them the same rule from
+  // v1.16: do not narrate a thing before it has happened, and do not let a
+  // ratio stand in for a quantity.
+  const config = makeConfig({ seed: 314, predation: false, disease: false });
+  const c = { id: 42, generation: 3, carnivory: 0.9, energy: 110, x: 100, y: 80, infected: false, immune: false };
+  const path = (over) => ({ ticks: 200, travelled: 400, displacement: 40, straightness: 0.1, ...over });
+
+  assert.equal(describeSelection(c, config), describeSelection(c, config, null), "no trail, no clause");
+  const young = describeSelection(c, config, path({ ticks: MIN_TRAIL_TICKS - 1 }));
+  assert.ok(!/swam/.test(young), `a path of one tick got a verdict: ${young}`);
+
+  const grazing = describeSelection(c, config, path());
+  assert.match(grazing, /In the last 200 ticks it swam 400 pixels and ended 40 from where it began/);
+  assert.match(grazing, /working one patch\.$/);
+  assert.match(describeSelection(c, config, path({ straightness: 0.4 })), /wandering\.$/);
+  assert.match(describeSelection(c, config, path({ straightness: 0.95 })), /heading somewhere\.$/);
+  // The clause is added to the sentence, never instead of it.
+  assert.match(grazing, /^Creature 42, generation 3, .*in the north-west of the pond\. In the last/);
+
+  // And the distance is spoken because the word cannot carry it: a creature
+  // that shuffled four pixels in a straight line and one that crossed the pond
+  // score the same straightness and are not the same animal.
+  const [near, far] = [40, 4000].map((d) =>
+    pathPhrase({ ticks: 200, travelled: d, displacement: d, straightness: 1 })
+  );
+  assert.notEqual(near, far);
+  assert.equal(pathPhrase(null), "");
 });
 
 test("the pond is described in ninths, and the middle one has no compass word", () => {

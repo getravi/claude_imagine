@@ -22,6 +22,7 @@ import {
   foodMote,
   refugeRing,
   visionReach,
+  selectionMark,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
@@ -79,6 +80,13 @@ export class Renderer {
     // it is an instrument, and the default view is the one every screenshot in
     // this project was taken of.
     this.showRefuge = false;
+    // The trail (v1.84): the selected creature's recent positions, drawn as one
+    // line. Off by default like every other overlay — the default view is the
+    // one every screenshot in this project was taken of — and it draws nothing
+    // unless `trail` has been handed a `Trail` recording the same creature.
+    this.showTrail = false;
+    /** @type {import('./trail.js').Trail|null} */
+    this.trail = null;
     this.showEnergy = true;
     this.selected = null; // a creature to highlight/inspect
     this.highlightSpeciesId = null; // when set, other species are dimmed
@@ -656,18 +664,101 @@ export class Renderer {
     ctx.restore();
   }
 
+  /**
+   * The path the selected creature took, as one line ending under its body
+   * (v1.84).
+   *
+   * Two decisions live here and both are the pond canvas's existing
+   * conventions rather than new ones.
+   *
+   * The **geometry** comes from `Trail.offsets()`, which accumulates each
+   * tick's shortest toroidal step backwards from the newest point. Added to
+   * wherever the head is being drawn, that is a continuous line that runs off
+   * the edge of the canvas rather than snapping across it — the same choice
+   * every other mark in this view makes (draw at the nearest wrapped image,
+   * hide the seam) and the opposite of the minimap's, which has four real edges
+   * and splits what straddles them.
+   *
+   * The **fade** is a taper in width, not a ramp in opacity. A translucent mark
+   * is legible or not depending on what it happens to be over, which is the
+   * finding this release is built on (see `selectionMark`); a thin one is quiet
+   * everywhere. So both tones stay opaque along the whole path and the measured
+   * contrast holds at the tail as well as at the head. Drawn in bands rather
+   * than per segment because a stroke has one width: eight rim passes and eight
+   * line passes, instead of six hundred strokes for one creature.
+   */
+  _drawTrail(ctx, c, p) {
+    const trail = this.trail;
+    if (!this.showTrail || !trail || trail.id !== c.id || trail.length < 2) return;
+    const offs = trail.offsets(this.config);
+    const mark = selectionMark();
+    const hair = 1 / this.camera.zoom;
+    const BANDS = 8;
+    const n = offs.length;
+
+    // Band `b` covers offs[from..to], sharing its newest point with the next
+    // band so the line has no gaps. Widths run from the taper at the old end to
+    // the full trail width at the head.
+    const band = (b) => {
+      const from = Math.floor((b * (n - 1)) / BANDS);
+      const to = Math.floor(((b + 1) * (n - 1)) / BANDS);
+      if (to <= from) return null;
+      const t = (b + 1) / BANDS;
+      return { from, to, width: mark.trailWidth * (mark.trailTaper + (1 - mark.trailTaper) * t) };
+    };
+    const path = (b) => {
+      ctx.beginPath();
+      for (let i = b.from; i <= b.to; i++) {
+        const x = p.x + offs[i].dx;
+        const y = p.y + offs[i].dy;
+        if (i === b.from) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    };
+
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    // Every rim first, then every line: casing each band as it goes would let a
+    // later band's rim lie over an earlier band's line at the joint.
+    for (const pass of ["rim", "ring"]) {
+      ctx.strokeStyle = mark[pass];
+      for (let b = 0; b < BANDS; b++) {
+        const seg = band(b);
+        if (!seg) continue;
+        ctx.lineWidth = (pass === "rim" ? seg.width + 1.1 : seg.width) * hair;
+        path(seg);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   _drawSelection(ctx, c, world) {
     const cfg = this.config;
     const p = this.camera.nearest(c.x, c.y);
+    this._drawTrail(ctx, c, p);
     ctx.save();
     // Ring around the selected creature. Overlay lines are measured in screen
     // pixels, so their width is divided back out of the zoom — a hairline stays
     // a hairline at 8×.
     const hair = 1 / this.camera.zoom;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.lineWidth = 1.5 * hair;
+    // Two tones since v1.84: the white this was drawn in for eighty-four
+    // releases is ΔE 0.00 from a well-fed body under its own glow, and the pond
+    // is full of them. The rim goes down first at `width + 1.1`, the way every
+    // cased stroke here does.
+    const sel = selectionMark();
+    const ring = c.radius + 6 * hair;
+    ctx.strokeStyle = sel.rim;
+    ctx.lineWidth = (sel.width + 1.1) * hair;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, c.radius + 6 * hair, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, ring, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = sel.ring;
+    ctx.lineWidth = sel.width * hair;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ring, 0, Math.PI * 2);
     ctx.stroke();
 
     if (this.showVision) {
