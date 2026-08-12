@@ -424,7 +424,10 @@ export class World {
     // scans and are left alone, which `src/reach.js` audits: against the block's
     // real guarantee of 18 px — not the 126 of one cell, which is what this
     // comment used to say — eating reaches 11.2 and scavenging 17.0, and a bite
-    // reaches `bodyRadiusMax * 2 + 2` = 18.0, clearing it by exactly nothing.
+    // reaches 17.273, clearing it by 0.727. (That row said 18.0 and "by exactly
+    // nothing" until v1.83: `radius + prey.radius + 2` was maximised over the
+    // pond's bodies rather than over the pairs `canEat` admits, and both bodies
+    // at `bodyRadiusMax` is the one pair predation forbids.)
     // Infection at 22 px does not clear it, and it is the one contact rule with
     // a neighbour query of its own (`_stepDisease`), so it is the one this line
     // cannot speak for.
@@ -435,7 +438,7 @@ export class World {
     // creature can only bite what it has already seen. Sight is therefore the
     // second, softer reach of every carried contact rule — wider than the index
     // by an order of magnitude here, and narrower than a bite below a
-    // `nightVisionFactor` of 0.107 (`src/reach.js`, `contactAudit().binds`).
+    // `nightVisionFactor` of 0.1028 (`src/reach.js`, `contactAudit().binds`).
     const nearbyR = Math.max(
       sightR,
       cfg.signalling ? cfg.signalRadius : 0,

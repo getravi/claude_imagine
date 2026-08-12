@@ -37,13 +37,13 @@
 //   | rule      | reach   | margin |
 //   | eating    | 11.2 px | +6.8   |
 //   | scavenging| 17.0 px | +1.0   |
-//   | biting    | 18.0 px | +0.0   |
+//   | biting    | 17.273  | +0.727 |
 //   | infection | 22.0 px | −4.0   |
 //
-// Three hold and one does not, and the third holds by exactly nothing: a bite
-// reaches `bodyRadiusMax * 2 + 2`, which is 18.0 because `bodyRadiusMax` is 8.0
-// and the stub is 18 px, and those two numbers have never been in the same
-// sentence before this one.
+// Three hold and one does not. The bite's row said **18.0 px** and a margin of
+// **+0.0** for two releases, and v1.83 corrected it: see the last section of
+// this header. The number was the largest `radius + prey.radius + 2` over the
+// pond's bodies, and the pond's bodies are not the pairs the rule admits.
 //
 // The one that fails is infection, and it fails in a way `exactVision` cannot
 // reach: eating, scavenging and biting all take their candidate from the sense
@@ -95,8 +95,8 @@
 //     never bound anything.
 //
 // It binds in the dark. Sight is the one radius here that shrinks — to
-// `nightVisionFactor` of itself at midnight — so below a factor of 18/168 =
-// 0.107 a hunter cannot bite the creature it is standing on top of, below
+// `nightVisionFactor` of itself at midnight — so below a factor of 17.273/168 =
+// 0.1028 a hunter cannot bite the creature it is standing on top of, below
 // 17/168 a scavenger cannot reach a corpse inside its own mouth, and below
 // 11.2/168 a grazer cannot eat the pellet it is sitting on. Nothing that ships
 // is near it: the darkest scenario in this project sets 0.28, and the deepest
@@ -119,6 +119,48 @@
 // against `visionR2` and nothing else — so the pond does not have the mechanism
 // the arithmetic suggested. v1.20's rule, arriving before the release note this
 // time rather than after it.)
+//
+// ---- v1.83: the pair the rule forbids ----
+//
+// v1.76 wrote the bite's zero margin down as a coincidence — "a correctness
+// claim resting on the pond's aesthetic dimensions", because 18.0 is
+// `bodyRadiusMax * 2 + 2` and 18 is `900 − 7 × 126`, and nothing connects those
+// two facts. It is not a coincidence and it is not zero. **A bite cannot reach
+// 18 px.**
+//
+// `radius + prey.radius + 2` is a distance between two bodies, and the two
+// bodies are not free of each other: the branch it sits in runs only where
+// `c.canEat(o)` said yes, and `canEat` requires `c.radius > o.radius *
+// preySizeRatio` — strictly. Both bodies at `bodyRadiusMax` is exactly the pair
+// the rule forbids, so the maximum this function took was over a set with the
+// answer removed from it. Over the pairs predation admits the supremum is
+//
+//   bodyRadiusMax + bodyRadiusMax / preySizeRatio + 2  =  17.2727 px
+//
+// and it is *open*: `>` and not `>=`, so a prey may approach `self / ratio` and
+// never be it. Over 36,416,658 eligible pairs — twelve seeds, 3,000 ticks each,
+// every living pair tested with `canEat` itself — the largest bite reach the
+// pond ever offers is **17.2200 px**, five hundredths under the bound and
+// nearly eight tenths under the number this file published.
+//
+// So the margin against the block's 18 px is **+0.727**, and the slack has a
+// name: `bodyRadiusMax − bodyRadiusMax / preySizeRatio` is the biggest body
+// minus the refuge radius (v1.64). The size rule that switches predation off
+// partway up the size range is the same rule that keeps the bite inside the
+// index's promise. Two constants that had never been in the same sentence, in
+// v1.76's words — but not the two it named.
+//
+// The class this belongs to is v1.64's, one level down. There, the control for
+// *who gets picked* turned out to be the hunter's eligible set and not the
+// pond; here the same substitution is geometric, and the quantity was a
+// **reach** rather than a statistic, which is why five releases of audit walked
+// past it. Swept across all five contact rules, exactly one row was wrong:
+// eating, scavenging and infection read one body or none, and the shove reads
+// two with no precondition at all (`_separate` shoves whatever overlaps), so
+// its corner is admissible and its 16.0 px is attained. `contactRules` derives
+// every reach from an `at` expression and an `otherMax` bound now, and the
+// suite brute-forces both halves of the claim rather than trusting the
+// monotonicity argument that makes the closed form work.
 
 import { SpatialGrid, indexCellSize } from "./grid.js";
 
@@ -513,8 +555,12 @@ export function ruleGate(rule, config) {
  * three contact rules that ride the sense scan change query with that flag
  * while infection does not.
  *
- * Reaches are the worst case over bodies: every one of them scales with a
- * creature's radius, and `bodyRadiusMax` is the biggest a creature gets.
+ * Reaches are the worst case over bodies — but over the bodies the rule's own
+ * precondition *admits*, which is not the same set and was not what this
+ * function computed until v1.83. `at` is the expression `world.js` writes,
+ * `bodies` says how many radii it reads, and `otherMax` bounds the second one
+ * given the first. `reach` is derived from the three; nothing here is typed by
+ * hand any more, which is the whole of the correction.
  */
 export function contactRules(config) {
   const body = config.bodyRadiusMax;
@@ -529,8 +575,10 @@ export function contactRules(config) {
       query: sensed,
       gate: "sight",
       sites: ["food"],
-      reach: config.eatRadius + body * 0.4,
+      bodies: 1,
+      at: (self) => config.eatRadius + self * 0.4,
       source: "eatRadius + radius * 0.4",
+      admits: null,
       active: true,
     },
     {
@@ -539,8 +587,12 @@ export function contactRules(config) {
       query: sensed,
       gate: "sight",
       sites: ["corpse"],
-      reach: body + config.scavengeRadius + 6,
+      // A corpse's own size is not in the expression, so this reads one body
+      // however many are involved in the event.
+      bodies: 1,
+      at: (self) => self + config.scavengeRadius + 6,
       source: "radius + scavengeRadius + 6",
+      admits: null,
       active: config.scavenging,
     },
     {
@@ -549,8 +601,16 @@ export function contactRules(config) {
       query: sensed,
       gate: "sight",
       sites: ["creature"],
-      reach: body * 2 + 2,
+      // Two bodies, and `canEat` will not let them both be the largest: a
+      // hunter must be *strictly* bigger than `preySizeRatio` times its target
+      // (`creature.js#_edible`), so the prey is capped at `self / ratio` — the
+      // refuge radius, when self is the biggest body this world grows.
+      bodies: 2,
+      at: (self, other) => self + other + 2,
+      otherMax: (self) => Math.min(body, self / config.preySizeRatio),
+      strict: true,
       source: "radius + prey.radius + 2",
+      admits: "radius > prey.radius * preySizeRatio",
       active: config.predation,
     },
     {
@@ -559,8 +619,10 @@ export function contactRules(config) {
       query: "block",
       gate: null,
       sites: ["infection"],
-      reach: config.infectionRadius,
+      bodies: 0,
+      at: () => config.infectionRadius,
       source: "infectionRadius",
+      admits: null,
       active: config.disease,
     },
     {
@@ -569,8 +631,15 @@ export function contactRules(config) {
       query: "disc",
       gate: null,
       sites: ["separation"],
-      reach: body * 2,
-      source: "bodyRadiusMax * 2",
+      // Also two bodies, and this is the control: `_separate` shoves any
+      // overlapping pair and asks nothing about their sizes, so the corner is
+      // admissible and the supremum is attained.
+      bodies: 2,
+      at: (self, other) => self + other,
+      otherMax: () => body,
+      strict: false,
+      source: "radius + other.radius",
+      admits: null,
       active: config.bodyCollision,
     },
     {
@@ -579,8 +648,10 @@ export function contactRules(config) {
       query: sensed,
       gate: null,
       sites: ["food", "creature", "corpse"],
-      reach: config.visionRadius,
+      bodies: 0,
+      at: () => config.visionRadius,
       source: "visionRadius",
+      admits: null,
       active: true,
     },
     {
@@ -589,8 +660,10 @@ export function contactRules(config) {
       query: sensed,
       gate: null,
       sites: ["creature"],
-      reach: config.signalRadius,
+      bodies: 0,
+      at: () => config.signalRadius,
       source: "signalRadius",
+      admits: null,
       active: config.signalling,
     },
     {
@@ -599,11 +672,46 @@ export function contactRules(config) {
       query: sensed,
       gate: null,
       sites: ["creature"],
-      reach: config.mateRadius,
+      bodies: 0,
+      at: () => config.mateRadius,
       source: "mateRadius",
+      admits: null,
       active: config.sexualReproduction,
     },
-  ];
+  ].map((rule) => ({ ...rule, ...ruleSupremum(rule, config) }));
+}
+
+/**
+ * The largest a rule's reach can be, over the pairs of bodies the rule itself
+ * admits — and whether that value is ever actually taken.
+ *
+ * Every `at` here is non-decreasing in both of its arguments, so the maximum
+ * sits at the largest admissible bodies and no search is needed. That is a
+ * precondition rather than a proof, so `test/reach.test.js` brute-forces a fine
+ * grid of radii against the predicate and checks both halves: that nothing
+ * admissible exceeds this number, and that something admissible approaches it.
+ *
+ * `open` marks a supremum that is a strict bound. A bite's is: `canEat` tests
+ * `>` and not `>=`, so `self / preySizeRatio` is a size the prey may approach
+ * and never be. It matters for the audit's boundary case — a rule whose open
+ * supremum lands *exactly* on the index's guarantee is covered, because no
+ * admissible pair is ever there — and it is why the observed maximum over 36
+ * million eligible pairs (17.2200 px) sits a little under this number rather
+ * than on it.
+ *
+ * @param {object} rule - an entry of `contactRules`, before `reach` is set
+ * @param {object} config
+ * @returns {{reach:number, open:boolean}}
+ */
+function ruleSupremum(rule, config) {
+  const max = config.bodyRadiusMax;
+  if (rule.bodies === 0) return { reach: rule.at(), open: false };
+  if (rule.bodies === 1) return { reach: rule.at(max), open: false };
+  const other = rule.otherMax(max);
+  // The strict inequality only bites while it is the binding constraint: if the
+  // predicate would allow the largest body anyway, the corner is admissible and
+  // the supremum is attained.
+  return { reach: rule.at(max, other), open: rule.strict === true && other < max };
 }
 
 /**
@@ -627,6 +735,12 @@ export function contactRules(config) {
  * unchanged; in a dark pond the gate binds instead, and no setting of
  * `exactVision` moves it, because the disc a scan covers is the radius sight
  * asked for.
+ *
+ * `reach` is a supremum over admissible bodies, and `open` says whether it is
+ * ever taken. Where it is open the boundary case is safe rather than knife-edge
+ * — a rule whose supremum lands exactly on the guarantee is covered, because no
+ * pair the rule admits is ever there — which is the shape the bite turned out
+ * to have and did not have when this comment was written.
  *
  * A margin of zero under `binds: "index"` is a passing rule that any change to
  * the pond's size, its vision radius or its bodies can turn into a failing one.

@@ -11,7 +11,7 @@
 //
 // The camera made it a quantity that moves. At 8× the viewport is a fourteenth
 // of the world and nothing on screen says so, which means every number this
-// project publishes about a distance — a bite's 18 px, sight's 168, the
+// project publishes about a distance — a bite's 17.273 px, sight's 168, the
 // refuge's 7.273 — is unreadable in the one picture where those distances are
 // actually visible. This module is the arithmetic of the ruler that fixes it:
 // pick a round world distance that fits the viewport, and say how long it is.

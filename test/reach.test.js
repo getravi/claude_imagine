@@ -44,9 +44,9 @@
 //     Eating, scavenging and biting have no query of their own, so they inherit
 //     the sense scan's *answer* as well as its window: a creature can only bite
 //     what it has already seen. That gate is `visionRadius` times the day/night
-//     cycle, and it binds below a night factor of 18/168 — in both arms, because
-//     `exactVision` is a fix for the index and this is not the index. The floors
-//     are computed, the default night is measured (a margin of 40.8 px, not a
+//     cycle, and it binds below a night factor of 17.273/168 — in both arms,
+//     because `exactVision` fixes the index and this is not the index. The
+//     floors are computed, the default night is measured (a margin of 41.5 px,
 //     construction), and the failure is staged in the pond itself: one hunter,
 //     one neighbour inside its jaws, unbitten at midnight and eaten at noon.
 //     The coupling that looked real and is not — a pond with voices offers
@@ -81,6 +81,18 @@ import {
 import { trajectoryFingerprint } from "../src/fingerprint.js";
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
+
+/**
+ * The largest bite this world admits: `bodyRadiusMax + prey + 2` where the prey
+ * is as big as `canEat` will allow, which is `bodyRadiusMax / preySizeRatio` —
+ * the refuge radius. 190/11 = 17.2727 with the shipped constants, and an *open*
+ * bound, because the size test is a strict `>`. This file asserted 18.0 for two
+ * releases (v1.76, v1.81), which is the sum over a pair predation forbids.
+ */
+const BITE =
+  DEFAULT_CONFIG.bodyRadiusMax +
+  DEFAULT_CONFIG.bodyRadiusMax / DEFAULT_CONFIG.preySizeRatio +
+  2;
 
 /** Every neighbour query in the shipped sources, read out of the sources. */
 function sweepSources() {
@@ -203,7 +215,7 @@ test("three contact rules clear the guarantee and infection does not", () => {
 
   assert.equal(by.eat.reach, 11.2);
   assert.equal(by.scavenge.reach, 17);
-  assert.equal(by.bite.reach, 18);
+  assert.ok(Math.abs(by.bite.reach - BITE) < 1e-12, "a bite cannot reach 18 (v1.83)");
   assert.equal(by.infect.reach, 22);
 
   assert.ok(by.eat.covered && by.scavenge.covered && by.bite.covered);
@@ -211,7 +223,7 @@ test("three contact rules clear the guarantee and infection does not", () => {
 
   assert.ok(Math.abs(by.eat.margin - 6.8) < 1e-12);
   assert.equal(by.scavenge.margin, 1);
-  assert.equal(by.bite.margin, 0, "a bite clears the block by exactly nothing");
+  assert.ok(Math.abs(by.bite.margin - 8 / 11) < 1e-12, "0.727, and the slack is the refuge");
   assert.equal(by.infect.margin, -4);
 
   assert.deepEqual(
@@ -221,12 +233,22 @@ test("three contact rules clear the guarantee and infection does not", () => {
   );
 });
 
-test("the bite's margin of zero is a lever, not a comfort", () => {
-  // `bodyRadiusMax * 2 + 2` = 18.0 against a stub of 18. Nothing chose that;
-  // the two numbers have never been in the same sentence before v1.76. A tenth
-  // of a pixel on the biggest body this world grows, and predation's contact
-  // test becomes a rule the index cannot answer.
-  const wider = contactAudit(makeConfig({ bodyRadiusMax: 8.1 }));
+test("the bite's margin is a lever, and it is not where v1.76 put it", () => {
+  // Pin the failure, not only the fix. v1.76 read the bite's reach as
+  // `bodyRadiusMax * 2 + 2` = 18.0 against a stub of 18 and called the zero a
+  // coincidence between the pond's aesthetic dimensions; v1.83 found that pair
+  // of bodies is the one `canEat` forbids. So the old lever is gone — a tenth
+  // of a pixel on the biggest body no longer breaks anything...
+  const bite = (extra) => contactAudit(makeConfig(extra)).rules.find((r) => r.name === "bite");
+  assert.equal(bite({ bodyRadiusMax: 8.1 }).covered, true, "18.2 by the old sum, 17.5 by the rule");
+
+  // ...and the real one sits where the admissible supremum crosses the stub:
+  // `B * (1 + 1/preySizeRatio) + 2 = 18`, which is 8.381 rather than 8.0.
+  const P = DEFAULT_CONFIG.preySizeRatio;
+  const edge = 16 / (1 + 1 / P);
+  assert.ok(Math.abs(edge - 8.381) < 5e-4, "the body size at which a bite outgrows the index");
+  assert.equal(bite({ bodyRadiusMax: edge * 0.999 }).covered, true);
+  const wider = contactAudit(makeConfig({ bodyRadiusMax: edge * 1.001 }));
   assert.equal(wider.rules.find((r) => r.name === "bite").covered, false);
   assert.deepEqual(wider.uncovered.map((r) => r.name), ["bite"]);
 
@@ -418,7 +440,7 @@ test("a disc covers what it was handed, which is not the same as covering a rule
     assert.equal(by[name].gateAt, 168);
     assert.equal(by[name].covered, true);
   }
-  assert.equal(by.bite.margin, 150);
+  assert.ok(Math.abs(by.bite.margin - (168 - BITE)) < 1e-12);
 
   // The two rules that query for themselves, and the senses. A margin of zero
   // here means the opposite of the bite's zero in the block arm: the rule is
@@ -443,7 +465,7 @@ test("a disc covers what it was handed, which is not the same as covering a rule
     assert.equal(block[name].gateAt, 168);
     assert.equal(block[name].offer, 18);
   }
-  assert.equal(block.bite.margin, 0);
+  assert.ok(Math.abs(block.bite.margin - 8 / 11) < 1e-12);
 });
 
 test("the gate binds in the dark, and no flag moves it", () => {
@@ -458,17 +480,17 @@ test("the gate binds in the dark, and no flag moves it", () => {
   const dusk = at(DEFAULT_CONFIG.nightVisionFactor);
   assert.ok(Math.abs(rule(dusk, "bite").gateAt - 58.8) < 1e-12, "midnight is the factor exactly");
   assert.equal(rule(dusk, "bite").binds, "index");
-  assert.equal(rule(dusk, "bite").margin, 0);
+  assert.ok(Math.abs(rule(dusk, "bite").margin - 8 / 11) < 1e-12);
   // ...and with the index taken out of the way, what is left is the gate, in
   // pixels rather than in a construction.
   const exact = at(DEFAULT_CONFIG.nightVisionFactor, { exactVision: true });
-  assert.ok(Math.abs(rule(exact, "bite").margin - 40.8) < 1e-12);
+  assert.ok(Math.abs(rule(exact, "bite").margin - (58.8 - BITE)) < 1e-9);
   assert.ok(Math.abs(rule(exact, "eat").margin - 47.6) < 1e-12);
   assert.ok(Math.abs(rule(exact, "scavenge").margin - 41.8) < 1e-12);
 
   // The floor: the night factor at which each rule stops being answerable at
   // all, which is its reach as a share of the vision radius. A bite goes first,
-  // at 0.107 — and it goes in *both* arms, because `exactVision` is a fix for
+  // at 0.1028 — and it goes in *both* arms, because `exactVision` is a fix for
   // the index and this is not the index.
   for (const name of ["eat", "scavenge", "bite"]) {
     const floor = rule(dusk, name).reach / DEFAULT_CONFIG.visionRadius;
@@ -480,7 +502,7 @@ test("the gate binds in the dark, and no flag moves it", () => {
       assert.equal(under.binds, "gate", "and it is sight that took it, not the index");
     }
   }
-  assert.ok(Math.abs(18 / DEFAULT_CONFIG.visionRadius - 0.1071) < 5e-5, "a bite's floor");
+  assert.ok(Math.abs(BITE / DEFAULT_CONFIG.visionRadius - 0.1028) < 5e-5, "a bite's floor");
 });
 
 test("voices widen the offer and do not carry the bite — the coupling that is not there", () => {
@@ -554,6 +576,120 @@ test("a bite at midnight the pond does not take", () => {
   noon.world.step();
   assert.ok(noon.pred.lastBiteAge > -1000, "the same pair, the same gap, in daylight");
   assert.ok(noon.prey.energy < full - 1, "and the prey pays for it");
+});
+
+test("every reach is the supremum over the pairs its own rule admits", () => {
+  // The sweep that found the bug, run over all five contact rules rather than
+  // over the one that was wrong. `contactRules` derives each reach from an `at`
+  // expression and a bound on the second body; this walks a fine grid of real
+  // radii, applies the rule's own precondition, and checks both halves of the
+  // claim — nothing admissible is above the declared number, and something
+  // admissible gets arbitrarily near it. A rule added later with a hand-typed
+  // reach fails here (v1.53: fix the instances, then make the class
+  // unrepresentable).
+  const cfg = makeConfig({
+    predation: true,
+    disease: true,
+    scavenging: true,
+    bodyCollision: true,
+  });
+  const { bodyRadiusMin: lo, bodyRadiusMax: hi, preySizeRatio: P } = cfg;
+  // The predicates, written from the shipped code rather than from the
+  // declarations under test: `creature.js#_edible` for the bite, and nothing at
+  // all for the shove, which is `world.js#_separate` asking only that two
+  // bodies overlap.
+  const admits = {
+    bite: (self, other) => self > other * P,
+    shove: () => true,
+  };
+  const STEPS = 400;
+  const grid = Array.from({ length: STEPS + 1 }, (_, i) => lo + ((hi - lo) * i) / STEPS);
+
+  for (const rule of contactRules(cfg).filter((r) => r.kind === "contact")) {
+    let best = -Infinity;
+    for (const self of grid) {
+      if (rule.bodies === 0) best = Math.max(best, rule.at());
+      else if (rule.bodies === 1) best = Math.max(best, rule.at(self));
+      else {
+        for (const other of grid) {
+          if (!admits[rule.name](self, other)) continue;
+          best = Math.max(best, rule.at(self, other));
+        }
+      }
+    }
+    assert.ok(
+      best <= rule.reach + 1e-12,
+      `${rule.name}: an admissible pair reaches ${best}, past a declared ${rule.reach}`
+    );
+    // Tight to within the grid's own step, which is the resolution this search
+    // has and not a slack the rule is allowed.
+    const step = (hi - lo) / STEPS;
+    assert.ok(
+      rule.reach - best <= 2 * step,
+      `${rule.name}: declared ${rule.reach} but nothing admissible gets past ${best}`
+    );
+    // And the second column: whether the supremum is ever actually taken. Only
+    // the bite's is open, and it is open because `canEat` tests `>`.
+    assert.equal(rule.open, rule.name === "bite", `${rule.name}: open supremum?`);
+    if (rule.open) assert.ok(best < rule.reach, "an open bound is not attained");
+  }
+});
+
+test("both bodies at bodyRadiusMax is the one pair predation forbids", () => {
+  // The wrong number, staged. `bodyRadiusMax * 2 + 2` = 18.0 needs a hunter and
+  // a prey both at 8.0 px, and that is the single pair `canEat` exists to
+  // refuse — so the reach this project published for two releases was the
+  // maximum over a set with the answer taken out of it (v1.64's eligible-set
+  // lesson, one level down, on a distance instead of a statistic).
+  const cfg = makeConfig({ predation: true });
+  const rng = new RNG(5);
+  const big = () => {
+    const c = new Creature(Genome.random(rng), cfg, 0, 0, rng);
+    c.radius = cfg.bodyRadiusMax;
+    c.carnivory = 1;
+    return c;
+  };
+  const [hunter, equal] = [big(), big()];
+  assert.equal(hunter.radius + equal.radius + 2, 18, "the sum the old audit took");
+  assert.equal(hunter.canEat(equal), false, "and the pair it is over");
+
+  // The largest prey it will take is the refuge radius, approached and never
+  // reached — half a thousandth under it is a meal, half a thousandth over is
+  // not, and the bite that follows is the number `contactRules` declares.
+  const refuge = cfg.bodyRadiusMax / cfg.preySizeRatio;
+  const prey = big();
+  prey.radius = refuge - 5e-4;
+  assert.equal(hunter.canEat(prey), true);
+  assert.ok(hunter.radius + prey.radius + 2 < BITE);
+  prey.radius = refuge + 5e-4;
+  assert.equal(hunter.canEat(prey), false, "the bound is the rule, not a rounding");
+});
+
+test("no pair the pond ever offers asks for more than the declared bite", () => {
+  // The declaration pinned against the pond rather than against itself. Every
+  // living pair a real run produces, tested with `canEat` itself: none of them
+  // reaches the bound, and the largest gets close enough that the bound is not
+  // idle. (SCIENCE.md carries the full sweep — 36,416,658 eligible pairs over
+  // twelve seeds, topping out at 17.2200 px.)
+  const world = new World(makeConfig({ seed: 314, predation: true }));
+  let most = 0;
+  let pairs = 0;
+  for (let t = 0; t < 1200; t++) {
+    world.step();
+    if (t % 100) continue;
+    const live = world.creatures.filter((c) => !c.dead);
+    for (const c of live) {
+      for (const o of live) {
+        if (c === o || !c.canEat(o)) continue;
+        pairs++;
+        most = Math.max(most, c.radius + o.radius + 2);
+      }
+    }
+  }
+  assert.ok(pairs > 1000, `a pond with something to measure (${pairs} eligible pairs)`);
+  assert.ok(most < BITE, `the pond's widest bite ${most} is under the bound ${BITE}`);
+  assert.ok(most > BITE - 1, "and near enough it that the bound is about this pond");
+  assert.ok(most < 18, "the number two releases published is one no pair ever asks for");
 });
 
 test("the audit is an instrument: it leaves the world exactly as it found it", () => {

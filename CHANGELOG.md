@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.83.0] — 2026-08-12
+
+v1.76 audited every contact rule against the spatial index's real 18-px
+guarantee and found one row that held **by exactly nothing** — a bite reaching
+`bodyRadiusMax * 2 + 2` = 18.0 against a stub of 18 — and wrote the zero up as a
+coincidence between two unrelated facts, "a correctness claim resting on the
+pond's aesthetic dimensions". It is not a coincidence and it is not zero.
+
+**A bite cannot reach 18 px.** `radius + prey.radius + 2` is a distance between
+two bodies, and the branch it sits in runs only where `canEat` said yes —
+`radius > prey.radius * preySizeRatio`, strictly. Both bodies at `bodyRadiusMax`
+is the exact pair predation exists to refuse, so the reach this project has
+published for two releases was the maximum over a set with the answer taken out
+of it.
+
+### Fixed
+
+- **The bite's reach is 17.273 px, not 18.0, and its margin is +0.727.** Over
+  the pairs predation admits the supremum is
+  `bodyRadiusMax + bodyRadiusMax / preySizeRatio + 2` = 190/11, and it is *open*
+  — the size test is `>`, so a prey may approach the bound and never be it.
+  Measured: over **36,416,658 eligible pairs** (twelve seeds, 3,000 ticks each,
+  every living pair tested with `canEat` itself) the widest bite any pond ever
+  offers is **17.2200 px**.
+- **The slack has a name.** `bodyRadiusMax − bodyRadiusMax / preySizeRatio` is
+  the biggest body minus the **refuge radius** (v1.64). The size rule that
+  switches the arms race off partway up the size range is the same rule that
+  keeps predation's contact test inside the index's promise — a real
+  relationship between two constants, where v1.76 saw an accident between two
+  others.
+- **The number, on every surface that carried it.** `src/reach.js` (header
+  table, prose, the night-factor floor), `src/world.js`, `src/config.js` beside
+  `nightVisionFactor`, `src/scalebar.js`, `docs/SCIENCE.md` (three tables) and
+  `test/reach.test.js`. The night factor below which a hunter cannot bite what
+  it is standing on is **0.1028**, not 0.107; the default night's margin is
+  41.5 px, not 40.8.
+
+### Changed
+
+- **`contactRules` derives every reach instead of typing it.** Each rule now
+  declares the expression `world.js` writes (`at`), how many body radii it reads
+  (`bodies`), and where the second body stops (`otherMax`); `reach` and `open`
+  fall out of those. Nothing in the simulation reads this module — it draws no
+  randomness and is not imported by `main.js` — so no world moves.
+
+### Added
+
+- **Three tests, one of which makes the class unrepresentable.** A 400-step
+  sweep of body radii for every contact rule, applying each rule's precondition
+  as written out from `creature.js` and `world.js` rather than from the
+  declaration under test, asserting both halves: nothing admissible above the
+  declared number, and something admissible within one grid step of it — so a
+  rule added later with a hand-typed reach fails. Plus the staged pair (two
+  8.0-px creatures whose sum is the old 18.0 and whom `canEat` refuses) and the
+  live pond (seed 314, every eligible pair, none reaching the bound, none
+  reaching 18).
+- **`docs/SCIENCE.md` — "The pair the rule forbids"**, with the class swept
+  across all five contact rules. Exactly one row was wrong: eating, scavenging
+  and infection read one body or none, and shoving reads two with no
+  precondition at all, so its corner is admissible and its 16.0 px is attained.
+
+### Known
+
+- **The lesson is v1.64's, one level down.** There, the control for *who gets
+  picked* was the hunter's eligible set and not the pond. This is the same
+  substitution applied to a **reach** rather than to a statistic, which is why
+  five releases of audit walked past it: a distance reads as geometry, and
+  geometry reads as something a precondition cannot touch.
+
 ## [1.82.0] — 2026-08-11
 
 v1.58 finished marking every moving scale on a figure and named what the

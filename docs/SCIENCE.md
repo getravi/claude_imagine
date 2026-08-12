@@ -5795,19 +5795,18 @@ against a promise of 18 px they read:
 | --- | ---: | --- | ---: | --- |
 | eating | 11.2 px | `eatRadius + radius * 0.4` | +6.8 | block |
 | scavenging | 17.0 px | `radius + scavengeRadius + 6` | +1.0 | block |
-| **biting** | **18.0 px** | `radius + prey.radius + 2` | **+0.0** | block |
+| **biting** | **17.273 px** | `radius + prey.radius + 2` | **+0.727** | block |
 | **infection** | **22.0 px** | `infectionRadius` | **−4.0** | block |
-| shoving | 16.0 px | `bodyRadiusMax * 2` | exempt | disc |
+| shoving | 16.0 px | `radius + other.radius` | exempt | disc |
 
-Three hold, one holds by exactly nothing, and one fails.
+Three hold and one fails.
 
-The zero is the one to look at twice. A bite reaches `bodyRadiusMax * 2 + 2`,
-which is 18.0 because `bodyRadiusMax` is 8.0 — and the stub is 18 px because
-900 is 7x126 + 18. Those two numbers have never been in the same sentence
-before this one, and the correctness of predation's contact test is currently
-resting on their coincidence. `test/reach.test.js` pins it as a lever: one tenth
-of a pixel on the biggest body this world grows, and the index can no longer
-answer the question predation asks it.
+The biting row read **18.0 px** and a margin of **+0.0** until v1.83, and the
+zero was written up here as a coincidence between two unrelated facts —
+`bodyRadiusMax * 2 + 2` is 18.0 because `bodyRadiusMax` is 8.0, and the stub is
+18 px because 900 is 7x126 + 18. See *[The pair the rule
+forbids](#the-pair-the-rule-forbids-v183)* below: a bite cannot reach 18 px, the
+margin is 0.727, and the slack is the refuge.
 
 Shoving is exempt for a reason worth repeating: v1.56 gave `_separate` a
 `forEachWithin` query on the stated grounds that *what two bodies touching means
@@ -5902,8 +5901,11 @@ So a carried rule sits behind two constraints:
 | the index | who is *offered* | 18 px |
 | the gate | who is *chosen* | 168 px |
 
+(A bite's own reach, the thing both of these have to cover, is 17.273 px — see
+below.)
+
 In the pond as it ships the index is far the tighter of the two, which is why
-forty-eight releases never noticed the second one: a bite reaches 18 px and
+forty-eight releases never noticed the second one: a bite reaches 17.3 px and
 sight reaches 168, and those two numbers had never been in the same sentence
 because they do not look like the same kind of quantity. One is a rule and one
 is a sense.
@@ -5918,10 +5920,10 @@ reaches −1), and at that moment the gate is what every carried rule reaches:
 | --- | ---: | ---: |
 | eat | 11.2 px | 0.0667 |
 | scavenge | 17.0 px | 0.1012 |
-| bite | 18.0 px | **0.1071** |
+| bite | 17.273 px | **0.1028** |
 
 Nothing that ships is near it. The default is 0.35 (sight 58.8 px at midnight,
-a margin of 40.8 px on the bite), and the darkest curated scenario in the
+a margin of 41.5 px on the bite), and the darkest curated scenario in the
 project sets 0.28 (47.0 px). The finding is not a bug; it is that the margin was
 never measured, and is not made of what the audit thought it was made of.
 
@@ -6292,6 +6294,143 @@ for (const seed of [7, 23, 314, 512]) {
     trajectoryFingerprint(arms[0]) === trajectoryFingerprint(arms[1]) ? "IDENTICAL" : "differs");
 }'
 ```
+
+## The pair the rule forbids (v1.83)
+
+v1.76 audited every contact rule against the spatial index's real guarantee of
+18 px and reported one row that held **by exactly nothing**:
+
+> A bite reaches `bodyRadiusMax * 2 + 2`, which is 18.0 because `bodyRadiusMax`
+> is 8.0 — and the stub is 18 px because 900 is 7x126 + 18. Those two numbers
+> have never been in the same sentence before this one, and the correctness of
+> predation's contact test is currently resting on their coincidence.
+
+It is not resting on a coincidence, because **a bite cannot reach 18 px**.
+
+### Where the number came from
+
+`radius + prey.radius + 2` is a distance between two bodies, and `contactRules`
+maximised it the obvious way: put both bodies at `bodyRadiusMax`. But the line
+that computes that reach lives inside a branch:
+
+```js
+if (d2 < preyD2) { if (c.canEat(o)) { preyD2 = d2; prey = o; } }   // world.js
+...
+} else if (cfg.predation && !preyTarget.dead) {
+  const reach = c.radius + preyTarget.radius + 2;                  // world.js
+```
+
+and `canEat` (via `_edible`) requires
+
+```js
+this.radius > other.radius * this.config.preySizeRatio             // creature.js
+```
+
+— strictly. Two bodies both at 8.0 px fail that test: 8.0 is not greater than
+8.0 x 1.1. The pair the audit maximised over is the exact pair predation exists
+to refuse, so the number was the maximum of a set with the answer removed from
+it.
+
+### What it actually is
+
+Maximise `self + other + 2` subject to `self > other * preySizeRatio` and both
+bodies inside `[bodyRadiusMin, bodyRadiusMax]`. The expression rises in both
+arguments, so the answer sits at the largest admissible pair: `self` at
+`bodyRadiusMax`, and `other` approaching `bodyRadiusMax / preySizeRatio`.
+
+| | value |
+| --- | ---: |
+| published by v1.76 and v1.81 | 18.0000 px |
+| supremum over admissible pairs | **17.2727 px** (open) |
+| largest ever offered by a pond | **17.2200 px** |
+| margin against the index's 18 px | **+0.727** |
+
+The bound is *open*: the size test is `>` and not `>=`, so a prey may approach
+`bodyRadiusMax / preySizeRatio` and never be it. The third row is the empirical
+check — twelve seeds, 3,000 ticks each, **36,416,658 eligible pairs**, every
+living pair tested with `canEat` itself. The widest bite any of those ponds ever
+offers is 17.2200 px, five hundredths under the bound and nearly eight tenths
+under the number this document published.
+
+### The slack has a name
+
+`bodyRadiusMax - bodyRadiusMax / preySizeRatio` = 8.0 - 7.2727 = **0.7273**, and
+`bodyRadiusMax / preySizeRatio` is the **refuge radius** (v1.64) — the size above
+which nothing this world can grow is able to eat you. So the margin keeping
+predation's contact test inside the index's promise *is* the refuge. The rule
+that switches the arms race off partway up the size range is the same rule that
+keeps the bite answerable, which is a real relationship between two constants
+where v1.76 saw an accident between two others.
+
+### The class, swept
+
+The same question of all five contact rules — *is the reach maximised over a
+pair the rule's own precondition admits?*
+
+| rule | bodies read | precondition | supremum |
+| --- | ---: | --- | --- |
+| eating | 1 | none | attained |
+| scavenging | 1 | none (a corpse's size is not in the expression) | attained |
+| **biting** | **2** | **`radius > prey.radius * preySizeRatio`** | **open, 17.273** |
+| infection | 0 | none | attained |
+| shoving | 2 | none — `_separate` shoves whatever overlaps | attained, 16.0 |
+
+Exactly one row was wrong. Shoving is the control that makes the point: it also
+reads two bodies, it also has no query problem, and because nothing constrains
+the pair its corner *is* admissible and its 16.0 px is a reach the pond really
+takes.
+
+### What is pinned
+
+`contactRules` no longer types any reach by hand. Each rule declares the
+expression `world.js` writes (`at`), how many body radii it reads (`bodies`), and
+where the second one stops (`otherMax`); the supremum is derived, and `open` says
+whether it is ever taken. Three tests hold it:
+
+- **the sweep** walks a 400-step grid of radii for every contact rule, applies
+  the rule's own predicate written out from `creature.js` and `world.js` rather
+  than from the declaration under test, and asserts both halves — nothing
+  admissible above the declared number, and something admissible within one grid
+  step of it. A rule added later with a typed-in reach fails here.
+- **the staged pair** builds two 8.0-px creatures, asserts their sum is the 18.0
+  the old audit took, and asserts `canEat` refuses them; then walks a prey
+  across `bodyRadiusMax / preySizeRatio` half a thousandth at a time and shows
+  the bound is the rule rather than a rounding.
+- **the pond** runs seed 314 with predation and tests every living pair with
+  `canEat`, asserting none reaches the bound, that the widest comes within a
+  pixel of it, and that none reaches 18.
+
+### Reproducing the 36-million-pair sweep
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { DEFAULT_CONFIG } from "./src/config.js";
+const B = DEFAULT_CONFIG.bodyRadiusMax, P = DEFAULT_CONFIG.preySizeRatio;
+let max = 0, pairs = 0;
+for (const seed of [314, 77, 51, 7, 13, 23, 45, 99, 512, 1, 2, 3]) {
+  const w = new World({ ...DEFAULT_CONFIG, seed });
+  for (let t = 0; t < 3000; t++) {
+    w.step();
+    const live = w.creatures.filter((c) => !c.dead);
+    for (const c of live) for (const o of live) {
+      if (c !== o && c.canEat(o)) { pairs++; max = Math.max(max, c.radius + o.radius + 2); }
+    }
+  }
+}
+console.log("quoted", B * 2 + 2, "supremum", B + B / P + 2, "observed", max, "over", pairs);'
+```
+
+### The lesson
+
+v1.64 found that the control for *who gets picked* is the hunter's eligible set
+and not the pond: predation takes bodies 1.448 px smaller than the population,
+and against the mean of each hunter's own legal targets the gap is −0.092. This
+is the same substitution one level down, and the reason five releases of audit
+walked past it is that the quantity was a **reach** rather than a statistic — a
+distance reads as geometry, and geometry reads as something a precondition
+cannot touch. Whenever a rule's reach is a function of two objects, ask whether
+the rule lets both of them be extreme.
 
 ## What this model deliberately leaves out
 

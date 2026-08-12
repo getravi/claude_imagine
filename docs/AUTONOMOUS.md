@@ -497,6 +497,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   coincidence** between `bodyRadiusMax * 2 + 2` and `900 − 7 × 126` — a
   correctness claim resting on the pond's aesthetic dimensions. Widening the
   world to 1,008 px removes the stub entirely and covers everything.
+  **Closed in v1.83, and that sentence is wrong twice over.** A bite cannot
+  reach 18 px: `radius + prey.radius + 2` is only ever evaluated where
+  `canEat` said yes, and `canEat` forbids both bodies being `bodyRadiusMax`.
+  The supremum over admissible pairs is
+  `bodyRadiusMax + bodyRadiusMax / preySizeRatio + 2` = **17.2727 px**, *open*,
+  and 36,416,658 eligible pairs over twelve seeds top out at 17.2200. So the
+  margin is **+0.727** and the slack is `bodyRadiusMax − refugeRadius` — the
+  refuge (v1.64) is what keeps predation's contact test inside the index's
+  promise, which is a relationship rather than an accident. `contactRules`
+  derives every reach from an `at` expression and an `otherMax` bound now, and
+  a 400-step sweep of admissible pairs holds it. Swept across the class,
+  exactly one row was wrong; the shove is the control (two bodies, no
+  precondition, corner admissible, 16.0 attained). What it leaves: a
+  per-creature reach is one parameter away, and **three of the five contact
+  reaches are circles while two are bands** — which is what a drawing of a
+  rule's reach would have to say; and `contactAudit`'s open-supremum boundary
+  case has been reasoned about and never seen.
   (c) **The audit's list of query sites is hand-typed** — **closed in v1.81**
   (`QUERY_SITES`, `scanQuerySites`): nine queries in `src/`, declared and
   derived from the source and compared both ways, so a query added anywhere
@@ -2575,3 +2592,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   20,000 — but that is a fact about this decimation and this quantity, not a
   property of thinning, and it was one comparison away from being an assumption.
   Before reading any new statistic off the archive, compute it both ways once.
+
+- **Whenever a rule's reach is a function of two objects, ask whether the rule
+  lets both of them be extreme.** v1.64 found the control for *who gets picked*
+  is the hunter's eligible set and not the pond, and the whole apparent effect
+  was the denominator. v1.83 is that substitution one level down, and what hid
+  it through five releases of audit is that the quantity was a **reach** rather
+  than a statistic: a distance reads as geometry, and geometry reads as a fact
+  about space that a predicate has no business touching. It is not —
+  `radius + prey.radius + 2` is only ever evaluated in a branch a predicate
+  already agreed to. The tell needs no measurement: an expression over two
+  objects, maximised at the corner, inside an `if`.
+- **A worst case is a claim about a set, and the set is the part nobody
+  states.** `contactRules` was right to take a worst case — it audits an index,
+  and an index must cover the worst case — and wrong about which pairs were in
+  the running. Every "max over bodies", "worst standing spot" and "busiest
+  interval" in this project names a quantity and leaves its domain implicit.
+  When writing one, write the domain beside it; when reading one, ask what was
+  in the bag (v1.71's own lesson, arriving on a bound instead of on a band).
+- **The cheapest way to audit an instrument is to ask it for something it was
+  not built for.** Nothing was wrong with `reach.js` as an index audit. The
+  defect surfaced the moment I asked it for a *per-creature* reach for a
+  drawing, because that question forces the expression's arguments apart where
+  a worst case collapses them. A new consumer is a free review of an old
+  producer — so when a lead names a feature that would reuse an instrument,
+  some of the value is in the reuse rather than in the feature, and that part
+  is collectable without building the feature.

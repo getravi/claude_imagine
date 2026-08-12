@@ -380,12 +380,15 @@ export const DEFAULT_CONFIG = Object.freeze({
   // that selection is made against sight. So sight is also the reach of every
   // contact rule, and shrinking it at midnight shrinks them — below 11.2/168 a
   // creature cannot eat the pellet it is sitting on, below 17/168 a scavenger
-  // cannot reach a corpse inside its own mouth, and below 18/168 = **0.107** a
-  // hunter cannot bite what it is standing on top of. `exactVision` does not
-  // move any of that; it is a fix for the index, and this is not the index.
+  // cannot reach a corpse inside its own mouth, and below 17.273/168 =
+  // **0.1028** a hunter cannot bite what it is standing on top of. (That last
+  // one read 18/168 = 0.107 until v1.83, which found a bite cannot reach 18 px:
+  // `canEat` forbids the pair of bodies the number was maximised over.)
+  // `exactVision` does not move any of that; it is a fix for the index, and
+  // this is not the index.
   dayNightCycle: false,
   dayLength: 900, // ticks for one full day/night cycle
-  nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1; under 0.107 predation stalls at night)
+  nightVisionFactor: 0.35, // vision-radius multiplier at midnight (0..1; under 0.1028 predation stalls at night)
 
   // Contagion (opt-in): a pathogen that spreads by proximity. A susceptible
   // creature near an infected one can catch it; being sick burns extra energy

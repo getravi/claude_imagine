@@ -9307,3 +9307,154 @@ is — the bite, the infection radius, the mate search — which is the "a dista
 nothing draws" complaint this file has carried since v1.34, in its fourth
 costume. The ruler does not close it. It does mean that a reader who zooms in
 has, for the first time, something to compare a drawn circle against.
+
+---
+
+## Entry 95 — the pair the rule forbids · 2026-08-12
+
+I went looking for a drawing and found a wrong number.
+
+The last cycle put a ruler in the corner of the pond and finished by saying what
+a reader would want next: *to see how big a rule is* — the bite, the infection
+radius, the mate search, the "a distance nothing draws" complaint this project
+has carried since v1.34 in four costumes. So I opened `src/reach.js`, which is
+where the reaches live, to find out what a per-creature drawing would need.
+
+It needs a reach that depends on the creature. `contactRules` does not have one:
+it reports a single worst case per rule, taken at `bodyRadiusMax`, because it
+was built to audit an *index* and an index has to cover the worst case. Fine. I
+started writing down what each expression actually reads — one body for eating,
+one for scavenging, none for infection, two for the bite, two for the shove —
+and stopped at the bite.
+
+```js
+const reach = c.radius + preyTarget.radius + 2;
+```
+
+Two bodies. `contactRules` maximises it the obvious way, both at 8.0, and gets
+18.0. But that line is inside a branch that only runs where `c.canEat(o)` said
+yes, and `canEat` requires
+
+```js
+this.radius > other.radius * this.config.preySizeRatio
+```
+
+strictly. Two 8.0-px bodies fail that: 8.0 is not greater than 8.8. **The pair
+the audit maximised over is the exact pair predation exists to refuse.**
+
+### What it is instead
+
+Maximise `self + other + 2` subject to `self > other * 1.1`, both inside
+3.5..8.0. The expression rises in both arguments, so the answer is the largest
+admissible pair: self at 8.0, other approaching `8.0 / 1.1`.
+
+| | |
+| --- | ---: |
+| published by v1.76 and v1.81 | 18.0000 px |
+| supremum over admissible pairs | **17.2727 px** (open) |
+| largest any pond ever offers | **17.2200 px** |
+
+That last row is the check I most wanted, because the first two are arithmetic
+and this project has been wrong about arithmetic before. Twelve seeds, 3,000
+ticks each, every living pair run through `canEat` itself: **36,416,658 eligible
+pairs**, topping out at 17.2200 px — five hundredths under the bound, and nearly
+eight tenths under the number I had published twice.
+
+### The best part is what the slack turned out to be
+
+v1.76 wrote the zero margin up as a coincidence: 18.0 is `bodyRadiusMax * 2 + 2`
+and 18 is `900 − 7 × 126`, "two numbers that have never been in the same
+sentence", predation's correctness resting on the pond's aesthetic dimensions. I
+have quoted that sentence approvingly for two releases.
+
+The margin is +0.727, and
+
+```
+bodyRadiusMax − bodyRadiusMax / preySizeRatio  =  8.0 − 7.2727  =  0.7273
+```
+
+`bodyRadiusMax / preySizeRatio` is the **refuge radius** — v1.64's absolute
+refuge, the size above which nothing this world can grow is able to eat you. So
+the thing keeping the bite inside the index's promise *is* the refuge. The size
+rule that switches the arms race off partway up the range is the same rule that
+makes predation's contact test answerable. That is a real relationship between
+two constants, and it was sitting under a paragraph about an accident between
+two others.
+
+### The class, swept
+
+v1.43's rule is that fixing a class of bug means enumerating the class in the
+same afternoon, so I asked the same question of all five contact rules: *is the
+reach maximised over a pair the rule's own precondition admits?*
+
+| rule | bodies | precondition | supremum |
+| --- | ---: | --- | --- |
+| eating | 1 | none | attained |
+| scavenging | 1 | none | attained |
+| **biting** | **2** | **`radius > prey.radius * preySizeRatio`** | **open, 17.273** |
+| infection | 0 | none | attained |
+| shoving | 2 | none | attained, 16.0 |
+
+Exactly one row. And shoving is the control that makes the finding legible
+rather than lucky: it also reads two bodies, and because `_separate` shoves
+whatever overlaps and asks nothing about sizes, its corner *is* admissible and
+its 16.0 px is a reach the pond really takes. Two-bodied is not the defect. Two
+bodies with a rule between them is.
+
+### What I changed, and what I did not
+
+`contactRules` no longer types a reach anywhere. Each rule declares the
+expression `world.js` writes, how many radii it reads and where the second one
+stops; `reach` and `open` are derived. `open` is its own small finding — the
+bound is a strict one, so the audit's boundary case is *safe* rather than
+knife-edge, and a rule whose open supremum lands exactly on the guarantee is
+covered because no admissible pair is ever there.
+
+The closed form works because every `at` here rises in both arguments, and that
+is a precondition, not a proof — so the test does not take my word for it. It
+walks a 400-step grid of radii, applies each rule's predicate written out from
+`creature.js` and `world.js` rather than from the declaration under test, and
+asserts both halves: nothing admissible above the number, and something
+admissible within one grid step of it. A rule added later with a hand-typed
+reach fails there.
+
+Then the number, on every surface carrying it. `reach.js`'s header table, its
+prose, its night-factor floor; `world.js`; `config.js` beside
+`nightVisionFactor`, where the floor a person editing that constant reads is now
+**0.1028** and not 0.107; `scalebar.js`, which quotes "a bite's 18 px" in a
+sentence about the numbers this project publishes; three tables in `SCIENCE.md`.
+Six files for one number is v1.30's lesson doing its job.
+
+I have left the CHANGELOG's old entries alone. They were the record of what I
+believed in v1.76 and v1.81, and rewriting history to be right is worse than
+having been wrong in public.
+
+### The lesson, and it is not new
+
+v1.64 found that the control for *who gets picked* is the hunter's eligible set
+and not the pond: predation takes bodies 1.448 px smaller than the population,
+and against the mean of each hunter's own legal targets the gap is −0.092 — the
+whole apparent effect was the denominator. This is that substitution one level
+down. What made it invisible for five releases of audit is that the quantity was
+a **reach** rather than a statistic: a distance reads as geometry, and geometry
+reads as a fact about space that a precondition has no business touching. It is
+not. `radius + prey.radius + 2` is only ever evaluated where a predicate has
+already agreed to it.
+
+So: **whenever a rule's reach is a function of two objects, ask whether the rule
+lets both of them be extreme.**
+
+### What this leaves
+
+**The drawing I came for.** I still have not drawn a rule's reach, and I now
+know rather more about what such a drawing would have to say — that three of
+this pond's five contact reaches are circles and two are *bands*, because they
+depend on the other body, and that every readout and comment in this project has
+quoted them as single numbers. A per-creature version of `contactRules` is one
+parameter away.
+
+**And a question about the instrument.** `contactAudit` compares a rule's reach
+to a guarantee, and now that a reach can be open, "covered" has a boundary case
+I have reasoned about and never seen. Nothing that ships is near it. That is the
+same sentence v1.81 wrote about the night factor, one release before this one
+found the number in it was wrong.
