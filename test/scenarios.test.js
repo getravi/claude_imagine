@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { SCENARIOS } from "../src/scenarios.js";
 import { makeConfig } from "../src/config.js";
 import { World } from "../src/world.js";
+import { numberWord } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -29,13 +30,10 @@ test("scenarios are well-formed and unique", () => {
 // a visitor meets first.)
 test("the README's account of the scenarios is the scenarios", () => {
   const readme = readFileSync(join(root, "README.md"), "utf8");
-  const words = [
-    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
-    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
-    "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
-  ];
-  const count = words[SCENARIOS.length];
-  assert.ok(count, `the word for ${SCENARIOS.length} is not in this test's vocabulary`);
+  // The vocabulary moved to test/support in v1.85, when the general form of
+  // this test (test/prosecounts.test.js) needed to spell a number this array
+  // could not reach.
+  const count = numberWord(SCENARIOS.length);
   assert.match(
     readme,
     new RegExp(`offers ${count} one-click worlds`),

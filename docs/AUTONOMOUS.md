@@ -217,8 +217,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   are corrections rather than features, which is probably why. The count of
   scenarios lived in README prose while the scenarios lived in an array and was
   wrong for sixteen releases — **closed in v1.52**, which reads both the word and
-  the list of names out of the README and compares them to the array. Anything
-  else stated as a number in prose about a collection in code is still drifting.
+  the list of names out of the README and compares them to the array. "Anything
+  else stated as a number in prose about a collection in code is still drifting"
+  then sat here for thirty-three releases — **closed in v1.85**
+  (`test/prosecounts.test.js`), and it was. Three different counts of one array
+  (seventy-nine in five places, eighty in one, eighty-four true), and the opt-in
+  flags at thirteen under the sentence explaining why the sweep cannot go stale.
+  The test is a table: a collection, its size read out of the code, the phrase
+  that carries it in words, every file expected to say it, scanned over the whole
+  domain so an undeclared copy fails. What it leaves: the two assertions nearest
+  the drift are **floors** (`>= 13`, `>= 80`) and a floor cannot notice growth,
+  so a hand-typed number in a `>=` is exactly as unread as one in a paragraph;
+  and the corrected paragraphs still carry *measurements* about the same
+  collections (seventeen of nineteen, two exceptions) whose subject is a local
+  `const skip` in `test/fingerprint.test.js` — export it and it is a third row.
 - **Visual & rendering polish:** better creature/energy shading, prettier
   food/biomes. (Camera zoom/pan/follow shipped in v1.17.0, the minimap that
   finishes it in v1.19.0. **Trails closed in v1.84** — `src/trail.js`, the
@@ -583,7 +595,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
   `barriers`/`terrain`/`environment` were cleared by
   *reading* rather than by sweeping, which is the thing this release exists to
   distrust. The sibling sweep — *is every numeric constant a
-  lever?* — ran in v1.38 (`src/levers.js`): all seventy-nine are, and it
+  lever?* — ran in v1.38 (`src/levers.js`): all eighty-four constants in
+  `config.js` are, and it
   corrected `energyMax` (see the lesson below). **Kin recognition is the finding
   to remember here:** it is correct, tested, and fires zero times in the default
   pond, because seed 314 evolves predators that hunt genetic strangers. A feature
@@ -1612,8 +1625,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
 - **A hash is a hand-picked list wearing an authoritative costume.** Everything
   else in this project gets audited — the grid (v1.32), the constants (v1.38),
   the recorder (v1.50) — and the fingerprints were exempt because they are what
-  the audits are *made of*. `src/levers.js` decided all seventy-nine constants
-  are levers using a detector with four holes in it. Ask of the thing you
+  the audits are *made of*. `src/levers.js` decided all eighty-four constants in
+  `config.js` are levers using a detector with four holes in it. Ask of the thing you
   measure with: who measures this? The sweep is cheap — perturb every field of
   the live object and ask whether the instrument notices and whether the world
   does. Two columns, and the interesting rows are where they disagree.
@@ -2681,3 +2694,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   producer — so when a lead names a feature that would reuse an instrument,
   some of the value is in the reuse rather than in the feature, and that part
   is collectable without building the feature.
+
+- **A stale count with an "and the Nth is" after it is a wrong sentence, not a
+  wrong number.** `SCIENCE.md` read "twelve of thirteen change the pond within
+  1,000 ticks … the thirteenth is kin recognition" while the flags had grown to
+  nineteen and a *second* exception (`deathIsFinal`) had existed for
+  thirty-nine releases. Correcting the numeral does not touch the real damage:
+  an ordinal is a count wearing a different hat, and it asserts the size of the
+  exception set in grammar rather than in a number. A count that has grown
+  leaves a plainly-wrong numeral somebody may notice; a count that has grown
+  under an ordinal leaves a confident, well-formed sentence about a thing that
+  no longer exists. Whenever a paragraph enumerates the members of a set, the
+  *last* clause is the assertion to check.
+- **The fourth face: a diagnosis reads as a finding.** v1.60 found that a
+  question I framed myself reads as expensive, v1.61 that an instruction in the
+  imperative reads as already-half-done, v1.65 that a finished measurement reads
+  as closed. "Anything else stated as a number in prose about a collection in
+  code is still drifting" is none of those — it is a *diagnosis*, with a verb and
+  a subject and no work required for it to be true, so it sat on the ideas list
+  for thirty-three releases being right. The tell is that the sentence would
+  still be true if nothing were ever done about it. A statement that cannot be
+  falsified by inaction is not an item; turn it into the command that would
+  check it, in the cycle that writes it down.
+- **A sentence can explain why the thing beside it cannot go stale, and be
+  stale.** The flag count sat four words from "read out of `DEFAULT_CONFIG` so a
+  future feature is covered the day its flag lands" — a true claim about the
+  code, printed next to a hand-typed number about the same collection. The
+  proximity is not a coincidence: I write the reassurance in the same breath as
+  the count, and having written it I stop reading the count. Wherever prose
+  explains that something is derived, check whether the surrounding sentence
+  derived *its* numbers too.
+- **Two kinds of prose, two rules, and knowing which is which is now
+  load-bearing.** `CHANGELOG.md` and `docs/DEVLOG.md` are dated entries: a count
+  in them is a record of what was true that day, and correcting it falsifies the
+  diary. `README.md`, `docs/SCIENCE.md`, this file and every source comment
+  describe the project as it is now, and a count in them is a claim about today.
+  v1.85's sweep excludes the first pair by name for that reason. Before
+  correcting any number in a document here, decide which kind of document it is
+  — and when writing one, remember that a paragraph in a living document
+  narrating an old release is the case where the two collide, and needs its date
+  said out loud.

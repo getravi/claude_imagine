@@ -2109,13 +2109,18 @@ to 3 × 10⁻¹² at t20,000 — until one of them flips a decision.
 Recording a hash for every configuration is not possible, but two claims about
 *all* of them are, and both are now tests. With every opt-in flag explicitly
 switched off, the full state hash is identical to the default world's — for all
-thirteen flags, read out of `DEFAULT_CONFIG` so a future feature is covered the
-day its flag lands. And with each switched on, the world must actually change
-(the v1.27 rule: sweep every lever once purely to check it *is* a lever).
+nineteen opt-in flags, read out of `DEFAULT_CONFIG` so a future feature is
+covered the day its flag lands. And with each switched on, the world must
+actually change (the v1.27 rule: sweep every lever once purely to check it *is*
+a lever).
 
-Twelve of thirteen change the pond within 1,000 ticks; the slowest is disease,
-whose first case arrives at t901. The thirteenth is **kin recognition**, and it
-is the interesting one:
+Seventeen of the nineteen change the pond within 1,000 ticks; the slowest is
+disease, whose first case arrives at t901. Two do not, and neither is dead.
+**Death is final** (v1.45) is rare rather than inert — the correction is
+decisive when it fires and fires about ten times in 20,000 ticks, so the two
+arms stay bit-identical until t3,587 on seed 314 — and is staged directly in
+`test/deathIsFinal.test.js` instead. **Kin recognition** is the other, and it is
+the interesting one:
 
 | Seed | `canEat` pairs eligible by size and diet | Spared as kin | Closest eligible pair, genetically |
 | --- | --- | --- | --- |
@@ -2194,16 +2199,17 @@ for (let i = 0; i < 40000; i++) {
 
 ## Is every number in `config.js` a lever?
 
-v1.36 asked this of the thirteen opt-in **flags** and left the seventy-nine
-**numbers** unasked — which is where both of this project's known dead
+v1.36 asked this of the opt-in **flags** — thirteen of them at the time, and
+there are nineteen opt-in flags now — and left the **numbers** unasked, which is
+where both of this project's known dead
 parameters came from. v1.27 found `detritusPerRadius` clipped by a cell cap that
 silently discarded a third of every large carcass. v1.29 found `energyMax`
 sitting above a threshold it could never be reached from. Neither was visible in
 the code; both were found by moving a number and watching for a world that
-didn't. So `src/levers.js` moves all seventy-nine, and `test/levers.test.js`
-keeps doing it.
+didn't. So `src/levers.js` moves every one of the eighty-four constants in
+`config.js`, and `test/levers.test.js` keeps doing it.
 
-The answer is **yes, all seventy-nine** — but getting there took two corrections
+The answer is **yes, all of them** — but getting there took two corrections
 to the sweep, and both are more interesting than the answer.
 
 ### A one-sided nudge measures one side
@@ -4332,7 +4338,8 @@ cannot be eaten by anything this world is capable of growing. Not
 disadvantaged; ineligible. The size range starts at 3.5 px, so the refuge is the
 top 16% of it, and it is absolute.
 
-`src/levers.js` sweeps all seventy-nine constants one at a time and cannot see
+`src/levers.js` sweeps the eighty-four constants in `config.js` one at a time
+and cannot see
 this, because what the pair decides is a *conjunction*: move either number alone
 and the sweep sees a lever with the effect it expects, while the boundary the
 two of them draw together is nowhere in its vocabulary. v1.38 asked whether

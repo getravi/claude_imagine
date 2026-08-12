@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.85.0] — 2026-08-12
+
+v1.52 caught the README saying the scenarios strip "offers eight one-click
+worlds" while the strip itself lived in an array, sixteen releases after that
+stopped being true, and pinned the sentence with a test. The lesson written down
+that afternoon was that *anything else stated as a number in prose about a
+collection in code is still drifting*, and it then sat in `docs/AUTONOMOUS.md`
+as a sentence for thirty-three releases. It was drifting.
+
+### Fixed
+
+- **This project carried three different counts of one array.** `config.js` held
+  seventy-nine numbers when v1.38 swept them and holds **eighty-four** today.
+  The README, `src/levers.js`, two sections of `docs/SCIENCE.md` and two lines
+  of the playbook all said seventy-nine; `test/levers.test.js` said eighty; the
+  true count appeared nowhere. All six now say eighty-four, and none of them
+  says it by hand.
+- **The opt-in flags went from thirteen to nineteen underneath the sentence
+  that boasts about it.** `docs/SCIENCE.md` says the sweep reads its list "out
+  of `DEFAULT_CONFIG` so a future feature is covered the day its flag lands" —
+  which is true of the code and was not true of the number four words earlier.
+  Six flags have landed since (`barriers`, `barrierOcclusion`, `deathIsFinal`,
+  `shuffleTurnOrder`, `bodyCollision`, `massWeightedShove`).
+- **A stale count with an "and the Nth is" after it is a wrong sentence, not a
+  wrong number.** The paragraph under that one read "Twelve of thirteen change
+  the pond within 1,000 ticks … The thirteenth is **kin recognition**", whose
+  arithmetic asserts there is exactly *one* exception. There have been two since
+  v1.45 shipped `deathIsFinal`, which is rare rather than inert — the arms stay
+  bit-identical until t3,587 on seed 314 — and the sweep in
+  `test/fingerprint.test.js` has been skipping it, correctly and silently, for
+  thirty-nine releases. Re-measured: **seventeen of the nineteen** move the pond
+  inside 1,000 ticks, the slowest still disease at t901.
+
+### Added
+
+- **`test/prosecounts.test.js`** — the general form of v1.52's one-off. A table
+  of claims: a collection, the size read out of the code, the phrase that
+  carries it in words, and every file expected to say it. Each claim is scanned
+  across the whole domain, so a copy of the sentence anywhere fails until it is
+  declared, and a declared site that loses its sentence fails too.
+- **The rule it pins:** a number word standing immediately in front of a
+  collection's name is a claim about that collection *today*. A count that means
+  *then* has to say when and must not sit next to the noun — which is why
+  "thirteen of them at the time" passes and "thirteen opt-in flags" does not.
+- **The domain is stated in the test, including what it excludes**, per v1.51:
+  every living document plus every source and test comment
+  (`README.md`, `docs/SCIENCE.md`, `docs/AUTONOMOUS.md`, `src/*.js`,
+  `test/**/*.js`); **not** `CHANGELOG.md` or `docs/DEVLOG.md`, where a count is
+  a dated record of what was true that day and correcting it would falsify the
+  diary rather than fix anything.
+- **`test/support/numberword.js`** — zero to ninety-nine, shared with
+  `test/scenarios.test.js`, which had its own array stopping at twenty. It
+  throws rather than returning something plausible outside its range, because a
+  test that quietly stops being able to spell the number it is checking is
+  v1.36's green check that lies by omission.
+
+### Known
+
+- **Both floors are still floors.** `test/fingerprint.test.js` asserts
+  `OPT_IN_FLAGS.length >= 13` and `test/levers.test.js` asserts
+  `KEYS.length >= 80`, and a floor cannot notice growth — which is exactly how
+  the prose beside them drifted while both stayed green. They are deliberate
+  (a new flag must not break an unrelated test) and the new test is what watches
+  the number now.
+- **Two of the counts in the corrected paragraphs are still prose.** Seventeen
+  of nineteen, and the two exceptions, are measurements rather than collection
+  sizes: the skip set lives as a local in `test/fingerprint.test.js` and nothing
+  compares it to the sentence describing it. That is the same shape one level
+  down, and the fix is the same table with a third row once the set is exported.
+
 ## [1.84.0] — 2026-08-12
 
 `FIELD_SILENT` in `inspect.js` excuses a creature's `x` with a sentence that is

@@ -2,8 +2,8 @@
 //
 // v1.36 gave this project a bit-exact identity and used it to ask *is every
 // flag a lever?* — switch each opt-in feature on and check the world moves. The
-// obvious sibling went unrun: `config.js` holds seventy-nine numbers, and
-// twice now one of them has turned out to be doing nothing. v1.27 found
+// obvious sibling went unrun: there are eighty-four constants in `config.js`,
+// and twice now one of them has turned out to be doing nothing. v1.27 found
 // `detritusPerRadius` clipped by a cell cap that silently discarded a third of
 // every large carcass, and v1.29 found `energyMax` sitting above a threshold it
 // could never be reached from. Neither was found by reading the code; both were
