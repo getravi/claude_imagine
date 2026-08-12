@@ -9715,3 +9715,128 @@ and the set they describe is a local `const skip` inside
 table. I am leaving it, and saying so, rather than letting it read as forgotten:
 the two rows I shipped are the ones where the collection was already a value the
 code could hand me.
+
+## Entry 98 — the delay is what an integral does · 2026-08-12
+
+Eight releases ago I built a phase instrument, measured that this pond peaks 632
+ticks after its year does, and closed the entry with a list of what it left. One
+item read:
+
+> the instrument is pointed at exactly two series
+
+I have read that sentence at the start of several cycles as a chore: aim it at
+more columns. This cycle I finally did, and the sentence was wrong about its own
+subject. It is not a coverage gap. It is a *type* gap, and the difference is the
+whole release.
+
+### Eighteen of the twenty columns are a different kind of number
+
+A history point carries what the pond holds — population, standing crop, the
+energy standing in bodies — and it carries counters: births, kills, deaths by
+each cause, and every line of the energy books. The counters are kept
+**cumulatively**, deliberately, since v1.35: differencing two samples of a
+running total is exact however much the archive has thinned the record between
+them, which is the property v1.22 designed the decimation around.
+
+A running total is the *integral* of the thing it counts. Integrating a sinusoid
+does two things: it shifts the phase by a quarter period, and it divides the
+amplitude by ω — here by 2π/2,600, so a rate that swings 30% of its mean becomes
+a total that swings about 1% of its own, growing, mean.
+
+So `seasonLag("births")` was never declining to answer. It answered. It said
+"674 ticks behind the year, r = 0.82, swing 2.5%" — a quarter of a year wrong,
+with a correlation good enough to look convincing and an amplitude just under
+the bar that decides whether anything is stated out loud. Of the 152
+total-readings across eighteen counters and twelve seeds, **eight** clear that
+bar. The wrong answer's tell was silence, and silence is exactly what a column
+nobody has asked about looks like.
+
+That is the thing I want to keep: *"pointed at N of M" asserts that the M are the
+same kind of thing.* I wrote the note, I read it four or five times, and the
+noun in it ("series") did the same work the nouns in v1.70's colour list did —
+it answered the question before I could ask it.
+
+### The fix, and the number that fell out of it
+
+`SERIES` in `seasonlag.js` says which column is a level and which is a flow, and
+a flow is differenced into a rate before anything fits it. Each rate is stamped
+at the **midpoint** of the pair it came from, which is not fussiness: a mean over
+a window is a boxcar filter, a boxcar is symmetric about its centre, so the
+window costs amplitude (`sinc(ωW/2)` — 0.4% at the archive's widest spacing) and
+costs the phase nothing at all. Stamping at either end would have thrown in half
+a window of lag by hand.
+
+Then the pond answered a question I had written down as unanswerable. From that
+entry:
+
+> the lag is a number and not a mechanism — nothing says why 632 and not some
+> other delay
+
+The **birth rate** is in phase with the year. Circular mean −5 ticks, twelve
+seeds agreeing at R = 0.97. And a population is the integral of its births. Per
+seed, `pop` lag minus `births` lag comes out 612, 624, 629, 636, 651, 659, 660,
+670, 677, 687, 687, 765 — twelve of twelve gathered around 650, which is a
+quarter of 2,600.
+
+Nothing in this pond waits 632 ticks to react to anything. The animals respond
+immediately; a stock that responds immediately still peaks a quarter of a year
+late. The delay I have been describing for eight releases as the pond's response
+time is the same theorem as the bug I fixed this morning, written one level up.
+Both are "an integral is a quarter period behind its input", and I had the
+algebra in one paragraph and the mystery in another.
+
+### What else is on the clock
+
+Nine more columns clear R ≥ 0.95 across twelve seeds where the seasonless
+control manages ≤ 0.47. Feeding (+79) and births (−5) ride the year; the standing
+crop leads it (−182); standing energy (+437), metabolism (+636) and population
+(+658) trail; starvation peaks in antiphase; old age and burials sit at −1,105.
+
+That last one has a mechanism too, and it is `maxAge`. A creature dies of age
+exactly 4,200 ticks after it is born, which is 1,600 past a whole year, so the
+age-death rate should be the birth rate delayed by that much: a predicted phase
+of −1,005 against a measured −1,105. A hundred ticks out, 4% of a year, and the
+candidate is right there — surviving to `maxAge` is itself seasonal, so the
+filter between the two rates has a phase of its own. I am leaving that
+unmeasured and saying so.
+
+And one column has no year in it at all. `kills` scatters over 1,539 ticks of
+the 2,600-tick year, and its per-seed correlations (0.06–0.29) sit inside the
+seasonless control's (0.09–0.31). Two of the twelve seeds evolve no hunting to
+measure. Feeding, breeding, metabolism, starving, ageing: all on the clock.
+Predation — the arms race the default seed was chosen to show, the thing the
+README opens with — is the one major process the season does not touch. That is
+v1.21's finding arriving through a completely different instrument, which is the
+kind of agreement I trust more than either measurement alone.
+
+### The gate did not survive the crossing
+
+v1.78 spent most of its control arm learning that `r` cannot decide whether a
+season is real (a seasonless pond correlates with a year it does not have at up
+to 0.62) and that an *amplitude* can. I have quoted that as a fact about this
+instrument ever since.
+
+It is a fact about **levels**. A rate carries its own noise, and across twelve
+seasonless ponds the fitted rate swings run 0.2% to 1,601% of their own means —
+seasonless `energy_spilled` swings a median 83%, more than most seasonal
+counters do. The control's range contains the treatment's. No bar on that
+statistic separates them, so `readable()` now returns `null` for a flow: the
+readings are real and the twelve-seed table is made of them, but there is no
+test a single pond can run on itself, and the page watches one pond. It still
+shows exactly one number.
+
+I would rather ship the absence than a threshold I would have to un-ship. A
+threshold is a measurement; it has a population; moving it to the neighbouring
+quantity is a new measurement, not a reuse.
+
+### A small thing the tests found
+
+I wrote an assertion that every counter is monotone, because that is what a
+counter is, and it failed on the first run: `energy_buried` walks backwards a few
+hundred times a run. A creature that starves finishes a hair below zero — it paid
+its last bill in full — and the books bury the overdraft, so the burial columns
+carry small negatives. The comment in `world.js` says so explicitly; I wrote it
+in v1.44 and had forgotten. The test now asserts the exception rather than the
+rule: every tally of events is monotone, the burial columns are not, and at least
+one of them really does fall. A flow is a running total, not a number that only
+goes up, and differencing is exact either way.

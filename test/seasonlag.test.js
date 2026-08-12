@@ -21,7 +21,19 @@ import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 import { seasonalFactor } from "../src/environment.js";
-import { seasonLag, correlogram, detrend, pearson, readable, MIN_SWING } from "../src/seasonlag.js";
+import {
+  seasonLag,
+  correlogram,
+  detrend,
+  pearson,
+  readable,
+  seriesKind,
+  MIN_SWING,
+  SERIES,
+  NOT_A_SERIES,
+} from "../src/seasonlag.js";
+import { DEATH_CAUSES } from "../src/stats.js";
+import { EnergyLedger, UNATTRIBUTED } from "../src/energy.js";
 import { STATS_HASHED } from "../src/fingerprint.js";
 import { stateFingerprint, trajectoryFingerprint } from "../src/fingerprint.js";
 
@@ -30,6 +42,24 @@ function synthetic(config, years, f, { from = 0, every = 4 } = {}) {
   const rows = [];
   const end = from + years * config.seasonLength;
   for (let t = from; t <= end; t += every) rows.push({ tick: t, pop: f(t) });
+  return rows;
+}
+
+/**
+ * A running total whose *rate* is `rate·(1 + amp·sin(ω(t − shift)))`.
+ *
+ * Written from the closed-form integral rather than by summing, so the
+ * difference between any two samples is exactly the mean rate over the ticks
+ * between them — which is what the instrument claims to recover, and what a
+ * real counter in this project genuinely is.
+ */
+function counter(config, years, { shift = 0, rate = 100, amp = 0.5, every = 4 } = {}) {
+  const P = config.seasonLength;
+  const omega = (2 * Math.PI) / P;
+  const total = (t) =>
+    rate * (t + (amp / omega) * (Math.cos(omega * -shift) - Math.cos(omega * (t - shift))));
+  const rows = [];
+  for (let t = 0; t <= years * P; t += every) rows.push({ tick: t, births: total(t) });
   return rows;
 }
 
@@ -241,6 +271,163 @@ test("reading the year does not move the pond", () => {
   // that is easy to leave unasserted.
   assert.ok(a.stats.seasonLag, "the arm that measures should have an answer");
   assert.equal(b.stats.seasonLag, null, "the arm that does not should not");
+});
+
+test("every column of a history point is classified, and every classification is a column", () => {
+  // The table in `seasonlag.js` is hand-typed — it has to be, because `stats.js`
+  // imports this module — so the thing that keeps it true is this, derived from
+  // the code in both directions. A column added to a history point and left
+  // unclassified fails here; a name in the table that nothing writes fails too.
+  const cfg = makeConfig({ seed: 314 });
+  const w = new World(cfg);
+  for (let t = 0; t < 3000; t++) w.step();
+  const carried = new Set();
+  for (const row of w.stats.runHistory.series()) for (const k in row) carried.add(k);
+  assert.ok(carried.size > 20, `only ${carried.size} columns — did the run do anything?`);
+
+  // The buried-energy columns exist only once a burial with that cause has
+  // happened, and old age is slow. Build them the way the ledger does, out of
+  // the two lists that decide the names, rather than running the pond until it
+  // gets around to each one.
+  const ledger = new EnergyLedger();
+  for (const cause of [...DEATH_CAUSES, UNATTRIBUTED]) ledger.bury(1, cause);
+  for (const k in ledger.snapshot(w)) carried.add(k);
+
+  const known = new Set([...Object.keys(SERIES), ...NOT_A_SERIES]);
+  for (const k of carried) assert.ok(known.has(k), `column "${k}" is classified nowhere`);
+  for (const k of Object.keys(SERIES)) assert.ok(carried.has(k), `"${k}" is not a column`);
+  // And the two halves of the classification are disjoint, so a column cannot
+  // be a series and the coordinate it is drawn against at the same time.
+  for (const k of NOT_A_SERIES) assert.ok(!(k in SERIES), `"${k}" is on both lists`);
+  // A flow is a running total, and a running total is not the same thing as a
+  // number that only goes up. Every tally of *events* is monotone, and the
+  // burial columns are not: a creature that starves finishes a hair below zero
+  // and the books bury the overdraft, so `energy_buried` walks backwards a few
+  // hundred times in a run. That is a rate that is negative, not a counter that
+  // is broken — and differencing is exact either way, which is the only
+  // property this module needs. Written as a strict inequality in both
+  // directions so the exception cannot quietly stop being one.
+  const rows = w.stats.runHistory.series();
+  let backwards = 0;
+  for (const [field, kind] of Object.entries(SERIES)) {
+    if (kind !== "flow") continue;
+    const mayOverdraw = field.startsWith("energy_buried");
+    for (let i = 1; i < rows.length; i++) {
+      const prev = rows[i - 1][field];
+      const next = rows[i][field];
+      if (!Number.isFinite(prev) || !Number.isFinite(next)) continue;
+      if (next >= prev - 1e-9) continue;
+      assert.ok(mayOverdraw, `${field} fell from ${prev} to ${next}`);
+      backwards++;
+    }
+  }
+  assert.ok(backwards > 0, "no burial went backwards — has the overdraft stopped happening?");
+});
+
+test("a counter's phase belongs to its rate, and the total reads a quarter of a year late", () => {
+  const cfg = makeConfig();
+  const P = cfg.seasonLength;
+  assert.equal(seriesKind("births"), "flow");
+  assert.equal(seriesKind("pop"), "level");
+  assert.equal(seriesKind("nosuch"), "level");
+
+  for (const shift of [-400, 0, 250, 700]) {
+    const rows = counter(cfg, 5, { shift });
+    const got = seasonLag(rows, "births", cfg);
+    assert.ok(got, `no answer at shift ${shift}`);
+    assert.equal(got.kind, "flow");
+    assert.ok(
+      Math.abs(got.lag - shift) < 1,
+      `shift ${shift} came back as ${got.lag.toFixed(2)}`
+    );
+    // The rate swings by half its mean, and that is what `swing` reports —
+    // about the rate, never about the total, which grows without bound and
+    // whose "share of its own mean" would be a fact about the run's length.
+    assert.ok(Math.abs(got.swing - 0.5) < 0.01, `swing ${got.swing.toFixed(3)}`);
+    assert.ok(got.r > 0.999, `r ${got.r}`);
+
+    // Pin the failure beside the fix (v1.24). Reading the running total as
+    // though it were a level is not noise and not a blur: a total is the
+    // integral of its rate, integrating a sinusoid shifts it a quarter period,
+    // so the answer is exactly 650 ticks late — same units, same shape, r just
+    // as high, and nothing downstream could tell.
+    const raw = seasonLag(rows, "births", cfg, { kind: "level" });
+    assert.ok(raw && raw.r > 0.999, `the wrong answer is not even suspicious: r ${raw?.r}`);
+    let off = raw.lag - shift;
+    while (off > P / 2) off -= P;
+    while (off <= -P / 2) off += P;
+    assert.ok(
+      Math.abs(off - P / 4) < 2,
+      `reading the total was out by ${off.toFixed(0)}, not ${(P / 4).toFixed(0)}`
+    );
+  }
+});
+
+test("a wide window costs the swing, not the lag", () => {
+  // Differencing across a gap is a mean over that gap, a mean is a boxcar, and
+  // a boxcar is symmetric about its own centre — so stamping the rate at the
+  // midpoint leaves the phase alone however coarse the record is, and the whole
+  // cost of the archive's thinning is a slightly smaller amplitude. That factor
+  // has a closed form, which makes it an assertion rather than a tolerance.
+  const cfg = makeConfig();
+  const P = cfg.seasonLength;
+  const omega = (2 * Math.PI) / P;
+  const sinc = (w) => (w === 0 ? 1 : Math.sin((omega * w) / 2) / ((omega * w) / 2));
+
+  // Fifty times the spacing, on a divisor of the year so that both fits see a
+  // whole number of periods and the only difference between them is the width
+  // of the window. (Off a divisor the fit picks up a fraction of a year as
+  // well, which is worth about a thousandth here and is not what is being
+  // asserted.)
+  const fine = seasonLag(counter(cfg, 5, { shift: 300, every: 4 }), "births", cfg);
+  const coarse = seasonLag(counter(cfg, 5, { shift: 300, every: 200 }), "births", cfg);
+  assert.ok(fine && coarse);
+  assert.ok(
+    Math.abs(fine.lag - coarse.lag) < 0.01,
+    `one point per 200 ticks moved the lag from ${fine.lag.toFixed(3)} to ${coarse.lag.toFixed(3)}`
+  );
+  assert.ok(
+    Math.abs(coarse.swing / fine.swing - sinc(200) / sinc(4)) < 1e-5,
+    `attenuation ${(coarse.swing / fine.swing).toFixed(6)} against ${(sinc(200) / sinc(4)).toFixed(6)}`
+  );
+  // And the spacing this actually happens at is the archive's, which halves as
+  // a run grows: 128 ticks at 20,000 costs the swing 0.4%, against a bar of
+  // 15%. The window is a rounding error on the amplitude and exactly nothing on
+  // the phase, which is the number the readout says out loud.
+  assert.ok(1 - sinc(128) < 0.005, `${1 - sinc(128)}`);
+});
+
+test("no surface may state a flow, because no bar has been measured for one", () => {
+  // The reading is real — the twelve-seed table in `docs/SCIENCE.md` is made of
+  // these — and `readable()` still declines it, because `MIN_SWING` is a
+  // level's bar and the seasonless control says no bar on this statistic can
+  // exist: a rate that is following nothing swings further than a rate that is
+  // following the year. The absence is the honest answer for a page watching
+  // one pond, and it is representable rather than approximated (v1.42).
+  const cfg = makeConfig();
+  const flow = seasonLag(counter(cfg, 5, { shift: 200, amp: 0.9 }), "births", cfg);
+  assert.ok(flow && flow.swing > MIN_SWING * 5, `swing ${flow?.swing}`);
+  assert.equal(readable(flow), null);
+  // …while the same numbers read as a level are stated, so this is a decision
+  // about the kind and not a new floor on the swing.
+  assert.ok(readable({ ...flow, kind: "level" }));
+});
+
+test("a counter with nothing in it is an absence, not a phase", () => {
+  const cfg = makeConfig();
+  // A flow needs pairs, so a record with one row has no series at all — and a
+  // counter that never moves has a rate of exactly zero, which is a structural
+  // absence rather than a small number (v1.20).
+  assert.equal(seasonLag([{ tick: 0, births: 5 }], "births", cfg), null);
+  const flat = [];
+  for (let t = 0; t <= 5 * cfg.seasonLength; t += 4) flat.push({ tick: t, births: 7 });
+  assert.equal(seasonLag(flat, "births", cfg), null);
+  // And a differenced series is one sample shorter than the record it came
+  // from, which is the sort of off-by-one that would quietly cost a year.
+  const rows = counter(cfg, 5, { shift: 0 });
+  const got = seasonLag(rows, "births", cfg);
+  const level = seasonLag(rows, "births", cfg, { kind: "level" });
+  assert.equal(got.samples, level.samples - 1);
 });
 
 test("the new field is in the books", () => {

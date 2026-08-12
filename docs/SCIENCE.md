@@ -6508,6 +6508,156 @@ a **width** rather than an opacity — the whole point being that a translucent
 mark's legibility depends on a background it does not control, which is what the
 first row measures.
 
+## The delay is what an integral does (v1.86)
+
+v1.78 built the phase instrument and pointed it at `pop` and `food`. Its own
+closing note said so — *the instrument is pointed at exactly two series* — and
+filed the rest as coverage: twenty-odd columns, two of them asked. That reading
+was wrong in a way worth writing down. The rest of a history point is eighteen
+cumulative counters, and a counter is not another series of the same kind. It is
+a running **total**, kept that way because differencing two samples of a total is
+exact under any amount of the archive's thinning (v1.22), and a total is the
+*integral* of the thing it counts.
+
+Integrating a sinusoid does two things to it. It divides the amplitude by ω —
+here, by 2π/2600, so a swing that is 30% of a rate's mean becomes about 1% of the
+growing total's — and it shifts the phase by a quarter period. So the instrument
+did not decline to answer about the counters. It answered, and the answer was
+650 ticks late with a swing under the bar, which reads on a panel as *nothing
+here*.
+
+`seasonlag.js` now classifies every column (`SERIES`) and differences a flow
+before it fits, stamping each rate at the **midpoint** of the samples it came
+from: a mean over a window is a boxcar, a boxcar is symmetric about its own
+centre, so the archive's widest spacing costs the swing 0.4% and the phase
+exactly nothing.
+
+### The quarter period is measurable, not just derivable
+
+Twelve seeds, 20,000 ticks, whole-run archive, first year discarded. For each
+counter, the phase of its **rate** against the phase of its **running total**,
+per seed, wrapped into one year:
+
+| counter | shift, total − rate (12 seeds) | median | predicted |
+| --- | ---: | ---: | ---: |
+| `births` | 622 … 834 | 655 | 650 |
+| `energy_crop` (what feeding mints) | 493 … 654 | 644 | 650 |
+| `energy_metabolism` | 477 … 689 | 654 | 650 |
+| `deaths_starvation` | 584 … 735 | 648 | 650 |
+
+And the cost of getting it wrong is not that the number is late — it is that
+there is no number. Of **152** total-readings across the eighteen counters and
+twelve seeds, **8** clear the `MIN_SWING` bar; of the 208 rate-readings, 184 do.
+
+### What follows the year, and when
+
+Circular means across the twelve seeds (a plain mean is meaningless on a phase),
+with `R` the resultant length — 1 is twelve seeds agreeing exactly, 0 is
+scatter. The control column is the same statistic on twelve **seasonless** ponds
+asked about a year they do not have. Positive is *behind*.
+
+| column | kind | lag | across seeds | median r | R | control R |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `energy_crop` — feeding | flow | **+79** | 30 … 214 | 0.98 | 0.99 | 0.29 |
+| `births` | flow | **−5** | −130 … 160 | 0.87 | 0.97 | 0.30 |
+| `food` — standing crop | level | −182 | −299 … 35 | 0.88 | 0.97 | 0.47 |
+| `energy_standing` | level | +437 | 309 … 605 | 0.98 | 0.97 | 0.19 |
+| `energy_metabolism` | flow | +636 | 502 … 791 | 0.96 | 0.97 | 0.46 |
+| `pop` | level | +658 | 499 … 883 | 0.95 | 0.96 | 0.38 |
+| `deaths_starvation` | flow | ±1300 | antiphase | 0.81 | 0.95 | 0.39 |
+| `deaths_age` | flow | −1105 | −1280 … −857 | 0.49 | 0.96 | 0.18 |
+| `energy_buried` | flow | −1115 | −1285 … −827 | 0.43 | 0.96 | 0.28 |
+| `kills` = `deaths_predation` | flow | +263 | −487 … 1052 | 0.16 | 0.59 | 0.30 |
+| `energy_spilled` | flow | +1059 | scattered | 0.31 | 0.57 | 0.04 |
+
+(`pop`'s circular mean is 658 where v1.78 reported 632. Same twelve numbers: 632
+is their plain median, which this table cannot use because a phase near the wrap
+has no median. The instrument has not moved.)
+
+**The pond's famous delay is arithmetic, and it is the same arithmetic as the
+bug above.** The birth rate is *in phase with the year* — circular mean −5
+ticks, twelve seeds agreeing at R = 0.97 — and a population is the integral of
+its births. Per seed, `pop` lag minus `births` lag is 612, 624, 629, 636, 651,
+659, 660, 670, 677, 687, 687, 765: twelve of twelve within a fifth of a period of
+**650**. v1.78 wrote "the lag is a number and not a mechanism — nothing says why
+632 and not some other delay". The mechanism was in the estimator's own algebra
+the whole time. Nothing in this pond waits 632 ticks to react to anything; the
+animals respond immediately, and a stock that responds immediately still peaks a
+quarter of a year late.
+
+**Old age is the birth rate delayed by one lifetime.** `maxAge` is 4,200 ticks,
+which is 1,600 past a whole year, so a cohort born at the year's peak should die
+of age 1,600 ticks later — a predicted phase of −1,005 against a measured
+**−1,105** (R = 0.96 on twelve seeds). The residual is 100 ticks, about 4% of the
+year, and it has an obvious unmeasured candidate: surviving to `maxAge` is
+itself seasonal, so the filter between the two rates has a phase of its own.
+
+**Starvation is the year's other half.** Its rate peaks half a year from the
+food peak on all twelve seeds — which is the one row here that anybody would
+have guessed, and is worth having because it is the row that says the instrument
+is pointed at the world and not at itself.
+
+**Predation is the process with no year in it.** `kills` scatters over 1,539
+ticks of the 2,600-tick year, its per-seed correlations are 0.06–0.29, and the
+seasonless control's are 0.09–0.31 — the same range. Two of the twelve seeds
+evolve no hunting at all and return no reading. This is the v1.21 finding in a
+new instrument: the arms race the default seed was chosen to show, and that the
+README opens with, is the one major process in this pond that the year does not
+touch. Everything else — feeding, breeding, metabolism, starving, ageing — is on
+the clock.
+
+### The gate does not survive the crossing
+
+v1.78's bar is a **swing**, and the reason was measured: a seasonless pond
+correlates with a year it does not have at up to r = 0.62, so `r` cannot gate,
+while a seasonless *population* barely moves. On a rate that reverses. Across
+these twelve seasonless ponds the fitted rate swings run from 0.2% to 1,601% of
+their own means — seasonless `energy_spilled` swings a median 83.0% — and the
+seasonal arm's counters swing 19.9%–106.6%. The control's range contains the
+treatment's, so no bar on this statistic separates them, and `readable()` now
+returns `null` for a flow rather than pretending otherwise. The twelve-seed
+agreement in the table above *does* separate them (R ≥ 0.95 against ≤ 0.47), and
+it is not a statistic one pond can compute, which is why nothing on the page
+reads a rate.
+
+### Reproducing it
+
+```sh
+node -e '
+  const N = 20000, SEEDS = [314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026];
+  Promise.all([import("./src/world.js"), import("./src/config.js"),
+               import("./src/seasonlag.js")]).then(([W, C, L]) => {
+    for (const seed of SEEDS) {
+      const cfg = C.makeConfig({ seed });
+      const w = new W.World(cfg);
+      for (let t = 0; t < N; t++) w.step();
+      const rows = w.stats.runHistory.series();
+      const out = [];
+      for (const f of ["pop", "births", "deaths_age", "kills", "energy_crop"]) {
+        const r = L.seasonLag(rows, f, cfg);          // rate for a flow
+        const t = L.seasonLag(rows, f, cfg, { kind: "level" }); // read as a total
+        out.push(`${f} ${r ? r.lag.toFixed(0) : "-"}` +
+                 (L.SERIES[f] === "flow" ? ` (total ${t.lag.toFixed(0)})` : ""));
+      }
+      console.log(seed, out.join("  "));
+    }
+  });'
+```
+
+Pass `C.makeConfig({ seed, seasons: false })` to the world and the seasonal
+config to `seasonLag` for the control arm.
+
+```bash
+node --test test/seasonlag.test.js
+```
+
+Six of its tests are this release: the classification table checked against a
+real history point in both directions, the quarter-period error pinned beside
+its fix, the boxcar's `sinc` attenuation against a closed form, the flows that
+are allowed to run backwards (a starved creature is buried holding a small
+negative, so `energy_buried` walks back a few hundred times a run), the absences,
+and `readable()` declining a flow.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

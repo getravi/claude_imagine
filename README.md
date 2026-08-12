@@ -171,7 +171,10 @@ could have fixed it.
   twelve seeds of twelve. The blue line follows it, **late**: v1.78 measured the
   population peaking a median of 632 ticks after the year does, on twelve seeds
   of twelve, which is very nearly a quarter of a 2,600-tick year and is why the
-  half-year averages v1.74 ran could not see it at all. The *Lag ⏳* stat is
+  half-year averages v1.74 ran could not see it at all. v1.86 says why it is a
+  quarter: the *birth rate* is in phase with the year, and a population is the
+  running total of its births — a stock that responds instantly still peaks a
+  quarter of a year late. The *Lag ⏳* stat is
   that number, live, once a run is long enough to have one. Toggle *Seasons* off
   to see the difference a constant climate makes — the shading goes with it, and
   so does the lag.

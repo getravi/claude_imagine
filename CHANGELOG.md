@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.86.0] — 2026-08-12
+
+v1.78 built the phase instrument, pointed it at `pop` and `food`, and closed
+with *the instrument is pointed at exactly two series*. That reads as a coverage
+gap. It was a type gap: the rest of a history point is eighteen cumulative
+counters, a counter is the **integral** of what it counts, and an integral of a
+sinusoid is a quarter period late with its amplitude divided by ω. The
+instrument was not declining to answer about them — it was answering, 650 ticks
+wrong, with a swing under every bar, which on a panel reads as *nothing here*.
+
+### Fixed
+
+- **A running total handed to a phase estimator answers about its integral.**
+  `seasonLag` now classifies each column (`SERIES`: a **level** is what the pond
+  holds at an instant, a **flow** is a running total) and differences a flow
+  into a rate before it fits. Measured on twelve seeds: the shift between a
+  counter's total and its rate is a median of 644–655 ticks across the four
+  columns clean enough to compare, against a predicted 650. Of 152
+  total-readings, 8 clear the swing bar; of 208 rate-readings, 184 do.
+- **A rate is stamped at the midpoint of the samples it came from**, so the
+  archive's thinning costs the swing 0.4% at its widest spacing and the phase
+  exactly nothing — a mean over a window is a boxcar and a boxcar is symmetric
+  about its own centre. The attenuation is asserted against `sinc(ωW/2)` rather
+  than against a tolerance.
+- **`readable()` returns `null` for a flow.** v1.78's bar is a swing and the
+  control says a swing cannot gate a rate: across twelve seasonless ponds the
+  fitted rate swings run 0.2%–1,601% of their own means, containing the seasonal
+  arm's 19.9%–106.6% outright. The twelve-seed agreement that *does* separate
+  them is not a statistic one pond can compute, so no surface states a rate.
+
+### Measured
+
+- **The pond's 632-tick delay is arithmetic.** The birth *rate* is in phase with
+  the year — circular mean −5 ticks, twelve seeds agreeing at R = 0.97 — and a
+  population is the integral of its births. Per seed, `pop` lag minus `births`
+  lag is 612…765 against a quarter period of 650. v1.78 wrote that the lag was
+  "a number and not a mechanism"; the mechanism was the same theorem as the bug
+  above. Nothing in this pond waits 632 ticks to react to anything.
+- **Nine more columns follow the year**, at R ≥ 0.95 across twelve seeds against
+  a seasonless control's ≤ 0.47: feeding (+79), births (−5), the standing crop
+  (−182), standing energy (+437), metabolism (+636), population (+658),
+  starvation (antiphase), old age (−1,105) and burials (−1,115).
+- **Old age is the birth rate delayed by one lifetime.** `maxAge` is 1,600 ticks
+  past a whole year, predicting a phase of −1,005 against a measured −1,105.
+- **Predation is the one major process with no year in it.** `kills` scatters
+  over 1,539 ticks of the 2,600-tick year, and its per-seed correlations
+  (0.06–0.29) sit inside the seasonless control's (0.09–0.31). Two of twelve
+  seeds evolve no hunting at all. Feeding, breeding, metabolism, starving and
+  ageing are all on the clock; the arms race the default seed was chosen to show
+  is not.
+
+### Added
+
+- **`test/seasonlag.test.js` gains six tests**: the classification table checked
+  against a real history point in both directions (a new column fails until it
+  is classified, a name that is not a column fails too), the quarter-period
+  error pinned beside its fix, the boxcar attenuation against its closed form,
+  the flows that may run backwards, the new absences, and `readable()` declining
+  a flow.
+- **A third row in `test/prosecounts.test.js`** — the eighteen counters, pinned
+  in the release that writes the number rather than in the one that finds it
+  stale.
+
+### Known
+
+- **A flow that goes backwards is not a broken counter.** A creature that
+  starves finishes a hair below zero and the books bury the overdraft, so
+  `energy_buried` and two of its by-cause columns walk backwards a few hundred
+  times a run. The test asserts exactly that: every tally of events is monotone,
+  the burial columns are not, and at least one of them really does fall.
+- **The reference is still hard-wired to the year.** The day/night cycle is a
+  900-tick clock nothing has been correlated against, and `seasonAmplitude` has
+  never been swept. Both are now one argument away.
+
 ## [1.85.0] — 2026-08-12
 
 v1.52 caught the README saying the scenarios strip "offers eight one-click

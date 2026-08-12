@@ -2543,6 +2543,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   has run; and the instrument is pointed at exactly two series. The day/night
   cycle is a 900-tick clock nothing has ever been correlated against, and every
   one of `Stats`'s forty-three columns is a series against the same reference.
+  **The two-series half closed in v1.86, and it was not the coverage gap that
+  sentence describes.** The other columns are counters, a counter is the
+  *integral* of what it counts, and an integral of a sinusoid is a quarter
+  period late with its amplitude divided by ω — so the instrument had been
+  answering about all eighteen of them, 650 ticks wrong and under every bar,
+  which reads as silence. Differencing them first (`SERIES`, the `flow` kind)
+  turns nine more columns into readings, and the first one answers v1.78's own
+  open question: the birth *rate* is in phase with the year (−5 ticks, R = 0.97
+  on twelve seeds) and a population is the integral of its births, so the 632
+  is the same quarter period as the bug — nothing in this pond waits 632 ticks
+  for anything. **What it leaves:** predation is the one major process with no
+  season in it (r 0.06–0.29 against a seasonless control's 0.09–0.31), which is
+  v1.21's finding in a new instrument and is a lead nobody has followed; the
+  age-death rate sits 100 ticks off the one-lifetime prediction and the
+  candidate (a survival filter that is itself seasonal) is unmeasured; there is
+  **no single-pond gate for a flow** — the seasonless swings contain the
+  seasonal ones, so `readable()` declines every rate and the page therefore
+  still shows exactly one number; and the day/night clock and `seasonAmplitude`
+  are untouched, both now one argument away since the reference is the only
+  part of this module still hard-wired to the year.
 
 - **When the honest measurement would be a fact about the machine, measure the
   work instead.** Performance is the one thing here I never instrumented, and
@@ -2724,6 +2744,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the count, and having written it I stop reading the count. Wherever prose
   explains that something is derived, check whether the surrounding sentence
   derived *its* numbers too.
+- **"Pointed at N of M" is a claim that the M are the same kind of thing.** The
+  note v1.78 left read as a coverage gap — an instrument aimed at two columns
+  out of twenty, so aim it at the rest — and it was a *type* gap: eighteen of
+  those columns are running totals, and a phase estimator handed a total
+  answers about its integral, a quarter period late with the amplitude divided
+  by ω. It does not decline; it returns a number with a good `r` on it, and the
+  amplitude collapse is what turns the wrong answer into apparent silence. This
+  is v1.71's "ask what was in the bag" on an instrument's *input* rather than
+  on its sample. Whenever a tool is described as reading some of a collection,
+  check whether the members are one kind before treating the rest as more work
+  of the same shape.
+- **A number I filed as unexplained can be arithmetic in the instrument's own
+  units.** v1.78 measured the pond 632 ticks behind the year and wrote "the lag
+  is a number and not a mechanism". It is a quarter period, and the quarter
+  period is the *same theorem* as the bug this release fixed: the birth rate is
+  in phase with the year, a population is the integral of its births, and an
+  integral is a quarter period late. Nothing waits. The lesson is not about
+  seasons — it is that when a result and a defect in the same module are the
+  same size, they are usually the same fact, and I looked at that number for
+  eight releases while writing the algebra that explains it into a different
+  paragraph.
+- **The gate a control picks is a gate for the quantity it was measured on.**
+  v1.78 proved `r` cannot separate a real season from a coincidence and that an
+  *amplitude* can, and I read that as a fact about this instrument. It is a fact
+  about **levels**: a rate carries its own noise, so on a flow the seasonless
+  arm's swing range contains the seasonal arm's outright and the gate reverses.
+  A threshold is a measurement, so it has a population, and moving it to a
+  neighbouring quantity is a new measurement rather than a reuse (v1.73 said the
+  same thing about a mark's backgrounds; this is the version with no colour in
+  it).
 - **Two kinds of prose, two rules, and knowing which is which is now
   load-bearing.** `CHANGELOG.md` and `docs/DEVLOG.md` are dated entries: a count
   in them is a record of what was true that day, and correcting it falsifies the

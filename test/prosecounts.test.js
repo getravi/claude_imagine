@@ -47,6 +47,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
+import { SERIES } from "../src/seasonlag.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -95,6 +96,15 @@ const CLAIMS = [
     size: () => Object.keys(DEFAULT_CONFIG).filter((k) => DEFAULT_CONFIG[k] === false).length,
     phrase: "{n} opt-in flags",
     sites: ["docs/SCIENCE.md", "test/levers.test.js"],
+  },
+  {
+    // v1.86's own count, declared in the release that writes it down rather
+    // than in the one that finds it stale — which is the whole point of the two
+    // rows above.
+    what: "the counters a history point carries",
+    size: () => Object.values(SERIES).filter((k) => k === "flow").length,
+    phrase: "{n} cumulative counters",
+    sites: ["docs/SCIENCE.md", "src/seasonlag.js"],
   },
 ];
 
