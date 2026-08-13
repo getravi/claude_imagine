@@ -23,9 +23,11 @@ import {
   timeOfDayLabel,
   MAX_SPOKEN,
   pathPhrase,
+  reachPhrase,
   MIN_TRAIL_TICKS,
 } from "../src/describe.js";
 import { energySeries, energyField } from "../src/energy.js";
+import { creatureReaches } from "../src/reach.js";
 
 const ev = (tick, msg) => ({ tick, year: 0, icon: "•", cat: "test", msg });
 
@@ -570,6 +572,47 @@ test("the path is spoken only once there is one, and says how far as well as how
   );
   assert.notEqual(near, far);
   assert.equal(pathPhrase(null), "");
+});
+
+test("the reach is spoken only when it is being shown, and in numbers", () => {
+  // The overlay's content, said out loud (v1.90). The rings carry no text — the
+  // pond canvas has none — so this is the only surface where the distances
+  // appear as numbers at all, and a listener who cannot see the circles is a
+  // listener who gets the whole of the feature or none of it.
+  const config = makeConfig({ seed: 314, predation: true, disease: false });
+  const c = { id: 42, generation: 3, carnivory: 0.9, energy: 110, x: 100, y: 80, radius: 7, infected: false, immune: false };
+
+  // Silent unless somebody asked to see it: a description that recites geometry
+  // nobody requested is a panel that will not stop talking.
+  assert.equal(describeSelection(c, config), describeSelection(c, config, null, false));
+  const said = describeSelection(c, config, null, true);
+  assert.match(said, /^Creature 42, /, "the clause is added to the sentence, never instead of it");
+
+  // The two shapes: eating fires at one distance, a bite at a range that
+  // depends on what it meets.
+  const [eat, bite] = ["eat", "bite"].map((name) =>
+    creatureReaches(c.radius, config).find((r) => r.name === name)
+  );
+  assert.match(said, new RegExp(`eats a pellet at ${eat.inner.toFixed(1)} pixels`));
+  assert.match(
+    said,
+    new RegExp(`bites from ${bite.inner.toFixed(1)} to ${bite.outer.toFixed(1)} pixels out, depending on the other body`)
+  );
+
+  // A rule that is switched off is not mentioned, the same as everywhere else
+  // on this surface.
+  const grazers = describeSelection(c, makeConfig({ seed: 314, predation: false }), null, true);
+  assert.ok(!/bites/.test(grazers), `a bite spoken in a pond with no predation: ${grazers}`);
+  assert.match(grazers, /eats a pellet at/);
+
+  // And the empty case is a sentence rather than a range, because there is no
+  // range: nothing in this world is small enough for the smallest body to eat,
+  // and "0.0 to 0.0 pixels" would be three true symbols arranged into a
+  // falsehood (v1.89).
+  const tiny = describeSelection({ ...c, radius: config.bodyRadiusMin }, config, null, true);
+  assert.match(tiny, /nothing here is small enough for it to bite/);
+  assert.ok(!/bites from/.test(tiny), tiny);
+  assert.equal(reachPhrase(config.bodyRadiusMin, makeConfig({ seed: 314, predation: false })).includes("bite"), false);
 });
 
 test("the pond is described in ninths, and the middle one has no compass word", () => {

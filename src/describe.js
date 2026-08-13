@@ -40,6 +40,7 @@
 // and a reader are never told two different totals.
 import { wholePercents } from "./stats.js";
 import { refugeRadius } from "./refuge.js";
+import { creatureReaches } from "./reach.js";
 import { readable } from "./seasonlag.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
@@ -419,7 +420,7 @@ export function regionOf(x, y, config) {
  * @param {{ticks:number, travelled:number, displacement:number, straightness:number}} [path]
  *   `Trail.stats()` for this creature, when a trail is being recorded
  */
-export function describeSelection(c, config, path = null) {
+export function describeSelection(c, config, path = null, reach = false) {
   if (!c) return "Selection cleared.";
   const bits = [`generation ${c.generation}`];
   // Diet only where it decides something, the same guard `describePond` uses on
@@ -435,8 +436,53 @@ export function describeSelection(c, config, path = null) {
   }
   const where = `in ${regionOf(c.x, c.y, config)} of the pond`;
   const said = `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
-  const track = pathPhrase(path);
-  return track ? `${said} ${track}` : said;
+  const clauses = [pathPhrase(path), reach ? reachPhrase(c.radius, config) : ""].filter(Boolean);
+  return clauses.length ? `${said} ${clauses.join(" ")}` : said;
+}
+
+/** How each contact rule is said out loud, given the distance clause. */
+const REACH_SAID = {
+  eat: (at) => `it eats a pellet ${at}`,
+  scavenge: (at) => `it reaches a corpse ${at}`,
+  bite: (at) => `it bites ${at}`,
+  infect: (at) => `it passes the sickness on ${at}`,
+  shove: (at) => `it pushes another body ${at}`,
+};
+
+/**
+ * The reach rings, said out loud (v1.90).
+ *
+ * The overlay draws circles and a listener gets none of it, which is the shape
+ * v1.77 found in the inspector: a mark that says something the spoken form
+ * never learned. So this is the same content in words, and it is the only place
+ * on the page where the *numbers* appear at all — the canvas has no text.
+ *
+ * Two things it will not do. It says nothing when the overlay is off, because a
+ * description that recites geometry nobody asked to see is the spoken form of a
+ * panel that will not stop talking. And a rule that admits nobody is spoken as
+ * a sentence rather than as a range: "nothing here is small enough for it to
+ * bite" is the reading, where `0.0 to 0.0 px` would be three true symbols
+ * arranged into a falsehood (v1.89's tile, one surface over).
+ *
+ * @param {number} radius the selected creature's body
+ * @param {object} config
+ */
+export function reachPhrase(radius, config) {
+  const said = [];
+  for (const reach of creatureReaches(radius, config)) {
+    const say = REACH_SAID[reach.name];
+    if (!say) continue;
+    if (reach.empty) {
+      said.push(`nothing here is small enough for it to ${reach.name}`);
+    } else if (reach.outer > reach.inner) {
+      said.push(say(`from ${rate(reach.inner)} to ${rate(reach.outer)} pixels out, depending on the other body`));
+    } else {
+      said.push(say(`at ${rate(reach.inner)} pixels`));
+    }
+  }
+  if (!said.length) return "";
+  const one = said[0][0].toUpperCase() + said[0].slice(1);
+  return `${[one, ...said.slice(1)].join("; ")}.`;
 }
 
 /**

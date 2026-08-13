@@ -26,6 +26,7 @@ import {
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
+import { creatureReaches } from "./reach.js";
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -34,6 +35,20 @@ import { refugeRadius, inRefuge } from "./refuge.js";
  * couple of pixels off for a polygon the frame budget does not notice.
  */
 const VISION_RAYS = 128;
+
+/**
+ * The dash of a reach that depends on the other body (v1.90), in screen pixels.
+ *
+ * Borrowed meaning rather than borrowed geometry: the vision overlay one method
+ * down already says *asked for* with a dash and *actually searched* with a
+ * solid line, so a dashed circle here reads "only against the largest thing
+ * this rule admits" and a solid one "whatever it meets". A dash is the channel
+ * v1.34 spends when a distinction has nowhere to live in colour, and this one
+ * cannot live in colour: both rings are the selection mark, whose two tones are
+ * the only pair in this project measured against the vision overlay's own
+ * backgrounds (v1.84, worst case ΔE 48.9).
+ */
+const REACH_DASH = [3, 3];
 
 /** Start a closed circular path. Kept as a function so it can be a clip *and* a stroke. */
 function circlePath(ctx, x, y, r) {
@@ -87,6 +102,11 @@ export class Renderer {
     this.showTrail = false;
     /** @type {import('./trail.js').Trail|null} */
     this.trail = null;
+    // The reach rings (v1.90): the distances the selected creature's own
+    // contact rules fire at, derived from the audit in `reach.js` rather than
+    // from a second copy of `world.js`'s arithmetic. Off by default, like every
+    // overlay here.
+    this.showReach = false;
     this.showEnergy = true;
     this.selected = null; // a creature to highlight/inspect
     this.highlightSpeciesId = null; // when set, other species are dimmed
@@ -735,10 +755,65 @@ export class Renderer {
     ctx.restore();
   }
 
+  /**
+   * How close something has to be before this creature's rules fire (v1.90).
+   *
+   * Everything else this overlay family draws is a *sense* — how far a creature
+   * can see, where it has been, which side of a size rule it is on. This is the
+   * other half: eating, biting, scavenging and infecting all happen at a
+   * distance, those distances are a handful of pixels rather than the 168 sight
+   * asks for, and until now nothing on the page said so. Two rings tell the
+   * same story the audit tells in numbers — a bite reaching further than the
+   * body that owns it, inside a sense reaching ten times further than either.
+   *
+   * A rule that reads two bodies gets two circles, because its reach is not a
+   * number: the solid one is what it reaches against the smallest body this
+   * world grows, the dashed one what it reaches against the largest body it
+   * admits, and the answer between them depends on what it meets. A rule that
+   * admits nobody — a creature under `bodyRadiusMin * preySizeRatio` cannot
+   * bite anything at all — draws no ring, the way the refuge line draws none
+   * around a body that outgrew it.
+   *
+   * Read-only and geometry-only: `creatureReaches` is arithmetic over the
+   * config and this animal's radius, so the overlay cannot disagree with the
+   * rule it plots without `test/reach.test.js` failing first.
+   */
+  _drawReach(ctx, c, p) {
+    if (!this.showReach) return;
+    const mark = selectionMark();
+    // Screen pixels, like every other overlay here: a hairline stays a hairline
+    // at 8×, and the *radii* stay world measurements, which is the point — this
+    // is a drawing of a distance in the pond.
+    const hair = 1 / this.camera.zoom;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    const ring = (radius, dashed) => {
+      ctx.setLineDash(dashed ? REACH_DASH.map((d) => d * hair) : []);
+      ctx.strokeStyle = mark.rim;
+      ctx.lineWidth = (mark.width + 1.1) * hair;
+      circlePath(ctx, p.x, p.y, radius);
+      ctx.stroke();
+      ctx.strokeStyle = mark.ring;
+      ctx.lineWidth = mark.width * hair;
+      circlePath(ctx, p.x, p.y, radius);
+      ctx.stroke();
+    };
+    for (const reach of creatureReaches(c.radius, this.config)) {
+      if (reach.empty) continue;
+      ring(reach.inner, false);
+      // A band whose two edges coincide is one distance, and drawing a dashed
+      // circle over a solid one at the same radius would say otherwise.
+      if (reach.outer > reach.inner) ring(reach.outer, true);
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
   _drawSelection(ctx, c, world) {
     const cfg = this.config;
     const p = this.camera.nearest(c.x, c.y);
     this._drawTrail(ctx, c, p);
+    this._drawReach(ctx, c, p);
     ctx.save();
     // Ring around the selected creature. Overlay lines are measured in screen
     // pixels, so their width is divided back out of the zoom — a hairline stays

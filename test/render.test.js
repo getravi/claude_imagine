@@ -43,6 +43,7 @@ import {
   selectionMark,
 } from "../src/palette.js";
 import { Trail } from "../src/trail.js";
+import { creatureReaches } from "../src/reach.js";
 
 /** A world with some history in it, so there is something to draw. */
 function pond(over = {}, ticks = 300) {
@@ -652,4 +653,152 @@ test("drawing the refuge line changes nothing about the pond", () => {
     [stateFingerprint(w), trajectoryFingerprint(w), observationFingerprint(w)],
     before
   );
+});
+
+// ---------------------------------------------------------------------------
+// The reach rings (v1.90). The overlay whose whole content is a *distance*, so
+// every assertion here is about a radius: that the rings land on the numbers
+// `reach.js` derives, that a band's far edge is dashed and its near edge is
+// not, and that a body with no admissible prey draws nothing rather than a
+// circle of zero.
+
+/** Arcs drawn at a given radius, to a tolerance a float can survive. */
+function arcsAt(ops, radius) {
+  return opsNamed(ops, "arc").filter((o) => Math.abs(o[4] - radius) < 1e-9).length;
+}
+
+/** The frame, with `who` selected and the reach overlay on. */
+function reachOps(w, who, tune = null) {
+  return renderOps(w, null, (r) => {
+    r.showReach = true;
+    r.selected = who;
+    if (tune) tune(r);
+  });
+}
+
+test("the reach rings are drawn at the distances the rule fires at", () => {
+  const w = pond();
+  // Somebody big enough to have a bite band at all, so both kinds of ring are
+  // in the frame.
+  const who = w.creatures
+    .filter((c) => !c.dead)
+    .sort((a, b) => b.radius - a.radius)[0];
+  const reaches = creatureReaches(who.radius, w.config);
+  assert.ok(reaches.length >= 2, "the default pond eats and bites");
+
+  const off = renderOps(w, null, (r) => (r.selected = who));
+  const on = reachOps(w, who);
+  for (const reach of reaches) {
+    assert.equal(reach.empty, false, `${reach.name} has nothing to draw`);
+    // Two strokes per ring, the rim and the tone over it — and taken as a
+    // difference, so a body arc that happens to land on the same radius cannot
+    // flatter the count.
+    assert.equal(
+      arcsAt(on, reach.inner) - arcsAt(off, reach.inner),
+      2,
+      `${reach.name}: no ring at its near edge (${reach.inner})`
+    );
+    if (reach.outer > reach.inner) {
+      assert.equal(
+        arcsAt(on, reach.outer) - arcsAt(off, reach.outer),
+        2,
+        `${reach.name}: no ring at its far edge (${reach.outer})`
+      );
+    }
+  }
+});
+
+test("a reach that depends on the other body is dashed, and one that does not is not", () => {
+  // The convention the vision overlay set one method up: solid is what the rule
+  // reaches whatever it meets, dashed is what it reaches only against the
+  // largest body it admits. Asserted by walking the stream in order, because a
+  // dash is state — what matters is which arc was drawn while it was set.
+  const w = pond();
+  const who = w.creatures.filter((c) => !c.dead).sort((a, b) => b.radius - a.radius)[0];
+  const bite = creatureReaches(who.radius, w.config).find((r) => r.name === "bite");
+  assert.ok(bite && bite.outer > bite.inner, "no band in this frame to check");
+
+  // The recorder spreads the pattern into the op, so `[id, "setLineDash"]` is a
+  // cleared dash and anything longer is a set one.
+  let dash = [];
+  const dashed = new Map();
+  for (const op of reachOps(w, who)) {
+    if (op[1] === "setLineDash") dash = op.slice(2);
+    if (op[1] !== "arc") continue;
+    const r = op[4];
+    if (Math.abs(r - bite.inner) < 1e-9) dashed.set("inner", dash.length > 0);
+    if (Math.abs(r - bite.outer) < 1e-9) dashed.set("outer", dash.length > 0);
+  }
+  assert.equal(dashed.get("inner"), false, "the near edge is a distance, not an aspiration");
+  assert.equal(dashed.get("outer"), true, "the far edge is only reached against the biggest prey");
+
+  // And the dash is cleared before anything else in the frame can inherit it.
+  const ops = reachOps(w, who);
+  const last = ops.filter((o) => o[1] === "setLineDash").pop();
+  assert.deepEqual(last.slice(2), [], "the frame ended with a dash still set");
+});
+
+test("the rings are hairlines in the palette's own tones", () => {
+  // The v1.25 family of bug, asked of this mark: `selectionMark` is the one
+  // pair in this project measured against the vision overlay's backgrounds, and
+  // this is the line that says the overlay actually draws it.
+  const w = pond();
+  const who = w.creatures.filter((c) => !c.dead)[0];
+  const mark = selectionMark();
+  const drawn = new Set(styles(reachOps(w, who)));
+  assert.ok(drawn.has(mark.ring), `the pale tone ${mark.ring} never reached the canvas`);
+  assert.ok(drawn.has(mark.rim), `the dark tone ${mark.rim} never reached the canvas`);
+
+  const widths = (zoom) =>
+    new Set(
+      reachOps(w, who, (r) => (r.camera.zoom = zoom))
+        .filter((o) => o[1] === "set:lineWidth")
+        .map((o) => o[2])
+    );
+  assert.ok(widths(1).has(mark.width), "no line at the mark's own width");
+  assert.ok(widths(4).has(mark.width / 4), "the hairline did not thin with the zoom");
+});
+
+test("nothing is drawn where there is no reach to draw", () => {
+  // Three silences, all of which have to be silent for the right reason: the
+  // overlay off (the default view every screenshot was taken of), nothing
+  // selected, and a body too small for any prey — where the bite ring goes and
+  // the eating ring stays.
+  const w = pond();
+  const who = w.creatures.filter((c) => !c.dead)[0];
+  const arcs = (ops) => opsNamed(ops, "arc").length;
+  const base = renderOps(w, null, (r) => (r.selected = who));
+  assert.ok(arcs(reachOps(w, who)) > arcs(base), "the overlay drew nothing at all");
+  assert.equal(arcs(renderOps(w, null, (r) => (r.showReach = true))), arcs(renderOps(w)));
+
+  // A body under `bodyRadiusMin * preySizeRatio` can eat nobody. Set on a live
+  // creature so the rest of the frame is a real pond.
+  const small = w.creatures.filter((c) => !c.dead)[1];
+  const was = small.radius;
+  small.radius = w.config.bodyRadiusMin;
+  const bite = creatureReaches(small.radius, w.config).find((r) => r.name === "bite");
+  const eat = creatureReaches(small.radius, w.config).find((r) => r.name === "eat");
+  assert.equal(bite.empty, true, "this body should have no prey in the world");
+  const ops = reachOps(w, small);
+  const off = renderOps(w, null, (r) => (r.selected = small));
+  assert.equal(arcsAt(ops, eat.inner) - arcsAt(off, eat.inner), 2, "the eating ring went with it");
+  assert.equal(
+    arcsAt(ops, small.radius + w.config.bodyRadiusMin + 2) - arcsAt(off, small.radius + w.config.bodyRadiusMin + 2),
+    0,
+    "a bite ring was drawn for a creature that can bite nothing"
+  );
+  small.radius = was;
+});
+
+test("drawing the reach changes neither the world nor the rule it plots", () => {
+  // The overlay reads `creatureReaches`, which reads the config: an instrument
+  // pointed at the pond, like the audit it borrows from. Both halves asserted —
+  // the world is untouched, and the numbers are the same before and after.
+  const w = pond();
+  const who = w.creatures.filter((c) => !c.dead)[0];
+  const before = stateFingerprint(w);
+  const said = JSON.stringify(creatureReaches(who.radius, w.config));
+  reachOps(w, who);
+  assert.equal(stateFingerprint(w), before);
+  assert.equal(JSON.stringify(creatureReaches(who.radius, w.config)), said);
 });

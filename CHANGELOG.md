@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.90.0] — 2026-08-13
+
+v1.83 audited the five contact rules and left one sentence unfinished: "a
+per-creature reach is one parameter away, and **three of the five contact reaches
+are circles while two are bands** — which is what a drawing of a rule's reach
+would have to say". This is that drawing. Everything else the pond can overlay is
+a *sense* — how far a creature sees, where it has been, which side of the size
+rule it is on. Nothing had ever drawn how close something has to be before a rule
+fires at all.
+
+### Added
+
+- **`Show the reach 📏`, the distances a creature's own rules fire at.**
+  `creatureReaches(radius, config)` is `ruleSupremum` with `bodyRadiusMax`
+  replaced by *this* body: a rule reading one body returns one distance, a rule
+  reading two returns a band — `inner` against the smallest body this world
+  grows, `outer` against the largest its own predicate admits. `render.js` draws
+  each as a ring around the selected creature, solid for a distance that holds
+  whatever it meets and dashed for one it reaches only against the biggest thing
+  it may eat, which is the convention the vision overlay set for *searched*
+  against *asked for*. No new colour: both rings are `selectionMark`, the cased
+  pair v1.84 measured against this overlay's own backgrounds (worst case ΔE 48.9).
+- **A creature that can eat nothing draws nothing.** Below
+  `bodyRadiusMin * preySizeRatio` = 3.85 px no body in this world is small enough
+  to clear the size rule, so there is no bite reach and the honest mark is the
+  absence of one — the refuge line's rule (v1.69), one overlay over.
+- **The rings, said out loud.** `reachPhrase` puts the numbers in
+  `describeSelection`, because the pond canvas carries no text: a listener gets
+  "it eats a pellet at 11.0 pixels; it bites from 13.0 to 16.3 pixels out,
+  depending on the other body", and, where nothing is small enough, a sentence
+  instead of a range. Spoken only while the overlay is on, and only for rules the
+  world has switched on.
+- **Twelve tests**: six on the derivation, five on what is drawn, one on what is said. The one that
+  matters is a substitution: at `bodyRadiusMax` the per-creature answer must be
+  the audit's declared reach, rule for rule and `open` for `open`, so the picture
+  cannot drift from the rule it plots.
+
+### Measured
+
+Twelve seeds, 3,000 ticks, sampled every tenth tick, 421,843 bodies:
+
+- **The band is 18.0% of a bite's far edge** — 12.32 px out to 15.01 px on
+  average — and **30.2%** of the 1,240 moments a hunter sits in contact range of
+  something it may eat fall inside it. A single circle at the guaranteed reach
+  would be the wrong picture a third of the time.
+- **The other band is nearly all band.** With `bodyCollision` on, 98.6% of 75,738
+  overlapping pairs sit beyond the shove's inner ring — the rule v1.83 used as
+  its control, because it reads two bodies and asks nothing about their sizes.
+- **The arm moves the number.** That same world reads 56.5% for the bite, because
+  bodies that push each other apart meet at wider distances. Two ponds, not one
+  pond measured twice (v1.80).
+- **2.26% of living bodies can eat nothing at all**, and the seeds disagree: nine
+  under 3%, three at 9.5%, 15.1% and 15.5%.
+
+### Fixed
+
+- **`docs/ARCHITECTURE.md` still published the bite reach v1.83 corrected** —
+  "18.0, a margin of exactly zero", the maximum over a pair `canEat` forbids, on
+  the page that describes each module as it is today. v1.83 swept its own header,
+  `config.js`, `world.js` and `SCIENCE.md` and missed this one, which is exactly
+  the leak that release warned about: when a number moves, grep for every place
+  the old one was written down.
+
+### Changed
+
+- **`src/reach.js` is no longer only an instrument.** It said of itself that
+  nothing on the page imports it; `render.js` and `describe.js` now do. The trade
+  is deliberate — a drawing that derives a contact distance anywhere but from the
+  audit is a second copy of `world.js`'s arithmetic, and this project has shipped
+  that bug before (v1.57's minimap pellet).
+
 ## [1.89.0] — 2026-08-13
 
 The `Refuge` tile has answered a question about `config.js` since v1.64: what is

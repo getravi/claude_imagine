@@ -58,9 +58,12 @@
 // day it landed on the stated grounds that what two bodies touching means
 // cannot depend on a sight setting.
 //
-// Nothing in the simulation reads anything here, this draws no randomness, and
-// it is not imported by `main.js` — like `levers.js`, `dimensions.js` and
-// `workload.js` it is an instrument the suite points at the pond, not a part of
+// Nothing in the simulation reads anything here and this draws no randomness.
+// It was also, until v1.90, unimported by anything on the page — an instrument
+// the suite points at the pond, the way `levers.js`, `dimensions.js` and
+// `workload.js` still are. `render.js` and `describe.js` now read
+// `creatureReaches` (the last section of this header), which makes this module
+// the one place a contact distance is written down rather than a second copy of
 // it. Fixing the hole it finds is a separate cycle: the disease scan is inside
 // the RNG's draw order, so covering the disc moves every world with contagion
 // switched on, and that is a change to write down before it is a change to
@@ -161,6 +164,33 @@
 // every reach from an `at` expression and an `otherMax` bound now, and the
 // suite brute-forces both halves of the claim rather than trusting the
 // monotonicity argument that makes the closed form work.
+
+// ---- v1.90: the reach one animal has ----
+//
+// v1.83 closed with two sentences: "a per-creature reach is one parameter
+// away", and "three of the five contact reaches are circles while two are
+// bands — which is what a drawing of a rule's reach would have to say". This
+// release takes both. `creatureReaches` is `ruleSupremum` with the largest body
+// replaced by *this* body, and `render.js` draws what it returns around the
+// selected creature.
+//
+// The band is the whole content of the picture. A rule reading one body (eating
+// at `eatRadius + radius * 0.4`, scavenging, infection) fires at one distance,
+// and that distance is a circle. A rule reading two (a bite, a shove) fires at a
+// distance that depends on the *other* animal, so what it has is an inner
+// circle it reaches whatever it meets — the smallest body this world grows —
+// and an outer one it reaches only against the largest body its own predicate
+// admits. Between them the answer is "it depends", and no single ring can say
+// that.
+//
+// One consequence worth stating, because it is the reason this lives here
+// rather than in `render.js`: this module used to say of itself that nothing on
+// the page imports it, "an instrument the suite points at the pond, not a part
+// of it". That is no longer true, and the trade is deliberate — a drawing of a
+// rule's reach that derives the reach from anywhere but the audit is a second
+// copy of `world.js`'s arithmetic, and this project has shipped that bug twice
+// (v1.57's minimap pellet, v1.30's Muller buffer). `contactRules` is the one
+// place a contact distance is written down.
 
 import { SpatialGrid, indexCellSize } from "./grid.js";
 
@@ -712,6 +742,69 @@ function ruleSupremum(rule, config) {
   // predicate would allow the largest body anyway, the corner is admissible and
   // the supremum is attained.
   return { reach: rule.at(max, other), open: rule.strict === true && other < max };
+}
+
+/**
+ * What one body's contact rules reach — the same derivation as `ruleSupremum`,
+ * with `bodyRadiusMax` replaced by the animal actually in the water.
+ *
+ * The audit above asks the worst case over every pair a rule admits, because an
+ * index has to cover the worst case. A drawing asks something narrower and more
+ * useful: *this* creature, against the bodies it might meet. So the second
+ * argument still runs over the range the rule admits, and what comes back is a
+ * pair of distances rather than one:
+ *
+ *   - `inner`, the reach against the smallest body this world grows, which is
+ *     the distance the rule fires at whatever it meets;
+ *   - `outer`, the reach against the largest body the rule's own predicate
+ *     lets this animal have — the same `otherMax` the supremum uses.
+ *
+ * A one-body rule has `inner === outer` and `band` false: eating happens at a
+ * distance, full stop. A two-body rule has a band, and `open` says the far edge
+ * is approached and never reached (`canEat` tests `>`), exactly as it does one
+ * function up.
+ *
+ * `empty` is the case a drawing must not paint: a creature small enough that
+ * *no* body in the admissible range clears its predicate has no bite reach at
+ * all, and the honest mark for that is no mark (v1.69's refuge ring, whose
+ * absence is its statement). Below `bodyRadiusMin * preySizeRatio` = 3.85 px
+ * with the shipped constants, which the smallest bodies in a pond are under.
+ *
+ * Inactive rules are dropped rather than returned with a flag, because a world
+ * with `scavenging` off has no scavenging reach to draw — the same gate every
+ * surface in this project puts on a switched-off mechanic.
+ *
+ * @param {number} radius the body doing the reaching
+ * @param {object} config
+ * @returns {Array<{name:string, inner:number, outer:number, band:boolean,
+ *   open:boolean, empty:boolean, source:string, admits:string|null}>}
+ */
+export function creatureReaches(radius, config) {
+  const least = config.bodyRadiusMin;
+  return contactRules(config)
+    .filter((rule) => rule.kind === "contact" && rule.active)
+    .map((rule) => {
+      const said = { name: rule.name, source: rule.source, admits: rule.admits };
+      if (rule.bodies < 2) {
+        const at = rule.bodies === 0 ? rule.at() : rule.at(radius);
+        return { ...said, inner: at, outer: at, band: false, open: false, empty: false };
+      }
+      const most = rule.otherMax(radius);
+      const open = rule.strict === true && most < config.bodyRadiusMax;
+      // Nothing admissible: with a strict predicate the largest allowed body is
+      // itself excluded, so a bound *at* the smallest body admits nobody.
+      if (open ? most <= least : most < least) {
+        return { ...said, inner: 0, outer: 0, band: true, open, empty: true };
+      }
+      return {
+        ...said,
+        inner: rule.at(radius, least),
+        outer: rule.at(radius, most),
+        band: true,
+        open,
+        empty: false,
+      };
+    });
 }
 
 /**

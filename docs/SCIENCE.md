@@ -6770,6 +6770,111 @@ are allowed to run backwards (a starved creature is buried holding a small
 negative, so `energy_buried` walks back a few hundred times a run), the absences,
 and `readable()` declining a flow.
 
+## A reach is not a number (v1.90)
+
+v1.83 audited the five contact rules and closed with a sentence nobody had
+followed up: **three of the five reaches are circles and two are bands.** A rule
+whose distance expression reads one body fires at one distance; a rule that reads
+two — a bite (`radius + prey.radius + 2`), a shove (`radius + other.radius`) —
+fires at a distance that depends on the animal it meets, and no single number
+describes it. This release draws them, which meant first computing them, and the
+computation is `ruleSupremum` with `bodyRadiusMax` replaced by *this* body:
+
+```
+inner = at(radius, bodyRadiusMin)     the reach against the smallest body there is
+outer = at(radius, otherMax(radius))  the reach against the largest the rule admits
+```
+
+`otherMax` is the rule's own precondition, so for a bite it is
+`min(bodyRadiusMax, radius / preySizeRatio)` — v1.83's correction, one argument
+down. Both edges come from `contactRules`, which means the overlay cannot
+disagree with the audit without a test failing first.
+
+### The band is not a technicality
+
+Twelve seeds, 3,000 ticks each, the pond sampled every tenth tick, default
+config with `predation` on:
+
+| | |
+| --- | --- |
+| bodies sampled | 421,843 |
+| mean bite band | **2.70 px** wide — 12.32 out to 15.01 |
+| as a share of the far edge | **18.0%** |
+| eligible hunter–prey pairs in contact range | 1,240 |
+| …of those, beyond the inner ring | **30.2%** (0%–53% by seed) |
+
+Every figure here is pooled over bodies rather than averaged over seeds, which
+matters for the last row: a pond that never grows a hunter contributes no
+contacts and no opinion.
+
+So in nearly a third of the moments when a hunter is close enough to eat
+something it is allowed to eat, the answer depends on how big that something is —
+a single circle drawn at the guaranteed reach would be the wrong picture a third
+of the time, and one drawn at the supremum would be wrong the other two thirds.
+
+The count is of *geometric opportunity*, not of bites: `world.js` attacks the
+nearest prey it can see and chooses whether to, so a pair inside contact range is
+a pair the rule could fire on rather than one it did.
+
+### The other band, and why the arms are not comparable
+
+The shove is the control v1.83 used and it works here too: it reads two bodies
+with no predicate at all, so its band runs the full body range. With
+`bodyCollision` on, **98.6% of 75,738 overlapping pairs** sit beyond its inner
+ring — a rule whose reach is almost entirely inside the band.
+
+That arm also moves the bite's number, to **56.5%** of 1,335 contacts, because
+bodies that push each other apart meet at wider distances. It is the same warning
+v1.80 wrote down: a perturbation's size cannot be held fixed in a world that
+reorganises around it, so the two numbers are two ponds rather than one pond
+measured twice.
+
+### The reach that is empty
+
+Below `bodyRadiusMin * preySizeRatio` = **3.85 px** a creature has no admissible
+prey at all: the largest body it is allowed to eat is smaller than the smallest
+body this world grows. That is not a hypothetical — **2.26%** of the
+421,843 bodies sampled are, and the seeds disagree wildly about it: nine sit
+under 3% and three at 9.5%, 15.1% and 15.5%, rising to 30.0% on seed 512 in the
+`bodyCollision` arm. The drawing shows nothing for them, which is the
+v1.69 rule (a mark's absence is its statement) and the v1.89 one (when a readout
+has no subject, the honest output is a word, not a zero).
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+import { creatureReaches } from "./src/reach.js";
+import { wrapDelta } from "./src/vec.js";
+let bodies = 0, empty = 0, band = 0, outer = 0, contacts = 0, inBand = 0;
+for (const seed of [314, 7, 13, 23, 42, 51, 99, 128, 256, 512, 777, 2026]) {
+  const w = new World(makeConfig({ seed, predation: true }));
+  for (let t = 0; t < 3000; t++) {
+    w.step();
+    if (t % 10) continue;
+    const cfg = w.config, live = w.creatures.filter((c) => !c.dead);
+    for (const c of live) {
+      const bite = creatureReaches(c.radius, cfg).find((r) => r.name === "bite");
+      bodies++;
+      if (bite.empty) { empty++; continue; }
+      band += bite.outer - bite.inner; outer += bite.outer;
+      for (const o of live) {
+        if (c === o || !c.canEat(o)) continue;
+        const d = Math.hypot(wrapDelta(c.x, o.x, cfg.width), wrapDelta(c.y, o.y, cfg.height));
+        if (d > c.radius + o.radius + 2) continue;
+        contacts++;
+        if (d > bite.inner) inBand++;
+      }
+    }
+  }
+}
+console.log("empty", (100 * empty / bodies).toFixed(2) + "%",
+            "band", (100 * band / outer).toFixed(1) + "% of reach",
+            "contacts in band", (100 * inBand / contacts).toFixed(1) + "%", "of", contacts);'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

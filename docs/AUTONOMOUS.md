@@ -561,11 +561,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   derives every reach from an `at` expression and an `otherMax` bound now, and
   a 400-step sweep of admissible pairs holds it. Swept across the class,
   exactly one row was wrong; the shove is the control (two bodies, no
-  precondition, corner admissible, 16.0 attained). What it leaves: a
-  per-creature reach is one parameter away, and **three of the five contact
-  reaches are circles while two are bands** — which is what a drawing of a
-  rule's reach would have to say; and `contactAudit`'s open-supremum boundary
-  case has been reasoned about and never seen.
+  precondition, corner admissible, 16.0 attained). What it left — a per-creature
+  reach one parameter away, and three of the five reaches circles while two are
+  bands, "which is what a drawing of a rule's reach would have to say" —
+  **closed in v1.90** (`creatureReaches`, the `Show the reach 📏` overlay, a
+  spoken clause). The band is not a technicality: it is 18.0% of a bite's far
+  edge, and **30.2%** of the 1,240 moments a hunter sits in contact range of
+  something it may eat fall inside it, so one circle is the wrong picture a
+  third of the time — while the `bodyCollision` arm reads 56.5% for the same
+  quantity, because bodies that push each other apart meet further out, which is
+  v1.80's rule about a dose that cannot be held fixed arriving on a geometry.
+  What *it* leaves: (a) the rings are **unlabelled** — the pond canvas draws no
+  text, so which circle is which is carried by `describeSelection` and by
+  nothing a *reader* can see, and at zoom 1 the three of them are one smudge, so
+  the overlay is legible only magnified (the `scalebar` situation, arrived at by
+  accident rather than by design). (b) The **sense that gates all three carried
+  rules is a different overlay with a different mark**, so the picture that
+  would say "18 px inside 168" — v1.81's whole finding, in one glance — needs
+  two boxes ticked and nothing on the page says so. (c) The empty case is 2.26%
+  of bodies pooled and 15.5% on one seed: a real subpopulation that can be eaten
+  and cannot eat, which no tile counts, and which is `hunterCeiling` (v1.89)
+  read from the other end. And `contactAudit`'s open-supremum boundary case has
+  been reasoned about and never seen.
   (c) **The audit's list of query sites is hand-typed** — **closed in v1.81**
   (`QUERY_SITES`, `scanQuerySites`): nine queries in `src/`, declared and
   derived from the source and compared both ways, so a query added anywhere

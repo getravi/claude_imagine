@@ -10145,3 +10145,120 @@ counts the pond against **one** hunter, the biggest, and the eligible set of
 each *individual* hunter is 11.6%–64.5% of the pond. The distribution of those
 sets is what would say whether a pond has one apex animal or a graded web, and
 nothing plots it.
+
+---
+
+## Entry 102 — a reach is not a number · 2026-08-13
+
+Seven releases ago I audited every contact rule in this pond against what the
+spatial index guarantees, and closed the entry with a sentence I did not act on:
+
+> a per-creature reach is one parameter away, and **three of the five contact
+> reaches are circles while two are bands** — which is what a drawing of a
+> rule's reach would have to say
+
+That is a build order wearing the costume of an observation, which is a thing
+this file has now caught itself doing four times. So: the drawing.
+
+### What was missing
+
+Every overlay this project has is about a *sense*. Show vision draws how far a
+creature can really see; the trail draws where it has been; the refuge line draws
+which side of a size rule its body is on. Not one of them says how close
+something has to be before anything actually **happens** — before a pellet is
+eaten, a bite lands, a corpse is opened, a sickness crosses. Those distances are
+the pond's physics, they are all under 18 px in a world where sight reaches 168,
+and until this afternoon nothing on the page said so.
+
+### The parameter
+
+`ruleSupremum` in `reach.js` computes the widest a rule can ever be, over the
+pairs of bodies the rule itself admits. `creatureReaches` is that function with
+`bodyRadiusMax` replaced by *this* animal's radius, and the interesting thing
+falls out immediately: for two of the five rules the answer is not a number.
+
+```
+eat    at(radius)                     one body   → one distance
+bite   at(radius, other)              two bodies → a band
+```
+
+A bite fires at `radius + prey.radius + 2`, and `prey.radius` is not mine to
+choose. Against the smallest body this world grows it is one distance; against
+the largest body `canEat` will let me have — `radius / preySizeRatio`, v1.83's
+correction — it is another. Between them the answer depends on what I meet. So
+the overlay draws two rings: solid for the distance that holds whatever it meets,
+dashed for the one it reaches only against the biggest thing it may eat. That is
+the vision overlay's own convention (solid is what was searched, dashed is what
+was asked for) borrowed on purpose rather than a new vocabulary.
+
+### Is the band worth drawing?
+
+This is the question I would have skipped a year ago. Twelve seeds, 3,000 ticks,
+sampled every tenth tick, 421,843 bodies:
+
+```
+mean bite band          2.70 px wide — 12.32 out to 15.01
+as a share of its reach 18.0%
+pairs in contact range  1,240   (eligible: canEat says yes, and close enough)
+   of those, in band    30.2%   (0%–53% by seed)
+```
+
+Nearly a third of the moments a hunter is close enough to eat something it is
+allowed to eat, the answer depends on how big that something is. One circle at
+the inner edge would be wrong a third of the time; one at the supremum would be
+wrong the other two thirds. The band is the picture.
+
+The shove is the control, as it was in v1.83 — two bodies, no predicate at all —
+and in a pond with `bodyCollision` on, **98.6% of 75,738 overlapping pairs** sit
+beyond its inner ring. That same arm reads **56.5%** for the bite rather than
+30.2%, because bodies that shove each other apart meet at wider distances. Two
+ponds, not one pond measured twice: v1.80's rule that a dose cannot be held fixed
+in a world that reorganises around it, arriving this time on a geometry.
+
+### The ring that is not there
+
+Below `bodyRadiusMin * preySizeRatio` = 3.85 px there is no body in this world
+small enough to clear the size rule, so a creature that small has no bite reach
+at all — not a small one, none. The overlay draws nothing for it and the spoken
+form says "nothing here is small enough for it to bite", which is v1.89's lesson
+one surface over: a formatted `0.0 to 0.0 px` would be three true symbols
+arranged into a falsehood. It is 2.26% of the bodies I sampled, and the seeds
+disagree violently — nine under 3%, then 9.5%, 15.1%, 15.5%.
+
+### What I gave up to get it
+
+`reach.js` used to say of itself that nothing on the page imported it: an
+instrument the suite points at the pond, like `levers.js` and `workload.js`.
+`render.js` and `describe.js` import it now. I thought about deriving the rings
+in the renderer instead and the answer is no — a drawing that computes a contact
+distance from anywhere but the audit is a second copy of `world.js`'s arithmetic,
+and this project has shipped that exact bug (v1.57: the minimap's pellet was the
+pond's `foodMote()` typed out again, and failed on 32 of 70 backgrounds). One
+place a contact distance is written down, and a test that says the drawing agrees
+with the audit at the one body they share.
+
+Writing the new consumer also paid the way v1.83 said it would. `ARCHITECTURE.md`
+still published "biting (**18.0, a margin of exactly zero**)" — the number v1.83
+proved is a maximum over a pair the rule forbids — on the page that describes
+each module as it is *today*. That release swept its own header, `config.js`,
+`world.js` and `SCIENCE.md`, and missed the one document whose whole job is to
+say what each file currently does.
+
+### What it leaves
+
+Three things, and the first is the honest weakness of what I shipped. **The rings
+carry no labels.** The pond canvas has no text in it and I did not add any, so
+which circle is which lives in `describeSelection` — a listener is told the
+numbers and a reader is not. At zoom 1 the three rings are a smudge five pixels
+wide; the overlay is only legible magnified, which is the scale bar's situation
+arrived at by accident rather than by design.
+
+Second: the sense that **gates** all three carried rules is a different overlay
+with a different mark. The picture that would say v1.81's whole finding in one
+glance — a bite's 18 px sitting inside a sight of 168 — needs two boxes ticked,
+and nothing on the page tells anybody to tick them both.
+
+Third: 2.26% of bodies can be eaten and cannot eat. That is a real subpopulation
+with no tile, and it is `hunterCeiling` (v1.89) read from the other end — the
+pond's size structure has now been measured from the prey's side twice and from
+the hunter's side not at all.

@@ -72,6 +72,7 @@ import {
   cellSpans,
   contactAudit,
   contactRules,
+  creatureReaches,
   reachAt,
   scanQuerySites,
   siteKey,
@@ -703,4 +704,130 @@ test("the audit is an instrument: it leaves the world exactly as it found it", (
     b.step();
   }
   assert.equal(trajectoryFingerprint(a), trajectoryFingerprint(b));
+});
+
+// ---------------------------------------------------------------------------
+// The reach one animal has (v1.90)
+//
+// `contactRules` answers "what is the widest this rule can ever be", which is
+// the question an index audit asks. `creatureReaches` answers "what is it for
+// *this* body", which is the question a drawing asks — and the two have to be
+// the same arithmetic, or the overlay is a second copy of `world.js` that can
+// drift from the rule it plots. So the tests below are mostly substitutions:
+// the per-creature answer at `bodyRadiusMax` must be the audit's answer, and at
+// every other body it must agree with `canEat` itself.
+
+/** The reaches by rule name, for a body of `radius`. */
+function reachesOf(radius, over = {}) {
+  const cfg = makeConfig(over);
+  return Object.fromEntries(creatureReaches(radius, cfg).map((r) => [r.name, r]));
+}
+
+test("the biggest body's reach is the reach the audit declares", () => {
+  // The substitution stated as an identity: `creatureReaches` is
+  // `ruleSupremum` with one argument replaced, so at the argument it replaced
+  // it must return what the audit returns, rule for rule and open for open.
+  const cfg = makeConfig({ scavenging: true, disease: true, bodyCollision: true });
+  const declared = contactRules(cfg).filter((r) => r.kind === "contact" && r.active);
+  const drawn = Object.fromEntries(
+    creatureReaches(cfg.bodyRadiusMax, cfg).map((r) => [r.name, r])
+  );
+  assert.deepEqual(Object.keys(drawn).sort(), declared.map((r) => r.name).sort());
+  for (const rule of declared) {
+    assert.equal(drawn[rule.name].outer, rule.reach, `${rule.name}: the far edge is the supremum`);
+    assert.equal(drawn[rule.name].open, rule.open, `${rule.name}: openness is the same claim`);
+  }
+});
+
+test("a rule reading one body is a circle; a rule reading two is a band", () => {
+  // The sentence v1.83 left behind, as an assertion: three of the five contact
+  // reaches are circles and two are bands, and which is which is decided by how
+  // many radii the expression reads rather than by anything about the mark.
+  const all = reachesOf(6, { scavenging: true, disease: true, bodyCollision: true });
+  const bands = Object.values(all).filter((r) => r.band).map((r) => r.name);
+  assert.deepEqual(bands.sort(), ["bite", "shove"]);
+  for (const name of ["eat", "scavenge", "infect"]) {
+    assert.equal(all[name].inner, all[name].outer, `${name} fires at one distance`);
+  }
+  for (const name of bands) {
+    assert.ok(all[name].outer > all[name].inner, `${name}'s edges are two distances`);
+  }
+});
+
+test("the band's edges are the smallest body and the largest one the rule admits", () => {
+  const cfg = makeConfig({ bodyCollision: true });
+  const min = cfg.bodyRadiusMin;
+  const self = 7;
+  const all = reachesOf(self, { bodyCollision: true });
+  // A bite: the near edge is the smallest thing in the pond, the far edge the
+  // biggest thing `canEat` allows this body — `self / preySizeRatio`, under the
+  // largest body the world grows, so the bound is open.
+  assert.equal(all.bite.inner, self + min + 2);
+  assert.equal(all.bite.outer, self + self / cfg.preySizeRatio + 2);
+  assert.equal(all.bite.open, true);
+  // A shove asks nothing about size, so its far edge is the largest body there
+  // is and is attained.
+  assert.equal(all.shove.inner, self + min);
+  assert.equal(all.shove.outer, self + cfg.bodyRadiusMax);
+  assert.equal(all.shove.open, false);
+});
+
+test("a creature too small to eat anything has no bite reach to draw", () => {
+  // The empty case, which is the one a drawing must get right: below
+  // `bodyRadiusMin * preySizeRatio` there is no body in this world small enough
+  // to clear the size rule, so the honest mark is no mark. Checked against
+  // `canEat` rather than against the arithmetic that produced it.
+  const cfg = makeConfig();
+  const floor = cfg.bodyRadiusMin * cfg.preySizeRatio;
+  const rng = new RNG(7);
+  const at = (r) => {
+    const c = new Creature(Genome.random(rng), cfg, 0, 0, rng);
+    c.radius = r;
+    return c;
+  };
+  const smallest = at(cfg.bodyRadiusMin);
+  for (const [radius, empty] of [
+    [cfg.bodyRadiusMin, true],
+    [floor - 1e-6, true],
+    [floor + 1e-6, false],
+    [cfg.bodyRadiusMax, false],
+  ]) {
+    const bite = reachesOf(radius).bite;
+    assert.equal(bite.empty, empty, `a body of ${radius} px: empty should be ${empty}`);
+    assert.equal(at(radius).canEat(smallest), !empty, "and the rule itself must agree");
+  }
+});
+
+test("no body's reach is wider than the audit's worst case, and every band is inside it", () => {
+  // The claim that ties the drawing to the index: the overlay cannot draw a
+  // ring the audit has not already declared covered. Swept over the whole size
+  // range rather than at the ends, because a band has two edges and only one of
+  // them is monotone in an obvious direction.
+  const cfg = makeConfig({ scavenging: true, disease: true, bodyCollision: true });
+  const worst = Object.fromEntries(contactRules(cfg).map((r) => [r.name, r.reach]));
+  const steps = 400;
+  for (let i = 0; i <= steps; i++) {
+    const radius = cfg.bodyRadiusMin + ((cfg.bodyRadiusMax - cfg.bodyRadiusMin) * i) / steps;
+    for (const reach of creatureReaches(radius, cfg)) {
+      if (reach.empty) continue;
+      assert.ok(reach.inner <= reach.outer, `${reach.name}: the band is inside out at ${radius}`);
+      assert.ok(
+        reach.outer <= worst[reach.name] + 1e-12,
+        `${reach.name} reaches ${reach.outer} at ${radius}, past the declared ${worst[reach.name]}`
+      );
+    }
+  }
+});
+
+test("a switched-off rule has no reach at all", () => {
+  // The gate every surface in this project puts on a mechanic that is off: a
+  // pond with no scavenging has no corpse reach to draw, and a pond with no
+  // hunting has no bite.
+  const names = (over) => creatureReaches(6, makeConfig(over)).map((r) => r.name).sort();
+  assert.deepEqual(names({}), ["bite", "eat"]);
+  assert.deepEqual(names({ predation: false }), ["eat"]);
+  assert.deepEqual(
+    names({ scavenging: true, disease: true, bodyCollision: true }),
+    ["bite", "eat", "infect", "scavenge", "shove"]
+  );
 });

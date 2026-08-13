@@ -1767,7 +1767,23 @@ function wireControls() {
     // watcher has just asked to see it. Announcing it on the arrow keys instead
     // would announce nothing — a step lands on a creature whose path has not
     // been recorded yet, by construction.
-    announce(describeSelection(c, config, trail.id === c.id ? trail.stats(config) : null));
+    announce(describeSelection(c, config, trail.id === c.id ? trail.stats(config) : null, renderer.showReach));
+  });
+  $("toggle-reach").addEventListener("change", (e) => {
+    renderer.showReach = e.target.checked;
+    if (!e.target.checked) return;
+    const c = renderer.selected;
+    // One creature's rings, so the same courtesy the trail gets: a ticked box
+    // over an empty selection draws nothing, and saying so beats leaving the
+    // watcher looking for a mark that was never coming.
+    if (!c || c.dead) {
+      flash("Click a creature (or press an arrow key) to see how far its rules reach.");
+      return;
+    }
+    // The rings carry no text — the pond canvas has none — so this is the only
+    // place the distances are said in numbers, and the moment to say them is
+    // the moment somebody asked to see them.
+    announce(describeSelection(c, config, trail.id === c.id ? trail.stats(config) : null, true));
   });
   $("toggle-motion").addEventListener("change", (e) => {
     renderer.reducedMotion = e.target.checked;
@@ -2120,7 +2136,9 @@ function wireCanvas(canvas) {
         // step onto somebody new says nothing about a path yet — `Trail.stats`
         // is read *after* the reassignment above, and `record` has already
         // cleared it by the next tick.
-        announce(describeSelection(next, config, trail.id === next.id ? trail.stats(config) : null));
+        announce(
+          describeSelection(next, config, trail.id === next.id ? trail.stats(config) : null, renderer.showReach)
+        );
       }
       e.preventDefault();
       return;
