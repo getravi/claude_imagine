@@ -668,7 +668,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   `.stage` is a *second coordinate system* over the pond, five marks live in it,
   and every audit this project has run has been about what a mark is made of or
   what the renderer draws — never about whether the DOM furniture is where it
-  claims to be. Four of the five are still unmeasured.
+  claims to be. **The other four closed in v1.87, and three of them were
+  wrong**: the zoom badge 22 px past the right edge of the water, the flash 17
+  px right of the picture's centre, the season badge and the minimap flush *by
+  luck* (a canvas is a block, so the slack is all on the right — spot-check one
+  mark and there is a 40% chance of writing "that one was fine"). The remedy is
+  one declaration and it is the one v1.82 should have found: the marks all mean
+  *in the corner of the picture*, an absolute mark is placed against its
+  containing block, so **make the containing block the picture** —
+  `.stage { width: fit-content }` is `min(900, available)`, the canvas's width
+  in both regimes. v1.82's per-frame placement came back out of `main.js` with
+  it. The shape to carry: **the fix was per-mark and the bug was per-container**,
+  and having a ruler in my hand was what made the mark look like the subject.
+  What it leaves: (a) the tell is cheap and is a *stylesheet* property, not a
+  measurement — this can only happen to a picture that is **told its size and
+  told to shrink** (`width="900"` plus `max-width: 100%`), so a picture told to
+  fill its box cannot have it; the chart's x-axis row, the Tree of Life's and
+  the splash's `<img>` overlays are all the safe arrangement and were measured
+  at 0.00 px to confirm it. (b) Nothing in `node --test` can lay out a page, so
+  the geometry lives in a scratch probe and the suite holds only the inventory
+  and the arithmetic. (c) The **splash page has four absolutely positioned
+  marks and has never been walked at all** — v1.51's keyboard walk, v1.28's
+  phone and this cycle's ruler were all `app/index.html`, and `index.html` is
+  the page a visitor sees first.
 - **A list's headings are unaudited claims, and the one that says "these are
   fine" is the one nobody reads twice.** Every colour finding since v1.61 came
   off the half of `colourliterals`'s list headed *marks the audit has never

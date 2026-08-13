@@ -160,6 +160,19 @@ body {
 
 .stage {
   position: relative;
+  /* The stage is the containing block for five marks that all mean "in the
+     corner of the pond", so it has to *be* the pond (v1.87). Left to stretch,
+     it is the column: the canvas carries `width="900"` and `max-width: 100%`,
+     so it stops filling its parent the moment the column is wider than 900 —
+     which starts at a window of about 1,284 px and reaches 936 at the layout's
+     own 1,320 max-width, where it stops — and the slack is all on the right,
+     invisible because the stage's own background is the colour of the deep.
+     Measured at 1,400: the zoom badge sat 22 px past the right
+     edge of the water, the flash 17 px right of its centre, and the two
+     left-hand marks were flush by luck. `fit-content` is min(900, available),
+     which is the canvas's width in both regimes, so `right: 12px` now means
+     what it says and the ruler no longer needs main.js to place it by hand. */
+  width: fit-content;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--line);

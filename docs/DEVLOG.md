@@ -9840,3 +9840,93 @@ in v1.44 and had forgotten. The test now asserts the exception rather than the
 rule: every tally of events is monotone, the burial columns are not, and at least
 one of them really does fall. A flow is a running total, not a number that only
 goes up, and differencing is exact either way.
+
+## Entry 99 — the box the corner belongs to · 2026-08-13
+
+v1.82 put a ruler in the corner of the pond, checked it in a real browser, and
+found it 22 px off the right edge of the water. The stage — the framed box the
+canvas sits in — is 936 CSS pixels wide at my window size and the canvas inside
+it is 900, because the pond stops growing at its own width while the column does
+not, and `right: 12px` is measured from the stage. I fixed the ruler by
+computing the canvas's right edge in `main.js` and writing the mark's `left` in
+pixels every frame, and then I wrote this down:
+
+> The whole `.stage` is a *second coordinate system* over the pond, five marks
+> live in it, and every audit this project has run has been about what a mark is
+> made of or what the renderer draws — never about whether the DOM furniture is
+> where it claims to be. Four of the five are still unmeasured.
+
+Three of the four were wrong.
+
+### What the probe said
+
+The zoom badge, top right, sat **22 px past the right edge of the water** —
+exactly the ruler's own error, on a mark that has been there since v1.17. The
+flash, the one mark that says *centre* rather than *corner*, sat **17 px right
+of the picture's centre**, which is half the slack less the border. The season
+badge and the minimap measured 12 and 12, flush, and they are flush **by luck**:
+a canvas is a block, so all the slack in a too-wide box lands on the right.
+
+Two of five correct for a reason that has nothing to do with either of them is
+the part I want to remember. If I had spot-checked one mark and it had been the
+minimap, I would have written "that one was fine" and moved on — which is v1.73's
+lesson about sampling a mark's backgrounds arriving on a mark's *placement*.
+
+### The fix is one declaration, and the old fix comes out
+
+The marks all mean *in the corner of the picture*. An absolutely positioned
+element is placed against its containing block's padding box, so the whole claim
+reduces to: **is the stage the pond?** It was not, and it is now —
+`width: fit-content`, which resolves to `min(900, available)`: the canvas's width
+when the column is wide, the column's when the column is narrow, the canvas
+filling it either way. All five marks measure 12.00 from the corner they name at
+1,400, 1,320, 1,264 and 1,100 pixels of window, and the flash reads 0.00 off
+centre.
+
+And v1.82's per-frame arithmetic came back out of `main.js`. That is the shape of
+this cycle in one line: **the fix was per-mark and the bug was per-container.**
+Fixing the mark I had a ruler in my hand for left four marks broken and one
+module reading layout every frame to place something the stylesheet had always
+known how to place. The ruler even got slightly better out of it — it was being
+rounded to whole pixels on the way through JS, so it read 11.91 where it now
+reads 12.00.
+
+### The tell, and where it cannot happen
+
+The canvas is the only element on this page that is *told its size and told to
+shrink*: `width="900"` in the markup, `max-width: 100%` in the sheet. That pair
+is what lets a picture be narrower than the box it lives in, and it is precisely
+what makes a corner ambiguous. So I asked the same question of every other
+positioned container on the page and the answers were dull in a useful way: the
+population chart's x-axis row and the Tree of Life's start and end where their
+canvases do, 0.00 px, because in both cases the canvas is told to fill its box
+rather than told its width. The front door's `<img>` overlays are the same
+arrangement. **A mark's corner is safe exactly when its picture is told to fill
+the box rather than told how big to be** — that is a property I can look up in a
+stylesheet, which is much cheaper than a browser.
+
+### What a text scan can hold
+
+Nothing in `node --test` can lay out a page, so the geometry above is a headless
+Chromium probe (v1.84's DevTools recipe, no dependency, about forty lines) and it
+lives in a scratch directory like every other one. What the suite got instead is
+the two halves of the claim that survive being asked of the source. The
+**inventory**: every element with an id inside the stage, classified — the
+picture, two paragraphs for a screen reader, five marks with the edges they name,
+two parts of the ruler — compared both ways, so a sixth mark cannot arrive
+without somebody saying which edge it hangs on. And the **arithmetic**: the
+widest column the grid can produce, derived from `.layout`'s own `max-width`,
+padding, gap and panel track (936), against the width the canvas is drawn at read
+out of the page (900). It asserts the slack is real *and* that the stage is
+declared shrink-to-fit — the first is v1.25's "pin the failure, not only the
+fix", because a layout change that removed the slack would make the second
+merely harmless, and I would want to be told.
+
+### The visible cost, stated
+
+The pond's frame no longer shares a right edge with the Chronicle below it on a
+wide window: the frame is the pond now and the Chronicle is still the column. The
+pond has not moved — same canvas, same size, same place — so the screenshots and
+the permalinks are untouched, and I would rather have a frame that bounds the
+thing it frames than 36 px of dead water-coloured strip nobody has seen since
+v1.17.

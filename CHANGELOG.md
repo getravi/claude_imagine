@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.87.0] — 2026-08-13
+
+v1.82 hung a ruler in the corner of the pond, found it 22 px off the right edge
+of the water, placed that one mark from `main.js` by hand, and left a note: four
+more marks live in the same coordinate system and none of them has ever been
+measured. Three of the four were wrong. The bug was never the ruler's — it
+belongs to the box all five are anchored to.
+
+### Fixed
+
+- **The stage is the pond now, and not the column.** `.stage` gets
+  `width: fit-content`. The canvas carries `width="900"` and `max-width: 100%`,
+  so it stops filling its parent the moment the column is wider than 900 px.
+  That starts at a window of about 1,284 and stops growing at the layout's own
+  `max-width` of 1,320, where the column is 936 — so the slack runs 0 to 36 px
+  and no further, and every mark anchored to the stage's right edge or its
+  centre was placed against it. It is invisible because the stage's own
+  background is the colour of the deep water.
+  `fit-content` is `min(900, available)`, which is the canvas's own width in
+  both regimes.
+- **The zoom badge sat 22 px past the right edge of the water**, and the flash —
+  the one mark that says *centre* rather than *corner* — 17 px right of the
+  picture's centre. Measured in Chromium at a 1,400-pixel window. The season
+  badge and the minimap were flush by luck: a canvas is a block, so all the
+  slack is on the right.
+- **The ruler's hand-placement came back out of `main.js`.** v1.82 read
+  `canvas.offsetLeft + canvas.offsetWidth` every frame and wrote the mark's
+  `left` in pixels; the stylesheet's `right: 12px` means what it says now. The
+  mark stopped being rounded to whole pixels on the way: it measures 12.00 from
+  the corner where it read 11.91.
+
+### Measured
+
+- **All five marks now read 12.00 px from the corner they name**, at window
+  widths of 1,400, 1,320, 1,264 and 1,100, and the flash centres on the picture
+  exactly (0.00, from +17.00). The stage's remaining 2 px of slack is its own
+  border, which is outside the box a mark is placed in.
+- **This one was only ever visible on a desktop.** Below about 1,284 px the
+  column is narrower than the pond, the canvas fills it, and every mark has
+  always been flush — including the 390-pixel phone v1.28 opened. That is v1.28
+  inverted: the bug it found was invisible in the window I work in, and this one
+  was invisible everywhere *else*.
+- **The other two positioned containers on the page are honest.** The
+  population chart's x-axis row and the Tree of Life's start and end exactly
+  where their canvases do (0.00 px; the tree's ±1.00 is the canvas's own
+  border), because in both cases the canvas is told to fill the box the marks
+  are placed in rather than told its own size.
+
+### Added
+
+- **Three tests in `test/markup.test.js`.** The stage's contents against a
+  classification of every one of them, compared both ways, so a sixth mark
+  cannot arrive without somebody saying which edge it hangs on. Each mark's rule
+  against the edge and the gap it declares. And the arithmetic: the widest
+  `.left-col` the grid can produce (936) derived from `.layout`'s own
+  declarations, against the width the canvas is drawn at (900) read out of the
+  page — asserted as a strict inequality, beside the `fit-content` that
+  inequality is the reason for.
+
+### Known
+
+- **The pond's frame no longer shares a right edge with the Chronicle below it**
+  at windows past ~1,284 px, because the frame is now the pond and the Chronicle
+  is still the column. The pond itself has not moved: the canvas is at the same
+  place and the same size it has been since v1.0, so every screenshot and
+  permalink is untouched.
+- **The scan cannot lay a page out.** Every number above comes from a headless
+  Chromium probe over the DevTools protocol (v1.84's recipe), which lives in a
+  scratch directory. The suite holds the inventory and the arithmetic; the
+  geometry is held by the fact that somebody ran it.
+
 ## [1.86.0] — 2026-08-12
 
 v1.78 built the phase instrument, pointed it at `pop` and `food`, and closed

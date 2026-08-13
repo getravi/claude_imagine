@@ -242,3 +242,144 @@ test("the two canvases a visitor can click can also be focused", () => {
     assert.ok(text.includes(word), `the pond's key hint never mentions ${word}`);
   }
 });
+
+// ---- The stage's marks (v1.87) ----
+//
+// Five things are drawn over the pond by the DOM rather than by `render.js`,
+// and all five say "in the corner of the picture" by anchoring to `.stage`.
+// That is a claim about a *containing block*, and it was false: the canvas
+// carries `width="900"` and `max-width: 100%`, so it stops filling the column
+// the moment the column is wider than 900 px, and everything anchored to the
+// right or the middle of the stage is placed against 936 px of box instead.
+// Measured in Chromium at a 1,400-pixel window, before the fix: the zoom badge
+// sat 22 px past the right edge of the water, the flash 17 px right of its
+// centre, the season badge and the minimap flush *by luck* (a canvas is a
+// block, so the slack is all on the right), and the ruler correct only because
+// v1.82 had caught this on that one mark and placed it from `main.js` by hand.
+// `.stage { width: fit-content }` makes the containing block the canvas in both
+// regimes; all five then measure 12 px from the corner they name, and the
+// hand-placement came back out of `main.js`.
+//
+// The scan cannot lay a page out, so these are the two halves of the claim it
+// *can* hold: the inventory (a sixth mark cannot arrive unclassified) and the
+// arithmetic (the column really is wider than the pond, which is the condition
+// the fix exists for).
+
+/** Everything with an `id` inside `<section class="stage">`, and what it is. */
+const STAGE = {
+  world: { kind: "the picture itself" },
+  "pond-keys": { kind: "prose for a screen reader" },
+  "pond-say": { kind: "prose for a screen reader" },
+  // The marks, with the edge each one names and the gap it asks for. The
+  // numbers are the measured ones: 12 px from the corner, the flash centred.
+  "season-badge": { kind: "mark", rule: ".season-badge", edges: { top: "12px", left: "12px" } },
+  "zoom-badge": { kind: "mark", rule: ".zoom-badge", edges: { top: "12px", right: "12px" } },
+  minimap: { kind: "mark", rule: ".minimap", edges: { left: "12px", bottom: "12px" } },
+  "scale-bar": { kind: "mark", rule: ".scale-bar", edges: { right: "12px", bottom: "12px" } },
+  flash: { kind: "mark", rule: ".flash", edges: { left: "50%", bottom: "18px" } },
+  // Inside the ruler, laid out by it rather than by the stage.
+  "scale-bar-rule": { kind: "part of the ruler" },
+  "scale-bar-label": { kind: "part of the ruler" },
+};
+
+/** The markup of the pond's stage, from the shipped page. */
+function stageMarkup() {
+  const src = read("app/index.html");
+  const open = src.indexOf('<section class="stage">');
+  assert.ok(open >= 0, "the page has lost its stage");
+  return src.slice(open, src.indexOf("</section>", open));
+}
+
+/** The declarations of one CSS rule, found by its selector on a line of its own.
+ *  Comments come out first: this file's rules are heavily commented, and a
+ *  comment explaining a declaration reads exactly like the declaration. */
+function cssRule(sheet, selector) {
+  const src = read(sheet).replace(/\/\*[\s\S]*?\*\//g, "");
+  const re = new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "m");
+  const m = src.match(re);
+  assert.ok(m, `${sheet}: no rule for "${selector}"`);
+  return m[1];
+}
+
+/** One property's value out of a rule's declarations. */
+function cssValue(body, prop) {
+  for (const line of body.split(";")) {
+    const m = line.match(new RegExp(`^\\s*${prop}\\s*:\\s*(.+)$`));
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+test("every element inside the stage is one this file has classified", () => {
+  // Both directions, the v1.81 pattern: a mark added over the pond fails here
+  // until somebody says which edge it hangs on, and a classification for
+  // something that has been deleted fails too.
+  const inStage = attrValues(stageMarkup(), "id");
+  assert.deepEqual(
+    [...inStage].sort(),
+    Object.keys(STAGE).sort(),
+    "the stage's contents and this file's list of them disagree"
+  );
+});
+
+test("every mark over the pond is anchored to the pond's own edges", () => {
+  for (const [id, entry] of Object.entries(STAGE)) {
+    if (entry.kind !== "mark") continue;
+    const body = cssRule("style.css", entry.rule);
+    assert.equal(
+      cssValue(body, "position"),
+      "absolute",
+      `#${id} is placed over the pond and is not positioned`
+    );
+    for (const [edge, gap] of Object.entries(entry.edges)) {
+      assert.equal(cssValue(body, edge), gap, `#${id}: ${edge} moved from ${gap}`);
+      // A percentage is not a gap, it is a claim about the *centre*, and half a
+      // mark's own width has to come back off it. The flash is the only one, and
+      // the half that would leave no trace if it were dropped is the transform:
+      // the mark would still be on screen, still near the middle, and wrong by
+      // half of whatever it happens to say.
+      if (gap.endsWith("%")) {
+        assert.match(
+          cssValue(body, "transform") || "",
+          /translateX\(-50%\)/,
+          `#${id} is placed by a percentage and never takes its own width back off`
+        );
+      }
+    }
+  }
+});
+
+test("the stage is the pond and not the column", () => {
+  // The arithmetic, derived rather than quoted, so it stays true if the layout
+  // moves: the widest `.left-col` the grid can produce, against the width the
+  // canvas is drawn at. It comes to 936 against 900 today.
+  const layout = cssRule("style.css", ".layout");
+  const num = (v) => {
+    const m = String(v).match(/(-?[\d.]+)px/);
+    assert.ok(m, `expected a pixel length, got "${v}"`);
+    return Number(m[1]);
+  };
+  const padding = cssValue(layout, "padding").split(/\s+/); // `20px 22px`
+  const tracks = cssValue(layout, "grid-template-columns").split(/\s+/); // `minmax(0, 1fr) 320px`
+  const column =
+    num(cssValue(layout, "max-width")) -
+    2 * num(padding[padding.length - 1]) -
+    num(cssValue(layout, "gap")) -
+    num(tracks[tracks.length - 1]);
+  const page = read("app/index.html");
+  const canvas = page.slice(page.indexOf('id="world"'));
+  const drawn = Number(canvas.match(/width="(\d+)"/)[1]);
+
+  // Pin the failure as well as the fix (v1.25): the slack is the whole bug, and
+  // a layout change that removed it would make the declaration below merely
+  // harmless rather than load-bearing — worth being told about either way.
+  assert.ok(
+    column > drawn,
+    `the column (${column}px) no longer exceeds the pond (${drawn}px); the stage's width is now belt-and-braces`
+  );
+  assert.equal(
+    cssValue(cssRule("style.css", ".stage"), "width"),
+    "fit-content",
+    `the stage would stretch to ${column}px around a ${drawn}px pond, and every mark anchored to its right edge or its centre would be placed against the ${column - drawn}px of slack`
+  );
+});
