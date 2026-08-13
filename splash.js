@@ -5,14 +5,34 @@
 // your browser. It warms up in non-blocking chunks so the page paints instantly
 // and the pond visibly *comes alive* as you arrive, then runs at full tilt.
 // Plus a tiny scroll-reveal for the sections below.
+//
+// Two things about the order here, both of which used to be wrong (v1.88). The
+// reveal is wired **first**, because it is what makes the rest of the page
+// readable and the hero is decoration. And the engine is pulled in with a
+// *dynamic* import inside a `try`, because a static one is resolved before any
+// statement in this file runs: blocking `src/world.js` used to leave all 53
+// bands of the page at opacity zero, forever, however far you scrolled. A
+// simulation module is now allowed to fail without taking the prose with it.
 
-import { makeConfig } from "./src/config.js";
-import { World } from "./src/world.js";
-import { Renderer } from "./src/render.js";
+import { setupReveal } from "./src/reveal.js";
+
+// ---- Scroll reveal ----
+setupReveal(document, window);
 
 // ---- Living hero ----
 const canvas = document.getElementById("hero-canvas");
 if (canvas) {
+  startHero(canvas).catch((err) => {
+    // The hero stays dark and the page is still a page. Nothing else on it
+    // depends on the simulation.
+    console.warn("Vivarium: the living hero could not start.", err);
+  });
+}
+
+async function startHero(canvas) {
+  const { makeConfig } = await import("./src/config.js");
+  const { World } = await import("./src/world.js");
+  const { Renderer } = await import("./src/render.js");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // A fixed simulation resolution (the canvas is CSS-stretched to fill the
   // hero), with food and population density scaled to its area so it looks lush
@@ -64,23 +84,4 @@ if (canvas) {
     requestAnimationFrame(loop);
   }
   warmup();
-}
-
-// ---- Scroll reveal ----
-const reveal = document.querySelectorAll("[data-reveal]");
-if ("IntersectionObserver" in window && reveal.length) {
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) {
-          e.target.classList.add("in");
-          io.unobserve(e.target);
-        }
-      }
-    },
-    { threshold: 0.12 }
-  );
-  reveal.forEach((el) => io.observe(el));
-} else {
-  reveal.forEach((el) => el.classList.add("in"));
 }

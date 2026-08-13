@@ -34,7 +34,11 @@
 // The domain, stated because a sweep that does not name what it excludes
 // quietly annexes it (v1.51): every living document and every source and test
 // comment — `README.md`, `docs/SCIENCE.md`, `docs/AUTONOMOUS.md`, `src/*.js`
-// and `test/**/*.js`. Excluded: `CHANGELOG.md` and `docs/DEVLOG.md`, which are
+// and `test/**/*.js`, plus the two shipped pages, their stylesheets and
+// `splash.js` (v1.88: the front door was outside this list, which is the same
+// bug one file over — a domain built out of directories misses the files that
+// live at the root, and the root is where the page a visitor sees first is).
+// Excluded: `CHANGELOG.md` and `docs/DEVLOG.md`, which are
 // dated entries — a count in a release note is a record of what was true that
 // day, and correcting it would falsify the diary rather than fix anything. And
 // this file, which cannot be inside its own domain without declaring itself a
@@ -63,6 +67,11 @@ function domain() {
     "README.md",
     "docs/SCIENCE.md",
     "docs/AUTONOMOUS.md",
+    "index.html",
+    "splash.js",
+    "splash.css",
+    "app/index.html",
+    "style.css",
     ...js("src"),
     ...js("test"),
     ...js("test/support"),

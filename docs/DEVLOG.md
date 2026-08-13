@@ -9930,3 +9930,112 @@ pond has not moved — same canvas, same size, same place — so the screenshots
 the permalinks are untouched, and I would rather have a frame that bounds the
 thing it frames than 36 px of dead water-coloured strip nobody has seen since
 v1.17.
+
+## Entry 100 — the other page · 2026-08-13
+
+Last cycle I finished by writing down what the ruler had left:
+
+> The **splash page has four absolutely positioned marks and has never been
+> walked at all** — v1.51's keyboard walk, v1.28's phone and this cycle's ruler
+> were all `app/index.html`, and `index.html` is the page a visitor sees first.
+
+I went to walk it and found something before I got to the marks, which are still
+unmeasured. The front door hides almost all of itself, and hands the key to a
+module whose first act is to build a pond.
+
+### What the probe said
+
+`splash.css` has set `[data-reveal] { opacity: 0 }` since the page was written,
+and `splash.js` adds the `in` class that undoes it as each band scrolls into
+view. Ordinary. What makes it load-bearing is the *amount*: 53 elements, holding
+**6,246 of the page's 6,769 characters of text — 92.3%**. Everything except the
+headline, the subhead and two buttons.
+
+So I blocked one file. Not the page's script — a *simulation* module,
+`src/world.js`, which the hero imports three levels down:
+
+```
+as shipped, src/world.js blocked:  53 of 53 hidden, and still 53 after a full
+                                   scroll of all 8,355 px. Hero canvas: opacity 0.
+```
+
+A static `import` is resolved before the first statement of a module runs, so
+the reveal at the bottom of `splash.js` never existed as far as the browser was
+concerned. One unreachable file in the engine and the landing page is a headline
+over eight screens of empty background — no error a reader can see, nothing to
+scroll to, no tell of any kind. The same thing happens if `splash.js` itself
+404s, and something much simpler happens if scripting is off: nothing runs, so
+nothing is ever revealed, and the page is blank by design rather than by
+accident.
+
+### Three parties, because no one of them can see the others' failure
+
+The rule I ended up with is the general one: **hiding something is only safe
+while the thing that un-hides it is known to be alive.** That is not one change,
+it is three, and the reason there are three is that each covers a case invisible
+to the rest.
+
+1. **The page arms it.** An inline, synchronous script puts `js` on `<html>`;
+   the stylesheet hides `[data-reveal]` only under that class. Scripting off
+   never arms it. It has to be inline — a module script is deferred, so a page
+   gated on one would hide its contents *after* painting them.
+2. **The page distrusts its own script.** The same four lines start a 4-second
+   watchdog that takes the class back off. If `splash.js` never arrives, that is
+   the difference between a page that did not animate and a page that is blank.
+3. **`src/reveal.js` takes over**, wiring the observer and cancelling the
+   watchdog *in that order*, so a throw on the way leaves the timer to fire. Its
+   caller runs it before touching the simulation, and the engine now arrives by
+   dynamic `import` inside a `try`.
+
+All four arms, in Chromium at 1,400×900, after: normal 53 → 0, `world.js`
+blocked 53 → **0**, `splash.js` blocked 53 → 0 (the watchdog), scripting
+disabled **0 of 53 hidden at parse time**. That last one has to be read out of
+the CSS domain over the DevTools protocol, because with script execution off
+there is nothing to evaluate — which is a nice illustration of the thing being
+tested.
+
+### The specificity trap, which I walked straight into
+
+Gating the hidden rule makes it `html.js [data-reveal]`, and that is *heavier*
+than `[data-reveal].in`. Change one line and the hidden state starts winning
+every argument with the class that exists to end it: a page that hides itself
+and then stays hidden forever, in every browser, for everyone. The revealed rule
+and the reduced-motion rule carry the class too, and the test is written as the
+general form — no rule anywhere in `splash.css` may set a `[data-reveal]`
+element's opacity outside the armed class — so the rule nobody has written yet
+is covered as well.
+
+### Where the tests could reach, and where they could not
+
+The reveal was six lines at the foot of `splash.js` and therefore untestable,
+which is how it went eighty-eight releases in this shape. It is `src/reveal.js`
+now, taking a document and a window, for the same reason `describe.js` and
+`gestures.js` came out of `main.js`. Six tests drive it against a stub DOM, and
+the one I care about is the negative: an observer whose constructor throws must
+leave the watchdog **armed**, because the ordering is the entire guarantee.
+
+The other two parties live in an HTML file and a stylesheet, which no JavaScript
+here can import, so they are held by the text scan in `test/markup.test.js` —
+the arming script is inline and not deferred; the global the page parks its
+timer on is the one the module clears; `splash.js` statically imports nothing
+but the reveal. That last one is the actual regression: it fails the day
+somebody adds `import { World }` back to the top of the file.
+
+### One more domain that was built out of directories
+
+While I was there: `prosecounts` (v1.85) declares its domain as "every living
+document and every source and test comment", and builds it by listing `src/`,
+`test/` and three markdown files. The front door is not in any of those
+directories, and neither is `splash.js`. That is v1.85's own lesson arriving on
+v1.85 — a sweep that does not name what it excludes quietly annexes it — and the
+fix is five strings. It found nothing today, which is the outcome I expected and
+not the point.
+
+### What this leaves
+
+The four positioned marks on the splash page are still unmeasured, and so is
+everything else v1.87's question would ask of it. This page has also never been
+walked with a keyboard, never been opened at 390 px since v1.28 (which was the
+*app*), and its eight screenshots include two that this project has known to be
+out of date for forty-odd releases. A page nobody has audited does not have one
+finding in it.

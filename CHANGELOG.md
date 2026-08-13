@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.88.0] — 2026-08-13
+
+Every audit this project has ever run — v1.28's phone, v1.51's keyboard walk,
+v1.57's colours, v1.82's ruler, v1.87's stage — was pointed at `app/index.html`.
+The other page, the one a visitor arrives on, had never been walked at all. It
+hides 92% of its own text behind a module whose first act was to build a
+simulation.
+
+### Fixed
+
+- **The landing page could be blanked by a simulation file.** `splash.css` sets
+  `[data-reveal]` to `opacity: 0` and `splash.js` adds the class that undoes it,
+  and `splash.js` statically imported `config.js`, `world.js` and `render.js` —
+  which are resolved before its first statement runs. Blocking **one** of them
+  in Chromium left all **53** bands at opacity zero however far you scrolled:
+  6,246 of the page's 6,769 characters of text, **92.3%**, under 8,355 px of
+  empty background, with the hero canvas dark as well. The premise, the science,
+  the screenshots, the timeline and both calls to action were in the DOM and
+  invisible.
+- **Hiding something is only safe while the thing that un-hides it is known to
+  be alive**, and that now has three parties, each covering a failure the others
+  cannot see. The page *arms* the rule — an inline, synchronous script puts `js`
+  on `<html>` and the stylesheet hides `[data-reveal]` only under that class, so
+  a browser with scripting off simply gets a page. The page *distrusts* its own
+  script — the same four lines start a 4-second watchdog that takes the class
+  back off, so a 404 or an offline reload cannot leave a permanently blank page.
+  And `src/reveal.js` *takes over* — it wires the observer and cancels the
+  watchdog in that order, so a throw on the way leaves the timer running.
+- **`splash.js` reveals the page before it touches the engine**, and pulls the
+  engine in with a dynamic `import` inside a `try`. A hero that cannot start now
+  costs the page its living background and nothing else.
+- **The reveal's CSS is qualified on both sides.** `html.js [data-reveal]` is
+  heavier than `[data-reveal].in`, so gating only the hidden half would have
+  made the hidden half win — a total, silent failure. The revealed rule and the
+  reduced-motion rule carry the class too.
+
+### Added
+
+- **`src/reveal.js`** — the reveal, carved out of `splash.js` for the reason
+  `describe.js` and `gestures.js` were carved out of `main.js`: logic worth
+  testing has to live where the suite can reach it. It takes a document and a
+  window and holds no state. `test/reveal.test.js` drives it with a stub DOM:
+  every element watched and revealed once, unobserved after, the whole page
+  shown at once where there is no `IntersectionObserver`, and the watchdog
+  cancelled on success and *left alone* on a throw.
+- **Four tests in `test/markup.test.js`** for the parts that live in files no
+  JavaScript can import: no rule may set a reveal's opacity outside the armed
+  class (the general form, so a rule nobody has written yet is covered), the
+  arming script is inline and not deferred, the watchdog's name matches the one
+  the module cancels, and `splash.js` statically imports nothing but the reveal.
+- **The front door joined `prosecounts`'s domain**, with `app/index.html`, both
+  stylesheets and `splash.js`. That sweep built its file list out of
+  directories, and the root is where the page a visitor sees first lives.
+
+### Measured
+
+- **All four arms, in Chromium at 1,400×900.** As shipped and working: 53 hidden
+  on arrival, **0** after a full scroll. `src/world.js` blocked: **53 → 0**,
+  where it was 53 → 53. `splash.js` blocked outright: 53 → 0, the watchdog. And
+  with script execution disabled, where the opacities have to be read out of the
+  CSS domain because nothing can be evaluated: **0 of 53 hidden**, at parse time,
+  because the class is never armed.
+
+### Known
+
+- **The splash page's own positioned marks are still unmeasured.** v1.87 asked
+  whether the app's DOM furniture is where it claims to be; this cycle answered
+  a different question about the same page and left that one open.
+
 ## [1.87.0] — 2026-08-13
 
 v1.82 hung a ruler in the corner of the pond, found it 22 px off the right edge

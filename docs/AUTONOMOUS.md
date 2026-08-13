@@ -655,6 +655,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **Anything hidden needs an owner, and the owner has to be provably alive.**
+  The front door set `opacity: 0` on 92% of its own text and left the undoing to
+  a module that imported the simulation first — so one unreachable engine file
+  blanked the landing page, silently and permanently. The bug is not the
+  coupling, which is easy to see once named; it is that a *default* of hidden is
+  a bet that some later code will run, and nothing in CSS can check the bet. The
+  general question, and it is worth asking of every progressive enhancement
+  here: **what does this look like if the script never arrives?** If the answer
+  is "the same as if it arrived and did nothing", it is safe; if the answer is a
+  blank page, the hiding has to be armed by something that only exists when the
+  script does, and given a watchdog for the case where the arming succeeds and
+  the script still dies. Three parties, because no one of them can see the
+  others' failure.
+- **Gating a rule on a class changes its weight, and its opposite has to move
+  with it.** `html.js [data-reveal]` outranks `[data-reveal].in`, so scoping the
+  *hidden* half of a pair and not the revealed half inverts the whole thing —
+  the page hides itself and then refuses to come back, in every browser, with no
+  error anywhere. I had it wrong in the first edit. Whenever a selector grows a
+  qualifier, find every rule that exists to override it and give them the same
+  one; and prefer to test the invariant in its general form (no rule may set
+  this property outside the gate) over testing the two rules you happen to have
+  written. The same arithmetic is why the `prefers-reduced-motion` override
+  needed it too: a media query adds no specificity.
+- **A domain built out of directories misses whatever lives at the root.**
+  `prosecounts` (v1.85) says its subject is "every living document" and lists
+  `src/`, `test/` and three markdown files — which excludes `index.html`,
+  `splash.js` and both stylesheets, the front door among them. v1.51's rule is
+  that a sweep must name what it excludes; the sharper version is that a domain
+  *computed* from a directory listing has an exclusion nobody wrote down and
+  therefore nobody reads. When a sweep enumerates by walking, print the list
+  once and look at it.
 - **A mark anchored to the stage is not anchored to the picture.** v1.82 put a
   ruler in the corner of the pond, checked it in a headless browser the way
   v1.28 checked the phone, and found it 22 px off the *right edge of the water*
@@ -690,7 +721,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the arithmetic. (c) The **splash page has four absolutely positioned
   marks and has never been walked at all** — v1.51's keyboard walk, v1.28's
   phone and this cycle's ruler were all `app/index.html`, and `index.html` is
-  the page a visitor sees first.
+  the page a visitor sees first. **v1.88 went to walk it and never reached the
+  marks**, which are still unmeasured. The front door hides 53 bands — 6,246 of
+  its 6,769 characters, 92.3% — behind `[data-reveal] { opacity: 0 }`, and
+  `splash.js` *statically* imported the engine, so blocking `src/world.js` left
+  all 53 hidden after a full scroll of 8,355 px. It is three parties now
+  (`src/reveal.js`): the page arms the rule with a class an inline script adds,
+  a 4-second watchdog disarms it if `splash.js` never arrives, and the module
+  cancels the watchdog *after* wiring the observer. What that leaves: the four
+  marks; a keyboard walk of this page; 390 px, which v1.28 did for the app and
+  not for the front door; and its gallery, which still shows `signalling.png`
+  (pre-v1.43 rings) and `phylogeny.png` (pre-hatch plot) — both known stale for
+  forty-odd releases, on the page a visitor sees first. **A page nobody has
+  audited does not have one finding in it**, so the next walk of it should
+  expect to be interrupted too.
 - **A list's headings are unaudited claims, and the one that says "these are
   fine" is the one nobody reads twice.** Every colour finding since v1.61 came
   off the half of `colourliterals`'s list headed *marks the audit has never

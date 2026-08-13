@@ -26,6 +26,25 @@
     />
     <meta name="twitter:image" content="docs/screenshots/vivarium.png" />
 
+    <!--
+      Arm the scroll reveal. The bands below start hidden and `src/reveal.js`
+      un-hides them, so the stylesheet may only hide them while a script is
+      running to undo it: `splash.css` gates `[data-reveal]` on this class.
+      Inline and synchronous because a module script is deferred, and gating on
+      one would hide the page after it had already been painted.
+
+      The timer is the page distrusting its own script. If `splash.js` never
+      arrives — a 404, an offline reload, a syntax error anywhere it imports —
+      nothing can ever add the `in` class, and without this the page would stay
+      blank forever. `setupReveal` cancels it once it has taken over.
+    -->
+    <script>
+      document.documentElement.classList.add("js");
+      window.revealFailsafe = setTimeout(function () {
+        document.documentElement.classList.remove("js");
+      }, 4000);
+    </script>
+
     <link rel="stylesheet" href="splash.css" />
     <link
       rel="icon"

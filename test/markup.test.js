@@ -20,6 +20,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { ARMED_CLASS, FAILSAFE_KEY } from "../src/reveal.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(join(root, p), "utf8");
@@ -241,6 +242,86 @@ test("the two canvases a visitor can click can also be focused", () => {
   for (const word of ["Arrow", "Enter", "Escape"]) {
     assert.ok(text.includes(word), `the pond's key hint never mentions ${word}`);
   }
+});
+
+// ---- The front door's hidden state (v1.88) ----
+//
+// The landing page hides 53 bands — 6,246 of its 6,769 characters of text — and
+// hands the job of showing them again to a module that builds a live simulation
+// first. Blocking `src/world.js` in Chromium left all 53 hidden however far you
+// scrolled. The remedy has three parties and two of them are in files no
+// JavaScript test can import, so this is where they are held: the page arms the
+// rule with a class, a watchdog disarms it if the script never arrives, and
+// `src/reveal.js` cancels the watchdog once it has taken over. The names are
+// exported by the module so a rename cannot half-happen.
+
+/** Every `selector { … }` rule in a stylesheet, comments and @media stripped. */
+function cssRules(sheet) {
+  const src = read(sheet).replace(/\/\*[\s\S]*?\*\//g, "");
+  return [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1].trim().replace(/\s+/g, " "),
+    body: m[2],
+  }));
+}
+
+test("nothing on the front door is hidden except under the class a script arms", () => {
+  // The general form, so it holds for a rule nobody has written yet: any rule
+  // that decides a `[data-reveal]` element's opacity is part of this contract
+  // and has to carry the class. It is also what keeps the *specificity* honest
+  // — hiding under `html.js` while revealing under a bare `[data-reveal].in`
+  // would make the hidden rule the heavier of the two and nothing would ever
+  // appear, which is a silent, total failure of the page.
+  const gate = `html.${ARMED_CLASS}`;
+  const opacity = cssRules("splash.css").filter(
+    (r) => r.selector.includes("[data-reveal]") && /(^|\s|;)opacity\s*:/.test(r.body)
+  );
+  assert.ok(opacity.length >= 2, "the reveal has lost its hidden or its revealed state");
+  for (const rule of opacity) {
+    assert.ok(
+      rule.selector.startsWith(gate),
+      `splash.css: "${rule.selector}" sets a reveal's opacity outside "${gate}"`
+    );
+  }
+});
+
+test("the front door arms the reveal itself, before anything is painted", () => {
+  const src = read("index.html");
+  const head = src.slice(0, src.indexOf("</head>"));
+  const scripts = [...head.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  const inline = scripts.filter((m) => !/\bsrc\s*=/.test(m[1]));
+  assert.equal(inline.length, 1, "the page arms the reveal in exactly one inline script");
+  const [attrs, body] = [inline[0][1], inline[0][2]];
+  // Deferred is the one thing it must not be: a module script runs after the
+  // document is parsed, so a page gated on one would flash its whole contents
+  // and then hide them.
+  assert.doesNotMatch(attrs, /\b(type\s*=\s*"module"|defer|async)\b/, "the arming script must be synchronous");
+  assert.match(body, new RegExp(`classList\\.add\\("${ARMED_CLASS}"\\)`), "it must add the class the sheet hides under");
+  assert.match(body, new RegExp(`classList\\.remove\\("${ARMED_CLASS}"\\)`), "and take it back off when the watchdog fires");
+  assert.match(body, new RegExp(`window\\.${FAILSAFE_KEY}\\s*=\\s*setTimeout`), "the watchdog goes where the module looks for it");
+});
+
+test("the watchdog the page starts is the one the module cancels", () => {
+  // A promise between two files, like `for` and `aria-labelledby` above: the
+  // page parks a timer id on the window under a name, and `src/reveal.js`
+  // clears whatever it finds there. Renaming one alone is silent — the page
+  // simply un-hides itself four seconds in, on every load, for everyone.
+  assert.match(read("src/reveal.js"), new RegExp(`clearTimeout\\(win\\[FAILSAFE_KEY\\]\\)`));
+  assert.ok(read("index.html").includes(`window.${FAILSAFE_KEY}`));
+});
+
+test("the page's script does not build a world before it shows the page", () => {
+  // The order is the finding. `splash.js` used to import the engine statically,
+  // which is resolved before its first statement runs, so one unreachable
+  // simulation file took the prose down with it. The reveal is wired first now
+  // and the engine arrives through a dynamic import inside a `try`.
+  const src = read("splash.js");
+  const statics = [...src.matchAll(/^import\s[\s\S]*?from\s+"([^"]+)";/gm)].map((m) => m[1]);
+  assert.deepEqual(statics, ["./src/reveal.js"], "the front door statically imports the engine again");
+  assert.ok(
+    src.indexOf("setupReveal(document, window)") < src.indexOf("startHero(canvas)"),
+    "the hero is started before the page is revealed"
+  );
+  assert.match(src, /startHero\(canvas\)\.catch\(/, "a hero that throws must not reach the top level");
 });
 
 // ---- The stage's marks (v1.87) ----
