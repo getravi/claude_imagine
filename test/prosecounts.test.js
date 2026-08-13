@@ -52,6 +52,7 @@ import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
 import { SERIES } from "../src/seasonlag.js";
+import { STATS_HASHED, STATS_UNHASHED } from "../src/fingerprint.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -114,6 +115,24 @@ const CLAIMS = [
     size: () => Object.values(SERIES).filter((k) => k === "flow").length,
     phrase: "{n} cumulative counters",
     sites: ["docs/SCIENCE.md", "src/seasonlag.js"],
+  },
+  {
+    // The collection v1.89 grew, declared by the release that grows it. It was
+    // already wrong before this cycle touched it — three files said `Stats`
+    // carried forty-seven own properties and it carried fifty-three, drift of
+    // six that arrived one field at a time across v1.78 and v1.86 — and what
+    // found it was adding to the collection rather than reading the sentence.
+    // A count nobody has a reason to recompute is the one that goes stale, so
+    // this is the row that recomputes it.
+    //
+    // The size is the declared lists rather than a live object's keys, which is
+    // not a shortcut: `test/books.test.js` walks a stepped world against those
+    // lists in both directions, so a name here that no field carries and a
+    // field that no name here declares are both already failures.
+    what: "the properties `Stats` carries",
+    size: () => STATS_HASHED.length + Object.keys(STATS_UNHASHED).length,
+    phrase: "{n} own properties",
+    sites: ["docs/AUTONOMOUS.md", "src/fingerprint.js", "test/books.test.js"],
   },
 ];
 

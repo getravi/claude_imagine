@@ -163,6 +163,20 @@ export function describePond(world, config, camera = null) {
         `${percent(s.refugeShare)} of them have grown past ${refugeRadius(config).toFixed(1)} ` +
           "pixels, the size above which nothing here can eat them."
       );
+      // And where that line sits for the hunters that exist. The sentence above
+      // is about a predator at `bodyRadiusMax`, which most ponds never grow, so
+      // it is a floor on safety and usually a distant one — on three seeds of
+      // twelve it says under one per cent while more than nine tenths of the
+      // pond is out of everything's reach. Said only where somebody hunts: the
+      // "None of them hunt" branch above has already covered the other case,
+      // and a line set by nobody is not a line.
+      if (carn > 0) {
+        out.push(
+          `No hunter now alive is bigger than ${s.hunterCeiling.toFixed(1)} pixels, so ` +
+            `today's line is ${s.livedRefugeRadius.toFixed(1)} and ` +
+            `${percent(s.livedRefugeShare)} of the pond is beyond every hunter in it.`
+        );
+      }
       // And who is spared rather than out of reach. Kin recognition (v1.10) has
       // never been reported anywhere on this page: it takes effect inside a
       // hunter's senses, so a spared relative is not approached, not marked and

@@ -19,7 +19,15 @@ import assert from "node:assert/strict";
 
 import { World } from "../src/world.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
-import { refugeRadius, inRefuge, refugeShare } from "../src/refuge.js";
+import {
+  refugeRadius,
+  inRefuge,
+  refugeShare,
+  hunterCeiling,
+  inLivedRefuge,
+  livedRefugeRadius,
+  livedRefugeShare,
+} from "../src/refuge.js";
 import { describePond } from "../src/describe.js";
 import { STATS_HASHED } from "../src/fingerprint.js";
 
@@ -196,4 +204,152 @@ test("the crossing is announced once, after first blood, and never from above", 
     0,
     "a pond that was never below the line announced crossing it"
   );
+});
+
+// ── The refuge the pond actually has (v1.89) ───────────────────────────────
+
+test("the ceiling is the biggest hunter, and a big herbivore is not one", () => {
+  const cfg = makeConfig();
+  const t = cfg.carnivoreThreshold;
+  // Hand-built, because the thing worth pinning is which half of `_edible` the
+  // ceiling reads: a body at `bodyRadiusMax` with no appetite must not set it,
+  // and a small hunter must.
+  const pond = [
+    { radius: cfg.bodyRadiusMax, carnivory: t - 0.0001 },
+    { radius: 5, carnivory: t },
+    { radius: 6.4, carnivory: 1 },
+    { radius: 7.9, carnivory: 0 },
+  ];
+  assert.equal(hunterCeiling(pond, cfg), 6.4);
+  assert.equal(hunterCeiling([], cfg), 0, "an empty pond has no hunter, not a NaN");
+  assert.equal(hunterCeiling([{ radius: 7.9, carnivory: 0 }], cfg), 0);
+  // The threshold is `>=`, exactly as `Creature._edible` reads it.
+  assert.equal(hunterCeiling([{ radius: 4, carnivory: t }], cfg), 4);
+
+  // And against a real pond, at several points in a run, brute-forced.
+  const w = new World(makeConfig({ seed: 314 }));
+  for (const mark of [1, 200, 1200, 2500]) {
+    while (w.tick < mark) w.step();
+    const max = w.creatures
+      .filter((c) => c.carnivory >= w.config.carnivoreThreshold)
+      .reduce((m, c) => Math.max(m, c.radius), 0);
+    assert.equal(hunterCeiling(w.creatures, w.config), max, `tick ${mark}`);
+  }
+});
+
+test("the lived predicate is the eating rule with the hunter that exists", () => {
+  // `inRefuge`'s test one substitution down. There the hunter is the largest
+  // this world can grow; here it is the largest it *has* grown, and the claim
+  // is the same shape: no creature in this pond can eat a body this size. So
+  // ask the pond's own biggest hunter, at a fine step over the whole range.
+  const cfg = makeConfig({ kinRecognition: false });
+  const w = new World(cfg);
+  for (let i = 0; i < 400; i++) w.step();
+  const ceiling = hunterCeiling(w.creatures, cfg);
+  assert.ok(ceiling > 0, "seed 314 has hunters at tick 400");
+  const hunter = w.creatures.find(
+    (c) => c.carnivory >= cfg.carnivoreThreshold && c.radius === ceiling
+  );
+  const target = w.creatures.find((c) => c !== hunter);
+  const wasRadius = target.radius;
+
+  for (let r = cfg.bodyRadiusMin; r <= cfg.bodyRadiusMax; r += 0.001) {
+    target.radius = r;
+    assert.equal(
+      hunter.canEat(target),
+      !inLivedRefuge(r, ceiling, cfg),
+      `the biggest living hunter and the lived refuge disagree at radius ${r}`
+    );
+  }
+  target.radius = wasRadius;
+
+  // The caption on it, and the boundary decided the way `creature.js` decides
+  // it — the `inRefuge` bit-probe, one substitution down.
+  const edge = livedRefugeRadius(ceiling, cfg);
+  assert.equal(edge, ceiling / cfg.preySizeRatio);
+  assert.equal(inLivedRefuge(edge, ceiling, cfg), true, "the reported line is itself safe");
+  assert.equal(inLivedRefuge(nextUp(edge), ceiling, cfg), true);
+  assert.equal(inLivedRefuge(nextDown(edge), ceiling, cfg), false);
+});
+
+test("a pond with nothing hunting is entirely out of reach", () => {
+  // The reading this statistic exists for, and the one the config's refuge
+  // cannot produce: two of twelve seeds hold no hunter at all at 6,000 ticks,
+  // and the older tile goes on quoting a line at 7.273 px in exactly that pond.
+  const cfg = makeConfig();
+  const pond = [{ radius: 3.5, carnivory: 0 }, { radius: 8, carnivory: 0.1 }];
+  assert.equal(hunterCeiling(pond, cfg), 0);
+  assert.equal(livedRefugeRadius(0, cfg), 0);
+  assert.equal(livedRefugeShare(pond, cfg), 1, "with no hunter, everything is safe");
+  assert.equal(inLivedRefuge(cfg.bodyRadiusMin, 0, cfg), true, "0 > r * ratio is never true");
+  assert.equal(livedRefugeShare([], cfg), 0, "an empty pond has no share, not a NaN");
+});
+
+test("the lived refuge is never behind the one the config declares", () => {
+  // The invariant that makes the pair worth showing together: a living hunter
+  // cannot be bigger than the biggest this world grows, so the line it sets is
+  // never higher and the share beyond it never smaller. The two meet exactly
+  // when somebody has reached `bodyRadiusMax`, which is the case the older tile
+  // is right about.
+  const w = new World(makeConfig({ seed: 314 }));
+  let sawGap = false;
+  for (let i = 0; i < 2500; i++) {
+    w.step();
+    if (i % 50) continue;
+    const ceiling = hunterCeiling(w.creatures, w.config);
+    const lived = livedRefugeShare(w.creatures, w.config);
+    const decl = refugeShare(w.creatures, w.config);
+    assert.ok(
+      livedRefugeRadius(ceiling, w.config) <= refugeRadius(w.config),
+      `tick ${w.tick}: the lived line is above the declared one`
+    );
+    assert.ok(lived >= decl, `tick ${w.tick}: ${lived} < ${decl}`);
+    if (ceiling === w.config.bodyRadiusMax) {
+      assert.equal(lived, decl, `tick ${w.tick}: a hunter at the maximum, and they disagree`);
+    } else if (lived > decl) sawGap = true;
+  }
+  assert.ok(sawGap, "seed 314 never once had a hunter smaller than the world allows");
+});
+
+test("the second readout on the panel is the module's own number too", () => {
+  // `Stats.sample` counts this in the pass it already runs, like `refugeShare`,
+  // so the same two-implementations risk applies and gets the same answer.
+  const w = new World(makeConfig({ seed: 314 }));
+  for (const mark of [1, 100, 1000, 2000]) {
+    while (w.tick < mark) w.step();
+    const ceiling = hunterCeiling(w.creatures, w.config);
+    assert.equal(w.stats.hunterCeiling, ceiling, `the ceiling disagrees at tick ${mark}`);
+    assert.equal(w.stats.livedRefugeRadius, livedRefugeRadius(ceiling, w.config));
+    assert.equal(
+      w.stats.livedRefugeShare,
+      livedRefugeShare(w.creatures, w.config),
+      `the tile and the module disagree at tick ${mark}`
+    );
+  }
+  for (const f of ["hunterCeiling", "livedRefugeRadius", "livedRefugeShare"]) {
+    assert.ok(STATS_HASHED.includes(f), `${f} is outside the books' channel`);
+  }
+});
+
+test("the pond says where today's line is, and says nothing when nobody hunts", () => {
+  const w = new World(makeConfig({ seed: 314 }));
+  for (let i = 0; i < 500; i++) w.step();
+  const said = describePond(w, w.config);
+  assert.match(said, /No hunter now alive is bigger than/);
+  assert.match(said, /beyond every hunter in it/);
+
+  // Staged rather than waited for (v1.45): strip the appetite out of the pond
+  // and re-sample. "None of them hunt" already covers this case, and a line set
+  // by nobody must not be quoted on top of it.
+  for (const c of w.creatures) c.carnivory = 0;
+  w.stats.sample(w);
+  const quiet = describePond(w, w.config);
+  assert.match(quiet, /None of them hunt/);
+  assert.doesNotMatch(quiet, /No hunter now alive/);
+  assert.equal(w.stats.livedRefugeShare, 1, "nothing hunts, so everything is beyond reach");
+
+  // And gone entirely with predation off, like the sentence above it.
+  const q = new World(makeConfig({ seed: 314, predation: false }));
+  for (let i = 0; i < 500; i++) q.step();
+  assert.doesNotMatch(describePond(q, q.config), /No hunter now alive/);
 });

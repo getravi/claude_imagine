@@ -30,8 +30,8 @@
 //   5. **The books**, added in v1.59. This was three hand-picked counters —
 //      `births`, `deaths`, `kills` — carried over because ten of the twelve
 //      tests had been checking them and no fingerprint covered them. Three of
-//      fifty-two as the books then stood: `world.stats` had forty-four own
-//      properties and `world.energy` eight, and a feature that was off and
+//      fifty-two as the books then stood: `world.stats` carried forty-four of
+//      them and `world.energy` eight, and a feature that was off and
 //      wrote to any of the other forty-nine passed every channel here — the
 //      lists in `fingerprint.js` are what the count is read from now, and they
 //      have grown since. It is the same shape as (4),

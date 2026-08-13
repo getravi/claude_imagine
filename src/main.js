@@ -744,6 +744,21 @@ function updateHUD() {
   $("stat-refuge").textContent = config.predation
     ? `${Math.round(s.refugeShare * 100)}% ≥${refugeRadius(config).toFixed(1)}px`
     : "off";
+  // And the same reading taken from the pond rather than from `config.js`: the
+  // line the largest hunter *alive* sets, and what is beyond it. The tile above
+  // quotes a hunter at `bodyRadiusMax`, which most ponds never grow — so these
+  // two disagree by an average of 43 points of the population, and a pond whose
+  // Refuge reads 0% can have all of itself standing outside the reach of every
+  // animal in the water.
+  //
+  // A word rather than a number when nothing hunts, because "100% ≥0.0px" is
+  // three true symbols arranged into a lie: there is no line, and the reason
+  // there is none is the reading. Gated on `predation` like the tile above it.
+  $("stat-safe").textContent = !config.predation
+    ? "off"
+    : s.hunterCeiling === 0
+      ? "all — no hunter"
+      : `${Math.round(s.livedRefugeShare * 100)}% ≥${s.livedRefugeRadius.toFixed(1)}px`;
   // Kin recognition: meals declined for being family — the run's total, and how
   // fast they are being declined now. Both halves, unlike the two other counters
   // of a rule's work (Walled, Jostled), which show a rate alone: those describe

@@ -11,7 +11,7 @@ import { Archive } from "./archive.js";
 import { groundBias } from "./terrain.js";
 import { patchBias } from "./environment.js";
 import { hazardShare } from "./contagion.js";
-import { inRefuge } from "./refuge.js";
+import { inRefuge, inLivedRefuge, livedRefugeRadius } from "./refuge.js";
 import { seasonLag } from "./seasonlag.js";
 import { ENERGY_SOURCES, LEDGER_FIELDS, energyField, buriedField } from "./energy.js";
 
@@ -399,6 +399,21 @@ export class Stats {
     // The *surfaces* gate on `config.predation`, because a refuge from nobody
     // is arithmetic rather than news.
     this.refugeShare = 0;
+    // The same question asked of the pond instead of the config: the largest
+    // body that actually hunts here (0 when nothing does), the line that hunter
+    // sets, and the share of the living beyond it. `refugeShare` counts against
+    // a predator this world has usually never grown; these count against the
+    // one in the water. They agree only when some hunter has reached
+    // `bodyRadiusMax`, and at 6,000 ticks on twelve seeds they are 43 points of
+    // the population apart on average (docs/SCIENCE.md).
+    //
+    // Instantaneous, like `refugeShare` and unlike every counter in this class:
+    // a body can be beyond every hunter this tick and inside the reach of one
+    // born on the next, and that movement is the reading rather than noise in
+    // it.
+    this.hunterCeiling = 0;
+    this.livedRefugeRadius = 0;
+    this.livedRefugeShare = 0;
     this.avgLearning = 0; // mean within-lifetime weight drift (plasticity on)
     this.avgVoice = 0; // mean |signal| across the pond (signalling on)
     this.avgHeard = 0; // mean strength of the call reaching each creature
@@ -446,14 +461,26 @@ export class Stats {
     // against two config numbers, which is cheaper than the branch deciding
     // whether to bother.
     let safe = 0;
+    // The largest hunter alive, found in the pass that is already asking every
+    // creature whether it is one. The line it sets needs the whole population
+    // before it can be compared against anything, so the count beyond it is a
+    // second pass — one multiply and one compare per creature, below.
+    let ceiling = 0;
     const threshold = world.config.carnivoreThreshold;
     for (let i = 0; i < pop; i++) {
       const cr = world.creatures[i];
       const g = cr.generation;
       if (g > maxGen) maxGen = g;
       sumGen += g;
-      if (cr.carnivory >= threshold) carnivores++;
+      if (cr.carnivory >= threshold) {
+        carnivores++;
+        if (cr.radius > ceiling) ceiling = cr.radius;
+      }
       if (inRefuge(cr.radius, world.config)) safe++;
+    }
+    let livedSafe = 0;
+    for (let i = 0; i < pop; i++) {
+      if (inLivedRefuge(world.creatures[i].radius, ceiling, world.config)) livedSafe++;
     }
     if (maxGen > this.maxGeneration) this.maxGeneration = maxGen;
     this.avgGeneration = pop > 0 ? sumGen / pop : 0;
@@ -461,6 +488,9 @@ export class Stats {
     this.carnivoreFrac = pop > 0 ? carnivores / pop : 0;
     this.carnivoreCount = carnivores;
     this.refugeShare = pop > 0 ? safe / pop : 0;
+    this.hunterCeiling = ceiling;
+    this.livedRefugeRadius = livedRefugeRadius(ceiling, world.config);
+    this.livedRefugeShare = pop > 0 ? livedSafe / pop : 0;
 
     // Learning: how far, on average, plastic brains have drifted from the
     // weights they were born with (0 when plasticity is off). A live readout of

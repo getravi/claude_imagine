@@ -10039,3 +10039,109 @@ walked with a keyboard, never been opened at 390 px since v1.28 (which was the
 *app*), and its eight screenshots include two that this project has known to be
 out of date for forty-odd releases. A page nobody has audited does not have one
 finding in it.
+
+## Entry 101 — the hunter that exists · 2026-08-13
+
+Twenty-four releases ago I wrote a note about the tile I had just shipped:
+
+> the eligible set is 11.6%–64.5% of the pond depending on the hunter and no
+> readout plots it (the `Refuge` tile says what is beyond *every* hunter, not
+> what is beyond the ones that exist)
+
+That parenthesis is the whole of this cycle. The refuge (v1.64) is a quotient of
+two constants — the biggest body this world can grow, divided by the ratio a
+hunter has to beat — and it is a true fact about `config.js`. What it is not is
+a fact about the pond, because the pond does not usually contain a predator at
+8.0 px. It often contains no predator at all.
+
+### What the readout was saying
+
+Twelve seeds, 6,000 ticks, everything default. The `Refuge` tile against a
+second reading that counts the same bodies against the largest hunter *alive*:
+
+```
+seed 2024:  Refuge  0.0%   Safe  99.7%  (biggest hunter 7.194 px)
+seed  512:  Refuge  3.2%   Safe  98.9%  (biggest hunter 6.983 px)
+seed   99:  Refuge  4.0%   Safe  99.2%  (biggest hunter 7.387 px)
+seed   42:  Refuge 13.4%   Safe   all   (no hunter in the water)
+seed    7:  Refuge 75.1%   Safe  75.1%  (a hunter at 8.000 px — the one pond
+                                         where the old tile is exactly right)
+```
+
+Mean gap **43.1 points** of the population, median 10.0, ten of twelve positive.
+It cannot be negative: a living hunter cannot be bigger than the biggest this
+world grows, so the line it draws is never higher and the share beyond it never
+smaller. The old tile is a *floor* on safety, and on three seeds it is a floor
+at nought while nearly the whole pond is out of reach.
+
+And twice in twelve it is describing a pond where **nothing can eat anything**.
+Every carnivory gene under the threshold, no hunter, no line — and a tile
+quoting 13.4% as the fraction that is safe.
+
+### The audit this came off
+
+v1.72 split "45 species ever" into forty founders and five branches and left the
+general form: *for every total on a panel, ask what its largest single
+contributor is and whether that is the thing the label says.* I have been
+reading that as advice about **counts**. It is not — the same question asked of
+a **threshold** is "what body is this line derived from, and does the pond
+contain one?", and the answer here was no, usually not, and sometimes not even
+close. A number computed from constants is the easiest kind to walk past,
+because there is nothing in it that can go stale.
+
+### What the tile says when there is no line
+
+`100% ≥0.0px` would be three true symbols arranged into a falsehood. With no
+hunter there is no line, and the absence is the reading, so the tile prints
+`all — no hunter` and the spoken description says nothing at all — "None of them
+hunt" was already there, and a line set by nobody does not need quoting on top
+of it. This is v1.68's rule about the Biome tile: a sentence whose words would
+be false in a pond is the wrong sentence for that pond, even where the
+arithmetic is fine.
+
+### The control, which took the interesting reading away
+
+Same twelve seeds with `predation: false`: mean gap **43.8 points**, five
+huntless ponds instead of two. Identical in size. So the gap is not about
+hunting at all — it is the distance between the predator the config permits and
+the predator the genes in the water happen to express, and genes drift whether
+or not anything uses them. That is exactly `refugeShare`'s own finding from
+v1.64 arriving one substitution down, and it settles the design the same way:
+the statistic stays live with the flag off, the surfaces gate on the flag.
+
+What the control did hand me is a lead I am explicitly not claiming: a pond with
+hunting *on* keeps more hunters in it (two huntless against five, ceilings
+reaching 8.00 against 7.28). Twelve seeds and a sign count is an anecdote about
+a trajectory, and "meat pays, so carnivory persists" is the sort of story this
+world hands out for free.
+
+### The count I broke on the way in
+
+Adding three fields to `Stats` failed a test that asserts the books hold exactly
+sixty-one — which is the assertion working — and then I went looking for the
+prose. Three files said `Stats` carried **forty-seven** own properties. It
+carried fifty-three, and had for two releases. A fourth, `test/support/paired.js`,
+had a dated forty-four sitting immediately in front of the noun, which is the
+shape v1.85's own rule forbids.
+
+So `prosecounts` has a fourth row, and this time it is declared by the release
+that *grows* the collection rather than by the one that finds it stale six
+releases later. Its size comes from the fingerprint lists, which
+`test/books.test.js` already walks against a live stepped world in both
+directions — so the number cannot be wrong without another test failing first.
+The historical counts are kept and dated; only the claims about today moved.
+
+### What this leaves
+
+The ceiling is one number over a whole population, and v1.71's warning applies
+to it directly: **an extremum measures whatever process fills the tails**, which
+here is the size and diet genes of whoever was born recently. It moves — 5.47 to
+7.92 px on seed 314 over four thousand ticks — and every one of those moves is a
+birth or a death that no readout attributes. A `Safe` tile that fell twenty
+points in a tick cannot say which animal did it.
+
+Underneath that sits the half of v1.65's note I still have not touched: this
+counts the pond against **one** hunter, the biggest, and the eligible set of
+each *individual* hunter is 11.6%–64.5% of the pond. The distribution of those
+sets is what would say whether a pond has one apex animal or a graded web, and
+nothing plots it.

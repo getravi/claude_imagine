@@ -4,6 +4,63 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.89.0] — 2026-08-13
+
+The `Refuge` tile has answered a question about `config.js` since v1.64: what is
+beyond a predator at `bodyRadiusMax`, a body most ponds never grow. v1.65 wrote
+down that it "says what is beyond *every* hunter, not what is beyond the ones
+that exist" and left it there. The two readings are 43 points of the population
+apart, and on two seeds of twelve the pond it describes has no hunter in it at
+all.
+
+### Added
+
+- **`Safe 🛟`, the refuge the pond actually has.** `hunterCeiling` is the
+  largest body in the water whose diet gene clears `carnivoreThreshold`;
+  `livedRefugeRadius` is the line that hunter draws, and `livedRefugeShare` is
+  the share of the living beyond it. Three fields on `Stats`, counted in the
+  pass that already asks every creature whether it hunts plus one comparison
+  each, a tile beside `Refuge 🔒`, and a sentence in the spoken description.
+- **A word where a number would lie.** With nothing hunting, the tile reads
+  `all — no hunter` rather than `100% ≥0.0px`: there is no line, and the absence
+  of one is the reading. The spoken form stays silent there instead, because
+  "None of them hunt" has already said it.
+- **`test/refuge.test.js` gained six tests**, and the invariant is the one worth
+  naming: the lived line is never above the declared one and the shares are
+  ordered by construction, with equality exactly when some hunter has reached
+  `bodyRadiusMax`. Also that the ceiling reads the *diet* half of
+  `Creature._edible` — a body at the maximum with no appetite must not set it —
+  and that `inLivedRefuge` agrees with the pond's own biggest hunter at every
+  radius in the range, the v1.64 sweep one substitution down.
+
+### Measured
+
+- **Twelve seeds at 6,000 ticks.** Mean gap between the two readings **43.1
+  points** of the population, median 10.0, ten of twelve positive and never
+  negative. Three seeds have the older tile under 1% while more than nine tenths
+  of the pond is beyond every hunter alive; one seed (7) grows a hunter at
+  8.000 px, where the two agree exactly.
+- **Two ponds of twelve hold no hunter at all** at tick 6,000, while the
+  `Refuge` tile quotes 13.4% and 71.3% as the safe share of a pond in which
+  nothing can eat anything.
+- **The control says this is not about hunting.** The same seeds with
+  `predation: false` give a mean gap of **43.8 points** — the same size, five
+  huntless ponds instead of two. The gap is the distance between the predator
+  the config permits and the one the genes express, and genes drift whether or
+  not they are used. So the statistic stays live with the flag off and the
+  surfaces gate on it, exactly as `refugeShare` has since v1.64.
+
+### Fixed
+
+- **Four files were counting `Stats` wrong before this release touched it.**
+  Three said forty-seven own properties against a real fifty-three, and
+  `test/support/paired.js` carried a dated forty-four in a phrase that sits next
+  to the noun. `test/prosecounts.test.js` has a row for the collection now,
+  sized from the fingerprint lists that `test/books.test.js` already walks
+  against a live stepped world in both directions — so the count cannot drift
+  again, and the release that grows the collection is the one that declared it.
+  The historical numbers are kept and dated rather than corrected.
+
 ## [1.88.0] — 2026-08-13
 
 Every audit this project has ever run — v1.28's phone, v1.51's keyboard walk,

@@ -68,3 +68,103 @@ export function refugeShare(creatures, config) {
   for (let i = 0; i < n; i++) if (inRefuge(creatures[i].radius, config)) safe++;
   return safe / n;
 }
+
+// ── The refuge the pond actually has ────────────────────────────────────────
+//
+// Everything above is a fact about `config.js`: it substitutes the largest body
+// this world is *capable* of growing into the eating rule and reports what that
+// hunter cannot touch. v1.65 left a note saying the tile built on it "says what
+// is beyond *every* hunter, not what is beyond the ones that exist", and then
+// nobody asked the second question for twenty-four releases.
+//
+// The hunters that exist are smaller. At 6,000 ticks on twelve seeds the
+// biggest one in the water runs 5.47–8.00 px against a permitted 8.0, and on
+// two of those seeds there is no hunter at all — every carnivory gene in the
+// pond is under the threshold, so nothing can eat anything, while the tile goes
+// on quoting a line at 7.273. The gap between the two readings averages 43
+// points of the population and reaches 99.7 (see `docs/SCIENCE.md`).
+//
+// This is v1.72's audit — *for every total on a panel, ask what its largest
+// single contributor is and whether that is the thing the label says* — arriving
+// on a threshold instead of on a count. The label said "the size above which
+// nothing here can eat them"; the number underneath answers about a creature
+// this pond has usually never grown.
+
+/**
+ * The largest body that hunts here right now, in pixels — 0 when nothing does.
+ *
+ * "Hunts" is the diet half of `Creature._edible`: a carnivory gene at or above
+ * `carnivoreThreshold`. It is deliberately *not* gated on `config.predation`,
+ * for `refugeShare`'s reason — the sizes and the genes are what they are in a
+ * pond where nobody bites, and the surfaces are what decide whether saying so
+ * is news. 0 is a real reading and the most interesting one this returns: it
+ * means the size rule has no one left to apply.
+ * @param {Array<{radius:number, carnivory:number}>} creatures
+ * @param {object} config
+ * @returns {number}
+ */
+export function hunterCeiling(creatures, config) {
+  let ceiling = 0;
+  for (let i = 0; i < creatures.length; i++) {
+    const cr = creatures[i];
+    if (cr.carnivory >= config.carnivoreThreshold && cr.radius > ceiling) ceiling = cr.radius;
+  }
+  return ceiling;
+}
+
+/**
+ * Is a body of this radius beyond every hunter currently alive?
+ *
+ * The same construction as `inRefuge` one substitution down: the negation of
+ * `canEat`'s size test with the *biggest living* hunter in place of the biggest
+ * possible one. Written as the rule rather than as `radius >= ceiling / ratio`
+ * for the reason given there, and with the same consequence — a ceiling of 0
+ * makes the comparison false for every radius, so an unhunted pond is entirely
+ * out of reach, which is the arithmetic agreeing with the English.
+ *
+ * What it does not know about is kinship. `canEat` spares family (v1.10) and
+ * `inRefuge` has never modelled that either: this is the *size* rule, and a
+ * relative spared is spared by a hunter that could still have eaten it.
+ * @param {number} radius
+ * @param {number} ceiling  the value of `hunterCeiling` for the same pond
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function inLivedRefuge(radius, ceiling, config) {
+  return !(ceiling > radius * config.preySizeRatio);
+}
+
+/**
+ * Where the line sits for the hunters that exist, in pixels — 0 when none do.
+ *
+ * The caption on the predicate above, exactly as `refugeRadius` is the caption
+ * on `inRefuge`, and bounded above by it: no living hunter can be larger than
+ * the largest this world grows, so this never exceeds `refugeRadius(config)`
+ * and equals it only in a pond holding a hunter at `bodyRadiusMax`.
+ * @param {number} ceiling
+ * @param {object} config
+ * @returns {number}
+ */
+export function livedRefugeRadius(ceiling, config) {
+  return ceiling / config.preySizeRatio;
+}
+
+/**
+ * What share of the living is beyond every hunter alive, 0–1.
+ *
+ * Never smaller than `refugeShare` on the same pond, because the line it counts
+ * against is never higher — the two agree exactly when some hunter has reached
+ * `bodyRadiusMax`, and the distance between them is how much the config's
+ * answer overstates the reach of the animals in the water.
+ * @param {Array<{radius:number, carnivory:number}>} creatures
+ * @param {object} config
+ * @returns {number}
+ */
+export function livedRefugeShare(creatures, config) {
+  const n = creatures.length;
+  if (n === 0) return 0;
+  const ceiling = hunterCeiling(creatures, config);
+  let safe = 0;
+  for (let i = 0; i < n; i++) if (inLivedRefuge(creatures[i].radius, ceiling, config)) safe++;
+  return safe / n;
+}

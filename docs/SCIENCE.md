@@ -3920,10 +3920,10 @@ say — a loop over three counters:
 for (const counter of ["births", "deaths", "kills"]) { ... }
 ```
 
-Three of fifty-one. `world.stats` carries **43** own properties and
-`world.energy` **8**, and until v1.59 a feature that was switched off and wrote
-to any of the other forty-eight left every fingerprint in this project
-bit-identical. `booksFingerprint()` is the fifth channel.
+Three of fifty-one, as the books stood at v1.59: `world.stats` carried **43**
+own properties then and `world.energy` **8**, and a feature that was switched
+off and wrote to any of the other forty-eight left every fingerprint in this
+project bit-identical. `booksFingerprint()` is the fifth channel.
 
 ### Why a counter needs a channel and cannot borrow one
 
@@ -4614,6 +4614,118 @@ Each script is twelve runs of 20,000 ticks and takes about three and a half
 minutes. The second one's kill count must equal `stats.deathsBy.predation` — if
 it does not, the attribution is wrong, and that disagreement (2,785 against
 2,807, 0.8%) is the only thing that gave away the first, broken version of it.
+
+## The refuge the pond actually has (v1.89)
+
+The section above is arithmetic on two constants: substitute the largest body
+this world is *capable* of growing into the eating rule and the answer is that
+nothing can touch a creature at or above 7.273 px. v1.65 finished by noting what
+that leaves — the `Refuge` tile "says what is beyond *every* hunter, not what is
+beyond the ones that exist" — and then nobody asked the second question for
+twenty-four releases.
+
+The hunters that exist are smaller. `Stats.hunterCeiling` is the largest body in
+the pond whose diet gene clears `carnivoreThreshold`; the line that hunter draws
+is `hunterCeiling / preySizeRatio`, and `Stats.livedRefugeShare` counts the
+living beyond it. Twelve seeds, 6,000 ticks, everything else default:
+
+| seed | hunters | biggest hunter | today's line | `Refuge` | `Safe` | gap |
+|---|---|---|---|---|---|---|
+| 314 | 1 | 5.467 | 4.970 | 99.2% | 100.0% | +0.8 |
+| 1 | 4 | 6.562 | 5.966 | 92.1% | 98.7% | +6.6 |
+| 7 | 155 | 8.000 | 7.273 | 75.1% | 75.1% | 0.0 |
+| 13 | 15 | 7.725 | 7.023 | 100.0% | 100.0% | 0.0 |
+| 23 | 50 | 6.821 | 6.201 | 0.0% | 10.0% | +10.0 |
+| 42 | 0 | — | — | 13.4% | all | +86.6 |
+| 51 | 0 | — | — | 71.3% | all | +28.7 |
+| 99 | 135 | 7.387 | 6.716 | 4.0% | 99.2% | +95.2 |
+| 128 | 88 | 7.707 | 7.007 | 60.3% | 63.3% | +3.0 |
+| 256 | 191 | 7.226 | 6.569 | 0.0% | 91.1% | +91.1 |
+| 512 | 65 | 6.983 | 6.349 | 3.2% | 98.9% | +95.8 |
+| 2024 | 307 | 7.194 | 6.540 | 0.0% | 99.7% | +99.7 |
+
+Mean gap **43.1 points** of the population, median 10.0, ten of twelve positive
+and never negative — it cannot be, and that is the first thing worth stating.
+
+**The two readings are ordered by construction.** No living hunter can be larger
+than the largest this world grows, so today's line is never above 7.273 and the
+share beyond it never below `refugeShare`. They are equal exactly when some
+hunter has reached `bodyRadiusMax`, which is seed 7 in the table — one pond of
+twelve where the older tile is telling the whole truth. Everywhere else it is a
+floor, and on three seeds it is a floor at nought while more than nine tenths of
+the pond stands outside the reach of every animal in the water.
+
+**Two ponds hold no hunter at all.** On seeds 42 and 51 every carnivory gene at
+tick 6,000 is under the threshold: nothing can eat anything, and the `Refuge`
+tile goes on quoting 13.4% and 71.3% of the pond as the part that is safe. This
+is the reading the config's refuge cannot produce, and it is why the tile prints
+a word rather than a number there — "100% ≥0.0px" is three true symbols
+arranged into a falsehood, because there is no line and the absence of one is
+the news. It is also v1.72's audit arriving on a threshold instead of on a
+count: *for every total on a panel, ask what its largest single contributor is
+and whether that is the thing the label says.* The label said "the size above
+which nothing here can eat them"; the number underneath was answering about a
+predator this pond has never grown.
+
+### The control: predation off
+
+The same twelve seeds with `predation: false`, which does not change a body's
+size or a diet gene directly — it removes the reason to care:
+
+| | hunters alive | ceilings | mean gap | median | positive |
+|---|---|---|---|---|---|
+| predation on | 2 ponds of 12 have none | 0.00–8.00 px | +43.1 | +10.0 | 10/12 |
+| predation off | 5 ponds of 12 have none | 0.00–7.28 px | +43.8 | +22.3 | 11/12 |
+
+So the gap is **not** a fact about hunting. It is the same size in a pond where
+nobody hunts, because it was never about behaviour: it is the distance between
+the biggest predator the config permits and the biggest one the genes in the
+water happen to express, and those genes drift whether or not they are used.
+This is `refugeShare`'s own finding (v1.64) one substitution down, and the
+statistic is left live with the flag off for the same reason — the surfaces gate
+on `predation`, the number does not.
+
+One thing the control does say, and it is a lead rather than a result: a pond
+with hunting on keeps *more* hunters in it (two huntless against five, ceilings
+reaching 8.00 against 7.28). Twelve seeds and a sign count is an anecdote about
+a trajectory (v1.32), and the mechanism it suggests — meat pays, so carnivory
+persists where it is allowed to be used — is the kind of plausible story this
+world hands out for free.
+
+### What is pinned, and what is only written down
+
+`test/refuge.test.js` holds the arithmetic and the invariant: that the ceiling
+reads the diet half of `Creature._edible` and not body size alone (a body at
+`bodyRadiusMax` with no appetite must not set it), that `inLivedRefuge` agrees
+with the pond's own biggest hunter at every radius in the range at a step of
+0.001, that its boundary is decided by the rule's multiplication rather than by
+a division one ULP away, that the lived line is never above the declared one and
+the two agree exactly when a hunter reaches `bodyRadiusMax`, that a pond with
+nothing hunting is entirely out of reach, and that the panel's three numbers are
+the module's own. The twelve-seed table is not in the suite, for the reason the
+v1.64 table is not.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+  const W = await import("./src/world.js"), C = await import("./src/config.js");
+  for (const predation of [true, false]) {
+    for (const seed of [314,1,7,13,23,42,51,99,128,256,512,2024]) {
+      const w = new W.World(C.makeConfig({ seed, predation }));
+      for (let t = 0; t < 6000; t++) w.step();
+      const s = w.stats;
+      console.log(predation ? "on " : "off", String(seed).padStart(4),
+        "hunters", String(s.carnivoreCount).padStart(3),
+        "ceiling", s.hunterCeiling.toFixed(3),
+        "line", s.livedRefugeRadius.toFixed(3),
+        "refuge", (s.refugeShare * 100).toFixed(1) + "%",
+        "safe", (s.livedRefugeShare * 100).toFixed(1) + "%");
+    }
+  }'
+```
+
+Twenty-four runs of 6,000 ticks, about two minutes.
 
 ## The half of the predator mark the audit walked past (v1.66)
 

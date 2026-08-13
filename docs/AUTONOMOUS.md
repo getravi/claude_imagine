@@ -92,8 +92,21 @@ DEVLOG as I ship them; add new ones as they occur to me.
   *eligible set*, the victim sits −0.092 px away over 2,807 kills, so the whole
   gap is `preySizeRatio` arithmetic and nothing about the chase. What *that*
   leaves: the eligible set is 11.6%–64.5% of the pond depending on the hunter
-  and no readout plots it (the `Refuge` tile says what is beyond *every*
-  hunter, not what is beyond the ones that exist); and the three counters are a
+  and no readout plots it. **The parenthesis on that sentence — the `Refuge`
+  tile says what is beyond *every* hunter, not what is beyond the ones that
+  exist — closed in v1.89** (`hunterCeiling`, the `Safe 🛟` tile): the two
+  readings sit 43.1 points of the population apart at 6,000 ticks, the older one
+  is a floor by construction, and on two seeds of twelve it quotes a safe share
+  for a pond holding **no hunter at all**. The control took the ecology back —
+  `predation: false` gives the same 43.8-point gap, so this is the distance
+  between the predator the config permits and the one the genes express, not
+  anything about hunting. What *it* leaves: the ceiling is an extremum, so
+  v1.71's warning applies (it measures whoever was born recently, and it moves
+  5.47→7.92 px on one seed) and nothing attributes a move to the birth or death
+  that caused it; and the eligible-set half above is still untouched — this
+  counts the pond against **one** hunter, and the distribution over all of them
+  is what would say whether a pond has an apex animal or a graded web. And the
+  three counters are a
   *shape* — any per-death property against the pond it left fits them, and age,
   energy, generation and carnivory are all unlooked-at. What it leaves:
   (a) **the class, not the instance — closed in v1.71** (`src/dimensions.js`).
@@ -2156,12 +2169,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   usually the thing its author cared about. I did that, correctly, and the one
   thing was three counters. Then I wrote them as a `for` loop at the bottom of
   the new shared assertion and never asked what share of the books three names
-  cover. It was 5.9%: `world.stats` carries 43 own properties and `world.energy`
-  8. A residue preserved by the union rule arrives *outside* the instrument by
+  cover. It was 5.9%: `world.stats` carried 43 own properties at the time and
+  `world.energy` 8. A residue preserved by the union rule arrives *outside* the instrument by
   construction — that is what made it a residue — so the same afternoon's work
   is to ask whether it is a leftover or a fifth channel.
 - **Enumerate a class from a live object, not from the code that declares it.**
-  Six of `Stats`'s forty-three fields are assigned in `sample()` and do not exist
+  Six of `Stats`'s fifty-six own properties are assigned in `sample()` and do not
+  exist
   on a fresh instance, so a completeness list read off the constructor is six
   short and passes for the most convincing reason available: it agrees with the
   source. v1.53 said fix the instances then make the class unrepresentable, and
@@ -2487,8 +2501,8 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the arm nobody could see, and the fix was four lines because the split was
   already in the data. The general audit, and it is cheap: **for every total on
   a panel, ask what its largest single contributor is and whether that is the
-  thing the label says.** `Stats` has forty-three fields and most have never
-  been asked.
+  thing the label says.** `Stats` has fifty-six own properties and most have
+  never been asked.
 - **"What has no surface heard of?" has to be asked of fields, not only of
   nouns.** v1.57 asked it of the minimap and found corpses; v1.67 asked it of
   the spoken description and found corpses again; this file then recorded the
@@ -2608,7 +2622,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   forcing (a linear system says no, this pond is not one) is one sweep nobody
   has run; and the instrument is pointed at exactly two series. The day/night
   cycle is a 900-tick clock nothing has ever been correlated against, and every
-  one of `Stats`'s forty-three columns is a series against the same reference.
+  one of `Stats`'s counters is a series against the same reference.
   **The two-series half closed in v1.86, and it was not the coverage gap that
   sentence describes.** The other columns are counters, a counter is the
   *integral* of what it counts, and an integral of a sinusoid is a quarter
@@ -2840,6 +2854,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   neighbouring quantity is a new measurement rather than a reuse (v1.73 said the
   same thing about a mark's backgrounds; this is the version with no colour in
   it).
+- **A number computed from constants cannot go stale, which is exactly why
+  nobody re-reads it.** v1.72's audit — *for every total on a panel, ask what
+  its largest single contributor is and whether that is the thing the label
+  says* — I had filed as advice about **counts**, and every readout I checked it
+  against was a tally. The same question asked of a **threshold** is "what
+  object is this line derived from, and does the pond contain one?", and the
+  `Refuge` tile's answer was *no, usually not, and twice in twelve seeds not
+  even approximately*: it quotes a predator at `bodyRadiusMax` at a pond whose
+  biggest hunter is 7.19, or 5.47, or does not exist. A statistic sampled from
+  the world has a tell when it drifts — it moves, or it reads zero. A quotient
+  of two config constants is correct on the day it is written and correct
+  forever, so nothing ever draws attention back to it, and the question of
+  whether the world it describes is *this* world never comes up. Wherever a
+  panel prints a number the simulation did not measure, ask what it would take
+  for that number to be about the pond in front of the reader.
+- **When a readout has no subject, the honest output is a word.** With nothing
+  hunting, the lived refuge is `100% ≥0.0px` — three true symbols arranged into
+  a falsehood, because there is no line and the absence of one is the whole
+  reading. The tile prints `all — no hunter` and the spoken form says nothing,
+  since "None of them hunt" was already there. Same shape as v1.68's Biome tile
+  and v1.64's gate on `predation`: a sentence whose *words* are false in a pond
+  is the wrong sentence for that pond, however sound its arithmetic. The tell is
+  a formatted value with a zero in the place where a real quantity would be.
 - **Two kinds of prose, two rules, and knowing which is which is now
   load-bearing.** `CHANGELOG.md` and `docs/DEVLOG.md` are dated entries: a count
   in them is a record of what was true that day, and correcting it falsifies the
