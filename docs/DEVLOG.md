@@ -10385,3 +10385,99 @@ be attached before the first tick. Every sweep this project has written walks
 something — a config, a creature, a set of counters, now a world — and this is
 the first time the thing to be walked was somewhere a walk cannot go.
 
+
+## Entry 104 — a door onto a rule that is usually silent · 2026-08-14
+
+Twelve scenarios, and every one of them is the same kind of object: a seed where
+some mechanic looks its best. Turn on terrain and seed 13 shows you a landscape;
+turn on rock and seed 51 shows you four rooms. The mechanic is on either way and
+the seed decides how good the demonstration is.
+
+Kin recognition is not that kind of object, and v1.80 is the release that found
+out. The rule takes effect inside a hunter's senses — a relative is simply never
+approached — so a pond where it never fires is not a muted version of a pond
+where it does. It is the pond without the rule, hash for hash, on nine of the
+twelve seeds measured. The flag ships with a checkbox, a tile, a spoken sentence
+and a Chronicle line, and on most worlds all four of them read zero forever.
+
+So the thing this rule has never had is a *door*, and finding one is a search
+rather than a choice: I need one of the minority of worlds in which the rule is
+ever offered a relative to spare.
+
+### The sweep
+
+Sixty-four seeds, 12,000 ticks, `kinRecognition` on and everything else left at
+its default. **Forty-five spare nothing at all.** Nineteen spare something,
+which is four times the field agreeing with v1.80's nine-of-twelve.
+
+Then the part that decides it. Five seeds speak in three or more separate
+thousand-tick windows, and only two are still speaking in the last quarter of
+the run. That gap is v1.52's rule doing its work — *score on persistence, not
+the peak* — and here it is unusually vivid: seed 128 declines 3,611 meals, all
+of them inside one thousand-tick window, after which its pond never mentions the
+rule again. A chip that opens onto a world which said something once, an hour
+before the visitor arrived, is not a door.
+
+Of the two that keep talking, seed 23 spares the most of any seed in the field
+and is a thin, cannibal pond — a mean of 95 creatures with a dip to 5 — and is
+already Earshot's door besides. Seed 512 holds a mean of 165, never drops below
+40, kills 303 times over 20,000 ticks, and declines 8,800 meals in four episodes
+with long silences between them. It is a working food web that also happens to
+be full of cousins, which is exactly the world the tile was built to report on.
+
+`One Big Family` (👪) ships on it.
+
+### The control is exact, for once
+
+Almost every claim this project makes is statistical, and my playbook is mostly
+a list of ways that goes wrong: seed-matched pairs are one coin toss, a
+perturbation cannot be dosed in a world that reorganises around it, a matched
+null is matched on an input and never on an outcome. This one is arithmetic.
+
+Run seed 512 with the flag on and off side by side. The two worlds are identical
+on all five fingerprint channels — the random stream included, because a refusal
+draws no numbers — through **t1,982**. They part on **t1,983**, which is the
+tick the first relative is spared, and never rejoin. That is the same sentence
+v1.80 wrote from the other end: there, the flag was a no-op forever; here, the
+world the rule makes is the world it would have been until the exact instant it
+first has anything to say.
+
+Both ends are tests now. The one that matters for the *door* is this one: a seed
+that stopped firing, or that started firing later, would still pass the
+viability check every scenario gets and would have quietly stopped being a
+doorway onto anything. The parting tick fails instead.
+
+### The story I did not ship
+
+Between t7,500 and t13,000 this pond nearly stops killing — about one kill per
+500 ticks — while refusals run at 175 per hundred and the carnivore fraction
+climbs past 0.8. A pond that turns into one family and starves its own hunters
+is a wonderful sentence and I had most of it written.
+
+The flag-off arm has the same drought over the same window.
+
+So the blurb says what the rule *did* — thousands of declined meals, in bursts,
+with silences between them — and says nothing about what it caused, which is
+also what v1.80's random-refusal control concluded from the other direction. It
+is the third time this world has offered me a mechanism-shaped coincidence
+(v1.20's alarm call, v1.27's detritus) and the third time the control has been
+cheaper than the paragraph would have been.
+
+### What it leaves
+
+The scenarios are now thirteen and **six** of them carry a seed earned by a
+sweep; the other seven are hand-picked and were never scored against anything.
+Four flags are still doorless — `groundSense`, `exactVision`, `deathIsFinal`,
+`shuffleTurnOrder` — and three of them are *corrections* rather than features,
+which is a category that may simply not want a chip: a door onto "the pond as it
+would have been if I had got this right in v1.32" is a hard thing to write a
+blurb for. The fourth, `groundSense`, is a feature that measured nothing when it
+shipped, which is a different problem and a more interesting one. Worth deciding
+rather than continuing to skip.
+
+And the sweep here scored 64 seeds on whether a rule *speaks*, which is the
+first time this project has searched for a world by asking whether a mechanism
+gets to happen at all. Kin recognition is not the only conditional rule in the
+pond — burnout, speciation and the night kill all need an ecology to arrive
+before they can fire — and nothing has ever measured how often those get their
+chance.

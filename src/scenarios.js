@@ -154,6 +154,52 @@ export const SCENARIOS = [
     over: { seed: 23, signalling: true, predation: true, seasons: true },
   },
   {
+    id: "kin",
+    icon: "👪",
+    name: "One Big Family",
+    blurb:
+      "Hunters here recognise their own relatives and let them go. In most ponds that rule never speaks once; in this one it turns down thousands of meals — in bursts, with long silences between them.",
+    // Seed 512 was earned by a 64-seed sweep of the only door this project has
+    // ever had to open onto a rule that is *ecologically conditional*. Kin
+    // recognition (v1.10) is not a mechanic a seed either shows or hides; v1.80
+    // measured that on nine ponds of twelve it never fires at all, and a rule
+    // that never fires draws nothing and perturbs nothing, so those worlds are
+    // their own controls bit-for-bit. Picking a seed here is picking one of the
+    // minority of worlds where the rule has anything to say.
+    //
+    // Sixty-four seeds, 12,000 ticks, the flag on: **nineteen** spare a
+    // relative at all and forty-five never do. Five speak in three or more
+    // separate thousand-tick windows, and only two — 23 and 512 — are still
+    // speaking in the last quarter of the run, which is v1.52's rule about
+    // scoring on persistence rather than on the peak. Seed 23 spares the most
+    // and is a thin, cannibal pond (a mean of 95 creatures, dipping to 5) that
+    // is already Earshot's door. Seed 512 holds a mean of **165** creatures
+    // over 20,000 ticks, never drops below 40, and kills 303 times meanwhile —
+    // a working food web that also happens to be full of cousins.
+    //
+    // What it delivers: **8,800 declined meals** over 20,000 ticks in four
+    // episodes, peaking at 300 per hundred ticks, the first at **t1,983** —
+    // early enough that a visitor watching the Kin tile and the Chronicle sees
+    // the rule speak rather than reading about it.
+    //
+    // The control is the sharpest thing here and it is exact rather than
+    // statistical. Run this seed with `kinRecognition` off alongside: the two
+    // ponds are identical on all four fingerprint channels through t1,982 and
+    // part on t1,983, the tick of the first refusal. That is the complement of
+    // v1.80's finding — there, the flag was a no-op forever; here, the world it
+    // makes is the world it would have been until the exact instant the rule
+    // gets its first chance to matter. `test/scenarios.test.js` holds both ends.
+    //
+    // What this scenario deliberately does *not* claim: that any of it changes
+    // the pond's fate. From t7,500 to t13,000 this world nearly stops killing
+    // (about one kill per 500 ticks) while refusals run at 175 per hundred, and
+    // the story writes itself — except that the flag-off arm has the same
+    // drought over the same window. The blurb says what the rule *did*, and
+    // v1.80's random-refusal control is why it says nothing about what it
+    // caused.
+    over: { seed: 512, kinRecognition: true, predation: true, seasons: true },
+  },
+  {
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",

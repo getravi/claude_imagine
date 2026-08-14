@@ -6,7 +6,9 @@ import { dirname, join } from "node:path";
 import { SCENARIOS } from "../src/scenarios.js";
 import { makeConfig } from "../src/config.js";
 import { World } from "../src/world.js";
+import { stateFingerprint, trajectoryFingerprint } from "../src/fingerprint.js";
 import { numberWord } from "./support/numberword.js";
+import { assertUnaffected } from "./support/paired.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -268,4 +270,59 @@ test("The Lay of the Land settles into its basins, and barrenness is why", () =>
     `barrenness should do the settling, not the movement cost ` +
       `(shipped ${shipped.bias.toFixed(4)}, tax-only ${taxOnly.bias.toFixed(4)})`
   );
+});
+
+// One Big Family is the first door onto a rule that is *ecologically
+// conditional* rather than merely optional. v1.80 measured that kin recognition
+// never fires on nine ponds of twelve, and that a pond where it never fires is
+// its own control bit-for-bit — `test/kinRecognition.test.js` pins that end on
+// seed 314. This is the other end, and it is exact rather than statistical: on
+// the seed the scenario ships, the rule's world *is* the ruleless world until
+// the tick of the first refusal, and never again after it. A seed that stopped
+// firing, or fired later, would still pass the viability test above and would
+// have quietly stopped being a door.
+test("One Big Family speaks, and the first refusal is where it parts from its control", () => {
+  const kin = SCENARIOS.find((s) => s.id === "kin");
+  assert.ok(kin, "the kin recognition scenario should exist");
+  assert.equal(kin.over.kinRecognition, true, "its whole subject is the rule being on");
+
+  const FIRST = 1983; // the tick the first relative is spared on seed 512
+  const on = new World(makeConfig(kin.over));
+  const off = new World(makeConfig({ ...kin.over, kinRecognition: false }));
+
+  // Everything before the first refusal: the same pond, through all five
+  // channels including the random stream, because a rule that declines nothing
+  // draws nothing.
+  assertUnaffected(on, off, FIRST - 1, "kin recognition before it has ever fired");
+  assert.equal(on.stats.kinSpared, 0, `nothing should be spared before t${FIRST}`);
+
+  on.step();
+  off.step();
+  assert.equal(on.stats.kinSpared, 1, `the first relative should be spared on t${FIRST}`);
+  assert.notEqual(
+    trajectoryFingerprint(on),
+    trajectoryFingerprint(off),
+    "one declined meal should move the pond"
+  );
+  assert.notEqual(stateFingerprint(on), stateFingerprint(off), "and the world with it");
+  assert.deepEqual(
+    on.chronicle.events.filter((e) => e.icon === "👪").map((e) => e.tick),
+    [FIRST],
+    "the Chronicle should say so, once"
+  );
+
+  // And it keeps speaking. Measured: 190 refusals by t3,000, 8,800 over 20,000
+  // ticks in four episodes, the pond holding a mean of 165 and never dropping
+  // below 40. The bounds are a fraction of that — this is a door being open,
+  // not a reading being reproduced.
+  let minPop = Infinity;
+  for (let t = FIRST + 1; t <= 3000; t++) {
+    on.step();
+    off.step();
+    minPop = Math.min(minPop, on.creatures.length);
+  }
+  assert.ok(on.stats.kinSpared > 50, `the rule should keep speaking (${on.stats.kinSpared})`);
+  assert.equal(off.stats.kinSpared, 0, "and be silent in the arm without it");
+  assert.ok(on.stats.kills > 0, "One Big Family should still be a pond that hunts");
+  assert.ok(minPop > 20, `One Big Family should stay a pond (fell to ${minPop})`);
 });

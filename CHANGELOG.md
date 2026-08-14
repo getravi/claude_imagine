@@ -4,6 +4,58 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.92.0] — 2026-08-14
+
+Every scenario this project ships is a seed chosen to show a mechanic at its
+best. Kin recognition cannot be presented that way, and v1.80 is why: the rule
+lives inside a hunter's senses, so a pond where it never fires is not a quiet
+version of one where it does — it is the ruleless pond, hash for hash, on nine
+seeds of the twelve measured. Giving it a door means finding one of the minority
+of worlds in which it is ever offered a relative, and that is a search rather
+than a choice.
+
+### Added
+
+- **A thirteenth scenario, *One Big Family* (👪, seed 512).** Hunters that
+  recognise their own relatives and let them go: **8,800** declined meals over
+  20,000 ticks, in four episodes with long silences between them, peaking at 300
+  per hundred ticks, the first at t1,983 — early enough that a visitor watching
+  the `Kin 👪` tile and the Chronicle sees the rule speak rather than reading
+  about it. The pond holds a mean of 165 creatures, never drops below 40, and
+  kills 303 times meanwhile, so it is a working food web that also happens to be
+  full of cousins. Six of the thirteen scenarios now carry an earned seed.
+- **Two tests, and they hold the door open rather than reproduce a reading.**
+  The scenario's world is bit-for-bit its `kinRecognition: false` arm through
+  t1,982 — all five channels, the random stream included, because a refusal
+  draws no numbers — and parts on t1,983, the tick of the first spared relative,
+  which the Chronicle announces exactly once. A seed that stopped firing, or
+  fired later, would still pass the viability test every scenario gets and would
+  quietly have stopped being a door; this fails instead.
+- **`docs/SCIENCE.md`: *The door onto a conditional rule*** — the sweep, the
+  scoring, and the control — and the README's scenario count, list and `Kin 👪`
+  row.
+
+### Measured
+
+Sixty-four seeds, 12,000 ticks, the flag on and everything else at its default:
+
+- **45 seeds spare no relative at all**; 19 spare at least one. v1.80 saw nine
+  of twelve silent, and four times the field agrees with it.
+- **Five speak in three or more separate thousand-tick windows**, and only
+  **two** — 23 and 512 — are still speaking in the last quarter of the run.
+  Scoring on persistence rather than the peak (v1.52) is what picks between
+  them: seed 128 declines 3,611 meals and does all of it inside one window.
+  Seed 23 spares the most of any seed and is a thin cannibal pond (a mean of 95,
+  a dip to 5) that is already *Earshot*'s door.
+- **The control is exact rather than statistical**, which is a property of the
+  rule and not of the seed — see the parting tick above. This is the complement
+  of v1.80's finding, which pinned a flag that is a no-op forever.
+- **The story the run offers is not shipped.** Between t7,500 and t13,000 this
+  pond nearly stops killing — about one kill per 500 ticks — while refusals run
+  at 175 per hundred. The flag-off arm has the same drought over the same
+  window, so the blurb, the tile and the Chronicle say what the rule *did* and
+  nothing about what it caused.
+
 ## [1.91.0] — 2026-08-14
 
 v1.53 asked whether every field a *creature* carries is visible to the hash that

@@ -2146,6 +2146,51 @@ at all within 6,000 ticks. The mechanism has always had a direct unit test in
 mechanism gets to speak, and in the pond on the landing page the answer is
 never.
 
+### The door onto a conditional rule (v1.92)
+
+Every other scenario in this project is a seed chosen to show a mechanic at its
+best. Kin recognition cannot be presented that way, because on most seeds it has
+nothing at all to show: the rule takes effect inside a hunter's senses, so a
+pond where it never fires is not a muted version of one where it does — it is
+the ruleless pond, hash for hash. Choosing a seed here is choosing one of the
+minority of worlds in which the rule is ever offered a relative.
+
+Sixty-four seeds, 12,000 ticks, `kinRecognition` on and everything else at its
+default:
+
+| | seeds |
+| --- | --- |
+| spare no relative at all | **45** |
+| spare at least one | **19** |
+| speak in three or more separate thousand-tick windows | 5 (23, 33, 37, 89, 512) |
+| still speaking in the last quarter of the run | **2** (23, 512) |
+
+Scoring on persistence rather than on the peak is v1.52's rule and it does the
+work here: seed 128 spares 3,611 relatives and does all of it inside one
+thousand-tick window, after which the pond never mentions the rule again. Of the
+two that keep speaking, seed 23 is a thin cannibal pond — a mean of 95 creatures
+and a dip to 5 — and is already *Earshot*'s door. Seed 512 holds a mean of
+**165** creatures over 20,000 ticks, never drops below 40, kills 303 times, and
+declines **8,800** meals in four episodes with long silences between them,
+peaking at 300 per hundred ticks. It ships as *One Big Family*.
+
+The control is exact rather than statistical, which is unusual for this project
+and is a property of the rule rather than of the seed. Run seed 512 with the
+flag on and off side by side: the two worlds are identical on all five channels
+— the random stream included, because a refusal draws no numbers — through
+t1,982, and part on **t1,983**, the tick the first relative is spared. v1.80
+pinned one end of that statement (on seed 314 the two arms never part at all);
+`test/scenarios.test.js` pins the other, and a seed that stopped firing, or
+fired later, would fail it rather than quietly stop being a door.
+
+What the scenario deliberately does not claim is that any of this changes the
+pond's fate. Between t7,500 and t13,000 this world nearly stops killing — about
+one kill per 500 ticks — while refusals run at 175 per hundred, and the story
+tells itself. The flag-off arm has the same drought over the same window. That
+is the same shape as v1.20's alarm call and v1.80's random-refusal arm: the
+tile, the blurb and the Chronicle line report what the rule **did**, and this
+project declines to say what it caused.
+
 ### Reproducing it
 
 Replay history (needs a git checkout, no dependencies):

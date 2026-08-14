@@ -221,13 +221,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   whether its control is clean, not only on how the shipped arm looks.** v1.52
   gave the rock its door on seed 51 (64-seed sweep, isolation +0.807 against a
   shifted-lines control of +0.052) and added the second half of that rule: score
-  on **persistence, not the peak** — see the lesson below. Still doorless:
-  `groundSense`, `exactVision`, `kinRecognition` (v1.80 measured which seeds it
-  speaks on rather than guessing: three of twelve — 23, 512 and 7 — and it starts
-  between t1,983 and t4,910, so the doorway is now a choice between three
-  candidates and the missing half is the *claim*, not the seed), `deathIsFinal`,
-  `shuffleTurnOrder`, and `dayNightCycle` × `disease` together; four of those six
-  are corrections rather than features, which is probably why. The count of
+  on **persistence, not the peak** — see the lesson below. **Kin recognition got
+  its door in v1.92** (`One Big Family`, seed 512), and it is the first search
+  here for a world in which a rule *gets to happen at all*: 64 seeds, 45 of which
+  spare nothing, 19 that spare something, five that speak in three or more
+  separate thousand-tick windows and **two** still speaking in the last quarter —
+  persistence is the whole of the scoring, because seed 128 declines 3,611 meals
+  inside one window and is silent for the rest of the run. What it left is a
+  control worth reusing: because a refusal draws no numbers, the shipped world is
+  bit-for-bit its flag-off arm through t1,982 and parts on **t1,983**, the tick
+  of the first sparing — an *exact* control rather than a statistical one, and
+  the complement of v1.80's no-op. And the story it refused to ship is the
+  familiar shape: the pond nearly stops killing while refusals run at 175 per
+  hundred, and the flag-off arm has the same drought. Still doorless:
+  `groundSense`, `exactVision`, `deathIsFinal`, `shuffleTurnOrder`, and
+  `dayNightCycle` × `disease` together; three of those are corrections rather
+  than features, which is probably why, and `groundSense` is the odd one — a
+  feature that measured nothing on arrival, which is a harder blurb than a
+  correction. **The general question v1.92 opened is bigger than the chip:**
+  kin recognition is not the only rule that needs an ecology to arrive before it
+  can fire (burnout, speciation, the night kill), and nothing has measured how
+  often any of the others get their chance. The count of
   scenarios lived in README prose while the scenarios lived in an array and was
   wrong for sixteen releases — **closed in v1.52**, which reads both the word and
   the list of names out of the README and compares them to the array. "Anything
