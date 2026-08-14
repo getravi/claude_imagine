@@ -4,6 +4,83 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.94.0] — 2026-08-14
+
+v1.91 swept the world's own state, gave `stateFingerprint` the half of the pond
+it had never covered, and left one field classified `null`: `world.chronicle`,
+"a real output that nothing watches". The tree of life got a channel in v1.38
+and the books in v1.59, both for the same reason — an output is invisible to
+every picture of the pond by construction, so a difference in one fails no hash
+anybody has. The narration is the third of those and the last.
+
+### Added
+
+- **`chronicleFingerprint`, the sixth channel** (`src/fingerprint.js`), with the
+  `CHRONICLE_HASHED`/`CHRONICLE_UNHASHED` pair a creature has had since v1.53, a
+  `Stats` since v1.59 and the world since v1.91. It covers the feed, the length
+  it is capped at and all thirty-six latches — the fields deciding whether a
+  line is ever spoken *again*, which is the same shape `observationFingerprint`
+  had to grow in v1.91 when a sweep found the tree's own future outside its
+  hash. Two fields stay out with their reasons: the config, and the narrator's
+  own generator, whose position lives in a closure exactly as `world.rng`'s
+  does.
+- **The channel is in the shared paired assertion** (`test/support/paired.js`),
+  which eighteen test files and twenty call sites delegate to, and so is a
+  `drawStream` on the narrator's generator — a diversity probe can shift without
+  crossing a threshold, and then no line and no latch would move.
+- **Three more arms on the assertion's own sabotage test** (a line spoken into
+  one pond and not the other, a latch that silences a later line, a draw stolen
+  from the narrator's stream). v1.32's rule about accelerators: a helper that
+  can only say yes is worth nothing to the eighteen tests that trust it.
+- **Six tests**, including the completeness walk in both directions and the
+  redundancy question `books.test.js` asks of the fifth channel — a chronicle
+  that observed one extra time, which the Chronicle being a pure observer makes
+  the smallest honest sabotage available.
+- **A fifth row in `test/prosecounts.test.js`**, so "thirty-six latches" is read
+  out of the code in the two living documents that state it, declared by the
+  release that made the count load-bearing rather than six releases later.
+
+### Fixed
+
+- **A `Set` is not an empty object.** `mixValue`, the generic mixer the books
+  are hashed through, sorted an object's keys and hashed a `Set` as `{}` —
+  every set of latched milestones identical to every other. `Map` had the same
+  hole. Nothing in the books is either type today, so no digest moved; the
+  narration is five of them, and the channel could not have been written over a
+  mixer that cannot see them.
+- **`src/statesweep.js`'s walk had the same blind spot, one level up**, and it
+  was worse there: a type the walk has no case for is reported as *nothing at
+  all* — not an opaque site, not an empty one — so five latch sets and
+  `phylogeny.byId` were six pieces of live state the sweep could not see it was
+  not seeing. Sets and Maps are `members` sites now, perturbed by adding a
+  member, which for a latch set is exactly the perturbation that means
+  something: a narrator holding one more member is a narrator that will never
+  say that line.
+
+### Measured
+
+- **38 chronicle sites, 0 of them visible to the five older channels.** The new
+  one sees 37; the exception is `chronicle.rng.seed`, which is a record of how a
+  stream started rather than the stream, and is declared in `SITE_SILENT` with
+  the `drawStream` that does reach it.
+- **38 of 38 hashed fields move the digest**, moved one at a time and put back.
+  Being named by a hash is not the same as being reached by it — the gap between
+  the two is where v1.53 found three fields.
+- **The sweep's domain is 172 sites, up from 166**, and the six are the walk's
+  new cases rather than anything the world grew.
+- **Tamper with all thirty-six latches and the pond does not notice.** State,
+  trajectory, observation and books all agree; 300 ticks later the two
+  trajectories are still identical, and the two narrations are 6 lines against
+  5 — a line the tampered pond was never told about, which is precisely the
+  difference every other channel is blind to.
+- **The twelve "bit-for-bit unaffected" claims pass on the sixth channel
+  unchanged.** 918 tests green with no other edit, so no feature that is off has
+  ever written a different chronicle. A null, and the one worth having: the
+  channel was a hole in the instrument, not in the promise.
+- **What there is to watch:** a default 6,000-tick pond speaks 14 lines on seed
+  314 (the first at t244), 16 on seed 42 and 11 on seed 512, with 9–11 of the
+  thirty-six latches carrying something by the end.
+
 ## [1.93.0] — 2026-08-14
 
 `test/colourliterals.test.js` sorts every colour named outside the palette into

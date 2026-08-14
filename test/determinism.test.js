@@ -185,7 +185,7 @@ test("the paired assertion fails on each thing it promises to catch", () => {
     ["a stolen draw", (w) => w.rng.next()],
     ["a moved creature", (w) => (w.creatures[0].y += 1e-9)],
     // `hue` is carried from birth and never rewritten, is drawn and nothing
-    // else, and is therefore exactly the leak the other four channels cannot
+    // else, and is therefore exactly the leak the other five channels cannot
     // see: a feature that quietly rewrites a creature and changes no outcome.
     ["a field only the state hash sees", (w) => w.creatures.forEach((c) => (c.hue += 1))],
     // The mirror of the line above, on the fifth channel: a counter is not a
@@ -193,6 +193,13 @@ test("the paired assertion fails on each thing it promises to catch", () => {
     // stages nine more of these.
     ["a miscounted birth", (w) => (w.stats.births += 1)],
     ["a miscount no fingerprint used to reach", (w) => (w.stats.scavenged += 1)],
+    // And the same mirror on the sixth (v1.94). A narration is an output too,
+    // so a line spoken into one pond and not the other moves nothing anybody
+    // can photograph; a latch is the version of it with no line at all, and it
+    // decides what the pond will be *allowed* to say for the rest of the run.
+    ["a line only the narrator heard", (w) => w.chronicle._push(w.tick, "🫥", "test", "said here and nowhere else")],
+    ["a latch that silences a later line", (w) => (w.chronicle._firstKill = true)],
+    ["a draw stolen from the narrator's own stream", (w) => w.chronicle.rng.next()],
   ];
   for (const [label, sabotage] of broken) {
     const a = new World(makeConfig({ seed: 21 }));

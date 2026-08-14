@@ -680,14 +680,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   written by watching a world run covers exactly the half that moves. The world
   now has the `WORLD_HASHED`/`WORLD_UNHASHED` pair a creature has had since
   v1.53, walked against a live object both ways, and the coverage half of the
-  sweep costs no ticks at all so it runs over all 166 sites on every suite run.
-  What v1.91 leaves: **the narration has no channel** — `world.chronicle` is an
+  sweep costs no ticks at all so it runs over all 172 sites on every suite run.
+  What v1.91 left was **the narration has no channel** — `world.chronicle` is an
   output exactly like the tree and the books, with thirty-six latches deciding
-  whether a line is ever spoken again and its own RNG, and nothing watches any
-  of it (measured to be pond-inert, so it is a hole in the instrument and not in
-  the promise; the sixth channel is the same shape as the fifth). And the sweep
-  has a hole it cannot close: `rng.seed` is a record of how a stream started and
-  not the stream, which lives in a closure no walk of an object can reach.
+  whether a line is ever spoken again and its own RNG, and nothing watched any
+  of it (measured to be pond-inert, so it was a hole in the instrument and not
+  in the promise). **Closed in v1.94** (`chronicleFingerprint`, the sixth
+  channel, in the shared paired assertion and in this sweep): 38 chronicle
+  sites, **0 of them seen by any of the five older channels and 37 by the new
+  one**, the exception being the narrator's own `rng.seed`, which is the hole
+  below. Two things came with it. The sweep's walk had never *reported* five of
+  those sites — a `Set` keeps its members where `Object.keys` cannot see them,
+  so the latch sets and `phylogeny.byId` were not opaque sites or empty ones but
+  nothing at all, and the generic mixer the books use hashed every `Set` as
+  `{}`; and the twelve "bit-for-bit unaffected" claims all pass on the new
+  channel unchanged, which is a null worth having said. What it leaves: the
+  channel is *stated* to be same-process-only like the state hash (a line's
+  wording is prose and prose is edited) and nothing tests that — no golden
+  narration exists, so the claim that a release may reword a line is carried by
+  a comment; the sweep still has the hole it cannot close, `rng.seed` being a
+  record of how a stream started and not the stream, which lives in a closure no
+  walk of an object can reach and which the *narrator* now has a second copy of;
+  and the walk's new membership perturbation only ever **adds** a member, so a
+  latch set that a bug *clears* is a difference no sweep here would find.
   The sibling sweep — *is every numeric constant a
   lever?* — ran in v1.38 (`src/levers.js`): all eighty-four constants in
   `config.js` are, and it

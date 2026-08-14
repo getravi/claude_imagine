@@ -213,13 +213,11 @@ export const WORLD_UNHASHED = {
     "perturbation is overwritten before anything reads it. Measured, not " +
     "assumed: the v1.91 sweep moves it and the pond does not part",
   seasonPhase: "the same, one field over",
-  chronicle: "**nothing watches it.** The pond's narration is an output like " +
-    "the tree and the books, and both of those got a channel when somebody " +
-    "asked; this one has thirty-six latches deciding whether a line is ever " +
-    "spoken again, its own RNG, and no hash. The v1.91 sweep says every one of " +
-    "them is inert with respect to the pond, so this is a hole in the " +
-    "instrument rather than in determinism — the sixth channel is the lead " +
-    "that release left",
+  chronicle: "the narration — `chronicleFingerprint` (v1.94), the sixth " +
+    "channel. It is an output like the tree and the books, so a difference in " +
+    "it moves no picture of the pond; v1.91 measured it inert with respect to " +
+    "the simulation, which made it a hole in the instrument rather than in " +
+    "determinism, and a hole in an instrument is still a hole",
 };
 
 /**
@@ -440,6 +438,12 @@ const MAX_BOOK_DEPTH = 6;
  * of names one level further down, which is the thing v1.53 spent a release
  * proving is not an instrument.
  */
+function byText(a, b) {
+  const x = String(a);
+  const y = String(b);
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
 function mixValue(h, v, depth = 0) {
   if (v === null || v === undefined) return h.word(0xfeedface);
   const t = typeof v;
@@ -456,6 +460,34 @@ function mixValue(h, v, depth = 0) {
     h.word(0x0a44a1); // tag: array
     h.word(v.length);
     for (const el of v) mixValue(h, el, depth + 1);
+    return h;
+  }
+  // A `Set` and a `Map` carry everything they hold somewhere `Object.keys`
+  // cannot reach, so without these two branches they fall through to the object
+  // tag below and hash as `{}` — every set of latched milestones identical to
+  // every other, silently. Nothing in the books is one today; the narration is
+  // five of them (v1.94), and the tell was that the generic mixer was written
+  // for a shape that grows, so the next shape it grows is exactly what it has
+  // never been shown.
+  //
+  // Members are sorted by their string form so the digest is a statement about
+  // *what is in the collection* rather than about the order some loop inserted
+  // them in — the same choice `observationFingerprint` makes for the abundance
+  // Maps, and the reason a `Set` needs it is stronger: insertion order here is
+  // the order the pond happened to cross its milestones in.
+  if (v instanceof Set) {
+    h.word(0x5e770001); // tag: set
+    h.word(v.size);
+    for (const el of [...v].sort(byText)) mixValue(h, el, depth + 1);
+    return h;
+  }
+  if (v instanceof Map) {
+    h.word(0x5e770002); // tag: map
+    h.word(v.size);
+    for (const k of [...v.keys()].sort(byText)) {
+      mixValue(h, k, depth + 1);
+      mixValue(h, v.get(k), depth + 1);
+    }
     return h;
   }
   h.word(0x0b1ec70b); // tag: object
@@ -547,6 +579,77 @@ export function booksFingerprint(world) {
   mixBook(h, world.stats, STATS_HASHED);
   mixBook(h, world.energy, ENERGY_HASHED);
   return h.digest();
+}
+
+/**
+ * Every own property of `world.chronicle` that `chronicleFingerprint` hashes:
+ * the feed itself, the length it is capped at, and all thirty-six latches.
+ *
+ * A latch is not bookkeeping about the past — it is a decision about the
+ * future. `_firstKill` says whether "first blood" can ever be written again;
+ * `_sawBelowRefuge` is the guard that stops the pond announcing a crossing it
+ * never made. Two chronicles holding the same lines and different latches are
+ * two narrators who will say different things from here on, which is exactly
+ * the shape `observationFingerprint` had to grow in v1.91 (`nextId`,
+ * `_lastSample`) after a sweep found the tree's own future outside its hash.
+ * Written from a *stepped* chronicle, for the reason `STATS_HASHED` gives.
+ */
+export const CHRONICLE_HASHED = [
+  "events", "max",
+  "_popCrossed", "_genCrossed", "_carnCrossed", "_hiddenMax",
+  "_firstKill", "_firstSpared", "_learned", "_predsAlive",
+  "_inCrash", "_recentMax", "_maxAge", "_lowDiversity", "_dominant",
+  "_nightFell", "_dawnBroke", "_nightKill", "_wasDark", "_lastKills",
+  "_reportedExtinct", "_reportedBranch", "_dieoff",
+  "_outbreak", "_epidemic", "_recovered", "_herd", "_burnout",
+  "_peakFood", "_stripped", "_regreened", "_leadingCause",
+  "_settled", "_settleStreak", "_soilFed", "_soilStreak",
+  "_refugeCrossed", "_sawBelowRefuge",
+];
+
+/** The two fields outside the channel, and why each is right to be. */
+export const CHRONICLE_UNHASHED = {
+  config: "the question, not the answer — the same object `WORLD_UNHASHED` " +
+    "names, reached through the narrator instead of through the world",
+  rng: "the diversity probe's own stream, and its position lives in the " +
+    "closure `mulberry32` returns exactly as `world.rng`'s does. No walk of " +
+    "an object can reach it; `drawStream` can, and `assertUnaffected` attaches " +
+    "one to this generator as well as to the pond's, because a probe that " +
+    "shifted without crossing a threshold would move no line and no latch",
+};
+
+/**
+ * The sixth channel: what the pond was *said* to have done.
+ *
+ * The five channels above are the world, its representation, the observer's
+ * tree, the random stream and the books. `world.chronicle` is an output like
+ * the tree and the books — v1.91 measured it inert with respect to the
+ * simulation, so nothing here is a determinism hole — and being an output is
+ * precisely why it needs a channel of its own: a difference in a narration
+ * moves no creature, so every other hash in this project is blind to it by
+ * construction, the same argument `observationFingerprint` and
+ * `booksFingerprint` were each built on one surface over.
+ *
+ * What that blindness covered: thirty-eight own fields, of which the v1.91
+ * state sweep could not even *enumerate* five, because a `Set` keeps its
+ * members where `Object.keys` cannot see them — so a chronicle that had
+ * already announced the pond passing 100 creatures and one that had not were
+ * the same object to every instrument here.
+ *
+ * Same-process only, like `stateFingerprint` and `booksFingerprint`: a line's
+ * wording is prose, and prose is edited. What it is *for* is the paired
+ * comparison — two worlds that ought to be identical, one of which may have
+ * been talking.
+ *
+ * Read-only: it draws no random numbers and writes nothing. There is a test.
+ *
+ * @param {import('./world.js').World} world
+ * @returns {string} eight hex digits
+ */
+export function chronicleFingerprint(world) {
+  const h = new Hash();
+  h.word(0x53414944); // domain separator: "SAID"
+  return mixBook(h, world.chronicle, CHRONICLE_HASHED).digest();
 }
 
 /** Mix one ledger's named fields, by name, so a rename is a difference. */

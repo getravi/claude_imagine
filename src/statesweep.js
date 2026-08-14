@@ -4,7 +4,8 @@
 // find out. v1.53 asked the same question one level in — is every field a
 // *creature* carries visible to the instrument that claims to hash a world? —
 // and found three of twelve omissions moving the pond while `stateFingerprint`
-// held still. v1.59 asked it of the books and added a fifth channel.
+// held still. v1.59 asked it of the books and added a fifth channel; v1.94
+// asked it of the narration and added a sixth.
 //
 // The world itself was never asked. `stateFingerprint` walks `world.creatures`,
 // `world.food.items`, `world.corpses` and `world.detritus.cells`, which is the
@@ -22,7 +23,7 @@
 // each: does the pond's future depend on it, and does any channel notice it
 // moved. A field that answers *yes, no* is a hole in the instrument.
 //
-// It found seventeen. A world with every mechanic on carries 166 sites of live
+// It found seventeen. A world with every mechanic on carries 172 sites of live
 // state across its twenty own fields; 23 of them part two ponds within 300
 // ticks, and until v1.91 seventeen of those 23 were invisible to all five
 // channels — the biome field's floor, width and centres, the roughness grid's
@@ -30,6 +31,14 @@
 // of all three spatial indices. The shape of the omission is the finding: a
 // pond's *contents* move every tick and its *shape* does not, so a hash
 // written by watching a world run covers exactly the half that moves.
+//
+// **v1.94 added the sixth channel and found six sites this walk had never
+// reported.** 166 of those 172 were what a walk over enumerable own properties
+// can reach; a `Set` and a `Map` keep their members where `Object.keys` cannot
+// see them, so the chronicle's five latch sets and the phylogeny's id index
+// were not opaque sites or empty ones — they were nothing at all. A type the
+// walk has no case for is an exclusion nobody wrote down, which is the version
+// of v1.51's rule with no sentence to read.
 //
 // **What the sweep cannot reach, stated here rather than discovered later.**
 //
@@ -55,6 +64,7 @@ import {
   stateFingerprint,
   observationFingerprint,
   booksFingerprint,
+  chronicleFingerprint,
 } from "./fingerprint.js";
 
 /**
@@ -65,10 +75,10 @@ import {
  * half, and `test/statesweep.test.js` holds the two in step both ways so
  * neither can grow a field the other has not heard of.
  *
- * `null` means no channel watches it. Three fields carry it: two are recomputed
- * from the tick at the end of every step, so there is nothing for a channel to
- * watch, and the third is `chronicle` — a real output that nothing watches,
- * which is a lead rather than a bug. See `WORLD_UNHASHED` for both reasons.
+ * `null` means no channel watches it. Two fields carry it, both recomputed from
+ * the tick at the end of every step, so there is nothing for a channel to
+ * watch. The third — `chronicle`, a real output that nothing watched — is the
+ * lead this sweep left in v1.91 and got its own channel in v1.94.
  */
 export const STATE_OWNERS = {
   config: "config",
@@ -90,7 +100,7 @@ export const STATE_OWNERS = {
   corpses: "state",
   corpseGrid: "state",
   stats: "books",
-  chronicle: null,
+  chronicle: "chronicle",
 };
 
 /**
@@ -110,6 +120,13 @@ export const SITE_SILENT = {
   "corpseGrid.cells": "the same, one index over",
   "stats.runHistory.fields": "the archive's column *names* — strings, which " +
     "this sweep has no perturbation for. `booksFingerprint` hashes them",
+  "chronicle.rng.seed": "a record of how the narrator's diversity probe " +
+    "started and not the stream, exactly as `world.rng.seed` is for the pond. " +
+    "The channel for it is a `drawStream` on the generator itself",
+  "phylogeny.byId": "the same species objects `phylogeny.species` already " +
+    "holds, indexed by id — a lookup table rather than a fact, so moving a " +
+    "member moves nothing the tree says. It became a site at all in v1.94, " +
+    "when the walk learned to open a Map",
 };
 
 /**
@@ -134,12 +151,27 @@ function isRecordArray(v) {
   return Array.isArray(v) && v.length > 0 && v.every((x) => x !== null && typeof x === "object");
 }
 
+/**
+ * The member a membership perturbation adds. A string, because the collections
+ * this reaches are keyed by numbers (`_popCrossed`) and by strings
+ * (`_carnCrossed`) and one value has to be foreign to both.
+ */
+export const SWEEP_MEMBER = "__statesweep__";
+
 function walk(out, path, v, depth, seen) {
   if (v === null || v === undefined) return;
   const t = typeof v;
   if (t === "number" || t === "boolean") return void out.push({ path, kind: t });
   if (t === "string" || t === "function") return;
   if (t !== "object") return;
+  // A `Set` and a `Map` are objects with no enumerable own properties, so the
+  // recursion below walks straight past them and reports nothing at all — not
+  // an opaque site, not an empty one. Until v1.94 that was six pieces of live
+  // state this sweep could not see it was not seeing: the chronicle's five
+  // latch sets and the phylogeny's id index. v1.68's rule is that a sweep must
+  // name what it excludes; a type the walk has no case for is excluded by
+  // *nobody*, which is the version of that bug with no sentence to read.
+  if (v instanceof Set || v instanceof Map) return void out.push({ path, kind: "members" });
   if (isNumberArray(v)) return void out.push({ path, kind: "numbers" });
   if (isRecordArray(v)) return void out.push({ path, kind: "records" });
   if (Array.isArray(v)) return void out.push({ path, kind: "opaque" });
@@ -161,7 +193,7 @@ function walk(out, path, v, depth, seen) {
  * world for the same reason.
  *
  * @param {World} world
- * @returns {Array<{path: string, kind: "number"|"boolean"|"numbers"|"records"|"empty"}>}
+ * @returns {Array<{path: string, kind: "number"|"boolean"|"numbers"|"records"|"members"|"opaque"}>}
  */
 export function stateSites(world) {
   const out = [];
@@ -214,6 +246,19 @@ export function perturbSite(world, site) {
     if (!v.length) return false;
     const i = Math.floor(v.length / 2);
     v[i] = perturb(v[i]);
+    return true;
+  }
+  // A latch set is a record of what has already been announced, so the
+  // perturbation that means anything is a *membership* one: a narrator holding
+  // one extra member is a narrator that will never say that line. A 37% push
+  // has no analogue here, and adding is chosen over deleting because it works
+  // on a collection that is legitimately empty.
+  if (v instanceof Set) {
+    v.add(SWEEP_MEMBER);
+    return true;
+  }
+  if (v instanceof Map) {
+    v.set(SWEEP_MEMBER, SWEEP_MEMBER);
     return true;
   }
   if (isRecordArray(v)) {
@@ -269,6 +314,7 @@ export function sweepSite(site, { config, warm = 40, after = 40 }) {
     state: stateFingerprint(a),
     observation: observationFingerprint(a),
     books: booksFingerprint(a),
+    chronicle: chronicleFingerprint(a),
   };
   if (!perturbSite(a, live)) {
     return { path: site.path, kind: live.kind, verdict: "empty", seen: [], moved: false };
@@ -277,6 +323,7 @@ export function sweepSite(site, { config, warm = 40, after = 40 }) {
   if (stateFingerprint(a) !== before.state) seen.push("state");
   if (observationFingerprint(a) !== before.observation) seen.push("observation");
   if (booksFingerprint(a) !== before.books) seen.push("books");
+  if (chronicleFingerprint(a) !== before.chronicle) seen.push("chronicle");
   try {
     for (let i = 0; i < after; i++) {
       a.step();

@@ -52,7 +52,7 @@ import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
 import { SERIES } from "../src/seasonlag.js";
-import { STATS_HASHED, STATS_UNHASHED } from "../src/fingerprint.js";
+import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -133,6 +133,17 @@ const CLAIMS = [
     size: () => STATS_HASHED.length + Object.keys(STATS_UNHASHED).length,
     phrase: "{n} own properties",
     sites: ["docs/AUTONOMOUS.md", "src/fingerprint.js", "test/books.test.js"],
+  },
+  {
+    // The collection v1.94 gave a channel to, declared in the same cycle — the
+    // habit the row above asks for, applied on arrival rather than six releases
+    // later. A latch is a decision about what the pond may still be told, so
+    // the count is what the sixth channel is *for*; the two files that state it
+    // are the hash's own list and the ideas list that carried the lead.
+    what: "the Chronicle's latches",
+    size: () => CHRONICLE_HASHED.filter((n) => n.startsWith("_")).length,
+    phrase: "{n} latches",
+    sites: ["docs/AUTONOMOUS.md", "src/fingerprint.js"],
   },
 ];
 

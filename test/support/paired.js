@@ -12,7 +12,7 @@
 // of them was also asserting something (the birth and death counters) that the
 // hash does not cover.
 //
-// So: one function, five channels as of v1.59, and everything any of the twelve
+// So: one function, six channels as of v1.94, and everything any of the twelve
 // used to check is in it.
 //
 //   1. **The random sequence**, hashed from before the first tick. This is the
@@ -37,6 +37,11 @@
 //      have grown since. It is the same shape as (4),
 //      one output over — a counter is not a place, so moving one moves no
 //      picture of the pond.
+//   6. **The narration**, added in v1.94, and the same argument a third time:
+//      the Chronicle is an output, so a feature that is off and writes a line,
+//      swallows one, or trips a latch that silences a later one passes all five
+//      channels above. Its own generator is watched too, because the diversity
+//      probe can shift without any line or latch moving.
 //
 // Plus the thing no hash can say: that the pond was alive at the end — comparing
 // two extinct worlds proves nothing, a guard v1.45 added to one test and nowhere
@@ -49,6 +54,7 @@ import {
   trajectoryFingerprint,
   observationFingerprint,
   booksFingerprint,
+  chronicleFingerprint,
   drawStream,
 } from "../../src/fingerprint.js";
 
@@ -76,6 +82,10 @@ export function assertUnaffected(a, b, ticks, what) {
 
   const drawsA = drawStream(a.rng);
   const drawsB = drawStream(b.rng);
+  // The narrator's stream is a second generator with a second position, and it
+  // is reachable the same way and by nothing else.
+  const saidA = drawStream(a.chronicle.rng);
+  const saidB = drawStream(b.chronicle.rng);
   for (let i = 0; i < ticks; i++) {
     a.step();
     b.step();
@@ -111,6 +121,19 @@ export function assertUnaffected(a, b, ticks, what) {
     booksFingerprint(b),
     `${where}the pond is identical and its books are not — some counter, ` +
       "ledger field or history buffer was written by a feature that is off"
+  );
+  assert.equal(
+    chronicleFingerprint(a),
+    chronicleFingerprint(b),
+    `${where}the pond is identical and its chronicle is not — a line, or a ` +
+      "latch deciding whether a line is ever spoken again, was written by a " +
+      "feature that is off"
+  );
+  assert.equal(
+    saidA.digest(),
+    saidB.digest(),
+    `${where}the pond is identical and the narrator's own random stream is ` +
+      `not (${saidA.count} draws against ${saidB.count})`
   );
   assert.ok(
     a.creatures.length > 0,

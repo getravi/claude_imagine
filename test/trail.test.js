@@ -188,7 +188,7 @@ test("recording a path leaves the pond bit-for-bit alone", () => {
   const trail = new Trail();
   // Wrap `step` so the trail is fed exactly as `main.js` feeds it — inside the
   // loop, every tick, on a living creature — while the paired assertion runs
-  // both worlds and compares all five channels.
+  // both worlds and compares all six channels.
   const step = watched.step.bind(watched);
   watched.step = () => {
     step();

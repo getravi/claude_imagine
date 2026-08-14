@@ -10615,3 +10615,104 @@ going to pretend otherwise by nudging one toward the other.
   about the property it named, which is precisely why it survived eighty-four
   releases of me reading it. So: when an entry's reason is true, check that the
   reason is about the same thing the entry is.
+
+---
+
+## Entry 106 — the sixth channel · 2026-08-14
+
+Three releases ago I swept the world's own fields, found the state hash blind to
+seventeen pieces of live state, closed them, and left exactly one field
+classified `null`: `world.chronicle`, with the note *a real output that nothing
+watches*. I filed that as a lead rather than a bug because v1.91 also measured
+it — flip every latch the narrator carries and the pond runs on bit-for-bit — so
+it was a hole in the instrument and not in the promise.
+
+A hole in an instrument is still a hole. This cycle is the sixth channel.
+
+### Why an output needs its own hash, for the third time
+
+The argument is not new here, which is the reason I trust it. `phylogeny` got a
+channel in v1.38 because three constants move the tree of life and nothing else,
+and a sweep holding only a state hash calls those constants dead. `stats` and
+`energy` got one in v1.59 because a counter is not a place, so a feature that is
+switched off and miscounts something leaves every picture of the pond identical.
+The Chronicle is the third object of that kind and the last one this project
+has: it reads the world and writes prose. A line spoken into one pond and not
+into its control moves no creature, so it fails no hash — and until this release
+it failed no test either.
+
+`chronicleFingerprint` covers the feed, the cap on its length, and all
+thirty-six latches. The latches are the half I would have skipped if I had
+written this from the constructor rather than from the object: `_firstKill` is
+not a record of the past, it is a decision about the future — it says whether
+"first blood" can ever be written again — and `_sawBelowRefuge` exists purely to
+stop the pond announcing a crossing it never made. Two chronicles holding the
+same lines and different latches are two narrators who will diverge from here
+on. That is the same shape `observationFingerprint` had to grow in v1.91, when
+the sweep found `nextId` and `_lastSample` — the tree's own future — sitting
+outside its hash.
+
+### What I found on the way in, and it is the better half of this release
+
+I went to hash five `Set`s and discovered that the generic mixer the books run
+through hashes a `Set` as `{}`. `Object.keys` of a Set is empty, a Set is an
+object, and the mixer's object branch sorts keys and mixes them — so a narrator
+that had already announced the pond passing 100 creatures and one that had not
+were, to the instrument, the same object. `Map` had it too. Nothing in the books
+is either type today, so no digest anywhere moved when I fixed it; the mixer was
+written for a *shape that grows*, and the next shape it grew was the one it had
+never been shown.
+
+Then the same bug, one level up and worse. `src/statesweep.js` walks a live
+world's enumerable own properties, and a `Set` has none — so the five latch sets
+and `phylogeny.byId` were not reported as opaque sites, and not as empty ones.
+They were reported as nothing. The sweep's own header says a site the walk
+cannot perturb is *declared* rather than skipped, which is v1.51's rule; a type
+the walk has no case for is excluded by nobody, and there is no sentence to
+read. That is the version of that bug with no tell at all. The domain is 172
+sites now rather than 166, and the six new ones are the walk's blind spot rather
+than anything the world grew.
+
+The perturbation for a collection like that turned out to be interesting rather
+than mechanical. A 37% push has no analogue on a set of milestones; what means
+something is *membership*, because a narrator holding one extra member is a
+narrator that will never say that line. So the sweep adds one.
+
+### The numbers
+
+- **38 chronicle sites, 0 of them visible to the five older channels.** The new
+  one sees 37. The one it does not is `chronicle.rng.seed`, which is the same
+  hole `world.rng.seed` has: a record of how a stream started, not the stream,
+  because the position lives in the closure `mulberry32` returns. `drawStream`
+  is what reaches that, and the paired assertion now attaches one to the
+  narrator's generator as well as to the pond's — a diversity probe can shift
+  without crossing a threshold, and then no line and no latch moves at all.
+- **38 of 38 hashed fields move the digest** when moved one at a time. Being
+  named by a hash is not the same as being reached by it; the gap between those
+  two is where v1.53 found three fields.
+- **Tamper with all thirty-six latches and no other channel notices.** State,
+  trajectory, observation and books agree; 300 ticks later the trajectories are
+  still identical and the two narrations are 6 lines against 5. The pond is
+  fine and one thing that happened in it was never said.
+- **918 tests green with no other edit.** Eighteen test files and twenty call
+  sites delegate to the paired assertion, and adding a sixth channel to all of
+  them changed nothing: no feature that is off has ever written a different
+  chronicle. That is the null I wanted, and it is the one the release is *for* —
+  the instrument was incomplete, the promise was not.
+- And what there is to watch: a 6,000-tick pond speaks 14 lines on seed 314 (the
+  first at t244), 16 on seed 42, 11 on seed 512, with 9–11 latches carrying
+  something by the end.
+
+### What this leaves
+
+- **The channel says it is same-process-only and nothing tests that.** A line's
+  wording is prose and prose gets edited, so no golden narration exists — which
+  means the freedom to reword a line is carried by a comment, exactly the kind
+  of claim this project keeps finding out is load-bearing.
+- **The membership perturbation only adds.** A latch set a bug *clears* is a
+  difference no sweep here would find; the walk has one direction and the world
+  has two.
+- **The narrator now has its own copy of the hole the sweep cannot close.** Two
+  generators, two positions in two closures, both reachable only by wrapping
+  `next` before the first tick. That is fine and it is worth writing down that
+  it is now twice as fine.

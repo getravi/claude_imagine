@@ -30,6 +30,7 @@ import {
   stateFingerprint,
   observationFingerprint,
   booksFingerprint,
+  chronicleFingerprint,
 } from "../src/fingerprint.js";
 import {
   STATE_OWNERS,
@@ -37,6 +38,7 @@ import {
   stateSites,
   perturbSite,
   sweepSite,
+  SWEEP_MEMBER,
 } from "../src/statesweep.js";
 
 /**
@@ -86,6 +88,10 @@ function snapshot(world, site) {
   if (typeof v === "number" || typeof v === "boolean") {
     return () => { owner[key] = v; };
   }
+  // A membership perturbation adds one known member, so the undo is a delete.
+  if (v instanceof Set || v instanceof Map) {
+    return () => { v.delete(SWEEP_MEMBER); };
+  }
   if (ArrayBuffer.isView(v) || Array.isArray(v)) {
     const i = Math.floor(v.length / 2);
     const el = v[i];
@@ -134,6 +140,15 @@ test("every piece of live state is watched by the channel its owner declares", (
   const world = warmed();
   const sites = stateSites(world);
   assert.ok(sites.length > 150, `only ${sites.length} sites — the walk stopped early`);
+  // The six a walk with no case for a `Set` or a `Map` reported as nothing at
+  // all — not an opaque site, not an empty one (v1.94). Five are the
+  // chronicle's latch sets and the sixth is the phylogeny's id index; a floor
+  // is wrong here for the reason v1.85 gives, so this is the count.
+  assert.equal(
+    sites.filter((s) => s.kind === "members").length,
+    6,
+    "the collections only a membership perturbation can move have changed in number"
+  );
 
   for (const site of sites) {
     const owner = site.path.split(".")[0];
@@ -161,7 +176,7 @@ test("every piece of live state is watched by the channel its owner declares", (
       continue;
     }
     const channel = STATE_OWNERS[owner];
-    if (channel === "state" || channel === "observation" || channel === "books") {
+    if (WATCHED.includes(channel)) {
       assert.ok(
         seen.includes(channel),
         `${site.path}: the pond carries it and ${channel} is blind to it (seen: ${seen.join(",") || "nothing"})`
@@ -187,8 +202,8 @@ test("the sweep's own exclusions are all still real", () => {
 
 test("the pond's shape is state its future depends on", () => {
   // The three sites that motivated v1.91, one from each of the landscape, the
-  // rock and the index. All three were invisible to all five channels before
-  // this release, and all three part two ponds inside forty ticks from a
+  // rock and the index. All three were invisible to all five channels that
+  // existed before v1.91, and all three part two ponds inside forty ticks from a
   // forty-tick warm-up — which is why these three and not the other fourteen.
   // The budget is a claim about a rate (v1.53's lesson, and it is load-bearing
   // here): from a 400-tick warm-up the same perturbation of `environment.floor`
@@ -221,12 +236,16 @@ test("asking a world its mean fertility does not change what it hashes", () => {
   assert.equal(stateFingerprint(w), full, "the state hash can see a cache");
 });
 
-test("the chronicle is the one output with no channel, and it is not a determinism hole", () => {
-  // `WORLD_UNHASHED.chronicle` claims two things. The first is that nothing
-  // watches it — the sweep above asserts that, by requiring every chronicle
-  // site to be seen by nobody. The second is that this costs determinism
-  // nothing, because the narration reads the pond and never writes to it, and
-  // that claim needs the pond run rather than hashed.
+test("the narration is watched now, and it still never writes back", () => {
+  // `WORLD_UNHASHED.chronicle` claims two things. The first is that the sixth
+  // channel watches it — the sweep above asserts that, by requiring every
+  // chronicle site to be seen by `chronicle` and nothing else. The second is
+  // v1.91's finding, which is what made the gap a hole in the instrument rather
+  // than in determinism: the narration reads the pond and never writes to it,
+  // and that claim needs the pond run rather than hashed.
+  //
+  // Both halves are asserted here, because a channel that watched an output the
+  // pond *did* depend on would be a different and much worse story.
   const a = new World({ ...EVERYTHING });
   const b = new World({ ...EVERYTHING });
   for (let i = 0; i < 200; i++) {
@@ -244,6 +263,11 @@ test("the chronicle is the one output with no channel, and it is not a determini
     }
   }
   assert.ok(flipped > 20, `only ${flipped} latches — the chronicle changed shape`);
+  assert.notEqual(
+    chronicleFingerprint(a),
+    chronicleFingerprint(b),
+    "thirty-odd latches moved and the channel that exists to watch them did not"
+  );
   for (let i = 0; i < 300; i++) {
     a.step();
     b.step();
@@ -256,16 +280,24 @@ test("the chronicle is the one output with no channel, and it is not a determini
 });
 
 /**
- * The three digests a perturbation between two ticks can be caught by. The
- * fourth and fifth channels cannot appear here by construction: `drawStream`
- * has to be attached before the first tick, and `rendershot`'s hash is about a
- * picture rather than a world.
+ * The four digests a perturbation between two ticks can be caught by. The two
+ * channels that cannot appear here do so by construction: `drawStream` has to
+ * be attached before the first tick, and `rendershot`'s hash is about a picture
+ * rather than a world.
  */
 function digests(world) {
-  return [stateFingerprint(world), observationFingerprint(world), booksFingerprint(world)];
+  return [
+    stateFingerprint(world),
+    observationFingerprint(world),
+    booksFingerprint(world),
+    chronicleFingerprint(world),
+  ];
 }
 
-const CHANNEL_NAMES = ["state", "observation", "books"];
+const CHANNEL_NAMES = ["state", "observation", "books", "chronicle"];
+
+/** The channels a site's owner can be declared to be watched by. */
+const WATCHED = CHANNEL_NAMES;
 
 function seenBy(before, after) {
   return CHANNEL_NAMES.filter((_, i) => before[i] !== after[i]);
