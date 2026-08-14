@@ -112,13 +112,21 @@ const ALLOWED = [
   // the filing that protected this one for eighty-four releases said it carried
   // no distinction, when it carries the only one on the canvas that is about
   // the *watcher* rather than about the world.)
-  {
-    file: "render.js",
-    literal: "rgba(30, 78, 66, 0.16)",
-    why: "the pond's biome glow, additive, over a large radius. Not the same colour as the little map's wash (`minimapBiomeWash`) and correctly so — one is a gradient over 1.8 patch radii, the other a flat disc a few pixels across — but the pair is worth remembering: two views of one feature in two colours, neither measured.",
-  },
-  { file: "render.js", literal: "rgba(30, 70, 62, 0.06)", why: "the same glow's mid stop — one of three colour stops in one gradient, and a stop is a shape in a ramp rather than a colour anything is told apart by." },
-  { file: "render.js", literal: "rgba(30, 70, 62, 0)", why: "the same glow's transparent end. An alpha of zero is a shape and not a colour: nothing is drawn there at all." },
+  // (The pond's biome glow — all three of its stops — was here until v1.93, and
+  // it is the eighth item off this list and the seventh that was hiding
+  // something. Its filing was the strongest form of the furniture claim this
+  // list makes: "a stop is a shape in a ramp rather than a colour anything is
+  // told apart by", which is true, and which answers a question about *colour*
+  // for a mark whose content is its *shape*. Measured, the colour really was
+  // fine — over the just-noticeable difference at the centre of every ground it
+  // can be drawn on, under `MIN_DELTA_E` on all of them, which is where a field
+  // belongs. The ramp was not: two straight segments where `FertilityField.at()`
+  // is a Gaussian, so the visible glow died at 0.99σ with the ground still at
+  // 61.3% of its peak fertility, and it accounted for 38.4% of a real crop.
+  // `pondBiomeGlow()` now samples the rule's own falloff out to the radius where
+  // it stops being visible, and the crop it accounts for is 60.9%. The lesson to
+  // carry: this list's headings sort colours, and a colour is not always what a
+  // colour literal is carrying.)
 
   // ---- opacities on colours that do come from somewhere else ----
   {

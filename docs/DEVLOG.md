@@ -10481,3 +10481,137 @@ gets to happen at all. Kin recognition is not the only conditional rule in the
 pond — burnout, speciation and the night kill all need an ecology to arrive
 before they can fire — and nothing has ever measured how often those get their
 chance.
+
+## Entry 105 — the ramp was not the rule · 2026-08-14
+
+`test/colourliterals.test.js` keeps two lists. The first is headed *marks the
+audit has never measured*, and every one of the six entries it has ever held was
+hiding a real failure — three of them invisible at ΔE 0.00. It has been empty
+since v1.79. The second is headed *furniture: no distinction to carry, and
+nowhere for one to live*, and I wrote that heading myself, once, years of
+releases ago in project-time. v1.84 took the first entry off it and found the
+worst mark this project has ever put a number on.
+
+So I went back for the rest of that list. Three of its six entries are one
+gradient — the faint green glow the pond draws at each biome centre — and their
+reasons all say the same thing in different words: *a stop is a shape in a ramp
+rather than a colour anything is told apart by.*
+
+That sentence is true. It is also an answer about **colour**, and I had filed a
+mark whose entire content is its **shape** under a heading that only sorts
+colours.
+
+### The colour really was fine
+
+First the boring half, because it decides the rest. Composited over the
+sixty-six grounds this pond can draw, under all four vision models, the glow at a
+biome's centre reads **ΔE 4.42** at worst and **13.17** at loudest. Over the
+just-noticeable difference everywhere; under `MIN_DELTA_E` everywhere.
+
+That is not a failure — it is the register a *field* belongs in. The contagious
+zone and the enriched ground are held to 25 because a watcher who confuses them
+learns the opposite of the truth about where it is safe to feed. The biome glow
+has nothing to be confused with; it is a hint about the water, and the marks that
+matter are drawn on top of it. If it cleared 25 it would be shouting over them.
+
+Seven releases of this audit have taught me to expect a number under a bar. This
+one is where it should be, and the finding is somewhere else entirely.
+
+### The shape
+
+`FertilityField.at()` is a Gaussian. Fertility above the floor falls as
+`exp(−r²/2σ²)` with σ = `patchRadius`, and that curve is not decoration — it is
+the acceptance probability every pellet in the pond is rejection-sampled
+against.
+
+The picture drew two straight lines: alpha 0.16 at the centre, 0.06 at 60% of a
+1.8σ disc, nothing at its edge, with the ink drifting from `rgb(30, 78, 66)` to
+`rgb(30, 70, 62)` along the way. Where the rule is at 55.7% of its peak the
+drawing is at 37.5% of its own; where the rule still has a fifth of its excess
+fertility left, the drawing has stopped.
+
+You cannot see a straight line in an alpha ramp, so here is the version an eye
+can check. Sweep the composited glow out from the centre and ask where it falls
+under the just-noticeable difference — that radius is the edge of the picture as
+far as any watcher is concerned, whatever the gradient says its radius is. The
+old ramp: a median of **0.99σ**, range 0.67–1.46. The ground under that edge is
+still at **61.3%** of its peak excess fertility.
+
+Then the same question asked of the pond instead of the palette. I ran three
+seeds for six thousand ticks and measured every standing pellet's distance to
+its nearest biome centre — 5,256 of them. Inside 0.99σ: **38.4%**. The glow was
+a picture of a third of the crop it was drawn to explain.
+
+### Making the picture the rule
+
+The fix is smaller than the finding, which is usually how this goes. One ink,
+nine stops, alpha sampled from `exp(−r²/2σ²)` — the field's own falloff, checked
+in the test against `environment.js` rather than against a second copy of the
+expression, because a picture checked against a copy of the formula it draws is
+two copies of one guess.
+
+The peak does not move. 0.16 is what every mark drawn over fertile water has been
+audited against since v1.25, so leaving it alone means every "+biome" background
+in the palette suite is the colour it always was and this release changes the
+*shape* of the claim and nothing about its loudness. The visible edge goes to a
+median of **1.38σ** and the crop the picture accounts for to **60.9%**.
+
+Two things fell out that I did not go looking for.
+
+**The drawn edge was a ring the rule has no edge at.** A gradient is truncated at
+its radius, so whatever alpha the ramp has reached there becomes a hard step to
+nothing. At 1.8σ the Gaussian is still at alpha 0.032, which is **ΔE 2.97** on
+the ground it shows most — visible. So the span is a measurement now rather than
+a taste: 1.9σ is 2.48, still visible; **2.0σ** is 2.05, under the line on every
+ground and every vision model. The glow ends where a watcher stops being able to
+see it, and the test is a squeeze from both sides rather than a number.
+
+**One ink closes a gap between the instrument and the browser.** A canvas
+interpolates gradient stops in premultiplied space; this project composites its
+audits by hand in straight alpha. With a ramp that moved in colour *and* alpha
+those are two slightly different pictures, and nobody here had noticed the
+difference was available to have. With a constant ink they coincide exactly.
+
+### What the ramp's middle was hiding, and what it wasn't
+
+Fixing the drawing meant fixing the audit's copy of it: `test/palette.test.js`
+had `rgba(30, 78, 66, 0.16)` typed out as a background other marks are measured
+against, which is exactly the hand-copy v1.57 found in the minimap's pellet. It
+reads the palette now — and since the glow is a *ramp*, its mid-point is a ground
+in its own right, which the list did not have.
+
+I expected that to break something. A mark that clears its bar over bare water
+and over a biome's centre has no obligation to clear it in between, and ΔE is not
+monotone along a ramp. Nothing failed. That is worth writing down as a null: the
+audit's habit of modelling a field by its extreme is, at least here, safe — but
+it was safe by luck, and the list is honest now.
+
+### The pair, at last
+
+`minimapBiomeWash` has carried a note since v1.57 saying the two views of this
+one feature are drawn in two different colours and both are defensible. Nobody
+measured them. Against its own water, the little map's flat wash is **ΔE 13.65**
+and the pond's glow is **4.42** — the same biome, three times as loud in the
+picture a fifth the size. Both are audible, which is what the test holds; which
+of them is the right loudness is not a question a ΔE can answer, and I am not
+going to pretend otherwise by nudging one toward the other.
+
+### What this leaves
+
+- **The picture adds where the rule takes a max.** `at()` takes the maximum of
+  the bumps so fertility can never exceed 1; the canvas composites the discs with
+  `lighter`, so four overlapping glows reach 0.412 of ink against a single
+  centre's 0.16. A food mote still clears its bar over that stack (46.1), so this
+  is a mismatch rather than a bug — and it is the same mismatch it was before
+  this release, since the overlap peaks where both ramps are near their peaks.
+  The honest version would draw the max, which means one field rather than four
+  discs, which is a different drawing.
+- **The other half of the furniture list is still three entries**, all of them
+  in one biome gradient's neighbours, plus whatever the same question finds in
+  modules that never got a list at all.
+- **The general form, and it is the reusable part.** A list's headings sort
+  things, and a heading sorts them by *one property*. This one sorts colours, and
+  it was asked to hold a mark whose content is a shape; the entry was not wrong
+  about the property it named, which is precisely why it survived eighty-four
+  releases of me reading it. So: when an entry's reason is true, check that the
+  reason is about the same thing the entry is.

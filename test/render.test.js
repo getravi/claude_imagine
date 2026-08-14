@@ -41,6 +41,8 @@ import {
   refugeRing,
   visionReach,
   selectionMark,
+  biomeGlowStops,
+  BIOME_GLOW_SPAN,
 } from "../src/palette.js";
 import { Trail } from "../src/trail.js";
 import { creatureReaches } from "../src/reach.js";
@@ -156,6 +158,32 @@ test("the food motes are drawn at the drawing radius", () => {
     const motes = opsNamed(ops, "arc").filter((o) => o[4] === r);
     assert.ok(motes.length >= alive, `${motes.length} arcs at radius ${r} for ${alive} pellets`);
   }
+});
+
+test("the biome glow the canvas draws is the ramp the palette measured", () => {
+  // v1.93 moved this gradient into the palette, where its shape could be held to
+  // `FertilityField`'s own falloff. The other half of that claim is here: the
+  // stops reaching the canvas are the palette's stops, at the palette's radius,
+  // and there are as many of them as the curve needs. The old two-segment ramp
+  // would fail every line of this.
+  const w = pond();
+  const ops = renderOps(w);
+  const radius = w.config.patchRadius * BIOME_GLOW_SPAN;
+  const glows = opsNamed(ops, "createRadialGradient").filter((o) => o[8] === radius);
+  assert.equal(glows.length, w.config.patchCount, "one gradient per biome centre");
+  const stops = biomeGlowStops();
+  for (const glow of glows) {
+    const drawn = opsNamed(ops, "addColorStop").filter((o) => o[2] === glow[2]);
+    assert.deepEqual(
+      drawn.map((o) => [o[3], o[4]]),
+      stops.map((s) => [s.offset, s.css]),
+      "the biome gradient is not the palette's"
+    );
+  }
+  // And nothing draws it beyond that radius: the truncation is the measured
+  // edge, so a second disc at some other size would be a second claim.
+  const wider = opsNamed(ops, "createRadialGradient").filter((o) => o[8] > radius);
+  assert.deepEqual(wider, [], "something draws a fertility disc the audit has never seen");
 });
 
 test("the marks the palette audit measured are the marks the canvas draws", () => {

@@ -54,6 +54,12 @@ import {
   barTrack,
   detritusTint,
   DETRITUS_MAX_ALPHA,
+  pondBiomeGlow,
+  biomeGlowFalloff,
+  biomeGlowStops,
+  BIOME_GLOW_PEAK,
+  BIOME_GLOW_SPAN,
+  BIOME_GLOW_STOPS,
   blendOver,
   CVD_TYPES,
   VISION_MODELS,
@@ -121,6 +127,9 @@ import {
 import { ENERGY_SINKS } from "../src/energy.js";
 import { independentAny } from "../src/contagion.js";
 import { terrainBandFill, TERRAIN_BANDS } from "../src/minimap.js";
+import { FertilityField } from "../src/environment.js";
+import { makeConfig } from "../src/config.js";
+import { RNG } from "../src/rng.js";
 
 // The body colour render.js paints for a given creature state, reproduced here
 // so the sweep measures what is actually drawn.
@@ -838,9 +847,19 @@ function veil(phase) {
   };
 }
 
-/** The biome glow at its centre: additive, as render.js draws it. */
-function overBiome(bg) {
-  return addOver(bg, { r: 30, g: 78, b: 66 }, 0.16);
+/**
+ * The biome glow at `t` of its drawn radius: additive, as render.js draws it.
+ *
+ * The default is the centre, which is what this list has always modelled — and
+ * until v1.93 it modelled it with a hand-copy of the literal in `render.js`,
+ * which is the arrangement v1.57 found in the minimap's pellet and v1.61 wrote a
+ * test against. It is the palette's glow now, and the parameter is the other
+ * half of the correction: the mark is a *ramp*, so every ground between bare
+ * water and the centre is a ground something can be drawn over too.
+ */
+function overBiome(bg, t = 0) {
+  const glow = pondBiomeGlow();
+  return addOver(bg, glow.rgb, glow.alpha * biomeGlowFalloff(t));
 }
 
 /** The terrain ramp at roughness r, with or without a contour line on it. */
@@ -869,10 +888,14 @@ function soilBackgrounds() {
         const tag = `season ${phase} terrain ${r}${contour ? "+contour" : ""}`;
         out.push({ name: tag, rgb: ground });
         out.push({ name: `${tag} +biome`, rgb: overBiome(ground) });
+        // Half-way out along the glow's ramp: a ground this list did not have
+        // until v1.93, because it modelled the glow as one value.
+        out.push({ name: `${tag} +biome edge`, rgb: overBiome(ground, 0.5) });
       }
     }
     out.push({ name: `season ${phase} flat`, rgb: v });
     out.push({ name: `season ${phase} flat +biome`, rgb: overBiome(v) });
+    out.push({ name: `season ${phase} flat +biome edge`, rgb: overBiome(v, 0.5) });
   }
   return out;
 }
@@ -1050,6 +1073,181 @@ test("enriched ground is the lightest thing under the water, which is why it sur
   const L = (rgb) => toLab(rgb)[0];
   assert.ok(L(soil) > L(ridge) + 10, `soil L* ${L(soil)} vs ridge ${L(ridge)}`);
   assert.ok(L(soil) > L(biome) + 10, `soil L* ${L(soil)} vs biome ${L(biome)}`);
+});
+
+// ---- the biomes' glow, and the shape of a claim (v1.93) ----
+//
+// The three stops of this gradient sat in `render.js` from v1.3 to v1.93 under
+// the *furniture* heading of `test/colourliterals.test.js` — no distinction to
+// carry, nowhere for one to live — which is the eighth entry struck off that
+// list and the seventh that was hiding something. What it was hiding is not a
+// contrast: at its centre the glow is over the just-noticeable difference on
+// every ground and under `MIN_DELTA_E` on all of them, which is the correct
+// register for a field. It is the *shape*. A gradient is a ramp, a ramp is a
+// curve, and this one was two straight segments standing in for the Gaussian
+// that decides where food actually goes.
+//
+// So these tests hold the picture to the rule (the falloff is `at()`'s own,
+// checked against the module rather than against a copy of the formula), and
+// they hold the edge to the eye (the drawn radius is where the ramp stops being
+// visible, squeezed from both sides).
+
+/** A one-biome fertility landscape, so `at()` describes a single bump. */
+function oneBiome() {
+  const config = makeConfig({ patchCount: 1, seed: 4 });
+  return { field: new FertilityField(config, new RNG(4)), config };
+}
+
+test("the glow's ramp is the fertility rule, not a shape that resembles it", () => {
+  // The test the old gradient could not have passed: its alpha fell to 37.5% of
+  // peak where the rule was still at 55.7%, and to nothing where the rule was at
+  // 19.8%. Read out of `environment.js` rather than re-typed here — a picture
+  // checked against a copy of the formula it draws is two copies of one guess.
+  const { field, config } = oneBiome();
+  const centre = field.centres[0];
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20;
+    const r = t * BIOME_GLOW_SPAN * config.patchRadius;
+    const fertility = field.at(centre.x + r, centre.y);
+    const excess = (fertility - config.patchFloor) / (1 - config.patchFloor);
+    assert.ok(
+      Math.abs(excess - biomeGlowFalloff(t)) < 1e-9,
+      `at ${t.toFixed(2)} of the drawn radius the ground is ${excess.toFixed(4)} of the way up and the glow is ${biomeGlowFalloff(t).toFixed(4)}`
+    );
+  }
+});
+
+test("the glow ends where a watcher stops seeing it — a squeeze, not a radius", () => {
+  // A gradient is truncated at its radius, so whatever alpha the ramp has
+  // reached there becomes a hard step to nothing. 1.8σ (v1.3–v1.93) cut at an
+  // alpha still worth ΔE 2.97 on the ground it shows most, which is a ring the
+  // rule has no edge at. Both halves are asserted: the span that shipped is
+  // invisible everywhere, and a tenth of a σ shorter is not.
+  const edgeDelta = (span) => {
+    const glow = pondBiomeGlow();
+    const alpha = glow.alpha * Math.exp(-(span * span) / 2);
+    let worst = 0;
+    for (const { rgb } of soilBackgrounds()) {
+      for (const vision of VISION_MODELS) {
+        worst = Math.max(worst, deltaE(addOver(rgb, glow.rgb, alpha), rgb, vision));
+      }
+    }
+    return worst;
+  };
+  const here = edgeDelta(BIOME_GLOW_SPAN);
+  assert.ok(here < JND, `the drawn edge is visible at ΔE ${here.toFixed(2)}`);
+  const shorter = edgeDelta(BIOME_GLOW_SPAN - 0.1);
+  assert.ok(shorter >= JND, `a span of ${BIOME_GLOW_SPAN - 0.1} would also have been invisible (${shorter.toFixed(2)})`);
+});
+
+test("the glow is visible at its centre and quiet enough to be a field", () => {
+  // Both bars, in the register a field belongs in. Over the just-noticeable
+  // difference everywhere, so the picture says *something* about fertile water;
+  // under MIN_DELTA_E everywhere, because this is a hint about the ground and
+  // not a mark to be told from another mark — the pond's own marks are drawn on
+  // top of it and the next test is what protects them.
+  let worst = { d: Infinity };
+  let loudest = 0;
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(overBiome(rgb), rgb, vision);
+      if (d < worst.d) worst = { d, name, vision };
+      loudest = Math.max(loudest, d);
+    }
+  }
+  assert.ok(worst.d >= JND, `the glow scores only ${worst.d.toFixed(2)} on ${worst.name} (${worst.vision})`);
+  assert.ok(loudest < MIN_DELTA_E, `the glow reached ${loudest.toFixed(1)}, which is a mark's register, not a field's`);
+});
+
+test("nothing drawn on fertile water is swallowed by the glow", () => {
+  // The constraint that keeps `BIOME_GLOW_PEAK` where it is. A pellet is the
+  // thing a watcher is looking *for* in a biome, so the glow that advertises the
+  // biome may not hide it — measured over the whole ramp, and over the worst
+  // stack four overlapping biomes can build (the picture adds where the rule
+  // takes a max, so the brightest fertile water is 0.412 of ink, not 0.16).
+  const mote = foodMote();
+  let worst = { d: Infinity };
+  for (const { name, rgb } of soilBackgrounds()) {
+    for (const t of [0, 0.5, 1]) {
+      const glow = overBiome(rgb, t);
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(addOver(glow, mote, mote.a), glow, vision);
+        if (d < worst.d) worst = { d, name: `${name} @${t}`, vision };
+      }
+    }
+    const stack = addOver(rgb, pondBiomeGlow().rgb, 0.412);
+    for (const vision of VISION_MODELS) {
+      const d = deltaE(addOver(stack, mote, mote.a), stack, vision);
+      if (d < worst.d) worst = { d, name: `${name} +stack`, vision };
+    }
+  }
+  assert.ok(
+    worst.d >= MIN_DELTA_E,
+    `a mote on the glow scores only ${worst.d.toFixed(1)} on ${worst.name} (${worst.vision})`
+  );
+});
+
+test("the gradient's chords are a resolution, not an approximation", () => {
+  // A canvas interpolates linearly between stops, so `BIOME_GLOW_STOPS` decides
+  // how closely the drawn ramp follows the curve above. Nine puts the worst
+  // chord two orders of magnitude under the just-noticeable difference; the
+  // assertion is on what the error is *worth*, because an alpha tolerance is a
+  // number and a ΔE is the thing a watcher has.
+  const stops = biomeGlowStops();
+  assert.equal(stops.length, BIOME_GLOW_STOPS);
+  assert.equal(stops[0].alpha, BIOME_GLOW_PEAK);
+  const glow = pondBiomeGlow();
+  let worst = 0;
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+    for (let s = 0; s <= 50; s++) {
+      const k = s / 50;
+      const chord = a.alpha + (b.alpha - a.alpha) * k;
+      const truth = glow.alpha * biomeGlowFalloff(a.offset + (b.offset - a.offset) * k);
+      for (const { rgb } of soilBackgrounds()) {
+        for (const vision of VISION_MODELS) {
+          worst = Math.max(
+            worst,
+            deltaE(addOver(rgb, glow.rgb, chord), addOver(rgb, glow.rgb, truth), vision)
+          );
+        }
+      }
+    }
+  }
+  assert.ok(worst < JND, `the linear chords cost ΔE ${worst.toFixed(2)}, which a watcher can see`);
+});
+
+test("one ink along the ramp, so the measured glow and the painted one agree", () => {
+  // The old gradient drifted from rgb(30, 78, 66) to rgb(30, 70, 62) on the way
+  // out, and a canvas is specified to interpolate stops in *premultiplied*
+  // space — so a ramp that moves in both colour and alpha is a slightly
+  // different picture from the one this file composites. With a constant ink the
+  // two readings coincide, which is a difference between the instrument and the
+  // browser that nobody here had noticed was available to have.
+  for (const s of biomeGlowStops()) {
+    assert.equal(s.css, `rgba(30, 78, 66, ${Number(s.alpha.toFixed(4))})`);
+  }
+});
+
+test("both views of one feature are audible, and they are not equally loud", () => {
+  // The pair `minimapBiomeWash` has named in prose since v1.57 and nobody had
+  // measured: the same biome, drawn twice. Each against its own water, worst
+  // case over every vision model — the assertion is that neither view is silent,
+  // because which loudness is *right* is not a question a ΔE answers.
+  let pond = Infinity;
+  for (const { rgb } of soilBackgrounds()) {
+    for (const vision of VISION_MODELS) pond = Math.min(pond, deltaE(overBiome(rgb), rgb, vision));
+  }
+  const water = minimapWater();
+  const wash = minimapBiomeWash();
+  let map = Infinity;
+  for (const vision of VISION_MODELS) {
+    map = Math.min(map, deltaE(blendOver(water, wash, wash.a), water, vision));
+  }
+  assert.ok(pond >= JND, `the pond's glow is inaudible at ${pond.toFixed(2)}`);
+  assert.ok(map >= JND, `the little map's wash is inaudible at ${map.toFixed(2)}`);
+  assert.ok(map > pond, `the two views have converged (${map.toFixed(2)} vs ${pond.toFixed(2)}) — re-read the note on minimapBiomeWash`);
 });
 
 // ---- Corpses (v1.55) ----

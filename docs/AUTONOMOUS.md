@@ -308,7 +308,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   with colour and have still never been measured** — the inspector swatch, the
   minimap's viewport rectangle, the predator *outline* and the vision overlay's
   three strengths — plus **the biomes drawn in two different colours in two
-  views** since v1.19, neither measured. **The predator outline closed in
+  views** since v1.19, neither measured (**both measured in v1.93**: the little
+  map's wash is worth ΔE 13.65 against its own water and the pond's glow 4.42
+  against its own, so one feature is three times as loud in the picture a fifth
+  the size; both audible, and the loudness question is left open on purpose).
+  **The predator outline closed in
   v1.66** (`predatorOutline()`): below the bar on 53.5% of its backgrounds and
   below the just-noticeable difference on 3.9%, and the degree its opacity
   encoded was worth ΔE 1.7 over the middle 80% of real predator-frames — the
@@ -361,7 +365,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   **The list had a second half, and v1.84 opened it.** Everything above is the
   *unmeasured marks* half, which is empty. Underneath it sits **furniture** —
   "no distinction to carry, and nowhere for one to live" — which nothing has
-  ever measured, because that is what the heading means. The pond's selection
+  ever measured, because that is what the heading means. **v1.93 took the
+  second entry off it** — the pond's biome glow, three stops of one gradient —
+  and it is the first item struck off this list whose finding was not a
+  contrast. The colour is fine and the heading was right about it (ΔE 4.42 at
+  worst over sixty-six grounds, 13.17 at loudest: over the just-noticeable
+  difference everywhere, under `MIN_DELTA_E` everywhere, which is a *field's*
+  register and not a mark's). What the heading could not see is that this
+  mark's content is its **shape**: `FertilityField.at()` is a Gaussian and the
+  picture was two straight segments, so the visible glow died at 0.99σ with the
+  ground still at 61.3% of its peak fertility and accounted for **38.4%** of a
+  real crop (5,256 pellets, three seeds). The ramp is the rule now
+  (`pondBiomeGlow`, `biomeGlowFalloff`, checked against `environment.js` rather
+  than against a copy of the formula), which takes the visible edge to 1.38σ and
+  the crop to **60.9%**, and the drawn radius is a squeeze rather than a taste —
+  1.8σ truncated at a step worth ΔE 2.97, 2.0σ at 2.05, so the picture ends
+  where the eye does. Three things it leaves. (a) **The picture adds where the
+  rule takes a max** — four overlapping discs reach 0.412 of ink against a
+  centre's 0.16 while `at()` caps at 1; a mote still clears its bar over that
+  stack (46.1), and the honest version is one field rather than four discs,
+  which is a different drawing. (b) The two views of the biome are **not
+  equally loud** — 13.65 for the little map's wash against 4.42 for the pond's
+  glow, a pair named in prose on `minimapBiomeWash` since v1.57 and measured
+  now; both audible, and which loudness is *right* is not a question a ΔE
+  answers. (c) The general form, which is the reusable part: **a heading sorts
+  by one property, and an entry can be true about that property and wrong about
+  the mark** — this list sorts colours and was asked to hold a shape. When an
+  entry's reason is true, check that the reason is about the same thing the
+  entry is. The pond's selection
   ring was filed there and was the worst mark this project has put a number on:
   `rgba(255, 255, 255, 0.8)` bottoms out at **ΔE 0.00** over the vision
   overlay's 4,388 backgrounds, is under the JND on **21.76%** of them and under
@@ -371,10 +402,12 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (`selectionMark()`, worst case **48.9**, the best here, since white and
   near-black are the two ends of the one axis all four models agree about) and
   the trail added in the same release shares it. **What that leaves is the rest
-  of the furniture**: three entries in `render.js`, all stops in one biome
-  gradient, plus whatever the same question finds in modules that never got a
-  list — and the general form is one list up, in the lesson below about a
-  heading nobody audits.
+  of the furniture**: the three stops of the biome gradient went in v1.93 (see
+  above — the colour passed and the *shape* was the finding), so what is left on
+  that half of the list is the three opacity entries, every one of them a
+  strength written on a colour that comes from somewhere else, plus whatever the
+  same question finds in modules that never got a list — and the general form is
+  one list up, in the lesson below about a heading nobody audits.
   What v1.73 leaves in turn is bigger than what it closed —
   see the two frequency lessons below, and note that the eighty-line rasteriser
   that produced them lives in a scratch directory and nothing in the suite can

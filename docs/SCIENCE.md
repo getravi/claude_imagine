@@ -6920,6 +6920,120 @@ console.log("empty", (100 * empty / bodies).toFixed(2) + "%",
             "contacts in band", (100 * inBand / contacts).toFixed(1) + "%", "of", contacts);'
 ```
 
+## The ramp was not the rule (v1.93)
+
+Every mark this project has audited since v1.25 was audited as a *colour*: take
+the composite, take the background it can appear on, take the ΔE, hold it to a
+bar. The pond's biome glow is the first one where that question was the wrong
+question and the audit's own list said so without noticing.
+
+### The colour
+
+The glow is additive `rgb(30, 78, 66)` at alpha 0.16 at a biome's centre. Over
+the sixty-six grounds this pond can draw — two season extremes × the whole
+terrain ramp with and without a contour, each with and without enriched ground
+and with and without a biome under it — and all four vision models:
+
+| | ΔE |
+|---|---|
+| worst | **4.42** (season 1, flat, deuteranopia) |
+| loudest | **13.17** |
+
+Over the just-noticeable difference (2.3) on every ground; under `MIN_DELTA_E`
+(25) on all of them. That is where a **field** belongs, as opposed to a mark: the
+contagious zone and the enriched ground are held to 25 because confusing them
+teaches a watcher the opposite of the truth, while the glow has nothing to be
+confused with and the marks that matter are drawn on top of it.
+
+### The shape
+
+`FertilityField.at()` returns `floor + (1 − floor)·exp(−r²/2σ²)` with
+σ = `patchRadius`, and that Gaussian is the acceptance probability every pellet
+is rejection-sampled against. From v1.3 to v1.93 the picture of it was two
+straight segments over a 1.8σ disc: alpha 0.16 → 0.06 over the first 60%, then
+0.06 → 0.
+
+Sweep the composited glow outward and record where it falls under the
+just-noticeable difference. That radius — not the gradient's — is the edge of
+the picture as far as a watcher is concerned:
+
+| ramp | visible edge (median) | range | fertility excess there |
+|---|---|---|---|
+| two segments (v1.3–v1.92) | **0.99σ** | 0.67–1.46σ | 61.3% |
+| the rule's own falloff (v1.93) | **1.38σ** | 1.04–1.94σ | 38.6% |
+
+And the same question asked of a pond rather than of a palette. Three seeds,
+6,000 ticks, every standing pellet's distance to its nearest biome centre
+sampled every 500 ticks — 5,256 pellets:
+
+| within | share of the standing crop |
+|---|---|
+| 0.99σ (the old visible edge) | **38.4%** |
+| 1.38σ (the new one) | **60.9%** |
+| 1.8σ (the old drawn edge) | 83.7% |
+| 2.0σ (the new one) | 90.7% |
+
+At both visible edges the measured share tracks the bump's own mass,
+`1 − exp(−k²/2)`, to within half a point (38.7% and 61.4% predicted) — the
+cheapest available confirmation that the glow is drawing the rule rather than
+something that resembles it. Further out the two part company in the direction
+the model predicts: 80.2% and 86.5% predicted against 83.7% and 90.7% measured,
+because `patchFloor` is 0.15 and a pond whose barren water still accepts pellets
+has more crop outside its biomes than a pure Gaussian would.
+
+### The edge is a measurement now
+
+A gradient is truncated at its radius, so whatever alpha the ramp has reached
+there becomes a hard step to nothing — a ring the rule has no edge at. Worst-case
+ΔE of that step over the same sixty-six grounds:
+
+| span | alpha at the cut | ΔE |
+|---|---|---|
+| 1.8σ | 0.0317 | **2.97** — visible |
+| 1.9σ | 0.0263 | 2.48 — visible |
+| **2.0σ** | 0.0217 | **2.05** — under the line everywhere |
+
+`BIOME_GLOW_SPAN` is 2.0σ, and the test is a squeeze from both sides rather than
+a number.
+
+### What it leaves
+
+`at()` takes the **maximum** of the bumps, so fertility can never exceed 1. The
+canvas composites the four discs with `lighter`, so where biomes overlap the
+picture reaches 0.412 of ink against a single centre's 0.16. A food mote still
+clears its bar over that stack (ΔE 46.1), and the overlap is unchanged by this
+release — but drawing the max would mean one field rather than four discs, which
+is a different drawing.
+
+### Reproducing it
+
+```bash
+node --input-type=module -e '
+import { World } from "./src/world.js";
+import { makeConfig } from "./src/config.js";
+const cfg = makeConfig({});
+const wrap = (a, b, s) => { let d = b - a; const h = s / 2; if (d > h) d -= s; else if (d < -h) d += s; return d; };
+const dist = [];
+for (const seed of [314, 7, 51]) {
+  const w = new World(makeConfig({ seed }));
+  for (let t = 0; t < 6000; t++) {
+    w.step();
+    if (t % 500 !== 499) continue;
+    for (const p of w.food.items) {
+      let best = Infinity;
+      for (const c of w.environment.centres) {
+        best = Math.min(best, Math.hypot(wrap(p.x, c.x, cfg.width), wrap(p.y, c.y, cfg.height)));
+      }
+      dist.push(best / cfg.patchRadius);
+    }
+  }
+}
+for (const k of [0.99, 1.38, 1.8, 2.0]) {
+  const share = dist.filter((d) => d <= k).length / dist.length;
+  console.log(k + "σ", (100 * share).toFixed(1) + "%", "analytic", (100 * (1 - Math.exp(-k * k / 2))).toFixed(1) + "%");
+}'
+```
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

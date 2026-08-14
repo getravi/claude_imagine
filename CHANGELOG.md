@@ -4,6 +4,87 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.93.0] — 2026-08-14
+
+`test/colourliterals.test.js` sorts every colour named outside the palette into
+two lists. One is headed *marks the audit has never measured* and has been empty
+since v1.79. The other is headed *furniture — no distinction to carry, and
+nowhere for one to live*, and v1.84 struck its first entry off and found the
+worst mark this project has ever put a number on. Three of the six entries left
+were one gradient: the faint green glow the pond has drawn at each biome centre
+since v1.3.
+
+Their reason was that a gradient stop is "a shape in a ramp rather than a colour
+anything is told apart by". Measured, the colour really is fine. The *shape* was
+a hand-drawn curve standing in for the rule that decides where food goes.
+
+### Changed
+
+- **The biome glow's ramp is the fertility rule now** (`pondBiomeGlow`,
+  `biomeGlowFalloff`, `biomeGlowStops` in `src/palette.js`).
+  `FertilityField.at()` puts fertility above the floor on `exp(−r²/2σ²)` with
+  σ = `patchRadius`; the picture drew two straight segments (0.16 → 0.06 over the
+  first 60% of a 1.8σ disc, then → 0) with the ink drifting from
+  `rgb(30, 78, 66)` to `rgb(30, 70, 62)` on the way out. It is one ink at nine
+  opacities sampled from the field's own falloff, and `test/palette.test.js`
+  checks the ramp against `environment.js` rather than against a second copy of
+  the formula.
+- **And it ends where a watcher stops seeing it.** A gradient is truncated at its
+  radius, so whatever alpha the ramp has reached there becomes a hard step to
+  nothing — a ring the rule has no edge at. 1.8σ cut at ΔE 2.97, over the
+  just-noticeable difference; `BIOME_GLOW_SPAN` is **2.0σ**, the first tenth of a
+  σ at which the cut is invisible on every ground under every vision model.
+- **The audit's own copy of the glow is gone.** `test/palette.test.js` had
+  `rgba(30, 78, 66, 0.16)` typed out as a background other marks are measured
+  against — the arrangement v1.57 found in the minimap's pellet and v1.61 wrote
+  a test against — and it modelled the whole ramp as that one value. It reads the
+  palette now, and the ramp's mid-point is a ground in its own right. Nothing
+  else regressed on the new grounds: every mark that clears its bar over bare
+  water and over a biome's centre clears it in between.
+
+### Measured
+
+Sixty-six grounds this pond can draw × four vision models, plus 5,256 pellets
+sampled over three seeds and 6,000 ticks:
+
+- **The glow's centre is ΔE 4.42 at worst and 13.17 at loudest** — over the
+  just-noticeable difference on every ground, under `MIN_DELTA_E` on all of
+  them. That is the right register for a field rather than a mark, and it is
+  what the furniture heading got right.
+- **The visible edge moves from a median of 0.99σ to 1.38σ** (0.67–1.46 → 
+  1.04–1.94). The old picture stopped being legible where the ground was still
+  at 61.3% of its peak excess fertility; the new one at 38.6%.
+- **The crop the picture accounts for moves from 38.4% to 60.9%.** At both edges
+  the bump's analytic mass and a real pond's pellets agree to within half a
+  point, which is the cheapest confirmation available that the glow is drawing
+  the rule; further out they part by three points in the direction `patchFloor`
+  predicts, since barren water still accepts a pellet.
+- **Nine stops cost ΔE 0.08.** A canvas interpolates linearly between stops, so
+  the count is the resolution of the curve; the worst chord is 0.00099 of alpha
+  off the truth, two orders of magnitude under what an eye can see.
+- **The two views of one biome are not equally loud.** Against its own water the
+  little map's flat wash is worth ΔE 13.65 and the pond's glow 4.42 — one
+  feature drawn three times as loudly in the small picture as in the big one,
+  named in prose on `minimapBiomeWash` since v1.57 and never measured. Both are
+  audible, which is the claim a test can hold; which loudness is right is not a
+  question a ΔE answers.
+- **The picture adds where the rule takes a max.** Four overlapping glows reach
+  0.412 of ink against a single centre's 0.16, while `at()` caps fertility at 1
+  by construction. A food mote still clears the bar over that stack (ΔE 46.1),
+  so it is a mismatch rather than a bug — and it is unchanged by this release,
+  since the overlap peaks where both ramps are near their peak.
+
+### Added
+
+- **Eight tests.** The ramp against `FertilityField.at()`; the span as a squeeze
+  from both sides; the centre held to both bars at once; a food mote's legibility
+  over the whole ramp and over the worst four-biome stack; the chords priced in
+  ΔE rather than in alpha; one ink along the ramp, so the composite this project
+  measures and the one a browser paints cannot differ; both views of the biome
+  audible against their own water; and — in `test/render.test.js` — that the
+  stops reaching the canvas are the palette's, at the palette's radius, one
+  gradient per biome centre.
+
 ## [1.92.0] — 2026-08-14
 
 Every scenario this project ships is a seed chosen to show a mechanic at its

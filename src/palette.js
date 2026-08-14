@@ -551,10 +551,18 @@ export function minimapWater() {
  * Here for the same reason as `minimapWater()` — the audit's ground list held a
  * hand-copy of it — and note that this is *not* the pond's biome colour. Two
  * views of one feature have been drawn in two different colours since v1.19
- * (`rgba(30, 78, 66, 0.16)` additive there, this flat 0.5 here), and both are
+ * (`pondBiomeGlow()`, additive, there; this flat 0.5 here), and both are
  * defensible: the pond's is a glow over a large radius, the map's is a disc of
  * a few pixels that has to survive the terrain ramp under it. What was not
  * defensible was neither of them having a name.
+ *
+ * v1.93 measured the pair rather than reasoning about it, and the two views do
+ * not say the same thing with the same voice: against its own water this wash
+ * is worth **ΔE 13.65** at worst, the pond's glow **4.42** at its centre — one
+ * feature drawn three times as loudly in the small picture as in the big one.
+ * Neither is under the just-noticeable difference, which is the claim
+ * `test/palette.test.js` holds; which of the two is the right loudness is not a
+ * question a ΔE answers, and is what that release leaves behind.
  */
 export function minimapBiomeWash() {
   return { r: 32, g: 82, b: 70, a: 0.5 };
@@ -1044,6 +1052,113 @@ export function powerLineTones() {
 
 /** The opacity of the band between the lines — see `powerLine()`. */
 export const POWER_BAND_ALPHA = 0.26;
+
+/**
+ * The pond's biomes: an additive glow at each fertile centre (v1.93).
+ *
+ * This lived in `render.js` as three hand-typed gradient stops from v1.3 to
+ * v1.93, filed under *furniture* in `test/colourliterals.test.js` — "a stop is a
+ * shape in a ramp rather than a colour anything is told apart by" — which is the
+ * heading v1.84's lesson says nobody reads twice. Unlike the seven entries
+ * struck off before it, what it was hiding is not a contrast. Measured, the
+ * glow's centre reads
+ * **ΔE 4.42–13.17** against the grounds it can be drawn on: over the
+ * just-noticeable difference everywhere, under `MIN_DELTA_E` everywhere, which
+ * is the right register for a field (this is not a mark to be told apart from
+ * another mark; it is a hint about the water) and is not the finding. The
+ * finding is the *shape*.
+ *
+ * **The ramp was not the rule.** `FertilityField.at()` is a Gaussian on the
+ * torus — fertility above the floor falls as `exp(−r²/2σ²)` with σ =
+ * `patchRadius` — and the picture drew two straight segments (0.16 → 0.06 over
+ * the first 60% of a 1.8σ disc, then 0.06 → 0 over the rest). Those are two
+ * different curves, and the difference is visible: composited and swept over
+ * the sixty-six grounds this pond can draw and all four vision models, the old
+ * ramp crossed under the just-noticeable difference at a median of **0.99σ**
+ * (0.67–1.46), so the glow a watcher could actually see stopped where the ground
+ * was still at 61.3% of its peak excess fertility. Measured against a real crop
+ * — 5,256 pellets over three seeds — the picture accounted for **38.4%** of the
+ * standing crop and drew nothing legible about the rest.
+ *
+ * So the ramp is the rule now: one ink, and the alpha carries `biomeGlowFalloff`,
+ * which *is* the field's own bump. That moves the visible edge to a median of
+ * **1.38σ** and the crop it accounts for to **60.9%**, without changing the ink,
+ * the peak or anything the audit had already measured — every "+biome"
+ * background in `test/palette.test.js` is the same colour it was, because that
+ * background is this glow's centre.
+ *
+ * @returns {{rgb:{r:number,g:number,b:number}, alpha:number, span:number}}
+ */
+export function pondBiomeGlow() {
+  return { rgb: { r: 30, g: 78, b: 66 }, alpha: BIOME_GLOW_PEAK, span: BIOME_GLOW_SPAN };
+}
+
+/**
+ * The glow's opacity at a biome centre. Unchanged since v1.3 and deliberately
+ * so: it is what every mark drawn over fertile water has been audited against,
+ * and this release changed the shape of the ramp rather than its loudness.
+ */
+export const BIOME_GLOW_PEAK = 0.16;
+
+/**
+ * How far the glow is drawn, in patch radii (σ) — and it is the first radius
+ * here chosen by measurement rather than by eye.
+ *
+ * A gradient ends at its radius, so wherever the ramp is truncated there is a
+ * hard step from whatever alpha it had reached to nothing. The old 1.8σ cut at
+ * an alpha of 0.032, which is **ΔE 2.97** on the ground where it shows most —
+ * over the just-noticeable difference, so the picture drew a faint ring the rule
+ * has no edge at. 2.0σ cuts at 0.022, worst case **2.05**, under it everywhere;
+ * 1.9σ is still 2.48. So the glow now ends where a watcher stops being able to
+ * see it, and `test/palette.test.js` holds that as a squeeze rather than a
+ * number.
+ */
+export const BIOME_GLOW_SPAN = 2;
+
+/**
+ * How many stops the Gaussian is sampled at. A canvas gradient interpolates
+ * linearly between stops, so this is the resolution of the curve: nine stops put
+ * the worst chord **0.00099** of alpha off the true falloff, which composites to
+ * ΔE 0.08 — two orders of magnitude under the just-noticeable difference, and
+ * the reason the ramp can be a rule rather than an approximation of one.
+ */
+export const BIOME_GLOW_STOPS = 9;
+
+/**
+ * The field's own falloff, as a fraction of peak, at `t` across the drawn
+ * radius. This is `exp(−r²/2σ²)` with `r = t · span · σ` — the same curve
+ * `FertilityField.at()` puts the excess fertility on, and `test/palette.test.js`
+ * checks it against that method rather than against a copy of this expression.
+ *
+ * @param {number} t 0 at the centre, 1 at the drawn edge
+ */
+export function biomeGlowFalloff(t) {
+  const r = BIOME_GLOW_SPAN * Math.max(0, Math.min(1, t));
+  return Math.exp(-(r * r) / 2);
+}
+
+/**
+ * The glow as a canvas gradient: one ink at `BIOME_GLOW_STOPS` opacities.
+ *
+ * The ink is constant along the ramp, which the old two-segment version was not
+ * — it drifted from `rgb(30, 78, 66)` to `rgb(30, 70, 62)` on the way out. A
+ * gradient with one colour and a moving alpha is the same picture under either
+ * reading of how a canvas interpolates a stop (premultiplied or not), so this
+ * also removes a difference between what this file measures and what a browser
+ * paints that nobody had ever noticed was there to have.
+ *
+ * @returns {Array<{offset:number, alpha:number, css:string}>}
+ */
+export function biomeGlowStops() {
+  const glow = pondBiomeGlow();
+  const out = [];
+  for (let i = 0; i < BIOME_GLOW_STOPS; i++) {
+    const offset = i / (BIOME_GLOW_STOPS - 1);
+    const alpha = glow.alpha * biomeGlowFalloff(offset);
+    out.push({ offset, alpha, css: rgbaCss(glow.rgb, alpha) });
+  }
+  return out;
+}
 
 /**
  * Enriched ground — the map of where this pond's dead went (v1.27).

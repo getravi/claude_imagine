@@ -23,6 +23,8 @@ import {
   refugeRing,
   visionReach,
   selectionMark,
+  biomeGlowStops,
+  BIOME_GLOW_SPAN,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
@@ -195,16 +197,20 @@ export class Renderer {
     // default view is the one every earlier version produced.
     if (world.terrain) this._drawTerrain(ctx, world.terrain, cam);
 
-    // Biomes: faint fertile glows so you can see where food concentrates.
+    // Biomes: faint fertile glows so you can see where food concentrates. The
+    // ramp is the rule — `biomeGlowStops()` samples the same Gaussian
+    // `FertilityField.at()` puts the fertility on, out to the radius where the
+    // glow falls under what an eye can see (v1.93, `palette.js` has the
+    // measurement). Until then it was two straight segments over 1.8σ, and the
+    // visible part of it stopped at 0.99σ.
     if (cfg.foodPatches && world.environment) {
       ctx.globalCompositeOperation = "lighter";
+      const stops = biomeGlowStops();
       for (const c of world.environment.centres) {
         const p = cam.nearest(c.x, c.y);
-        const rad = cfg.patchRadius * 1.8;
+        const rad = cfg.patchRadius * BIOME_GLOW_SPAN;
         const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad);
-        grd.addColorStop(0, "rgba(30, 78, 66, 0.16)");
-        grd.addColorStop(0.6, "rgba(30, 70, 62, 0.06)");
-        grd.addColorStop(1, "rgba(30, 70, 62, 0)");
+        for (const s of stops) grd.addColorStop(s.offset, s.css);
         ctx.fillStyle = grd;
         ctx.beginPath();
         ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
