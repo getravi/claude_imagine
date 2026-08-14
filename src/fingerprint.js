@@ -175,6 +175,54 @@ export const CREATURE_UNHASHED = {
 };
 
 /**
+ * Every own field a live `World` carries that `stateFingerprint` reaches, and
+ * the two lists are the point rather than either one of them.
+ *
+ * v1.53 wrote this list for a creature and found three fields moving the pond
+ * from outside it. v1.59 wrote it for the books. The world's own fields — the
+ * twenty things a `World` *is* — were nobody's list until v1.91, and the sweep
+ * that came looking (`src/statesweep.js`) found the state hash blind to six of
+ * them. `test/statesweep.test.js` walks a stepped world and fails on any own
+ * field that is in neither list, so the next release's addition has to be
+ * classified rather than defaulted.
+ */
+export const WORLD_HASHED = [
+  "tick", "visionFactor", "creatures", "food", "corpses", "detritus",
+  "environment", "terrain", "barriers",
+  "creatureGrid", "foodGrid", "corpseGrid",
+];
+
+/**
+ * The eight fields the state hash does not reach, and why each is right to be
+ * outside it. Five have a channel of their own; three do not, and the third is
+ * the gap this release leaves open.
+ */
+export const WORLD_UNHASHED = {
+  config: "the question, not the answer — two worlds built from different " +
+    "configs are supposed to differ, and `src/levers.js` has swept every " +
+    "number in it since v1.38",
+  rng: "its position lives inside the closure `mulberry32` returns, so " +
+    "`rng.seed` is a record of how a stream started and not the stream. No " +
+    "walk of an object can reach the state that matters; `drawStream` is the " +
+    "channel, and it is the one that must be attached before the first tick",
+  phylogeny: "the observer's tree — `observationFingerprint`, so that a change " +
+    "moving it and not the pond still reads as pure observation",
+  stats: "the books — `booksFingerprint` (v1.59)",
+  energy: "the books — `booksFingerprint` (v1.59)",
+  seasonFactor: "derived from the tick at the end of every step, so a " +
+    "perturbation is overwritten before anything reads it. Measured, not " +
+    "assumed: the v1.91 sweep moves it and the pond does not part",
+  seasonPhase: "the same, one field over",
+  chronicle: "**nothing watches it.** The pond's narration is an output like " +
+    "the tree and the books, and both of those got a channel when somebody " +
+    "asked; this one has thirty-six latches deciding whether a line is ever " +
+    "spoken again, its own RNG, and no hash. The v1.91 sweep says every one of " +
+    "them is inert with respect to the pond, so this is a hole in the " +
+    "instrument rather than in determinism — the sixth channel is the lead " +
+    "that release left",
+};
+
+/**
  * Everything the trajectory hash covers, plus how this build *represents* it:
  * the genome a child would inherit, the brain the creature currently is, its
  * body genes, its disease and signalling state, the ground under it, and the
@@ -234,7 +282,78 @@ export function stateFingerprint(world) {
   for (const f of world.food.items) h.num(f.x).num(f.y).flag(f.eaten);
   for (const k of world.corpses || []) h.num(k.x).num(k.y).num(k.energy);
   h.array(world.detritus && world.detritus.cells);
+  mixShape(h, world);
   return h.digest();
+}
+
+/**
+ * The pond's shape: the landscape it is laid out on, the bookkeeping the food
+ * field carries between ticks, and the geometry of the index everything is
+ * looked up through. Added in v1.91.
+ *
+ * Everything above this line is the pond's *contents* — where each creature,
+ * pellet and corpse is. That was the whole hash from v1.36 to v1.90, and
+ * v1.59 noticed the omission and cleared it by reading the code: the landscape
+ * is built once at construction and never written again, so two worlds from one
+ * config cannot differ in it. The reading was right about most of it and wrong
+ * about the conclusion, which is that a claim nothing checks is a claim about
+ * the code as it stands today. `src/statesweep.js` is the sweep that asked the
+ * question properly, and of 166 pieces of live state in the richest world this
+ * project can build it found 23 the pond's future depends on and **17 that no
+ * channel could see** — every one of them in this function's subject, spread
+ * over six of the world's twenty fields.
+ *
+ * Note the shape of what was missing, because it is not "a field somebody
+ * forgot". The pond's contents move every tick and its shape does not, so a
+ * hash written by watching a world run covers exactly the half that moves.
+ *
+ * @param {Hash} h
+ * @param {import('./world.js').World} world
+ */
+function mixShape(h, world) {
+  const fertility = world.environment;
+  if (!fertility) h.word(0xdeadbeef);
+  else {
+    // `_mean` is deliberately absent: it is a lazily-filled cache of a pure
+    // function of the fields below it, so hashing it would make a world that
+    // has been *asked* its mean fingerprint differently from one that has not
+    // — which is the one thing v1.36 says an instrument may never do.
+    h.num(fertility.floor).num(fertility.sigma).num(fertility.twoSigma2);
+    h.word(fertility.centres.length);
+    for (const c of fertility.centres) h.num(c.x).num(c.y);
+    for (const d of fertility.driftDirs) h.num(d.x).num(d.y);
+  }
+  const terrain = world.terrain;
+  if (!terrain) h.word(0xdeadbeef);
+  else h.word(terrain.cols).word(terrain.rows).num(terrain.mean).array(terrain.grid);
+  const barriers = world.barriers;
+  if (!barriers) h.word(0xdeadbeef);
+  else {
+    h.word(barriers.walls.length);
+    for (const w of barriers.walls) {
+      h.flag(w.vertical).num(w.pos).num(w.half).num(w.gapHalf).array(w.gaps);
+    }
+  }
+  const detritus = world.detritus;
+  if (detritus) {
+    h.word(detritus.cols).word(detritus.rows);
+    h.num(detritus.cellW).num(detritus.cellH).num(detritus.total);
+  }
+  // What the food field remembers between ticks: the fractional pellet it is
+  // part-way through spawning, and the two counters `Stats` reads its rates
+  // from. The accumulator is the pond's spawn *phase* — set it to a different
+  // fraction and the crop arrives on different ticks.
+  h.num(world.food._spawnAccumulator).num(world.food.spawned).num(world.food.sprouted);
+  // The index's geometry, not its buckets. `cells` holds the same creature and
+  // pellet objects the loops above already hashed, rebuilt from their positions
+  // at the top of every tick — hashing it would say nothing new and would make
+  // the digest depend on where inside a tick it was taken. The geometry is a
+  // different thing: `cellSize` is a term in the physics rather than a tuning
+  // knob (v1.75), because with `exactVision` off the 3×3 block *is* what a
+  // creature can find.
+  for (const g of [world.creatureGrid, world.foodGrid, world.corpseGrid]) {
+    h.num(g.width).num(g.height).num(g.cellSize).word(g.cols).word(g.rows);
+  }
 }
 
 /**
@@ -269,6 +388,11 @@ export function observationFingerprint(world) {
   if (!p) return h.word(0xdeadbeef).digest();
   h.num(p.threshold).num(p.sampleInterval).word(p.maxSnapshots);
   h.word(p.snapshotStride).word(p.snapshotsSeen).num(p.latestTick === null ? -1 : p.latestTick);
+  // The two the v1.91 sweep found: the id the next branch will be given, and
+  // the tick the next snapshot is due after. Both decide the observer's future
+  // while saying nothing about its present, which is why a hash written by
+  // looking at the tree missed them.
+  h.word(p.nextId).num(p._lastSample === null || p._lastSample === undefined ? -1 : p._lastSample);
   h.word(p.species.length);
   for (const s of p.species) {
     h.word(s.id).word(s.parentId === null ? -1 : s.parentId);

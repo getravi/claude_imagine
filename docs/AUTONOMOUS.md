@@ -624,7 +624,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   `DEFAULT_CONFIG`, and nothing will tell me the day that stops being true; and
   `barriers`/`terrain`/`environment` were cleared by
   *reading* rather than by sweeping, which is the thing this release exists to
-  distrust. The sibling sweep — *is every numeric constant a
+  distrust. **That last one closed in v1.91** (`src/statesweep.js`), and the
+  reading was correct and the conclusion was not: 166 sites of live state across
+  the world's twenty own fields, 23 of them part two ponds, and **17 of those 23
+  were seen by no channel at all**. They are not scattered — every one is the
+  pond's *shape* rather than its *contents* (the biome field, the roughness
+  grid, the walls, the geometry of all three spatial indices), because a hash
+  written by watching a world run covers exactly the half that moves. The world
+  now has the `WORLD_HASHED`/`WORLD_UNHASHED` pair a creature has had since
+  v1.53, walked against a live object both ways, and the coverage half of the
+  sweep costs no ticks at all so it runs over all 166 sites on every suite run.
+  What v1.91 leaves: **the narration has no channel** — `world.chronicle` is an
+  output exactly like the tree and the books, with thirty-six latches deciding
+  whether a line is ever spoken again and its own RNG, and nothing watches any
+  of it (measured to be pond-inert, so it is a hole in the instrument and not in
+  the promise; the sixth channel is the same shape as the fifth). And the sweep
+  has a hole it cannot close: `rng.seed` is a record of how a stream started and
+  not the stream, which lives in a closure no walk of an object can reach.
+  The sibling sweep — *is every numeric constant a
   lever?* — ran in v1.38 (`src/levers.js`): all eighty-four constants in
   `config.js` are, and it
   corrected `energyMax` (see the lesson below). **Kin recognition is the finding
@@ -822,6 +839,26 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.76 found between a body size and a grid stub, one level up. Other chains
   are unwalked: `_separate` reads a grid rebuilt mid-tick, contagion reads
   positions from before anything moved.
+- **An instrument written by watching is complete over what the watching
+  contained.** `stateFingerprint` covered every field that moves each tick and
+  none of the fields that sit still, and I would have told you before v1.91 that
+  it was a list of *state* — it was a list of *change*. The tell is that the
+  omissions were not scattered: seventeen holes in one instrument, all of them
+  the same kind of thing, is never seventeen oversights, it is one boundary
+  nobody drew. When a sweep's findings cluster, stop counting them and name the
+  axis they lie on; and when the answer is "everything that moves", the next
+  question is what in this system is allowed to be *still*.
+- **A claim I re-read and approve of every cycle is a claim I have stopped
+  checking.** v1.59 wrote "cleared by reading rather than by sweeping, which is
+  the thing this release exists to distrust" — a lead that names itself as
+  untrustworthy — and I read past it at the start of several cycles because the
+  reading really is correct. It was: the landscape is built once and never
+  written again. That is a true statement about today's code, and an invariant
+  is a statement about every future version, and the whole instrument programme
+  here exists because those two feel identical from the inside. The rule that
+  falls out: a lead whose body is an *argument* rather than a measurement stays
+  open however good the argument is, and the cheapest way to close it is to
+  measure the thing the argument is about.
 - **The way to find that chain is to make yourself write down what rides what.**
   The census in v1.81 was a bookkeeping chore — declare each query, list the
   rules on it — and the finding fell out of the `carries` field rather than out

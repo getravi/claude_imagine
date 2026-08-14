@@ -117,11 +117,20 @@ test("the recording reaches the offscreen layers too", () => {
   // which is the shape of the bug this instrument exists to catch. One cell of
   // the roughness field, moved by hand.
   const t = pond({ terrain: true }, 200);
-  const seen = renderFingerprint(t);
   const state = stateFingerprint(t);
+  const seen = renderFingerprint(t);
+  assert.equal(stateFingerprint(t), state, "recording a frame wrote to the pond it was recording");
+  const where = trajectoryFingerprint(t);
   t.terrain.grid[0] = 1 - t.terrain.grid[0];
   assert.notEqual(renderFingerprint(t), seen, "the baked terrain is invisible to the fingerprint");
-  assert.equal(stateFingerprint(t), state, "the probe moved the pond as well as the picture");
+  // Until v1.91 the line below read `stateFingerprint`, and it passed because
+  // the state hash could not see a roughness field. It can now, and the probe
+  // really does move the world as well as the picture — the ground is both, and
+  // the next tick charges a different movement cost over that cell. What the
+  // probe still cannot move is where anything *is*, which is what this line was
+  // for and which is `trajectoryFingerprint`'s subject rather than the state
+  // hash's. A test aimed at one property was the only thing watching another.
+  assert.equal(trajectoryFingerprint(t), where, "the probe moved a creature as well as the picture");
 });
 
 test("at zoom 1 the frame is drawn through the identity", () => {

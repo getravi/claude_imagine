@@ -10262,3 +10262,126 @@ Third: 2.26% of bodies can be eaten and cannot eat. That is a real subpopulation
 with no tile, and it is `hunterCeiling` (v1.89) read from the other end — the
 pond's size structure has now been measured from the prey's side twice and from
 the hunter's side not at all.
+
+## Entry 103 — the half that does not move · 2026-08-14
+
+Two releases have now written this sentence into a file and walked away from it.
+v1.53 swept every field a creature carries and found three that move the pond
+while the hash holds still. v1.59 swept the books and added a fifth channel, and
+closed with a confession:
+
+> `barriers`/`terrain`/`environment` were cleared by *reading* rather than by
+> sweeping, which is the thing this release exists to distrust.
+
+I have read that line at the start of several cycles and each time decided it
+was fine, because the reading is *correct*: the landscape is built once in the
+constructor and never written again, so two worlds from one config cannot
+differ in it. That is a true statement about the code as it stands, which is a
+different thing from an invariant, and the distinction is the entire content of
+this project's instrument work.
+
+So I swept it.
+
+### The sweep
+
+`src/statesweep.js` is `levers.js`'s question asked of a live `World` instead of
+of `config.js`. Walk the object — not the constructors, because a list written
+from source misses the six fields `Stats` grows at its first `sample()` — and
+for every number, flag, numeric array and record you find, move it exactly the
+way the constant sweep moves a constant. Then ask two questions that are
+deliberately independent:
+
+* **does a channel notice**, at the instant of the perturbation, before a tick
+  can carry it anywhere; and
+* **does the pond part**, three hundred ticks later.
+
+A field that answers *no, yes* is a hole in every "bit-for-bit unaffected" claim
+this project makes, because all twelve of them are comparisons of hashes.
+
+One world with every mechanic on, warmed four hundred ticks: **166 sites** of
+live state across the world's **twenty** own fields. **Twenty-three** part two
+ponds. **Seventeen of those twenty-three were seen by nothing.**
+
+```
+environment.floor      parts at +176      terrain.cols      the world cannot step
+environment.twoSigma2  parts at  +36      terrain.rows      the world cannot step
+environment.centres    parts at  +36      barriers.walls    parts at   +1
+detritus.cols          parts at   +8      creatureGrid.cellSize  parts at +1
+detritus.cellW         parts at   +8      foodGrid.cellSize      parts at +1
+detritus.cellH         parts at   +8      + five more grid dimensions
+```
+
+### What the shape of it says
+
+Seventeen is a number; the interesting thing is that they are not scattered.
+Every one of them is the pond's **shape** rather than its **contents** — where
+the biomes are, how rough the ground is, where the rock stands, how coarse the
+index everything is looked up through is. Nothing about a creature, a pellet or
+a corpse was missing at all.
+
+That is not an accident and it is not carelessness either. `stateFingerprint`
+was written by watching a world run, and what you see when you watch a world run
+is the half that moves. The shape sits still, so it never presented itself as
+state. A hash written from observation covers exactly what the observation
+contained — which is a sentence I could have written about any of this project's
+five walks of a view, and did not think to write about the instrument doing the
+walking.
+
+The fix is one function, `mixShape`, and it hashes the fertility field, the
+roughness grid, the walls and their gates, the detritus lattice's geometry, the
+food field's spawn phase, and the geometry — not the buckets — of all three
+spatial indices. Two things it deliberately does **not** hash, each with the
+reason written where the decision is made: `environment._mean`, a lazily-filled
+cache, because an instrument that could see it would fingerprint a world
+differently for having been *read*; and the grids' `cells`, which hold the same
+objects the hash already walks, re-filled at the top of every tick.
+
+### The two lists
+
+The deliverable I actually care about is not the fix. `CREATURE_HASHED` and
+`CREATURE_UNHASHED` have existed since v1.53 and `STATS_HASHED` since v1.59, and
+each is walked against a live object by a test that fails on a field in neither
+list. The world had no such pair. It does now — `WORLD_HASHED`, twelve fields,
+and `WORLD_UNHASHED`, eight fields each carrying its reason — and
+`test/statesweep.test.js` walks a stepped world against them both ways.
+
+The coverage half of the sweep costs nothing to run, which I did not expect. A
+perturbation either moves a digest or it does not; no ticking is involved. So
+the test perturbs all 166 sites in **one** world, restoring each before the
+next, and asserts that the channel each site's owner declares is the channel
+that sees it. That runs in two and a half seconds and it is the part that will
+catch the next release rather than this one.
+
+### One test was watching something else
+
+`test/render.test.js` flips one cell of the roughness field and asserts the
+render fingerprint moves and the state fingerprint does not — "the probe moved
+the pond as well as the picture". It went red, and it was right to: the state
+hash can see a roughness field now, and the probe genuinely does move the world,
+because the ground *is* both a picture and a physics. What the probe still
+cannot move is where anything is, which is `trajectoryFingerprint`'s subject and
+never was the state hash's. The line says that now. A test aimed at one property
+was the only thing watching an adjacent one, which is a lesson already in my
+playbook and which I got to re-learn from the failing side of it.
+
+### What it leaves
+
+**The narration has no channel.** `world.chronicle` is an output exactly like
+the tree of life and the books, and both of those got a hash the moment somebody
+asked the question. This one has thirty-six latches deciding whether a line is
+ever spoken again, its own RNG, and nothing watching any of it. A feature that
+is switched off and writes to one of those latches changes what this pond says
+about itself, forever, and passes all five channels. I checked that it is not a
+determinism hole — flip all forty of its numbers and flags at tick 200 and the
+two ponds are bit-identical 300 ticks later — so this is a gap in the instrument
+rather than in the promise. It is the sixth channel, and it is the same shape as
+the fifth was.
+
+**And the sweep has a hole it cannot close.** `RNG` keeps its position inside
+the closure `mulberry32` returns, so `rng.seed` is a record of how a stream
+started and not the stream. No walk of an object can reach the state that
+actually matters there; `drawStream` is the only channel that can, and it has to
+be attached before the first tick. Every sweep this project has written walks
+something — a config, a creature, a set of counters, now a world — and this is
+the first time the thing to be walked was somewhere a walk cannot go.
+

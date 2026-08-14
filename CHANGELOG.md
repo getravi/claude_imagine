@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.91.0] — 2026-08-14
+
+v1.53 asked whether every field a *creature* carries is visible to the hash that
+claims to identify a world, and found three moving the pond from outside it.
+v1.59 asked it of the books and added a fifth channel. The world's own fields —
+the twenty things a `World` *is* — were nobody's list, and v1.59 wrote the gap
+down and closed it by reading the code: "`barriers`/`terrain`/`environment` were
+cleared by *reading* rather than by sweeping, which is the thing this release
+exists to distrust." This is the sweeping.
+
+### Added
+
+- **`src/statesweep.js`, the constant sweep asked of a live world.** It walks
+  every perturbable field a `World` carries — off the object, not the
+  constructors, because a list written from source misses the six `Stats` grows
+  at its first sample — moves each one exactly the way `levers.js` moves a
+  number, and asks two independent questions: does any fingerprint channel
+  notice, and does the pond's future part. `STATE_OWNERS` names the channel
+  watching each of the world's twenty fields; `SITE_SILENT` names the five
+  exclusions and why each is right. Both are checked against a live world in
+  both directions, so a field added in a later release fails a test until
+  somebody classifies it.
+- **`WORLD_HASHED` and `WORLD_UNHASHED`** in `fingerprint.js`, the world-level
+  equivalent of the creature and stats lists that have existed since v1.53 and
+  v1.59. Eight fields sit outside the state hash and each carries its reason.
+- **Six tests.** The coverage half of the sweep needs no ticking — a
+  perturbation either moves a digest or it does not — so it runs over all 166
+  sites on every suite run, perturbing and restoring in one world.
+
+### Fixed
+
+- **`stateFingerprint` now hashes the pond's shape, not only its contents.**
+  The biome field (floor, width, every centre and drift direction), the
+  roughness grid, every wall and its gates, the detritus lattice's geometry,
+  the food field's spawn phase and its two counters, and the cell size and
+  shape of all three spatial indices. Seventeen sites the pond's future depends
+  on were invisible to all five channels; every one of them is in that list.
+- **`observationFingerprint` gains `nextId` and `_lastSample`** — the id the
+  next branch will be given and the tick the next snapshot is due after. Both
+  decide the observer's future while saying nothing about its present, which is
+  why a hash written by looking at the tree missed them.
+
+### Measured
+
+One world with every mechanic switched on, warmed 400 ticks, each site
+perturbed and both arms run 300 ticks further:
+
+- **166 sites of live state** across the world's **twenty** own fields.
+- **23 of them part two ponds**, and **17 of those 23 were seen by nothing**.
+  Six owners: the biome field (3), the roughness grid (2), the detritus lattice
+  (3), the walls (1), and the three spatial indices (8).
+- The shape of the omission is the finding, not the count. A pond's contents
+  move every tick and its shape does not — so a hash written by watching a
+  world run covers exactly the half that moves.
+- **The narration is the one output with no channel at all.** `world.chronicle`
+  carries thirty-six latches deciding whether a line is ever spoken again, and
+  its own RNG. Every one of them is inert with respect to the pond — flip all
+  forty of its numbers and flags at tick 200 and the two ponds are still
+  bit-identical 300 ticks later — so this is a hole in the instrument rather
+  than in determinism. The sixth channel is what this release leaves.
+
+### Changed
+
+- `test/render.test.js`'s recorder probe asserted that flipping one cell of the
+  roughness field moved the picture and not the pond, and used the state hash to
+  say so. It passed because the state hash could not see a roughness field. The
+  probe really does move the world — the ground is both — so the line now says
+  what it was always for, in `trajectoryFingerprint`: it moves no creature and
+  no pellet.
+
 ## [1.90.0] — 2026-08-13
 
 v1.83 audited the five contact rules and left one sentence unfinished: "a
