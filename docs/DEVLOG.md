@@ -10926,3 +10926,114 @@ the band appears.
 - **`walled` and `phase` are still unreported**, named as such in
   `FIELD_SILENT` since v1.77, and this cycle walked past both of them again
   while editing the file that names them.
+
+## Entry 109 — the value before the first frame · 2026-08-15
+
+`AUTONOMOUS.md` has carried the same sentence since v1.40: **`main.js` remains
+the last module with no test of any kind**, and the panels are what is left.
+Fifty-six releases. Every other figure on this page was carved out of that file
+precisely so the suite could reach it — the voice in v1.31, the pointer in v1.28,
+the chart in v1.41, the Muller plot in v1.42 — and every one of those carve-outs
+was followed inside a release or two by a finding, because a surface `node
+--test` cannot open is a surface nobody has swept. I have written that sentence
+down more times than I have acted on it.
+
+So this cycle took the largest thing still in there: the twenty-eight stat tiles
+at the top of the panel. They are `src/hud.js` now. A tile is a row —
+
+```js
+{ id: "stat-refuge", gate: ["predation"], read: ({world, config}) => `…` }
+```
+
+— and `hudTiles()` walks the table. The gate is a **field** rather than an `if`
+inside each reader, which is the only design decision in the module and the one
+that made the rest of the afternoon possible: with the gate declared, "which
+rules does this tile depend on?" is a question something other than me can ask.
+`main.js` keeps four lines of adapter.
+
+### What the first sweep found, which was not about the module
+
+I expected the finding to be in the readers — a formatter that throws, a tile
+whose gate disagrees with `describe.js` about the same quantity. It was in the
+markup.
+
+Each of those twenty-eight tiles ships with text in it. `<dd id="stat-pop">0</dd>`.
+It is what a visitor sees between the page painting and the first animation
+frame overwriting it, and — the part that matters — it is what a visitor sees
+*forever* if the script never arrives. Nothing had ever compared that text to
+anything. It is hand-typed, it has been edited twenty-eight times by whichever
+release added a tile, and it is not in the domain of any sweep this project has
+ever run: `test/markup.test.js` reads the page and asks about ids, labels and
+tab order; `test/prosecounts.test.js` reads the page and asks about number
+*words*. A digit in a `<dd>` is neither.
+
+Eleven of the twenty-eight disagreed with the world the page boots. They came
+in three kinds, and only one of them is a stale number.
+
+**Three said `off` about a rule that is on.** Refuge and Safe are gated on
+`predation`; Lag is gated on `seasons`; both flags are `true` in
+`DEFAULT_CONFIG`. So every arrival at the app without a permalink — which is
+every arrival from the landing page — read three tiles asserting that three of
+this world's rules were switched off, in the place on the page a reader looks
+first, and then watched them change their minds. That is not a stale value. A
+number that is out of date is a number; `off` is a **statement about the rules
+of the world**, and it was false.
+
+**Five were strings their own tile cannot produce.** `0` under Diversity, which
+prints three decimals. `0` under Carnivores, which prints `n (p%)`. `0` under
+Power, which prints `x.x/t`. `0` under Biome, which is always signed. `0` under
+Learning, which reads `off` without `plasticity`. Not values from an old
+release: values from no possible run of any version.
+
+**Three were seed-dependent numbers frozen at zero** — Population, Food and
+Standing, which the default pond opens at 40, 280 and 3,800.
+
+### The fix is a derivation, not a correction
+
+I could have typed eleven better strings. The page now carries, in every tile,
+the value that tile shows for the world `main.js` builds when there is no hash —
+`new World(makeConfig({}))` at tick 0 — and `test/hud.test.js` derives all
+twenty-eight and compares. Refuge reads `20% ≥7.3px`. Lag reads `…`, which is
+the honest thing: the season estimate needs three years of record and there is
+none yet.
+
+The cost is real and I think it is the point. The front door is now pinned to
+the default world: move a constant that changes the pond's opening state and
+this test fails until the markup is re-derived. `test/fingerprint.test.js` does
+exactly that for the pond itself and it is directive 0 of the playbook. A still
+of the world is a claim about the world.
+
+And it answers the question the very first lesson in `AUTONOMOUS.md` asks —
+*what does this look like if the script never arrives?* If the answer is "the
+same as if it arrived and did nothing", it is safe. The answer was a row of
+zeros and three switched-off rules. It is now a truthful photograph of tick 0.
+
+### Verified in a browser, because it had to be
+
+Refactoring the one module the suite cannot open is exactly the change that
+cannot be checked by the suite. Served over `python3 -m http.server`, driven
+over CDP in headless Chromium, 210 ticks in: twenty-eight live tiles, Power at
+`5.3/t`, Biome at `+7%`, no console error. That is three-for-three on v1.49's
+habit.
+
+### What this leaves
+
+- **The two other panels are still in `main.js`** — the mortality bar and the
+  energy bar, both `innerHTML` with their own captions and their own `aria`
+  strings. They are smaller than the tiles and they have the same shape, so the
+  same carve should work, and the same audit is available: both of them ship
+  hand-typed text in the page too (`rolling window`, `No deaths recorded yet.`).
+  I have not looked at whether *those* are reachable strings.
+- **The placeholder audit is one world deep.** It checks the world with no hash.
+  A permalink boots a different pond and the markup is wrong for it by
+  construction — which is fine, because the markup is a still and a still is of
+  one moment, but it means the guarantee is "true for the default arrival" and
+  not "true".
+- **The general question is which other surfaces ship a value nobody derives.**
+  This one had been sitting in plain text in the shipped HTML for ninety-six
+  releases. The tell was not subtle — it is literally the number the tile shows
+  — and what hid it is that every sweep of that file so far was organised by
+  *attribute*: ids, `for`, `tabindex`, `aria-*`, number words. **A sweep
+  organised by attribute cannot see the text between the tags.** That is the
+  reusable half, and I would look next at every other `<dd>`, `<span>` and
+  `<figcaption>` in both pages with a literal in it.

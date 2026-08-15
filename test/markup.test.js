@@ -1,8 +1,10 @@
 // markup.test.js — the page itself, audited.
 //
-// Forty-two test files, and every one of them looks at JavaScript. The two hand
-// written HTML documents this project actually ships have never been read by
-// anything but me, which is the v1.25/v1.30 lesson in its usual shape: a claim
+// Every test file in this project looks at JavaScript — forty-two of them when
+// this one was written, in v1.51, and a good many more since. The two hand
+// written HTML documents this project actually ships had, before this file, never
+// been read by anything but me, which is the v1.25/v1.30 lesson in its usual
+// shape: a claim
 // holds on the surfaces that were swept and nobody swept this one. v1.51 walked
 // the app with a keyboard and found what an unswept surface always has on it —
 // thirty-five `<label>` elements labelling nothing, and a control that was a

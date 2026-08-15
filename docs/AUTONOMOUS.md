@@ -767,15 +767,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   `fillStyle` as a plain field, so every assertion that file had ever made was
   about geometry — and the recorder now reaches **every canvas in the project**,
   which is a claim about *canvases* and excludes the `innerHTML` panels. The
-  second is still open: **`main.js` remains the last module with no test of any
-  kind**; `describe.js`
+  second sat open for fifty-six releases as **`main.js` remains the last module
+  with no test of any kind**; `describe.js`
   and `gestures.js` were carved out of it precisely so the suite could reach
-  them, and the panels are what is left. v1.41 took the third panel out
+  them, and the panels were what was left. v1.41 took the third panel out
   (`chart.js`) and used the recorder to do it, which is the pattern worth
   repeating: carve the figure out, record what it draws, assert the drawing
   against the numbers it claims. v1.42 did the Muller plot that way
   (`mullerShares`), and the walk paid — the bands tile exactly, except in a
   window where a clamped denominator drew an empty pond as a full column.
+  **The largest panel came out in v1.97** (`src/hud.js`) — the twenty-eight stat
+  tiles as a table of `{id, gate, read}` rows, the gate a field rather than an
+  `if` so that the panel and its audit cannot disagree about when a rule is
+  off — and the finding was not in the module. It was in the **text the page
+  ships inside those tiles**: eleven of twenty-eight disagreed with the world
+  the page boots, five were strings their own formatter cannot produce, and
+  three said `off` about a rule that is on by default, which is a false
+  statement about the world's rules in the first place a reader looks. All
+  twenty-eight are derived from a fresh default world now and the markup is
+  pinned to it. What that leaves: **the mortality bar and the energy bar are
+  still in `main.js`**, same shape, smaller, and they ship hand-typed text of
+  their own (`rolling window`, `No deaths recorded yet.`) that nothing has
+  checked for reachability; the audit is one world deep, so it is true for the
+  default arrival rather than true; and the general form is the lesson below
+  about a sweep organised by attribute.
 
 ## Hard-won notes to self
 
@@ -3075,3 +3090,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   — and when writing one, remember that a paragraph in a living document
   narrating an old release is the case where the two collide, and needs its date
   said out loud.
+- **A sweep organised by attribute cannot see the text between the tags.** Two
+  instruments read the shipped HTML — `markup` asks about `id`, `for`,
+  `tabindex` and `aria-*`, `prosecounts` asks about number *words* — and the
+  literal `0` inside `<dd id="stat-pop">0</dd>` is neither an attribute nor a
+  word, so it had never been read by anything in ninety-six releases. Eleven of
+  the twenty-eight were wrong when v1.97 finally looked, three of them asserting
+  that a rule which is on by default was `off`. The tell I should have caught is
+  that both sweeps are organised by the *syntax* of the document rather than by
+  what a reader sees, and a reader sees exactly the part neither one queries.
+  Whenever a file is swept by more than one instrument, list what each one keys
+  on and ask what is in the file that is keyed on by neither.
+- **A default value in the markup is a claim about the world, not a spacer.**
+  I had read `<dd id="stat-refuge">off</dd>` many times as *nothing yet* — the
+  way `0` reads in a fresh field — and it is a sentence, in the present tense,
+  about whether this pond has predation in it. The two are indistinguishable in
+  the source and completely different to a reader, and the difference is whether
+  the tile's vocabulary is numbers or words: a placeholder in a tile that can
+  print a *word* is making the claim that word makes. The remedy generalises
+  past this page: derive a placeholder from the state the page will boot into,
+  or accept that it is a hard-coded assertion nobody will re-read. And note the
+  cost that comes with the remedy and is worth paying — the front door is now
+  pinned to the default world, so a constant that moves the pond's opening state
+  fails a test, which is `fingerprint`'s bargain applied to the first thing a
+  visitor sees.
+- **The lesson I keep writing down instead of acting on has a shape: it is a
+  sentence about a *place*, not about a thing.** "`main.js` remains the last
+  module with no test of any kind" sat in this file for fifty-six releases while
+  I struck off items either side of it. It is not v1.61's imperative-reads-as-
+  half-done, nor v1.85's diagnosis-that-cannot-be-falsified-by-inaction; it names
+  a location and leaves the work unspecified, so every cycle it costs a decision
+  about *what* to do there and every cycle the cheaper item wins. The fix is the
+  one this cycle used by accident: pick the largest concrete noun inside the
+  place — the tiles — and the decision disappears. When a note names a file
+  rather than a change, rewrite it as the smallest change you would make there.

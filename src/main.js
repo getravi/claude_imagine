@@ -41,9 +41,8 @@ import {
   brainEdge,
   brainNodeColours,
 } from "./palette.js";
-import { EnergyLedger, ENERGY_SINKS, energySeries } from "./energy.js";
-import { refugeRadius } from "./refuge.js";
-import { readable } from "./seasonlag.js";
+import { ENERGY_SINKS, energySeries } from "./energy.js";
+import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import {
   describeChart,
   describeLineages,
@@ -157,7 +156,7 @@ let running = true;
 // Same value, so nothing about the page moves — but the number is now the one
 // `config.js` says it is, and a permalink can set it.
 let speed = config.stepsPerFrame;
-const uiRng = new RNG(12345); // separate RNG for UI-side sampling (diversity)
+const uiRng = new RNG(UI_RNG_SEED); // separate RNG for UI-side sampling (diversity)
 // Where the selected creature has been (v1.84). Recorded whenever there is a
 // selection, whether or not the overlay is drawing it, so ticking the box shows
 // the path already taken rather than starting a new one — and read by the
@@ -718,154 +717,15 @@ function toggleHighlight(id) {
 }
 
 // ---- HUD ----
+// The tiles themselves live in `src/hud.js` — one table of `{id, gate, read}`
+// rows, so the suite can ask what the panel would say about a given world
+// without a browser. What is left here is the adapter, which is the same
+// division v1.41 made for the chart and v1.31 for the voice.
 function updateHUD() {
-  const s = world.stats;
-  $("stat-pop").textContent = world.creatures.length;
-  $("stat-food").textContent = world.food.items.length;
-  $("stat-gen").textContent = s.currentMaxGeneration;
-  $("stat-tick").textContent = world.tick.toLocaleString();
-  $("stat-births").textContent = s.births.toLocaleString();
-  $("stat-deaths").textContent = s.deaths.toLocaleString();
-  $("stat-fps").textContent = Math.round(fpsSmooth);
-  const div = s.diversity(world, uiRng);
-  $("stat-div").textContent = div.toFixed(3);
-  // Carnivores: count and share of the population.
-  const pop = world.creatures.length;
-  const carn = s.carnivoreCount || 0;
-  const pct = pop > 0 ? Math.round((carn / pop) * 100) : 0;
-  $("stat-carn").textContent = `${carn} (${pct}%)`;
-  $("stat-kills").textContent = s.kills.toLocaleString();
-  // The refuge: what share of the pond is at or above the size nothing here can
-  // eat, and where that line is. Both halves are needed — the percentage is the
-  // news and the threshold is what makes it a fact rather than a mood — and the
-  // threshold is a config quotient, so it is printed rather than hard-coded.
-  // "off" without predation: the same bodies are the same size, but a refuge
-  // from nobody is arithmetic and not a readout.
-  $("stat-refuge").textContent = config.predation
-    ? `${Math.round(s.refugeShare * 100)}% ≥${refugeRadius(config).toFixed(1)}px`
-    : "off";
-  // And the same reading taken from the pond rather than from `config.js`: the
-  // line the largest hunter *alive* sets, and what is beyond it. The tile above
-  // quotes a hunter at `bodyRadiusMax`, which most ponds never grow — so these
-  // two disagree by an average of 43 points of the population, and a pond whose
-  // Refuge reads 0% can have all of itself standing outside the reach of every
-  // animal in the water.
-  //
-  // A word rather than a number when nothing hunts, because "100% ≥0.0px" is
-  // three true symbols arranged into a lie: there is no line, and the reason
-  // there is none is the reading. Gated on `predation` like the tile above it.
-  $("stat-safe").textContent = !config.predation
-    ? "off"
-    : s.hunterCeiling === 0
-      ? "all — no hunter"
-      : `${Math.round(s.livedRefugeShare * 100)}% ≥${s.livedRefugeRadius.toFixed(1)}px`;
-  // Kin recognition: meals declined for being family — the run's total, and how
-  // fast they are being declined now. Both halves, unlike the two other counters
-  // of a rule's work (Walled, Jostled), which show a rate alone: those describe
-  // rules that fire constantly from the first tick, and this one is
-  // *ecologically conditional*. A pond can run twenty thousand ticks with the
-  // flag on and never once offer a hunter a relative it could have eaten
-  // (docs/SCIENCE.md), so "has this rule ever spoken here?" and "is it speaking
-  // now?" are different questions and a rate answers only the second. A total of
-  // 0 is this tile's most interesting reading.
-  //
-  // Gated on `predation` as well as on its own flag, which the counter behind it
-  // is not: the rule still steers what a carnivore chases in a pond where
-  // nothing may bite, but a *declined meal* in a world where no meal is ever
-  // taken is arithmetic rather than news — the Refuge tile's rule, one row up.
-  //
-  // Two tokens with a separator rather than `total (rate/100t)`: these tiles are
-  // an 80-pixel column and they wrap, so a value's longest *unbreakable* token
-  // is what has to fit. `(0.0/100t)` is one such token, 96 px wide, and it hung
-  // 8 px outside the panel — measured in a browser, because `main.js` is the one
-  // module `node --test` cannot open.
-  $("stat-kin").textContent = config.kinRecognition && config.predation
-    ? `${s.kinSpared.toLocaleString()} · ${s.kinSparedRate.toFixed(0)}/100t`
-    : "off";
-  // Contagion: the live sick / immune split (both "off" without a pathogen).
-  $("stat-sick").textContent = config.disease
-    ? `${s.infectedCount} (${pop > 0 ? Math.round((s.infectedCount / pop) * 100) : 0}%)`
-    : "off";
-  $("stat-immune").textContent = config.disease ? s.immuneCount : "off";
-  // How much of the water is inside catching distance of somebody sick — the
-  // number the blue field in the pond and the minimap draws. Zero on its own
-  // whenever nobody is ill, which is every world with no pathogen in it.
-  $("stat-reach").textContent = config.disease
-    ? `${Math.round(s.hazardShare * 100)}%`
-    : "off";
-  $("stat-learn").textContent = config.plasticity ? s.avgLearning.toFixed(3) : "off";
-  // Traffic on the signalling channel: how strong a call the average creature is
-  // hearing right now. "off" where nobody can hear at all.
-  $("stat-heard").textContent = config.signalling ? s.avgHeard.toFixed(2) : "off";
-  // Terrain: how much smoother the ground under the living is than the
-  // landscape as a whole. Negative — shown as a "flatter by" percentage — means
-  // the pond has genuinely drifted into its basins rather than spreading evenly
-  // over ground it cannot perceive. Reads exactly 0 without terrain, so it is
-  // shown as "off" rather than as a suspiciously steady zero.
-  $("stat-ground").textContent = config.terrain
-    ? `${s.groundBias <= 0 ? "−" : "+"}${Math.abs(Math.round(s.groundBias * 100))}%`
-    : "off";
-  // Biomes: how much more fertile the ground under the living is than this
-  // pond's own average. The fertility field has decided where food falls since
-  // v1.3 and no number on this page has ever described it — the tile beside
-  // this one measures the pond against the *terrain*, and until v1.68 there was
-  // no equivalent for the thing that actually moves the crop.
-  //
-  // "off" without `foodPatches`, and the number behind it stays live there: a
-  // field the spawner never consults is a landscape nothing is standing in
-  // *because of*, so the tile is the wrong place for its noise — and the noise
-  // is what it reads (+0.000 over twelve seeds, against +0.089 with the patches
-  // on), which is the measurement that makes the blank honest rather than a
-  // mask. Same shape as the Refuge tile, which is a real number in a pond with
-  // nobody hunting and says "off" anyway.
-  $("stat-biome").textContent = config.foodPatches
-    ? `${s.patchBias < 0 ? "−" : "+"}${Math.abs(Math.round(s.patchBias * 100))}%`
-    : "off";
-  // Barriers: how often the rock is refusing a move, per hundred ticks over the
-  // trailing window. The walls are visible and the detours are not, so this is
-  // the number that says what the layout is actually costing — and it is a rate
-  // rather than the run's total, which would stop moving by tick 3,000. Reads
-  // exactly 0 with no walls in the pond, so it says "off" instead.
-  $("stat-walled").textContent = config.barriers ? `${s.walledRate.toFixed(1)}/100t` : "off";
-  // How far the pond is running behind its own year. Three states, and the
-  // middle one is the point: "off" in a world with no seasons, "…" while the
-  // record is still shorter than the three years the estimate needs (which is
-  // tick 10,400 — measured, see docs/SCIENCE.md), and the lag once there is
-  // one. A number here before the record can support it would be v1.22's
-  // always-full buffer with a clock on it, so the wait is stated rather than
-  // filled in.
-  //
-  // The bar between a reading and a shrug is `readable()`, in the module, so
-  // this tile and the spoken description cannot come to different views about
-  // whether the pond is keeping time.
-  const lag = readable(s.seasonLag);
-  $("stat-lag").textContent = !config.seasons
-    ? "off"
-    : lag
-      ? `${Math.abs(Math.round(lag.lag)).toLocaleString()}t ${lag.lag < 0 ? "ahead" : "behind"}`
-      : "…";
-  // Solid bodies: how many pairs the pond is pushing apart, per hundred ticks
-  // over the same window. This is the only readout of a rule that is almost
-  // invisible — two creatures that cannot overlap look very like two that can —
-  // and it is a rate for the same reason `walled` is: a run's total stops
-  // moving. Exactly 0 in a pond where bodies pass through each other.
-  // The mode is on the tile because nothing else on the page could carry it:
-  // `massWeightedShove` changes *who* gives up the ground and leaves the pair
-  // count, the picture and the population where they were, so a watcher with
-  // only a rate in front of them cannot tell the two rules apart (v1.13).
-  $("stat-jostled").textContent = config.bodyCollision
-    ? `${s.jostledRate.toFixed(0)}/100t${config.massWeightedShove ? " ⚖" : ""}`
-    : "off";
-  // Detritus: what share of the crop is currently growing out of the pond's own
-  // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
-  // field, so it says "off" rather than showing a steady, plausible zero.
-  $("stat-soil").textContent = config.detritus
-    ? `${Math.round(s.soilShare * 100)}%`
-    : "off";
-  $("stat-brain").textContent = config.evolvableTopology
-    ? `${s.avgConns.toFixed(0)}c ${s.avgHidden.toFixed(1)}h`
-    : "fixed";
-  updateMortality(s);
+  for (const { id, text } of hudTiles({ world, config, fps: fpsSmooth, uiRng })) {
+    $(id).textContent = text;
+  }
+  updateMortality(world.stats);
   updateEnergy();
 }
 
@@ -888,8 +748,6 @@ function updateHUD() {
 let energyLabel = "";
 function updateEnergy() {
   const e = world.energy;
-  $("stat-standing").textContent = Math.round(EnergyLedger.standing(world)).toLocaleString();
-  $("stat-power").textContent = `${world.stats.power.toFixed(1)}/t`;
   $("nrg-made").textContent = `${Math.round(e.created).toLocaleString()} minted`;
 
   const shares = e.shares();
@@ -918,7 +776,6 @@ function updateEnergy() {
 // safe to run every frame (see the inspector's note about innerHTML).
 function updateMortality(s) {
   const m = s.mortality();
-  $("stat-life").textContent = m ? Math.round(m.meanLifespan).toLocaleString() : "—";
   const bar = $("mort-bar");
   if (!m) {
     bar.setAttribute("aria-label", "No deaths recorded yet.");

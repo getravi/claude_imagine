@@ -4,6 +4,68 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.97.0] — 2026-08-15
+
+Since v1.40 this file has carried a sentence: `main.js` is the last module with
+no test of any kind, and the panels are what is left. The twenty-eight stat
+tiles were the largest thing in it. They are `src/hud.js` now — one table of
+`{id, gate, read}` rows — and the first question the suite asked of them was not
+about the module at all. It was about the hand-typed text the page ships in
+those tiles before the first frame writes over it, which nothing had ever
+compared to anything. **Eleven of the twenty-eight were wrong, and three of them
+said a rule was `off` that is on by default.**
+
+### Added
+
+- **`src/hud.js`** — the tiles as data. Each row is an `id`, an optional `gate`
+  of config flags, the word it shows when they are not all set, and a `read`
+  that turns a world into a string. The gate is a field rather than an `if`
+  inside each reader, so the panel and the audit cannot come to different views
+  about when a rule is switched off. `main.js` keeps the adapter and nothing
+  else: `for (const {id, text} of hudTiles(...)) $(id).textContent = text`.
+- **`test/hud.test.js`, ten tests.** Both directions of the tile-to-page table,
+  so a tile added to either side cannot go quietly missing from the other; every
+  gated tile reading exactly its blank word with all flags off and something else
+  with its own flags on; every gate naming a flag `DEFAULT_CONFIG` actually
+  holds; a fingerprint either side of ten reads, because Diversity samples and a
+  readout that drew from the pond's stream would make watching the pond change
+  it; and every tile producing a non-empty string in a 600-tick world with every
+  flag on.
+- **The opening still.** `app/index.html` now carries, in each tile, the value
+  that tile shows for the world the page boots — `20% ≥7.3px` where it used to
+  say `off`, `40` where it said `0` — and the test derives all twenty-eight
+  rather than trusting them.
+
+### Fixed
+
+- **Three tiles told a visitor a rule was off while it was on.** Refuge and Safe
+  are gated on `predation` and Lag on `seasons`; both flags default to true, so
+  every arrival without a permalink read `off` on three tiles until the first
+  animation frame — and *forever* if the script never arrived, which is the
+  oldest lesson in the playbook and the one this markup failed.
+- **Five placeholders were strings their tile cannot produce.** `0` for
+  Diversity (three decimals), `0` for Carnivores (`n (p%)`), `0` for Power
+  (`x.x/t`), `0` for Biome (always signed), `0` for Learning (which reads `off`
+  without `plasticity`). Not stale values — values from no possible run.
+- **Three were seed-dependent numbers frozen at zero**: Population, Food and
+  Standing, which the default pond opens at 40, 280 and 3,800.
+
+### Notes
+
+- **Verified in a browser as well as in the suite** (v1.49's habit, now
+  three-for-three): the app served over `http.server`, driven over CDP, 210
+  ticks in, twenty-eight tiles live and no console error. A refactor of the one
+  module `node --test` cannot open is exactly the change that has to be run.
+- **The audit pins the front door to the default world.** If a constant moves
+  the pond's opening state, `test/hud.test.js` fails and the markup has to be
+  re-derived. That is the point rather than a cost: the first thing a visitor
+  reads is now a claim the suite holds, in the same sense `test/fingerprint.js`
+  holds the pond itself.
+- **`test/markup.test.js`'s opening count is dated rather than corrected.** It
+  said "forty-two test files" and there are sixty-five; the sentence narrates
+  v1.51, so it says when, and moves the number off the noun — v1.96's rule about
+  the two kinds of prose, applied to a comment rather than to a paragraph.
+
 ## [1.96.0] — 2026-08-15
 
 v1.90 drew three rings around the selected creature and left a note about them:
