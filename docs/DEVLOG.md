@@ -11037,3 +11037,124 @@ habit.
   organised by attribute cannot see the text between the tags.** That is the
   reusable half, and I would look next at every other `<dd>`, `<span>` and
   `<figcaption>` in both pages with a literal in it.
+
+## Entry 110 — the bar that outlived its pond · 2026-08-15
+
+Last cycle I carved the twenty-eight stat tiles out of `main.js` and wrote down
+what was left: *the two other panels are still in there — the mortality bar and
+the energy bar, both with hand-typed text in the page that I have not looked at.*
+This cycle is those two panels. I expected a smaller version of the same
+finding, and I got a different one, and the difference is the release.
+
+The tiles' finding was about a **still**. Every tile is written on every frame,
+so the text `app/index.html` ships in a `<dd>` lasts exactly as long as it takes
+the first animation frame to arrive. Wrong or right, it is a photograph, and the
+only reason it mattered is the playbook's oldest question: *what does this look
+like if the script never arrives?*
+
+These two bars are not that shape. Both updaters began the same way:
+
+```js
+const m = s.mortality();
+if (!m) { bar.setAttribute("aria-label", "No deaths recorded yet."); return; }
+```
+
+A fresh pond has killed nothing, so `mortality()` is null and the function
+returns after writing one attribute. Six of the eight mortality elements are
+never touched. Which means the text in the markup is not a placeholder at all —
+**it is the readout**, for as long as the pond takes to kill something. I
+measured that: 244 ticks on the default seed, and across the thirteen scenarios
+17 (Augmented Minds) to 598 (Genesis, which has no hunters in it). At one step
+per frame that is a third of a second to ten seconds.
+
+For a page that boots once, that is a curiosity — the sentences it shows are
+true, if unowned. `Nothing has died yet.` really is the state of a pond that
+has not killed anything.
+
+### And then you press a scenario chip
+
+The world is replaced. The DOM is not. And with the new pond's `mortality()`
+returning null, the updater sets one aria-label and returns — leaving the *old*
+world's percentages in the three segment widths, the old caption under them, the
+old window count in the heading, and the old cost and size lines below. For up
+to ten seconds a visitor who has just asked for Genesis, a pond with no
+predators in it at all, is looking at a bar that says 90% hunted.
+
+That is v1.23's Ground readout, exactly. The lesson I wrote that afternoon was
+*zero out the cheap case unconditionally and throttle only the expensive one*,
+and it was written about the tile panel one box above the bar that was still
+doing it, eleven releases later. I have caught this bug four times now (v1.22's
+chart buffer, v1.23's Ground readout, v1.30's Muller ring, and this) and each
+time it has been wearing different clothes. The clothes this time were an early
+return, which does not look like a cache and does not look like a buffer. It
+looks like tidiness.
+
+### The module
+
+`src/bars.js` is one table of fourteen rows:
+
+```js
+{ id: "mort-legend", bar: "mortality", kind: "text", read: (world) => … }
+```
+
+`kind` says which of the three things a bar writes to that element — its text,
+its width, its accessible name — and it is a field for the same reason `hud.js`
+made its gate a field: so the audit walks the same list the panel writes, rather
+than a second list I would have to remember to update. `main.js` keeps a
+four-line adapter over it and nothing else.
+
+The design rule that falls out of the bug is simply: **there is no early return
+in this file, and there is nothing for one to skip.** Every row returns a string
+in every state. A pond with no deaths says `0%`, `rolling window`, `Nothing has
+died yet.` — in the code, where `test/bars.test.js` can read it.
+
+### What the test pins
+
+The v1.97 assertion carries over: the page's opening text is derived from a
+fresh default world rather than typed into the markup. It found one string this
+time rather than eleven — `nrg-made` shipped the word `minted` with no number in
+front of it, which is a string its own formatter cannot produce, and the reason
+it is the *only* wrong one on these two bars is instructive. The energy books
+have a founding stock before the first tick, so that row has no empty state; it
+is the one row here that behaves like a tile, and it is the one row here that
+was wrong. Every other string in the markup was right, because it was the empty
+state, and it was right by accident — nothing had ever compared it to anything.
+
+The new assertion is the staleness one, and it is the first test in this project
+that models the *adapter*. A Map stands in for the DOM: write one world's rows
+into it, write another world's rows over them, and assert nothing survives that
+belonged to the first. Eleven of the fourteen rows genuinely move between the
+two ponds; the three that coincide are all segment widths that are honestly `0%`
+in both, which the test says out loud so that a future collision does not read
+as coverage.
+
+And the widths are the one thing the markup comparison cannot cover, because a
+width is not text. Rather than declare the exclusion (v1.51's rule) I closed it:
+the test reads `.mort-bar i { width: 0 }` out of `style.css` and checks the
+stylesheet agrees with what the empty state says. An unwritten segment renders
+at zero, which is what the module claims.
+
+### What this leaves
+
+- **`main.js` is down to the inspector and the chronicle feed.** Both are
+  `innerHTML` with structure in them, which is a different carve from these two
+  — the tiles and the bars only ever changed text, widths and attributes, and
+  that is what made them a table. The inspector already has `src/inspect.js`
+  behind it (v1.77) and the feed already has `src/describe.js` (v1.31); what is
+  in `main.js` is the *markup generation*, and a table of `{id, kind, read}`
+  rows is not the shape for that. I do not yet know what is.
+- **The stale-on-reseed question is bigger than these two bars.** I fixed the
+  panel that had the bug. What I did not do is ask which *other* surfaces are
+  written conditionally and therefore survive a world they no longer describe —
+  the chart's captions, the season badge, the inspector, the flash. The general
+  form is: **grep for every early return in a per-frame updater**, because each
+  one is a promise that the state it skips was already correct, and after a
+  reseed none of them are. That is the sweep, and this cycle only did one site
+  of it.
+- **The empty state is now owned and still has two registers.** `mort-legend`
+  says `Nothing has died yet.` and `mort-bar`'s accessible name says `No deaths
+  recorded yet.` — two sentences for one state, deliberately, because the second
+  has to carry the bar as well as the caption. That is a defensible choice and
+  it is also exactly the kind of thing this project has found to be wrong twice
+  before (v1.67's spoken nouns, v1.79's swatch and pip). Nobody has measured
+  whether a listener and a reader are being told the same thing on this panel.

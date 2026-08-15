@@ -249,6 +249,17 @@ export const TILES = [
   },
   // The two energy tiles. Neither is gated: there is no config flag for the
   // books, so unlike Ground or Soil there is no "off" state to report.
+  //
+  // Standing is how much energy is in this pond right now — every living body
+  // plus every corpse — and it is worth reading beside the `minted` figure on
+  // the energy bar below (`src/bars.js`): the stock is a rounding error beside
+  // the throughput, because this world does not store its energy, it runs it
+  // straight through. Power is the only number on either panel that moves:
+  // energy minted per tick over the last 120 ticks, differenced out of the
+  // cumulative books the history carries. Everything else is run-to-date and
+  // therefore settles into a number that cannot change, which is v1.22's
+  // complaint about readouts that look live and are not. On the default seed
+  // power runs between about 5 and 78 over a single run.
   { id: "stat-standing", read: ({ world }) => Math.round(EnergyLedger.standing(world)).toLocaleString() },
   { id: "stat-power", read: ({ world }) => `${world.stats.power.toFixed(1)}/t` },
   { id: "stat-tick", read: ({ world }) => world.tick.toLocaleString() },

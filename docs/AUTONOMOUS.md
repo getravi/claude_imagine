@@ -785,12 +785,32 @@ DEVLOG as I ship them; add new ones as they occur to me.
   three said `off` about a rule that is on by default, which is a false
   statement about the world's rules in the first place a reader looks. All
   twenty-eight are derived from a fresh default world now and the markup is
-  pinned to it. What that leaves: **the mortality bar and the energy bar are
-  still in `main.js`**, same shape, smaller, and they ship hand-typed text of
-  their own (`rolling window`, `No deaths recorded yet.`) that nothing has
-  checked for reachability; the audit is one world deep, so it is true for the
-  default arrival rather than true; and the general form is the lesson below
+  pinned to it. What that leaves: the audit is one world deep, so it is true for
+  the default arrival rather than true; and the general form is the lesson below
   about a sweep organised by attribute.
+  **The other two panels came out in v1.98** (`src/bars.js`, fourteen
+  `{id, bar, kind, read}` rows), and they were not the same shape as a tile,
+  which is the whole finding. A tile is written every frame, so its markup is a
+  *still*; these two bars **returned early when they had no subject**, so the
+  markup was the live readout for as long as the state lasted — and the same
+  early return left the **previous pond's death mix on screen after a reseed**,
+  17 to 598 ticks depending on the scenario (244 on the default seed), which is
+  v1.23's Ground readout arriving for the fourth time wearing an early return
+  instead of a cache. One markup string was wrong (`nrg-made` shipped `minted`
+  with no number) and it is the *only* row here with no empty state, which is
+  the tell: the rows that behave like tiles fail like tiles, and the rows with
+  an empty state were right by accident because nothing had ever compared them.
+  Three things it leaves. (a) **`main.js` is down to the inspector and the
+  chronicle feed**, both `innerHTML` with *structure* in them — a table of
+  `{id, kind, read}` is not the shape for that and I do not yet know what is.
+  (b) The sweep this cycle did one site of: **grep for every early return in a
+  per-frame updater**, because each is a promise that the state it skips was
+  already correct, and after a reseed none of them are — the chart's captions,
+  the season badge, the inspector and the flash are all unlooked-at.
+  (c) The empty state has **two registers** (`Nothing has died yet.` in the
+  caption, `No deaths recorded yet.` in the accessible name) and nobody has
+  measured whether the listener and the reader are being told the same thing,
+  which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
 

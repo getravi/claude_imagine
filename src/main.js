@@ -21,8 +21,6 @@ import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.
 import {
   wholePercents,
   mortalitySeries,
-  deathCosts,
-  deathSizes,
   DEATH_CAUSES,
   POWER_WINDOW,
 } from "./stats.js";
@@ -43,6 +41,7 @@ import {
 } from "./palette.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
+import { barRows } from "./bars.js";
 import {
   describeChart,
   describeLineages,
@@ -725,125 +724,25 @@ function updateHUD() {
   for (const { id, text } of hudTiles({ world, config, fps: fpsSmooth, uiRng })) {
     $(id).textContent = text;
   }
-  updateMortality(world.stats);
-  updateEnergy();
+  updateBars();
 }
 
-// How much energy is standing in this pond right now — every living body plus
-// every corpse — and what has become of everything it ever made.
+// The two bars under the tiles: what they die of, and where the energy goes.
+// Both live in `src/bars.js` now, for the reason the tiles do — and what the
+// carve found is written up there. What is left here is the adapter, and it
+// writes every row on every frame with no early return, because an early return
+// is what left the previous pond's death mix on screen for up to ten seconds
+// after a scenario chip replaced the world underneath it.
 //
-// The two numbers are worth putting next to each other: the standing stock is a
-// rounding error beside the throughput, because this world does not store its
-// energy, it runs it straight through. Nothing here is a config toggle, so
-// unlike Ground or Soil there is no "off" state to report; the books are always
-// open.
-//
-// Power is the third, and the only one on this panel that moves: energy minted
-// per tick over the last 120 ticks, differenced out of the cumulative books the
-// history now carries. Everything else here is run-to-date and therefore
-// settles into a number that cannot change, which is the v1.22 complaint about
-// readouts that look live and are not. On the default seed this runs between
-// about 5 and 78 over a single run — a fifteenfold swing no previous version of
-// this panel could have shown you.
-let energyLabel = "";
-function updateEnergy() {
-  const e = world.energy;
-  $("nrg-made").textContent = `${Math.round(e.created).toLocaleString()} minted`;
-
-  const shares = e.shares();
-  if (!shares) return;
-  const pct = wholePercents(ENERGY_SINKS.map((k) => shares[k]));
-  // Bar and caption come from the same integers, and the integers sum to 100 —
-  // the v1.26 rule, which matters more here than anywhere else in the panel
-  // because one segment is normally around 90% and the eye has nothing else to
-  // check the arithmetic against.
-  ENERGY_SINKS.forEach((k, i) => {
-    $(`nrg-${k}`).style.width = `${pct[i]}%`;
-  });
-  const [burned, lost, buried] = pct;
-  const text = `${burned}% burned living · ${lost}% lost · ${buried}% buried`;
-  if (energyLabel === text) return;
-  energyLabel = text;
-  $("nrg-legend").textContent = text;
-  $("nrg-bar").setAttribute(
-    "aria-label",
-    `Of all the energy this world has spent: ${text.replace(/ · /g, ", ")}.`
-  );
-}
-
-// The death mix: which of the three ways out of this world the pond is
-// currently taking. Only widths and text change, never structure, so this is
+// Only widths, text and accessible names change, never structure, so this is
 // safe to run every frame (see the inspector's note about innerHTML).
-function updateMortality(s) {
-  const m = s.mortality();
-  const bar = $("mort-bar");
-  if (!m) {
-    bar.setAttribute("aria-label", "No deaths recorded yet.");
-    return;
+function updateBars() {
+  for (const { id, kind, text } of barRows(world)) {
+    const el = $(id);
+    if (kind === "width") el.style.width = text;
+    else if (kind === "aria") el.setAttribute("aria-label", text);
+    else el.textContent = text;
   }
-  const [starve, aged, hunted] = wholePercents([
-    m.shares.starvation,
-    m.shares.age,
-    m.shares.predation,
-  ]);
-  // Bar and caption are drawn from the same integers, so the widths on screen
-  // are exactly the numbers underneath them.
-  $("mort-starve").style.width = `${starve}%`;
-  $("mort-age").style.width = `${aged}%`;
-  $("mort-pred").style.width = `${hunted}%`;
-  const text = `${starve}% starved · ${aged}% aged · ${hunted}% hunted`;
-  $("mort-legend").textContent = text;
-  $("mort-window").textContent = `last ${m.n}`;
-  bar.setAttribute("aria-label", `Of the last ${m.n} deaths, ${text.replace(/ · /g, ", ")}.`);
-
-  // And what each of them costs, which the bar above cannot say and the energy
-  // bar below it cannot either. Run-to-date rather than over the death window,
-  // because this is a per-body figure and not a mix: it is what one death of
-  // each kind takes out of the pond, and averaging it over more bodies makes it
-  // truer rather than staler. Old age is normally two to three thousand times
-  // the other two — see docs/SCIENCE.md.
-  const cost = deathCosts(s.deathsBy, world.energy.buriedBy);
-  if (cost) {
-    // Named rather than indexed, like the shares above it, so the words and the
-    // causes cannot drift apart. Whole units: the interesting thing about the
-    // first and third is that they round to nothing.
-    const per = (c) => Math.round(cost.causes[c].perDeath);
-    $("mort-cost").textContent =
-      `buried with each: ${per("starvation")}⚡ starved · ` +
-      `${per("age")}⚡ aged · ${per("predation")}⚡ hunted`;
-  }
-
-  // And what size of body each cause takes, measured against the pond standing
-  // at the instant it took it. Run-to-date for the same reason the costs above
-  // are: a per-body figure, not a mix. Signed, and the sign is the whole point
-  // — two of these three are the control (see docs/SCIENCE.md), and a watcher
-  // who reads −0.02, +0.02, −1.81 has the finding without any prose.
-  const size = deathSizes(s.sizedBy, s.radiusSumBy, s.poolSumBy);
-  if (size) {
-    // Only causes that have actually happened, unlike the costs: a delta is a
-    // comparison and 0.00 out of nothing invites being read as "no selection"
-    // rather than as "no deaths". A cause with an empty column simply waits.
-    const parts = [];
-    for (const [cause, word] of [
-      ["starvation", "starved"],
-      ["age", "aged"],
-      ["predation", "hunted"],
-    ]) {
-      const row = size.causes[cause];
-      if (row.n > 0) parts.push(`${signed(row.delta)} ${word}`);
-    }
-    $("mort-size").textContent = parts.length
-      ? `size vs the pond (px): ${parts.join(" · ")}`
-      : "";
-  }
-}
-
-/** Two decimals with an explicit sign, so the near-zero columns read as near-zero. */
-function signed(v) {
-  // `-0.00` is a true statement about a rounded number and reads as a bug, so
-  // the sign comes from the rounded value rather than from the raw one.
-  const r = Math.round(v * 100) / 100;
-  return `${r < 0 ? "−" : "+"}${Math.abs(r).toFixed(2)}`;
 }
 
 // ---- Live population chart ----

@@ -402,6 +402,7 @@ src/
   barriers.js       optional rock: wrapped slabs with gates, cutting the pond into rooms
   scenarios.js      curated one-click world presets
   hud.js            the panel's stat tiles as data: id, gate, and how to read one
+  bars.js           the death-mix and energy bars as data, empty state included
   main.js           boot, animation loop, UI wiring
 test/               unit + integration tests (node --test)
 docs/               science, architecture, devlog, screenshots

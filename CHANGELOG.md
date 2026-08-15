@@ -4,6 +4,71 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.98.0] — 2026-08-15
+
+v1.97 carved the twenty-eight stat tiles out of `main.js` and left a sentence
+behind: the mortality bar and the energy bar are still in there, same shape,
+smaller, and they ship hand-typed text of their own that nothing has checked.
+They are `src/bars.js` now, and the sweep found something the tiles could not
+have — because these two panels are not the same shape as a tile.
+
+**A tile is overwritten on the first frame. These bars had an empty state, and
+nothing wrote it.** Both updaters returned early when there was no subject, so
+the markup's text was not a placeholder that lasts one frame — it was the live
+readout for as long as the state lasted. And the same early return meant a new
+pond wore the old pond's death mix: press a scenario chip and the percentages,
+the caption, the window count, the cost and size lines and the three segment
+widths all keep the *previous* world's values until the new pond's first death.
+**17 to 598 ticks depending on the scenario, 244 on the default seed** — a third
+of a second to ten seconds of a bar that looks live and is a photograph of a
+world that no longer exists.
+
+### Added
+
+- **`src/bars.js`** — the two bars as one table. A row is an `id`, a `bar`, a
+  `kind` saying which of the three things a bar writes to that element (its
+  text, its width, its accessible name), and a `read` that turns a world into
+  the string. `kind` is a field rather than three separate tables so the audit
+  walks the same list the panel writes, which is the rule `hud.js` applies to a
+  gate. Fourteen rows, and every one of them returns a string in every state:
+  there is no early return in the module and nothing for one to skip.
+- **`test/bars.test.js`, ten tests.** Both directions of the row-to-page table;
+  the page's opening text derived from a fresh default world rather than typed;
+  every row reading a string in a pond with no subject at all; the two ponds
+  written through a stand-in for the adapter, so an element that survives the
+  world it described is a failure; the size of the stale window kept as a number
+  so it cannot quietly become "an instant"; and the v1.26 identity on both bars
+  at once — widths summing to 100 and the caption reading back the same three
+  integers.
+
+### Fixed
+
+- **A new pond no longer reads like the pond it replaced.** Every row is written
+  on every frame. This is v1.23's Ground readout exactly — *zero out the cheap
+  case unconditionally and throttle only the expensive one* — a lesson written
+  about the panel one box above the bar that was still breaking it.
+- **`nrg-made` shipped `minted` with no number.** The books have a founding
+  stock before the first tick, so this row has no empty state at all; the page
+  now says `3,800 minted`, which is what the default world holds at tick 0.
+- **The energy bar never wrote its own empty accessible name.** Its sibling did
+  (`No deaths recorded yet.`) and it did not, because the early return came
+  first. A screen reader arriving before anything had been eaten got whatever
+  the markup happened to say.
+- **Three strings were owned by `app/index.html` alone** — `Nothing has died
+  yet.`, `rolling window`, `Nothing has been eaten yet.` No formatter could
+  produce them and no test could reach them. They are in `EMPTY` in the module
+  now, and the markup is compared against it.
+
+### Notes
+
+- **Verified in a browser as well as in the suite** (v1.49's habit, now
+  four-for-four): the app served over `http.server`, driven over CDP, both bars
+  live, a scenario chip pressed mid-run and the bar following the new world on
+  the same frame.
+- The widths are the one thing the markup audit excludes, and the exclusion is
+  closed rather than declared: the test reads `.mort-bar i { width: 0 }` out of
+  `style.css` and checks it agrees with what the empty state says.
+
 ## [1.97.0] — 2026-08-15
 
 Since v1.40 this file has carried a sentence: `main.js` is the last module with
