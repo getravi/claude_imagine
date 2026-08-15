@@ -4,6 +4,56 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.96.0] — 2026-08-15
+
+v1.90 drew three rings around the selected creature and left a note about them:
+the pond canvas draws no text, so *which circle is which* was carried by
+`describeSelection()` and by nothing a reader can see, and at zoom 1 the three
+of them are one smudge. That is v1.77's own finding arriving in v1.77's own file
+— a listener told something a reader is not, about the same selection — with the
+direction reversed, which is why seventeen releases of the lesson did not catch
+it. The inspector has a `Reach 📏` row now.
+
+### Added
+
+- **A `Reach 📏` row in the inspector** (`reachText`, `src/inspect.js`). Every
+  contact rule the selected creature is subject to, at the distance it fires
+  from: `eats at 11.0 · bites at 13.0–16.3` in the pond as it ships, a band
+  wherever the rule reads two bodies. Derived from `creatureReaches`, so the
+  row, the rings and `test/reach.test.js`'s audit cannot disagree about the
+  geometry — an expression that moves in `contactRules` moves all three.
+- **The gate, named rather than folded in.** Eating, scavenging and biting
+  choose from what a sense scan already selected (v1.81), so their distances
+  are the *second* of two tests, and the row says so: `— eating and biting are
+  gated by sight, which reaches 168.0 px`. That is v1.90's other open note —
+  the picture that would say "18 px inside 168" needed two overlays ticked and
+  nothing on the page said so — in one line a reader gets for free.
+- **`gate` on every entry `creatureReaches` returns**, so a surface can tell a
+  carried rule from one with a query of its own, checked against `ruleGate`'s
+  own answer rather than against a second copy of the list.
+- **`sightWindow(config)`** (`src/reach.js`), the pair `ruleGate` is now the
+  floor of. An audit is owed midnight because an index must cover the worst
+  case; a reader is owed both ends, because the number moves with the hour and
+  one number would say it does not. With the day/night cycle on the row reads
+  `58.8–168.0 px`.
+- **Nine tests.** Both directions of the rule-to-word table, so a contact rule
+  added to `reach.js` cannot go quietly missing from the panel; the row's
+  numbers checked against the rings' own; the gate clause checked against
+  `ruleGate` rule by rule; and the `sightWindow`/`ruleGate` identity in both
+  kinds of world.
+
+### Notes
+
+- **A creature that admits no prey gets a sentence, not a zero** — `nothing here
+  is small enough to bite`, for the 2.26% of bodies (15.5% on one seed, v1.90)
+  under `bodyRadiusMin * preySizeRatio`. `0.0` there is three true symbols
+  arranged into a falsehood, which is v1.89's rule on a second surface.
+- **The row is marked `live` although a body never grows.** Its sight half moves
+  when the day/night toggle does, and flipping a toggle changes no row *key*, so
+  `main.js` does not rebuild the panel — an unpatched row would keep quoting the
+  sense the world used to have, with no tell. Confirmed in a browser: the band
+  appears the moment the toggle is checked.
+
 ## [1.95.0] — 2026-08-15
 
 This world keeps two periodic times: a 2,600-tick year on the rate food arrives

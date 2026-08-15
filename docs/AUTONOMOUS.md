@@ -618,14 +618,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   third of the time — while the `bodyCollision` arm reads 56.5% for the same
   quantity, because bodies that push each other apart meet further out, which is
   v1.80's rule about a dose that cannot be held fixed arriving on a geometry.
-  What *it* leaves: (a) the rings are **unlabelled** — the pond canvas draws no
-  text, so which circle is which is carried by `describeSelection` and by
-  nothing a *reader* can see, and at zoom 1 the three of them are one smudge, so
-  the overlay is legible only magnified (the `scalebar` situation, arrived at by
-  accident rather than by design). (b) The **sense that gates all three carried
-  rules is a different overlay with a different mark**, so the picture that
-  would say "18 px inside 168" — v1.81's whole finding, in one glance — needs
-  two boxes ticked and nothing on the page says so. (c) The empty case is 2.26%
+  What *it* left: (a) the rings were **unlabelled** — the pond canvas draws no
+  text, so which circle was which was carried by `describeSelection` and by
+  nothing a *reader* could see — and (b) the **sense that gates all three
+  carried rules is a different overlay with a different mark**, so the picture
+  that says "18 px inside 168" — v1.81's whole finding, in one glance — needed
+  two boxes ticked with nothing on the page saying so. **Both closed in v1.96**
+  (`reachText`, the `Reach 📏` row), and one row does both because the gate is a
+  clause rather than a second mark: `eats at 11.0 · bites at 13.0–16.3 — eating
+  and biting are gated by sight, which reaches 168.0 px`. `gate` rides on every
+  `creatureReaches` entry now and `sightWindow` is the pair `ruleGate` is the
+  floor of — an audit is owed midnight, a reader both ends. Three things it
+  leaves in turn. **The rings are labelled and still unlabelled**: a reader with
+  the panel open knows which distance is which, and a reader watching the pond
+  at zoom 8 with the inspector scrolled away still sees three circles, so
+  whether this canvas should ever draw text is the question underneath, and it
+  is bigger than a row (the `scalebar` situation, arrived at by accident rather
+  than by design). The empty case has a **sentence and still no count** — see
+  (c) below, which the row states for one creature and nothing states for the
+  pond. And **the row is `live` for a reason that is not about its subject**:
+  a body never grows, the sight half moves with a toggle, and a toggle changes
+  no row *key*, so the panel is never rebuilt — a derived readout's staleness
+  clock is the fastest-moving of its inputs, and a config input is the one with
+  no symptom. (c) The empty case is 2.26%
   of bodies pooled and 15.5% on one seed: a real subpopulation that can be eaten
   and cannot eat, which no tile counts, and which is `hunterCeiling` (v1.89)
   read from the other end. And `contactAudit`'s open-supremum boundary case has
@@ -2851,6 +2866,17 @@ DEVLOG as I ship them; add new ones as they occur to me.
   first finding came out of, for forty-six releases. A one-directional sweep of
   a pair of surfaces is half a sweep, and the half I skip is always the one
   where the *good* implementation is the evidence.
+  **And the lesson did not protect its own pair — v1.96 is the correction.**
+  v1.90 gave `describeSelection()` the reach numbers, and I wrote in the same
+  cycle's closing notes that the rings were unlabelled and that a reader could
+  not tell which circle was which. Same two surfaces, same selection, same file
+  the note above lives in, thirteen releases later. What made it invisible is
+  that the note names a **direction**: v1.77's instance had the reader behind,
+  so what I watch for is a panel missing what the voice has, and v1.90's is the
+  mirror — the voice ahead because I built the voice first. So: **a pair lesson
+  names the direction it was learned in, and the next instance arrives in the
+  other one.** When a note says "check X against Y", the work is to read it
+  both ways round before deciding it does not apply.
 - **A view whose subject is one object has an exact inventory, and it is the
   cheapest walk there is.** Four of these sweeps needed a list of nouns invented
   first, which is what made them a cycle each. The inspector needed

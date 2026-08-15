@@ -28,9 +28,12 @@ import {
   creatureFacts,
   healthText,
   voiceText,
+  reachText,
+  REACH_WORDS,
   FIELD_REPORTS,
   FIELD_SILENT,
 } from "../src/inspect.js";
+import { contactRules, creatureReaches, sightWindow } from "../src/reach.js";
 
 /** Every flag that adds a row, so the walk sees the panel at its widest. */
 const ALL_ON = {
@@ -93,6 +96,7 @@ test("a mechanic that is off gets no row at all", () => {
     "size",
     "metabolism",
     "diet",
+    "reach",
   ]);
 
   const on = new World(makeConfig(ALL_ON));
@@ -194,6 +198,116 @@ test("silence is a word, not a zero", () => {
   assert.equal(voiceText(c), "says 0.50, hears nothing");
   c.heard = -0.25;
   assert.equal(voiceText(c), "says 0.50, hears -0.25");
+});
+
+// ---- the reach row (v1.96) ----
+//
+// v1.90 put three rings on the pond and left the note this row closes: the
+// circles carry no labels, the canvas draws no text, and which one is which was
+// said only to a listener. The tests below hold the two things that would make
+// the row worse than nothing — a number that disagrees with the ring beside it,
+// and a rule that lands in `reach.js` and quietly never reaches the panel.
+
+test("every contact rule this world can run has a word in the panel", () => {
+  // The hand-typed half of `reachText`, checked against the list it is a copy
+  // of. `REACH_WORDS` naming a rule nobody runs is the same defect from the
+  // other side (v1.61), so both directions are asserted.
+  const cfg = makeConfig({
+    ...ALL_ON,
+    predation: true,
+    scavenging: true,
+    bodyCollision: true,
+  });
+  const rules = contactRules(cfg)
+    .filter((r) => r.kind === "contact")
+    .map((r) => r.name);
+  // Non-vacuity rather than a count: the two walks below are exact, and a floor
+  // is a hand-typed number that cannot notice growth (`docs/AUTONOMOUS.md`).
+  assert.ok(rules.length > 0, "no contact rule at all — this test would pass on nothing");
+  for (const name of rules) {
+    assert.ok(REACH_WORDS[name], `\`${name}\` is a contact rule the Reach row has no word for`);
+  }
+  for (const name of Object.keys(REACH_WORDS)) {
+    assert.ok(rules.includes(name), `the Reach row names \`${name}\`, which is not a contact rule`);
+  }
+});
+
+test("the row quotes the rings it is a label for", () => {
+  // Derived from the same call the overlay draws from, so this fails the day
+  // an expression in `contactRules` moves and only one of the two follows it.
+  const cfg = makeConfig({ seed: 314, scavenging: true, bodyCollision: true, disease: true });
+  const world = new World(cfg);
+  for (let i = 0; i < 300; i++) world.step();
+  const c = world.creatures.find((x) => x.radius > 5);
+  assert.ok(c, "no body big enough to bite anything");
+
+  const row = reachText(c, cfg);
+  for (const reach of creatureReaches(c.radius, cfg)) {
+    if (reach.empty) continue;
+    assert.ok(
+      row.includes(reach.inner.toFixed(1)),
+      `the Reach row does not quote ${reach.name}'s ${reach.inner.toFixed(1)}: ${row}`
+    );
+    if (reach.outer > reach.inner) {
+      assert.ok(
+        row.includes(reach.outer.toFixed(1)),
+        `the Reach row does not quote ${reach.name}'s far edge: ${row}`
+      );
+    }
+  }
+});
+
+test("a rule that admits nobody is a sentence, not a zero", () => {
+  // v1.89's rule, one surface over: `0.0` for a creature that cannot bite is
+  // three true symbols arranged into a falsehood. The threshold is
+  // `bodyRadiusMin * preySizeRatio`, and a body under it is 2.26% of the pond.
+  const cfg = makeConfig({ seed: 314 });
+  const tiny = { radius: cfg.bodyRadiusMin * cfg.preySizeRatio - 0.01 };
+  const big = { radius: cfg.bodyRadiusMax };
+
+  const small = reachText(tiny, cfg);
+  assert.match(small, /nothing here is small enough to bite/);
+  assert.ok(!/bites at/.test(small), small);
+  assert.ok(!/0\.0(?!\d)/.test(small), `a zero reached the panel: ${small}`);
+
+  const grown = reachText(big, cfg);
+  assert.match(grown, /bites at/);
+  assert.ok(!/nothing here is small enough/.test(grown), grown);
+});
+
+test("the gate is named, and it is a band only where there is a day", () => {
+  // The half that makes the row a finding rather than a list: eating,
+  // scavenging and biting choose from what a sense scan already selected
+  // (v1.81), so their distances are the second of two tests. The rules with a
+  // query of their own must not be swept into that clause.
+  const flat = makeConfig({ seed: 314, scavenging: true, disease: true, bodyCollision: true });
+  const body = { radius: flat.bodyRadiusMax };
+  const row = reachText(body, flat);
+  assert.match(row, /eating, scavenging and biting are gated by sight, which reaches 168\.0 px/);
+  assert.ok(!/infecting|pushing/.test(row), `an ungated rule was called gated: ${row}`);
+
+  const dark = makeConfig({ seed: 314, dayNightCycle: true });
+  const window = sightWindow(dark);
+  assert.ok(window.least < window.most, "the day stopped moving sight");
+  assert.match(
+    reachText(body, dark),
+    new RegExp(`reaches ${window.least.toFixed(1)}–${window.most.toFixed(1)} px`)
+  );
+
+  // Eating has no off switch, so the clause is in every row this world can
+  // build — the singular is reachable and the empty case is not.
+  const lone = makeConfig({ seed: 314, predation: false, disease: true });
+  assert.match(reachText(body, lone), /^eats at .* · infects at .* — eating is gated by sight/);
+});
+
+test("a switched-off mechanic has no clause in the row", () => {
+  const bare = makeConfig({ seed: 314 });
+  const body = { radius: bare.bodyRadiusMax };
+  const row = reachText(body, bare);
+  assert.ok(!/scavenges|infects|pushes/.test(row), row);
+  assert.match(reachText(body, makeConfig({ seed: 314, scavenging: true })), /scavenges at/);
+  assert.match(reachText(body, makeConfig({ seed: 314, disease: true })), /infects at/);
+  assert.match(reachText(body, makeConfig({ seed: 314, bodyCollision: true })), /pushes at/);
 });
 
 test("every fact that moves is marked live", () => {

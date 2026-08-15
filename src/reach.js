@@ -557,7 +557,28 @@ export function siteRequest(site, config) {
  */
 export function ruleGate(rule, config) {
   if (rule.gate !== "sight") return null;
-  return config.visionRadius * (config.dayNightCycle ? config.nightVisionFactor : 1);
+  return sightWindow(config).least;
+}
+
+/**
+ * What sight is worth over one turn of the day: `visionRadius` at noon and
+ * `nightVisionFactor` of it at midnight, or that one number twice in a world
+ * with no day in it.
+ *
+ * The arithmetic lived inside `ruleGate` alone while the only caller was an
+ * audit, and an audit is owed exactly one end of it — the worst case, which is
+ * midnight. A *reader* asking how close a creature has to be to touch something
+ * is owed both, because the answer moves with the hour and a single number
+ * would say it does not. So the pair is the function and `ruleGate` is its
+ * floor: one expression, two callers, no second copy of it (v1.57, where a
+ * hand-typed duplicate of a colour the palette already owned failed on 32 of 70
+ * grounds while the audit swept the original).
+ * @param {object} config
+ * @returns {{least:number, most:number}}
+ */
+export function sightWindow(config) {
+  const most = config.visionRadius;
+  return { least: config.dayNightCycle ? most * config.nightVisionFactor : most, most };
 }
 
 /**
@@ -774,17 +795,25 @@ function ruleSupremum(rule, config) {
  * with `scavenging` off has no scavenging reach to draw — the same gate every
  * surface in this project puts on a switched-off mechanic.
  *
+ * `gate` rides along because a reach on its own is half the answer. Three of
+ * these rules never see a candidate the sense scan did not already choose
+ * (v1.81), so a bite reaching 17.2 px is a fact about the last 17.2 px of a
+ * journey that sight has to permit first — and the field is what lets a surface
+ * say which of the distances it is showing are the *second* of two tests rather
+ * than the only one.
+ *
  * @param {number} radius the body doing the reaching
  * @param {object} config
  * @returns {Array<{name:string, inner:number, outer:number, band:boolean,
- *   open:boolean, empty:boolean, source:string, admits:string|null}>}
+ *   open:boolean, empty:boolean, source:string, admits:string|null,
+ *   gate:string|null}>}
  */
 export function creatureReaches(radius, config) {
   const least = config.bodyRadiusMin;
   return contactRules(config)
     .filter((rule) => rule.kind === "contact" && rule.active)
     .map((rule) => {
-      const said = { name: rule.name, source: rule.source, admits: rule.admits };
+      const said = { name: rule.name, source: rule.source, admits: rule.admits, gate: rule.gate };
       if (rule.bodies < 2) {
         const at = rule.bodies === 0 ? rule.at() : rule.at(radius);
         return { ...said, inner: at, outer: at, band: false, open: false, empty: false };

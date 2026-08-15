@@ -74,8 +74,10 @@ import {
   contactRules,
   creatureReaches,
   reachAt,
+  ruleGate,
   scanQuerySites,
   siteKey,
+  sightWindow,
   siteRequest,
   strandedShare,
 } from "../src/reach.js";
@@ -736,6 +738,48 @@ test("the biggest body's reach is the reach the audit declares", () => {
   for (const rule of declared) {
     assert.equal(drawn[rule.name].outer, rule.reach, `${rule.name}: the far edge is the supremum`);
     assert.equal(drawn[rule.name].open, rule.open, `${rule.name}: openness is the same claim`);
+  }
+});
+
+test("a drawn reach says what gates it, and the gate is the audit's own", () => {
+  // v1.96 gave `creatureReaches` the `gate` field so a surface can say which of
+  // the distances it shows are the *second* of two tests. It has to be the same
+  // claim `ruleGate` makes, or the panel and the audit disagree about which
+  // rules ride the sense scan.
+  const cfg = makeConfig({ scavenging: true, disease: true, bodyCollision: true });
+  const declared = new Map(
+    contactRules(cfg)
+      .filter((r) => r.kind === "contact" && r.active)
+      .map((r) => [r.name, r])
+  );
+  for (const reach of creatureReaches(6, cfg)) {
+    const rule = declared.get(reach.name);
+    assert.equal(reach.gate, rule.gate, `${reach.name}'s gate`);
+    assert.equal(reach.gate === "sight", ruleGate(rule, cfg) !== null, `${reach.name} is carried`);
+  }
+  assert.deepEqual(
+    creatureReaches(6, cfg).filter((r) => r.gate === "sight").map((r) => r.name),
+    ["eat", "scavenge", "bite"]
+  );
+});
+
+test("sight is a window, and ruleGate is its floor", () => {
+  // One expression, two callers. The audit takes midnight because an index must
+  // cover the worst case; a reader is owed both ends, because the number moves
+  // with the hour and one number would say it does not.
+  const flat = makeConfig({});
+  assert.deepEqual(sightWindow(flat), { least: flat.visionRadius, most: flat.visionRadius });
+
+  const dark = makeConfig({ dayNightCycle: true });
+  const window = sightWindow(dark);
+  assert.equal(window.most, dark.visionRadius);
+  assert.equal(window.least, dark.visionRadius * dark.nightVisionFactor);
+  assert.ok(window.least < window.most);
+
+  for (const cfg of [flat, dark]) {
+    const eat = contactRules(cfg).find((r) => r.name === "eat");
+    assert.equal(ruleGate(eat, cfg), sightWindow(cfg).least);
+    assert.equal(ruleGate(contactRules(cfg).find((r) => r.name === "infect"), cfg), null);
   }
 });
 

@@ -38,6 +38,7 @@
 // `test/inspect.test.js` pins it with plasticity on.
 
 import { groundSway } from "./creature.js";
+import { creatureReaches, sightWindow } from "./reach.js";
 
 /**
  * Energy as the share of `energyMax` the panel has always shown — the same
@@ -122,6 +123,96 @@ export function voiceText(c) {
 }
 
 /**
+ * The verb each contact rule is worth to a reader, and the noun it is worth to
+ * a sentence about what gates it.
+ *
+ * Hand-written, and therefore checked in both directions:
+ * `test/inspect.test.js` walks `contactRules` and fails on a rule with no entry
+ * here, and on an entry naming no rule. A contact rule added to `reach.js`
+ * cannot go quietly missing from the panel, which is v1.61's failure written
+ * down before it happens — an instrument holding a copy of a list that has
+ * moved, and printing `ok` for it.
+ */
+export const REACH_WORDS = {
+  eat: { verb: "eats", doing: "eating" },
+  scavenge: { verb: "scavenges", doing: "scavenging" },
+  bite: { verb: "bites", doing: "biting" },
+  infect: { verb: "infects", doing: "infecting" },
+  shove: { verb: "pushes", doing: "pushing" },
+};
+
+/** A distance in the pond, at the one decimal the Size row already uses. */
+const px = (n) => n.toFixed(1);
+
+/** "eating", "eating and biting", "eating, scavenging and biting". */
+function series(words) {
+  if (words.length < 2) return words[0] || "";
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+/**
+ * How close this creature has to be to touch something, and what it has to do
+ * before the distance matters at all.
+ *
+ * v1.90 drew these as rings on the pond and left the note this row closes: the
+ * circles are unlabelled, the canvas draws no text, and *which circle is which*
+ * was carried by `describeSelection()` and by nothing a reader can see. That is
+ * v1.77's own finding arriving in v1.77's own file — a listener told something
+ * a reader is not, about the same selection — and the surface with the good
+ * implementation is again the evidence, which is the half of a pair sweep I
+ * skip (`docs/AUTONOMOUS.md`). It is also the reading that survives zoom 1,
+ * where the three rings are one smudge.
+ *
+ * Both halves are derived from `creatureReaches`, so the row cannot disagree
+ * with the overlay or with the audit that pins the geometry; and the numbers
+ * are one arithmetic away from `contactRules`, so a rule whose expression
+ * changes moves the ring, the sentence and this row together.
+ *
+ * Two things it says in words rather than in numbers. A creature under
+ * `bodyRadiusMin * preySizeRatio` admits no prey at all — 2.26% of bodies
+ * pooled, 15.5% on one seed (v1.90) — and `0.0` for that is three true symbols
+ * arranged into a falsehood (v1.89), so the reading is a sentence. And the
+ * gate is named rather than folded into the distances: eating, scavenging and
+ * biting are choices made out of what a sense scan already selected, so their
+ * reach is the *second* of two tests, and a row listing 10.0 px beside a sense
+ * of 168 is v1.81's whole finding in one line.
+ *
+ * @param {object} c
+ * @param {object} config
+ */
+export function reachText(c, config) {
+  const said = [];
+  const gated = [];
+  for (const reach of creatureReaches(c.radius, config)) {
+    const say = REACH_WORDS[reach.name];
+    if (!say) continue;
+    if (reach.empty) {
+      said.push(`nothing here is small enough to ${reach.name}`);
+      continue;
+    }
+    said.push(
+      reach.outer > reach.inner
+        ? `${say.verb} at ${px(reach.inner)}–${px(reach.outer)}`
+        : `${say.verb} at ${px(reach.inner)}`
+    );
+    if (reach.gate === "sight") gated.push(say.doing);
+  }
+  // Neither of these is reachable in a world this project ships: eating has no
+  // off switch and is gated by sight, so there is always at least one entry and
+  // always a clause. They are here because `reachText` reads a table rather
+  // than a fixed list, and a guard is cheaper than a panel that renders the
+  // word `undefined` the day that stops being true.
+  if (!said.length) return "nothing here touches anything";
+  if (!gated.length) return said.join(" · ");
+  const sight = sightWindow(config);
+  const far =
+    sight.least === sight.most
+      ? `${px(sight.most)} px`
+      : `${px(sight.least)}–${px(sight.most)} px`;
+  return `${said.join(" · ")} — ${series(gated)} ${gated.length === 1 ? "is" : "are"} gated by sight, which reaches ${far}`;
+}
+
+/**
  * The inspector's fact grid, in display order.
  *
  * Each row is `{key, term, value, wide, live}`. `live` marks the ones that
@@ -148,6 +239,12 @@ export function creatureFacts(c, config) {
     { key: "size", term: "Size", value: c.radius.toFixed(1) },
     { key: "metabolism", term: "Metabolism", value: `${c.metabolismScale.toFixed(2)}×` },
     { key: "diet", term: "Diet", value: dietText(c, config), wide: true },
+    // `live` although a body never grows: the sight half moves when the
+    // day/night toggle does, and flipping a toggle changes no row *key*, so the
+    // panel is not rebuilt and an unpatched row would keep quoting the sense a
+    // world used to have. v1.86's rule about live flags is that they are
+    // checked against what moves, and this one can.
+    { key: "reach", term: "Reach 📏", value: reachText(c, config), wide: true, live: true },
   ];
   if (config.groundSense) {
     facts.push({ key: "foot", term: "Underfoot 👣", value: footText(c), wide: true, live: true });
@@ -181,7 +278,7 @@ export const FIELD_REPORTS = {
   age: "the Age row",
   energy: "the Energy row",
   children: "the Children row",
-  radius: "the Size row",
+  radius: "the Size row, and the Reach row — every contact distance is derived from it",
   metabolismScale: "the Metabolism row",
   carnivory: "the Diet row",
   groundFeel: "the Underfoot row (groundSense)",
