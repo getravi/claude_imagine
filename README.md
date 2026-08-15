@@ -389,7 +389,7 @@ src/
   energy.js         the pond's books: every unit made, spent, wasted or buried
   stats.js          rolling population/lineage measurements, and what kills them
   archive.js        the whole run at falling resolution, extremes kept exact
-  seasonlag.js      how far behind its own year the pond is running (observation only)
+  seasonlag.js      how far behind one of its clocks the pond runs (observation only)
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
   world.js          the simulation: steps everything forward

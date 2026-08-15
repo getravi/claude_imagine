@@ -51,7 +51,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
-import { SERIES } from "../src/seasonlag.js";
+import { SERIES, CLOCKS } from "../src/seasonlag.js";
 import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
@@ -144,6 +144,17 @@ const CLAIMS = [
     size: () => CHRONICLE_HASHED.filter((n) => n.startsWith("_")).length,
     phrase: "{n} latches",
     sites: ["docs/AUTONOMOUS.md", "src/fingerprint.js"],
+  },
+  {
+    // v1.95's collection, declared in the cycle that creates it. A clock is a
+    // periodic time the world keeps, `CLOCKS` is the table of them, and the
+    // count is a claim that will grow the moment anything else in here repeats
+    // — the biome drift and the plasticity decay are both periodic in the same
+    // sense and neither is in the table.
+    what: "the clocks this world keeps",
+    size: () => Object.keys(CLOCKS).length,
+    phrase: "{n} periodic clocks",
+    sites: ["docs/SCIENCE.md", "src/seasonlag.js"],
   },
 ];
 

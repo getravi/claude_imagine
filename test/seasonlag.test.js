@@ -28,6 +28,7 @@ import {
   pearson,
   readable,
   seriesKind,
+  CLOCKS,
   MIN_SWING,
   SERIES,
   NOT_A_SERIES,
@@ -428,6 +429,173 @@ test("a counter with nothing in it is an absence, not a phase", () => {
   const got = seasonLag(rows, "births", cfg);
   const level = seasonLag(rows, "births", cfg, { kind: "level" });
   assert.equal(got.samples, level.samples - 1);
+});
+
+/** A history of `turns` turns of `clock`, sampled every 4 ticks, holding `f(t)`. */
+function turns(config, clock, n, f, { every = 4 } = {}) {
+  const P = CLOCKS[clock].period(config);
+  const rows = [];
+  for (let t = 0; t <= n * P; t += every) rows.push({ tick: t, pop: f(t) });
+  return rows;
+}
+
+/** A config running every clock in the table, so one pond can be asked twice. */
+const twoClocks = (over = {}) => makeConfig({ seasons: true, dayNightCycle: true, ...over });
+
+test("every clock is in phase with itself, which is the whole job of `refShift`", () => {
+  // The one check that can be made of a declared phase offset without writing
+  // the offset down a second time: hand each clock its own waveform and demand
+  // the answer be *zero*. A lag here means "after this clock's crest", so a
+  // clock trailing itself by a quarter of anything is a reading no watcher
+  // could use — and the year and the day disagree about where their crest is,
+  // which is why this stopped being free the moment there were two of them.
+  const cfg = twoClocks();
+  for (const [name, clock] of Object.entries(CLOCKS)) {
+    assert.ok(clock.running(cfg), `${name} is not running in a config that runs everything`);
+    const rows = turns(cfg, name, 5, (t) => 100 * clock.factor(t, cfg));
+    const got = seasonLag(rows, "pop", cfg, { clock: name });
+    assert.ok(got, `${name}: no answer`);
+    assert.equal(got.clock, name);
+    assert.ok(Math.abs(got.lag) < 0.5, `${name} runs ${got.lag.toFixed(2)} ticks behind itself`);
+    assert.ok(got.r > 0.999, `${name}: r ${got.r}`);
+
+    // …and the shift is the shift, in both directions, for whichever clock.
+    const P = clock.period(cfg);
+    for (const shift of [-P / 3, P / 8, P / 2.5]) {
+      const moved = seasonLag(
+        turns(cfg, name, 5, (t) => 100 * clock.factor(t - shift, cfg)),
+        "pop",
+        cfg,
+        { clock: name }
+      );
+      assert.ok(
+        Math.abs(moved.lag - shift) < 0.5,
+        `${name}: shift ${shift.toFixed(0)} came back as ${moved.lag.toFixed(2)}`
+      );
+    }
+  }
+
+  // Pin the failure beside the fix (v1.24). The fit is onto sin/cos and reports
+  // in the sine's convention; the year's crest is a quarter period into that
+  // convention and the day's is at tick 0, so a day read without `refShift`
+  // does not come back blurred — it comes back exactly a quarter day out, with
+  // r just as high and nothing downstream able to tell. Read as a year of its
+  // own length, high noon is 225 ticks *ahead* of a sine that starts at zero,
+  // and that number is `refShift` itself.
+  assert.equal(CLOCKS.year.refShift(cfg), 0);
+  assert.equal(CLOCKS.day.refShift(cfg), -cfg.dayLength / 4);
+  const noon = turns(cfg, "day", 5, (t) => 100 * CLOCKS.day.factor(t, cfg));
+  const asYear = seasonLag(noon, "pop", { ...cfg, seasonLength: cfg.dayLength }, { clock: "year" });
+  assert.ok(asYear && asYear.r > 0.999, "the wrong answer is not even suspicious");
+  assert.ok(
+    Math.abs(asYear.lag - CLOCKS.day.refShift(cfg)) < 0.5,
+    `the sine's convention put noon at ${asYear.lag.toFixed(1)}`
+  );
+});
+
+test("the brute-force curve agrees on the day as well as on the year", () => {
+  // v1.32's rule reaches the new clock: the closed form is an accelerator, an
+  // accelerator is an assertion of equivalence, and one nothing checks is a
+  // claim nothing checks. The day's waveform is a cosine where the year's is a
+  // sine, so this is the one place the two could have parted.
+  const cfg = twoClocks();
+  let x = 987;
+  const noise = () => {
+    x = (x * 1103515245 + 12345) % 2147483648;
+    return x / 2147483648 - 0.5;
+  };
+  const rows = turns(
+    cfg,
+    "day",
+    8,
+    (t) => 200 * CLOCKS.day.factor(t - 210, cfg) + 40 * Math.sin(t / 2000) + 20 * noise()
+  );
+  const closed = seasonLag(rows, "pop", cfg, { clock: "day" });
+  const curve = correlogram(rows, "pop", cfg, { clock: "day", step: 2 });
+  assert.ok(closed && curve.length > 300);
+  assert.equal(curve[0].lag, -cfg.dayLength / 2);
+  let best = curve[0];
+  for (const p of curve) if (p.r > best.r) best = p;
+  assert.ok(
+    Math.abs(closed.lag - best.lag) <= 2,
+    `closed ${closed.lag.toFixed(1)} vs grid ${best.lag}`
+  );
+});
+
+test("a clock the world is not running has no phase; a clock that does not exist is a bug", () => {
+  const cfg = twoClocks();
+  const rows = turns(cfg, "day", 6, (t) => 100 * CLOCKS.day.factor(t, cfg));
+  // Two ways for a day to be absent, and the second is the one that needs
+  // saying: a cycle switched on with `nightVisionFactor: 1` moves nothing, so
+  // there is no clock there either, and the gate is about the *effect* rather
+  // than about the flag (v1.20 — a statistic that is non-zero with its
+  // mechanism off is not measuring the mechanism).
+  assert.equal(seasonLag(rows, "pop", makeConfig({ dayNightCycle: false }), { clock: "day" }), null);
+  assert.equal(
+    seasonLag(rows, "pop", twoClocks({ nightVisionFactor: 1 }), { clock: "day" }),
+    null
+  );
+  assert.deepEqual(correlogram(rows, "pop", makeConfig(), { clock: "day" }), []);
+  // A misspelt clock is not a state of the pond. Every other absence here means
+  // "this world has nothing to say"; returning `null` for a typo would make the
+  // number quietly unavailable instead of loudly wrong.
+  assert.throws(() => seasonLag(rows, "pop", cfg, { clock: "Day" }), /unknown clock/);
+  assert.throws(() => correlogram(rows, "pop", cfg, { clock: "week" }), /unknown clock/);
+  // And the default is the clock v1.78 shipped with, named nowhere by callers.
+  const plain = seasonLag(turns(cfg, "year", 5, (t) => 100 * seasonalFactor(t - 200, cfg)), "pop", cfg);
+  assert.equal(plain.clock, "year");
+});
+
+test("no surface may state a day reading, because the arms do not separate", () => {
+  // The same shape as the flow above, and measured the same way. `MIN_SWING` is
+  // the *year's* bar (v1.87: a gate a control picks is a gate for the quantity
+  // it was measured on), and twelve seeds with a day in them swing the same as
+  // twelve with none asked about the day they do not have — see docs/SCIENCE.md.
+  // So the day has no bar, and a clock with no bar is a clock no surface quotes.
+  assert.equal(CLOCKS.day.minSwing, null);
+  assert.equal(CLOCKS.year.minSwing, MIN_SWING);
+  const cfg = twoClocks();
+  const loud = seasonLag(
+    turns(cfg, "day", 6, (t) => 100 + 90 * Math.sin((2 * Math.PI * t) / cfg.dayLength)),
+    "pop",
+    cfg,
+    { clock: "day" }
+  );
+  assert.ok(loud && loud.swing > MIN_SWING * 5, `swing ${loud?.swing}`);
+  assert.equal(readable(loud), null);
+  // …and the identical numbers under the year's name are stated, so this is a
+  // decision about which clock has a measured bar and not a new floor.
+  assert.ok(readable({ ...loud, clock: "year" }));
+  // A result from before there were clocks (or from a caller that dropped the
+  // field) is a year's, which is what every stored reading in this project is.
+  assert.ok(readable({ ...loud, clock: undefined }));
+});
+
+test("The Long Night keeps a day the panel still says nothing about", () => {
+  // The scenario is the reason this clock is reachable at all: `seasons: false`
+  // and a 700-tick day, so the pond it ships is the one world here whose only
+  // periodic time is the light. The wiring works — a real archive, a real
+  // reading, tagged with the clock it came from — and `readable()` declines it,
+  // which is this release's finding rather than an omission.
+  const cfg = makeConfig({
+    seed: 64,
+    dayNightCycle: true,
+    dayLength: 700,
+    nightVisionFactor: 0.28,
+    predation: true,
+    seasons: false,
+  });
+  const w = new World(cfg);
+  for (let t = 0; t < 4200; t++) w.step();
+  assert.ok(w.creatures.length > 0, "reading an empty pond proves nothing");
+  const got = seasonLag(w.stats.runHistory.series(), "pop", cfg, { clock: "day" });
+  assert.ok(got, "six days of record and no answer");
+  assert.equal(got.clock, "day");
+  assert.equal(got.kind, "level");
+  assert.ok(got.years > 3, `${got.years} days`);
+  assert.equal(readable(got), null);
+  // The year is the absence here, and for the older reason: this pond has none.
+  assert.equal(w.stats.seasonLag, null);
 });
 
 test("the new field is in the books", () => {

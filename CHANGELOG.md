@@ -4,6 +4,66 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.95.0] — 2026-08-15
+
+This world keeps two periodic times: a 2,600-tick year on the rate food arrives
+at (v1.3) and a 900-tick day on how far anything can see (v1.13). The phase
+instrument v1.78 built could only be asked about the first, and v1.86's closing
+note said the second was one argument away. It is that argument — and the answer
+the day gives is *nothing*, measured four ways and with a threshold under it.
+
+### Added
+
+- **`CLOCKS` and `opts.clock`** (`src/seasonlag.js`). A clock is whether the
+  world is running it, how long a turn takes, the waveform the world is actually
+  driven by, and where that waveform's crest sits. The crest is the part that is
+  not bookkeeping: the fit is onto `sin`/`cos` and reports in the sine's
+  convention, the year's crest is a quarter period into it and the day's is at
+  tick 0, so a day read without `refShift` comes back **exactly 225 ticks out**
+  with `r > 0.999` — v1.86's failure mode one level up. The year's path is the
+  arithmetic v1.78 shipped, unchanged.
+- **A `clock` field on every reading**, so a stored lag says which time it is
+  behind, and `readable()` reads its bar out of the clock rather than out of one
+  module-level constant.
+- **Five tests**: every clock in phase with itself (the only honest check of a
+  declared crest — hand a clock its own waveform and demand zero), the
+  brute-force curve against the closed form on the new clock (v1.32), the two
+  ways a day can be absent beside the misspelt clock that is a caller's bug and
+  therefore loud, `readable()` declining a day, and The Long Night's own archive
+  read against the clock it actually keeps.
+- **A sixth row in `test/prosecounts.test.js`** for the size of `CLOCKS`,
+  declared by the release that creates the collection rather than by the one
+  that finds the number stale.
+
+### Measured
+
+- **Nothing in this pond follows the day.** Twelve seeds, 12,000 ticks, with the
+  cycle against without it and asked about the day either way: the population
+  swings 0.3%–2.6% of its own mean with a day and 0.1%–2.6% without one, and the
+  standing crop, the feeding rate and the kill rate all sit inside their
+  controls too. A full-resolution fold by hour of the day — no archive, no fit —
+  agrees, and the control is the *louder* arm on two rows of three.
+- **v1.86's separator does not survive the crossing either.** Twelve day-less
+  ponds asked about the day agree on a phase at **R = 0.91**, which twelve
+  independent phases essentially never do. Slide the window and R wanders
+  between 0.14 and 0.94 in both arms. What the seeds share is a founder
+  transient and a start tick, and the default warm-up — *one turn of the clock*,
+  chosen for the year because a founder boom is not a season — is 900 ticks for
+  the day and does not clear it.
+- **The null has a threshold in it, and it is a margin this project already
+  measured.** Sweeping `nightVisionFactor`, the day turns on between 0.20 and
+  0.107: crop swing 6.8% → 14.5% → 28.4% at 0.05, feeding-rate swing 3.9% →
+  11.1% → 25.1%. Midnight sight is `visionRadius × nvf`, so 0.107 is **18.0 px**
+  — v1.81's floor, where sight arrives at a bite's own reach — and 0.05 is
+  8.4 px, under *eating's* 11.2, where a creature at midnight cannot see the
+  pellet it is touching. The day is invisible because sight is enormous: dimming
+  a 168-px sense to 59 leaves every rule it carries an order of magnitude in
+  hand. The default is 0.35 and the darkest scenario 0.28.
+- **So `CLOCKS.day.minSwing` is `null`** and `readable()` declines every day
+  reading, the same answer v1.86 gave a flow and on the same kind of evidence.
+  The page still shows exactly one number, and this is the finding rather than
+  an omission.
+
 ## [1.94.0] — 2026-08-14
 
 v1.91 swept the world's own state, gave `stateFingerprint` the half of the pond

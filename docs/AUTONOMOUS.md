@@ -921,6 +921,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   falls out: a lead whose body is an *argument* rather than a measurement stays
   open however good the argument is, and the cheapest way to close it is to
   measure the thing the argument is about.
+- **A null is a shape, and the way to find the shape is to sweep until the null
+  stops.** v1.95 measured the pond against the day/night cycle, got nothing on
+  every series and every instrument, and the entry that would have gone in this
+  file is *nothing follows the day* — a true sentence with no size on it and no
+  mechanism in it. Sweeping `nightVisionFactor` until the readings switched on
+  cost twenty minutes and turned the null into a threshold, and the threshold
+  turned out to be **a number this project had already measured for another
+  reason**: 0.107, where midnight sight arrives at a bite's own reach (v1.81).
+  So the null is not "the light does not matter", it is "sight is an order of
+  magnitude wider than anything it gates, and dimming it to a third spends
+  margin rather than function". Whenever a measurement comes back empty, ask
+  what would have to change for it to stop being empty, sweep that, and then
+  check whether the crossing lands on a quantity this project already knows.
+- **A default expressed in the instrument's units is a different amount of world
+  for every setting of the instrument.** `seasonLag`'s warm-up is *one turn of
+  the clock*, and the reason written next to it is about the founder transient —
+  a fact about the pond, not about the clock. For the year the two coincide;
+  point the same default at a 900-tick day and it clears none of the transient,
+  which is where the control's twelve seeds get an R of 0.91 about a day they do
+  not have. A generalised instrument inherits every default that was chosen
+  against the one case it used to have, and the ones to check are the defaults
+  whose *justification* names something the new case does not scale with.
+- **Re-run the control for the statistic that gated, not only for the one that
+  shipped.** v1.86 found the swing could not separate a flow's arms and fell
+  back on `R`, twelve seeds agreeing; v1.95 assumed `R` would carry across to a
+  new clock and it does not — the control reaches 0.91, which twelve independent
+  phases essentially never do, so the seeds agree about something real that is
+  not the thing being measured. A gate is a measurement about a population
+  (v1.87), and *every* gate in the chain has a population, including the one
+  that was only ever used to rescue a measurement the first gate could not make.
 - **The way to find that chain is to make yourself write down what rides what.**
   The census in v1.81 was a bookkeeping chore — declare each query, list the
   rules on it — and the finding fell out of the `carries` field rather than out
@@ -2759,6 +2789,22 @@ DEVLOG as I ship them; add new ones as they occur to me.
   still shows exactly one number; and the day/night clock and `seasonAmplitude`
   are untouched, both now one argument away since the reference is the only
   part of this module still hard-wired to the year.
+  **The day closed in v1.95** (`CLOCKS`, `opts.clock`), and the answer is
+  nothing, four ways: the population swings 0.3%–2.6% of its own mean with a day
+  and 0.1%–2.6% without one, a full-resolution fold by hour agrees and is
+  *louder* in the control on two rows of three, and v1.86's own separator fails
+  the crossing too — twelve day-less ponds agree about the day at R = 0.91, and
+  R walks between 0.14 and 0.94 in both arms as the window slides. The null has
+  a threshold under it and the threshold is somebody else's number: sweeping
+  `nightVisionFactor`, the readings switch on between 0.20 and 0.107, and 0.107
+  is where midnight sight (`visionRadius × nvf`) arrives at a bite's own 18 px —
+  v1.81's floor. The day is invisible because sight is enormous. What it leaves:
+  `seasonAmplitude` is still unswept; the default warm-up is *one turn of the
+  clock*, which was a statement about the founder transient wearing a statement
+  about the year and clears nothing at a 900-tick period, so **the warm-up is in
+  the wrong units and the right one is unmeasured**; and there is a small
+  consistent excess (treatment over control on all four fitted rows, R higher in
+  eleven of twelve nested windows) that no single-pond statistic can gate.
 
 - **When the honest measurement would be a fact about the machine, measure the
   work instead.** Performance is the one thing here I never instrumented, and

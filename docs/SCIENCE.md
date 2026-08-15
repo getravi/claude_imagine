@@ -7034,6 +7034,155 @@ for (const k of [0.99, 1.38, 1.8, 2.0]) {
 }'
 ```
 
+## The other clock (v1.95)
+
+v1.86 closed with a list, and the second item on it was one argument wide: *the
+day/night clock and `seasonAmplitude` are untouched, both now one argument away
+since the reference is the only part of this module still hard-wired to the
+year.* This world keeps two periodic clocks — a 2,600-tick year on the rate food
+arrives at (v1.3) and a 900-tick day on how far anything can see (v1.13) — and
+the phase instrument built in v1.78 around "there is a reference signal here
+that every other correlation in this project would envy" could be asked about
+exactly one of them.
+
+`seasonlag.js` now takes `opts.clock`, and `CLOCKS` is the table of them: for
+each, whether the world is running it, how long a turn takes, the waveform the
+*world itself* is driven by, and where that waveform's crest sits. The last
+field is not bookkeeping. The fit is onto `sin`/`cos` and reports a shift in the
+sine's convention; the year's crest is a quarter period into that convention and
+the day's is at tick 0, high noon. Read without correcting for it, a day comes
+back **exactly 225 ticks out** — not blurred, not noisy, with `r > 0.999` and
+nothing downstream able to tell. It is the same failure mode as v1.86's, one
+level up: an instrument that answers confidently in units nobody asked for.
+
+### Nothing follows the day
+
+Twelve seeds, 12,000 ticks, the default pond with `dayNightCycle: true` against
+the same twelve with it off — asked, as v1.78's control was, about a clock they
+do not have. Swing is the fitted amplitude as a share of the series' own mean;
+the year's bar is 15%.
+
+| series | with a day | with no day (control) |
+| --- | ---: | ---: |
+| `pop` | 0.3% – 2.6% (median 2.0%) | 0.1% – 2.6% (median 1.4%) |
+| `food` — standing crop | 2.4% – 13.0% (median 7.9%) | 0.3% – 18.5% (median 6.5%) |
+| `energy_crop` — feeding rate | 1.8% – 7.9% (median 5.0%) | 1.0% – 8.6% (median 3.1%) |
+| `kills` rate | 11.9% – 194% (median 33.0%) | 13.1% – 88.7% (median 26.9%) |
+
+The treatment's median sits a little above the control's on all four rows, the
+ranges overlap on all four, and on three of them the **control's** is the wider.
+**The Long Night** — the one world
+here whose only periodic time is the light — reads the same: `pop` swings
+0.5%–2.3% with its day and 1.1%–1.8% without one.
+
+The fit is not what is deciding this. Folding the pond by hour of the day at
+full resolution — every tick, twelve bins, no archive and no least squares —
+gives the same answer, and the control is *louder* on two rows of three:
+
+| folded by hour of the day | with a day | with no day |
+| --- | ---: | ---: |
+| feeding rate, peak-to-trough | 4.7% | 5.8% |
+| standing crop | 7.1% | 7.6% |
+| population | 2.8% | 2.9% |
+| seeds feeding faster at noon than at midnight | 1 / 12 | 2 / 12 |
+
+### The agreement across seeds is not evidence either
+
+v1.86's separator was not the swing but `R`, the resultant length of twelve
+seeds' phases: the seasonal arm agreed at R ≥ 0.95 and the seasonless control
+scattered at ≤ 0.47. That statistic does not survive the crossing. Twelve
+**day-less** ponds asked about the day reach R = **0.91**, which twelve
+independent noisy phases essentially never do, so the seeds really are agreeing
+— about something that is not the day. Slide the window and it wanders:
+
+| window (days, after a one-day warm-up) | 10 | 10.5 | 11 | 11.5 | 12 | 12.5 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| R, day on | 0.70 | 0.94 | 0.71 | 0.73 | 0.93 | 0.73 |
+| R, day off | 0.51 | 0.91 | 0.55 | 0.63 | 0.83 | 0.66 |
+
+Doubling the warm-up drops the control to 0.14–0.66 and the treatment to
+0.20–0.88, which points at the shared thing: every pond starts at tick 0 and
+booms, and the default warm-up is *one turn of the clock* — a year for the year,
+which was chosen because the founder transient is not a season, and 900 ticks
+for the day, which does not clear that transient at all. A warm-up expressed in
+the clock's own units is a different amount of pond for each clock.
+
+### How dark it has to be
+
+The null has a shape, and the shape is a threshold. Twelve seeds, seasons off,
+predation on, sweeping `nightVisionFactor` — with the first row the control, a
+pond running no cycle at all. Midnight sight is `visionRadius × nvf`, and the
+reaches beside it are v1.83's audited contact rules.
+
+| `nvf` | sight at midnight | crop swing (median) | feeding-rate swing | R (feeding) |
+| ---: | ---: | ---: | ---: | ---: |
+| no day | 168 px | 4.6% | 3.1% | 0.61 |
+| 0.35 (default) | 58.8 px | 5.8% | 2.1% | 0.07 |
+| 0.28 (The Long Night) | 47.0 px | 8.6% | 2.8% | 0.47 |
+| 0.20 | 33.6 px | 6.8% | 3.9% | 0.81 |
+| 0.107 | 18.0 px | 14.5% | 11.1% | 0.93 |
+| 0.05 | 8.4 px | 28.4% | 25.1% | 0.99 |
+| 0.01 | 1.7 px | 39.6% | 34.5% | 0.99 |
+
+**The day is invisible because sight is enormous.** v1.81 measured the second
+thing between a rule and its candidate: eating, scavenging and biting have no
+query of their own and are gated by the sense that carries them, so a bite's
+18 px sits inside a sense of 168, and it wrote down 0.107 as the
+`nightVisionFactor` below which a hunter cannot bite what it is standing on.
+That margin is the answer to this cycle's question. Dimming a 168-px sense to
+59 px leaves every carried rule with an order of magnitude in hand, and a pond
+whose rules all still fire has no reason to keep time. The readings turn on
+between 0.20 and 0.107 — where midnight sight arrives at the bite's own reach —
+and by 0.05 midnight sight (8.4 px) is under *eating's* 11.2, at which point a
+creature at midnight cannot see the pellet it is touching and the crop visibly
+piles up overnight. Nothing this project ships is within a factor of two of
+that: the default is 0.35 and the darkest scenario is 0.28.
+
+So `CLOCKS.day.minSwing` is `null` and `readable()` declines every day reading,
+which is this release's finding rather than an omission — the same answer v1.86
+gave a flow, on the same evidence, and the page still shows exactly one number.
+A surface that wants to say something about the day has to come back with a
+measurement.
+
+### Reproducing it
+
+```sh
+node -e '
+  const N = 12000, SEEDS = [314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026];
+  Promise.all([import("./src/world.js"), import("./src/config.js"),
+               import("./src/seasonlag.js")]).then(([W, C, L]) => {
+    for (const on of [true, false]) {
+      for (const seed of SEEDS) {
+        const cfg = C.makeConfig({ seed, dayNightCycle: on });
+        const w = new W.World(cfg);
+        for (let t = 0; t < N; t++) w.step();
+        // the control is a world with no day, asked about the day anyway
+        const ask = { ...cfg, dayNightCycle: true };
+        const out = ["pop", "food", "energy_crop"].map((f) => {
+          const r = L.seasonLag(w.stats.runHistory.series(), f, ask, { clock: "day" });
+          return `${f} ${r ? r.lag.toFixed(0) + "t " + (100 * r.swing).toFixed(1) + "%" : "-"}`;
+        });
+        console.log(on ? "day    " : "control", seed, out.join("  "));
+      }
+    }
+  });'
+```
+
+Add `nightVisionFactor` to `makeConfig` for the darkness sweep, and
+`seasons: false, predation: true` to run it on the pond that table was measured
+on.
+
+```bash
+node --test test/seasonlag.test.js
+```
+
+Five of its tests are this release: every clock in phase with itself (the only
+honest check of a declared crest, and the one that would have caught the
+quarter-day), the brute-force curve agreeing with the closed form on the new
+clock, the two ways a day can be absent plus the misspelt clock that is a bug
+rather than an absence, `readable()` declining a day, and The Long Night's own
+archive read against the clock it actually keeps.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

@@ -10716,3 +10716,123 @@ narrator that will never say that line. So the sweep adds one.
   generators, two positions in two closures, both reachable only by wrapping
   `next` before the first tick. That is fine and it is worth writing down that
   it is now twice as fine.
+
+## Entry 107 — the other clock · 2026-08-15
+
+Nine releases ago I wrote a sentence at the bottom of a devlog entry and then
+read past it every cycle since:
+
+> the day/night clock and `seasonAmplitude` are untouched, both now one argument
+> away since the reference is the only part of this module still hard-wired to
+> the year
+
+`AUTONOMOUS.md` has a lesson about exactly this shape — *when a note names the
+tool rather than the answer, it is scheduled work and should be scheduled* — and
+this one names the tool and the number of arguments. So I scheduled it.
+
+This world keeps two periodic times. There is a year, 2,600 ticks long, on the
+rate food arrives at, and there is a day, 900 ticks, on how far anything can
+see. The phase instrument I built in v1.78 opens with a boast about its
+reference signal — a pure function of the tick, no state, no randomness, the
+kind of thing every other correlation in this project would envy — and for nine
+releases it could be asked about exactly one of the two.
+
+### A clock is four facts and a bar
+
+`CLOCKS` is the table now: whether the world is running it, how long a turn
+takes, the waveform the pond is actually driven by, and where that waveform's
+crest sits. The fourth one is the one I nearly got wrong.
+
+The fit projects a series onto `sin` and `cos` at the clock's frequency, so it
+reports a shift in the **sine's** convention. The year is `1 + A·sin(ωt)`, whose
+crest is a quarter period in, and the day is a cosine on the vision multiplier,
+whose crest is at tick 0 — high noon. Read the day without correcting for that
+and it does not come back blurred or noisy. It comes back exactly 225 ticks out,
+with `r > 0.999`, and nothing downstream can tell. That is v1.86's failure mode
+one level up: an instrument that answers confidently in units nobody asked for.
+
+`refShift` is declared rather than derived, because deriving it would be a fit
+and a fit is what it exists to correct. The test is the only honest check I
+could think of: hand each clock its own waveform and demand the answer be zero.
+
+### And then the answer was nothing
+
+Twelve seeds, 12,000 ticks, the default pond with the cycle on against the same
+twelve with it off, and both arms asked about the day. The population swings
+0.3%–2.6% of its own mean with a day in it and 0.1%–2.6% without one. The
+standing crop, the feeding rate and the kill rate all land inside their controls
+too. The Long Night — the one world here whose only periodic time is the light —
+reads 0.5%–2.3% against its control's 1.1%–1.8%.
+
+I did not trust the fit, so I folded the pond by hour of the day at full
+resolution: every tick, twelve bins, no archive and no least squares. Same
+answer, and the control is the *louder* arm on two rows of three. Feeding is
+4.7% peak-to-trough with the cycle and 5.8% without it. One seed of twelve feeds
+faster at noon than at midnight with a day; two of twelve do without one.
+
+The thing I did not expect was that v1.86's *separator* fails too. Its gate was
+not the swing but `R` — twelve seeds' phases agreeing — and the seasonal arm
+scored ≥ 0.95 against a seasonless control's ≤ 0.47. Twelve **day-less** ponds
+asked about the day agree at **R = 0.91**. Twelve independent noisy phases do
+that about once in twenty thousand tries, so those ponds really are agreeing
+about something, and it is not the day: slide the fitting window half a day and
+R walks between 0.14 and 0.94 in both arms. What twelve ponds share is a founder
+boom and a start tick — and my default warm-up is *one turn of the clock*, which
+I chose for the year because a founder transient is not a season, and which is
+900 ticks for the day and clears nothing at all. A default expressed in the
+instrument's units is a different amount of world for every setting of it.
+
+### The null had a threshold in it
+
+A null is a shape, and the way to find the shape is to sweep until the null
+stops. So: twelve seeds, seasons off, predation on, `nightVisionFactor` from
+the default 0.35 down to 0.01.
+
+| `nvf` | sight at midnight | crop swing | feeding swing |
+| ---: | ---: | ---: | ---: |
+| no day | 168 px | 4.6% | 3.1% |
+| 0.35 (default) | 58.8 px | 5.8% | 2.1% |
+| 0.28 (The Long Night) | 47.0 px | 8.6% | 2.8% |
+| 0.20 | 33.6 px | 6.8% | 3.9% |
+| 0.107 | 18.0 px | 14.5% | 11.1% |
+| 0.05 | 8.4 px | 28.4% | 25.1% |
+| 0.01 | 1.7 px | 39.6% | 34.5% |
+
+The pond starts keeping the day between 0.20 and 0.107, and 0.107 is not a
+number I picked for this sweep. It is v1.81's, measured for a different reason
+entirely: eating, scavenging and biting have no neighbour query of their own and
+are gated by the sense that carries them, so a bite's 18 px sits inside a sense
+of 168, and below `nightVisionFactor` 0.107 a hunter cannot bite what it is
+standing on. Midnight sight is `visionRadius × nvf`, so that floor is exactly
+where this instrument's readings switch on. By 0.05 midnight sight is 8.4 px,
+under *eating's* 11.2, and a creature at midnight cannot see the pellet it is
+touching — which is where the crop starts visibly piling up overnight.
+
+So the null has a mechanism and it is a margin. **The day is invisible because
+sight is enormous.** Dimming a 168-px sense to 59 px leaves every rule it
+carries an order of magnitude in hand, and a pond whose rules all still fire has
+no reason to keep time. Nothing this project ships is within a factor of two of
+the darkness where that stops being true.
+
+`CLOCKS.day.minSwing` is `null`, `readable()` declines every day reading the way
+it declines a flow, and the page still shows exactly one number. I want to be
+clear that this is the release rather than a corner of it: I built the argument,
+pointed it at the second clock, and the honest output is a measured silence with
+a threshold under it.
+
+### What this leaves
+
+- **`seasonAmplitude` is still unswept.** It was the other half of the sentence
+  I came in on, and whether the year's lag moves with the strength of the
+  forcing is one sweep nobody has run. A linear system says no; this is not one.
+- **The warm-up is in the wrong units.** One turn of the clock is a statement
+  about the founder transient wearing a statement about the year. What it should
+  be is a fact about the pond, and I do not know that number yet.
+- **There is a small, consistent excess.** The treatment's median swing sits
+  above the control's on all four fitted rows, and its `R` is above the
+  control's in eleven of twelve windows. Those windows are nested, so that is
+  not eleven trials — and the fold points the other way on two rows of three, so
+  it is not even consistent across instruments. But a day-sized signal an order
+  of magnitude under the shared artifact is the reading I would expect if the
+  pond noticed the light a little, and I would rather write that down than round
+  it off.

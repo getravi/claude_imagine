@@ -1,4 +1,4 @@
-// seasonlag.js — how far behind the year the pond runs.
+// seasonlag.js — how far behind one of its clocks the pond runs.
 //
 // v1.74 drew the season on the chart and measured what it does with the
 // cheapest statistic available: the mean of the winter halves against the mean
@@ -17,7 +17,7 @@
 // sit at. The instrument that can see it is a cross-correlation over lag, and
 // this is it.
 //
-// What it computes: the pond's clock is `sin(2πt / seasonLength)`, a pure
+// What it computes: the pond's year is `sin(2πt / seasonLength)`, a pure
 // function of the world's own tick with no state and no randomness, so there is
 // a *reference signal* here that every other correlation in this project would
 // envy. Against it, a series is one number — the shift at which it lines up —
@@ -52,10 +52,84 @@
 // others were checked and found flat, but because a counter cannot be read this
 // way and nothing said so. `SERIES` below says which column is which, and
 // `seasonLag` differences a flow before it fits it.
+//
+// v1.86 left the other half of its own sentence open: *the day/night clock and
+// `seasonAmplitude` are untouched, both now one argument away since the
+// reference is the only part of this module still hard-wired to the year.* The
+// argument is `opts.clock` and `CLOCKS` is the table it indexes. This pond keeps
+// two periodic clocks — a 2,600-tick year on the food rate and a 900-tick day
+// on how far anything can see — and for nine releases an instrument built around
+// "there is a reference signal here that every other correlation in this project
+// would envy" could only be asked about one of them.
 
-import { seasonalFactor } from "./environment.js";
+import { seasonalFactor, dayNightVisionFactor } from "./environment.js";
 
 const TAU = Math.PI * 2;
+
+/**
+ * The periodic times this world keeps, and how to read each one.
+ *
+ * A clock here is four facts and a bar: whether the world is running it at all,
+ * how long one turn of it takes, the waveform the *world itself* uses (not a
+ * stand-in sinusoid — the reference has to be the thing the pond is actually
+ * driven by, or the lag is measured against a picture of the rule rather than
+ * the rule), where that waveform's crest sits relative to a plain `sin(ωt)`,
+ * and how big a swing a surface may state as a fact.
+ *
+ * The crest is the whole reason this is a table rather than a pair of
+ * arguments. The year is `1 + A·sin(ωt)`, so its crest is a quarter period in;
+ * the day is `nvf + (1−nvf)·(cos(ωt)+1)/2`, so its crest is at tick 0, high
+ * noon. The fit below is onto `sin`/`cos` and reports a shift in the *sine's*
+ * convention, and a reading of "the pond peaks 225 ticks after the sine" is not
+ * an answer to any question a watcher has. `refShift` is what turns it into one:
+ * a lag here always means *after this clock's own crest*. It is declared rather
+ * than derived because deriving it is a fit and a fit is what it exists to
+ * correct — so `test/seasonlag.test.js` checks it the only honest way, by
+ * handing each clock its own waveform and demanding the answer be zero.
+ *
+ * @type {Readonly<Record<string, Readonly<object>>>}
+ */
+export const CLOCKS = Object.freeze({
+  /** The year: a sine on the rate food arrives at (v1.3), on by default. */
+  year: Object.freeze({
+    running: (c) => !!c.seasons && c.seasonAmplitude > 0,
+    period: (c) => c.seasonLength,
+    factor: seasonalFactor,
+    refShift: () => 0,
+    /**
+     * The bar a *level's* swing has to clear before a surface states it as a
+     * fact. See `MIN_SWING` — this is that measurement, and it is the year's.
+     */
+    minSwing: 0.15,
+  }),
+  /**
+   * The day: a cosine on how far anything can see (v1.13), opt-in, and the
+   * clock `The Long Night` runs instead of a year.
+   *
+   * `minSwing` is `null` — not "no bar", but *no bar that works*, the same
+   * answer `readable()` gives a flow and for a reason that is measured rather
+   * than assumed. See `MIN_SWING`.
+   */
+  day: Object.freeze({
+    running: (c) => !!c.dayNightCycle && c.nightVisionFactor < 1,
+    period: (c) => c.dayLength,
+    factor: dayNightVisionFactor,
+    refShift: (c) => -c.dayLength / 4,
+    minSwing: null,
+  }),
+});
+
+/** The clock a caller asked for, by name. */
+function clockOf(name) {
+  const clock = CLOCKS[name];
+  // A typo is a caller's bug and not a state of the pond, so it is loud. The
+  // absences this module represents with `null` are all facts about a world —
+  // no year, too short a record, a series that does not move — and burying a
+  // misspelt clock among them would make the one number this module exists to
+  // report quietly unavailable (v1.42: a guard is a decision about what to say).
+  if (!clock) throw new Error(`seasonlag: unknown clock "${name}"`);
+  return clock;
+}
 
 /**
  * What kind of quantity each column of a history point is.
@@ -297,15 +371,18 @@ const DEFAULTS = {
   minYears: 3,
   /** Fewest samples worth a phase, whatever the span. */
   minSamples: 24,
+  /** Which of `CLOCKS` the lag is measured against. */
+  clock: "year",
 };
 
 /**
- * How far a series runs behind the year, in ticks.
+ * How far a series runs behind one of the world's clocks, in ticks.
  *
  * Positive means *behind*: the series reaches its peak `lag` ticks after the
- * food-spawn rate reaches its own. Negative means ahead — the standing crop
- * does this, and it is not a paradox, it is what an integrator does when the
- * thing draining it is late.
+ * clock does — after the food-spawn rate's own high point for the year, after
+ * high noon for the day. Negative means ahead — the standing crop does this
+ * against the year, and it is not a paradox, it is what an integrator does when
+ * the thing draining it is late.
  *
  * The estimate is the phase of the season's own frequency, which for a pure
  * sinusoidal reference is the argmax of the correlation and is continuous in
@@ -329,16 +406,18 @@ const DEFAULTS = {
  *
  * @param {Array<object>} rows history points, oldest first
  * @param {string} field which column ("pop", "food", …)
- * @param {object} config the world's config — `seasons`, `seasonLength`,
- *   `seasonAmplitude`
+ * @param {object} config the world's config — whichever of `seasons`,
+ *   `seasonLength`, `seasonAmplitude`, `dayNightCycle`, `dayLength` and
+ *   `nightVisionFactor` the chosen clock reads
  * @param {object} [opts] see `DEFAULTS`, plus `kind` to override `SERIES`
- * @returns {{lag:number, r:number, swing:number, kind:string, years:number,
- *   samples:number}|null}
+ * @returns {{lag:number, r:number, swing:number, kind:string, clock:string,
+ *   years:number, samples:number}|null}
  */
 export function seasonLag(rows, field, config, opts = {}) {
-  const { warmup, minYears, minSamples, kind } = { ...DEFAULTS, ...opts };
-  if (!config || !config.seasons || !(config.seasonAmplitude > 0)) return null;
-  const period = config.seasonLength;
+  const { warmup, minYears, minSamples, kind, clock } = { ...DEFAULTS, ...opts };
+  const time = clockOf(clock);
+  if (!config || !time.running(config)) return null;
+  const period = time.period(config);
   if (!(period > 0)) return null;
 
   const of = kind ?? seriesKind(field);
@@ -382,8 +461,11 @@ export function seasonLag(rows, field, config, opts = {}) {
   const power = Math.hypot(a, b);
   if (!(power > 0)) return null;
   // y ≈ C·sin(ω(t − L)) = C[cos(ωL)·sin(ωt) − sin(ωL)·cos(ωt)], so the pair
-  // (a, b) points at angle ωL once b is negated.
-  const lag = wrap(Math.atan2(-b, a) / omega, period);
+  // (a, b) points at angle ωL once b is negated. That L is a shift against the
+  // sine; `refShift` carries it the rest of the way, to a shift against the
+  // clock's own crest, and is exactly 0 for the year (so this line is the
+  // arithmetic v1.78 shipped, unchanged, for the clock it shipped with).
+  const lag = wrap(Math.atan2(-b, a) / omega - time.refShift(config), period);
 
   let mean = 0;
   for (const v of values) mean += v;
@@ -393,7 +475,7 @@ export function seasonLag(rows, field, config, opts = {}) {
   // detrended, because the fit above is: correlating a detrended series against
   // an undetrended reference charges the season for the trend it was not fitted
   // to, and reads r = 0.994 on a pond made of nothing but a season.
-  const ref = detrend(ticks.map((t) => seasonalFactor(t - lag, config)));
+  const ref = detrend(ticks.map((t) => time.factor(t - lag, config)));
   const r = pearson(y, ref);
   if (r === 0) return null;
 
@@ -405,6 +487,11 @@ export function seasonLag(rows, field, config, opts = {}) {
     // lag on a series that barely moves is arithmetic.
     swing: mean !== 0 ? power / Math.abs(mean) : 0,
     kind: of,
+    clock,
+    // Turns of the clock the reading is made over — years for the year, days
+    // for the day. The name is the one v1.78 gave it and is left alone: it is
+    // read by `main.js` and by the books, and a field renamed for tidiness is a
+    // change to two surfaces for no measurement.
     years: span / period,
     samples: n,
   };
@@ -432,8 +519,26 @@ export function seasonLag(rows, field, config, opts = {}) {
  * with a year in it swings 18.0%–31.1%. So the gate is amplitude, the gap between the two
  * ranges is where the bar goes, and `r` stays on the result as a description
  * rather than a filter. See docs/SCIENCE.md.
+ *
+ * **And it is the year's bar.** v1.87 wrote down that a gate a control picks is
+ * a gate for the quantity it was measured on, and a clock is a quantity: v1.95
+ * ran the same twelve-seed pair against the *day* and the two arms do not
+ * separate. A pond with a day in it swings 0.3%–2.6% of its mean population,
+ * a pond with no day at all swings 0.1%–2.6% against the day it does not have,
+ * and a full-resolution fold by hour of the day reads a 2.8% range with the
+ * cycle on and 2.9% with it off. The day moves what a creature can *see*, and
+ * sight is 168 px where the rules it carries need 11 to 18 (v1.81) — so
+ * dimming it to a third at midnight changes nothing the pond can be measured
+ * to notice. Below a `nightVisionFactor` of about 0.107, where midnight sight
+ * falls to a bite's own reach, the day becomes legible and the swings go to
+ * 25%–40%; nothing this project ships is near there. So there is no bar to
+ * find rather than a bar nobody has looked for: `CLOCKS.day` carries
+ * `minSwing: null` and `readable()` declines every day reading, the same answer
+ * it gives a flow and for the same reason — the number is real, the
+ * single-pond test that would let a surface state it is not. See
+ * `docs/SCIENCE.md`.
  */
-export const MIN_SWING = 0.15;
+export const MIN_SWING = CLOCKS.year.minSwing;
 
 /**
  * The reading, if it says anything; `null` if it does not.
@@ -450,12 +555,21 @@ export const MIN_SWING = 0.15;
  * pond. So the honest answer for a surface is the absence, until somebody
  * measures a gate that works. Nothing on the page reads a flow today.
  *
- * @param {{swing:number, kind?:string}|null} result from `seasonLag`
+ * A **day** reading answers `null` for the same reason and on the same
+ * evidence, which is v1.95's finding rather than its hedge: the bar is
+ * `CLOCKS[clock].minSwing`, the day's is `null`, and a clock with no bar is a
+ * clock no surface may quote. Two absences with one predicate — a surface that
+ * wants to say something about the day has to come back with a measurement.
+ *
+ * @param {{swing:number, kind?:string, clock?:string}|null} result from
+ *   `seasonLag`
  * @returns {object|null}
  */
 export function readable(result) {
   if (!result || result.kind === "flow") return null;
-  return result.swing >= MIN_SWING ? result : null;
+  const bar = CLOCKS[result.clock ?? "year"]?.minSwing;
+  if (!(bar > 0)) return null;
+  return result.swing >= bar ? result : null;
 }
 
 /**
@@ -476,9 +590,10 @@ export function readable(result) {
  * @returns {Array<{lag:number, r:number}>} one entry per lag, ascending
  */
 export function correlogram(rows, field, config, opts = {}) {
-  const { warmup, step = 4, kind } = { ...DEFAULTS, ...opts };
-  if (!config || !config.seasons || !(config.seasonAmplitude > 0)) return [];
-  const period = config.seasonLength;
+  const { warmup, step = 4, kind, clock } = { ...DEFAULTS, ...opts };
+  const time = clockOf(clock);
+  if (!config || !time.running(config)) return [];
+  const period = time.period(config);
   if (!(period > 0) || !(step > 0)) return [];
   const warm = warmup == null ? period : warmup;
   const { ticks, values } = columns(rows || [], field, warm, kind ?? seriesKind(field));
@@ -486,7 +601,7 @@ export function correlogram(rows, field, config, opts = {}) {
   const y = detrend(values);
   const out = [];
   for (let lag = -period / 2; lag <= period / 2; lag += step) {
-    const ref = detrend(ticks.map((t) => seasonalFactor(t - lag, config)));
+    const ref = detrend(ticks.map((t) => time.factor(t - lag, config)));
     out.push({ lag, r: pearson(y, ref) });
   }
   return out;
