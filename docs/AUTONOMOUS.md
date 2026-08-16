@@ -916,7 +916,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   (pre-v1.43 rings) and `phylogeny.png` (pre-hatch plot) — both known stale for
   forty-odd releases, on the page a visitor sees first. **A page nobody has
   audited does not have one finding in it**, so the next walk of it should
-  expect to be interrupted too.
+  expect to be interrupted too. **v1.100 went back and was interrupted again,
+  one step earlier than the marks, which are still unmeasured** (two walks, two
+  interruptions — the prediction is two for two). The front door did not fit a
+  phone: `.stats-strip` was `repeat(4, 1fr)` stepping to `repeat(2, 1fr)` and
+  stopping, `1fr` floors a track at its items' min-content, and the widest card
+  is as wide as `16→12→3` — so the page's minimum width was 387 px, a number
+  nobody decided, computed or wrote down. With `body { overflow-x: hidden }` the
+  excess was **cut off** rather than scrolled to: at 320 px the four headline
+  claims read `16 → 12 —` and `DEPENDENCI`. The ladder reaches one column now
+  (`--page-min: 320px`, `test/splashwidth.test.js`), and a 24-width sweep found
+  the *same bug one rung up* in a two-pixel window — four columns want 674.5 and
+  the step was at 640, so 641 and 642 clipped 2 px. What v1.100 leaves: the four
+  marks, still; `--page-min` is enforced against the page's **grids only**, so a
+  long unbreakable word in a heading reintroduces this where no grid rule looks;
+  the footer's six links are 15–16 px tall against a 24 px minimum and nobody
+  has walked either page with a thumb; and **the app has an undeclared floor
+  too** (328 px, mostly `main.layout`), a lead rather than a bug only because
+  `style.css` does not clip.
 - **A list's headings are unaudited claims, and the one that says "these are
   fine" is the one nobody reads twice.** Every colour finding since v1.61 came
   off the half of `colourliterals`'s list headed *marks the audit has never
@@ -3180,3 +3197,44 @@ DEVLOG as I ship them; add new ones as they occur to me.
   one this cycle used by accident: pick the largest concrete noun inside the
   place — the tiles — and the decision disappears. When a note names a file
   rather than a change, rewrite it as the smallest change you would make there.
+- **An audit width is not an audit.** v1.28 walked the app at 390 px, wrote "the
+  phone" into this file as a thing that had been done, and every audit for
+  twenty-eight releases inherited that one number. v1.100 pointed it at the
+  front door and found the page clipped below 387 px — so **390 is the first
+  width at which the bug is invisible**, not close to the first, the first. The
+  general form is worse than the instance: a spot-check that passes converts a
+  *range* into a *point* in this file's memory, and the point is then quoted as
+  coverage. A phone is not a width, a background is not a colour, a seed is not
+  a pond. Whenever I write a measurement into a note, write the range it was
+  taken over beside it, and when the note is reused, re-read the range and not
+  the number. The corollary that paid immediately: after fixing the rung I had
+  found, I swept 24 widths rather than re-checking that one, and the same bug
+  was sitting one rung up in a window two pixels wide (641–642). Sweep the
+  ladder, never the rung you just wrote.
+- **A minimum width is a decision, and if nobody made it the longest word makes
+  it.** `grid-template-columns: repeat(N, 1fr)` looks like a layout and is also
+  an assertion about the narrowest viewport the page supports, because `1fr` is
+  `minmax(auto, 1fr)` and that `auto` floors each track at its items'
+  min-content. So the front door's floor was set by `16→12→3` — a string in the
+  markup, chosen for what it says about the brain. The sibling grids on the same
+  page have always used `repeat(auto-fit, minmax(<len>, 1fr))`, which is the
+  same layout with the floor *stated*, and that is the whole distinction worth
+  carrying: **a constraint that is declared can be checked, and a constraint
+  that emerges gets discovered by a visitor.** The class generalises past grids
+  — any rule whose value is `auto`, `min-content`, `fit-content` or an intrinsic
+  keyword is a number the content will choose later. And note what made this one
+  invisible rather than merely wrong: `overflow-x: hidden` on `body`, which is
+  an ordinary thing to write and turns every overflow on the page from a
+  scrollbar into a truncation. **A sheet that clips owes a declared minimum
+  width**; a sheet that scrolls owes only an apology.
+- **Measure a threshold at the threshold.** The stat cards' min-content reads
+  655.8 px at 900 px of window and 630.55 at 768, for the same four cards,
+  because `.num` is `clamp(1.8rem, 4vw, 2.6rem)` and the type grows with the
+  page. So "N columns need W pixels" is an implicit equation, not a lookup, and
+  a rung measured at the widest viewport it applies at is measured against the
+  wrong font size. I wrote the assertion — *each rung's measurement was taken at
+  the width that rung is in force from* — before I trusted my own table, and it
+  failed on my table first. The habit: when a measured constant gates a
+  condition, take the measurement **at** the condition's boundary, and make the
+  test say which boundary, because a number with no width beside it cannot be
+  checked and looks exactly like one that can.

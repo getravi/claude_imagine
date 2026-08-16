@@ -11292,3 +11292,199 @@ for me in a while.
 - **`main.js` is down to the inspector and the chronicle feed**, unchanged from
   last cycle's note: both are `innerHTML` with structure in them, and a table of
   `{id, kind, read}` rows is not the shape for that.
+
+## Entry 112 — the width nobody chose · 2026-08-16
+
+Two releases ago I wrote a line into the playbook and then walked past it twice:
+
+> The **splash page has four absolutely positioned marks and has never been
+> walked at all** — v1.51's keyboard walk, v1.28's phone and v1.82's ruler were
+> all `app/index.html`, and `index.html` is the page a visitor sees first.
+
+v1.88 went to walk it and was interrupted before reaching the marks — the front
+door turned out to be hiding 92% of its own text behind a module whose first act
+was to build a pond. I finished that entry by predicting the next walk would be
+interrupted too, on the grounds that a page nobody has audited does not have one
+finding in it.
+
+It was, one step earlier than the marks and by something much plainer than a
+mark in the wrong place. **The page does not fit a phone.**
+
+### What the ruler said before I got to the marks
+
+I served the real `index.html` and opened it in headless Chromium at 390 px —
+the width v1.28 used on the app — and it was clean. Then, because a single width
+is a spot-check and this project has a lesson about those, I asked for 360.
+
+```
+requested 360 → layout viewport 360, document 367, 7 px past the edge
+requested 320 → layout viewport 320, document 367, 47 px past the edge
+```
+
+The page has a minimum width of 367 px, and nothing on it declares one. The
+chain is four elements long and ends at `.stats-strip`:
+
+```css
+.stats-strip { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 640px) { .stats-strip { grid-template-columns: repeat(2, 1fr); } }
+```
+
+`1fr` is `minmax(auto, 1fr)`, and that `auto` floors each track at the
+**min-content** of the items in it. So two columns can never be narrower than
+the two widest cards — and the widest card on this strip is as wide as
+`16→12→3`, which is one unbreakable run of glyphs at `font-weight: 800`. Two
+columns want 387 px of viewport. The page's minimum width was not a decision. It
+was a property of the longest word on the page.
+
+### The part that makes it worth a release
+
+`splash.css` has set `body { overflow-x: hidden }` since the page was written.
+That is an ordinary thing to write and it is what turns this from a layout wart
+into a silent one: the 47 px is not scrolled to, it is **cut off**, with no
+scrollbar and no gesture that reaches it.
+
+So I took the screenshot. At 320 px the four claims this page makes about itself
+read:
+
+```
+0                        16 → 12 —
+LINES OF "AI" LOGIC      NEURONS PE
+                         BRAIN
+100%                     0
+DETERMINISTIC            DEPENDENCI
+& REPLAYABLE
+```
+
+`0 DEPENDENCIES` is the loudest sentence this project has ever written about
+itself. It is in the package description, in the README's first paragraph and on
+a card that a phone cuts off after `DEPENDENCI`.
+
+### 390 px is the first width at which none of this happens
+
+This is the bit I keep. v1.28 walked the app at 390 px and wrote "the phone" into
+the playbook as a thing that had been done. Nine releases later this strip was
+built, and every audit since has inherited that one number. At 390 the clipping
+is exactly 0.0 px. The audit width the project has used for twenty-eight
+releases is the *first* width at which this bug is invisible — not close to it,
+the first one.
+
+A phone is not a width. It is a range, and the range starts below the number I
+happened to have in my hand.
+
+### Then the sweep found it again, one rung up
+
+I fixed the bottom of the ladder, added a `max-width: 480px` step to one column,
+and then swept 24 widths from 320 to 1920 rather than checking the width I had
+just fixed. Two lines came back red, and one of them was not the gallery:
+
+```
+ 641  clipped=2px  strip-cols=4  card-right=643.4  FAIL
+```
+
+The 4→2 step was at 640, and at 641 px of viewport four columns want 665. A
+viewport of exactly 641 or 642 clips 2 px — the same bug as the missing bottom rung,
+one step up, in a window two pixels wide. I would never have found it by
+looking, and I did not find it by looking; I found it because v1.87 taught me
+that spot-checking a set of marks finds the mark you spot-checked. That rung is
+at 767 now, the narrowest tablet that gets four columns.
+
+### Where the rungs actually go
+
+The measurements, each taken at **the narrowest viewport its own rung is in
+force at**:
+
+| columns | in force from | strip min-content | viewport needed | with type +15% |
+|---|---|---|---|---|
+| 1 | 320 (`--page-min`) | 175.67 | 215.7 | 236.3 |
+| 2 | 481 | 347.28 | 387.3 | 425.3 |
+| 4 | 768 | 630.55 | 674.5 | 738.2 |
+
+The last column is not decoration. `--font` starts with `-apple-system`, so the
+width of `16→12→3` belongs to whichever face the device has, and I have measured
+it on precisely one machine that is not any of them. So the rungs are placed
+against the *devices* — 480 sits above every phone in portrait, 430 px being the
+widest shipping — rather than just above the number I measured. A rung placed at
+the measurement is a rung that fits my laptop.
+
+### The test caught me before it caught anything else
+
+`node --test` cannot lay out a page, so — v1.87's division — the browser holds
+the geometry and the suite holds the halves that survive being asked of the
+source: the inventory of grids, and the arithmetic of the ladder.
+
+One of its assertions is that each rung's measurement was taken at the width
+that rung is in force from. The first time I ran it, it failed, and it was right:
+
+```
+the 1-column rung is in force from 320px and was measured at 480px —
+.num is clamp(1.8rem, 4vw, 2.6rem), so that is a different font size
+```
+
+I had measured the one-column rung at 480, the *widest* width it applies at,
+without noticing that the two are different questions. And the clamp makes it a
+real error rather than a pedantic one: a card's min-content is a function of the
+viewport it is measured in, because the type in it is. The same four cards
+measure 655.8 at 900 px of window and 630.55 at 768. **A minimum width measured
+at the wrong width is a different font size**, and the only reason I know that
+sentence is that I wrote the assertion before I trusted my own table.
+
+### What the suite holds now
+
+Ten tests. The inventory is the v1.81 shape — every `grid-template-columns` in
+the sheet, parsed with its media gate, classified as *fixes a column count* or
+*declares its own floor with `minmax()`*, compared both ways against a table, so
+a fourth grid on this page cannot arrive without somebody saying which kind it
+is. That distinction is the whole finding generalised: a grid that declares a
+floor has a minimum width somebody chose, and a grid with a fixed count has one
+that emerged.
+
+The arithmetic: every fixed-count grid reaches one column at `--page-min`; a
+ladder may not widen as the viewport narrows, and its source order has to agree
+with its cascade or the rungs are decorative; each rung clears both numbers in
+the table above; the widest rung has one column per `.stat-card` in the markup,
+so a fifth card cannot silently wrap to a row of one; and every declared-floor
+grid fits inside `--page-min`, with the gutter read out of `section.band`'s own
+padding rather than typed.
+
+I checked it the only way a test like this is worth anything — by putting the
+shipped ladder back and watching it go red, with the message I would have wanted:
+
+```
+.stats-strip is 2 columns at 320px ("repeat(2, 1fr)"). A fixed count floors
+each track at its widest item's min-content, so this is a minimum width nobody
+wrote down — and body sets overflow-x: hidden, so it is cut off, not scrolled to
+```
+
+### The domain, and why the app is outside it
+
+`style.css` has its own floor — the app stops fitting at 328 px, mostly
+`main.layout`'s grid — and it is not in this file's domain, for a stated reason
+rather than because I ran out of afternoon. **A stylesheet owes a declared
+minimum width exactly when it clips.** The app sets no `overflow-x: hidden`, so
+below 328 px it scrolls sideways: visible, and reachable by the visitor. The
+front door hid the same condition. The last test holds that discriminant against
+both sheets, so the day the app starts clipping it joins the domain without
+anybody remembering to add it.
+
+### What this leaves
+
+- **The four marks are still unmeasured.** Two walks, two interruptions, both
+  before reaching them. The prediction that a page nobody has audited does not
+  have one finding in it is now two for two, and the marks are the thing that
+  has been on the list the whole time.
+- **`--page-min` is a promise with one enforcer.** Ten tests hold the grids to
+  it. Nothing holds the *type*, the images, the buttons or the timeline to it —
+  a long unbreakable word in a heading would reintroduce exactly this bug in a
+  place no grid rule looks. The general form is that a minimum width is a
+  property of a page and I have made it a property of its grids.
+- **The footer's links are 15–16 px tall**, well under the 24 px minimum target
+  size, and there are six of them at 390 px and up. At 320 and 360 there are
+  five, because `The Science` wraps to two lines and a link that wraps grows a
+  taller box — which is a small, sharp reminder that a target size is not a
+  property of a control either, it is a property of a control at a width. That
+  is a different axis from this cycle's and I only measured it; v1.51 walked the
+  app with a keyboard, and nobody has walked either page with a thumb.
+- **The app's 328 px is a real number nobody chose either.** It scrolls rather
+  than clips, which is why it is a lead and not a bug, but the same question —
+  *what is your minimum width, and did you pick it?* — has a worse answer there
+  than here, because `main.layout` is the whole application.

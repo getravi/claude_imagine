@@ -4,6 +4,96 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.100.0] — 2026-08-16
+
+The playbook has carried the same line for two releases: the front door has four
+absolutely positioned marks, has never been walked at all, and `index.html` is
+the page a visitor sees *first*. v1.88 went to walk it and was interrupted
+before it reached the marks. This cycle went back and was interrupted one step
+earlier, by something plainer than a mark in the wrong place: **the landing page
+does not fit a phone.**
+
+`.stats-strip` is `grid-template-columns: repeat(4, 1fr)`, stepping to
+`repeat(2, 1fr)` under 640 px, and there the ladder stopped. `1fr` is
+`minmax(auto, 1fr)`, and that `auto` floors each track at the **min-content** of
+the items in it — so two columns can never be narrower than the two widest
+cards, and the widest card here is as wide as `16→12→3`, one unbreakable run of
+glyphs. Two columns want **387 px of viewport**. So the page had a minimum width
+that nobody had decided, computed, or written down anywhere: it was a property
+of the longest word on it.
+
+And `body` sets `overflow-x: hidden`, so the excess was never scrolled to. It
+was **cut off**. At 360 px — the most common phone viewport there is — 7 px
+went. At 320 px, 47 px went, and the strip read `16 → 12 —` and `DEPENDENCI`:
+two of the page's four headline claims truncated mid-word, one of them this
+project's loudest, with no scrollbar anywhere on the page to admit it.
+
+**The width every previous audit used is the first width at which this is
+invisible.** v1.28 measured a phone at 390 px, on the app, nine releases before
+this strip existed, and 390 px is exactly where the clipping reaches 0.0.
+
+### Fixed
+
+- **The stat strip steps all the way to one column.** A rung at `max-width:
+  480px` takes it to `1fr`. The page now fits **320 px**, which is the narrowest
+  viewport it declares support for, with 0.0 px clipped at every one of 24
+  widths from 320 to 1920 in a headless browser.
+- **The 4→2 rung was wrong too, in a window two pixels wide.** The step was at
+  640, and at 641 px of viewport four columns want 665 — so 641 and 642 clipped
+  2 px. It moves to `max-width: 767px`, the narrowest tablet that gets four
+  columns, where the same four columns want 674.5 because the type has grown
+  with the page. Found by sweeping the ladder rather than re-checking the rung I
+  had just written — v1.87's four marks, three wrong, one flush by luck, one
+  list over.
+- **The rungs are placed against devices, not against my machine.** The font
+  stack starts `-apple-system`, so the width of `16→12→3` belongs to whichever
+  face the device has. Every rung clears the width its own contents need *and*
+  the width they would need with the type 15% wider: 320 against 236.3, 481
+  against 425.3, 768 against 738.2.
+
+### Added
+
+- **`--page-min: 320px` in `splash.css`.** The narrowest viewport this page
+  promises to fit, stated once. No CSS rule reads it; the test does. A declared
+  floor is the whole point — the alternative is the one this release removed,
+  where the number exists but is an emergent property of the type.
+- **`test/splashwidth.test.js`, ten tests.** `node --test` cannot lay out a
+  page, so — v1.87's division — the browser holds the geometry and the suite
+  holds the halves that survive being asked of the source. The **inventory**:
+  every `grid-template-columns` in the sheet, parsed with its media gate,
+  classified as *fixes a column count* or *declares its own floor with
+  `minmax()`*, compared both ways against a table, so a fourth grid cannot
+  arrive unclassified. The **arithmetic**: every fixed-count grid must reach one
+  column at `--page-min`; the ladder may not widen as the viewport narrows, and
+  its source order must agree with its cascade; each rung's narrowest viewport
+  is checked against the measured width its contents need, and against the +15%
+  figure; the strip's widest rung must have one column per `.stat-card` in the
+  markup; and every declared-floor grid must fit inside `--page-min`, with the
+  gutter read out of `section.band`'s own padding rather than typed.
+- **The domain has a stated discriminant, so it cannot quietly shrink.** A
+  stylesheet owes a declared minimum width exactly when it *clips* — `style.css`
+  sets no `overflow-x: hidden`, so the app scrolls sideways below its own floor
+  (328 px), which is visible and recoverable by the visitor. The last test holds
+  that rule, so the day the app starts clipping it is in the domain.
+
+### Notes
+
+- **The test caught an error in my own measurement before it caught anything
+  else.** I measured the one-column rung at 480 px — the *widest* viewport it is
+  in force at — and the assertion that a rung be measured at its own narrowest
+  width rejected it. It matters here and not only in principle: `.num` is
+  `clamp(1.8rem, 4vw, 2.6rem)`, so a card's min-content is a function of the
+  viewport it is measured in. The four-column figure reads 655.8 at 900 px of
+  window and 630.55 at 768. A minimum width measured at the wrong width is a
+  different font size.
+- **`.gallery` fits `--page-min` exactly, to the pixel.** It declares
+  `minmax(280px, 1fr)` and 320 px of viewport leaves 280 px of content. That is
+  not a bug and it is not a margin either — it is the pixel the page's floor
+  rests on, so the test pins the zero (v1.25: pin the failure, not only the fix).
+- Determinism untouched: this release changes one stylesheet and adds one test
+  that reads files. Nothing here can reach the simulation or draw a random
+  number. 973 tests green.
+
 ## [1.99.0] — 2026-08-16
 
 v1.98 fixed one panel that kept the previous world's numbers after a reseed and

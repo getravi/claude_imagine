@@ -14,6 +14,12 @@
   --accent-3: #b98cff;
   --line: #17222f;
   --max: 1080px;
+  /* The narrowest viewport this page promises to fit. Nothing in CSS reads it —
+     `test/splashwidth.test.js` does, and holds every grid here to it. It is a
+     declaration rather than a measurement on purpose: a page's minimum width is
+     otherwise a property of the longest unbreakable string on it, which is not a
+     thing anybody decides. */
+  --page-min: 320px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -247,7 +253,16 @@ section.band {
   color: transparent;
 }
 
-/* ---- Stat strip ---- */
+/* ---- Stat strip ----
+   A fixed column count is a minimum width nobody wrote down. `1fr` is
+   `minmax(auto, 1fr)` and that `auto` floors the track at the item's
+   *min-content*, so N columns cannot be narrower than N of the widest card —
+   and the widest card here is as wide as `16→12→3`, one unbreakable run of
+   glyphs. That made the whole page's minimum 387 px of viewport, with
+   `overflow-x: hidden` on `body` clipping the excess rather than scrolling to
+   it: at 320 px the strip read `16 → 12 —` and `DEPENDENCI`. The ladder below
+   is why the count now steps all the way to one. See the sibling grids, which
+   have always declared their own floor with `minmax(<len>, 1fr)`. */
 .stats-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -552,11 +567,38 @@ html.js [data-reveal].in {
 }
 
 @media (max-width: 640px) {
+  section.band {
+    padding: 72px 20px;
+  }
+}
+
+/* The stat strip's ladder, kept in one place because it is one decision.
+   Measured in a headless browser, each rung at the narrowest viewport it is in
+   force at: four columns need 674.5 px, two need 387.3, one needs 215.7. The
+   rung is measured *at* the rung because `.num` is `clamp(1.8rem, 4vw, 2.6rem)`
+   — the type grows with the page, so the requirement does too, and four columns
+   read 665 at 641 px of viewport against 674.5 at 768.
+
+   Every rung sits well above its number rather than just above it, because the
+   number is not mine to know: the font stack starts `-apple-system`, so the
+   width of `16→12→3` belongs to whichever face the device has. A run of glyphs
+   15% wider needs 738.2, 425.3 and 236.3. So the rungs are placed against the
+   *devices* — 768 is the narrowest tablet that gets four columns, and 480 sits
+   above every phone in portrait (430 px is the widest shipping) rather than
+   above the 387.3 this machine happened to measure.
+
+   The old 4→2 rung was at 640, where four columns want 665, so a viewport of
+   exactly 641 or 642 clipped 2 px: the same bug as the missing bottom rung, one
+   step up, in a window two pixels wide. Sweep the ladder, do not spot-check the
+   rung you just wrote. */
+@media (max-width: 767px) {
   .stats-strip {
     grid-template-columns: repeat(2, 1fr);
   }
-  section.band {
-    padding: 72px 20px;
+}
+@media (max-width: 480px) {
+  .stats-strip {
+    grid-template-columns: 1fr;
   }
 }
 
