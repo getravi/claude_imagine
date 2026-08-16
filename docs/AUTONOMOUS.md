@@ -103,9 +103,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   anything about hunting. What *it* leaves: the ceiling is an extremum, so
   v1.71's warning applies (it measures whoever was born recently, and it moves
   5.47→7.92 px on one seed) and nothing attributes a move to the birth or death
-  that caused it; and the eligible-set half above is still untouched — this
-  counts the pond against **one** hunter, and the distribution over all of them
-  is what would say whether a pond has an apex animal or a graded web. And the
+  that caused it. **The eligible-set half closed in v1.101**
+  (`src/foodweb.js`, the `Web 🕸️` tile): every creature's eligible set counted at
+  once, reported as the widest hunter's share of the pond and the median
+  hunter's. The apex-or-graded question has an answer — 87× apart on seed 128 and
+  8.5× on 256, 1.0–1.2× on the six other ponds that hunt, so a graded web is the
+  common case and an apex animal is what a pond that kept a big body looks like —
+  and it is not the finding. The finding is the column I added for a
+  denominator: **379 of 706 carnivores over twelve seeds, 53.7%, have an empty
+  eligible set**, and two ponds of twelve (the default among them) hold the gene
+  and reach nothing at all, which is a state `Safe 🛟` cannot express because its
+  ceiling is the biggest *gene-carrier* whether or not that animal has prey. A
+  carnivore is a gene; a hunter is a carnivore with a meal; every readout of
+  predation here was built from `config.js` and a body size, so *who is in the
+  water* had only ever entered through a maximum. What it leaves: an eligible set
+  is an **opportunity**, and nothing puts it beside the kills it produced; the
+  distribution is reported by two order statistics because that is what fits in a
+  tile, and **no figure on this page has a per-creature quantity on an axis** —
+  seed 128's seventy hunters spread between 37% and nothing are a histogram
+  nothing draws; and **nobody has asked what a carnivore with an empty set
+  costs**, which is half of them paying carnivory's plant-nutrition penalty for a
+  niche their pond does not contain, a pressure `energy.js` already has the books
+  to weigh. And the
   three counters are a
   *shape* — any per-death property against the pond it left fits them, and age,
   energy, generation and carnivory are all unlooked-at. What it leaves:
@@ -776,7 +795,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   against the numbers it claims. v1.42 did the Muller plot that way
   (`mullerShares`), and the walk paid — the bands tile exactly, except in a
   window where a clamped denominator drew an empty pond as a full column.
-  **The largest panel came out in v1.97** (`src/hud.js`) — the twenty-eight stat
+  **The largest panel came out in v1.97** (`src/hud.js`) — the stat
   tiles as a table of `{id, gate, read}` rows, the gate a field rather than an
   `if` so that the panel and its audit cannot disagree about when a rule is
   off — and the finding was not in the module. It was in the **text the page
@@ -836,6 +855,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A count of a trait is not a count of the behaviour it enables.** The panel
+  has said `Carnivores 21 (49%)` since v1.0 and the voice has said "21 of them
+  hunt", and over twelve seeds **53.7% of those animals have nothing in the pond
+  they can eat** — the gene is expressed, the cost is paid, and the behaviour is
+  arithmetically impossible. The reason it went thirty-five releases unnoticed is
+  worth more than the number: every readout of predation here is built out of
+  `config.js` and a body size, so the pond's own contents only ever entered
+  through an *extremum* (`hunterCeiling`), and a maximum cannot say whether the
+  thing it names has anybody to act on. So for any tile that names a trait, ask
+  what the trait *does* and whether the pond currently permits it — kin
+  recognition (v1.80) is the same finding from the other side, a rule that works
+  perfectly and fires zero times, and it took sixty-nine releases to count.
+- **An absence asserted by a proxy word is a promise about the vocabulary, not
+  about the claim.** `describe.test.js` held from v1.34 that a pond with nobody
+  ill says nothing about a contagious zone, and it held it as
+  `doesNotMatch(/reaches/)`. A new sentence about how far a *hunter* reaches
+  failed it — correctly, by its letter, and about nothing. A `doesNotMatch` is
+  the one assertion whose domain is every string the code could ever produce, so
+  it has to name its subject (`/sickness reaches/`) rather than a word that
+  subject happens to contain. The tell: if the regex would still make sense in a
+  test file about a different feature, it is too loose.
 
 - **Anything hidden needs an owner, and the owner has to be provably alive.**
   The front door set `opacity: 0` on 92% of its own text and left the undoing to

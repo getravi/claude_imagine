@@ -1,5 +1,5 @@
-// hud.test.js — the panel's twenty-eight tiles, and the values the page ships
-// with before any of them has been written.
+// hud.test.js — the panel's twenty-nine stat tiles, and the values the page
+// ships with before any of them has been written.
 //
 // `src/hud.js` exists because of a sentence that has been in `AUTONOMOUS.md`
 // since v1.40: **`main.js` remains the last module with no test of any kind**,
@@ -15,9 +15,9 @@
 // module.
 //
 // **A placeholder is a claim about the pond the visitor is about to see.** The
-// twenty-eight `<dd>`s in `app/index.html` carry hand-typed text, and until this
-// release nothing had ever compared it to anything. Eleven of them disagreed
-// with the world the page boots, and the disagreement was not uniform: five were
+// `<dd>`s in `app/index.html` carry hand-typed text, and until v1.97 nothing
+// had ever compared it to anything. Eleven of the twenty-eight then on the page
+// disagreed with the world it boots, and the disagreement was not uniform: five were
 // strings the tile's own formatter cannot produce (`0` for a value printed with
 // three decimals, `0` for one that is always signed), three were seed-dependent
 // numbers frozen at zero, and **three said `off` about a rule that is on by

@@ -39,6 +39,7 @@
 // the same largest-remainder rounding the mortality caption uses, so a listener
 // and a reader are never told two different totals.
 import { wholePercents } from "./stats.js";
+import { webProfile } from "./foodweb.js";
 import { refugeRadius } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
 import { readable } from "./seasonlag.js";
@@ -176,6 +177,23 @@ export function describePond(world, config, camera = null) {
           `No hunter now alive is bigger than ${s.hunterCeiling.toFixed(1)} pixels, so ` +
             `today's line is ${s.livedRefugeRadius.toFixed(1)} and ` +
             `${percent(s.livedRefugeShare)} of the pond is beyond every hunter in it.`
+        );
+        // And the same question asked of every hunter rather than the biggest.
+        // The two sentences above are both drawn against a single line; this one
+        // is the spread, which is what says whether the pond has an apex animal
+        // or a graded web. It also draws the distinction the carnivore count
+        // cannot: a diet gene is not a meal, and a pond can be full of
+        // carnivores that have nothing small enough to eat.
+        const web = webProfile(world.creatures, config);
+        out.push(
+          web.hunters === 0
+            ? (carn === 1
+                ? "It has nothing small enough to eat, though"
+                : `None of those ${carn} has anything small enough to eat, though`) +
+              ": the gene is here and the meal is not."
+            : `${count(web.hunters, "of them has", "of them have")} something small enough to ` +
+              `eat — the widest reaches ${percent(web.top)} of the pond and the middle one ` +
+              `${percent(web.mid)}.`
         );
       }
       // And who is spared rather than out of reach. Kin recognition (v1.10) has

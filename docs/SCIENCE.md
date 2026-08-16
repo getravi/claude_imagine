@@ -7183,6 +7183,143 @@ clock, the two ways a day can be absent plus the misspelt clock that is a bug
 rather than an absence, `readable()` declining a day, and The Long Night's own
 archive read against the clock it actually keeps.
 
+## Half the carnivores cannot eat anybody (v1.101)
+
+Two readouts have counted the pond against the reach of predation, and both are
+drawn against a **single** hunter: the `Refuge 🔒` tile (v1.64) substitutes the
+largest body this world's constants permit into the eating rule, and `Safe 🛟`
+(v1.89) substitutes the largest one actually in the water. v1.65 wrote down what
+neither of them says, and it sat unbuilt for thirty-five releases:
+
+> the eligible set is 11.6%–64.5% of the pond depending on the hunter and no
+> readout plots it … the distribution over all of them is what would say whether
+> a pond has an apex animal or a graded web.
+
+`src/foodweb.js` is that distribution. For every creature it counts the bodies
+the size-and-diet rule (`Creature._edible`) admits it, and reports three things:
+how many animals can eat *anything*, what share of the pond the widest one
+reaches, and what share the middle one does.
+
+### A carnivore is a gene; a hunter is a carnivore with a meal
+
+The distinction has no readout anywhere on this page, and it is not a fine one.
+Twelve seeds at 6,000 ticks:
+
+| seed | pop | carnivores | hunters | top | mid |
+|---|---|---|---|---|---|
+| 314 (default) | 244 | 1 | **0** | — | — |
+| 1 | 227 | 4 | 1 | 1% | 1% |
+| 2 | 275 | 38 | 1 | 1% | 1% |
+| 7 | 169 | 155 | 97 | 25% | 21% |
+| 13 | 278 | 15 | **0** | — | — |
+| 42 | 277 | 0 | 0 | — | — |
+| 51 | 251 | 0 | 0 | — | — |
+| 99 | 251 | 135 | 15 | 1% | 1% |
+| 128 | 237 | 88 | 71 | **37%** | **<1%** |
+| 256 | 191 | 191 | 65 | 9% | 1% |
+| 512 | 189 | 65 | 63 | 1% | 1% |
+| 2718 | 283 | 14 | 14 | 24% | 24% |
+
+**379 of the 706 carnivores in those twelve ponds — 53.7% — have an empty
+eligible set.** They carry the diet gene, they pay carnivory's cost in plant
+nutrition, and there is no body in the water they are big enough to bite. On
+seed 256 the whole population is carnivorous and two thirds of it can eat
+nothing; on seed 99 it is 120 of 135.
+
+Two of the twelve ponds — including the default seed, the one every visitor
+arrives at — hold the gene and reach nothing at all. That is a state the older
+tiles cannot express: on seed 314 at 6,000 ticks the panel reads
+
+```
+Carnivores 🔺  1 (0%)      Refuge 🔒  99% ≥7.3px
+Safe 🛟  100% ≥5.0px       Web 🕸️  none reach
+```
+
+`Safe` is quoting a line at 5.0 px drawn against an animal that cannot eat
+anybody, because a ceiling is the biggest *gene-carrier* whether or not it has
+prey. It is not wrong — 100% of the pond really is beyond every hunter in it —
+but "the line is at 5.0 px" and "there is no line" are different sentences, and
+until this release only the first one had a place to be said.
+
+### Apex or graded
+
+The two shares are the answer to v1.65's question, and the ponds split cleanly:
+
+| shape | seeds | top ÷ mid |
+|---|---|---|
+| graded — everybody's reach is the same reach | 1, 2, 7, 99, 512, 2718 | 1.0–1.2× |
+| apex — one animal eats a world the others cannot | 128, 256 | 87×, 8.5× |
+
+Seed 128 is the sharp case: one hunter reaching 37% of the pond over a median
+hunter reaching under 1% of it, with seventy others in between. Seed 7 is the
+opposite and is the only pond here that looks like a textbook web — 97 hunters,
+the widest reaching a quarter of the pond and the middle one a fifth of it.
+
+### The default pond loses its predation and the panel goes on saying `1 (0%)`
+
+Watched from tick 0, the default seed is a graded web that thins out:
+
+| tick | pop | carnivores | hunters | top | mid |
+|---|---|---|---|---|---|
+| 0 | 40 | 21 | 18 | 82% | 38% |
+| 500 | 61 | 25 | 22 | 58% | 22% |
+| 1,000 | 260 | 25 | 25 | 16% | 7% |
+| 2,000 | 191 | 13 | 11 | 11% | 3% |
+| 4,000 | 255 | 5 | 1 | 2% | 2% |
+| 6,000 | 244 | 1 | 0 | — | — |
+
+The opening pond is the most predatory state this seed ever reaches, and it is
+the tick-0 random draw rather than anything evolution did: forty genomes dealt
+at random put big carnivores over small bodies, and every generation after that
+grows the pond into the refuge. **The last hunter loses its prey at tick 4,200**
+and never gets it back inside 6,000.
+
+### What this is not
+
+It is the *size-and-diet* rule, not `canEat`. Kinship is excluded, exactly as
+`inRefuge` excludes it — a relative spared is spared by a hunter that could
+still have eaten it — and there is a second reason here: `_isKin` compares two
+genomes, so asking it of every ordered pair would put a genome distance behind a
+per-frame readout.
+
+It is also an *instantaneous* count of who could eat whom, not a count of who
+does. An eligible set is an opportunity; whether the hunter ever finds that body,
+sees it (v1.81: sight gates every bite) and lands the bite is the pond's business
+and the kill counter's.
+
+### Reproducing it
+
+```bash
+node -e '
+  const SEEDS = [314, 1, 2, 7, 13, 42, 51, 99, 128, 256, 512, 2718];
+  Promise.all([import("./src/world.js"), import("./src/config.js"),
+               import("./src/foodweb.js")]).then(([W, C, F]) => {
+    let carn = 0, hunt = 0;
+    for (const seed of SEEDS) {
+      const cfg = C.makeConfig({ seed });
+      const w = new W.World(cfg);
+      for (let t = 0; t < 6000; t++) w.step();
+      const p = F.webProfile(w.creatures, cfg);
+      carn += p.carnivores; hunt += p.hunters;
+      console.log(seed, w.creatures.length, p.carnivores, p.hunters,
+                  (100 * p.top).toFixed(1), (100 * p.mid).toFixed(1));
+    }
+    console.log("carnivores with an empty set:", carn - hunt, "of", carn);
+  });'
+```
+
+```bash
+node --test test/foodweb.test.js
+```
+
+Fourteen tests. The one that matters is the first: the module sorts the radii
+once and binary-searches the rule, which is a rearrangement of an O(n²) question,
+so it is checked against the O(n²) form running `_edible` itself — at four ages
+of one pond and across the whole ±50% range `src/levers.js` can move
+`preySizeRatio` through, including the sub-1.0 regime where a hunter may eat a
+body its own size and the self-exclusion stops being arithmetic and becomes a
+decision.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

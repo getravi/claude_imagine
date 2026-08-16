@@ -1,7 +1,7 @@
 // bars.js — the mortality bar and the energy bar, as data.
 //
-// v1.97 carved the twenty-eight stat tiles out of `main.js` into `src/hud.js`
-// and left one sentence behind: *the two other panels are still in `main.js`,
+// v1.97 carved the stat tiles out of `main.js` into `src/hud.js` and left one
+// sentence behind: *the two other panels are still in `main.js`,
 // same shape, smaller, and they ship hand-typed text of their own that nothing
 // has checked for reachability.* These are those two panels. A row is an `id`
 // on the page, a `kind` saying which of the three things a bar writes to that

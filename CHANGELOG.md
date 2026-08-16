@@ -4,6 +4,82 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.101.0] — 2026-08-16
+
+Two tiles have counted this pond against the reach of predation, and both are
+drawn against a **single** hunter: `Refuge 🔒` (v1.64) against the largest body
+`config.js` permits, `Safe 🛟` (v1.89) against the largest one in the water.
+v1.65 wrote down what neither says and it sat unbuilt for thirty-five releases —
+*the eligible set is a different size for every hunter, and the distribution over
+all of them is what would say whether a pond has an apex animal or a graded web.*
+
+This is that distribution, and the first thing it found was not the shape. It was
+that **379 of the 706 carnivores across twelve seeds — 53.7% — cannot eat
+anybody**: they carry the diet gene, they pay carnivory's cost in plant
+nutrition, and there is no body in the water they are big enough to bite. On seed
+256 the entire population is carnivorous and two thirds of it has an empty
+eligible set. A carnivore is a gene; a hunter is a carnivore with a meal; nothing
+on this page had ever counted the second.
+
+### Added
+
+- **`src/foodweb.js`** — `eligibleCounts` and `webProfile`. For every creature,
+  the number of living bodies the size-and-diet rule (`Creature._edible`) admits
+  it, computed by sorting the radii once and binary-searching **the rule itself**:
+  O(n log n) instead of the O(n²) the question is written in, with the predicate
+  `_edible`'s comparison character for character so a body on the boundary is
+  decided by the same float test the bite is. Kinship is excluded, exactly as
+  `inRefuge` excludes it. A pure observer — no randomness, and the pond cannot
+  notice being read.
+- **The `Web 🕸️` tile** — `82% top 38% mid`: the widest hunter's share of the
+  rest of the pond, and the middle hunter's. Wide apart is an apex animal (seed
+  128: 37% over a median under 1%, a ratio of 87×); close together is a web
+  everybody is inside of (seed 7: 25% over 21%). Six of the eight ponds with a
+  hunter in them are graded at 1.0–1.2×.
+- **Two empty states, because they are two different empty ponds.** `none hunt`
+  is a pond with no diet gene over the threshold; `none reach` is a pond full of
+  carnivores with nothing small enough to eat. The Safe tile cannot tell them
+  apart — its ceiling is the biggest gene-carrier whether or not that animal has
+  prey — so on the **default seed** at 6,000 ticks the panel reads `Safe 100%
+  ≥5.0px` beside `Web none reach`: a line quoted at 5.0 px, drawn against an
+  animal that can eat nobody. The default pond's last hunter loses its prey at
+  tick 4,200 (docs/SCIENCE.md).
+- **A spoken clause** in `describe.js`, so the listener gets the same pair the
+  reader does, in the same `<1%` rendering — v1.67's and v1.79's question about
+  whether the two surfaces agree, answered on arrival this time rather than
+  forty-six releases later.
+- **`test/foodweb.test.js`, fourteen tests.** The central one is the
+  rearrangement audit: the search is checked against the O(n²) form running
+  `_edible` itself, at four ages of one pond and across the whole ±50% range
+  `src/levers.js` can move `preySizeRatio` through — including the sub-1.0 regime
+  where a hunter may eat a body its own size and the self-exclusion stops being
+  arithmetic and becomes a decision.
+- **A `{n} stat tiles` row in `test/prosecounts.test.js`**, declared by the
+  release that grows the collection rather than by a later one that finds it
+  stale (v1.89's habit). It caught two things immediately: three files opened
+  with the old count, one of them the module's own first line; and a *fourth*
+  file stated it in the shape the sweep's own rule forbids — a number that means
+  *then* sitting next to its noun — which is now reworded rather than exempted.
+
+### Changed
+
+- **The separator came off the tile, because it costs a line.** `77% top · 39%
+  mid` wraps to three lines in a 72-px column — a `·` is a token of its own — for
+  57 px of tile against 38 for the same two readings without it. Measured in a
+  browser, like the token width that shaped the Kin tile, because `node --test`
+  cannot lay out a panel.
+- **`test/describe.test.js` names the absence it is asserting.** The claim that a
+  pond with nobody ill says nothing about a contagious zone was written as
+  `doesNotMatch(/reaches/)` in v1.34, and this release's sentence about hunters'
+  reach failed it. A proxy word any future sentence can collide with is a test of
+  the vocabulary rather than of the claim; it asks for `/sickness reaches/` now.
+
+### Notes
+
+- Nothing in the simulation reads any of this, no random number is drawn, and the
+  default pond is bit-for-bit what it was in v1.3.0 — `test/fingerprint.test.js`
+  is untouched and green.
+
 ## [1.100.0] — 2026-08-16
 
 The playbook has carried the same line for two releases: the front door has four

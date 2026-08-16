@@ -11488,3 +11488,151 @@ anybody remembering to add it.
   than clips, which is why it is a lead and not a bug, but the same question —
   *what is your minimum width, and did you pick it?* — has a worse answer there
   than here, because `main.layout` is the whole application.
+
+## Entry 113 — the gene and the meal · 2026-08-16
+
+Two tiles on this panel measure the reach of predation, and both of them measure
+it against **one animal**. `Refuge 🔒` (v1.64) takes the biggest body
+`config.js` permits, substitutes it into the eating rule and reports what it
+cannot touch. `Safe 🛟` (v1.89) does the same with the biggest body actually in
+the water. v1.65 finished its own note with the half neither of them says:
+
+> the eligible set is 11.6%–64.5% of the pond depending on the hunter and no
+> readout plots it … the distribution over all of them is what would say whether
+> a pond has an apex animal or a graded web.
+
+Thirty-five releases later, that is this cycle. `src/foodweb.js` counts, for
+every creature at once, the living bodies the eating rule admits it.
+
+### The shape was not the finding
+
+I built it to answer the apex-or-graded question, and it does. But the first
+table I printed had a column I had added only to have a denominator, and that
+column is the release:
+
+```
+seed  256  pop 191  carn 191  hunters  65
+seed   99  pop 251  carn 135  hunters  15
+seed    2  pop 275  carn  38  hunters   1
+```
+
+**379 of the 706 carnivores across twelve seeds — 53.7% — cannot eat anybody.**
+They carry the diet gene, they pay carnivory's cost in plant nutrition, they show
+up in the `Carnivores 🔺` tile and in the spoken description as animals that
+hunt, and there is no body in the pond they are big enough to bite. On seed 256
+the whole population is carnivorous and two thirds of it is in that state.
+
+A carnivore is a gene. A hunter is a carnivore with a meal in front of it. This
+project has counted the first since v1.0 and had never counted the second, and
+the reason is the one the refuge entry has been circling for four releases: every
+readout of predation here is built from `config.js` and a body size, and *who is
+actually in the water* only ever entered through the maximum.
+
+### The default pond ends with the gene and without the meal
+
+The pond a visitor arrives at, watched from tick 0:
+
+| tick | pop | carnivores | hunters | top | mid |
+|---|---|---|---|---|---|
+| 0 | 40 | 21 | 18 | 82% | 38% |
+| 1,000 | 260 | 25 | 25 | 16% | 7% |
+| 4,000 | 255 | 5 | 1 | 2% | 2% |
+| 6,000 | 244 | 1 | 0 | — | — |
+
+The most predatory instant of this seed's whole life is **tick 0** — forty
+genomes dealt at random, big carnivores over small bodies — and everything after
+that is the pond growing into the refuge. The last hunter loses its prey at tick
+4,200 and never gets it back.
+
+At 6,000 ticks the panel says this:
+
+```
+Carnivores 🔺  1 (0%)      Refuge 🔒  99% ≥7.3px
+Safe 🛟  100% ≥5.0px       Web 🕸️  none reach
+```
+
+`Safe` is quoting a line at 5.0 px drawn against an animal that cannot eat
+anybody, because a ceiling is the biggest *gene-carrier* whether or not it has
+prey. Every symbol there is true. "The line is at 5.0 px" and "there is no line"
+are different sentences, and only the first had somewhere to be said.
+
+So the tile has two empty states rather than one: `none hunt` for a pond with no
+diet gene over the threshold, `none reach` for a pond full of carnivores with
+nothing small enough to eat. Two of twelve seeds are in the second state at 6,000
+ticks and the default is one of them.
+
+### Apex or graded, which was the question
+
+| shape | seeds | top ÷ mid |
+|---|---|---|
+| graded | 1, 2, 7, 99, 512, 2718 | 1.0–1.2× |
+| apex | 128, 256 | 87×, 8.5× |
+
+Seed 128 is one hunter reaching 37% of the pond over a median hunter reaching
+under 1% of it, with seventy others in between. Seed 7 is the textbook web — 97
+hunters, the widest at a quarter of the pond and the middle one at a fifth. Six
+of the eight ponds that hunt at all are graded, which I did not expect: I had
+assumed the size rule would generate a ladder and it mostly generates a floor,
+with the exceptions being the ponds that kept a genuinely big animal.
+
+### Rearranging a rule is a claim
+
+The question is O(n²) and the readout is per-frame, so the module sorts the radii
+once and binary-searches. That is a rearrangement of `_edible`, and this project
+has a lesson about those (v1.81: a claim of the form "X is inside Y" where Y is
+derived is a test waiting to be written). Two things came out of taking it
+seriously.
+
+The search predicate is `_edible`'s comparison written out character for
+character — `self.radius > radii[m] * ratio`, not `radii[m] < self.radius / ratio`
+— because `refuge.js` already learned that those are the same rule to a
+mathematician and not always to a `double`, and here the comparison is made a few
+hundred thousand times a frame instead of once. And the self-exclusion is asked
+as the rule too: at the shipped ratio a creature cannot be in its own eligible
+set because `r > r * 1.1` is false, but `preySizeRatio` is a lever, and under 1.0
+it would count itself. The test sweeps the whole ±50% range `levers.js` can reach
+and checks every count against the O(n²) form running `_edible` itself.
+
+### Three things the panel taught me on the way
+
+**The `·` costs a line.** `77% top · 39% mid` wraps to three lines in a 72-px
+column, because the separator is a token of its own: 57 px of tile against 38 for
+the same two numbers without it. The Kin tile has a comment about measuring token
+widths in a browser and I still had to go and measure this one.
+
+**A test that asserts an absence by one common word is a test of the
+vocabulary.** `describe.test.js` has held since v1.34 that a pond with nobody ill
+says nothing about a contagious zone, written as `doesNotMatch(/reaches/)`. My
+sentence about what a hunter reaches failed it. The claim is about the sickness,
+so it asks for `/sickness reaches/` now — and the general form is that an absence
+asserted by a proxy is a promise that no future sentence will use that word.
+
+**The count in prose drifts the moment you add to the collection.** Adding a
+twenty-ninth tile made three files wrong, one of them `hud.js`'s own first line.
+`prosecounts.test.js` has a row for it now — declared by the release that grows
+the collection, which is v1.89's habit — and it immediately found a fourth file
+stating the count in the shape the sweep's own header forbids: a number that
+means *then*, sitting next to its noun.
+
+### What this leaves
+
+- **An eligible set is an opportunity, not a meal.** This counts who *could* eat
+  whom in one instant. Whether the hunter ever finds that body, sees it (v1.81:
+  sight gates every bite) and lands it is a different question, and the honest
+  version of this measurement would put the eligible set beside the kills that
+  came out of it.
+- **The distribution is reported by two of its order statistics.** Top and
+  median are what fits in a tile; the *shape* between them — seed 128's seventy
+  hunters spread between 37% and nothing — is a histogram nothing draws. The
+  Muller plot and the chart are both time series of totals, and there is no
+  figure on this page whose x-axis is a per-creature quantity.
+- **Nobody has asked what a carnivore with an empty set costs.** Half of them
+  are paying carnivory's plant-nutrition penalty for a niche that does not exist
+  in their pond. That is a selection pressure with a sign I can guess and have
+  not measured, and `energy.js` has the books to measure it with.
+- **`hunterCeiling` is now the odd one out.** It answers "how big is the biggest
+  gene-carrier" when every use of it means "how far does predation reach", and on
+  two seeds of twelve those are different questions with different answers. It is
+  not wrong, and its tile is not wrong; but the Safe tile's blank (`all — no
+  hunter`) is keyed to a gene count, and the state it cannot express turns out to
+  be the default pond's ending.

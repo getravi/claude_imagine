@@ -72,9 +72,11 @@ test("every label labels something", () => {
   // The v1.51 finding, pinned. A `<label>` with no `for` and no control inside
   // it is not a label at all — it is text that happens to sit above a number,
   // and the pairing exists only in the layout. There were thirty-five at the
-  // time: twenty-two stat tiles, and thirteen more the inspector generated.
-  // (Both numbers have grown since; the test above is what keeps the page's own
-  // count of the first one honest.)
+  // time: twenty-two of them stat tiles, and thirteen more the inspector
+  // generated. (Both numbers have grown since; the test above is what keeps the
+  // page's own count of the first one honest — and the count in this sentence
+  // is deliberately not next to its noun, which is `test/prosecounts.test.js`'s
+  // rule for a number that means *then*.)
   const CONTROL = /<(input|select|textarea|button|meter|progress|output)\b/i;
   for (const file of [...PAGES, "src/main.js"]) {
     const src = read(file);

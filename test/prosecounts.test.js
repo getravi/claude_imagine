@@ -53,6 +53,7 @@ import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
 import { SERIES, CLOCKS } from "../src/seasonlag.js";
 import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
+import { TILES } from "../src/hud.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -155,6 +156,19 @@ const CLAIMS = [
     size: () => Object.keys(CLOCKS).length,
     phrase: "{n} periodic clocks",
     sites: ["docs/SCIENCE.md", "src/seasonlag.js"],
+  },
+  {
+    // The collection v1.97 carved out and v1.101 grew, declared by the release
+    // that grows it. It had already drifted the moment the tile was written:
+    // three files opened with the old number, one of them the module's own
+    // first line. `app/index.html`'s copy of this count is *not* a site — it
+    // is held by `test/markup.test.js`, which reads the comment and counts the
+    // `<div class="stat">`s rather than the table, so the page and the module
+    // are each pinned to the tiles by a test of their own.
+    what: "the panel's tiles",
+    size: () => TILES.length,
+    phrase: "{n} stat tiles",
+    sites: ["src/hud.js", "test/hud.test.js"],
   },
 ];
 

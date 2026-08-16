@@ -235,9 +235,17 @@ test("the reach of the sickness is spoken, and only while there is one", () => {
 
   // A pond of survivors with nobody currently ill has no zone to report, and
   // saying "0% of the water" to a listener is noise.
+  //
+  // Named by its own subject rather than by the verb. This absence was asserted
+  // as `/reaches/` from v1.34 until v1.101, when a sentence about the predation
+  // web arrived with the word "reaches" in it and failed a test about disease —
+  // a proxy that any future sentence can collide with is a test of the
+  // vocabulary rather than of the claim, and the sentences here are prose that
+  // gets rewritten (`chronicle`'s note in `src/fingerprint.js` is the same
+  // point one module over).
   world.stats.infectedCount = 0;
   world.stats.hazardShare = 0;
-  assert.doesNotMatch(describePond(world, world.config), /reaches/);
+  assert.doesNotMatch(describePond(world, world.config), /sickness reaches/);
 });
 
 test("an empty pond says so, rather than saying zero", () => {

@@ -1,6 +1,6 @@
-// hud.js — the twenty-eight tiles at the top of the panel, as data.
+// hud.js — the twenty-nine stat tiles at the top of the panel, as data.
 //
-// These lines lived in `main.js` from v1.0 until this release, which is to say
+// These lines lived in `main.js` from v1.0 until v1.97, which is to say
 // they lived in the one module `node --test` cannot open. Every other figure on
 // this page has been carved out for exactly that reason — the chart in v1.41,
 // the Muller plot in v1.42, the voice in v1.31, the pointer in v1.28 — and each
@@ -27,6 +27,7 @@
 // is a judgement rather than an arithmetic fact.
 
 import { EnergyLedger } from "./energy.js";
+import { webProfile } from "./foodweb.js";
 import { refugeRadius } from "./refuge.js";
 import { readable } from "./seasonlag.js";
 
@@ -45,6 +46,26 @@ export const UI_RNG_SEED = 12345;
  * @property {number} fps the smoothed frame rate, which only `main.js` knows
  * @property {import("./rng.js").RNG} uiRng the UI's own stream (never the pond's)
  */
+
+/**
+ * A whole-number percentage that refuses to round a real quantity down to zero.
+ *
+ * Character for character `describe.js`'s `percent`, which has said `<1%` since
+ * v1.31 for the reason v1.89's Safe tile then wrote down: a hunter that reaches
+ * one body in four hundred reaches 0.25% of the pond, and printing that as `0%`
+ * is three true symbols arranged into a falsehood. Zero stays `0%` — there the
+ * symbol and the fact agree.
+ *
+ * The same rendering in both places on purpose. v1.67's and v1.79's question is
+ * whether the listener and the reader are being told the same thing, and this
+ * tile and that sentence are the same statistic on two surfaces; a tile that
+ * floored at 1% while the voice said `<1%` would be two answers to one question
+ * (`docs/AUTONOMOUS.md` — the empty state with two registers).
+ */
+const share = (v) => {
+  const p = Math.round(v * 100);
+  return `${p === 0 && v > 0 ? "<1" : p}%`;
+};
 
 /**
  * Every tile, in the order the page lays them out.
@@ -99,6 +120,38 @@ export const TILES = [
       const s = world.stats;
       if (s.hunterCeiling === 0) return "all — no hunter";
       return `${Math.round(s.livedRefugeShare * 100)}% ≥${s.livedRefugeRadius.toFixed(1)}px`;
+    },
+  },
+  // And the same question asked of every hunter at once rather than of the
+  // biggest one. The two tiles above count the pond against a single line — the
+  // one `config.js` permits, and the one the largest living carnivore sets — and
+  // v1.65 left the rest of it written down: the eligible set is a different size
+  // for every hunter, and the *spread* of those sizes is what says whether this
+  // pond has an apex animal or a graded web. Wide apart (37% against 0.4% on
+  // seed 128) is one animal eating a world nobody else can reach; close together
+  // (25% against 21% on seed 7) is a web everybody is inside of.
+  //
+  // No separator between the two halves, which is the Kin tile's convention one
+  // row down and is wrong here: this column is 72 px, a `·` is a token of its
+  // own, and it wraps onto a line by itself — 57 px of tile against 38 for the
+  // same two readings without it. Measured in a browser, like the token width
+  // that shaped the Kin tile, because a panel is a layout and this suite cannot
+  // lay one out.
+  //
+  // Two words rather than a number in the two empty cases, and they are
+  // different empty cases, which is the reason this tile has both: `none hunt`
+  // is a pond with no diet gene over the threshold, and `none reach` is a pond
+  // full of carnivores with nothing small enough to eat. The Safe tile above
+  // cannot tell them apart — it is drawn against the biggest gene-carrier
+  // whether or not that animal can eat anybody — and the default seed ends its
+  // run in the second state (docs/SCIENCE.md).
+  {
+    id: "stat-web",
+    gate: ["predation"],
+    read: ({ world, config }) => {
+      const web = webProfile(world.creatures, config);
+      if (web.hunters === 0) return web.carnivores === 0 ? "none hunt" : "none reach";
+      return `${share(web.top)} top ${share(web.mid)} mid`;
     },
   },
   // Kin recognition: meals declined for being family — the run's total, and how
