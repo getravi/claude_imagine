@@ -55,6 +55,7 @@ import {
 } from "./describe.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
+import { ViewState } from "./viewstate.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -162,6 +163,11 @@ const uiRng = new RNG(UI_RNG_SEED); // separate RNG for UI-side sampling (divers
 // spoken description, which has no overlay to be switched on. A pure observer:
 // it is written from this loop and never read by the simulation.
 const trail = new Trail();
+// Everything on this page that describes *one* pond (v1.99). Nineteen caches
+// that used to be private `let`s here, reset in three hand-typed lists that
+// disagreed with each other; one object keyed on the world's identity now,
+// adopted at the top of the frame.
+const view = new ViewState();
 
 // Track FPS for the HUD.
 let lastFrame = performance.now();
@@ -171,6 +177,16 @@ let fpsSmooth = 60;
 // are the app's main continuous-motion effect); a visitor who prefers a
 // calmer view can still flip it either way from the controls panel.
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+/**
+ * Hand the current world to the view state, and do the one thing that reset
+ * cannot: the DOM. `adopt` clears the species highlight, so the button that
+ * clears it has nothing left to do and says so.
+ */
+function adoptWorld() {
+  if (!view.adopt(world, renderer)) return;
+  $("btn-clear-highlight").classList.add("hidden");
+}
 
 function boot() {
   const canvas = $("world");
@@ -210,11 +226,10 @@ function launchScenario(scn) {
   config = makeConfig(scn.over);
   world = new World(config);
   renderer.setConfig(config);
-  renderer.selected = null;
-  renderer.highlightSpeciesId = null;
-  legendSig = "";
-  lastChronKey = "";
-  $("btn-clear-highlight").classList.add("hidden");
+  // Nothing is cleared here. `view.adopt` sees the new object at the top of the
+  // next frame and resets every surface at once, which is the whole of v1.99:
+  // this function used to name four things, `resetWorld` named the same four,
+  // and `loadWorld` named one of them.
   syncControlsFromConfig();
   // Mark the active chip.
   [...$("scenario-chips").children].forEach((b, i) => {
@@ -271,6 +286,12 @@ function loop(now) {
   lastFrame = now;
   fpsSmooth += ((1000 / Math.max(dt, 1)) - fpsSmooth) * 0.1;
 
+  // Before anything is stepped or drawn: if the pond has been replaced since
+  // the last frame, every cache describing the old one goes, along with the
+  // three references into it that the renderer holds. One place, whichever of
+  // the three buttons did it.
+  adoptWorld();
+
   if (running) {
     for (let i = 0; i < speed; i++) {
       world.step();
@@ -314,35 +335,23 @@ function loop(now) {
 // wording and the "should this be said at all?" rules are tested; this function
 // is only the adapter onto the DOM, the same division `gestures.js` uses.
 const DESCRIBE_EVERY = 15; // frames between rewrites of the canvas description
-let narratedWorld = null;
-let spokenLine = null;
-let pendingSay = "";
-let pondLabel = "";
-let describeIn = 0;
 // What the keyboard has just done, waiting for the region to be free. A *state*
 // rather than an event, so a new one replaces an unspoken old one: holding an
 // arrow key down should announce where the selection ended up, not read out
 // every creature it passed through. Nothing is lost by overwriting, because the
 // Chronicle's own queue is only consulted on a frame where this is empty.
-let pendingAct = null;
 
 /** Say something in response to a key press, once the live region is free. */
 function announce(text) {
-  pendingAct = text;
+  view.pendingAct = text;
 }
 
 function updateNarration(world) {
-  // Keyed on the world *object*, not on a seed or a tick: a reset, a scenario
-  // and a load all build a new World, and a new object cannot find the old
-  // one's state — so an arriving world always primes silently instead of
-  // reading out the chronicle it inherited. Unrepresentable beats guarded.
-  if (world !== narratedWorld) {
-    narratedWorld = world;
-    spokenLine = null;
-    pendingSay = "";
-    pendingAct = null;
-    describeIn = 0;
-  }
+  // These four used to be reset here, on the world's own identity — the one
+  // place in this file that got the question right. `viewstate.js` is that idea
+  // generalised to all nineteen, so an arriving world still primes silently
+  // instead of reading out the chronicle it inherited, and the priming now
+  // happens for every surface rather than for this one.
 
   // Announcements go out over two frames — blank, then text — because a live
   // region whose content is rewritten to the same string may not fire at all,
@@ -350,22 +359,22 @@ function updateNarration(world) {
   // are two events). A real mutation every time costs one frame and removes the
   // question.
   const say = $("pond-say");
-  if (pendingSay) {
-    say.textContent = pendingSay;
-    pendingSay = "";
-  } else if (pendingAct) {
+  if (view.pendingSay) {
+    say.textContent = view.pendingSay;
+    view.pendingSay = "";
+  } else if (view.pendingAct) {
     // A keystroke answered first: it is the only thing here a listener is
     // actively waiting for, and the Chronicle's line keeps until the next frame
-    // because `spokenLine` has not moved.
+    // because `view.spokenLine` has not moved.
     say.textContent = "";
-    pendingSay = pendingAct;
-    pendingAct = null;
+    view.pendingSay = view.pendingAct;
+    view.pendingAct = null;
   } else {
-    const said = pendingSpeech(world.chronicle.events, spokenLine);
-    spokenLine = said.spoken;
+    const said = pendingSpeech(world.chronicle.events, view.spokenLine);
+    view.spokenLine = said.spoken;
     if (said.text) {
       say.textContent = "";
-      pendingSay = said.text;
+      view.pendingSay = said.text;
     }
   }
 
@@ -373,22 +382,21 @@ function updateNarration(world) {
   // reads it when their cursor lands on the pond. Rebuilding it every frame
   // would be wasted work, and writing it unchanged would be a DOM write for
   // nothing.
-  if (describeIn-- > 0) return;
-  describeIn = DESCRIBE_EVERY;
+  if (view.describeIn-- > 0) return;
+  view.describeIn = DESCRIBE_EVERY;
   const label = describePond(world, config, renderer.camera);
-  if (label === pondLabel) return;
-  pondLabel = label;
+  if (label === view.pondLabel) return;
+  view.pondLabel = label;
   $("world").setAttribute("aria-label", label);
 }
 
 // ---- Chronicle feed (natural-history timeline) ----
-let lastChronKey = "";
 function updateChronicle(world) {
   const ev = world.chronicle.events;
   const newest = ev.length ? ev[ev.length - 1] : null;
   const key = ev.length + "|" + (newest ? newest.tick + newest.msg : "");
-  if (key === lastChronKey) return; // nothing changed since last render
-  lastChronKey = key;
+  if (key === view.lastChronKey) return; // nothing changed since last render
+  view.lastChronKey = key;
 
   const feed = $("chronicle-feed");
   if (ev.length === 0) {
@@ -413,7 +421,6 @@ function updateChronicle(world) {
 // magnification, and says whose shoulder you're looking over. It also keeps the
 // Follow checkbox honest — the camera lets go by itself when its creature dies
 // or when a drag takes the wheel, and the control has to admit that.
-let viewSig = "";
 function updateViewBadge() {
   const cam = renderer.camera;
   const badge = $("zoom-badge");
@@ -421,8 +428,8 @@ function updateViewBadge() {
   if (follow.checked !== !!cam.target) follow.checked = !!cam.target;
 
   const sig = cam.isDefault() ? "" : cam.zoom.toFixed(2) + "|" + (cam.target ? cam.target.id : "");
-  if (sig === viewSig) return;
-  viewSig = sig;
+  if (sig === view.viewSig) return;
+  view.viewSig = sig;
   // A zoomed-in view is draggable, and the cursor should say so — however the
   // zoom got there (wheel, keyboard, or following someone). A hand needs more
   // than a cursor: the canvas has to stop conceding vertical swipes to the page
@@ -449,7 +456,6 @@ function updateViewBadge() {
 // stylesheet is displaying the canvas at, and that moves when the *window*
 // does, with no camera event to hang a refresh on. So the measurement is taken
 // every frame and the DOM is written only when one of the two answers changes.
-let rulerSig = "";
 function updateScaleBar() {
   const cam = renderer.camera;
   const box = $("scale-bar");
@@ -467,8 +473,8 @@ function updateScaleBar() {
   // means what it says now, so the only thing left to write here is the ruler's
   // own length — which is what this function was always about.
   const sig = span.label + "|" + px.toFixed(2);
-  if (sig === rulerSig) return;
-  rulerSig = sig;
+  if (sig === view.rulerSig) return;
+  view.rulerSig = sig;
   $("scale-bar-rule").style.width = px.toFixed(2) + "px";
   $("scale-bar-label").textContent = span.label;
 }
@@ -556,7 +562,6 @@ function updateSeasonBadge(world) {
 
 // ---- Tree of Life (Muller plot + legend) ----
 let mullerCtx = null;
-let legendSig = ""; // avoid rebuilding the legend DOM every frame
 function drawPhylogeny(world) {
   const canvas = $("muller");
   if (!mullerCtx) {
@@ -605,8 +610,8 @@ function drawPhylogeny(world) {
   const hatch = new Map(shares.shown.map((s, k) => [s.id, shares.texture[k]]));
   const living = shown.filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
   const sig = living.map((s) => s.id).join(",") + "|" + renderer.highlightSpeciesId;
-  if (sig !== legendSig) {
-    legendSig = sig;
+  if (sig !== view.legendSig) {
+    view.legendSig = sig;
     buildLegend(living, hatch);
   } else {
     // Cheap in-place count refresh.
@@ -631,24 +636,22 @@ function drawPhylogeny(world) {
 // when the set last changed, drifting up to a whole step away from the columns
 // they name: v1.23's stale readout, and invisible to reading the code — only
 // opening the page showed a mark labelled 1,000 sitting over tick 1,150.
-let mullerAxisKey = "";
-let mullerMarks = [];
 function updateMullerAxis(phylo, width) {
   const axis = mullerAxis(phylo, width);
   const key = axis.marks.map((m) => m.tick).join(",");
-  if (key !== mullerAxisKey) {
-    mullerAxisKey = key;
+  if (key !== view.mullerAxisKey) {
+    view.mullerAxisKey = key;
     const box = $("phylo-ticks");
     box.innerHTML = "";
-    mullerMarks = axis.marks.map((mark) => {
+    view.mullerMarks = axis.marks.map((mark) => {
       const el = document.createElement("span");
       el.textContent = mark.text;
       box.appendChild(el);
       return el;
     });
   }
-  for (let i = 0; i < mullerMarks.length; i++) {
-    const el = mullerMarks[i];
+  for (let i = 0; i < view.mullerMarks.length; i++) {
+    const el = view.mullerMarks[i];
     const mark = axis.marks[i];
     el.style.left = `${(mark.frac * 100).toFixed(4)}%`;
     // The anchor follows the position: a mark drifts in from the right-hand
@@ -659,10 +662,9 @@ function updateMullerAxis(phylo, width) {
 }
 
 /** The Tree of Life's spoken form, written only when it changes. */
-let mullerLabel = "";
 function setMullerLabel(text) {
-  if (text === mullerLabel) return;
-  mullerLabel = text;
+  if (text === view.mullerLabel) return;
+  view.mullerLabel = text;
   $("muller").setAttribute("aria-label", text);
 }
 
@@ -711,7 +713,7 @@ function buildLegend(living, hatch) {
 
 function toggleHighlight(id) {
   renderer.highlightSpeciesId = renderer.highlightSpeciesId === id ? null : id;
-  legendSig = ""; // force legend refresh to update the active chip
+  view.legendSig = ""; // force legend refresh to update the active chip
   $("btn-clear-highlight").classList.toggle("hidden", renderer.highlightSpeciesId == null);
 }
 
@@ -800,24 +802,22 @@ function updateChart(world) {
 // scope, because that window slides, so every position is patched in place
 // every frame. v1.54 conflated the two and left the numbers drifting a whole
 // step from the columns they named; this axis moves faster than that one.
-let chartXKey = "";
-let chartXMarks = [];
 function updateChartXAxis(hist) {
   const box = $("chart-xticks");
   const axis = chartAxis(hist, Math.round(box.clientWidth) || 300);
   const key = axis.marks.map((m) => m.tick).join(",");
-  if (key !== chartXKey) {
-    chartXKey = key;
+  if (key !== view.chartXKey) {
+    view.chartXKey = key;
     box.innerHTML = "";
-    chartXMarks = axis.marks.map((mark) => {
+    view.chartXMarks = axis.marks.map((mark) => {
       const el = document.createElement("span");
       el.textContent = mark.text;
       box.appendChild(el);
       return el;
     });
   }
-  for (let i = 0; i < chartXMarks.length; i++) {
-    const el = chartXMarks[i];
+  for (let i = 0; i < view.chartXMarks.length; i++) {
+    const el = view.chartXMarks[i];
     const mark = axis.marks[i];
     el.style.left = `${(mark.frac * 100).toFixed(4)}%`;
     const cls = "tick-" + mark.anchor;
@@ -828,11 +828,10 @@ function updateChartXAxis(hist) {
 // The axis numbers, as DOM text in the gutter beside the canvas. Rebuilt only
 // when the ceiling actually moves — which is the point of a round ceiling, and the v1.15 rule
 // about not replacing elements inside the animation loop.
-let chartAxisKey = "";
 function updateChartAxis(axis, H, foodMax) {
   const key = `${axis.ticks.join(",")}|${foodMax}`;
-  if (key === chartAxisKey) return;
-  chartAxisKey = key;
+  if (key === view.chartAxisKey) return;
+  view.chartAxisKey = key;
   const box = $("chart-ticks");
   box.innerHTML = "";
   for (const label of axisLabels(axis, H)) {
@@ -849,10 +848,9 @@ function updateChartAxis(axis, H, foodMax) {
 }
 
 /** The chart's spoken form, written only when it changes. */
-let chartLabel = "";
 function setChartLabel(text) {
-  if (text === chartLabel) return;
-  chartLabel = text;
+  if (text === view.chartLabel) return;
+  view.chartLabel = text;
   $("chart").setAttribute("aria-label", text);
 }
 
@@ -904,7 +902,6 @@ function updateChartRange(world, hist, season) {
 // caption carries the absolute peak, since a normalised strip with no number on
 // it looks the same in a massacre and in a quiet afternoon.
 let deathsCtx = null;
-let deathsLabel = "";
 function drawDeaths(world) {
   if (!deathsCtx) {
     const c = $("deaths");
@@ -966,8 +963,8 @@ function drawDeaths(world) {
 function setDeathsCaption(peakText, label) {
   const el = $("deaths-peak");
   if (el.textContent !== peakText) el.textContent = peakText;
-  if (deathsLabel !== label) {
-    deathsLabel = label;
+  if (view.deathsLabel !== label) {
+    view.deathsLabel = label;
     $("deaths").setAttribute("aria-label", label);
   }
 }
@@ -993,7 +990,6 @@ function setDeathsCaption(peakText, label) {
 // strip, and for the same reason: this says *when* the pond was working hard,
 // not how it compares to another run. The caption carries the absolute peak.
 let powerCtx = null;
-let powerLabel = "";
 function drawPower(world) {
   if (!powerCtx) {
     const c = $("power");
@@ -1063,8 +1059,8 @@ function strokeIntervals(ctx, intervals, xOf, yOf, valueOf, stroke, dash) {
 function setPowerCaption(peakText, label) {
   const el = $("power-peak");
   if (el.textContent !== peakText) el.textContent = peakText;
-  if (powerLabel !== label) {
-    powerLabel = label;
+  if (view.powerLabel !== label) {
+    view.powerLabel = label;
     $("power").setAttribute("aria-label", label);
   }
 }
@@ -1130,14 +1126,13 @@ function applyInspectorColours() {
 // the panel's wording, its coverage of a creature's fields and its idea of what
 // moves are all reachable by `node --test`; this file is the markup and the
 // two figures.
-let inspKey = "";
 function updateInspector() {
   const panel = $("inspector");
   const c = renderer.selected;
   if (!c || c.dead) {
     if (c && c.dead) renderer.selected = null;
-    if (inspKey !== "-") {
-      inspKey = "-";
+    if (view.inspKey !== "-") {
+      view.inspKey = "-";
       panel.classList.add("empty");
       panel.innerHTML =
         '<div class="hint">Click a creature to inspect its brain and lineage.</div>';
@@ -1155,8 +1150,8 @@ function updateInspector() {
   // forgotten here.
   const key =
     c.id + "|" + chain.map((s) => s.id).join(",") + "|" + facts.map((f) => f.key).join(",");
-  if (key !== inspKey) {
-    inspKey = key;
+  if (key !== view.inspKey) {
+    view.inspKey = key;
     panel.classList.remove("empty");
     panel.innerHTML = inspectorHTML(c, chain, facts);
     const link = document.getElementById("insp-species");
@@ -1750,7 +1745,7 @@ function wireControls() {
   // Tree of Life: clear the lineage spotlight.
   $("btn-clear-highlight").addEventListener("click", () => {
     renderer.highlightSpeciesId = null;
-    legendSig = "";
+    view.legendSig = "";
     $("btn-clear-highlight").classList.add("hidden");
   });
 }
@@ -1774,11 +1769,6 @@ function resetWorld(seed) {
   config = makeConfig({ ...config, seed });
   world = new World(config);
   renderer.setConfig(config);
-  renderer.selected = null;
-  renderer.highlightSpeciesId = null; // species ids don't carry across worlds
-  legendSig = "";
-  lastChronKey = ""; // force the chronicle feed to re-render for the new world
-  $("btn-clear-highlight").classList.add("hidden");
   syncHash();
 }
 
@@ -1946,7 +1936,6 @@ function loadWorld() {
     world = new World(config);
     world.loadJSON(obj);
     renderer.setConfig(config);
-    renderer.selected = null;
     $("seed-input").value = config.seed;
     syncHash();
     flash("World loaded.");

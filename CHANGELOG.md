@@ -4,6 +4,89 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.99.0] — 2026-08-16
+
+v1.98 fixed one panel that kept the previous world's numbers after a reseed and
+left the sweep behind: *which other surfaces are written conditionally, and
+therefore survive a world they no longer describe?* This is that sweep, and the
+answer was not where the note pointed. The early returns were not the seam.
+
+`main.js` holds **nineteen** pieces of module state that describe one pond, and
+**thirteen are keyed on the very string they write** — a memo of that shape
+cannot outlive its world, because the frame after the swap recomputes the key
+from the new pond, finds it different, and writes. Self-correcting, with nobody
+having arranged it. What the sweep found is the handful that are keyed on
+nothing, one that is keyed on something worse than nothing, and three
+hand-typed reset lists that disagreed with each other.
+
+**The right answer was already in the file.** `updateNarration` has keyed its
+state on the world *object* since v1.31 — "a new object cannot find the old
+one's state", v1.23's cache rule stated exactly — and it resets four fields on
+every world swap. It was never generalised. Everything else was hand-reset by
+the three functions that build a `World`: `launchScenario` and `resetWorld`
+name four things each, and `loadWorld` names **one**.
+
+### Added
+
+- **`src/viewstate.js`** — one owner for all nineteen. A roster of names with
+  the value each holds before a pond has been drawn, a `reset()` that walks it,
+  and an `adopt(world, renderer)` keyed on the world's identity rather than on
+  its seed or its tick — because a reset, a scenario and a load all build a new
+  `World`, and two of the three can leave the seed alone. It runs once at the
+  top of the frame. The three lists in `main.js` are gone rather than
+  reconciled: a list that cannot be typed cannot disagree with a copy of itself.
+- **The other half of the classification, with reasons.** `PAGE_SCOPED` names
+  the fourteen bindings a new pond does *not* invalidate — two canvas contexts
+  called "likewise" failed the test that says an excuse has to be long enough to
+  read — because the playbook's lesson about headings is that the bucket marked
+  *does not need checking* is the one nobody reads twice. Between them the two
+  lists have to account for every top-level `let` in the file.
+- **`test/viewstate.test.js`, twelve tests.** The roster walked both ways; the
+  reset walked against a wholly perturbed object rather than a field or two
+  (`statesweep.js`'s method, pointed at the observer); a fresh array per state
+  and per reset, so two ponds cannot share one array of DOM elements; a stub
+  renderer standing in for the page as v1.98's `Map` stood in for the DOM; and
+  three scans of the shipped `src/main.js` — every top-level `let` classified in
+  exactly one list, no roster name growing a private declaration again, and no
+  roster name used bare rather than through the owner.
+
+### Fixed
+
+- **A loaded world no longer wears the previous pond's species highlight.**
+  Spotlight a lineage, press `📂 Load`, and a species of the *loaded* world lit
+  up instead — an id the visitor never pressed, because species ids restart in
+  every pond — with `✕ Clear highlight` still offering to undo a choice made in
+  a world that is gone. Driven in a browser both ways: before, a chip reads
+  `aria-pressed="true"` and the button is visible after the load; after, neither
+  is, on the same frame. `loadWorld` was missing three of the four resets its
+  two siblings performed, which is what a hand-typed list in three copies does.
+- **The Tree of Life's legend can no longer be a previous world's.**
+  `legendSig` is `living species ids | highlight`, and a new pond deals #1, #2,
+  #3 exactly as the old one did — so the signature can match across a swap and
+  take the cheap path, which patches counts into `chip-n-<id>` elements
+  belonging to the last world's species. New numbers, old colours, old hatches.
+
+### Notes
+
+- **The claim I would have shipped died in the browser, and it is the best thing
+  in the release.** `renderer.camera.target` is a reference into the world that
+  no list named, and the reasoning was clean: follow a creature, press a
+  scenario chip, and the camera follows a body that is no longer stepped, never
+  moves, and — since `Camera.update()` releases only on death — never dies.
+  Every word true, and the bug does not happen: `renderer.setConfig()` calls
+  `camera.reset()`, and all three paths call `setConfig`. The one piece of state
+  no owner claimed is owned by a *fourth* function whose name is about the
+  config. `adopt()` releases the target anyway — a no-op today, and the
+  difference between correct and correct-on-purpose the day a path forgets
+  `setConfig`.
+- **Verified in a browser as well as in the suite** (v1.49's habit, five for
+  five): the app served over a twenty-line static server, driven over CDP with
+  no dependency, a species spotlit, a world saved, a scenario launched and the
+  save loaded back — before and after, on two checkouts.
+- Determinism untouched: `viewstate.js` imports nothing, and a test asserts it,
+  so nothing here can reach the simulation or draw a random number. 963 tests
+  green.
+
 ## [1.98.0] — 2026-08-15
 
 v1.97 carved the twenty-eight stat tiles out of `main.js` and left a sentence

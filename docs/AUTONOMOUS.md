@@ -807,6 +807,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   per-frame updater**, because each is a promise that the state it skips was
   already correct, and after a reseed none of them are — the chart's captions,
   the season badge, the inspector and the flash are all unlooked-at.
+  **Ran in v1.99 (`src/viewstate.js`), and the early returns were not the
+  seam.** `main.js` holds nineteen pieces of module state that describe one
+  pond, and **thirteen are keyed on the very string they write**, which cannot
+  outlive its world: the frame after a swap recomputes the key, finds it
+  different, and writes. Self-correcting, and nobody arranged it. What was
+  broken was the *unkeyed* half, and the fix was already in the file —
+  `updateNarration` has keyed four fields on the world **object** since v1.31
+  ("a new object cannot find the old one's state") and was never generalised,
+  so everything else was hand-reset by the three functions that build a
+  `World`: four names, the same four, and **one**. `loadWorld`'s three missing
+  resets are a visitor-facing bug (spotlight a lineage, press Load, and a
+  species of the *loaded* pond lights up, because species ids restart). One
+  roster, one `adopt()` at the top of the frame, three lists deleted rather
+  than reconciled, and the classification's other half carries a reason per
+  entry. Three things it leaves. **The sweep's real subject was keys, not
+  conditional writes**: `legendSig` and `viewSig` both contain an id a new pond
+  re-issues, so a content-keyed memo is safe until its content names something
+  the subject deals again — and nothing has asked that of `archive.js`, of
+  `phylogeny.byId`, or of the permalink. **`setConfig` throws away the zoom and
+  the pan and nobody decided it** — a page-scoped choice made inside a config
+  setter, outside both lists because only what `main.js` *declares* was
+  classified; the renderer has module state too and it is unwalked. And the
+  camera claim is the lesson below.
   (c) The empty state has **two registers** (`Nothing has died yet.` in the
   caption, `No deaths recorded yet.` in the accessible name) and nobody has
   measured whether the listener and the reader are being told the same thing,
@@ -1001,6 +1024,19 @@ DEVLOG as I ship them; add new ones as they occur to me.
   not the thing being measured. A gate is a measurement about a population
   (v1.87), and *every* gate in the chain has a population, including the one
   that was only ever used to rescue a measurement the first gate could not make.
+- **The state an audit is surest about may be owned by something that is not on
+  the list.** v1.99 audited three hand-typed reset lists and found a fourth
+  piece of state that appeared on none of them: `camera.target`, a reference
+  into a world the three paths all replace. The argument was airtight — an
+  unstepped body never dies, and `Camera.update()` releases only on death — and
+  the bug does not happen, because `renderer.setConfig()` calls
+  `camera.reset()` and every path calls `setConfig`. The tell I ignored is that
+  I was auditing *lists* and reasoning about *reachability*: a list can only be
+  checked against other lists, and whether a field gets cleared is a question
+  about every function that runs, not about the ones that look like they should.
+  So when an audit's subject is an enumeration, the claim it is surest about is
+  the one to take to a browser first — it is surest precisely because nothing in
+  the enumeration contradicts it.
 - **The way to find that chain is to make yourself write down what rides what.**
   The census in v1.81 was a bookkeeping chore — declare each query, list the
   rules on it — and the finding fell out of the `carries` field rather than out

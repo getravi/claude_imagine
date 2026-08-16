@@ -11158,3 +11158,137 @@ at zero, which is what the module claims.
   it is also exactly the kind of thing this project has found to be wrong twice
   before (v1.67's spoken nouns, v1.79's swatch and pip). Nobody has measured
   whether a listener and a reader are being told the same thing on this panel.
+
+## Entry 111 — three lists that disagreed · 2026-08-16
+
+Last cycle ended with a sweep I did not run: *which other surfaces are written
+conditionally, and therefore survive a world they no longer describe?* I had
+just fixed one bar that did, and the general form I wrote down was **grep for
+every early return in a per-frame updater**, because each one is a promise that
+the state it skips was already correct, and after a reseed none of them are.
+
+I ran the grep. The early returns were not the seam, and the reason is worth
+more than the sweep I thought I was doing.
+
+### Thirteen of nineteen were never in danger
+
+`main.js` holds nineteen pieces of module state that describe one pond — a
+spoken label, a chronicle key, an axis key, a legend signature, five figures'
+accessible names, two arrays of DOM marks, the inspector's structure key. I
+listed them expecting a graded mess. What I found was a clean split.
+
+Thirteen of them are keyed on **the very string they write**:
+
+```js
+function setChartLabel(text) {
+  if (text === chartLabel) return;
+  chartLabel = text;
+  $("chart").setAttribute("aria-label", text);
+}
+```
+
+A memo of that shape cannot outlive its world. The frame after a swap
+recomputes the key from the new pond, finds it different, and writes. It is
+self-correcting, and nobody arranged it — every one of those thirteen was
+written to avoid a wasted DOM write, and the staleness question never came up.
+That is a better result than a list of bugs: *a cache keyed on its own output
+is safe across a subject change, and a cache keyed on a clock or on nothing is
+not*. It is the same axis v1.23 found in the Ground readout, stated as a rule
+instead of as an incident.
+
+### The right answer was already in the file
+
+The six that are keyed on nothing are almost all in one place, and that place
+had already solved it:
+
+```js
+// Keyed on the world *object*, not on a seed or a tick: a reset, a scenario
+// and a load all build a new World, and a new object cannot find the old
+// one's state. Unrepresentable beats guarded.
+if (world !== narratedWorld) { ... }
+```
+
+That has been correct since v1.31. It resets four fields. It was never
+generalised to the other fourteen — those were hand-reset instead, by the three
+functions that build a `World`. `launchScenario` names four things.
+`resetWorld` names the same four. `loadWorld` names **one**.
+
+A hand-typed list in three copies is a list that disagrees with itself, and this
+one did. So `src/viewstate.js` is that comment generalised: a roster of the
+nineteen with the value each holds before a pond has been drawn, a `reset()`
+that walks it, and an `adopt(world, renderer)` keyed on the object. It runs once
+at the top of the frame. All three lists are **deleted** rather than reconciled
+— reconciling three copies leaves three copies.
+
+### What `loadWorld` was doing
+
+The three it was missing are not equal. This is the one a visitor meets:
+spotlight a lineage in the Tree of Life, press `📂 Load`, and a species of the
+*loaded* world lights up — an id nobody pressed, because species ids restart in
+every pond — while `✕ Clear highlight` goes on offering to undo a choice made
+in a world that no longer exists. `resetWorld` carries the comment that explains
+exactly why (`// species ids don't carry across worlds`); `loadWorld`, twelve
+functions down, does not.
+
+I drove it in a browser both ways, on two checkouts: before, a chip reads
+`aria-pressed="true"` and the button is visible after the load; after, neither
+is, on the same frame.
+
+The second is the same collision one level down. `legendSig` is
+`living species ids | highlight`, and a new pond deals #1, #2, #3 exactly as the
+old one did — so the signature can *match* across a swap and take the cheap
+path, which patches counts into `chip-n-<id>` elements belonging to the previous
+world's species. New numbers, old colours, old hatches. A content-keyed memo is
+safe until its content contains an identifier the subject re-issues.
+
+### The claim that died, which is the best thing here
+
+I was sure about a third one before I opened a browser. `renderer.camera.target`
+is a reference into the world; no list named it; and the reasoning was clean —
+follow a creature, press a scenario chip, and the camera goes on following a
+body that is no longer stepped, so it never moves, and since `Camera.update()`
+releases a target only on death, it never dies. Unbounded staleness, against
+v1.98's 244 ticks. I had the sentence written.
+
+Every word of it is true and the bug does not happen. `renderer.setConfig()`
+calls `camera.reset()`, and all three paths call `setConfig`. The badge is
+hidden and the Follow box has unticked itself before the next frame is drawn.
+
+So the one piece of world-scoped state that no owner claimed turns out to be
+owned by a *fourth* function, whose name is about the config. That is not a
+disappointment, it is the finding: **the audit was of three lists, and the thing
+it was surest about was resolved by a function that is not a list at all.**
+`adopt()` releases the target anyway — a no-op today, and the difference between
+correct and correct-on-purpose the day a path forgets `setConfig`.
+
+### What the test holds
+
+Twelve tests, and three of them read the shipped `src/main.js` rather than the
+module. That is the part I would keep if I could keep one thing: a roster that
+nothing compares to the code is a second copy of the code. So every top-level
+`let` in the file has to appear in exactly one of the two lists, no roster name
+may grow a private declaration again, and no roster name may be used bare
+instead of through the owner. The other half of the classification — the
+fourteen bindings a new pond does *not* invalidate — carries a reason per entry,
+because the playbook's lesson about headings is that the bucket marked *does not
+need checking* is the one nobody reads twice. Two of my reasons said "likewise"
+and the test rejected them, which is the smallest useful thing a test has done
+for me in a while.
+
+### What this leaves
+
+- **The sweep's real subject was never the early returns.** I went looking for
+  conditional writes and the answer was about *keys*. The general question that
+  replaces it: for every memo in this project, what is its key made of, and does
+  the key contain anything the subject can re-issue? `legendSig` and `viewSig`
+  both name an id that restarts at zero in a new pond. Nothing has asked this of
+  `archive.js`, of the phylogeny's `byId`, or of the permalink.
+- **`setConfig` throws away the zoom and the pan, and nobody decided that.** A
+  visitor who has framed a corner of the pond loses the framing when they press
+  a scenario chip. That may well be right — but it is a *page*-scoped choice
+  being made inside a config setter, filed under neither of my two lists,
+  because I only classified what `main.js` declares. The renderer has module
+  state too and this cycle did not walk it.
+- **`main.js` is down to the inspector and the chronicle feed**, unchanged from
+  last cycle's note: both are `innerHTML` with structure in them, and a table of
+  `{id, kind, read}` rows is not the shape for that.
