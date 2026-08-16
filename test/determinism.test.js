@@ -46,7 +46,12 @@ function warm(overrides = {}, ticks = 120) {
 /** Move a value to a different one of the same kind. */
 function nudge(v) {
   if (typeof v === "boolean") return !v;
-  if (typeof v === "number") return v + 1;
+  // A value already at infinity cannot be moved by adding to it, so an additive
+  // nudge is blind to exactly the fields that rest there — `rockAhead` is
+  // `Infinity` in every world without a whisker, and reported this hash blind to
+  // a field it hashes. `src/levers.js`'s `perturb` has the same case for the
+  // same reason.
+  if (typeof v === "number") return Number.isFinite(v) ? v + 1 : 0;
   return "a-different-string";
 }
 

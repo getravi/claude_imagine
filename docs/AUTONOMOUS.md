@@ -195,13 +195,42 @@ DEVLOG as I ship them; add new ones as they occur to me.
   everyone who could see a hunter stops being able to — and it deepens v1.48's
   isolation on **6 of 12 seeds**, which is a coin toss, for a reason that was
   already written down (see the lesson below). What it leaves behind:
-  **nothing still perceives the rock** (the sense, not the shadow — a creature
-  finds a gate by sliding, exactly as in v1.48), predation more than doubles on
+  nothing still perceived the rock (the sense, not the shadow — a creature
+  found a gate by sliding, exactly as in v1.48) **until v1.102, which built the
+  sense and measured it worth nothing, for the reason that sliding *is* the
+  policy**, predation more than doubles on
   a median but only 8 of 12 seeds and is filed as a *lead*, and the tick is 3.4x
   slower in a walled pond, all of it in the sense queries. And the fact that the
   headless recorder could not draw a walled world for two whole releases means
   **the recorder is a claim of equivalence like any other accelerator** — sweep
   it when `render.js` learns a new call.
+
+- **The rock nothing could feel — closed in v1.102 (`wallSense`), and what it
+  left.** v1.48 and v1.50 both closed with *nothing perceives the rock* and it
+  stood for fifty-three releases. It is perceived now — one scalar, one ray
+  along the heading, the third aux sense after the ear and the foot, built the
+  same way and drawing zero random numbers when off. **The result is the second
+  null of its kind and the reason is not the first one's.** v1.33 failed because
+  the gradient was absent (-0.003); here the gradient is real and measured
+  (v1.48's three- to six-fold drop in room changes), the diagnosis check passed,
+  and the remedy failed anyway: against a scrambled arm reading the rock ninety
+  degrees to the left, refusals fall on 8 seeds of 12, which is a coin, and the
+  no-information arm supports 32 more creatures. **A creature that meets a wall
+  already slides along it until a gate turns up**, so *follow the wall until it
+  ends* — the whole policy a forward-facing scalar can teach — is performed by
+  the physics for free. See the lesson below. What it leaves: (a) the experiment
+  this null argues for is **three** whiskers, left/ahead/right, because a
+  direction is the first thing sliding does not already provide, and that brings
+  the packing question back with two channels that are the *same* sense; (b) the
+  **foot still has no spoken form** — the whisker got a `describeSelection`
+  clause on arrival (v1.80's sixty-nine releases), and `Underfoot` has been on
+  the panel since v1.33 with a listener never told what is under the creature,
+  an asymmetry now between two adjacent rows; (c) `FIELD_SILENT` is down to
+  **one** entry with no argument behind it — `walled` moved to the reported list
+  because it is the whisker's subject at zero distance, and `phase` is the last;
+  (d) the whisker deliberately has **no tile**, on a consistency argument (the
+  ground sense has none, `Walled 🧱` says what rock costs the pond) rather than
+  a measurement, and v1.80 is the release that says those age badly.
 
 - **Rock — closed in v1.48 (`barriers`), and what it left.** v1.23's movement
   tax bought no spatial structure, and the diagnosis was a *timescale*, not a
@@ -210,15 +239,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   walls with gates, cutting the torus into four rooms. It works — room changes
   fall 3-6x, and creatures either side of a wall are 18% further apart
   genetically, against 3.6% for the same run partitioned along lines half a room
-  over. What it leaves behind: **nothing perceives the rock**, so no behaviour
-  has evolved around it — no wall-following beyond the physics, no memory of
-  where a gate is — and a predator still sees, hears, infects and bites straight
-  through a wall. And the *second* remedy on v1.23's list, a resource that
-  varies in space, is still untried; the biomes are the closest thing and they
-  do not move with anything.
+  over. What it leaves behind: nothing perceived the rock, so no behaviour had
+  evolved around it — **closed in v1.102 (`wallSense`), and the behaviour still
+  has not**, because wall-following *is* the physics and a forward scalar can
+  teach nothing else (see the entry above and the first lesson below) — and a
+  predator still sees, hears, infects and bites straight through a wall unless
+  `barrierOcclusion` is on. Memory of where a gate is remains untouched, and it
+  is the half of that sentence a sense cannot supply. And the *second* remedy on
+  v1.23's list, a resource that varies in space, shipped as `biomeDrift` and has
+  a scenario of its own; what has never been asked is whether *it* addressed the
+  timescale the diagnosis named.
 
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
-  flocking, memory, tool-use, symbiosis, parasitism. (Terrain — a roughness
+  flocking, memory, tool-use, symbiosis, parasitism. (The rock sense shipped in
+  v1.102 and is the third aux channel; a fourth is a well-worn path now — one
+  gene block on the end of the genome, `AUX_ORDER` grows by a row, and the whole
+  cost is in deciding what the channel should *carry*, which is where both
+  senses so far have gone wrong.) (Terrain — a roughness
   landscape that is expensive to cross and reluctant to grow food — shipped in
   v1.23; hard obstacles shipped in v1.48, and creature-on-creature collision is
   still untouched. Kin
@@ -738,7 +775,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the walk's new membership perturbation only ever **adds** a member, so a
   latch set that a bug *clears* is a difference no sweep here would find.
   The sibling sweep — *is every numeric constant a
-  lever?* — ran in v1.38 (`src/levers.js`): all eighty-four constants in
+  lever?* — ran in v1.38 (`src/levers.js`): all eighty-five constants in
   `config.js` are, and it
   corrected `energyMax` (see the lesson below). **Kin recognition is the finding
   to remember here:** it is correct, tested, and fires zero times in the default
@@ -855,6 +892,51 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A remedy has to add information the physics is not already acting on.**
+  v1.33 wrote the rule that a proposed fix must address the diagnosis already on
+  paper, and that perception cannot create a pressure — the ground sense failed
+  because v1.23 had priced rough ground at -0.003 and there was no gradient. So
+  v1.102 checked the diagnosis first and it *passed*: v1.48 measured rock cutting
+  room changes three- to six-fold and lineages 18% apart either side of a wall.
+  The whisker still bought nothing (8 seeds of 12 against a scrambled arm, which
+  is a coin; the no-information arm supported the larger pond). The reason is the
+  second failure mode and it is not in v1.33's lesson: **the pressure was real
+  and already relieved.** A creature that meets a wall loses the component of its
+  velocity pointing into the rock and slides along it until a gate turns up, and
+  *follow the wall until it ends* is the entire policy a forward-facing scalar
+  could teach — performed for free, correctly, from the first tick, by every
+  creature that has never had the sense. So before adding a channel, ask not only
+  whether there is a gradient but **what the pond already does at the bottom of
+  it**: if the existing physics implements the policy the sense would teach, the
+  sense is a second copy of an answer. The useful half is that this names the
+  interesting experiment rather than closing the file — a scalar says *something
+  is there* and nothing about which way is clear, so a direction is the first
+  thing sliding does not already provide.
+
+- **A comment saying "whatever else is wired in" is a claim about the future,
+  and it expires without a symptom.** `groundSway` probed the *last* aux channel
+  and said so in words: "the foot is the last aux channel, whatever else is
+  wired in". True for sixty-nine releases and false the moment v1.102 put a
+  channel behind it — in a world with both senses on it would have reported the
+  whisker's swing under the ground's name, on the panel, silently, with every
+  test green. The tell is grammatical: a comment that quantifies over things
+  that do not exist yet ("whatever else", "any future", "the last") is an
+  invariant nobody is holding. Make it a function of what is actually on
+  (`auxChannel`), keep the order in one list both readers walk, and test each
+  reading by silencing the *other* one. This is v1.70's warning — read a
+  classification as a guess — arriving on a comment rather than on a list.
+
+- **An additive or multiplicative perturbation cannot move infinity, so a sweep
+  built on one is blind to every field that rests there.** `creature.rockAhead`
+  is `Infinity` wherever the whisker found nothing, which is most of the pond
+  most of the time, and the determinism sweep reported the state hash blind to a
+  field the state hash hashes. The hash was fine; the instrument was not —
+  `perturb` scales, `nudge` adds, and `Infinity` absorbs both. The general form:
+  **a perturbation is a claim that the value has somewhere to go**, and a sweep
+  should say what it does at the ends of its own domain. This one had never been
+  stepped in because every constant in `config.js` is finite and, until this
+  release, so was every hashed creature field.
 
 - **A count of a trait is not a count of the behaviour it enables.** The panel
   has said `Carnivores 21 (49%)` since v1.0 and the voice has said "21 of them
@@ -1994,7 +2076,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
 - **A hash is a hand-picked list wearing an authoritative costume.** Everything
   else in this project gets audited — the grid (v1.32), the constants (v1.38),
   the recorder (v1.50) — and the fingerprints were exempt because they are what
-  the audits are *made of*. `src/levers.js` decided all eighty-four constants in
+  the audits are *made of*. `src/levers.js` decided all eighty-five constants in
   `config.js` are levers using a detector with four holes in it. Ask of the thing you
   measure with: who measures this? The sweep is cheap — perturb every field of
   the live object and ask whether the instrument notices and whether the world

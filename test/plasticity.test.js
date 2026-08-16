@@ -8,13 +8,14 @@ import { RNG } from "../src/rng.js";
 
 const WLEN = NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs);
 
-test("genome layout is weights + plasticity + ear + foot + body", () => {
-  assert.equal(genomeLength(), 2 * WLEN + 2 * BRAIN.hidden + 4);
+test("genome layout is weights + plasticity + ear + foot + whisker + body", () => {
+  assert.equal(genomeLength(), 2 * WLEN + 3 * BRAIN.hidden + 4);
   const g = Genome.random(new RNG(1));
   assert.equal(g.brainWeights.length, WLEN);
   assert.equal(g.plasticityGenes.length, WLEN);
   assert.equal(g.earGenes.length, BRAIN.hidden);
   assert.equal(g.footGenes.length, BRAIN.hidden);
+  assert.equal(g.whiskerGenes.length, BRAIN.hidden);
 });
 
 test("random genomes start with zero plasticity (learning must evolve)", () => {

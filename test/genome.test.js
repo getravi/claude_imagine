@@ -1,17 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Genome, genomeLength, BRAIN } from "../src/genome.js";
+import { Genome, genomeLength, BRAIN, AUX_ORDER } from "../src/genome.js";
 import { NeuralNet } from "../src/nn.js";
 import { RNG } from "../src/rng.js";
 
-test("genome length = brain weights + plasticity + ear + foot + body genes", () => {
+test("genome length = brain weights + plasticity + ear + foot + whisker + body genes", () => {
   const brain = NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs);
   // As of v1.4 the genome carries a parallel plasticity vector (same length as
-  // the weights); v1.20 added one ear gene per hidden neuron and v1.33 one foot
-  // gene. Every one of those blocks is inert unless its feature is on. Then
-  // four body genes: size, metabolism, hue, diet — always the last four,
-  // whatever else is inserted before them.
-  assert.equal(genomeLength(), 2 * brain + 2 * BRAIN.hidden + 4);
+  // the weights); v1.20 added one ear gene per hidden neuron, v1.33 one foot
+  // gene and v1.102 one whisker gene. Every one of those blocks is inert unless
+  // its feature is on. Then four body genes: size, metabolism, hue, diet —
+  // always the last four, whatever else is inserted before them.
+  assert.equal(genomeLength(), 2 * brain + AUX_ORDER.length * BRAIN.hidden + 4);
 });
 
 test("random genome has the right length and body genes in [0,1)", () => {

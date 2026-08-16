@@ -2,7 +2,7 @@
 //
 // v1.36 gave this project a bit-exact identity and used it to ask *is every
 // flag a lever?* — switch each opt-in feature on and check the world moves. The
-// obvious sibling went unrun: there are eighty-four constants in `config.js`,
+// obvious sibling went unrun: there are eighty-five constants in `config.js`,
 // and twice now one of them has turned out to be doing nothing. v1.27 found
 // `detritusPerRadius` clipped by a cell cap that silently discarded a third of
 // every large carcass, and v1.29 found `energyMax` sitting above a threshold it
@@ -64,8 +64,19 @@ export const DEFAULT_BUDGET = 600;
  * Move a number somewhere it should be distinguishable from where it was.
  * Fractions at the top of their range go *down* rather than out of it, so a
  * probability stays a probability and a decay factor stays under one.
+ *
+ * **Infinity is the case that has to be named** (v1.102). Every other line here
+ * scales, and no scaling moves an infinite value: `Infinity * 1.37` is
+ * `Infinity`, so a field resting at one is invisible to this sweep and to
+ * `statesweep.js`, which perturbs live state with exactly this function. That is
+ * not hypothetical — `creature.rockAhead` is `Infinity` whenever the whisker
+ * found no rock, which is most of the pond most of the time, and the sweep
+ * reported the state hash blind to a field it hashes. A miss is a real reading
+ * with no magnitude to scale, so it is moved to a finite number instead: 0, the
+ * distance that means the opposite of what it is standing in for.
  */
 export function perturb(v) {
+  if (!Number.isFinite(v)) return 0;
   if (v === 0) return 0.5; // a rate switched off by being zero: switch it on
   if (v <= 1) return v > 0.5 ? v * 0.7 : v * 1.37;
   return Number.isInteger(v) ? Math.round(v * 1.37) : v * 1.37;
@@ -102,6 +113,13 @@ export const SPECIAL = {
   // measured as the layout that kills three seeds in twelve.
   barrierGaps: { world: { barriers: true }, to: 1, why: "barriers are opt-in; a gate count is an integer" },
   barrierGapWidth: { world: { barriers: true }, why: "barriers are opt-in" },
+  // The whisker's reach needs two flags, not one: the sense has to be on and
+  // there has to be rock for it to find. Either alone leaves the constant
+  // multiplying a miss, which is the same number whatever the reach is.
+  whiskerRange: {
+    world: { barriers: true, wallSense: true },
+    why: "the whisker is opt-in, and a reach needs something inside it to reach",
+  },
   dayLength: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   nightVisionFactor: { world: { dayNightCycle: true }, why: "the day/night cycle is opt-in" },
   signalRadius: { world: { signalling: true }, why: "signalling is opt-in" },

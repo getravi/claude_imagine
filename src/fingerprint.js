@@ -157,7 +157,8 @@ export function trajectoryFingerprint(world) {
 export const CREATURE_HASHED = [
   "x", "y", "heading", "vx", "vy", "energy", "age", "generation", "children",
   "dead", "deathCause", "radius", "metabolismScale", "carnivory", "phase",
-  "hue", "ground", "groundFeel", "walled", "infected", "immune",
+  "hue", "ground", "groundFeel", "walled", "rockAhead", "wallFeel",
+  "infected", "immune",
   "infectedAtAge", "signal", "prevSignal", "heard", "lastBiteAge",
 ];
 
@@ -239,7 +240,9 @@ export const WORLD_UNHASHED = {
  * future while the hash held still: `metabolismScale` and `phase` at the next
  * tick, `lastBiteAge` (the predation cooldown) within three. Six more
  * (`walled`, `groundFeel`, `hue`, `infectedAtAge`, `prevSignal`, `heard`) are
- * inert only because their readers are behind flags that are off. v1.36 wrote
+ * inert only because their readers are behind flags that are off — and v1.102's
+ * `rockAhead` and `wallFeel` join that half of the list, both read by the
+ * whisker and by nothing else. v1.36 wrote
  * "decide what the instrument must be *blind* to, and then write a test
  * asserting the blindness", and wrote that test for the trajectory hash; the
  * complementary question — what must this one *not* be blind to? — went with
@@ -267,6 +270,10 @@ export function stateFingerprint(world) {
     h.word(c.generation).word(c.children).flag(c.dead).text(c.deathCause);
     h.num(c.radius).num(c.metabolismScale).num(c.carnivory).num(c.phase).num(c.hue);
     h.num(c.ground).num(c.groundFeel).flag(c.walled);
+    // `rockAhead` is `Infinity` wherever the whisker found nothing, which `num`
+    // mixes by its bits like any other double — a miss is a value here, not an
+    // absence, and it is distinct from every distance a hit can report.
+    h.num(c.rockAhead).num(c.wallFeel);
     h.flag(c.infected).flag(c.immune).num(c.infectedAtAge);
     h.num(c.signal).num(c.prevSignal).num(c.heard).num(c.lastBiteAge);
     h.array(c.genome && c.genome.data);

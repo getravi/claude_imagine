@@ -44,10 +44,14 @@ const EAR_GENES = BRAIN.hidden;
 // The foot: one weight from "how rough is the ground I am standing on" into
 // each hidden neuron. Same trick as the ear, for the same reason.
 const FOOT_GENES = BRAIN.hidden;
+// The whisker: one weight from "how close is the rock straight ahead" into each
+// hidden neuron. Third of the same trick, and the third block to go on the end
+// of the aux region rather than into the brain's vector.
+const WHISKER_GENES = BRAIN.hidden;
 const BODY_GENES = 4; // [sizeGene, metabolismGene, hueGene, dietGene]
 
 export function genomeLength() {
-  return 2 * WLEN + EAR_GENES + FOOT_GENES + BODY_GENES;
+  return 2 * WLEN + EAR_GENES + FOOT_GENES + WHISKER_GENES + BODY_GENES;
 }
 
 // Where the auxiliary sense blocks start and end. Body genes are always
@@ -58,12 +62,15 @@ const EAR_START = 2 * WLEN;
 const EAR_END = EAR_START + EAR_GENES;
 const FOOT_START = EAR_END;
 const FOOT_END = FOOT_START + FOOT_GENES;
-const AUX_END = FOOT_END;
+const WHISKER_START = FOOT_END;
+const WHISKER_END = WHISKER_START + WHISKER_GENES;
+const AUX_END = WHISKER_END;
 
 /**
  * Bring a genome vector saved by an older version up to the current layout.
  * Pre-v1.20 saves end `[...plasticity][body 4]` with no aux senses between them,
- * and pre-v1.33 saves have an ear but no foot. In both cases the body genes are
+ * pre-v1.33 saves have an ear but no foot, and pre-v1.102 saves have both but no
+ * whisker. In every case the body genes are
  * lifted to the new end of the vector and whatever aux blocks the save is
  * missing are left silent (all zero) — which is exactly what a creature that
  * has never had that sense should inherit. The senses being laid out in the
@@ -83,20 +90,43 @@ export function migrateGenomeData(src) {
 }
 
 /**
- * The auxiliary weight block a brain gets: the enabled sense blocks
- * concatenated in genome order (ear, then foot). Null when no aux sense is on,
- * which is the case the forward pass is optimised — and pinned — for.
- * @param {Genome} genome
- * @param {boolean} ear
- * @param {boolean} foot
+ * The aux sense blocks, in genome order, as data.
+ *
+ * Two senses could be written out by hand; three is where the hand-written form
+ * starts costing a combinatorial case per sense, and v1.20's and v1.33's
+ * pairwise version had exactly the shape this project keeps finding stale (see
+ * `AUX_ORDER`'s two readers below — `auxWeightsFor` here and `Creature.think`
+ * — which must walk the same flags in the same order or the brain is wired to
+ * the wrong channel). One list, three readers, and the order is stated once.
+ *
+ * @type {ReadonlyArray<{name: string, from: number, to: number, flag: string}>}
  */
-function auxWeightsFor(genome, ear, foot) {
-  if (!ear && !foot) return null;
-  if (!foot) return Float32Array.from(genome.earGenes);
-  if (!ear) return Float32Array.from(genome.footGenes);
-  const out = new Float32Array(EAR_GENES + FOOT_GENES);
-  out.set(genome.earGenes, 0);
-  out.set(genome.footGenes, EAR_GENES);
+export const AUX_ORDER = Object.freeze([
+  { name: "ear", from: EAR_START, to: EAR_END, flag: "signalling" },
+  { name: "foot", from: FOOT_START, to: FOOT_END, flag: "groundSense" },
+  { name: "whisker", from: WHISKER_START, to: WHISKER_END, flag: "wallSense" },
+]);
+
+/**
+ * The auxiliary weight block a brain gets: the enabled sense blocks
+ * concatenated in genome order (ear, then foot, then whisker). Null when no aux
+ * sense is on, which is the case the forward pass is optimised — and pinned —
+ * for.
+ * @param {Genome} genome
+ * @param {boolean[]} live one flag per entry of `AUX_ORDER`, in that order
+ */
+function auxWeightsFor(genome, live) {
+  let n = 0;
+  for (let i = 0; i < AUX_ORDER.length; i++) if (live[i]) n += AUX_ORDER[i].to - AUX_ORDER[i].from;
+  if (n === 0) return null;
+  const out = new Float32Array(n);
+  let at = 0;
+  for (let i = 0; i < AUX_ORDER.length; i++) {
+    if (!live[i]) continue;
+    const b = AUX_ORDER[i];
+    out.set(genome.data.subarray(b.from, b.to), at);
+    at += b.to - b.from;
+  }
   return out;
 }
 
@@ -124,16 +154,18 @@ export class Genome {
    * @param {import('./rng.js').RNG} rng
    * @param {boolean} [withEar] draw the ear genes too (signalling worlds only)
    * @param {boolean} [withFoot] draw the foot genes too (ground-sense worlds only)
+   * @param {boolean} [withWhisker] draw the whisker genes too (wall-sense worlds
+   *   only). Last in the order, so a world that leaves it off draws exactly what
+   *   it drew before the block existed.
    */
-  static random(rng, withEar = false, withFoot = false) {
+  static random(rng, withEar = false, withFoot = false, withWhisker = false) {
     const data = new Float32Array(genomeLength());
     for (let i = 0; i < WLEN; i++) data[i] = rng.gaussian(0, 1); // weights
     // plasticity block [WLEN, 2*WLEN) left at 0 — no draws
-    if (withEar) {
-      for (let i = EAR_START; i < EAR_END; i++) data[i] = rng.gaussian(0, 1);
-    }
-    if (withFoot) {
-      for (let i = FOOT_START; i < FOOT_END; i++) data[i] = rng.gaussian(0, 1);
+    const live = [withEar, withFoot, withWhisker];
+    for (let b = 0; b < AUX_ORDER.length; b++) {
+      if (!live[b]) continue;
+      for (let i = AUX_ORDER[b].from; i < AUX_ORDER[b].to; i++) data[i] = rng.gaussian(0, 1);
     }
     for (let i = data.length - BODY_GENES; i < data.length; i++) data[i] = rng.float();
     return new Genome(data);
@@ -152,6 +184,10 @@ export class Genome {
   /** One weight per hidden neuron for the ground-underfoot sense. */
   get footGenes() {
     return this.data.subarray(FOOT_START, FOOT_END);
+  }
+  /** One weight per hidden neuron for the rock-ahead sense (see barriers.js). */
+  get whiskerGenes() {
+    return this.data.subarray(WHISKER_START, WHISKER_END);
   }
 
   // Body genes, mapped from raw storage to meaningful ranges. Always the last
@@ -179,14 +215,15 @@ export class Genome {
    * @param {boolean} [ear] wire in the heard-signal sense (signalling worlds).
    *   When false the net is built without it and behaves exactly as before.
    * @param {boolean} [foot] wire in the ground-underfoot sense.
+   * @param {boolean} [whisker] wire in the rock-ahead sense.
    */
-  buildBrain(learn = null, ear = false, foot = false) {
+  buildBrain(learn = null, ear = false, foot = false, whisker = false) {
     // Float32Array copies so the net never mutates the stored genome.
     const weights = Float32Array.from(this.brainWeights);
     // The aux channels the brain gets are whichever senses are switched on, in
     // the order they are laid out in the genome. Creature.think() fills its aux
-    // vector by walking the same two flags in the same order.
-    const auxW = auxWeightsFor(this, ear, foot);
+    // vector by walking the same flags in the same order.
+    const auxW = auxWeightsFor(this, [ear, foot, whisker]);
     if (learn) {
       return new NeuralNet(
         BRAIN.inputs,
@@ -208,15 +245,16 @@ export class Genome {
    * escape a local optimum.
    *
    * Draw order is weights → body → (plasticity only if `mutatePlasticity`) →
-   * (ear only if `mutateEar`) → (foot only if `mutateFoot`). With those features
-   * off, every one of those blocks is skipped entirely, so the random draws
-   * exactly match pre-v1.4 and worlds are preserved.
+   * then the aux blocks in `AUX_ORDER`, each only if its world switched it on.
+   * With those features off, every one of those blocks is skipped entirely, so
+   * the random draws exactly match pre-v1.4 and worlds are preserved.
    * @param {import('./rng.js').RNG} rng
    * @param {number} rate per-gene probability of a mutation event
    * @param {number} strength stdev of the small nudge
    * @param {boolean} mutatePlasticity also mutate the plasticity genes
    * @param {boolean} mutateEar also mutate the ear genes
    * @param {boolean} mutateFoot also mutate the foot genes
+   * @param {boolean} mutateWhisker also mutate the whisker genes
    */
   mutate(
     rng,
@@ -224,7 +262,8 @@ export class Genome {
     strength = 0.15,
     mutatePlasticity = false,
     mutateEar = false,
-    mutateFoot = false
+    mutateFoot = false,
+    mutateWhisker = false
   ) {
     const data = Float32Array.from(this.data);
     const nudge = (i) => {
@@ -244,15 +283,13 @@ export class Genome {
     if (mutatePlasticity) {
       for (let i = WLEN; i < 2 * WLEN; i++) nudge(i);
     }
-    // Ear genes — likewise, only when there is anything to hear. Last in the
-    // order so that switching signalling on cannot disturb the draws above it.
-    if (mutateEar) {
-      for (let i = EAR_START; i < EAR_END; i++) nudge(i);
-    }
-    // Foot genes — last of all, so switching the ground sense on cannot disturb
-    // the draws for any block above it either.
-    if (mutateFoot) {
-      for (let i = FOOT_START; i < FOOT_END; i++) nudge(i);
+    // The aux senses — likewise, only when the world has switched each on, and
+    // in genome order after every block above, so that turning any one of them
+    // on cannot disturb a single draw belonging to the blocks before it.
+    const live = [mutateEar, mutateFoot, mutateWhisker];
+    for (let b = 0; b < AUX_ORDER.length; b++) {
+      if (!live[b]) continue;
+      for (let i = AUX_ORDER[b].from; i < AUX_ORDER[b].to; i++) nudge(i);
     }
     return new Genome(data);
   }
@@ -268,7 +305,8 @@ export class Genome {
       config.mutationStrength,
       config.plasticity,
       config.signalling,
-      config.groundSense
+      config.groundSense,
+      config.wallSense
     );
   }
 
@@ -287,27 +325,28 @@ export class Genome {
    * that predates that sense.
    * @param {boolean} [withEar] cross the ear genes too
    * @param {boolean} [withFoot] cross the foot genes too
+   * @param {boolean} [withWhisker] cross the whisker genes too
    */
-  static crossover(a, b, rng, withEar = false, withFoot = false) {
+  static crossover(a, b, rng, withEar = false, withFoot = false, withWhisker = false) {
     const len = a.data.length;
     const data = new Float32Array(len);
     const pick = (i) => {
       data[i] = rng.chance(0.5) ? a.data[i] : b.data[i];
     };
-    const copyOrPick = (from, to, live) => {
-      if (live) for (let i = from; i < to; i++) pick(i);
-      else data.set(a.data.subarray(from, to), from);
-    };
+    const live = [withEar, withFoot, withWhisker];
     for (let i = 0; i < EAR_START; i++) pick(i); // brain weights + plasticity
-    copyOrPick(EAR_START, EAR_END, withEar);
-    copyOrPick(FOOT_START, FOOT_END, withFoot);
+    for (let bi = 0; bi < AUX_ORDER.length; bi++) {
+      const block = AUX_ORDER[bi];
+      if (live[bi]) for (let i = block.from; i < block.to; i++) pick(i);
+      else data.set(a.data.subarray(block.from, block.to), block.from);
+    }
     for (let i = AUX_END; i < len; i++) pick(i); // body
     return new Genome(data);
   }
 
   /**
    * Genetic distance to another genome: mean absolute difference over the brain
-   * weights and body genes. Plasticity, ear and foot genes are deliberately excluded,
+   * weights and body genes. Plasticity and every aux sense block are deliberately excluded,
    * so a species is defined by its innate wiring and body — and so distance is
    * the same function it has always been, in every world, whichever of those two
    * features happens to be switched on. (Speciation thresholds, kin recognition

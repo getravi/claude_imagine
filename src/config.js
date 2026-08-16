@@ -160,6 +160,41 @@ export const DEFAULT_CONFIG = Object.freeze({
   // geometry is exact, not sampled.
   barrierOcclusion: false,
 
+  // The whisker (v1.102, opt-in, needs `barriers` to have anything to report):
+  // one scalar telling a creature how close the rock straight ahead of it is.
+  //
+  // v1.48 and v1.50 each closed with the same sentence — *nothing perceives the
+  // rock* — and it stood for fifty-three releases. The walls stop a body, and
+  // since v1.50 they stop a sense; what no creature has ever had is a way to
+  // know a wall is there before walking into it. So no behaviour could evolve
+  // around the rock: a creature finds a gate by sliding along stone until the
+  // stone runs out, which is physics doing the navigating.
+  //
+  // v1.33's lesson governs what to expect here: **perception does not create a
+  // pressure, it can only exploit one.** The ground sense found nothing because
+  // v1.23 had already measured the gradient it was offered at -0.003 — there was
+  // nothing to climb. The rock is the other case: v1.48 measured room changes
+  // falling 3-6x and lineages either side of a wall 18% further apart, so a wall
+  // demonstrably costs something to cross, and a creature that can tell rock
+  // from water before it arrives has something to gain. That is the difference
+  // this experiment turns on, and docs/SCIENCE.md is where it is settled.
+  //
+  // Like the ear (v1.20) and the foot (v1.33), the whisker has its own gene
+  // block outside the brain's weight vector, so switching it on costs zero
+  // random draws in any world that leaves it off, and the input reads exactly 0
+  // in a world with no rock in it at all.
+  wallSense: false,
+  // How far ahead the whisker reaches, in pixels. The sense is a proximity: 0
+  // at this range and beyond, 1 with rock against the nose.
+  //
+  // 60 px is a little over three tick-lengths of travel at `maxSpeed` — far
+  // enough that a creature has time to turn, short enough that it is a whisker
+  // and not a second eye. Sight already reaches 168 px (v1.81) and is the reach
+  // every carried contact rule inherits; a rock sense at that range would be
+  // making a navigational map, which is a different mechanic from feeling for a
+  // wall.
+  whiskerRange: 60,
+
   // Detritus (v1.27, opt-in): the ground remembers where things died. Food has
   // arrived from nowhere since v1.0 — v1.18 made the crop conditional on itself
   // and v1.23 on the ground, but a death still had no consequence for the pond

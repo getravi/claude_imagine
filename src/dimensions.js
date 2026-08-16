@@ -95,6 +95,7 @@ export const UNITS = Object.freeze({
   barrierThickness: "px",
   barrierGaps: "gate",
   barrierGapWidth: "px",
+  whiskerRange: "px",
 
   // --- Detritus ---
   detritusPerRadius: "nutrient/px",

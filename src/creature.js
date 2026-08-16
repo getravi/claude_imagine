@@ -12,7 +12,7 @@
 // offspring. Everything that looks like purpose is selection in disguise.
 
 import { wrapDelta, wrap, normalizeAngle, clamp, lerp } from "./vec.js";
-import { Genome, migrateGenomeData } from "./genome.js";
+import { Genome, migrateGenomeData, AUX_ORDER } from "./genome.js";
 import { NeatGenome } from "./neat.js";
 
 let NEXT_ID = 1;
@@ -45,19 +45,48 @@ export function buildBrainFor(genome, config) {
   const learn = config.plasticity
     ? { rate: config.learnRate, decay: config.learnDecay, clamp: config.weightClamp }
     : null;
-  return genome.buildBrain(learn, !!config.signalling, !!config.groundSense);
+  return genome.buildBrain(
+    learn,
+    !!config.signalling,
+    !!config.groundSense,
+    !!config.wallSense
+  );
 }
 
 /**
- * How much of a creature's steering the ground under it is currently deciding:
- * the mean absolute change in its turn and thrust commands between standing on
- * the flattest ground and the roughest, with every other sense held at what it
- * actually perceived this tick. On the same (-1, 1) scale as the motor commands,
- * so 0.3 means the ground is worth about 15% of the full range of both.
+ * Which aux channel a given sense occupies in this world's brains, or -1 when
+ * the world has it switched off.
  *
- * Exactly 0 when the creature has no ground sense, which is what makes it worth
- * showing: a readout that is non-zero with its mechanism off is not measuring
- * the mechanism.
+ * The channels are packed — only the senses that are on get a block — so a
+ * sense's index is a function of the flags below it in `AUX_ORDER`, not of its
+ * own position. Written down once because `groundSway` below spent one release
+ * asserting "the foot is the last aux channel", which was true for exactly as
+ * long as the foot *was* the last one: the whisker (v1.102) made that comment
+ * wrong, silently, in the only world where both senses are on.
+ * @param {object} config
+ * @param {string} name one of `AUX_ORDER`'s names
+ * @returns {number}
+ */
+export function auxChannel(config, name) {
+  let n = 0;
+  for (const block of AUX_ORDER) {
+    if (!config[block.flag]) continue;
+    if (block.name === name) return n;
+    n++;
+  }
+  return -1;
+}
+
+/**
+ * How much of a creature's steering one aux sense is currently deciding: the
+ * mean absolute change in its turn and thrust commands between that channel's
+ * two extremes, with every other sense held at what it actually perceived this
+ * tick. On the same (-1, 1) scale as the motor commands, so 0.3 means the sense
+ * is worth about 15% of the full range of both.
+ *
+ * Exactly 0 when the creature does not have the sense, which is what makes it
+ * worth showing: a readout that is non-zero with its mechanism off is not
+ * measuring the mechanism.
  *
  * It is a *hypothetical*, so it runs with learning suppressed — asking a plastic
  * brain what it would do somewhere else must not teach it anything.
@@ -66,19 +95,39 @@ export function buildBrainFor(genome, config) {
  * the wire is any use: `docs/SCIENCE.md` measures the same quantity against a
  * scrambled arm and finds selection indifferent to it.
  * @param {Creature} c
+ * @param {string} sense one of `AUX_ORDER`'s names
+ * @param {number} [lowValue] the channel's floor; the ceiling is always 1
  */
-export function groundSway(c) {
+export function auxSway(c, sense, lowValue = 0) {
   const brain = c.brain;
-  if (!c.config.groundSense || !brain.nAux) return 0;
+  if (!brain.nAux) return 0;
+  const k = auxChannel(c.config, sense);
+  if (k < 0) return 0;
   const n = brain.nAux;
-  // The foot is the last aux channel (see genome.js), whatever else is wired in.
   const lo = new Float32Array(n);
   const hi = new Float32Array(n);
-  for (let i = 0; i < n - 1; i++) lo[i] = hi[i] = c._aux[i];
-  hi[n - 1] = 1;
-  const flat = Float32Array.from(brain.forward(c._in, n === 1 ? 0 : lo, false));
-  const rough = brain.forward(c._in, n === 1 ? 1 : hi, false);
-  return (Math.abs(rough[0] - flat[0]) + Math.abs(rough[1] - flat[1])) / 2;
+  for (let i = 0; i < n; i++) lo[i] = hi[i] = c._aux[i];
+  lo[k] = lowValue;
+  hi[k] = 1;
+  const low = Float32Array.from(brain.forward(c._in, n === 1 ? lo[0] : lo, false));
+  const high = brain.forward(c._in, n === 1 ? hi[0] : hi, false);
+  return (Math.abs(high[0] - low[0]) + Math.abs(high[1] - low[1])) / 2;
+}
+
+/**
+ * The ground sense's sway: flattest ground against roughest.
+ * @param {Creature} c
+ */
+export function groundSway(c) {
+  return auxSway(c, "foot");
+}
+
+/**
+ * The whisker's sway: open water ahead against rock against the nose.
+ * @param {Creature} c
+ */
+export function wallSway(c) {
+  return auxSway(c, "whisker");
 }
 
 export class Creature {
@@ -136,6 +185,20 @@ export class Creature {
     // says nothing when there is nothing to say. Refreshed by sense().
     this.groundFeel = 0;
 
+    // How far the rock straight ahead is, in pixels, as the world last measured
+    // it: `Infinity` when there is none within the whisker's reach, and
+    // `Infinity` in every world where the whisker is off or there is no rock,
+    // because the ray is only ever cast when both are true. The raw distance
+    // rather than the normalised feel, so the one number the world computes is
+    // the one a reader can check against `whiskerRange`.
+    this.rockAhead = Infinity;
+
+    // What the whisker makes of that: 0 with nothing inside its reach, 1 with
+    // rock against the nose. Derived from `rockAhead`, so exactly 0 in a world
+    // with no walls in it — the same honest zero `groundFeel` reads on a pond
+    // with no terrain. Refreshed by sense().
+    this.wallFeel = 0;
+
     // Body traits decoded from body genes.
     this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
     // Metabolism gene scales base drain from 70%..130% of the world default.
@@ -177,7 +240,7 @@ export class Creature {
     this._in = new Float32Array(this.brain.nIn);
     // Scratch buffer for the auxiliary senses (see think()). Length 2 covers
     // both of them; the brain reads only as many as it was wired for.
-    this._aux = new Float32Array(2);
+    this._aux = new Float32Array(AUX_ORDER.length);
   }
 
   /**
@@ -250,6 +313,13 @@ export class Creature {
     const costSpan = (cfg.terrainRoughCost || 1) - 1;
     this.groundFeel = costSpan > 0 ? clamp((this.ground - 1) / costSpan, 0, 1) : 0;
 
+    // The rock ahead, normalised the way every other proximity in this vector is
+    // (`foodProx` and its siblings below): 1 at the nose, 0 at the reach. An
+    // out-of-range or absent wall is `Infinity`, which lands on 0 without a
+    // branch of its own.
+    const reach = cfg.whiskerRange;
+    this.wallFeel = reach > 0 ? clamp(1 - this.rockAhead / reach, 0, 1) : 0;
+
     // Helper: relative bearing (sin, cos) and proximity to a target.
     const rel = (t, dist) => {
       if (!t) return [0, 0, 0];
@@ -287,10 +357,11 @@ export class Creature {
   /**
    * Run the brain. Returns [turn, thrust, colourSignal], each in (-1, 1).
    *
-   * The auxiliary senses — what it hears, what it feels underfoot — live outside
-   * the input vector so the genome's weight block keeps the shape it has had
-   * since v1.0. They are gathered here in genome order, and only the ones this
-   * world has switched on, which is exactly how the brain was wired.
+   * The auxiliary senses — what it hears, what it feels underfoot, what its
+   * whisker is touching — live outside the input vector so the genome's weight
+   * block keeps the shape it has had since v1.0. They are gathered here in
+   * genome order, and only the ones this world has switched on, which is exactly
+   * how the brain was wired: `AUX_ORDER` is the one list both walks.
    */
   think() {
     const brain = this.brain;
@@ -299,6 +370,7 @@ export class Creature {
     let n = 0;
     if (cfg.signalling) this._aux[n++] = this.heard;
     if (cfg.groundSense) this._aux[n++] = this.groundFeel;
+    if (cfg.wallSense) this._aux[n++] = this.wallFeel;
     // A single channel is passed as a bare scalar, which is the arithmetic the
     // ear has always taken.
     return brain.forward(this._in, n === 1 ? this._aux[0] : this._aux);
@@ -436,7 +508,14 @@ export class Creature {
     // (fixed-topology or NEAT); both expose a static crossover and a
     // config-driven mutateForConfig, so this code is genome-agnostic.
     const base = mate
-      ? this.genome.constructor.crossover(this.genome, mate, rng, cfg.signalling, cfg.groundSense)
+      ? this.genome.constructor.crossover(
+          this.genome,
+          mate,
+          rng,
+          cfg.signalling,
+          cfg.groundSense,
+          cfg.wallSense
+        )
       : this.genome;
     const childGenome = base.mutateForConfig(rng, cfg);
     const offset = this.radius + 2;

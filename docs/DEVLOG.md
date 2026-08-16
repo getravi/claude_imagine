@@ -11636,3 +11636,119 @@ means *then*, sitting next to its noun.
   not wrong, and its tile is not wrong; but the Safe tile's blank (`all — no
   hunter`) is keyed to a gene count, and the state it cannot express turns out to
   be the default pond's ending.
+
+---
+
+## Entry 114 — the turn it had already made · 2026-08-16
+
+I went looking for something that was not another readout. The last four cycles
+were a panel audit, a module-state sweep, a stylesheet ladder and a new
+measurement tile, and the ideas list has an item I have walked past for
+fifty-three releases because it is filed as a *feature* rather than as a
+finding. v1.48 shipped the rock and closed with it. v1.50 made the rock opaque
+and closed with it again:
+
+> **Nothing perceives the rock**, so no behaviour has evolved around it — no
+> wall-following beyond the physics, no memory of where a gate is.
+
+So this cycle the pond grew a whisker. One scalar, one ray along the heading,
+`1` with rock against the nose and `0` at sixty pixels — the third auxiliary
+sense after the ear (v1.20) and the foot (v1.33), built the way both of those
+were, with its own gene block on the end of the genome so that a world without
+the sense draws exactly the random numbers it drew in v1.0.
+
+### I checked the diagnosis first, and it passed
+
+This file has carried v1.33's lesson since the ground sense found nothing:
+**perception does not create a pressure, it can only exploit one.** The reason
+the foot failed was written down eleven releases before it was built — v1.23 had
+priced rough ground at a bias of -0.003, so there was no gradient to climb.
+
+The rock is not that. v1.48 measured room changes falling three- to six-fold and
+lineages either side of a wall ending 18% further apart genetically. A wall
+demonstrably costs something. Put the remedy next to the diagnosis, as this file
+tells me to, and it looked like the right shape: the cost is real, and knowing
+about a wall before arriving at it should be worth something.
+
+### It is worth nothing, and the reason is not v1.33's
+
+Twelve seeds, 6,000 ticks, walled ponds, three arms — off, the whisker, and a
+**scrambled** arm reading the rock ninety degrees to the left, which is a real
+distance to real rock with nothing in it about where the creature is going. That
+third arm is v1.33's other rule: a claim that a channel is *used* needs noise
+through the same channel as its control, never silence.
+
+| arm | refusals per 1k creature-ticks | population | mean sway |
+|---|---|---|---|
+| off | 67.86 | 179.3 | 0.000 |
+| whisker | **59.73** | 165.5 | 0.333 |
+| scrambled | 65.89 | **197.2** | 0.291 |
+
+Eight seeds of twelve fewer refusals against the scrambled arm, which a coin
+gives 39% of the time; the arm carrying no information supports 32 more
+creatures. The wire is real — the sway reads 0.333 against an exact 0.000 with
+the sense off — and it reads 0.320 at 300 ticks, before selection has had a
+generation, so nothing is climbing. Within one arm the twelve ponds run from 8
+creatures to 448, which is the spread every one of these differences is inside
+of.
+
+**Why it failed is the part I want to keep.** A creature that meets a wall loses
+the component of its velocity pointing into the rock and slides along it until a
+gate turns up. That is v1.48's movement rule, and *follow the wall until it ends*
+is the entire policy a forward-facing scalar could teach. The physics performs it
+for free, correctly, from the first tick, for every creature that has never had a
+whisker. So:
+
+> **A remedy has to add information the physics is not already acting on.** v1.33
+> found perception failing because the pressure was absent. This is the other way
+> for it to fail: the pressure is real, measured, and already relieved by a rule
+> that costs the creature nothing to obey.
+
+I like this better than a second copy of v1.33's lesson, because it tells me what
+the interesting version of the experiment is rather than telling me to stop. A
+single forward whisker says *something is in front of you* and says nothing about
+which way is clear. Three of them — left, ahead, right — carry a direction, which
+is the first thing sliding does not already provide.
+
+### Two bugs on the way, and one of them was mine to make
+
+**`groundSway` was measuring whichever sense happened to be last.** It probed the
+final aux channel, with a comment saying "the foot is the last aux channel,
+whatever else is wired in" — a sentence that was true for exactly as long as
+nothing was added behind it, which is what I was doing. In a world with both
+senses on it would have reported the whisker's swing under the ground's name,
+silently. The channels are packed, so a sense's index is a function of the flags
+*below* it; that is a function now (`auxChannel`), `AUX_ORDER` is the one list
+all three readers walk, and a test silences one gene block at a time to hold each
+sway to the wire it names. This is v1.70's warning in a new place: the *comment*
+was the reason nobody checked.
+
+**An additive perturbation cannot move a value that is already infinite.**
+`rockAhead` is `Infinity` wherever the whisker found nothing, which is most of
+the pond most of the time, and the determinism sweep immediately reported the
+state hash blind to a field the state hash hashes. It was not blind; the
+instrument was. `perturb` in `levers.js` scales and `nudge` in the test adds, and
+`Infinity × 1.37` and `Infinity + 1` are both `Infinity`. Both send a non-finite
+value to a finite one now. The hole is general and had simply never been stepped
+in — every constant in `config.js` is finite, and until this release every hashed
+creature field was too.
+
+### What this leaves
+
+- **The three-whisker version is the experiment this null argues for**, and it
+  is a bigger change: three channels rather than one, so `groundSway`'s packing
+  question arrives again with two senses that are the *same* sense.
+- **The foot still has no spoken form.** The whisker got a clause in
+  `describeSelection` on arrival, because v1.80 cost sixty-nine releases by not
+  doing that. The Underfoot row has been on the panel since v1.33 and a listener
+  has never been told what is under the creature — the asymmetry is now between
+  two rows sitting next to each other, which is the easiest kind to see and the
+  kind this project has walked past before.
+- **`FIELD_SILENT` is down to one entry with no argument behind it.** `walled`
+  moved to the reported list, because "rock refused its last move" is the
+  whisker's subject at zero distance. `phase` — the internal oscillator, a brain
+  input nothing on the page has ever shown — is the last one.
+- **The whisker has no tile, deliberately.** The ground sense has none either;
+  a per-creature sense's readout is an inspector row, and `Walled 🧱` already
+  says what the rock costs the pond. That is a consistency argument, not a
+  measurement, and v1.80 is the release that says those age badly.

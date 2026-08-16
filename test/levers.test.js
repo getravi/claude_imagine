@@ -1,13 +1,13 @@
 // Tests for the constant sweep (v1.38) — is every number in config.js a lever?
 //
 // v1.36 asked this of the opt-in *flags* — thirteen at the time, and there are
-// nineteen opt-in flags now — and left the *numbers* unasked, which is where the
+// twenty opt-in flags now — and left the *numbers* unasked, which is where the
 // two known cases of a parameter doing nothing both came from:
 // `detritusPerRadius` clipped by a cell cap (v1.27) and `energyMax` sitting
 // above a threshold it could never be reached from (v1.29). Neither was visible
 // in the code. Both would have been caught here.
 //
-// The answer the sweep gives is yes, all eighty-four constants in `config.js`
+// The answer the sweep gives is yes, all eighty-five constants in `config.js`
 // are levers — but only once each is given a world where it can bite, and only
 // once the sweep can watch more than the simulation. See src/levers.js for the
 // four channels and for every exception's

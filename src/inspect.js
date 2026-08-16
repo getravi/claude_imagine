@@ -37,7 +37,7 @@
 // anything; `forward()` takes a learning flag for exactly that reason and
 // `test/inspect.test.js` pins it with plasticity on.
 
-import { groundSway } from "./creature.js";
+import { groundSway, wallSway } from "./creature.js";
 import { creatureReaches, sightWindow } from "./reach.js";
 
 /**
@@ -73,6 +73,31 @@ export function dietText(c, config) {
  */
 export function footText(c) {
   return `${Math.round(c.groundFeel * 100)}% rough — sways steering ${groundSway(c).toFixed(2)}`;
+}
+
+/**
+ * What this creature's whisker is touching, and how much of its steering that
+ * is deciding right now.
+ *
+ * Three states rather than two, because a distance and a miss are different
+ * readings and a percentage cannot say which it is: rock at a stated distance,
+ * or open water for the whole reach. The sway is `footText`'s second number one
+ * sense over — a hypothetical put to this creature's own brain, not a claim
+ * that the rock steers the pond.
+ *
+ * The last clause is `walled`, which `FIELD_SILENT` has named as unreported
+ * since v1.77: rock refused this creature's last move. It belongs here because
+ * it is the same subject at zero distance — the one reading the whisker cannot
+ * give, since a wall it is already against is a wall it has already hit.
+ * @param {object} c
+ * @param {object} config
+ */
+export function whiskerText(c, config) {
+  const sway = wallSway(c).toFixed(2);
+  const where = Number.isFinite(c.rockAhead)
+    ? `rock ${c.rockAhead.toFixed(1)}px ahead`
+    : `open water for ${config.whiskerRange}px`;
+  return `${where} — sways steering ${sway}${c.walled ? " · blocked last move" : ""}`;
 }
 
 /**
@@ -249,6 +274,15 @@ export function creatureFacts(c, config) {
   if (config.groundSense) {
     facts.push({ key: "foot", term: "Underfoot 👣", value: footText(c), wide: true, live: true });
   }
+  if (config.wallSense) {
+    facts.push({
+      key: "whisker",
+      term: "Whisker 📡",
+      value: whiskerText(c, config),
+      wide: true,
+      live: true,
+    });
+  }
   if (config.disease) {
     facts.push({
       key: "health",
@@ -282,6 +316,9 @@ export const FIELD_REPORTS = {
   metabolismScale: "the Metabolism row",
   carnivory: "the Diet row",
   groundFeel: "the Underfoot row (groundSense)",
+  rockAhead: "the Whisker row (wallSense) — the distance, or the word for a miss",
+  wallFeel: "the Whisker row (wallSense) — rockAhead normalised, and what the brain is given",
+  walled: "the Whisker row (wallSense) — rock refused its last move",
   speciesId: "the Species link and the ancestry pips",
   genome: "the inherited-brain figure — the strip, or the evolved network diagram",
   brain: "the learned-brain figure (plasticity)",
@@ -316,7 +353,7 @@ export const FIELD_SILENT = {
   lastBiteAge: "drawn — the attack flash on the canvas",
   _in: "scratch input buffer, reused every tick",
   _aux: "scratch buffer for the auxiliary senses",
-  // The two with no argument.
-  walled: "UNREPORTED — rock refused its last move (v1.48); reaches stats.walled and no per-creature surface",
+  // The one with no argument. `walled` was the other until v1.102 gave the
+  // whisker a row and the rock a place to say so.
   phase: "UNREPORTED — the internal oscillator, a brain input nothing on the page has ever shown",
 };

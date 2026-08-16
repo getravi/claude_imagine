@@ -2109,7 +2109,7 @@ to 3 × 10⁻¹² at t20,000 — until one of them flips a decision.
 Recording a hash for every configuration is not possible, but two claims about
 *all* of them are, and both are now tests. With every opt-in flag explicitly
 switched off, the full state hash is identical to the default world's — for all
-nineteen opt-in flags, read out of `DEFAULT_CONFIG` so a future feature is
+twenty opt-in flags, read out of `DEFAULT_CONFIG` so a future feature is
 covered the day its flag lands. And with each switched on, the world must
 actually change (the v1.27 rule: sweep every lever once purely to check it *is*
 a lever).
@@ -2245,13 +2245,13 @@ for (let i = 0; i < 40000; i++) {
 ## Is every number in `config.js` a lever?
 
 v1.36 asked this of the opt-in **flags** — thirteen of them at the time, and
-there are nineteen opt-in flags now — and left the **numbers** unasked, which is
+there are twenty opt-in flags now — and left the **numbers** unasked, which is
 where both of this project's known dead
 parameters came from. v1.27 found `detritusPerRadius` clipped by a cell cap that
 silently discarded a third of every large carcass. v1.29 found `energyMax`
 sitting above a threshold it could never be reached from. Neither was visible in
 the code; both were found by moving a number and watching for a world that
-didn't. So `src/levers.js` moves every one of the eighty-four constants in
+didn't. So `src/levers.js` moves every one of the eighty-five constants in
 `config.js`, and `test/levers.test.js` keeps doing it.
 
 The answer is **yes, all of them** — but getting there took two corrections
@@ -4383,7 +4383,7 @@ cannot be eaten by anything this world is capable of growing. Not
 disadvantaged; ineligible. The size range starts at 3.5 px, so the refuge is the
 top 16% of it, and it is absolute.
 
-`src/levers.js` sweeps the eighty-four constants in `config.js` one at a time
+`src/levers.js` sweeps the eighty-five constants in `config.js` one at a time
 and cannot see
 this, because what the pair decides is a *conjunction*: move either number alone
 and the sweep sees a lever with the effect it expects, while the boundary the
@@ -7319,6 +7319,157 @@ of one pond and across the whole ±50% range `src/levers.js` can move
 `preySizeRatio` through, including the sub-1.0 regime where a hunter may eat a
 body its own size and the self-exclusion stops being arithmetic and becomes a
 decision.
+
+## The wall it can feel, and the turn it already made (v1.102)
+
+Two releases closed with the same sentence and nobody acted on it for
+fifty-three versions. v1.48 shipped rock — four wrapped walls with gates,
+cutting the torus into rooms — and left this behind:
+
+> **Nothing perceives the rock**, so no behaviour has evolved around it — no
+> wall-following beyond the physics, no memory of where a gate is.
+
+v1.50 made the walls opaque and repeated it: *the sense, not the shadow — a
+creature finds a gate by sliding, exactly as in v1.48.*
+
+`wallSense` is that sense. It is the third auxiliary channel, built exactly as
+the ear (v1.20) and the foot (v1.33) were: its own gene block on the end of the
+genome, drawn only in a world that has the sense on, so switching it on costs
+zero random draws anywhere else. Each tick, before it moves, a creature casts one
+ray along its heading and is told how close the first rock is —
+`1 − distance / whiskerRange`, so 1 with rock against the nose, 0 at 60 px and
+beyond, and exactly 0 in a pond with no walls in it.
+
+### What v1.33 said to check first, and why it looked safe
+
+The ground sense found nothing, and this file has carried the reason ever since:
+
+> **Perception does not create a pressure; it can only exploit one.** v1.23
+> measured the terrain movement cost at a ground bias of -0.003 — rough ground
+> barely costs anything — … there was never a gradient for it to climb.
+
+So the first question is whether the rock is a gradient the terrain was not, and
+on the face of it, it is. v1.48 measured room changes falling **three- to
+six-fold** with walls in the pond, and lineages either side of a wall ending
+about **18% further apart** genetically. A wall demonstrably costs something to
+cross. A creature that can tell rock from water before it arrives should have
+something to gain.
+
+### The three arms
+
+Twelve seeds, 6,000 ticks, walled ponds. Three arms, because v1.33's other rule
+is that a claim about a *channel* needs noise through the same channel as its
+control, never silence:
+
+- **off** — the sense switched off.
+- **whisker** — the sense reading the rock straight ahead.
+- **scrambled** — the sense reading the rock **ninety degrees to the left**: a
+  real distance to real rock, drawn from very nearly the same distribution,
+  carrying nothing about where this creature is going.
+
+The statistic is `stats.walled` per thousand creature-ticks — how often rock
+refuses a move. Walking into a wall is the thing the sense is for, so if it is
+worth anything at all it is worth it here.
+
+| arm | refusals per 1k creature-ticks | population (last 1,000 ticks) | mean sway |
+|---|---|---|---|
+| off | 67.86 | 179.3 | 0.000 |
+| whisker | **59.73** | 165.5 | 0.333 |
+| scrambled | 65.89 | **197.2** | 0.291 |
+
+| comparison | fewer refusals | more | level |
+|---|---|---|---|
+| whisker vs off | 8/12 | 4 | 0 |
+| whisker vs scrambled | 8/12 | 4 | 0 |
+| scrambled vs off | 7/12 | 5 | 0 |
+
+Eight of twelve is what a coin gives 39% of the time. The arm carrying *no
+information* beats the arm carrying it on the population, by 32 creatures, which
+is a difference no mechanism explains and every seed-to-seed spread here can
+produce on its own: within one arm the twelve ponds run from 8 to 448 creatures.
+
+The wire is real and is doing nothing. `wallSway` — the swing in a creature's
+turn and thrust between open water and rock against the nose, put to its own
+brain with learning suppressed — reads **0.333** in the whisker arm and exactly
+**0.000** with the sense off, so the channel reaches the motor commands. It reads
+0.320 at 300 ticks, before selection has had a generation to work on it, and
+0.333 at 6,000; the scrambled arm goes 0.333 → 0.291 over the same window. Both
+wander, neither climbs, which is v1.33's warning that on-vs-off cannot tell
+selection from drift, arriving on the third sense.
+
+### Why the gradient did not translate, and the sharper rule
+
+The diagnosis check passed and the remedy still failed, which is the part worth
+keeping. The rock *is* expensive to cross; what the whisker adds is not
+information the pond can act on that it was not already acting on.
+
+A creature that meets a wall loses the component of its velocity pointing into
+the rock and slides along it until a gate turns up (v1.48). That behaviour —
+follow the wall until it ends — is the whole of what a scalar "wall ahead" could
+buy, and the physics performs it for free, correctly, from the first tick, for
+every creature that has never had a whisker. A forward whisker says *something is
+in front of you* and says nothing about which way is clear, so the best policy it
+supports is "turn when blocked", and being blocked already turns you.
+
+> **A remedy has to add information the physics is not already acting on.** v1.33
+> found perception failing because the pressure was absent. This is the other
+> way for it to fail: the pressure is real, measured, and *already relieved* by a
+> rule that costs the creature nothing to obey. Before adding a sense, ask not
+> only whether there is a gradient but what the pond currently does at the bottom
+> of it — if the existing physics already implements the policy the sense would
+> teach, the sense is a second copy of an answer.
+
+What that leaves is a specific, testable next step rather than a shrug: the
+whisker is one scalar and gives no *direction*. Two or three whiskers — left,
+ahead, right — would carry which way is clear, which is the first thing the
+sliding rule does not already provide. That is a different experiment and a
+bigger one, and this null is what says it is the interesting version.
+
+### Reproducing it
+
+```bash
+node -e '
+  Promise.all([import("./src/world.js"), import("./src/config.js"),
+               import("./src/creature.js")]).then(([W, C, Cr]) => {
+    const real = Cr.Creature.prototype.sense;
+    let scramble = false, rock = null;
+    Cr.Creature.prototype.sense = function (...a) {
+      if (scramble && rock) {
+        const g = this.config, ang = this.heading + Math.PI / 2;
+        const t = rock.firstHit(this.x, this.y, Math.cos(ang) * g.whiskerRange,
+                                Math.sin(ang) * g.whiskerRange);
+        this.rockAhead = t <= 1 ? t * g.whiskerRange : Infinity;
+      }
+      return real.apply(this, a);
+    };
+    for (const arm of ["off", "whisker", "scrambled"]) {
+      scramble = arm === "scrambled";
+      for (const seed of [7, 13, 21, 44, 51, 77, 88, 128, 256, 314, 512, 1024]) {
+        const cfg = C.makeConfig({ seed, barriers: true, wallSense: arm !== "off" });
+        const w = new W.World(cfg);
+        let ct = 0;
+        for (let t = 0; t < 6000; t++) { rock = w.barriers; w.step(); ct += w.creatures.length; }
+        const sway = w.creatures.map((c) => Cr.wallSway(c));
+        console.log(arm, seed, (1000 * w.stats.walled / ct).toFixed(2),
+                    w.creatures.length,
+                    (sway.reduce((x, y) => x + y, 0) / (sway.length || 1)).toFixed(3));
+      }
+    }
+  });'
+```
+
+```bash
+node --test test/wallSense.test.js
+```
+
+Sixteen tests, and the ones that matter are not about the finding. Three pin the
+draw sites — a founder, a mutation and a crossover with the sense off must
+consume exactly the random numbers they consumed before the gene block existed —
+one pins the exact no-op (in open water the reading is 0, and `w × 0` is exactly
+0, so a creature that can feel rock thinks precisely what a creature that cannot
+thinks), and one checks the reported distance against `barriers.blocked()` rather
+than against a second copy of the geometry: just past it is rock, just before it
+is not, for every creature in a stepped pond.
 
 ## What this model deliberately leaves out
 

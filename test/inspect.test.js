@@ -50,7 +50,7 @@ const keysOf = (c, cfg) => creatureFacts(c, cfg).map((f) => f.key);
 test("every field a creature carries is either reported or named as silent", () => {
   // Warmed rather than fresh: a completeness list read off a constructor is
   // exactly as good as the moment it is taken at, and six of `Stats`'s fields
-  // taught this file that lesson in v1.59. Every one of a creature's 33 is set
+  // taught this file that lesson in v1.59. Every one of a creature's 35 is set
   // in its constructor today; stepping the pond is what makes that a finding
   // rather than an assumption.
   const world = new World(makeConfig(ALL_ON));
@@ -79,9 +79,9 @@ test("every field a creature carries is either reported or named as silent", () 
 
   // The count is pinned so that a release which quietly stops showing something
   // has to say so here first.
-  assert.equal(Object.keys(FIELD_REPORTS).length, 18);
-  assert.equal(Object.keys(FIELD_SILENT).length, 15);
-  assert.equal(Object.getOwnPropertyNames(c).length, 33);
+  assert.equal(Object.keys(FIELD_REPORTS).length, 21);
+  assert.equal(Object.keys(FIELD_SILENT).length, 14);
+  assert.equal(Object.getOwnPropertyNames(c).length, 35);
 });
 
 test("a mechanic that is off gets no row at all", () => {

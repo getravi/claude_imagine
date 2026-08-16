@@ -97,6 +97,7 @@ function parseHash() {
   if (p.has("feel")) o.groundSense = p.get("feel") === "1";
   if (p.has("rock")) o.barriers = p.get("rock") === "1";
   if (p.has("dark")) o.barrierOcclusion = p.get("dark") === "1";
+  if (p.has("whisk")) o.wallSense = p.get("whisk") === "1";
   if (p.has("fin")) o.deathIsFinal = p.get("fin") === "1";
   if (p.has("ord")) o.shuffleTurnOrder = p.get("ord") === "1";
   if (p.has("body")) o.bodyCollision = p.get("body") === "1";
@@ -132,6 +133,7 @@ function syncHash() {
   p.set("feel", config.groundSense ? "1" : "0");
   p.set("rock", config.barriers ? "1" : "0");
   p.set("dark", config.barrierOcclusion ? "1" : "0");
+  p.set("whisk", config.wallSense ? "1" : "0");
   p.set("fin", config.deathIsFinal ? "1" : "0");
   p.set("ord", config.shuffleTurnOrder ? "1" : "0");
   p.set("body", config.bodyCollision ? "1" : "0");
@@ -272,6 +274,7 @@ function syncControlsFromConfig() {
   setToggle("toggle-groundsense", config.groundSense);
   setToggle("toggle-barriers", config.barriers);
   setToggle("toggle-occlusion", config.barrierOcclusion);
+  setToggle("toggle-whisker", config.wallSense);
   setToggle("toggle-deathfinal", config.deathIsFinal);
   setToggle("toggle-turnorder", config.shuffleTurnOrder);
   setToggle("toggle-bodies", config.bodyCollision);
@@ -1689,6 +1692,17 @@ function wireControls() {
     // drawn if it was born into a world with the sense on, so switching it on
     // mid-run gives most of the pond a silent one and leaves the work to their
     // descendants' mutations.
+    for (const c of world.creatures) c.brain = buildBrainFor(c.genome, config);
+    syncHash();
+  });
+  $("toggle-whisker").checked = config.wallSense;
+  $("toggle-whisker").addEventListener("change", (e) => {
+    config.wallSense = e.target.checked;
+    // Rebuild every living brain so the whisker is wired in (or unwired) at
+    // once, exactly as the ear and the foot are — and with the same caveat: a
+    // creature born into a world without the sense carries a silent gene block,
+    // so switching it on mid-run hands most of the pond a numb whisker and
+    // leaves the work to their descendants' mutations.
     for (const c of world.creatures) c.brain = buildBrainFor(c.genome, config);
     syncHash();
   });

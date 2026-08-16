@@ -4,6 +4,99 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.102.0] — 2026-08-16
+
+Two releases closed with the same sentence and neither was acted on. v1.48
+shipped rock — four wrapped walls with gates, cutting the torus into rooms — and
+left behind *nothing perceives the rock, so no behaviour has evolved around it*.
+v1.50 made the walls opaque and repeated it: *the sense, not the shadow — a
+creature finds a gate by sliding, exactly as in v1.48.* That stood for
+fifty-three releases.
+
+The whisker is that sense, and the result is the second null of its kind. The
+wire reaches the motor commands (`0.333`, and exactly `0.000` with the sense
+off); against a scrambled arm reading the rock ninety degrees to the left,
+refused moves fall on **eight seeds of twelve**, which is what a coin gives 39%
+of the time, and the arm carrying no information supports the larger population.
+
+v1.33's diagnosis does not explain it. That release found perception useless
+because there was no gradient — v1.23 had priced rough ground at -0.003. Here the
+gradient is real and measured: v1.48 found room changes falling three- to
+six-fold and lineages 18% further apart either side of a wall. The remedy failed
+anyway, and the reason is that **a creature that meets a wall already loses the
+component of its velocity pointing into the rock and slides along it until a gate
+turns up.** Follow-the-wall-until-it-ends is the whole of what a scalar "rock
+ahead" can buy, and the physics has performed it for free since v1.48. The sense
+is a second copy of an answer the pond already had.
+
+### Added
+
+- **The whisker (`wallSense`, off by default)** — the third auxiliary sense,
+  built exactly as the ear (v1.20) and the foot (v1.33): one gene per hidden
+  neuron in its own block on the end of the genome, drawn, mutated and crossed
+  **only** in a world that has the sense on, so a pond that leaves it off draws
+  the random numbers it has drawn since v1.0. Each tick, before it moves, a
+  creature casts one ray along its heading through `barriers.firstHit` — the same
+  exact geometry the vision overlay plots — and reads
+  `1 − distance / whiskerRange`. In open water the reading is 0 and `w × 0` is
+  exactly 0, so a creature that can feel rock thinks precisely what one that
+  cannot thinks until there is rock to feel.
+- **`whiskerRange: 60`** — how far ahead it reaches, a little over three
+  tick-lengths of travel. Sight reaches 168 px (v1.81); a rock sense at that
+  range would be drawing a map, which is a different mechanic.
+- **The `Whisker 📡` inspector row and a spoken clause**, so the reader and the
+  listener get the same three states on arrival rather than forty-six releases
+  later (v1.77's finding, v1.101's habit). A distance and a miss are different
+  readings and a percentage cannot say which is which, so the row says
+  `rock 23.4px ahead` or `open water for 60px`.
+- **`test/wallSense.test.js`, sixteen tests.** Three pin the draw sites, one pins
+  the exact no-op, one checks the reported distance against `barriers.blocked()`
+  rather than against a second copy of the geometry, and one is about the bug
+  this cycle nearly shipped — see below.
+- **`docs/SCIENCE.md`** — the three arms, the sign counts, and the rule the null
+  leaves: *a remedy has to add information the physics is not already acting on.*
+
+### Fixed
+
+- **`groundSway` was measuring whichever sense happened to be last.** It probed
+  the final aux channel with a comment saying "the foot is the last aux channel,
+  whatever else is wired in" — true for exactly as long as the foot *was* last,
+  and this release put a channel behind it. In a world with both senses on it
+  would have reported the whisker's swing and called it the ground's, silently,
+  in the only world where anyone could have noticed. The channels are packed, so
+  a sense's index is a function of the flags *below* it: `auxChannel(config,
+  name)` computes it, `AUX_ORDER` in `genome.js` is the single list all three
+  readers walk, and a test silences one gene block at a time to hold each sway to
+  the wire it names.
+- **An additive perturbation cannot move a value that is already infinite.**
+  `creature.rockAhead` is `Infinity` wherever the whisker found nothing, which is
+  most of the pond most of the time, and both state sweeps report a hashed field
+  as invisible when they cannot move it: `src/levers.js`'s `perturb` (which
+  `src/statesweep.js` perturbs live state with) and `test/determinism.test.js`'s
+  `nudge` both scale or add, and neither could. Both send a non-finite value to a
+  finite one now. The hole was general and this is the first field to fall in it.
+
+### Changed
+
+- **`auxWeightsFor` and the three draw sites are a loop over one list.** Two
+  senses could be written out by hand; the third is where the pairwise form
+  starts costing a case per sense, and it is the form that produced the
+  `groundSway` bug one file over.
+- **The counts in prose**, as `test/prosecounts.test.js` requires of the release
+  that grows a collection: eighty-five constants in `config.js`, twenty opt-in
+  flags, twenty-one reported creature fields against fourteen silent ones — and
+  `walled` moves from the silent list to the reported one, because "rock refused
+  its last move" is the whisker's subject at zero distance. `FIELD_SILENT` is
+  down to one entry with no argument behind it.
+
+### Notes
+
+- Determinism: with the sense off, a walled world is bit-for-bit what it was —
+  all six channels, 1,500 ticks (`assertUnaffected`). The default pond is
+  bit-for-bit what it was in v1.3.0; `test/fingerprint.test.js` holds it. The
+  genome is twelve floats longer and not one of them is drawn unless the flag is
+  on. 1,004 tests green.
+
 ## [1.101.0] — 2026-08-16
 
 Two tiles have counted this pond against the reach of predation, and both are

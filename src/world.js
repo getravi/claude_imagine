@@ -202,7 +202,15 @@ export class World {
       }
     } else if (this.barriers) {
       this.barriers = null;
-      for (const c of this.creatures) c.walled = false;
+      for (const c of this.creatures) {
+        c.walled = false;
+        // The whisker's reading is the last one taken through a field that no
+        // longer exists. Cleared here rather than left to the next `sense()`,
+        // for `syncTerrain`'s reason one field over: a creature stepped outside
+        // a world at all must read the same as one in a world without rock.
+        c.rockAhead = Infinity;
+        c.wallFeel = 0;
+      }
     }
     if (this.food) this.food.barriers = this.barriers;
   }
@@ -214,7 +222,7 @@ export class World {
     // the RNG stream — and thus every existing world — is unchanged.
     const genome = cfg.evolvableTopology
       ? NeatGenome.random(this.rng)
-      : Genome.random(this.rng, cfg.signalling, cfg.groundSense);
+      : Genome.random(this.rng, cfg.signalling, cfg.groundSense, cfg.wallSense);
     // The two draws happen either way, and the ejection that may follow costs
     // none: a founder that lands in rock is moved to the nearest open ground
     // rather than re-rolled, so the stream is identical in both kinds of world.
@@ -453,6 +461,13 @@ export class World {
     // could state.
     const rock = cfg.barrierOcclusion ? this.barriers : null;
 
+    // The rock again, under the other flag that reads it: the whisker (v1.102).
+    // Deliberately *not* gated on `barrierOcclusion` — a wall a creature can see
+    // through is still a wall it cannot swim through, and the whisker is about
+    // the second of those. Null unless the sense is on and this world has walls,
+    // so a pond without both casts no ray and pays for nothing.
+    const whisker = cfg.wallSense ? this.barriers : null;
+
     // 2. Sense, think, act, in the order `_turnOrder()` hands them over — which
     // is `this.creatures` itself unless this world has asked for a shuffle.
     for (const c of this._turnOrder()) {
@@ -580,6 +595,19 @@ export class World {
       // moves so the bill doesn't depend on where in the update order it sits.
       // Untouched — and therefore exactly 1 — in a world without terrain.
       if (this.terrain) c.ground = this.terrain.costFactor(c.x, c.y);
+      // What the whisker is touching, read on the same terms: before it moves,
+      // and only in a world that has both the sense and something to sense.
+      // `firstHit` returns a fraction of the ray it was given, so scaling by the
+      // reach turns it back into pixels; a miss is `Infinity` and stays one.
+      if (whisker) {
+        const t = whisker.firstHit(
+          c.x,
+          c.y,
+          Math.cos(c.heading) * cfg.whiskerRange,
+          Math.sin(c.heading) * cfg.whiskerRange
+        );
+        c.rockAhead = t <= 1 ? t * cfg.whiskerRange : Infinity;
+      }
       c.sense(
         nf,
         nf ? Math.sqrt(nfD2) : Infinity,

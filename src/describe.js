@@ -452,6 +452,18 @@ export function describeSelection(c, config, path = null, reach = false) {
     if (c.infected) bits.push("sick");
     else if (c.immune) bits.push("immune");
   }
+  // The whisker, said the way the panel's row says it (v1.102). A distance and
+  // a miss are different readings and both are worth a word: the sense exists to
+  // tell those two apart, so a listener who only ever heard the number would be
+  // told the pond is full of walls. Gated on the flag, like every clause above:
+  // a world without the sense says nothing about rock here.
+  if (config.wallSense) {
+    bits.push(
+      Number.isFinite(c.rockAhead)
+        ? `rock ${rate(c.rockAhead)} pixels ahead`
+        : "open water ahead"
+    );
+  }
   const where = `in ${regionOf(c.x, c.y, config)} of the pond`;
   const said = `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
   const clauses = [pathPhrase(path), reach ? reachPhrase(c.radius, config) : ""].filter(Boolean);
