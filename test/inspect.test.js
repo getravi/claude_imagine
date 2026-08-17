@@ -2,8 +2,8 @@
 //
 // Three claims, in order of how badly they fail.
 //
-//   1. **Completeness.** A creature carries 33 own properties. The panel is the
-//      only surface in this project whose subject is a single object, so "what
+//   1. **Completeness.** There are thirty-five fields of a creature. The panel
+//      is the only surface in this project whose subject is a single object, so "what
 //      has this view never heard of?" has an exact answer here rather than an
 //      inventory — and the answer is checked against a live creature, not
 //      against my reading of `creature.js` (v1.59: enumerate a class from the
@@ -78,9 +78,13 @@ test("every field a creature carries is either reported or named as silent", () 
   }
 
   // The count is pinned so that a release which quietly stops showing something
-  // has to say so here first.
-  assert.equal(Object.keys(FIELD_REPORTS).length, 21);
-  assert.equal(Object.keys(FIELD_SILENT).length, 14);
+  // has to say so here first. v1.103 moved three of them and the split is the
+  // record of it: `_in` and `_aux` were filed as scratch while both sways are
+  // functions of them, and `wallFeel` was filed as reported by a row that never
+  // mentions it. Membership was all this test could check — `test/registers.test.js`
+  // is the one that derives the verdict rather than reading the list.
+  assert.equal(Object.keys(FIELD_REPORTS).length, 22);
+  assert.equal(Object.keys(FIELD_SILENT).length, 13);
   assert.equal(Object.getOwnPropertyNames(c).length, 35);
 });
 

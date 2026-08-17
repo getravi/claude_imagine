@@ -4,6 +4,97 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.103.0] — 2026-08-17
+
+A selected creature is described twice. The inspector renders a fact grid and
+the live region says a sentence, and they are two renderings of one subject
+assembled out of two hand-written lists of clauses gated by two hand-written
+sets of `if`s. Every asymmetry between them found so far was found by somebody
+looking: v1.77 discovered that `describeSelection()` had said *sick* and
+*immune* since v1.31 about a panel that said neither, forty-six releases apart;
+v1.102 gave the whisker a row and a clause in one cycle so the pair could not
+part, and closed by naming the next one — `Underfoot` has been on the panel
+since v1.33 and a listener has never been told what a creature is standing on.
+
+This is the sweep that does not need somebody to look. `src/registers.js` is
+`statesweep.js` pointed at text: move one field of one creature, render both,
+and see which rendering notices. It found the foot and the voice missing from
+the sentence, and it found two entries in the panel's own coverage table that
+were **wrong in opposite directions** — `wallFeel` filed as reported by a row
+that never mentions it, and `_in` and `_aux` filed as scratch while both of the
+panel's sway numbers are functions of them. That table has been hand-typed
+since v1.77 and was checked for *membership* only, which is a check a wrong
+entry passes.
+
+### Added
+
+- **`src/registers.js`** — the register sweep. `readingOf()` is the grid's text,
+  `hearingOf()` the sentence in its fullest form, and `fieldRegisters()` moves
+  every perturbable site a creature carries and reports which of the two moved.
+  It reuses `statesweep.js`'s walker and `levers.js`'s perturbation rather than
+  copying either, so the three sweeps in this project disagree about nothing. A
+  pure observer: it restores every field it touches, and a test holds that a
+  swept world hashes exactly as it did.
+- **`FIELD_SPOKEN` and `FIELD_UNSPOKEN` in `describe.js`** — the coverage table
+  the sentence has never had. Thirteen fields spoken, twenty-two not, each
+  silence with its reason, and two of the reasons say `UNSPOKEN` because they
+  are choices nobody has measured (`phase`, and `walled`).
+- **`FIELD_OFF_GRID` in `inspect.js`** — v1.77 wrote "four of them are said by
+  something that is not a row" as a comment, and a comment cannot be tested
+  against. As data it is the missing half of the claim: everything in
+  `FIELD_REPORTS` and not in here must move the grid's text when it moves.
+- **The ground and the voice, said out loud.** `on ground 46% rough` closes
+  v1.102's own leave-behind; `calling 1.00, hearing nothing` closes its sibling,
+  the `Voice 📣` row, which has shown both halves since v1.77 while the sentence
+  said neither. Both gated on their flag, both silent in the default pond, and
+  both quoting the number the row quotes — a test parses the row and looks for
+  its digits in the sentence.
+- **`test/registers.test.js`, ten tests.** The load-bearing one is general
+  rather than particular: **a flag that gates a row gates a clause**, checked
+  against every boolean in `DEFAULT_CONFIG` rather than against the four that
+  gate one today. That is the class v1.33, v1.77 and v1.102 are three instances
+  of.
+
+### Fixed
+
+- **`wallFeel` was declared reported and is not.** The `Whisker 📡` row prints
+  `rockAhead` itself and a sway taken out of `_aux`, so no text on the panel is
+  a function of the field the table named — an entry written one release ago,
+  by the release that added the row. It is a declared silence now, with the
+  reason and the release that found it.
+- **`_in` and `_aux` were declared scratch and are read.** `auxSway()` holds
+  every *other* sense at what the creature actually perceived, so both sway
+  numbers are functions of the whole buffer. The mirror image of the entry
+  above, in the other list.
+- **`docs/ARCHITECTURE.md` was outside `test/prosecounts.test.js`'s domain** —
+  the map of every module in the project, unread by the sweep whose subject is
+  stale counts, since the day that sweep was written. It was carrying two: the
+  books' channel described as hashing `world.stats`' *forty-three* own
+  properties (it is fifty-six, and has been since v1.89) and a creature's field
+  count at 33 (it is thirty-five, and has been since v1.102). This is v1.88's
+  finding again — a domain that is a list somebody typed has an exclusion
+  nobody wrote down.
+- **The creature's field count was invisible to that sweep twice over**, and
+  the second reason is worth more than the first: it was written in **digits**
+  in all three places, and the matcher reads number *words*. Spelled out now,
+  with a claim row of its own, so the next release to add a field to a creature
+  fails a test rather than leaving three documents wrong.
+
+### Changed
+
+- **`test/prosecounts.test.js` closes the class, not the instance.** Adding the
+  missing document fixes today; a new assertion holds that every markdown file
+  in the repository is either in the domain or in `NOT_LIVING` with a reason,
+  so there is no third state a living document can arrive in. `CONTRIBUTING.md`
+  came in with `ARCHITECTURE.md`.
+
+### Notes
+
+- Determinism: untouched. Both renderings are pure observers, the sweep restores
+  what it moves, and the default pond is bit-for-bit what it was in v1.3.0 —
+  `test/fingerprint.test.js` holds it. Neither new clause exists in a world with
+  its flag off, which is the default pond. 1,016 tests green.
+
 ## [1.102.0] — 2026-08-16
 
 Two releases closed with the same sentence and neither was acted on. v1.48

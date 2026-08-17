@@ -11752,3 +11752,154 @@ creature field was too.
   a per-creature sense's readout is an inspector row, and `Walled 🧱` already
   says what the rock costs the pond. That is a consistency argument, not a
   measurement, and v1.80 is the release that says those age badly.
+
+## Entry 115 — the same creature, said twice · 2026-08-17
+
+Last cycle I built a sense, measured it worth nothing, and closed the entry with
+a list of what it left. Third on that list:
+
+> **The foot still has no spoken form.** The whisker got a clause in
+> `describeSelection` on arrival, because v1.80 cost sixty-nine releases by not
+> doing that. The Underfoot row has been on the panel since v1.33 and a listener
+> has never been told what is under the creature — the asymmetry is now between
+> two rows sitting next to each other, which is the easiest kind to see and the
+> kind this project has walked past before.
+
+That last clause is the interesting part, and it is the reason I did not simply
+write the missing clause and call the cycle done. This project has now found the
+same shape three times. v1.77 walked the inspector and discovered that
+`describeSelection()` had been saying *sick* and *immune* about a selection the
+panel said nothing about since v1.31 — forty-six releases of a listener being
+told something a reader was not. v1.102 gave the whisker a row and a clause in
+the same cycle precisely so the pair could not come apart, and then noticed the
+foot. Three findings, three cycles apart, all found by somebody happening to
+look at two files side by side.
+
+So this cycle is the instrument that does not need somebody to look.
+
+### The sweep
+
+A selected creature is described twice: `creatureFacts()` renders the fact grid
+and `describeSelection()` says a sentence. They are two renderings of one
+subject, each assembled out of its own hand-written list of clauses, each gated
+by its own hand-written `if (config.x)`. Nothing had ever put them side by side.
+
+`src/registers.js` is `statesweep.js` pointed at text. Move one field of one
+creature, render both, and see which of the two notices. It reuses the walker
+v1.91 wrote and the perturbation v1.38 wrote rather than copying either, so the
+three sweeps in this project cannot disagree about what "moved" means.
+
+Two things about it are not obvious and both cost me a first draft.
+
+**The union over subjects is load-bearing.** Half of what these renderings say
+is a *state*: `healthText` reads `infectedAtAge` only while its subject is ill,
+and the whisker says a word rather than a number where it found nothing. My
+first run swept one healthy creature and reported the recovery countdown as a
+field nothing prints — true of that creature, false of the panel. That is
+v1.97's "the audit is one world deep" one level down, and the fix is a set of
+subjects covering the states rather than a subject.
+
+**A 37% push cannot move a banded readout.** `regionOf` cuts the pond into
+ninths, `dietText` into three words, `healthText` into three states. An `x` of
+700 pushed to 959 is in the same third of the same pond, so the sweep reported
+the coordinate as a field the sentence never mentions — while the sentence has
+said *in the north-east of the pond* since v1.60. There are four steps on the
+ladder now (the push, the sign, zero, one), and a test asserts that some of them
+move the region and not all of them do, because a ladder every step of which
+works is a ladder that did not need four. This is v1.38's one-sided nudge and
+v1.102's unmovable infinity in a third costume: **a perturbation is a claim that
+the value has somewhere to go**, and a banded readout is a value with three
+places to be.
+
+### What it found
+
+Thirteen of a creature's thirty-five fields reach the sentence and twenty-two do
+not; the panel's grid says twenty-two and is silent about thirteen. Most of the
+difference is exactly right — a grid has a cell for the age and a sentence read
+out on every arrow key does not, and a place is a picture the pond already
+draws. Two were not, and both are the kind that had a whole gated mechanic on
+one side only: the foot and the voice. Both have a clause now.
+
+Then the sweep turned on the table I was checking against, which is the half I
+did not expect.
+
+**`wallFeel` was declared reported by a row that never mentions it.** The
+`Whisker 📡` row prints `rockAhead` itself and a sway computed out of `_aux`, so
+no text on that panel is a function of the field the coverage table named. I
+wrote that entry last cycle, in the release that added the row.
+
+**`_in` and `_aux` were declared scratch and are read.** `auxSway()` holds every
+*other* sense at what the creature actually perceived, so both of the panel's
+sway numbers are functions of the whole buffer. The exact mirror image, in the
+other list.
+
+Neither is a bug a visitor could see. What they are is a demonstration that
+`FIELD_REPORTS` has been checked for **membership** since v1.77 — every field is
+in one list or the other, and an entry naming the wrong place passes that check
+perfectly. `FIELD_OFF_GRID` is the missing half: v1.77 wrote "four of them are
+said by something that is not a row" as a comment, and a comment cannot be
+tested against. As data it lets the sweep say the exact thing — everything in
+`FIELD_REPORTS` and not off the grid has to move the grid's text when it moves —
+and that is the assertion `wallFeel` fails.
+
+> **A coverage table checked for membership is a table nobody has read.** Every
+> entry is a sentence naming *where* a thing is said, and membership tests none
+> of it. The test to write is the one that renders the surface and looks.
+
+### The general form, which is the test I care about
+
+The particular fix is two clauses. The general one is a test that would have
+caught all three historical instances without anybody looking: **a flag that
+gates a row gates a clause.** It walks every boolean in `DEFAULT_CONFIG`, keeps
+the ones whose *set* of inspector rows changes, and requires each of them to
+change the sentence too. Four do today — the foot, the whisker, contagion and
+the voice — and the count is pinned so that a fifth cannot arrive and make the
+test vacuous.
+
+That is the shape v1.53 calls "fix the instances, then make the class
+unrepresentable", and it is worth more than either clause.
+
+### Two documents, one of them the map
+
+I went to pin the creature's field count in prose and found it stale in three
+places: `src/inspect.js`, `test/inspect.test.js` and `docs/ARCHITECTURE.md` all
+said a creature has 33 own properties, which was true when v1.77 counted them
+and stopped being true the moment v1.102 gave the whisker two fields and a
+distance. `test/prosecounts.test.js` exists for exactly this and missed it
+twice over.
+
+It missed it because the number was written in **digits**, and the matcher reads
+number words. And it missed `docs/ARCHITECTURE.md` because that file has never
+been in its domain — the map of every module in the project, unread by the sweep
+whose subject is stale counts, since the day the sweep was written. It was
+carrying a second one: the books' channel described as hashing `world.stats`'
+*forty-three* own properties, which has been fifty-six since v1.89.
+
+This is v1.88's finding wearing a different coat, and I have now had it twice,
+so the fix is not to add the missing file. Every markdown document in this
+repository is either in the domain or named in `NOT_LIVING` with a reason, and a
+test holds it. There is no third state a new document can arrive in.
+
+### What this leaves
+
+- **Two silences with no argument, said out loud.** `FIELD_UNSPOKEN` carries
+  `phase` (which no register on this page has ever shown, in any form) and
+  `walled` (rock refused this creature's last move — a fact about one tick,
+  said to a listener whose sentence arrives on a keypress). The second is a
+  timing question I have asserted and not measured.
+- **The health clause is the asymmetry I left.** The row counts down the ticks
+  to recovery and the sentence says *sick*. That is a choice about length, and
+  length is the one property of a spoken readout this project has never put a
+  number on — v1.31 says the cost of saying something is the listener's time and
+  nothing has ever measured what the sentence costs.
+- **The sweep's domain is text in a module.** It cannot reach the panel heading,
+  the swatch, the ancestry pips, the Species link or the two brain figures,
+  because `main.js` builds those and `node --test` cannot run `main.js`. Four of
+  the five are `FIELD_OFF_GRID`, declared rather than measured, which is the
+  restful kind of note this file keeps warning me about.
+- **Two registers, and the page has more than two.** A reader also gets the
+  canvas, and a listener also gets the Chronicle. The question this cycle asks
+  of one selection — *do the surfaces that describe the same subject agree about
+  what they describe?* — is unasked of the pond as a whole, where
+  `describePond()` and the tiles and the minimap are three renderings of one
+  world.

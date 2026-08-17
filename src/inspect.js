@@ -9,8 +9,9 @@
 // inspector as the last unwalked surface since v1.74.
 //
 // The inspector is the one view whose subject is a single object, so the walk
-// is exact rather than an inventory of nouns: a creature has 33 own properties
-// and the panel reported 13 of them. Two of the silences were mechanics with an
+// is exact rather than an inventory of nouns: there are thirty-five fields of a
+// creature today, and the panel reported 13 of the 33 there were when v1.77
+// walked it. Two of the silences were mechanics with an
 // off switch, a chronicle line, a tile and a mark on the canvas — contagion
 // (v1.16) and signalling (v1.20) — and the sharper half is that
 // `describeSelection()` in `describe.js` has said "sick" and "immune" about the
@@ -301,9 +302,17 @@ export function creatureFacts(c, config) {
 /**
  * Every field a creature carries that the panel reports, and where it says it.
  *
- * The values name a part of the panel rather than a fact key, because four of
- * them are said by something that is not a row: the heading, the swatch, the
- * ancestry pips and the two brain figures.
+ * The values name a part of the panel rather than a fact key, because some of
+ * them are said by something that is not a row — see `FIELD_OFF_GRID`, which is
+ * the machine-readable half of that sentence and the reason this list is now
+ * checked against the words the rows actually contain rather than read.
+ *
+ * v1.103 corrected two entries and moved two in. The sweep in
+ * `src/registers.js` moves a field and asks whether the grid's text changes;
+ * `wallFeel` did not, because the Whisker row prints `rockAhead` itself and a
+ * sway computed out of `_aux`, so the field named here was reported by nothing.
+ * `_in` and `_aux` were the mirror image, filed as scratch in `FIELD_SILENT`
+ * while both sways are functions of them.
  */
 export const FIELD_REPORTS = {
   id: "the panel heading — Creature #n",
@@ -317,11 +326,14 @@ export const FIELD_REPORTS = {
   carnivory: "the Diet row",
   groundFeel: "the Underfoot row (groundSense)",
   rockAhead: "the Whisker row (wallSense) — the distance, or the word for a miss",
-  wallFeel: "the Whisker row (wallSense) — rockAhead normalised, and what the brain is given",
   walled: "the Whisker row (wallSense) — rock refused its last move",
   speciesId: "the Species link and the ancestry pips",
   genome: "the inherited-brain figure — the strip, or the evolved network diagram",
-  brain: "the learned-brain figure (plasticity)",
+  brain:
+    "the learned-brain figure (plasticity) — and the Underfoot and Whisker rows, " +
+    "whose sway is this brain answering a hypothetical",
+  _in: "the Underfoot and Whisker rows — a sway holds every other sense at what this creature perceived, so both numbers are functions of this buffer",
+  _aux: "the Underfoot and Whisker rows — as _in, and it is the buffer the swept channel is swept *in*",
   infected: "the Health row (disease)",
   immune: "the Health row (disease)",
   infectedAtAge: "the Health row (disease) — the countdown and the recovery age",
@@ -351,9 +363,33 @@ export const FIELD_SILENT = {
   ground: "the terrain cost multiplier; groundFeel is its normalised form and is what Underfoot shows",
   prevSignal: "last tick's signal, an artifact of the update order rather than a fact about the creature",
   lastBiteAge: "drawn — the attack flash on the canvas",
-  _in: "scratch input buffer, reused every tick",
-  _aux: "scratch buffer for the auxiliary senses",
+  wallFeel:
+    "rockAhead normalised and clamped, and what the brain is given. The Whisker " +
+    "row prints the distance itself and a sway taken out of _aux, so no text on " +
+    "the panel is a function of this field — it was filed as reported until " +
+    "v1.103 swept the rows instead of reading them",
   // The one with no argument. `walled` was the other until v1.102 gave the
   // whisker a row and the rock a place to say so.
   phase: "UNREPORTED — the internal oscillator, a brain input nothing on the page has ever shown",
+};
+
+/**
+ * The fields `FIELD_REPORTS` names as said by something that is not a row.
+ *
+ * v1.77 wrote that sentence as a comment and nothing could act on it, so the
+ * coverage claim above could only ever be checked for *membership* — a field
+ * listed here with a reason naming a row that does not mention it passed, which
+ * is how `wallFeel` stood for a release. This is the half a test can hold:
+ * everything in `FIELD_REPORTS` and not in here must move the grid's text when
+ * it moves, and everything in here must not.
+ *
+ * `brain` is deliberately absent, which is the correction. It draws a figure
+ * *and* both sways are it answering a hypothetical, so it is the one field the
+ * panel says in a picture and in words at once.
+ */
+export const FIELD_OFF_GRID = {
+  id: "the panel heading, which main.js builds",
+  hue: "the swatch beside the heading — a colour",
+  speciesId: "the Species link and the ancestry pips",
+  genome: "the inherited-brain figure — a strip or a diagram, never a row",
 };

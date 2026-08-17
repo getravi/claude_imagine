@@ -222,12 +222,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   this null argues for is **three** whiskers, left/ahead/right, because a
   direction is the first thing sliding does not already provide, and that brings
   the packing question back with two channels that are the *same* sense; (b) the
-  **foot still has no spoken form** — the whisker got a `describeSelection`
-  clause on arrival (v1.80's sixty-nine releases), and `Underfoot` has been on
-  the panel since v1.33 with a listener never told what is under the creature,
-  an asymmetry now between two adjacent rows; (c) `FIELD_SILENT` is down to
-  **one** entry with no argument behind it — `walled` moved to the reported list
-  because it is the whisker's subject at zero distance, and `phase` is the last;
+  foot's missing spoken form — **closed in v1.103, and not by writing the
+  clause.** The asymmetry between two adjacent rows was the third instance of
+  one shape (v1.77's sick-and-immune, v1.102's whisker, this), so the cycle
+  built the sweep instead: `src/registers.js` moves one field of one creature,
+  renders the grid and the sentence, and reports which of the two noticed. The
+  foot and the voice were the two mechanics with a row and no clause and both
+  have one now; the general form is a test that **a flag gating a row must gate
+  a clause**, walked over every boolean in `DEFAULT_CONFIG` rather than over the
+  four that gate one today. What it found on the way is worth more: `wallFeel`
+  was filed as reported by a row that never mentions it (the Whisker row prints
+  `rockAhead` and a sway taken out of `_aux`) and `_in`/`_aux` were filed as
+  scratch while both sways are functions of them — because **`FIELD_REPORTS` had
+  only ever been checked for membership**, and an entry naming the wrong place
+  passes that perfectly. `FIELD_OFF_GRID` is the half a test can hold. What
+  v1.103 leaves: the health row counts down and the sentence says only *sick*,
+  which is a choice about **length**, and length is the one property of a spoken
+  readout nothing here has ever put a number on; the sweep's domain is text in a
+  module, so the heading, the swatch, the pips, the Species link and the brain
+  figures are declared rather than measured; and the question it asks of one
+  selection — *do two renderings of one subject agree about what they render?* —
+  is unasked of the pond, where `describePond()`, the tiles and the minimap are
+  three; (c) `FIELD_SILENT` is down to **one** entry with no argument behind it
+  (`phase`), and the sentence's new `FIELD_UNSPOKEN` has two — `phase` again,
+  and `walled`, whose silence is a claim about timing that has been asserted and
+  never measured;
   (d) the whisker deliberately has **no tile**, on a consistency argument (the
   ground sense has none, `Walled 🧱` says what rock costs the pond) rather than
   a measurement, and v1.80 is the release that says those age badly.
@@ -596,10 +615,13 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and the reader was not, for forty-six releases. Five walks, five different
   *kinds* of answer, no repeats — which is either a good question or a sign that
   it only ever finds what I did not think to list, and the way to tell is to run
-  it once more on a view I believe is finished. What v1.77 leaves: `walled` and
-  `phase` are still unreported and are named as such in `FIELD_SILENT`; and the
+  it once more on a view I believe is finished. What v1.77 leaves: `walled` went
+  to the panel in v1.102 and `phase` is still unreported in either register; the
   rows are held by `node --test` while the fact that `main.js` renders them is
-  held by nothing but a browser run. The Muller plot's snapshot ring became a whole-run
+  held by nothing but a browser run; and **the coverage table it introduced was
+  itself unread until v1.103**, which found two of its entries naming the wrong
+  place — see the first lesson below, and note that the walk's *sixth* subject
+  turned out to be the instrument the first five produced. The Muller plot's snapshot ring became a whole-run
   record in v1.30 — the last bounded buffer I know of that was silently
   sliding. The Tree of Life got its x-axis in v1.54 — round tick marks in the
   DOM under the figure, on an exactly-linear map the same release pinned — and
@@ -893,6 +915,35 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **A coverage table checked for membership is a table nobody has read.**
+  `FIELD_REPORTS` has partitioned a creature's fields since v1.77 and every
+  test of it asked one question — is this field in one list or the other? Each
+  entry is also a *sentence naming where the thing is said*, and membership
+  tests none of that, so `wallFeel` sat for a release filed as reported by a row
+  that never mentions it and `_in`/`_aux` sat filed as scratch while both of the
+  panel's sway numbers are functions of them. Two errors in opposite directions,
+  in a table written a month ago, passing every check. The remedy is the shape
+  v1.41 found for the Muller plot: **render the surface and look** — move the
+  field, re-render, and compare the text to the claim. And the reason it could
+  not be done before is a comment: v1.77 wrote "four of them are said by
+  something that is not a row" in prose, and a prose exception is an exception no
+  assertion can quote (`FIELD_OFF_GRID` is that sentence as data). Wherever this
+  project declares *where* something is said, the declaration is untested until
+  something reads the surface back.
+
+- **Two surfaces describing one subject drift, and the way to stop finding it by
+  hand is to sweep the pair.** The same asymmetry has now turned up three times
+  — contagion and signalling on the panel (v1.77, forty-six releases), the
+  whisker (v1.102, caught only because that cycle built the row), the foot
+  (v1.103, thirty-five releases) — and every one was found by somebody reading
+  two files side by side. A reader and a listener are two renderings assembled
+  from two hand-written lists of clauses with two hand-written sets of gates, so
+  the failure is structural rather than careless. The instance is a clause; the
+  class is one assertion — **a flag that gates a row gates a clause** — checked
+  against every flag rather than the ones that gate one today. Ask it of any
+  pair of surfaces with a shared subject: the pond has three
+  (`describePond()`, the tiles, the minimap) and nothing has compared them.
+
 - **A remedy has to add information the physics is not already acting on.**
   v1.33 wrote the rule that a proposed fix must address the diagnosis already on
   paper, and that perception cannot create a pressure — the ground sense failed
@@ -990,7 +1041,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   that a sweep must name what it excludes; the sharper version is that a domain
   *computed* from a directory listing has an exclusion nobody wrote down and
   therefore nobody reads. When a sweep enumerates by walking, print the list
-  once and look at it.
+  once and look at it. **v1.103 had it a second time and stopped fixing
+  instances.** `docs/ARCHITECTURE.md` — the map of every module in this project
+  — had never been in that domain, and was carrying two stale counts: the books'
+  channel at forty-three of `world.stats`' own properties (fifty-six since
+  v1.89) and a creature's fields at 33 (thirty-five since v1.102). Two lessons
+  in it. A hand-typed domain has the same hole a computed one does, so the
+  closing move is a test that every markdown file in the repository is either
+  swept or named in `NOT_LIVING` with a reason — no third state a new document
+  can arrive in. And the *second* reason that count was invisible is the sharper
+  one: it was written in **digits**, and `prosecounts` matches number words. A
+  sweep's domain is not only which files it opens but which forms of the claim
+  it can recognise, and the form it cannot see is the one nobody chose.
 - **A mark anchored to the stage is not anchored to the picture.** v1.82 put a
   ruler in the corner of the pond, checked it in a headless browser the way
   v1.28 checked the phone, and found it 22 px off the *right edge of the water*

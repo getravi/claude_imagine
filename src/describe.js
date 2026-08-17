@@ -452,6 +452,16 @@ export function describeSelection(c, config, path = null, reach = false) {
     if (c.infected) bits.push("sick");
     else if (c.immune) bits.push("immune");
   }
+  // The foot, said at last (v1.103). `Underfoot` has been on the panel since
+  // v1.33 and a listener has never been told what a creature is standing on —
+  // an asymmetry v1.102 named as it added the row *below* it, having given the
+  // whisker a row and a clause in the same cycle so the two could not part.
+  // What is spoken is the perception rather than the panel's second number: the
+  // sway is a hypothetical put to the brain, and this sentence fires on every
+  // arrow key (v1.31 — the cost of saying something is the listener's time).
+  if (config.groundSense) {
+    bits.push(`on ground ${Math.round(c.groundFeel * 100)}% rough`);
+  }
   // The whisker, said the way the panel's row says it (v1.102). A distance and
   // a miss are different readings and both are worth a word: the sense exists to
   // tell those two apart, so a listener who only ever heard the number would be
@@ -464,11 +474,92 @@ export function describeSelection(c, config, path = null, reach = false) {
         : "open water ahead"
     );
   }
+  // The voice (v1.103), the foot's sibling. The `Voice 📣` row has shown both
+  // halves since v1.77 and `describePond` says what the *pond* is calling at,
+  // so the one thing missing was this creature's own. `heard` is exactly 0 when
+  // nobody in earshot is speaking, which is a state rather than a measurement
+  // and gets a word instead of a number — the panel's own distinction, made
+  // here so the two cannot disagree about what silence sounds like.
+  if (config.signalling) {
+    bits.push(
+      c.heard === 0
+        ? `calling ${c.signal.toFixed(2)}, hearing nothing`
+        : `calling ${c.signal.toFixed(2)}, hearing ${c.heard.toFixed(2)}`
+    );
+  }
   const where = `in ${regionOf(c.x, c.y, config)} of the pond`;
   const said = `Creature ${c.id}, ${bits.join(", ")}, ${where}.`;
   const clauses = [pathPhrase(path), reach ? reachPhrase(c.radius, config) : ""].filter(Boolean);
   return clauses.length ? `${said} ${clauses.join(" ")}` : said;
 }
+
+/**
+ * Every field of a creature this sentence says, and the clause that says it.
+ *
+ * The inspector has had a table like this since v1.77 and the sentence has
+ * never had one, which is why every asymmetry between the two has been found by
+ * hand — contagion and signalling in v1.77, the foot in v1.102, both of them
+ * one release after somebody happened to look. `src/registers.js` derives the
+ * same verdict by moving each field and watching which rendering notices, and
+ * `test/registers.test.js` holds the derivation and this declaration in step
+ * both ways, so a clause added here without a field, or a field that quietly
+ * stops reaching the words, fails a test.
+ *
+ * The gated clauses name their flag, because half of what this sentence says is
+ * absent from a world that has the mechanic switched off.
+ */
+export const FIELD_SPOKEN = {
+  id: "the opening words — Creature n",
+  generation: "generation n",
+  carnivory: "a hunter, or a grazer (predation)",
+  energy: "n% fed",
+  infected: "sick (disease)",
+  immune: "immune (disease)",
+  groundFeel: "on ground n% rough (groundSense)",
+  rockAhead: "rock n pixels ahead, or open water (wallSense)",
+  signal: "calling n (signalling)",
+  heard: "hearing n, or hearing nothing (signalling)",
+  x: "the region — in the north-east of the pond, and the rest of regionOf()",
+  y: "as x",
+  radius: "the reach clause — every contact distance is derived from it",
+};
+
+/**
+ * Every field this sentence leaves out, and why.
+ *
+ * Two kinds of reason, and only one of them is restful. Most of these are said
+ * better by something else — a picture, a link, a row a listener can go and
+ * read — and a sentence read out on every arrow key is the one readout on this
+ * page whose length is a cost to its audience (v1.31). **Two are silences with
+ * no argument behind them** and say so, the habit `FIELD_SILENT` keeps one file
+ * over: an unmeasured thing filed with its own defect written out reads as
+ * handled, which is the most restful note there is and the reason to write the
+ * word.
+ */
+export const FIELD_UNSPOKEN = {
+  config: "not a property of this creature — the whole page is the config's readout",
+  genome: "the inherited brain: a matrix, drawn as a strip or a network diagram, with no spoken form",
+  brain: "the learned brain (plasticity) — as genome",
+  heading: "drawn — the body points along it",
+  vx: "drawn — the body moves along it",
+  vy: "as vx",
+  age: "the Age row. A number that moves every tick costs a sentence its whole length and a grid one cell",
+  children: "the Children row — as age",
+  dead: "the selection clears the moment its subject dies, and a cleared selection says so",
+  deathCause: "null while alive, and only the living are ever described (see dead)",
+  speciesId: "the Species link and the ancestry pips; describePond() counts the lineages",
+  ground: "the terrain cost multiplier; groundFeel is its normalised form and is what the ground clause speaks",
+  wallFeel: "rockAhead normalised — the whisker clause states the distance itself",
+  metabolismScale: "the Metabolism row — a constant of the body, said once by a panel rather than on every keypress",
+  hue: "the swatch and the body's own colour, which is not a thing this project says in words",
+  prevSignal: "last tick's signal, an artifact of the update order rather than a fact about the creature",
+  lastBiteAge: "drawn — the attack flash on the canvas",
+  _in: "scratch input buffer, rewritten every tick; the panel reads it only through the sways",
+  _aux: "scratch buffer for the auxiliary senses — as _in",
+  phase: "UNSPOKEN — the internal oscillator, which nothing on this page has ever shown in any register",
+  walled: "UNSPOKEN — rock refused its last move, a fact about one tick said to a listener whose sentence arrives on a keypress",
+  infectedAtAge: "the Health row's countdown. The state is spoken and the ticks remaining are not, which is a choice about length and has never been measured against a listener",
+};
 
 /** How each contact rule is said out loud, given the distance clause. */
 const REACH_SAID = {

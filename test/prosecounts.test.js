@@ -54,6 +54,7 @@ import { numericKeys } from "../src/levers.js";
 import { SERIES, CLOCKS } from "../src/seasonlag.js";
 import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
 import { TILES } from "../src/hud.js";
+import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -67,8 +68,16 @@ function domain() {
       .map((f) => `${dir}/${f}`);
   return [
     "README.md",
+    "CONTRIBUTING.md",
     "docs/SCIENCE.md",
     "docs/AUTONOMOUS.md",
+    // v1.103. The map of the modules was a living document outside this sweep
+    // from the day the sweep was written, and it was carrying a count of
+    // `world.stats` thirteen short and a count of a creature's fields two
+    // short. This is v1.88's finding again — a domain that is a list somebody
+    // typed has an exclusion nobody wrote down — and the guard below is the
+    // part that stops it being found a third time.
+    "docs/ARCHITECTURE.md",
     "index.html",
     "splash.js",
     "splash.css",
@@ -133,7 +142,12 @@ const CLAIMS = [
     what: "the properties `Stats` carries",
     size: () => STATS_HASHED.length + Object.keys(STATS_UNHASHED).length,
     phrase: "{n} own properties",
-    sites: ["docs/AUTONOMOUS.md", "src/fingerprint.js", "test/books.test.js"],
+    sites: [
+      "docs/ARCHITECTURE.md",
+      "docs/AUTONOMOUS.md",
+      "src/fingerprint.js",
+      "test/books.test.js",
+    ],
   },
   {
     // The collection v1.94 gave a channel to, declared in the same cycle — the
@@ -169,6 +183,24 @@ const CLAIMS = [
     size: () => TILES.length,
     phrase: "{n} stat tiles",
     sites: ["src/hud.js", "test/hud.test.js"],
+  },
+  {
+    // The collection v1.103 gave a second coverage table to, and the one that
+    // proves this file is worth its weight: three living documents said a
+    // creature had 33 own properties, which was true when v1.77 counted them
+    // and stopped being true the moment v1.102 gave the whisker two fields and
+    // a distance. The count was invisible here for two separate reasons — it
+    // was written in digits, and one of the three documents was not in the
+    // domain — so it is spelled out now and the phrase is its own.
+    //
+    // The size comes from the declared lists rather than from a live creature,
+    // for `Stats`' reason one row up: `test/inspect.test.js` and
+    // `test/registers.test.js` both walk a live creature against them in both
+    // directions, so a name here that no field carries is already a failure.
+    what: "the fields of a creature",
+    size: () => Object.keys(FIELD_REPORTS).length + Object.keys(FIELD_SILENT).length,
+    phrase: "{n} fields of a creature",
+    sites: ["docs/ARCHITECTURE.md", "src/inspect.js", "test/inspect.test.js"],
   },
 ];
 
@@ -215,6 +247,44 @@ for (const claim of CLAIMS) {
     );
   });
 }
+
+/**
+ * The documents this sweep deliberately does not read, with the reason. A dated
+ * entry is a record of what was true that day and correcting it would falsify
+ * the diary; this file cannot be inside its own domain without declaring itself
+ * a site for every claim it holds.
+ */
+const NOT_LIVING = {
+  "CHANGELOG.md": "dated release notes",
+  "docs/DEVLOG.md": "a dated diary",
+};
+
+// The domain is a list somebody typed, and until v1.103 `docs/ARCHITECTURE.md`
+// was not on it — the map of every module in the project, carrying two counts
+// that had gone stale in exactly the way this file exists to catch. v1.88 wrote
+// the general form down ("a domain built out of directories misses whatever
+// lives at the root") and the remedy it took was to add the missing file, which
+// is the fix for an instance. This is the fix for the class: a markdown
+// document in this repository is either read or excused, and there is no third
+// state a new one can arrive in.
+test("every living document is in the domain or excused", () => {
+  const md = [
+    ...readdirSync(root).filter((f) => f.endsWith(".md")),
+    ...readdirSync(join(root, "docs"))
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => `docs/${f}`),
+  ];
+  const swept = new Set(domain());
+  for (const file of md) {
+    assert.ok(
+      swept.has(file) || file in NOT_LIVING,
+      `${file} is neither swept for stale counts nor declared as a document that may hold them`
+    );
+  }
+  for (const file of Object.keys(NOT_LIVING)) {
+    assert.ok(md.includes(file), `${file} is excused from this sweep and does not exist`);
+  }
+});
 
 // The instrument's own claim of equivalence (v1.32): the matcher has to be able
 // to read a phrase that wrapped, or it would pass by finding nothing.
