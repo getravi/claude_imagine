@@ -33,14 +33,25 @@ async function startHero(canvas) {
   const { makeConfig } = await import("./src/config.js");
   const { World } = await import("./src/world.js");
   const { Renderer } = await import("./src/render.js");
+  const { heroFit } = await import("./src/herofit.js");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // A fixed simulation resolution (the canvas is CSS-stretched to fill the
-  // hero), with food and population density scaled to its area so it looks lush
-  // at this size. Predators on for warm/cool colour variety; a gentle biome
-  // drift keeps the whole field slowly breathing.
-  const SW = 1280;
-  const SH = 760;
+  // The simulation's resolution is the box it will be drawn into, not a pair of
+  // constants (v1.106). The canvas is `object-fit: cover`, so a world whose
+  // aspect ratio disagrees with the window's is *cropped* — at 1280 × 760 that
+  // was 24.8%–95.0% of the pond visible across nine measured viewports, a phone
+  // seeing a quarter of it and no window seeing all of it. `heroFit` gives the
+  // box's own aspect ratio back, under a ceiling on the area (so the tick never
+  // costs more than it does today) and a floor on the shorter side (so a sense
+  // disc cannot wrap around a torus onto itself).
+  //
+  // Food and population density are still scaled to the area, which is the
+  // whole reason the shape is free to move: those five constants were never a
+  // function of the width or the height, only of the product.
+  const box = canvas.getBoundingClientRect();
+  const { width: SW, height: SH } = heroFit(box.width, box.height);
   const area = (SW * SH) / (900 * 620);
+  // Predators on for warm/cool colour variety; a gentle biome drift keeps the
+  // whole field slowly breathing.
   const config = makeConfig({
     width: SW,
     height: SH,

@@ -4,6 +4,114 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.106.0] — 2026-08-17
+
+v1.87 walked the app's five absolutely positioned marks with a ruler and found
+three of them placed against a container wider than the picture. It closed by
+naming the page it had not walked: *the splash page has four absolutely
+positioned marks and has never been walked at all.* v1.88 went and was
+interrupted — the front door was hiding 92% of itself behind a static import.
+v1.100 went and was interrupted — the page's narrowest width was 387 px, a
+number nobody had chosen. `docs/AUTONOMOUS.md` predicted a third interruption.
+
+**The marks are a null, and there are five of them.** Measured in a headless
+Chromium at nine viewports from 320×568 to 1920×1080: `#hero-canvas` and
+`.hero::before` sit at 0.00 px on all four sides of a `.hero` that *is* the
+picture, `.showcase .overlay` at 1.00 px (its own border) inside an `<a>` that
+wraps nothing but its `<img>`, and `.scroll-cue` centred to within 0.01 px at
+every width. v1.87's bug needs a container wider than the picture and this page
+has none — every containing block here holds the picture and nothing else. The
+fifth mark is `.tl-item::before`, the timeline dot, which the count of four
+missed.
+
+**The interruption is the picture.** `#hero-canvas` is `object-fit: cover` over
+a simulation whose size was two constants in `splash.js` — `SW = 1280`,
+`SH = 760` — while a hero box is as wide as the window and `100svh` tall, so the
+two aspect ratios agree on no device that exists. Share of the pond a visitor
+could see:
+
+| viewport | visible | viewport | visible |
+| --- | ---: | --- | ---: |
+| 320×568 | **24.8%** | 1024×768 | 76.0% |
+| 360×780 | **27.4%** | 1280×800 | 91.4% |
+| 390×844 | **27.4%** | 1440×900 | 95.0% |
+| 430×932 | **27.4%** | 1920×1080 | 94.7% |
+| 768×1024 | 44.5% | | |
+
+No viewport showed the whole pond and a phone showed a quarter of it — under a
+subhead reading "the background behind these words is not a video — it's a real
+ecosystem of neural creatures, evolving in your browser as you read". It was
+also three-quarters of the tick's work, every frame, on the hardware least able
+to pay for it.
+
+After this release every one of those nine reads **100.0%**, worst case 0.6 px
+of a 1,920 px picture.
+
+### Added
+
+- **`src/herofit.js`** — the pond's size as a function of the box it is drawn
+  into, rather than a pair of constants. The fix is not a different
+  `object-fit`: `contain` letterboxes a full-bleed hero and `fill` distorts a
+  world whose distances this project publishes to three decimal places. It is to
+  stop choosing the aspect ratio in advance. `heroFit` hands the box's own ratio
+  back — so `cover` crops under a pixel — scaled by a factor with two clamps,
+  both **derived rather than picked**:
+  - a **ceiling on the area** (`HERO_AREA` = 1280 × 760), which is the number
+    the hero's five density constants have been divided by since the hero
+    existed. Above it the world shrinks and is drawn magnified, so the tick
+    never costs more than it costs today.
+  - a **floor on the shorter side** (`SIGHT_DIAMETERS × 2 × visionRadius` =
+    336 px). The world is a torus, and a pond shorter than a sense disc's
+    diameter wraps that disc onto itself — a creature answering its own query
+    from the far edge. It binds on a 320 px phone and nowhere else in the sweep.
+
+  Both clamps scale uniformly, so the aspect ratio survives them either way.
+  Under the ceiling and over the floor — every phone, tablet and laptop up to
+  about 1280 × 760 — the magnification is **exactly 1** and a creature is drawn
+  at the size the pond thinks it is. `coverCrop` is the CSS rule written down,
+  and it is here because it was reasoned about for eighty releases and the
+  answer was 24.8%.
+- **`test/herofit.test.js`, thirteen tests**, in v1.87's division: the browser
+  holds the geometry, the suite holds the two halves that survive being asked of
+  the source. The **inventory** — every `position: absolute` rule in
+  `splash.css`, declared with the box it is placed against and derived from the
+  stylesheet, compared both ways, so a sixth mark cannot arrive unclassified,
+  plus an assertion that each of those boxes is itself positioned (or the mark
+  falls through to the viewport and v1.87's bug is back in its original form).
+  And the **arithmetic** — the crop at each of the nine measured viewports,
+  the area ceiling, the sight floor, the 1:1 magnification, the fallback for an
+  unmeasurable box, and that `herofit.js` imports nothing and draws no random
+  numbers. The old 24.8% is asserted too: a regression test that does not know
+  what the bug looked like cannot recognise it coming back.
+
+### Changed
+
+- **`splash.js`** measures the hero canvas's box and sizes the world to it. The
+  density scaling is untouched, which is the whole reason the shape is free to
+  move: `foodStart`, `foodMax`, `foodSpawnRate`, `populationStart` and
+  `populationMax` were never functions of the width or the height, only of the
+  product. The engine is still a dynamic import inside a `try` (v1.88), and
+  `herofit.js` joins it there rather than at the top of the file.
+- **`docs/ARCHITECTURE.md`** gains rows for `herofit.js` and for `reveal.js`,
+  which shipped in v1.88 and had never been on the module map — the same
+  hand-typed-domain hole v1.103 found in `prosecounts`, one document over.
+
+### Notes
+
+- **Nothing was changed in the pond.** No flag, no constant, no new RNG draw,
+  no import into anything the app loads. The default 900 × 620 world is
+  bit-for-bit what it has been since v1.3.0. What moves is the size of a
+  *different* world — the front door's decorative one, which has never had a
+  permalink, a screenshot or a fingerprint pinned to it.
+- The hero's world is now a function of the window, so two visitors on
+  different devices watch different ponds. They already did in every way that
+  was visible: what changes is that each of them now sees all of theirs.
+- **The world is sized once, at start.** `cover` remains the safety net for a
+  resize or a rotation, and there the crop comes back — re-fitting would mean
+  rebuilding the world and throwing away its 1,700-tick warm-up mid-view, which
+  is a worse thing to do to somebody who has just turned their phone sideways.
+- 1,065 tests green.
+
 ## [1.105.0] — 2026-08-17
 
 v1.101 counted the eligible set and found that **53.7% of carnivores over twelve

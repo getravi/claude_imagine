@@ -953,6 +953,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **When two things have to agree on a shape and each is decided somewhere else,
+  one of them is silently losing the difference.** The front door's hero canvas
+  is `object-fit: cover`; its aspect ratio came from two constants in
+  `splash.js`, its box's came from the visitor's window, and `cover`'s entire
+  job is to absorb the disagreement without saying so. Nobody had ever put the
+  two numbers side by side, and the answer was that a phone had been shown a
+  quarter of the pond since the page existed. The tell is not a bug in either
+  half — both are correct — it is the *word*: `cover`, `clip`, `min`, `max`,
+  `clamp`, `overflow: hidden`, `Math.min(...)` are all instructions to discard a
+  quantity rather than report it, and every one of them is a place where a
+  mismatch nobody is measuring can live indefinitely. So grep for the absorbers
+  and, at each one, compute what is being absorbed. And when the fix comes:
+  prefer making one side *follow* the other over choosing a better way to
+  discard, and check whether the follower's tuning was a function of a quantity
+  that can be held fixed — the hero's five density constants were functions of
+  the world's **area** and of nothing else, which is the whole reason its shape
+  was free to move without re-tuning anything.
+
 - **A price charged on a gene and a permission granted on a threshold are two
   different functions of one number, and nobody had ever put them side by side.**
   `carnivoreMetabolicCost * carnivory` is a ramp from zero; `carnivory >=
@@ -1204,8 +1222,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   claims read `16 → 12 —` and `DEPENDENCI`. The ladder reaches one column now
   (`--page-min: 320px`, `test/splashwidth.test.js`), and a 24-width sweep found
   the *same bug one rung up* in a two-pixel window — four columns want 674.5 and
-  the step was at 640, so 641 and 642 clipped 2 px. What v1.100 leaves: the four
-  marks, still; `--page-min` is enforced against the page's **grids only**, so a
+  the step was at 640, so 641 and 642 clipped 2 px. **The marks closed in v1.106,
+  on the third walk, and they are a null — the third interruption is the
+  finding.** Nine viewports from 320×568 to 1920×1080 in a headless Chromium:
+  `#hero-canvas` and `.hero::before` at 0.00 px on all four sides of a `.hero`
+  that *is* the picture, `.showcase .overlay` at 1.00 px (its border), the
+  scroll cue centred to 0.01 px. v1.87's bug needs a container wider than the
+  picture and this page has none, because every containing block here holds the
+  picture and nothing else — which is a structural reason rather than luck, and
+  the reusable half. There are **five** marks, not four: `.tl-item::before` has
+  been one since the page shipped, and a stylesheet is outside `prosecounts`'
+  domain, so a count in prose about a collection in CSS is unread by
+  construction. What interrupted it was the picture: `#hero-canvas` is
+  `object-fit: cover` over a world that was two constants (1280 × 760) against a
+  hero box as wide as the window and `100svh` tall, so **24.8%–95.0% of the pond
+  was visible over the nine viewports, a quarter of it on a phone, and no window
+  showed all of it** — under a subhead promising a real ecosystem evolving as
+  you read, and at three-quarters of a tick's work per frame on the weakest
+  hardware. `src/herofit.js` sizes the world to its box under two derived
+  clamps (a ceiling on the area, which is the number the hero's five density
+  constants were already divided by; a floor of one sense diameter on the
+  shorter side, below which a torus wraps a vision disc onto itself), both
+  uniform so the aspect survives them: 100.0% at all nine now, magnification
+  exactly 1 wherever the budget allows. What v1.106 leaves: the world is fitted
+  **once**, so a rotation crops again and the alternative (rebuild, lose the
+  1,700-tick warm-up mid-view) is unmeasured; the front door no longer has *a*
+  pond, so pointing at anything in it needs a device named; **`splash.css` and
+  `style.css` are in no sweep's domain**, which is v1.103's hand-typed-domain
+  hole a second time and wants the same closing move (every file either swept or
+  named with a reason); and `reveal.js` had never been on the module map since
+  v1.88 — found by writing a row for something else, which is the argument for a
+  test rather than another row. What v1.100 leaves: `--page-min` is enforced against the page's **grids only**, so a
   long unbreakable word in a heading reintroduces this where no grid rule looks;
   the footer's six links are 15–16 px tall against a 24 px minimum and nobody
   has walked either page with a thumb; and **the app has an undeclared floor
