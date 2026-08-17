@@ -1,4 +1,4 @@
-// hud.js — the twenty-nine stat tiles at the top of the panel, as data.
+// hud.js — the thirty stat tiles at the top of the panel, as data.
 //
 // These lines lived in `main.js` from v1.0 until v1.97, which is to say
 // they lived in the one module `node --test` cannot open. Every other figure on
@@ -26,6 +26,7 @@
 // see its own note below, which is the only place in this file where the gate
 // is a judgement rather than an arithmetic fact.
 
+import { dietBill } from "./dietcost.js";
 import { EnergyLedger } from "./energy.js";
 import { webProfile } from "./foodweb.js";
 import { refugeRadius } from "./refuge.js";
@@ -152,6 +153,43 @@ export const TILES = [
       const web = webProfile(world.creatures, config);
       if (web.hunters === 0) return web.carnivores === 0 ? "none hunt" : "none reach";
       return `${share(web.top)} top ${share(web.mid)} mid`;
+    },
+  },
+  // What the diet gene costs, against the meal it buys. The three tiles above
+  // are all about *reach* — who is out of it, whose, how far — and none of them
+  // has a price on it. This one is the bill: the upkeep the living are draining
+  // right now for their carnivory (`carnivoreMetabolicCost`, per unit of gene,
+  // per tick), and how much of that is being paid by bodies with nothing in the
+  // water they can eat.
+  //
+  // The reading is startling and it is arithmetic rather than a mood: on twelve
+  // seeds at 6,000 ticks the idle share runs 40%–100% with a median near 90%,
+  // because the licence to hunt is a step at `carnivoreThreshold` and the bill
+  // is a ramp from zero — so a pond of grazers carrying a diet gene of 0.3 pays
+  // for hunting apparatus none of them is allowed to use.
+  //
+  // **Not gated**, which makes it the only tile here with something to say
+  // about a `predation: false` world: the toll is drained in that world exactly
+  // as in this one and nothing can ever be eaten, so it reads 100% idle and the
+  // three tiles above it read `off`. See `dietcost.js` for why the gate belongs
+  // inside the arithmetic instead.
+  //
+  // No separator, which is the Web tile's convention two rows up and for its
+  // reason — a `·` is a token of its own in an 80-pixel column. `/t` marks the
+  // first half as a rate, matching the Power tile at the bottom of the panel,
+  // and the second half is labelled because two bare percentages in one tile
+  // would be two different questions wearing one symbol.
+  //
+  // A word rather than a pair when the toll is 0, which is a pond holding no
+  // diet gene at all (and an empty one): "0.0/t 0% idle" is a percentage of
+  // nothing, and this file's rule is that a formatted zero standing where a
+  // real quantity would go is true symbols arranged into a falsehood.
+  {
+    id: "stat-bill",
+    read: ({ world, config }) => {
+      const bill = dietBill(world.creatures, config);
+      if (bill.toll === 0) return "none";
+      return `${bill.toll.toFixed(1)}/t ${share(bill.idle / bill.toll)} idle`;
     },
   },
   // Kin recognition: meals declined for being family — the run's total, and how

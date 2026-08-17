@@ -1,4 +1,4 @@
-// hud.test.js — the panel's twenty-nine stat tiles, and the values the page
+// hud.test.js — the panel's thirty stat tiles, and the values the page
 // ships with before any of them has been written.
 //
 // `src/hud.js` exists because of a sentence that has been in `AUTONOMOUS.md`

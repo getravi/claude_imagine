@@ -7567,6 +7567,111 @@ beside it.
 - **The bars are counts, not mass.** Three 8 px animals and three 4 px animals
   draw the same bar, and the first is eight times the biomass.
 
+## Half the carnivory bill buys nothing (v1.105)
+
+v1.101 counted the eligible set and found that **53.7% of carnivores over twelve
+seeds can reach nothing at all** — the gene is here and the meal is not. It
+closed by naming what it had not asked: what does a carnivore with an empty set
+*cost*?
+
+It costs twice, and both charges are unconditional.
+
+- **Upkeep.** `creature.js` drains `carnivoreMetabolicCost * carnivory` every
+  tick from every body. At the default 0.03 a full carnivore pays 0.03 a tick
+  against `metabolicBase` 0.051 for merely being alive — 59% on top of
+  existence.
+- **Forgone plants.** `world.js` scores a pellet at
+  `foodEnergy * (1 - plantPenaltyFromDiet * carnivory)`, so at the default 0.4 a
+  full carnivore gets 13.8 energy from a 23-energy pellet.
+
+Neither term asks whether there is anything in the water to eat. Neither asks
+whether the gene clears `carnivoreThreshold`. **The licence to hunt is a step at
+0.55 and the bill for it is a ramp from zero**, so a pond of grazers carrying a
+diet gene of 0.3 pays three tenths of both prices for a rule that will never
+once admit it.
+
+`src/dietcost.js` is that arithmetic, and the `Bill 🧾` tile is the reading.
+
+### Twelve seeds at 6,000 ticks
+
+The same twelve ponds v1.101 and v1.104 measured. *vs existing* is the toll
+against `metabolicBase` × population — what these same bodies pay simply to be
+alive. *idle* is the share of the toll paid by bodies with an empty eligible
+set; *below threshold* is the share paid by bodies the eating rule never even
+looks at, which is a subset of it. *per pellet* is the mean share of a meal
+given up, over creatures.
+
+| seed | pop | toll (energy/tick) | vs existing | idle | below threshold | per pellet | toll with `predation` off |
+|---|---|---|---|---|---|---|---|
+| 314 (default) | 244 | 1.23 | 9.9% | **100.0%** | 98.0% | 6.7% | 0.83 |
+| 1 | 227 | 2.96 | 25.6% | 99.1% | 97.2% | 17.4% | 2.73 |
+| 2 | 275 | 2.90 | 20.7% | 99.3% | 74.4% | 14.1% | 2.47 |
+| 7 | 169 | 2.99 | 34.6% | **40.1%** | 4.6% | 23.6% | 0.89 |
+| 13 | 278 | 0.48 | 3.4% | **100.0%** | 45.3% | 2.3% | 0.31 |
+| 42 | 277 | 2.16 | 15.3% | **100.0%** | 100.0% | 10.4% | 1.93 |
+| 51 | 251 | 1.63 | 12.7% | **100.0%** | 100.0% | 8.7% | 1.63 |
+| 99 | 251 | 4.03 | 31.5% | 92.0% | 28.0% | 21.4% | 3.30 |
+| 128 | 237 | 3.51 | 29.0% | 56.5% | 46.1% | 19.7% | 4.13 |
+| 256 | 191 | 4.48 | 46.0% | 65.4% | 0.0% | 31.3% | 3.41 |
+| 512 | 189 | 2.51 | 26.0% | 49.4% | 47.1% | 17.7% | 3.08 |
+| 2718 | 283 | 3.14 | 21.8% | 86.7% | 86.7% | 14.8% | 2.71 |
+
+**The idle share runs 40.1% to 100.0%, median 95.6%**, and on four ponds of
+twelve it is exactly 100: every body carrying a diet gene is paying for hunting
+apparatus that has nothing to point at. The default pond is one of them — it
+loses its last hunter before 6,000 ticks (v1.101), and it goes on paying 1.23
+energy a tick, a tenth of its whole standing metabolic bill, for the privilege.
+
+**The median pond spends 23.7% on carnivory of what it spends on being alive**,
+and the range is 3.4% to 46.0%. This is not a rounding error in the energy
+books; it is the second-largest fixed charge in the pond after `metabolicBase`
+itself.
+
+**The median share paid below the threshold is 60.7%**, and on two seeds it is
+100%. These are bodies the eating rule refuses before it compares a single size
+— they could be the only creature in a pond of newborns and still eat nobody —
+and on most seeds they are where most of the money goes. The ramp-and-step
+mismatch is not a curiosity at the margin; it is the main effect.
+
+### The control: switching hunting off barely changes the bill
+
+`predation: false` stops every bite and moves neither price. If selection were
+removing an unpayable gene, this is the arm where it would show.
+
+**It does not.** Over the same twelve seeds the toll with hunting off is a
+median **0.86×** what it is with hunting on — a 14% reduction — and the range is
+0.30× to **1.23×**. On seeds 128 and 512 the pond spends *more* on carnivory in
+a world where nothing can ever be eaten. Only seed 7, the most predatory pond in
+the set (and the only one whose idle share is under half), collapses its bill,
+to 0.30×.
+
+So the diet gene is not being held up by the meals it buys. It drifts, it is
+cheap enough per body to survive, and the pond carries it whether or not the
+niche exists — which is `carnivoreMetabolicCost`'s own comment in `config.js`
+(*"in a world with no viable prey selection pushes the diet gene back down
+toward herbivory"*) measured, and mostly not confirmed.
+
+### What this does not measure
+
+- **`plantLoss` is a mean over creatures, not over meals.** A pure carnivore
+  that never grazes counts as much as a grazer eating every tick, so the number
+  is what the *average body* gives up per pellet and not what the pond's crop
+  actually loses. Weighting it needs a per-creature grazing rate, which is a
+  history, and this module reads only the living.
+- **The two ledgers are not summed, and cannot be.** The upkeep is energy per
+  tick; the penalty is a share of a meal. Turning the second into the first
+  needs the same missing rate, and doing it anyway would be a guess wearing a
+  unit (v1.44's rule: one bar is a mix of events, the other a mix of
+  quantities).
+- **"Idle" is an instant, not a life.** A body with an empty eligible set this
+  tick may have eaten last tick and may eat next; nothing here follows one
+  animal's bill against one animal's meals, which is the measurement that would
+  turn this from an accounting fact into a fitness claim.
+- **Nothing was changed.** This release adds no flag and moves no constant. The
+  obvious experiment it argues for — gating the upkeep on the threshold, so the
+  bill is a step like the licence — is a different pond, and would move every
+  world.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

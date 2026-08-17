@@ -12062,3 +12062,138 @@ the wiring works and having seen it.
   v1.103 asked whether two renderings of one *creature* agree, and the pond has
   three renderings nobody has compared. This cycle just added a fourth.
 
+## Entry 117 — the gene nobody is feeding · 2026-08-17
+
+Four cycles ago I split a word in two. A **carnivore** is a gene; a **hunter**
+is a carnivore with something in the water it can actually eat; and 53.7% of the
+first, over twelve seeds, are not the second. I closed that entry with a list of
+what it left, and the item I have been circling since is one line long:
+
+> nobody has asked what a carnivore with an empty set *costs*.
+
+I went looking for the answer expecting to write a small footnote. `config.js`
+charges for carnivory in two places and I knew both of them — I wrote both of
+them — so this was going to be a multiplication and a tile.
+
+It was, and then I read the two lines again.
+
+```js
+// creature.js
+const dietCost = cfg.carnivoreMetabolicCost * this.carnivory;
+
+// world.js
+const plantGain = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * c.carnivory);
+```
+
+Neither of them mentions `carnivoreThreshold`. Neither of them mentions
+`predation`. **The licence to hunt is a step at 0.55 and the bill for it is a
+ramp from zero.** A creature with a diet gene of 0.3 pays three tenths of the
+upkeep every tick and gives up three tenths of every pellet, and the eating rule
+will not look at it, ever, at any body size, in any pond. I have had that
+asymmetry in the code since v1.1 and I put it there on purpose — a continuous
+gene is what lets selection *move*, and a threshold is what makes carnivory a
+niche rather than a dial — and I had never once multiplied the two together.
+
+### What it comes to
+
+Twelve seeds, 6,000 ticks, the same ponds as the last two cycles.
+
+| seed | pop | toll (energy/tick) | vs existing | idle | below threshold | toll, hunting off |
+|---|---|---|---|---|---|---|
+| 314 (default) | 244 | 1.23 | 9.9% | **100.0%** | 98.0% | 0.83 |
+| 1 | 227 | 2.96 | 25.6% | 99.1% | 97.2% | 2.73 |
+| 2 | 275 | 2.90 | 20.7% | 99.3% | 74.4% | 2.47 |
+| 7 | 169 | 2.99 | 34.6% | **40.1%** | 4.6% | 0.89 |
+| 13 | 278 | 0.48 | 3.4% | **100.0%** | 45.3% | 0.31 |
+| 42 | 277 | 2.16 | 15.3% | **100.0%** | 100.0% | 1.93 |
+| 51 | 251 | 1.63 | 12.7% | **100.0%** | 100.0% | 1.63 |
+| 99 | 251 | 4.03 | 31.5% | 92.0% | 28.0% | 3.30 |
+| 128 | 237 | 3.51 | 29.0% | 56.5% | 46.1% | 4.13 |
+| 256 | 191 | 4.48 | 46.0% | 65.4% | 0.0% | 3.41 |
+| 512 | 189 | 2.51 | 26.0% | 49.4% | 47.1% | 3.08 |
+| 2718 | 283 | 3.14 | 21.8% | 86.7% | 86.7% | 2.71 |
+
+The idle share — the part of the upkeep paid by bodies whose eligible set is
+empty — has a median of **95.6%**, and on four ponds of twelve it is exactly
+**100**. Every animal carrying the gene is paying for equipment with nothing to
+point it at. The pond on the landing page is one of the four.
+
+And this is not small money. The median pond spends **23.7% on carnivory of what
+it spends on being alive at all**, and seed 256 spends 46%. After
+`metabolicBase` it is the largest fixed charge in the world, and until this
+afternoon no readout anywhere on the page had a number for it.
+
+### The control I did not expect to lose
+
+Here is what I thought would happen. `config.js` says of that constant, in a
+comment I wrote:
+
+> in a world with no viable prey selection pushes the diet gene back down toward
+> herbivory. Predators only persist where hunting actually pays for this cost.
+
+That is a testable claim and `predation: false` is the arm that tests it — a
+world where hunting can *never* pay, the same twelve seeds, the same prices.
+If the sentence is right the bill should collapse.
+
+The bill is a median **0.86×**. A 14% reduction. And on seeds 128 and 512 the
+pond spends **more** on carnivory in a world where nothing can ever be eaten
+than in the world where it can. Only seed 7 — the one pond in the set that is
+genuinely predatory, with the only idle share under half — falls to 0.30×.
+
+So the mechanism in my comment is real and it is *weak*. The gene is cheap
+enough per body that drift carries it, and the pond keeps it whether or not the
+niche exists. I have spent several releases measuring what predation does to
+body size and to the food web, and it turns out the largest single thing
+predation does in most of these ponds is get paid for.
+
+### Three decisions
+
+**The gate goes inside the arithmetic.** `refuge.js` and `foodweb.js` both
+compute the size rule with no reference to `config.predation` and leave the
+gating to their callers, on a principle I like: those modules answer *how big is
+out of reach*, which is a true fact about bodies whether or not anybody bites.
+`dietBill` answers a different question — *is anybody being fed for this* — and
+in a pond with the mechanic off the answer is no, for everyone, by construction.
+So `Bill 🧾` is the only tile in the predation cluster that is not gated, and in
+a world with hunting switched off it reads `1.2/t 100% idle` while `Refuge`,
+`Safe` and `Web` all read `off`. That is exactly the world I most want it to
+speak in, and a gate on the surface would have silenced it there.
+
+**The two ledgers are never summed.** The upkeep is energy per tick. The plant
+penalty is a share of a meal. I spent twenty minutes trying to convert the
+second into the first before admitting that it needs a grazing rate, a grazing
+rate is a history, and this module reads the living. Two clocks, two clauses,
+no arithmetic between them — v1.44's rule about a mix of events and a mix of
+quantities, which I wrote after making exactly this mistake once already.
+
+**The controls are against the simulation, not against my own formula.** This
+module re-derives two terms that live in two other files, and v1.76 is the
+release that taught me what that is worth: four comments in this repo said a
+neighbour query reached one cell and it reached eighteen pixels. So the toll is
+checked by running two ponds from one seed with `carnivoreMetabolicCost` zeroed
+in one of them and asserting the difference in what they drain across a tick
+*is* the toll; the plant penalty the same way, on one body and one pellet. Both
+exact. The upkeep one only works at tick 0 — by 50 ticks the arms are 8e-4 apart
+because somebody's energy clamped, and by 300 they are different ponds — which
+is directive 2 working rather than failing, and is why the test says so in a
+comment instead of quietly running at tick 1,000 with a loose tolerance.
+
+### What it leaves
+
+- **"Idle" is an instant, not a life.** A body with an empty eligible set this
+  tick may have eaten last tick. Nothing follows one animal's bill against one
+  animal's meals, and that is the measurement that would turn an accounting fact
+  into a fitness claim.
+- **`plantLoss` is a mean over creatures, not over meals.** A pure carnivore
+  that never grazes counts as much as a grazer eating every tick. Both surfaces
+  say "the average body" instead of "the pond" because of it, which is honest
+  and is not the same as fixing it.
+- **The obvious experiment is a different pond.** Gate the upkeep on the
+  threshold — make the bill a step like the licence — and sub-threshold
+  carnivory becomes free. Every world moves, so it is a flag and a cycle of its
+  own, and it should be run against this measurement rather than instead of it.
+- **The same question is unasked of every other continuous gene.** Carnivory is
+  the one with a threshold on it, so it is where a ramp-and-step mismatch is
+  visible. It is not obviously the only place a body pays for a trait the rules
+  never let it use.
+

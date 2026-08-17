@@ -39,6 +39,7 @@
 // the same largest-remainder rounding the mortality caption uses, so a listener
 // and a reader are never told two different totals.
 import { wholePercents } from "./stats.js";
+import { dietBill } from "./dietcost.js";
 import { webProfile } from "./foodweb.js";
 import { refugeRadius } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
@@ -222,6 +223,44 @@ export function describePond(world, config, camera = null) {
               `to eat, ${s.kinSparedRate.toFixed(1)} per hundred ticks lately.`
         );
       }
+    }
+    // What the diet gene costs. Outside the `predation` block on purpose, and
+    // it is the only clause here that is: both prices in `config.js` are
+    // drained unconditionally — the upkeep every tick, the plant penalty on
+    // every pellet — so a world with the mechanic switched off pays the whole
+    // bill and can never be fed for it. That is the reading, not an exception
+    // to it, and gating this would silence the sentence exactly where it is
+    // most worth hearing.
+    //
+    // Two clocks, said as two clauses rather than added: the upkeep is energy
+    // per tick and the penalty is a share of a meal, and joining them needs a
+    // grazing rate this surface does not have (`dietcost.js`). The upkeep is
+    // given against what the same bodies pay simply to exist, because "2.9
+    // energy a tick" is a number with no scale on it and "half again what being
+    // alive costs" is the same fact a listener can hold.
+    const bill = dietBill(world.creatures, config);
+    if (bill.toll > 0) {
+      // "Including" rather than "and": the second share is a subset of the
+      // first — a body under `carnivoreThreshold` is refused prey before any
+      // size is compared — and two adjacent percentages read as a partition
+      // unless the sentence says otherwise.
+      out.push(
+        `Carnivory is draining ${bill.toll.toFixed(1)} energy a tick, ` +
+          `${percent(bill.toll / bill.baseline)} of what these bodies pay simply to exist; ` +
+          `${percent(bill.idle / bill.toll)} of that is paid by animals with nothing in the ` +
+          `water they can eat` +
+          (bill.unlicensed > 0
+            ? `, including ${percent(bill.unlicensed / bill.toll)} by bodies too herbivorous ` +
+              "for the eating rule to count as carnivores at all."
+            : ".")
+      );
+      // "The average body" rather than "the pond": this is a mean over
+      // creatures and not over meals, so a carnivore that never grazes counts
+      // as much as a grazer that eats every tick. See `dietcost.js`.
+      out.push(
+        `The gene also costs the average body ${percent(bill.plantLoss)} of every pellet it ` +
+          `grazes, and the ones it feeds nothing ${percent(bill.idlePlantLoss)}.`
+      );
     }
     out.push(`The deepest lineage has reached generation ${s.currentMaxGeneration}.`);
   }

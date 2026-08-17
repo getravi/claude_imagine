@@ -4,6 +4,83 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.105.0] — 2026-08-17
+
+v1.101 counted the eligible set and found that **53.7% of carnivores over twelve
+seeds can reach nothing at all**. It closed by naming what it had not asked:
+what does a carnivore with an empty set *cost*?
+
+It costs twice, and both charges are unconditional. `carnivoreMetabolicCost`
+drains `0.03 × carnivory` from every body every tick — 59% on top of
+`metabolicBase` for a full carnivore — and `plantPenaltyFromDiet` takes
+`0.4 × carnivory` off every pellet. Neither term asks whether there is anything
+in the water to eat, and neither asks whether the gene clears
+`carnivoreThreshold`. **The licence to hunt is a step at 0.55 and the bill for
+it is a ramp from zero.**
+
+Over twelve seeds at 6,000 ticks the share of the pond's carnivory upkeep paid
+by bodies with an empty eligible set runs **40.1%–100.0%, median 95.6%**, and on
+four ponds of twelve — the default among them — it is exactly 100. The bill
+itself is a median **23.7% of what those same bodies pay simply to be alive**,
+and a median **60.7% of it is paid below the threshold**, by animals the eating
+rule refuses before it compares a single size.
+
+The control is the finding's other half. With `predation` off the toll is a
+median **0.86×** what it is with hunting on, range 0.30×–1.23× — on two seeds
+the pond spends *more* on carnivory in a world where nothing can ever be eaten.
+`config.js` says of that constant that "in a world with no viable prey selection
+pushes the diet gene back down toward herbivory"; measured, it mostly does not.
+
+### Added
+
+- **`src/dietcost.js`** — `dietBill` prices the gene against the meal.
+  Six numbers: the upkeep the living are draining (energy/tick), the part of it
+  paid by bodies with an empty eligible set, the part paid below the threshold,
+  the same bodies' cost of merely existing as a scale to read the first against,
+  and the mean share of a pellet given up — pond-wide and over the idle. Reuses
+  `foodweb.js`'s eligible set rather than re-deriving the size rule. Pure
+  observer: no RNG, and a test holds that pricing a pond leaves its state
+  fingerprint untouched.
+- **The `Bill 🧾` tile**, between `Web 🕸️` and `Kin 👪`. The panel's thirtieth,
+  and the only **ungated** one in the predation cluster — `config.predation` is
+  folded into `dietBill`'s arithmetic instead, because a world where nothing may
+  bite still pays the whole bill and is the world this reading matters most in.
+  It reads `1.2/t 77% idle` there, while the three tiles above it read `off`.
+- **Two clauses in `describePond`**, likewise outside the `predation` block —
+  the one predation clause in `describe.js` that is. A listener gets the toll,
+  its ratio to bare existence, the idle share, the below-threshold share nested
+  inside it ("including", not "and": the second is a subset of the first), and
+  both per-pellet means.
+- **`test/dietcost.test.js`, thirteen tests.** The two load-bearing ones are
+  controls against the simulation rather than against a second copy of the
+  formula. The upkeep: two ponds from one seed, one with
+  `carnivoreMetabolicCost` at zero, and the difference in what they drain across
+  a tick is the toll (asserted at tick 0, where the arms are still one world —
+  by 300 ticks they are different ponds, which is directive 2 working). The
+  plant penalty: the same paired arithmetic on `plantPenaltyFromDiet`, one body,
+  one pellet, exact at every diet. Also pinned: the partition of the toll, the
+  threshold boundary both ways, the tile's word for a pond with no diet gene,
+  and that every number the tile shows appears in the sentence.
+- **`test/describe.test.js`** now asserts the bill clause *survives*
+  `predation: false`, stated beside the rule it is the exception to — v1.77's
+  `FIELD_OFF_GRID` lesson, that a prose exception is one no assertion can quote.
+
+### Notes
+
+- **Nothing was changed in the pond.** No flag, no constant, no new RNG draw.
+  The default world is bit-for-bit what it has been since v1.3.0, and the
+  experiment this release argues for — gating the upkeep on the threshold, so
+  the bill is a step like the licence — is deliberately not taken, because it
+  would move every world.
+- `plantLoss` is a mean over **creatures, not meals**: a carnivore that never
+  grazes counts as much as a grazer eating every tick. Both surfaces say "the
+  average body" rather than "the pond" for that reason, and `SCIENCE.md` lists
+  it first among what this does not measure.
+- The two ledgers are reported side by side and never summed. One is energy per
+  tick and the other a share of a meal; joining them needs a grazing rate this
+  observer does not have, and doing it anyway would be a guess wearing a unit.
+- 1,052 tests green.
+
 ## [1.104.0] — 2026-08-17
 
 Every figure on this page draws time, space or descent. The population chart,

@@ -75,6 +75,14 @@ test("a mechanic that is off is not mentioned", () => {
   assert.doesNotMatch(text, /corpse/i);
   assert.doesNotMatch(text, /calling/i);
   assert.doesNotMatch(text, /sprouting/i);
+  // The one clause that survives `predation: false` on purpose, stated here
+  // because a rule's exception belongs beside the rule (v1.77's `FIELD_OFF_GRID`
+  // lesson: a prose exception is one no assertion can quote). The diet bill is
+  // not a readout of a mechanic that is off — both prices in `config.js` are
+  // drained in this world exactly as in one where hunting happens, and nothing
+  // can ever be eaten for them. See `test/dietcost.test.js`, which asserts the
+  // reading is 100% idle here.
+  assert.match(text, /Carnivory is draining/);
   // ...and the things that are always true are still there.
   assert.match(text, /creature/);
   assert.match(text, /food pellet/);

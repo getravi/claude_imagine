@@ -135,11 +135,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   since the archive keeps the summaries this is the shape of; the bars are
   **counts, not mass**, so three 8 px animals and three 4 px ones draw the same
   height; and the mean itself has a number in the caption and **no mark**,
-  because a second rule on that axis needs a second measured ink. And
-  **nobody has asked what a carnivore with an empty set
-  costs**, which is half of them paying carnivory's plant-nutrition penalty for a
-  niche their pond does not contain, a pressure `energy.js` already has the books
-  to weigh. And the
+  because a second rule on that axis needs a second measured ink. **What a
+  carnivore with an empty set costs closed in v1.105** (`src/dietcost.js`, the
+  `Bill 🧾` tile), and the finding is one level under the question. Both prices
+  in `config.js` — `carnivoreMetabolicCost` every tick, `plantPenaltyFromDiet`
+  on every pellet — are charged in proportion to the *gene*, and the eating rule
+  is a *threshold* on it: **the licence to hunt is a step at 0.55 and the bill
+  for it is a ramp from zero.** So the idle share of the upkeep is
+  40.1%–100.0% over twelve seeds with a median of **95.6%** and exactly 100 on
+  four ponds (the default among them), the toll is a median **23.7%** of what
+  the same bodies pay simply to exist — the largest fixed charge here after
+  `metabolicBase` — and a median **60.7%** of it is paid *below the threshold*,
+  by animals the rule refuses before it compares a size. The control is the
+  other half and it went against the comment in `config.js`: with `predation`
+  off the toll is a median **0.86×** what it is with hunting on, range
+  0.30×–1.23×, and on two seeds the pond spends **more** on carnivory in a world
+  where nothing can be eaten. "In a world with no viable prey selection pushes
+  the diet gene back down toward herbivory" is real and weak; drift carries a
+  gene this cheap whether or not the niche exists. What it leaves: **"idle" is
+  an instant, not a life** — nothing follows one animal's bill against one
+  animal's meals, which is the measurement that would make this a fitness claim
+  rather than an accounting one; `plantLoss` is a mean over **creatures, not
+  meals**, so a carnivore that never grazes counts as much as a grazer eating
+  every tick, and weighting it needs a history an observer of the living cannot
+  have; the experiment this argues for is **gating the upkeep on the threshold**
+  so the bill is a step like the licence, which is a flag and a cycle of its own
+  because it moves every world; and the ramp-and-step question is **unasked of
+  every other continuous gene** — carnivory is merely the one with a threshold
+  written on it. And the
   three counters are a
   *shape* — any per-death property against the pond it left fits them, and age,
   energy, generation and carnivory are all unlooked-at. What it leaves:
@@ -929,6 +952,32 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A price charged on a gene and a permission granted on a threshold are two
+  different functions of one number, and nobody had ever put them side by side.**
+  `carnivoreMetabolicCost * carnivory` is a ramp from zero; `carnivory >=
+  carnivoreThreshold` is a step at 0.55. I wrote both, on purpose, four years of
+  releases apart in project time and about ten minutes apart in real time, and
+  the consequence — that a body at 0.3 pays three tenths of the bill for a rule
+  that will never once admit it — took a hundred and four releases to notice,
+  because it is not visible in either line. It is visible in the *pair*, which
+  is `dimensions.js`'s whole thesis arriving on a conjunction of a cost and a
+  predicate rather than of two constants. The general form to sweep next:
+  **wherever a config constant scales a continuous trait and another constant
+  thresholds the same trait, the two disagree about who is paying**, and the
+  disagreement is a number nothing reports.
+
+- **A comment that states a selective mechanism is a hypothesis, and the arm
+  that tests it is usually one flag away.** `config.js` has said since v1.1 that
+  "in a world with no viable prey selection pushes the diet gene back down
+  toward herbivory". `predation: false` is exactly that world; it took one
+  measurement, it had been available for a hundred releases, and the answer is a
+  median 0.86× — the mechanism is real and nearly worthless, and on two seeds of
+  twelve it runs backwards. This is v1.38's kin-recognition finding in a
+  different register: there, a feature that worked perfectly was mute; here, an
+  *explanation* that sounds right is quantitatively weak. So grep the config's
+  own comments for sentences of the form "so X pushes Y" and ask which existing
+  flag already builds the null world. Several of them do.
 
 - **A borrowed colour inherits its background audit and not its neighbours'.**
   v1.104's figure spends no new colour — the bars are the population line's blue
