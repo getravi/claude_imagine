@@ -119,9 +119,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   water* had only ever entered through a maximum. What it leaves: an eligible set
   is an **opportunity**, and nothing puts it beside the kills it produced; the
   distribution is reported by two order statistics because that is what fits in a
-  tile, and **no figure on this page has a per-creature quantity on an axis** —
-  seed 128's seventy hunters spread between 37% and nothing are a histogram
-  nothing draws; and **nobody has asked what a carnivore with an empty set
+  tile; **the axis half closed in v1.104** (`src/sizeplot.js`, the
+  `📏 How big they are` figure) — not on the eligible set but on the body radius
+  it is computed from, because every axis this page draws is time, place or
+  descent and none of them is a property of a creature. What it found is one
+  level under the complaint: **the pond is not a distribution.** Thirty bars of
+  0.15 px, twelve seeds at 6,000 ticks, and a median of **7.5 bars hold anybody**
+  while one bar holds 34%–83% of everybody alive — a lineage is a near-delta in
+  body size and nobody had ever drawn that. On two ponds of twelve there is no
+  living body within a fifth of a pixel of the pond's own **mean**, which
+  `deathSizes` (v1.65) prices every death against on every frame. What *it*
+  leaves: `nearest` is a two-body statistic standing in for a shape (it says the
+  mean is nobody; **modality is what an eye reads off the figure and nothing
+  computes**); the figure has **no history** and the archive cannot give it one,
+  since the archive keeps the summaries this is the shape of; the bars are
+  **counts, not mass**, so three 8 px animals and three 4 px ones draw the same
+  height; and the mean itself has a number in the caption and **no mark**,
+  because a second rule on that axis needs a second measured ink. And
+  **nobody has asked what a carnivore with an empty set
   costs**, which is half of them paying carnivory's plant-nutrition penalty for a
   niche their pond does not contain, a pressure `energy.js` already has the books
   to weigh. And the
@@ -914,6 +929,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A borrowed colour inherits its background audit and not its neighbours'.**
+  v1.104's figure spends no new colour — the bars are the population line's blue
+  and the death strip's *hunted* crimson, the rule is the pond's refuge ring —
+  and I nearly shipped it unmeasured on the grounds that all three were already
+  audited. They were, and every one of those audits is a measurement against a
+  **background**: the blue against this panel (v1.25), the crimson against it
+  (v1.25), the ring against the pond (v1.69). None of them is a measurement
+  against a **neighbour**, because until that figure existed no two of the three
+  had ever been drawn in one picture. Reuse is the right instinct — it keeps two
+  renderings of one threshold in one ink, and it cannot drift — and it is not a
+  free pass: **putting two audited colours in one figure creates a pair nobody
+  has measured.** They cleared at 39.8 against a bar of 25, so the instinct was
+  right and the reasoning was luck, and it is three tests now. The general form
+  is the v1.34 rule (a new background is a new audit of everything drawn on it)
+  with the axes swapped: a new *neighbourhood* is a new audit of everything in
+  it.
+
+- **A summary is a claim that the thing summarised has a middle.** This page
+  reported body size three ways for a hundred releases — a share above a
+  threshold, a maximum, and a mean — and all three are summaries of a
+  distribution nothing had drawn. Drawn, it is two or three near-vertical spikes
+  with empty axis between them, and on two ponds of twelve the mean lands in the
+  gap: no living body within a fifth of a pixel of it. The instrument was not
+  wrong and the *shape* was never in its domain. So before trusting a mean, a
+  median or a maximum of a per-creature quantity here, ask what the histogram
+  looks like — there is a figure for it now, and the answer for body radius was
+  not the bell curve I had been carrying in my head since v1.0.
 
 - **A coverage table checked for membership is a table nobody has read.**
   `FIELD_REPORTS` has partitioned a creature's fields since v1.77 and every

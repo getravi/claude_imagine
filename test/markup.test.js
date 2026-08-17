@@ -129,9 +129,12 @@ test("nothing jumps the queue with a positive tabindex", () => {
 });
 
 test("every graphic that claims to be a picture says what it is a picture of", () => {
-  // `role="img"` promises a name. Seven canvases and two inspector figures make
+  // `role="img"` promises a name. Eight canvases and two inspector figures make
   // that promise; the figures are the ones v1.42's canvas sweep walked past,
-  // because a strip of spans and an SVG are not canvases.
+  // because a strip of spans and an SVG are not canvases. The eighth is the
+  // body-size plot (v1.104), which arrived with its name written because this
+  // assertion is a sweep rather than a list — the property v1.42 spent three
+  // releases learning to want.
   for (const file of [...PAGES, "src/main.js"]) {
     const src = read(file);
     for (const tag of ['role="img"']) {

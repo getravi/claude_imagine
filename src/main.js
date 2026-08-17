@@ -18,6 +18,7 @@ import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.js";
+import { drawSizes, sizeAxis, sizeProfile, sizeCaption } from "./sizeplot.js";
 import {
   wholePercents,
   mortalitySeries,
@@ -38,6 +39,7 @@ import {
   weightMarkTones,
   brainEdge,
   brainNodeColours,
+  refugeRing,
 } from "./palette.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -49,6 +51,7 @@ import {
   describePond,
   describePower,
   describeSelection,
+  describeSizes,
   pendingSpeech,
   seasonLabel,
   timeOfDayLabel,
@@ -321,6 +324,7 @@ function loop(now) {
   drawDeaths(world);
   drawPower(world);
   updateChartXAxis(chartHist);
+  updateSizes(world);
   drawPhylogeny(world);
   updateHUD();
   updateSeasonBadge(world);
@@ -890,6 +894,64 @@ function updateChartRange(world, hist, season) {
   if (el.textContent !== text) el.textContent = text;
 }
 
+// ---- The body-size figure ----
+//
+// The one figure in this column whose x-axis is not time. Everything about it
+// that could drift lives in `src/sizeplot.js` — the bins, the axis, the
+// drawing, the caption — and what is left here is the same three-part adapter
+// the chart has: find the canvas, put the numbers into the DOM, and set the
+// spoken form.
+//
+// It is redrawn every frame like the rest of them, which is affordable for a
+// reason worth writing down: the profile is two linear passes over the living
+// and no sort, so this figure is the cheapest thing in this function, and it is
+// the only one that has nothing to remember between frames. There is no history
+// buffer behind it at all — a histogram of *now* is a picture the archive
+// cannot reconstruct, since the archive keeps summaries and this is the shape
+// those summaries are summaries of.
+let sizeCtx = null;
+function updateSizes(world) {
+  if (!sizeCtx) {
+    const c = $("sizes");
+    sizeCtx = c.getContext("2d");
+    sizeCtx._w = c.width;
+    sizeCtx._h = c.height;
+  }
+  const axis = sizeAxis(world.config, Math.round($("sizes").clientWidth) || sizeCtx._w);
+  const profile = sizeProfile(world.creatures, world.config, axis);
+  drawSizes(sizeCtx, sizeCtx._w, sizeCtx._h, profile, { config: world.config, axis });
+  updateSizeAxis(axis);
+  const caption = sizeCaption(profile, world.config);
+  if ($("size-legend").textContent !== caption) $("size-legend").textContent = caption;
+  const label = describeSizes(profile, world.config);
+  if (view.sizeLabel !== label) {
+    view.sizeLabel = label;
+    $("sizes").setAttribute("aria-label", label);
+  }
+}
+
+// The size axis's numbers, in the DOM under the figure. Unlike the chart's x —
+// which slides every four ticks, so every position is patched every frame —
+// this axis is a pair of constants, so both the elements and their positions
+// are rebuilt only when the marks themselves change. That is the v1.15 rule
+// applied to a scale that in practice never moves at all: it can only move if
+// somebody drags `bodyRadiusMin` or `bodyRadiusMax`, which no control on this
+// page does and a permalink can.
+function updateSizeAxis(axis) {
+  const key = axis.marks.map((m) => m.tick).join(",");
+  if (key === view.sizeAxisKey) return;
+  view.sizeAxisKey = key;
+  const box = $("size-ticks");
+  box.innerHTML = "";
+  for (const mark of axis.marks) {
+    const el = document.createElement("span");
+    el.textContent = mark.text;
+    el.className = "tick-" + mark.anchor;
+    el.style.left = `${(mark.frac * 100).toFixed(4)}%`;
+    box.appendChild(el);
+  }
+}
+
 // ---- The death strip ----
 //
 // Under the chart, on the same x-axis and following the same recent/whole
@@ -1099,6 +1161,14 @@ function applyMortalityColours() {
   paint("line-made", p.line);
   $("line-spent").style.background =
     `repeating-linear-gradient(to right, ${p.line} 0 ${on}px, transparent ${on}px ${on + off}px)`;
+  // The body-size figure's three swatches (v1.104). It spends no new colour —
+  // the bars are the population line's and this bar's own `predation`, and the
+  // rule is the pond's refuge ring — so the same rule applies with more force
+  // than usual: a legend painted from the stylesheet would be a fourth place
+  // for three colours to disagree.
+  paint("dot-grazer", chartLines().pop);
+  paint("dot-carnivore", c.predation);
+  paint("line-refuge", refugeRing().ring);
 }
 
 /**

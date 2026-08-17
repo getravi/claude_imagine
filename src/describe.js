@@ -43,6 +43,7 @@ import { webProfile } from "./foodweb.js";
 import { refugeRadius } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
 import { readable } from "./seasonlag.js";
+import { sizeAxis, SIZE_BINS } from "./sizeplot.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -773,6 +774,66 @@ export function describeChart(hist, axis, foodMax, season = null) {
     `${count(last.food, "food pellet")} of ${foodMax.toLocaleString()}.` +
     describeSeason(season, last.tick)
   );
+}
+
+/**
+ * The body-size figure, said out loud (v1.104).
+ *
+ * A histogram is the hardest picture on this page to say, because what a reader
+ * gets from it is a *shape* and a sentence cannot draw one. So this does not
+ * try: it says the four numbers that decide the shape's character — the range
+ * the bodies occupy, the tallest bar and where it is, and the mean with the
+ * distance to the body nearest it — and the last of those is the one a listener
+ * cannot get anywhere else on this page. `mean 6.2 px, nearest body 0.25 px
+ * away` is a pond with two spikes and a hole between them; `mean 7.5 px,
+ * nearest body 0.01 px away` is a pond with a middle. That is the figure's own
+ * finding, and it is a number rather than a picture, which is the rare case
+ * where the listener is not the one being short-changed.
+ *
+ * The carnivore clause is a count, not a share, and it deliberately says
+ * *carrying the diet gene*: v1.101's whole finding is that half of those
+ * animals have nothing they can eat, and a sentence calling them hunters would
+ * put the error this project corrected one release ago back on the page.
+ *
+ * @param {import("./sizeplot.js").SizeProfile} profile
+ * @param {object} config
+ */
+export function describeSizes(profile, config) {
+  if (profile.total === 0) return "Body sizes: no bodies to measure.";
+  const peakAt = peakBinCentre(profile, config);
+  const refuge = config.predation
+    ? ` Nothing this world can grow is able to eat a body of ${px(refugeRadius(config))} or more.`
+    : "";
+  return (
+    `Body sizes: ${count(profile.total, "creature")} between ${px(profile.min)} and ` +
+    `${px(profile.max)} across, ${profile.carnivores.toLocaleString()} of them carrying the diet gene. ` +
+    `The tallest bar holds ${count(profile.peak, "body", "bodies")} near ${px(peakAt)}. ` +
+    `The mean is ${px(profile.mean)} and the nearest body to it is ${px(profile.nearest, 2)} away.` +
+    refuge
+  );
+}
+
+/** A pixel measurement, said the way this page writes it. */
+function px(v, places = 1) {
+  return `${v.toFixed(places)} pixels`;
+}
+
+/**
+ * The middle of the tallest bar, which is what "where the peak is" means for a
+ * figure whose x is binned. Derived from the axis rather than from the bodies:
+ * the bar is the thing a reader sees, so the sentence has to name the bar's
+ * position and not the mean of what fell in it.
+ */
+function peakBinCentre(profile, config) {
+  const axis = sizeAxis(config);
+  let at = 0;
+  for (let i = 0; i < SIZE_BINS; i++) {
+    if (profile.grazer[i] + profile.carnivore[i] === profile.peak) {
+      at = i;
+      break;
+    }
+  }
+  return axis.lo + (at + 0.5) * axis.binWidth;
 }
 
 /**

@@ -4,6 +4,93 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.104.0] — 2026-08-17
+
+Every figure on this page draws time, space or descent. The population chart,
+the death strip, the power strip and the Tree of Life all put ticks along the
+bottom; the pond and the little map put a place on both axes; the Tree of Life
+stacks its bands by line of descent. v1.101 counted what that leaves out and
+wrote it down — *no figure on this page has a per-creature quantity on an
+axis* — and this is that figure, on the quantity the most findings here turn
+on.
+
+A body radius decides what a creature may eat, what may eat it, what moving
+costs it and what it leaves behind when it dies, and this page has reported it
+exactly three ways, all of them one number: a **share** above a threshold
+(`Refuge 🔒`, v1.64), a **maximum** (`Safe 🛟`, v1.89) and a **mean** (the
+death-size line under the mortality bar, v1.65, which prices every death
+against the average body of the pond that survived it).
+
+**A summary is a claim that the thing summarised has a middle, and on two ponds
+of twelve it does not.** Over v1.101's twelve seeds at 6,000 ticks, thirty bars
+of 0.15 px each, a median of **7.5 bars hold anybody at all** and one bar holds
+between 34% and 83% of the population. The pond is not a distribution across
+the size range; it is two or three near-vertical spikes with empty axis between
+them, which is what a handful of clonal lineages looks like when you finally
+draw it. On seed 128 the nearest living body to the pond's own mean is
+**0.251 px away** — nearly two empty bars — and on seed 2718 it is 0.222 px.
+The `Refuge`, `Safe` and death-size readouts cannot say that, and an axis says
+it at a glance.
+
+### Added
+
+- **`src/sizeplot.js`** — the figure. `sizeProfile` counts the living into
+  thirty bars and reports the four numbers that decide the shape (`peak`,
+  `mean`, `min`/`max`, and `nearest` — the distance from the mean to the
+  closest body); `drawSizes` paints it; `sizeAxis` reuses `chart.js`'s
+  1–2–5 mark builder, its third consumer after the chart's own x and the Tree
+  of Life. Pure observer: no RNG, and a test holds that drawing it leaves the
+  state fingerprint untouched.
+- **The `📏 How big they are` block in the panel**, under the chart stack: the
+  canvas, its axis marks, a three-swatch legend and a caption. The caption
+  carries the y scale (which moves, so it is stated exactly — v1.41's rule for
+  the two strips) and the mean beside the distance to the nearest body, which
+  is the figure's own second opinion on the number three other readouts quote.
+- **`describeSizes` in `describe.js`** — the same figure for a listener. A
+  histogram is the hardest picture here to say, because what a reader takes
+  from it is a shape; so the sentence says the four numbers that decide the
+  shape instead of trying to draw one, and `nearest` is the clause a listener
+  cannot get anywhere else on the page.
+- **`sizePlotTones` in `palette.js`, and three tests.** The figure spends **no
+  new colour**: the bars are the population line's blue and the death strip's
+  *hunted* crimson, and the rule is the pond's own refuge ring, so the
+  threshold's two renderings — a circle around a body, a line on an axis — are
+  one colour. Reuse is not a free pass, and this is the case that shows why:
+  each ink had been measured against this panel (v1.25, v1.25, v1.69) and no
+  *pair* of them ever had, because until now no two were drawn in one picture.
+  All three pairs clear `MIN_DELTA_E` under every vision model — worst case
+  **39.8** — and all three clear the panel by more than 40.
+- **`test/sizeplot.test.js`, twenty tests.** The load-bearing one is the axis:
+  it is `bodyRadiusMin`..`bodyRadiusMax` declared rather than fitted to the
+  data, so the picture cannot silently rescale itself the way v1.41 found the
+  chart doing, and the bound is exact — a radius is a lerp of the two over a
+  gene clamped to 0–1 — which is checked over a run and at both extremes. Also
+  pinned: every creature counted exactly once on the side of the diet rule it
+  is on; thirty bars spanning the figure with no seam; **a bar holding one
+  creature drawn at least a pixel tall**, since the loner at the top of the
+  range is exactly what this figure exists to show; and the caption's numbers
+  all appearing in the sentence.
+
+### Notes
+
+- The bars are cut by the **diet gene**, and the word for that half is
+  *carnivore* rather than *hunter*: v1.101's finding is that 53.7% of the first
+  are not the second, and a legend saying "hunters" would put the error the
+  release before last corrected back on the page. What the split is *for* is
+  that predation is a rule about the distance between two points on this axis —
+  on seed 128 the crimson spike sits at 4.3 px and the blue one at 7.3, and a
+  4.3 px body may eat nothing above 3.9.
+- The refuge rule is gated on `config.predation`, exactly as the two tiles
+  quoting the same threshold are and for the reason `refuge.js` gives: the
+  arithmetic survives switching hunting off and the meaning does not.
+- The two ponds with a hole where their mean is are not the same shape. On seed
+  128 the gap is between the diets (carnivores mean 4.40 px, grazers 7.30); on
+  seed 2718 both spikes are grazers, 3.7 px and 5.2 px, and the diets have
+  nothing to do with it.
+- Determinism untouched: this figure reads the pond and never steps it, the
+  default world is bit-for-bit what it was in v1.3.0, and no configuration
+  gained a flag. 1,039 tests green.
+
 ## [1.103.0] — 2026-08-17
 
 A selected creature is described twice. The inspector renders a fact grid and

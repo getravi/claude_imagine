@@ -7471,6 +7471,102 @@ thinks), and one checks the reported distance against `barriers.blocked()` rathe
 than against a second copy of the geometry: just past it is rock, just before it
 is not, for every creature in a stepped pond.
 
+## The pond has no middle (v1.104)
+
+Three readouts on this page report a body size, and every one of them is a
+single number: the share of the pond above the refuge threshold (`Refuge 🔒`,
+v1.64), the largest hunter in the water (`Safe 🛟`, v1.89), and the mean body
+radius of the pond that survived each death (the third line under the mortality
+bar, v1.65). A share, a maximum and a mean.
+
+**A summary is a claim that the thing summarised has a middle.** Nothing here
+had ever drawn the distribution those three are summaries of, because no figure
+on this page had a per-creature quantity on an axis — every axis this project
+draws is time, place or descent. `src/sizeplot.js` is that figure: the living
+counted into thirty bars of 0.15 px across the range `bodyRadiusMin` to
+`bodyRadiusMax`, cut by the diet gene, with the refuge line drawn where it
+falls.
+
+### Twelve seeds at 6,000 ticks
+
+The same twelve ponds v1.101 measured, so the two releases can be read together.
+*Bars used* is how many of the thirty hold anybody; *nearest body* is the
+distance from the pond's own mean radius to the closest living creature.
+
+| seed | pop | bars used | tallest bar | mean px | nearest body |
+|---|---|---|---|---|---|
+| 314 (default) | 244 | 7 | 175 (72%) | 7.54 | 0.008 |
+| 1 | 227 | 6 | 189 (83%) | 7.85 | 0.041 |
+| 2 | 275 | 6 | 115 (42%) | 7.13 | 0.001 |
+| 7 | 169 | 8 | 76 (45%) | 7.52 | 0.012 |
+| 13 | 278 | 5 | 148 (53%) | 7.74 | 0.006 |
+| 42 | 277 | 8 | 200 (72%) | 7.09 | 0.012 |
+| 51 | 251 | 8 | 155 (62%) | 7.38 | 0.004 |
+| 99 | 251 | 7 | 116 (46%) | 6.98 | 0.004 |
+| 128 | 237 | 10 | 125 (53%) | **6.22** | **0.251** |
+| 256 | 191 | 8 | 116 (61%) | 6.65 | 0.005 |
+| 512 | 189 | 6 | 65 (34%) | 6.86 | 0.007 |
+| 2718 | 283 | 11 | 144 (51%) | **4.96** | **0.222** |
+
+**The pond is not a spread.** A median of **7.5 of the thirty bars** hold
+anybody at all, and a single 0.15 px bar holds between **34% and 83%** of
+everybody alive. That is what a handful of clonal lineages looks like drawn out:
+a lineage is a near-delta in body size, because `radius` is
+`lerp(bodyRadiusMin, bodyRadiusMax, sizeGene)` and a size gene drifts by
+`rng.gaussian(0, 0.05)` only when a mutation lands on that one slot.
+
+**On two ponds of twelve, the mean is a size nothing in the water is.** Seed 128
+holds no body within **0.251 px** of its own average — nearly two empty bars —
+and seed 2718 none within **0.222 px**. The other ten are within 0.041 px, so
+the ordinary case is that the mean is a real animal, and the exceptions are the
+reason the caption under the figure carries `nearest body` as a number rather
+than leaving it to the eye.
+
+### The two hollow ponds are not the same hollow
+
+They look alike in the table and they are different worlds.
+
+- **Seed 128 splits by diet.** The carnivores' spike sits at **4.40 px** (n=88)
+  and the grazers' at **7.30 px** (n=149), 2.9 px apart, with the pond's mean at
+  6.22 in the empty range between them. The two colours of the figure land on
+  either side of the hole — which is also v1.101's finding drawn rather than
+  counted, since a 4.4 px hunter may eat nothing above 4.0 px and the grazer
+  spike is three pixels above that.
+- **Seed 2718 splits within one diet.** Both spikes are grazers — 3.7 px (n=40)
+  and 5.2 px (n=144) — 269 of 283 creatures carry no diet gene at all, and the
+  hole between them has nothing to do with predation.
+
+One instance of a mechanism is not the mechanism. The figure shows a shape; what
+makes the shape is a separate question, and it has at least two answers.
+
+### What the mean is used for
+
+This is not a curiosity about a statistic nobody reads. `deathSizes` (v1.65) is
+on the panel permanently, and its whole method is to price each death's body
+radius **against the mean radius of the pond standing at the instant it died** —
+that is the control arm that makes predation's −1.448 px readable as
+size-selective mortality. On ten ponds of twelve that baseline is a typical
+animal. On the other two it is a gap between two spikes, and −1.448 px "below
+the pond" means something different when the pond has no middle to be below.
+
+The correction, if one is wanted, is a different comparison rather than a better
+mean, and v1.65 already found the sharper one: measured against the mean of each
+hunter's own *eligible set*, the victim sits −0.092 px away. What the figure adds
+is that the earlier baseline's failure mode is now visible and has a number
+beside it.
+
+### What this does not measure
+
+- **`nearest` says the mean is nobody; it does not say the pond is bimodal.**
+  They are different claims — one outlier moves the first and not the second —
+  and modality is what an eye reads off this figure in a glance and what nothing
+  here computes.
+- **The figure is a photograph of now.** There is no history behind it, and the
+  archive cannot reconstruct one, because the archive keeps summaries and this is
+  the shape those summaries are summaries of. *When* a pond splits is unasked.
+- **The bars are counts, not mass.** Three 8 px animals and three 4 px animals
+  draw the same bar, and the first is eight times the biomass.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

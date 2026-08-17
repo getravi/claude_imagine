@@ -98,6 +98,12 @@ const FRESH = Object.freeze({
   chartLabel: "",
   deathsLabel: "",
   powerLabel: "",
+  // The body-size figure (v1.104), which shares none of that axis: its x is a
+  // body radius, so its marks move only when a permalink moves the two
+  // constants they are derived from, and there is no element list beside the
+  // key because nothing about a mark's *position* changes without its value.
+  sizeAxisKey: "",
+  sizeLabel: "",
   // The inspector.
   inspKey: "",
 });
@@ -129,6 +135,7 @@ export const PAGE_SCOPED = Object.freeze({
   chartCtx: "the population chart's drawing context, held so it is fetched once",
   deathsCtx: "the death strip's drawing context, which also caches the canvas's own size",
   powerCtx: "the power strip's drawing context, likewise, and cleared every frame",
+  sizeCtx: "the body-size figure's drawing context, likewise, and caching its canvas's size",
   chartScope: "a visitor's choice of window, which outlives the run it was made in",
   flashTimer: "a `setTimeout` handle for the toast, measured in seconds of real time",
 });

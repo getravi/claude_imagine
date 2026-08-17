@@ -49,6 +49,7 @@ import {
   minimapPreyDotRgb,
   mortalityColours,
   mortalityTones,
+  sizePlotTones,
   energyColours,
   energyTones,
   barTrack,
@@ -800,6 +801,57 @@ test("each cause colour stands off the surface it is drawn on", () => {
       }
     }
   }
+});
+
+// ---- the body-size figure (v1.104) ----
+//
+// Three borrowed inks in one picture, and the point of measuring them is that
+// reuse inherits a *background* audit and not a *neighbour* audit. The
+// population line was measured against this panel in v1.25, the cause colours
+// in v1.25 and the refuge ring against the pond in v1.69; no two of the three
+// had ever been drawn in one figure, so no pair had ever been asked.
+
+test("the body-size figure's three inks are told apart from each other", () => {
+  const tones = sizePlotTones();
+  const names = Object.keys(tones);
+  let worst = Infinity;
+  let where = null;
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(tones[names[i]], tones[names[j]], vision);
+        if (d < worst) {
+          worst = d;
+          where = `${names[i]}/${names[j]}, ${vision}`;
+        }
+      }
+    }
+  }
+  assert.ok(worst >= MIN_DELTA_E, `worst pair in the size figure is ΔE ${worst.toFixed(1)} at ${where}`);
+});
+
+test("each of them stands off the panel it is drawn on", () => {
+  // The same 40 the cause colours are held to, and for the same reason: three
+  // mutually distinct colours that are all nearly the background is a fourth
+  // way for a small figure to fail quietly.
+  for (const [name, rgb] of Object.entries(sizePlotTones())) {
+    for (const surface of SURFACES) {
+      for (const vision of VISION_MODELS) {
+        const d = deltaE(rgb, surface.rgb, vision);
+        assert.ok(d >= 40, `${name} on ${surface.name} is ΔE ${d.toFixed(1)} under ${vision}`);
+      }
+    }
+  }
+});
+
+test("the figure borrows its inks rather than minting them", () => {
+  // The claim `sizeplot.js` opens with, as an assertion: every colour in that
+  // figure is a colour something else on this page already draws, so a change
+  // to one of the three moves both surfaces together and neither can drift.
+  const tones = sizePlotTones();
+  assert.deepEqual(tones.grazer, chartLineTones().pop);
+  assert.deepEqual(tones.carnivore, mortalityTones().predation);
+  assert.deepEqual(tones.refuge, refugeRingTones().ring);
 });
 
 test("the cause colours are ordered by luminance, which is the channel that survives", () => {

@@ -451,6 +451,40 @@
           <div class="chart-range" id="chart-range"></div>
         </div>
 
+        <!-- The bodies in the pond right now, counted into bars by how big they
+             are. Every other figure on this page has time, space or descent on
+             its x-axis; this one has a property of a creature, which nothing
+             here had ever drawn (v1.104). The bars are cut by the diet gene
+             because predation is a rule about the distance between two points
+             on this axis — see src/sizeplot.js. -->
+        <div class="sizewrap">
+          <div class="mort-head">📏 How big they are</div>
+          <canvas
+            id="sizes"
+            class="size-plot"
+            width="300"
+            height="46"
+            role="img"
+            aria-label="Body sizes: no bodies to measure."
+          ></canvas>
+          <!-- The x-axis: body radius in pixels, running the whole range a
+               genome can express rather than the range this pond happens to
+               occupy, so the picture means the same thing from one minute to
+               the next. Marks in the DOM, like the two rows above, because this
+               canvas is stretched to whatever the column is. -->
+          <div class="chart-xticks size-ticks" id="size-ticks" aria-hidden="true"></div>
+          <div class="deaths-legend">
+            <span class="dot" id="dot-grazer"></span> grazers
+            <span class="dot" id="dot-carnivore"></span> carnivores
+            <span class="line" id="line-refuge"></span> refuge
+          </div>
+          <!-- The y scale, which moves, stated exactly instead of marked (the
+               rule the two strips above follow) — and beside it the mean this
+               figure is a second opinion on, with the distance to the body
+               nearest it. -->
+          <div class="chart-range" id="size-legend"></div>
+        </div>
+
         <div id="inspector" class="inspector empty">
           <div class="hint">Click a creature to inspect its brain and lineage.</div>
         </div>

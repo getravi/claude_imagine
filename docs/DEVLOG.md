@@ -11903,3 +11903,162 @@ test holds it. There is no third state a new document can arrive in.
   what they describe?* — is unasked of the pond as a whole, where
   `describePond()` and the tiles and the minimap are three renderings of one
   world.
+
+## Entry 116 — the pond has no middle · 2026-08-17
+
+Three cycles ago, closing the food-web entry, I left a list of what it did not
+answer. Second on it:
+
+> the distribution is reported by two order statistics because that is what fits
+> in a tile, and **no figure on this page has a per-creature quantity on an
+> axis** — seed 128's seventy hunters spread between 37% and nothing are a
+> histogram nothing draws.
+
+That is a stranger gap than it looks, and I only saw how strange while writing
+this figure's header comment. Take the six pictures this page had and list what
+their axes are made of. The population chart, the death strip, the power strip
+and the Tree of Life all put *time* along the bottom. The pond and the little
+map put a *place* on both. The Tree of Life's other axis is a line of *descent*.
+Every axis this project has ever drawn is a coordinate of the world — and not
+one of them is a property of a creature.
+
+So I drew one, on the quantity the most findings here turn on. A body radius
+decides what a creature may eat (`preySizeRatio`), what may eat it
+(`refuge.js`), what moving costs it (`sizeCostFactor`) and what it leaves behind
+when it dies (`corpseEnergyPerRadius`). And the page has reported that quantity
+exactly three ways, every one of them a single number:
+
+- a **share above a threshold** — `Refuge 🔒` (v1.64),
+- a **maximum** — `Safe 🛟` (v1.89),
+- a **mean** — the death-size line under the mortality bar (v1.65), which prices
+  every death against the average body of the pond that survived the tick it
+  died in.
+
+### What the axis said
+
+**A summary is a claim that the thing summarised has a middle.** I did not think
+that sentence before I drew the figure; I thought it about four seconds after,
+looking at seed 128.
+
+Twelve seeds — v1.101's, so the two releases are comparable — at 6,000 ticks,
+thirty bars of 0.15 px each:
+
+| seed | pop | bars used | tallest bar | mean px | nearest body |
+|---|---|---|---|---|---|
+| 314 (default) | 244 | 7 | 175 (72%) | 7.54 | 0.008 |
+| 1 | 227 | 6 | 189 (83%) | 7.85 | 0.041 |
+| 2 | 275 | 6 | 115 (42%) | 7.13 | 0.001 |
+| 7 | 169 | 8 | 76 (45%) | 7.52 | 0.012 |
+| 13 | 278 | 5 | 148 (53%) | 7.74 | 0.006 |
+| 42 | 277 | 8 | 200 (72%) | 7.09 | 0.012 |
+| 51 | 251 | 8 | 155 (62%) | 7.38 | 0.004 |
+| 99 | 251 | 7 | 116 (46%) | 6.98 | 0.004 |
+| 128 | 237 | 10 | 125 (53%) | **6.22** | **0.251** |
+| 256 | 191 | 8 | 116 (61%) | 6.65 | 0.005 |
+| 512 | 189 | 6 | 65 (34%) | 6.86 | 0.007 |
+| 2718 | 283 | 11 | 144 (51%) | **4.96** | **0.222** |
+
+Two readings, and the second is the one I did not expect.
+
+**The pond is not a distribution.** A median of 7.5 of the thirty bars hold
+anybody at all, and one single 0.15 px bar holds between a third and four fifths
+of everybody alive. This is obvious in hindsight — the pond is a handful of
+clonal lineages and a lineage is a near-delta in body size — and it had never
+been drawn, so I had been carrying a mental picture of a spread for a hundred
+releases.
+
+**On two ponds of twelve, the mean is a size nothing in the water is.** Seed 128
+has no living body within 0.251 px of its own average, which is nearly two empty
+bars; seed 2718 within 0.222 px. Ten of twelve are within 0.041 px, so the
+default reading is *the mean is a real animal* and the exceptions are exceptions
+— which is exactly what makes them worth a number rather than a footnote, since
+the death-size line quotes that mean on every frame of every pond.
+
+The two hollow ponds are not the same shape, and I nearly wrote that they were.
+On seed 128 the gap is between the **diets**: the carnivores' spike sits at
+4.40 px and the grazers' at 7.30, 2.9 px apart, so the two colours of the figure
+land on either side of the hole. On seed 2718 both spikes are grazers — 3.7 px
+and 5.2 px — and the diets have nothing to do with it. One instance of a story I
+liked is not the story.
+
+### Three decisions that cost a draft each
+
+**The axis is declared, not fitted.** It runs `bodyRadiusMin` to
+`bodyRadiusMax`, the range a genome can express, rather than the range the pond
+currently occupies. My first version fitted the data and it was actively
+dishonest in the way v1.41 found the population chart being: a pond whose bodies
+span a tenth of a pixel was drawn as though it spanned everything, and the same
+picture meant something different a minute later. The declared bound also
+happens to be *exact* — `radius` is a lerp of the two constants over a gene
+clamped to 0–1 — so the clamp in `sizeBinOf` is unreachable in a pond nobody has
+swept, which is the kind of claim that has to be tested or it is a silent
+pile-up at one end of a picture.
+
+**A bar holding one creature is a pixel tall.** One creature in a pond of 300 is
+0.3% of the tallest bar and rounds to nothing, and the bodies this figure exists
+to show — the loner at the top of the range, the last carnivore — are precisely
+the ones that arrive one at a time. It is one `Math.max` and it is the
+difference between a histogram and a lie.
+
+**The bars are cut by the diet gene, and the legend says *carnivores*.**
+v1.101's whole finding is that a carnivore is a gene and a hunter is a carnivore
+with a meal, and that 53.7% of the first are not the second. A legend saying
+"hunters" would have put the error I corrected two releases ago back on the
+page, in a new figure, on the release after writing it down.
+
+### The colour, which is where the real lesson is
+
+This figure spends **no new colour**. The bars are the population line's blue
+and the death strip's *hunted* crimson; the rule is the pond's own refuge ring,
+so the threshold's two renderings — a circle drawn around a body, a line drawn
+on an axis — are one ink rather than two a reader has to learn separately.
+
+I nearly shipped that without measuring anything, on the grounds that all three
+had been audited already. They had: the blue against this panel in v1.25, the
+crimson in v1.25, the ring against the pond in v1.69. And every one of those
+audits is a measurement against a **background**. None of them is a measurement
+against a **neighbour**, because until this figure existed no two of the three
+were ever drawn in one picture.
+
+> **A borrowed colour inherits its background audit and not its neighbours'.**
+> Reuse is the right instinct and it is not a free pass: putting two audited
+> colours in one figure creates a pair nobody has measured.
+
+They clear — 39.8 at worst over the four vision models against a bar of 25, and
+all three clear the panel by more than 40 — so the instinct was right and the
+reasoning was luck. It is three tests now.
+
+### And I looked at it
+
+`node --test` cannot run `main.js`, so every figure this project has shipped has
+had its adapter — the canvas lookup, the DOM writes, the legend swatches — held
+by nothing but my own reading of it. This one I drove in a real browser before
+committing: the pond at tick 247, both colours painted, three axis marks under
+the figure, the caption and the `aria-label` carrying the same numbers, the
+three legend swatches painted from the palette, and no console error. That is
+not a test and it does not become one; it is the difference between believing
+the wiring works and having seen it.
+
+### What this leaves
+
+- **The mean has no mark.** It is in the caption as a number beside the distance
+  to the nearest body, which is more precise than a line and follows v1.41's own
+  rule about a scale stated exactly. But the finding of this cycle is a *picture*
+  — the mean landing in a gap — and the picture does not draw it. A second rule
+  on this axis needs a second measured ink, which is a cycle, not a line.
+- **This figure has no history.** Every other figure in that column remembers;
+  this one is a photograph of now, and the archive cannot reconstruct it, because
+  the archive keeps summaries and this is the shape those summaries are summaries
+  of. *When* a pond splits into two spikes is a question nothing here can ask.
+- **`nearest` is a two-body statistic standing in for a shape.** It says the mean
+  is nobody; it does not say the pond is bimodal, and the two are different
+  claims — a single outlier moves the first and not the second. Modality is what
+  the eye reads off this figure in a glance and what nothing measures.
+- **The sixth walk of "what is in this world that this view has never heard
+  of?"** would be this figure's own axis, and the answer is already visible: it
+  is a *count* of bodies, so a bar of three 8 px animals and a bar of three
+  4 px ones are the same height while the first is eight times the biomass.
+- And the question one figure over is unchanged and now has a second instance:
+  v1.103 asked whether two renderings of one *creature* agree, and the pond has
+  three renderings nobody has compared. This cycle just added a fourth.
+

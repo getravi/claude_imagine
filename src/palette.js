@@ -1050,6 +1050,42 @@ export function powerLineTones() {
   return { line: hslToRgb(70, 92, 58) };
 }
 
+/**
+ * The body-size figure (v1.104), which spends no new colour at all.
+ *
+ * Three inks, every one of them borrowed from the surface whose meaning it
+ * already carries: the population line's blue for the bars, because a histogram
+ * of bodies is the population the chart draws, cut a different way; the death
+ * strip's *hunted* crimson for the carnivore half, because that colour has said
+ * predation on this page since v1.25; and the pond's own refuge ring for the
+ * line at `bodyRadiusMax / preySizeRatio`, so the threshold's two renderings —
+ * a circle around a body, a rule on an axis — are the same colour rather than
+ * two colours a reader has to learn separately.
+ *
+ * Reuse is not a free pass, and this is the case that shows why. Each of the
+ * three has been measured against this panel — the blue in v1.25, the crimson
+ * in v1.25, the ring in v1.69 — and none of the three *pairs* had ever been
+ * measured, because until this figure existed no two of them were drawn in one
+ * picture: two live on the chart's stack and one lives on the pond. A colour
+ * inherits its background audit and not its neighbours'. All three pairs clear
+ * `MIN_DELTA_E` under all four vision models — worst case **39.8**, blue
+ * against the ring — and all three clear the panel by more than 40.
+ *
+ * The ring is quoted here as its opaque tone rather than its two-tone pond
+ * treatment. On the pond it is drawn with a near-black rim because it straddles
+ * bodies of arbitrary hue (v1.69); here its background is one colour I choose,
+ * which is v1.79's distinction between a mark on the canvas and a mark on the
+ * panel, and a rim would be a second line 1 px from the first in a figure 46 px
+ * tall.
+ */
+export function sizePlotTones() {
+  return {
+    grazer: chartLineTones().pop,
+    carnivore: mortalityTones().predation,
+    refuge: refugeRingTones().ring,
+  };
+}
+
 /** The opacity of the band between the lines — see `powerLine()`. */
 export const POWER_BAND_ALPHA = 0.26;
 

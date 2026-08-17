@@ -297,6 +297,7 @@ body {
 .stats,
 .mortality,
 .chartwrap,
+.sizewrap,
 .inspector {
   background: var(--bg-panel);
   border: 1px solid var(--line);
@@ -638,6 +639,23 @@ details .field {
 }
 .chart-range {
   margin-left: var(--axis-gutter);
+}
+/* ---- The body-size figure (v1.104) ----
+   The one figure in this column with no y-axis gutter: its y is a count, stated
+   in the caption rather than marked, so nothing has to sit beside the paint and
+   the drawing runs the full width. That is why the tick row and the caption
+   both undo the inset the chart's stack needs. */
+.sizewrap {
+  padding: 12px 14px;
+}
+.size-plot {
+  width: 100%;
+  height: 46px;
+  display: block;
+}
+.size-ticks,
+.sizewrap .chart-range {
+  margin-left: 0;
 }
 .chart-range,
 .phylo-range {
