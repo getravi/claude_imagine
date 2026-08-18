@@ -158,11 +158,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   rather than an accounting one; `plantLoss` is a mean over **creatures, not
   meals**, so a carnivore that never grazes counts as much as a grazer eating
   every tick, and weighting it needs a history an observer of the living cannot
-  have; the experiment this argues for is **gating the upkeep on the threshold**
-  so the bill is a step like the licence, which is a flag and a cycle of its own
-  because it moves every world; and the ramp-and-step question is **unasked of
-  every other continuous gene** — carnivory is merely the one with a threshold
-  written on it. And the
+  have; **the experiment this argued for ran in v1.107** (`licensedDietCost`)
+  and the prediction in the sentence above it was wrong, which is the finding.
+  Gate both prices on the licence and the pond gets a third richer (population
+  up on eleven seeds of twelve) and *less* carnivorous — mean diet gene down on
+  eight of twelve, the carnivore share from a median 45.5% to 11.5%, two more
+  ponds holding no carnivore at all. Drift does not carry the free gene up,
+  because **the thing that selects is the shape of a price and not its size**:
+  under the ramp a lineage pays for each step as it climbs and crossing 0.55
+  costs it nothing extra, while under the gate the whole licensed bill arrives
+  in the single mutation that crosses — upkeep 0 → 0.0165/tick (32.4% of
+  `metabolicBase`), a pellet 23 → 17.94, against a `mutationStrength` of 0.16.
+  Removing a cost built a wall out of it, and the pooled genes draw it: 11.05%
+  of all living bodies in the 0.05 band below the line against 1.78% ungated,
+  with the density falling monotonically above it where the ungated one rises
+  straight through. What *it* leaves: **two prices were gated by one flag**, so
+  the subsidy (the pellet) and the cliff (the upkeep) cannot be apportioned —
+  gating only the upkeep is one more flag and separates them; the histogram is
+  **twelve lineages pooled into a shape**, which v1.104's near-delta finding
+  says is honest about the set and mute about any member, and *no pooled
+  density on this project has ever carried that caption*; and it is one clock
+  again (6,000 ticks, v1.64's warning). The ramp-and-step question is still
+  **unasked of every other continuous gene** — carnivory is merely the one with
+  a threshold written on it — but it now has a worked example of what the
+  mismatch is worth, which is: the direction you would guess, reversed. And the
   three counters are a
   *shape* — any per-death property against the pond it left fits them, and age,
   energy, generation and carnivory are all unlooked-at. What it leaves:

@@ -443,7 +443,13 @@ export class Creature {
     // `ground` is exactly 1 unless terrain is switched on.
     const move = cfg.metabolicMove * thrust * sizeFactor * this.ground;
     // Upkeep of being a predator — see carnivoreMetabolicCost in config.js.
-    const dietCost = cfg.carnivoreMetabolicCost * this.carnivory;
+    // With `licensedDietCost` on the bill follows the licence: a body under
+    // `carnivoreThreshold` is refused prey before any size is compared, so it
+    // is charged nothing for a gene it can never spend. `licensed` is exactly
+    // `true` in every world where the flag is off, which leaves the term below
+    // the expression it has been since v1.1.
+    const licensed = !cfg.licensedDietCost || this.carnivory >= cfg.carnivoreThreshold;
+    const dietCost = licensed ? cfg.carnivoreMetabolicCost * this.carnivory : 0;
     // The price of a fever (contagion). `infected` can only ever be true while
     // that feature is on, so this term is an exact 0 in every other world.
     const illCost = this.infected ? cfg.diseaseMetabolicCost : 0;

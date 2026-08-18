@@ -390,6 +390,19 @@ export const DEFAULT_CONFIG = Object.freeze({
   // where hunting actually pays for this cost.
   carnivoreMetabolicCost: 0.03,
 
+  // The licence is a step and the bill is a ramp (opt-in, v1.107). Both prices
+  // of the diet gene — the upkeep above and `plantPenaltyFromDiet` — are
+  // charged in proportion to the gene, while `carnivoreThreshold` refuses a
+  // body below 0.55 admission to the mechanic at all. v1.105 put a number on
+  // the mismatch: over twelve seeds a median 60.7% of the upkeep is paid
+  // *below* that line, by animals the rule will never once let hunt. Switch
+  // this on and both prices follow the licence — a body under the threshold
+  // pays no upkeep and gives up nothing from a pellet, while every licensed
+  // body pays exactly what it pays today. Off by default and a pure no-op when
+  // off: the term is the same expression, no branch is taken and no random
+  // number is drawn, so default worlds stay bit-for-bit identical.
+  licensedDietCost: false,
+
   // Kin recognition (opt-in): a predator that is genetically close enough to
   // its target — a recent parent, sibling, or offspring — declines to treat
   // it as prey (and, symmetrically, isn't sensed as a threat by that kin

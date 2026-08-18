@@ -94,8 +94,14 @@ export function dietBill(creatures, config) {
   let idleN = 0;
   for (let i = 0; i < n; i++) {
     const diet = creatures[i].carnivory;
-    const upkeep = config.carnivoreMetabolicCost * diet;
-    const forgone = config.plantPenaltyFromDiet * diet;
+    // `licensedDietCost` (v1.107) is the experiment this module argued for: it
+    // gates both prices on the threshold, so an unlicensed body is charged
+    // nothing. The bill has to know, or the tile would keep quoting a toll the
+    // pond has stopped draining — a readout that disagrees with the rule it
+    // reports is the failure v1.103 built a sweep for.
+    const charged = !config.licensedDietCost || diet >= threshold;
+    const upkeep = charged ? config.carnivoreMetabolicCost * diet : 0;
+    const forgone = charged ? config.plantPenaltyFromDiet * diet : 0;
     bill.toll += upkeep;
     bill.plantLoss += forgone;
     // Fed: the gene is over the threshold, the mechanic is on, and there is at

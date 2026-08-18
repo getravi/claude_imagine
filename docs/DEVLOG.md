@@ -12404,3 +12404,145 @@ default world is bit-for-bit what it has been since v1.3.0.
   interrupted before reaching its stated subject, and the stated subject has now
   been reached and is a null. Whether the page has a fourth finding in it is
   genuinely open for the first time.
+
+
+## Entry 119 — the bill was holding the door open · 2026-08-18
+
+Two cycles ago I measured what a carnivore with nothing to eat costs, and ended
+the entry by writing down an experiment I was not going to run:
+
+> The obvious experiment is a different pond. Gate the upkeep on the threshold —
+> make the bill a step like the licence — and sub-threshold carnivory becomes
+> free. Every world moves, so it is a flag and a cycle of its own, and it should
+> be run against this measurement rather than instead of it.
+
+This is that cycle. The flag is `licensedDietCost`, it is off by default, and it
+gates *both* prices of the diet gene on `carnivoreThreshold`: under the line you
+pay no upkeep and keep your whole pellet, at or above it you pay exactly what
+you have always paid. Fourteen lines of code across three files, no new module,
+no random number drawn either way.
+
+I wrote down the prediction before running it, because v1.105's own closing
+paragraph contains one:
+
+> "In a world with no viable prey selection pushes the diet gene back down
+> toward herbivory" is real and weak; drift carries a gene this cheap whether or
+> not the niche exists.
+
+If drift carries a gene that costs a little, it should carry a gene that costs
+*nothing* at least as far. Making the sub-threshold half free should let the
+diet gene wander up.
+
+It goes down. Median mean diet over twelve seeds falls 0.514 → 0.398, down on
+eight of twelve. The carnivore share falls on seven and rises on one, median
+45.5% → 11.5%. Two more ponds join the three that hold no carnivore at all. And
+the population rises on **eleven of twelve**, median 223 → 289.5.
+
+### A subsidy that selects against the thing it subsidises
+
+The population is easy and I should have seen it coming: a grazer carrying a
+diet gene of 0.4 was handing back 16% of every pellet for a licence it never
+had, and now it eats the whole thing. The pond gets a third richer because most
+of the pond was paying that.
+
+The gene is the interesting half, and the answer is that I had been thinking
+about the *size* of a price when the thing that selects is its **shape**.
+
+Under the ramp, carnivory costs more the more of it you have, continuously, from
+zero. A lineage drifting toward the threshold pays for every step it takes and
+arrives at 0.55 having already paid four fifths of a full carnivore's bill.
+Crossing the line costs it almost nothing — the licence is the only thing that
+changes there, and the licence is free.
+
+Under the gate, everything below the line is free and the entire licensed bill
+arrives in **the one mutation that crosses**. At 0.55 the upkeep goes 0 → 0.0165
+a tick, which is 32.4% of `metabolicBase` on top of it, and a pellet goes from
+23 energy to 17.94, −22.0%. `mutationStrength` is 0.16, so the gene steps over
+that line in a single ordinary mutation and gets the whole bill at once, with no
+prey secured yet and half its diet still coming from plants it has just become
+bad at eating. I removed a cost and built a wall out of it.
+
+The pooled diet genes at 6,000 ticks draw it. Share of every living body across
+the twelve ponds, by 0.05 band:
+
+| band | ramp (off) | gate (on) |
+| --- | ---: | ---: |
+| 0.45 – 0.50 | 0.34% | 1.74% |
+| 0.50 – 0.55 | 1.78% | **11.05%** |
+| **0.55** — the licence | | |
+| 0.55 – 0.60 | 2.77% | 8.63% |
+| 0.60 – 0.65 | 9.79% | 4.25% |
+| 0.65 – 0.70 | 11.65% | 4.22% |
+
+The ungated column rises straight through the threshold, which is exactly right:
+with the price on a ramp, 0.55 is not a feature of the landscape at all, it is
+just a number where a rule starts being willing to admit you. The gated column
+peaks in the last band below the line and falls monotonically above it. A 6.2×
+pile-up against a cliff I made.
+
+### The part that is not simply "carnivory got worse"
+
+The *hunters* column stopped me writing the tidy version of this entry. Kills
+rise on nine of twelve seeds, median 86 → 281.5. Seed 99 goes from a pond where
+6.0% of the living are hunters taking 16 kills in 6,000 ticks to one where 83.8%
+are hunters taking 461. Seed 2026 goes from no hunters at all to 46.1%.
+
+Both things are true at once: the gate makes carnivory harder to enter, and it
+makes the far side of the threshold a much better place to be, because the far
+side of the threshold is now standing in a pond a third larger and prey is what
+a pond is made of. Two ponds lose their hunters entirely and two gain a whole
+predatory ecology. The spread across otherwise identical worlds is far wider
+with the gate on than with it off, which is what a barrier does to a set of
+worlds: it converts a gradient every pond climbs a little into a coin every pond
+flips once.
+
+### What the suite got
+
+Seven tests, and the two I care about are both controls against the simulation
+rather than second copies of the arithmetic — the rule this project learned the
+hard way and keeps re-learning:
+
+- **the gated toll is what the gated pond drains.** v1.105's own control, re-run
+  inside this world: two ponds from one seed, one with `carnivoreMetabolicCost`
+  at zero, both gated, stepped once. The flag takes no branch a random number
+  depends on, so the whole difference in what they burn is the term `dietcost.js`
+  claims.
+- **the gate is invisible where the licence refuses nobody.** Set
+  `carnivoreThreshold` to 0 and every body is licensed, so a gate on the licence
+  has nothing to gate: 400 ticks, bit-for-bit. `fingerprint.test.js` sweeps every
+  flag for being a no-op when *off*; this is the sharper claim, that the flag is
+  the gate and not something else that happens to be near it.
+
+`dietcost.js` had to learn the flag too. The `Bill 🧾` tile reports the toll and
+the share of it paid below the threshold — with the gate on, that share is zero
+by construction, and a tile still quoting the ungated number would have been the
+exact failure v1.103 built a sweep for: two renderings of one subject
+disagreeing about what they render.
+
+And `prosecounts.test.js` did its job without being asked. Adding one flag made
+three sentences stale — two in SCIENCE.md, one in a test file, all saying
+"twenty opt-in flags" — and the suite named all three with line numbers before I
+had thought to look. That test has now caught drift twice on flags it did not
+know were coming, which is the whole argument for reading a number out of the
+code instead of typing it into prose.
+
+### What it leaves
+
+- **I gated two prices with one flag, so I cannot apportion the result.** The
+  population rise is plainly the pellet subsidy and the gene's fall is argued to
+  be the cliff, but "argued" is the word. Gating only the upkeep and leaving the
+  pellet penalty on its ramp separates them, and it is another flag.
+- **The histogram is twelve lineages wearing a distribution.** v1.104 found this
+  pond is a near-delta in body size, and the diet gene is no better. Pooling
+  twelve ponds says something true about the *set* and nothing about any member,
+  and I should stop drawing pooled densities without saying so in the caption.
+- **6,000 ticks is one clock.** v1.64 read the refuge one way at 6,000 and the
+  other at 20,000 and nobody has ever run both. The pile-up under the line might
+  be a standing state or a lineage on its way somewhere, and this measurement
+  cannot tell them apart.
+- **The shape is general and I only looked at carnivory.** A ramp priced against
+  a step is available anywhere a threshold gates a continuous gene, and carnivory
+  is simply the one with the threshold written down in `config.js`. That was
+  v1.105's closing sentence and it is still open — but it now has a worked
+  example of what the mismatch is worth, which is: the direction you would guess,
+  reversed, for a reason that is about shape and not about magnitude.

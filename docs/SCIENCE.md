@@ -2109,7 +2109,7 @@ to 3 × 10⁻¹² at t20,000 — until one of them flips a decision.
 Recording a hash for every configuration is not possible, but two claims about
 *all* of them are, and both are now tests. With every opt-in flag explicitly
 switched off, the full state hash is identical to the default world's — for all
-twenty opt-in flags, read out of `DEFAULT_CONFIG` so a future feature is
+twenty-one opt-in flags, read out of `DEFAULT_CONFIG` so a future feature is
 covered the day its flag lands. And with each switched on, the world must
 actually change (the v1.27 rule: sweep every lever once purely to check it *is*
 a lever).
@@ -2245,10 +2245,10 @@ for (let i = 0; i < 40000; i++) {
 ## Is every number in `config.js` a lever?
 
 v1.36 asked this of the opt-in **flags** — thirteen of them at the time, and
-there are twenty opt-in flags now — and left the **numbers** unasked, which is
-where both of this project's known dead
-parameters came from. v1.27 found `detritusPerRadius` clipped by a cell cap that
-silently discarded a third of every large carcass. v1.29 found `energyMax`
+there are twenty-one opt-in flags now — and left the **numbers** unasked,
+which is where both of this project's known dead parameters came from. v1.27
+found `detritusPerRadius` clipped by a cell cap that silently discarded a third
+of every large carcass. v1.29 found `energyMax`
 sitting above a threshold it could never be reached from. Neither was visible in
 the code; both were found by moving a number and watching for a world that
 didn't. So `src/levers.js` moves every one of the eighty-five constants in
@@ -7671,6 +7671,125 @@ toward herbivory"*) measured, and mostly not confirmed.
   obvious experiment it argues for — gating the upkeep on the threshold, so the
   bill is a step like the licence — is a different pond, and would move every
   world.
+
+## The bill that was holding the door open (v1.107)
+
+v1.105 ended by naming an experiment and declining to run it:
+
+> The obvious experiment is a different pond. Gate the upkeep on the threshold —
+> make the bill a step like the licence — and sub-threshold carnivory becomes
+> free. Every world moves, so it is a flag and a cycle of its own.
+
+`licensedDietCost` is that flag. With it on, **both** prices of the diet gene are
+gated on `carnivoreThreshold`: a body under 0.55 pays no `carnivoreMetabolicCost`
+and gives up nothing from a pellet, while every body at or above it pays exactly
+what it paid before. Off by default, no branch taken, no random number drawn —
+the default pond is bit-for-bit what it has been since v1.3.0.
+
+The prediction in v1.105 was that the gene would drift *up*: "drift carries a
+gene this cheap whether or not the niche exists", and this makes the cheap half
+free. It goes down.
+
+### Twelve seeds at 6,000 ticks
+
+The same twelve ponds v1.101, v1.104 and v1.105 measured, each run twice from
+one seed with the flag as the only difference. *carnivores* is the share of the
+living whose diet gene clears the threshold; *hunters* is the share that clears
+it **and** has somebody in the water it could eat (`foodweb.js`'s eligible set);
+*bill* is the toll against what the same bodies pay simply to exist.
+
+| seed | population | mean diet | carnivores | hunters | kills | bill ÷ existence |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 314 | 244 → 274 | 0.168 → 0.233 | 0.4% → 0.4% | 0.0% → 0.0% | 29 → 18 | 0.099 → 0.001 |
+| 7 | 169 → 244 | 0.589 → 0.405 | 91.7% → 54.9% | 57.4% → 0.0% | 251 → 335 | 0.346 → 0.189 |
+| 21 | 209 → 367 | 0.677 → 0.584 | 78.0% → 22.6% | 60.8% → 10.1% | 372 → 552 | 0.398 → 0.098 |
+| 42 | 277 → 364 | 0.260 → 0.235 | 0.0% → 0.0% | 0.0% → 0.0% | 122 → 37 | 0.153 → 0.000 |
+| 51 | 251 → 290 | 0.216 → 0.248 | 0.0% → 0.0% | 0.0% → 0.0% | 1 → 3 | 0.127 → 0.000 |
+| 77 | 196 → 265 | 0.648 → 0.566 | 100.0% → 60.8% | 3.1% → 11.7% | 316 → 460 | 0.381 → 0.212 |
+| 99 | 251 → 185 | 0.536 → 0.824 | 53.8% → 83.8% | 6.0% → 83.8% | 16 → 461 | 0.315 → 0.454 |
+| 128 | 237 → 304 | 0.493 → 0.391 | 37.1% → 0.0% | 30.0% → 0.0% | 42 → 17 | 0.290 → 0.000 |
+| 256 | 191 → 207 | 0.782 → 0.682 | 100.0% → 100.0% | 34.0% → 51.2% | 50 → 228 | 0.460 → 0.401 |
+| 512 | 189 → 331 | 0.442 → 0.196 | 34.4% → 0.0% | 33.3% → 0.0% | 357 → 412 | 0.260 → 0.000 |
+| 1024 | 252 → 289 | 0.269 → 0.273 | 0.0% → 0.0% | 0.0% → 0.0% | 18 → 19 | 0.158 → 0.000 |
+| 2026 | 169 → 436 | 0.702 → 0.438 | 100.0% → 48.9% | 0.0% → 46.1% | 399 → 525 | 0.413 → 0.194 |
+| **median** | **223 → 289.5** | **0.514 → 0.398** | **45.5% → 11.5%** | **4.5% → 0.0%** | **86 → 281.5** | **0.303 → 0.050** |
+
+Direction, seed by seed: population up on **11 of 12**, the bill down on **11 of
+12**, mean diet down on **8 of 12**, the carnivore share down on **7** and up on
+**1** (four ponds are level, three of them at zero either way). Ponds holding no
+carnivore at all go from **3 of 12 to 5 of 12**.
+
+So making carnivory cheaper produced *less* of it, in a pond that grew by a
+median 30%.
+
+### The gate is a cliff
+
+The subsidy explains the population — a grazer at diet 0.4 was giving up 16% of
+every pellet and now keeps all of it — but a subsidy paid to the gene should not
+select against the gene. The selection is in the shape of the price, not its
+size.
+
+Under the ramp, the cost of carnivory rises continuously with the gene, so a
+lineage climbing toward the threshold pays for each step it takes and arrives
+having already paid most of the bill. Under the gate, everything below the line
+is free and the **whole licensed bill arrives in the one mutation that crosses
+it**: at 0.55 the upkeep jumps 0 → 0.0165 a tick (32.4% of `metabolicBase`) and
+a pellet drops from 23 to 17.94 energy (−22.0%), in a single step. `mutationStrength`
+is 0.16, so that step is comfortably inside one ordinary mutation of the diet
+gene — the cliff is one mutation wide, and nothing can approach it gradually.
+
+The pooled diet genes at 6,000 ticks show it as a shape. Share of all living
+bodies across the twelve ponds, by 0.05-wide band:
+
+| band | ramp (off) | gate (on) |
+| --- | ---: | ---: |
+| 0.45 – 0.50 | 0.34% | 1.74% |
+| 0.50 – 0.55 | 1.78% | **11.05%** |
+| **0.55** — the licence | | |
+| 0.55 – 0.60 | 2.77% | 8.63% |
+| 0.60 – 0.65 | 9.79% | 4.25% |
+| 0.65 – 0.70 | 11.65% | 4.22% |
+| 0.70 – 0.75 | 8.24% | 2.45% |
+
+With the ramp the density *rises* straight through the line — the threshold is
+not a feature of the landscape at all, because the price either side of it is
+the same price. With the gate the density peaks in the last band **below** the
+line and falls monotonically above it: 11.05% against 1.78%, a 6.2× pile-up
+against the cliff.
+
+### Harder to enter, better once inside
+
+The gate is not simply anti-carnivore, and the *hunters* column is where that
+shows. Where a lineage does get across, it lands in a pond a third larger, and
+prey is what a pond is made of: kills rise on **9 of 12** seeds (median 86 →
+281.5), the hunter share rises on 4 seeds and falls on 4, and seed 99 goes from
+a pond of 6.0% hunters taking 16 kills to one of 83.8% taking 461. Two ponds
+(7, 512) lose their hunters entirely; two others (99, 2026) gain a full
+predatory ecology where they had almost none. The variance across seeds is much
+larger with the gate on than with it off, which is what a threshold that has
+become a barrier does to a set of otherwise identical worlds.
+
+### What it leaves
+
+- **The two prices were gated together, so their shares are unmeasured.** The
+  subsidy (a grazer keeping its whole pellet) and the cliff (the licensed bill
+  arriving at once) are both consequences of one flag, and the population rise
+  is plainly the first while the gene's fall is argued to be the second. Gating
+  only the upkeep, leaving the pellet penalty on its ramp, would separate them
+  and is one more flag.
+- **The pooled histogram is twelve lineages, not one distribution.** v1.104
+  measured this pond as a near-delta in body size — a median 7.5 of 30 bars hold
+  anybody — and the diet gene is no different. Pooling twelve ponds to draw a
+  density is honest about the *set* of worlds and not about any one of them, and
+  a per-seed version of that table is twelve near-spikes.
+- **This is an instant, at 6,000 ticks.** v1.64's warning applies: the refuge
+  read one way at 6,000 ticks and the other at 20,000, and nobody has run either
+  measurement at the other's clock. Whether the pile-up under the line is a
+  standing state or a lineage on its way somewhere is not answered here.
+- **The cliff is a general shape, and carnivory is the only place it has been
+  looked for.** Any rule that gates a continuous gene on a threshold and prices
+  it on a ramp has the same mismatch available, and the config has more genes
+  than it has thresholds. Which is v1.105's closing sentence, still open.
 
 ## What this model deliberately leaves out
 

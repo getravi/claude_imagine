@@ -1,8 +1,8 @@
 // Tests for the constant sweep (v1.38) — is every number in config.js a lever?
 //
 // v1.36 asked this of the opt-in *flags* — thirteen at the time, and there are
-// twenty opt-in flags now — and left the *numbers* unasked, which is where the
-// two known cases of a parameter doing nothing both came from:
+// twenty-one opt-in flags now — and left the *numbers* unasked, which is where
+// the two known cases of a parameter doing nothing both came from:
 // `detritusPerRadius` clipped by a cell cap (v1.27) and `energyMax` sitting
 // above a threshold it could never be reached from (v1.29). Neither was visible
 // in the code. Both would have been caught here.

@@ -636,7 +636,16 @@ export class World {
         if (nfD2 <= eatR2) {
           nf.eaten = true;
           grazed = true;
-          const plantGain = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * c.carnivory);
+          // The gene's second price. With `licensedDietCost` on it is gated on
+          // the same threshold the upkeep is (`creature.js`): a grazer carrying
+          // a diet gene the hunting rule will never admit keeps the whole
+          // pellet. The `false` branch is the expression this line has always
+          // been, so a default world is bit-for-bit unchanged.
+          const forgone =
+            cfg.licensedDietCost && c.carnivory < cfg.carnivoreThreshold
+              ? 0
+              : cfg.plantPenaltyFromDiet * c.carnivory;
+          const plantGain = cfg.foodEnergy * (1 - forgone);
           // A pellet is a place, not a battery: these units exist for the first
           // time here. What the eater had no room for is minted and lost in the
           // same instant, which is the only way that waste is ever visible.

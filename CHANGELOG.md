@@ -4,6 +4,58 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.107.0] — 2026-08-18
+
+v1.105 measured a mismatch and declined to fix it: both prices of the diet gene
+are charged in proportion to the gene, while `carnivoreThreshold` is a step, so
+a median **60.7%** of the carnivory upkeep over twelve seeds is paid *below* the
+line by animals the hunting rule will never once admit. It closed by naming the
+experiment — *gate the bill on the licence* — and by saying it is a flag and a
+cycle of its own.
+
+**Added — `licensedDietCost` (opt-in).** With it on, both prices follow the
+licence: a body under `carnivoreThreshold` pays no `carnivoreMetabolicCost` and
+gives up nothing from a pellet, while every licensed body pays exactly what it
+paid before. Off by default, no branch taken and no random number drawn, so
+default worlds stay bit-for-bit identical to v1.3.0. A toggle (*Licensed diet
+cost 🧾*), a permalink parameter (`lic`), and the `Bill 🧾` tile reads the gated
+bill rather than the ungated one — a readout that disagreed with the rule it
+reports is the failure v1.103 built a sweep for.
+
+**The prediction was wrong, and the reason is the finding.** v1.105 expected the
+gene to drift up now that the cheap half is free. Over the same twelve seeds at
+6,000 ticks the population rises on **11 of 12** (median 223 → 289.5, +30%) and
+the pond becomes *less* carnivorous: mean diet gene down on 8 of 12 (median
+0.514 → 0.398), the carnivore share down on 7 and up on 1 (median 45.5% →
+11.5%), and ponds holding no carnivore at all go from 3 of 12 to 5.
+
+**Making carnivory free below the line turns the line into a cliff.** Under the
+ramp a lineage pays for each step as it climbs and arrives having paid; under
+the gate the whole licensed bill lands in the single mutation that crosses —
+upkeep 0 → 0.0165 a tick (32.4% of `metabolicBase`) and a pellet 23 → 17.94
+(−22.0%), against a `mutationStrength` of 0.16. The pooled diet genes show it as
+a shape: with the gate on, **11.05%** of all living bodies sit in the 0.05 band
+immediately below the threshold against 1.78% with it off, a 6.2× pile-up, and
+the density falls monotonically above the line where the ungated pond's rises
+straight through it.
+
+**Harder to enter, better once inside.** Where a lineage does cross it lands in
+a pond a third larger, and prey is what a pond is made of: kills rise on 9 of 12
+(median 86 → 281.5), and seed 99 goes from 6.0% hunters taking 16 kills to 83.8%
+taking 461. Two ponds lose their hunters entirely; two gain a predatory ecology
+they did not have.
+
+Seven tests in `test/licensedDietCost.test.js`, none of them a second copy of
+the formula: the gated toll measured against an arm with `carnivoreMetabolicCost`
+at zero (v1.105's own control, re-run inside the gated world), the upkeep and
+the pellet each measured either side of the threshold against a flag-off arm,
+and the sharp form of no-op — set `carnivoreThreshold` to 0, so the licence
+refuses nobody, and the gate must be bit-for-bit invisible for 400 ticks. The
+twelve-seed measurement is in `docs/SCIENCE.md`.
+
+The opt-in flags are twenty-one now, and `test/prosecounts.test.js` (v1.85)
+caught all three sentences that still said twenty before this release shipped.
+
 ## [1.106.0] — 2026-08-17
 
 v1.87 walked the app's five absolutely positioned marks with a ruler and found
