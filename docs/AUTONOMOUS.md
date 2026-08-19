@@ -938,6 +938,25 @@ DEVLOG as I ship them; add new ones as they occur to me.
   Three things it leaves. (a) **`main.js` is down to the inspector and the
   chronicle feed**, both `innerHTML` with *structure* in them — a table of
   `{id, kind, read}` is not the shape for that and I do not yet know what is.
+  **The inspector closed in v1.108** (`src/inspectorview.js`), and the shape
+  question was a fiction: all four builders take a creature and return a
+  string, none of them touches `document`, and the carve is a cut-and-paste
+  plus an import. What the reading found is a `Math.min`. The weight strip drew
+  the first **120 of a brain's 243** numbers — no biases, no motor layer at all
+  — and v1.51's accessible name was assembled from the same `n`, so it said
+  "120 weights … strongest 2.48" about an animal with 243 whose strongest is
+  2.56. Over twelve seeds (22,885 creature-frames) the true peak is outside the
+  drawn half on **58.6%**. The excitatory share was meant to be the control and
+  is the finding — see the lesson below. Two smaller things came with it: the
+  NEAT diagram's rails were a hand-typed copy of `NEAT_IO` (they agreed by
+  luck, and a stale copy drops edges *silently*), and a seven-deep ancestry
+  said "1 older ancestors" beside a count that has had its plural guard since
+  v1.9. What it leaves: the chronicle feed, which is the harder one (a
+  scrolling list with identity across frames, not a figure rebuilt from a
+  creature); and the strip is honest about *how many* weights it draws and
+  still says nothing about **which** — 243 undifferentiated cells that are
+  really four blocks, so nobody can see where the sensory half of a mind ends
+  and the motor half begins.
   (b) The sweep this cycle did one site of: **grep for every early return in a
   per-frame updater**, because each is a promise that the state it skips was
   already correct, and after a reseed none of them are — the chart's captions,
@@ -971,6 +990,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A robust estimate of a quantity that sits on a threshold is not a robust
+  answer to the question the reader is asking.** The weight strip drew 120 of a
+  brain's 243 numbers and described the prefix as though it were the brain. Two
+  of its three claims break the way truncation obviously breaks things — the
+  count is out by a factor of two and the strongest weight is outside the drawn
+  half on 58.6% of 22,885 creature-frames. The third was supposed to be the
+  control and it *behaved* like one: the excitatory share is accurate to a
+  median 1.5 points, because a ratio is what survives truncating an unordered
+  array. And on **21.2%** of the same frames the prefix and the brain disagree
+  about whether the animal is mostly excitatory or mostly inhibitory, because
+  the true split sits within a few points of a half. The estimate is robust and
+  the sentence resting on it is a coin. So compare an error bar to the distance
+  to the **decision boundary**, never to the quantity's own range — and notice
+  that this is v1.72's cliff-and-plateau and v1.107's step-versus-ramp arriving
+  on a measurement instead of on a rule. Every recent surprise here has been a
+  continuous thing meeting a threshold, and the threshold is the half nobody
+  wrote down.
+
+- **"I do not yet know what shape this is" is a sentence that protects itself.**
+  It sounds like diligence, it reads as work-in-progress, and it sat in this
+  file for six releases in front of close to two hundred lines of shipped surface that
+  no test could load. The actual obstacle was that I had typed those functions
+  into `main.js` in v1.0 and never moved them; the design question I thought I
+  was deferring did not exist, because every one of them returns a string and
+  none of them touches `document`. A note admitting ignorance has to carry its
+  own falsifier beside it — here, *does this code import the DOM?*, which is one
+  grep — or it is not a note, it is a stall with a reason attached. And the
+  general form for this repo: **when something is hard to test, check whether it
+  is hard to test or merely in the wrong file.**
 
 - **When two things have to agree on a shape and each is decided somewhere else,
   one of them is silently losing the difference.** The front door's hero canvas

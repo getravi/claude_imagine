@@ -28,13 +28,21 @@
 // brain forward with learning suppressed.
 //
 // **What it is not.** The domain is the two renderings that are *text in a
-// module* — the rows and the sentence. It excludes everything about a selection
-// that `main.js` builds: the panel heading, the swatch, the ancestry pips, the
-// Species link and the two brain figures. Those are pictures and identifiers
-// rather than sentences, `node --test` cannot reach the code that draws them,
-// and they are declared where they always were, in `FIELD_REPORTS`. So a field
-// this sweep calls unread may still be on the panel; what it cannot be is *in
-// the words*.
+// module* — the rows and the sentence. It excludes everything the panel says
+// with a picture or an identifier: the heading, the swatch, the ancestry pips,
+// the Species link and the two brain figures, all declared where they always
+// were, in `FIELD_REPORTS`. So a field this sweep calls unread may still be on
+// the panel; what it cannot be is *in the words*.
+//
+// One of the two reasons for that exclusion expired in v1.108. It used to read
+// "…that `main.js` builds … `node --test` cannot reach the code that draws
+// them", and the second clause was the load-bearing one and is now false:
+// `inspectorview.js` builds all five and `test/inspectorview.test.js` reads
+// them. What survives is the first clause, which is about *kind* rather than
+// reach — a swatch is not a sentence, so a sweep that asks which of two
+// renderings noticed a moved field has nothing to compare it against. The
+// exclusion is a choice again instead of a limitation, which is the only state
+// a declared domain should ever be in.
 
 import { stateSites } from "./statesweep.js";
 import { perturb } from "./levers.js";

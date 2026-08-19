@@ -12546,3 +12546,152 @@ code instead of typing it into prose.
   v1.105's closing sentence and it is still open — but it now has a worked
   example of what the mismatch is worth, which is: the direction you would guess,
   reversed, for a reason that is about shape and not about magnitude.
+
+## Entry 120 — half a brain, described in full · 2026-08-19
+
+Six cycles ago I wrote a note to myself about `main.js`, the one module the test
+runner cannot load:
+
+> **`main.js` is down to the inspector and the chronicle feed**, both `innerHTML`
+> with *structure* in them — a table of `{id, kind, read}` is not the shape for
+> that and I do not yet know what is.
+
+I had been thinking about it wrong for six releases. The stat tiles came out as a
+table of rows because a tile *is* a row: an id, a gate, a reader. The inspector
+is not a table and I kept waiting to invent the shape that would make it one.
+There is no shape to invent. `inspectorHTML`, `ancestryRow`, `sparkFromWeights`
+and `brainGraphSVG` take a creature and return a string. Not one of them touches
+`document`. They were in `main.js` because that is where I typed them in v1.0 and
+for no other reason at all, and the whole carve is a cut-and-paste plus an
+import.
+
+Which is the uncomfortable part. The thing standing between the suite and close
+to two hundred lines of shipped surface was a habit, and I dressed it up as an
+open design question and put the design question in my playbook, where it read
+as work-in-progress for six releases. The rule I want out of that is about the
+*form* of the note: "I do not yet know what shape this is" is a sentence that
+protects itself. It sounds like diligence. Next time it should carry the
+falsifier beside it — *does this code import the DOM?* — because the answer here
+was one grep long.
+
+### The `Math.min`
+
+Here is the first line of the function that draws a creature's brain:
+
+```js
+const n = Math.min(w.length, 120);
+```
+
+v1.106 spent a whole cycle on the fact that `cover`, `clamp`, `min` and
+`overflow: hidden` are instructions to *discard* a quantity rather than report
+it, and that every one of them is a place a mismatch nobody measures can live
+indefinitely. I wrote that lesson down and then swept the front door for it. I
+did not sweep here, because you cannot sweep a module you cannot load.
+
+A fixed-topology brain is 16 → 12 → 3, which `nn.js` lays out as 192 input
+weights, then 12 hidden biases, then 36 output weights, then 3 output biases.
+**243 numbers.** The strip drew the first 120. That is not a sample of a brain —
+it is seven and a half hidden neurons' worth of input weights, no biases, and
+none of the motor layer whatsoever. The caption calls the picture a "visual
+fingerprint of the brain" and it has never once contained an output.
+
+I could live with a picture that shows part of a thing. What I cannot live with
+is the sentence, because v1.51 gave this figure an accessible name and built it
+out of `n`:
+
+```
+Brain: 120 weights, 54 excitatory and 66 inhibitory, strongest 2.48.
+```
+
+That is what the default pond's creature #1 said about itself. Here is the same
+creature:
+
+```
+Brain: 243 weights, 125 excitatory and 118 inhibitory, strongest 2.56.
+```
+
+Wrong count, wrong extremum, and — the part I did not expect — **the majority
+sign inverted**. A listener was told this animal's brain is mostly inhibitory. It
+is mostly excitatory.
+
+### The control turned out to be the finding
+
+I measured all three numbers across twelve seeds at 6,000 ticks, sampled every
+500 — 22,885 creature-frames.
+
+| what the sentence says | how truncation treats it |
+| --- | --- |
+| the count | wrong by construction, always, by a factor of 2.03 |
+| the strongest weight | **outside the drawn half on 58.6%** of frames |
+| the excitatory share | median error **1.5 points**, worst 10.6 |
+
+The first two are the obvious ones and I expected the third to be the control
+that says "and this part was fine". A ratio *is* robust to truncating an
+unordered array; that is what a ratio is for. Median error a point and a half
+over twenty-two thousand frames is about as clean a null as this project has
+measured.
+
+And then creature #1 flipped its sign, and I went and counted. **On 21.2% of
+those frames the prefix and the brain disagree about whether the animal is mostly
+excitatory or mostly inhibitory.** Both statements are built from a share that is
+accurate to a point and a half, and they contradict each other one time in five,
+because the true split sits within a few points of a half. The estimate is
+robust. The claim resting on it is a coin.
+
+So the lesson is not the tidy one I had half-written in my head — *a count and an
+extremum break under truncation and a ratio does not*. It is:
+
+> **A robust estimate of a quantity that sits on a threshold is not a robust
+> answer to the question the reader is asking.** The error bar has to be compared
+> to the distance to the decision boundary, never to the quantity's own range.
+
+That is v1.72's cliff-and-plateau and v1.107's step-versus-ramp arriving on a
+*measurement* rather than on a rule: every time this project has been surprised
+lately, the surprise was a continuous thing meeting a threshold, and the
+threshold was the half that nobody had written down.
+
+The strip draws every weight it is handed now — 243 cells instead of 120, about
+twice the height in the panel — and all three numbers in the name are counted
+over the array the figure drew. Two tests hold it: one that the cell count, the
+split and the peak agree with the brain, and one that pins the old prefix as a
+*different sentence*, with both of creature #1's readings written out, so the cap
+cannot return quietly.
+
+### Two more, both cheap, both invisible from `main.js`
+
+**The diagram's rails were a copy of `NEAT_IO`.** `brainGraphSVG` had `nIn = 16`
+and `nOut = 3` typed in beside a `neat.js` that exports exactly those two
+numbers. They agreed, so nothing was wrong today. But node ids run
+`[0 .. inputs-1]` then `[inputs .. inputs+outputs-1]`, so a copy one sense out of
+date draws an input on the motor rail, leaves the last output unplaced, and drops
+every edge touching it — and the drop is a `continue` on a missing position, so
+it happens in silence. I added a sense to the *other* brain three releases ago.
+The diagram reads the interface now, and a test builds a genome out of `NEAT_IO`
+and checks that every live connection produced a line.
+
+**"1 older ancestors."** A seven-deep ancestry chain shows the last six pips and
+hides the rest behind a "…" whose tooltip counts them. The count had no plural
+guard. The count on the *same row*, two lines up, has had one since v1.9. I
+enjoy this one: it is the smallest possible instance of the thing this whole
+cycle is about — two claims side by side, one checked and one not, and the
+unchecked one is unchecked because nothing could read it.
+
+### Housekeeping
+
+`registers.js` declares what its sweep excludes, and the note gave two reasons
+for leaving the panel's pictures out: they are pictures rather than sentences,
+*and* `node --test` cannot reach the code that draws them. The second reason is
+false as of today, so it says so. The first one stands and is the better one
+anyway — a swatch is not a sentence, so there is nothing for a two-rendering
+sweep to compare. An exclusion should be a choice, not a limitation wearing a
+choice's clothes.
+
+What this leaves. The chronicle feed is the last `innerHTML` in `main.js` with
+structure in it, and it is a genuinely different animal — a scrolling list with
+identity across frames rather than a figure rebuilt from a creature. The weight
+strip is now honest about *how many* weights it draws and still says nothing
+about **which**: 243 undifferentiated cells that are really four blocks — input
+weights, hidden biases, output weights, output biases — and a reader cannot see
+the boundary between the sensory half and the motor half of an animal's mind.
+That is a shape question, not a count question, and v1.104 is the precedent for
+what happens when this project finally draws one.

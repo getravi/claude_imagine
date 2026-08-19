@@ -4,6 +4,73 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.108.0] — 2026-08-19
+
+v1.98 carved the last two panels out of `main.js` and left one item behind:
+*"`main.js` is down to the inspector and the chronicle feed, both `innerHTML`
+with structure in them, and a table of `{id, kind, read}` is not the shape for
+that and I do not yet know what is."* The shape turned out to be the plain one.
+The inspector's four builders never touched the DOM — they return strings — and
+`main.js` was holding them only because that is where they were written.
+
+**Added — `src/inspectorview.js`.** The panel's markup: the heading and its
+swatch, the ancestry pips, the Species link, the weight strip, the evolved-brain
+diagram, and the key that decides when the structure is rebuilt. `main.js` keeps
+the adapter — the element lookup, the `innerHTML` write, two click handlers and
+the per-frame patching. Eleven tests in `test/inspectorview.test.js`, which is
+the first time any of these strings has been read by anything.
+
+**The finding is a `Math.min`.** `sparkFromWeights` opened with
+`const n = Math.min(w.length, 120)`. A creature's inherited brain is 16 → 12 → 3,
+which `nn.js` lays out as 192 input weights, 12 hidden biases, 36 output weights
+and 3 output biases — **243 numbers**. The strip drew the first 120: not a
+sample, the first 120 in memory, which is seven and a half hidden neurons' worth
+of input weights and **none of the biases and none of the motor layer at all**.
+The figure the page has called "a visual fingerprint of the brain" since v1.0 has
+never once contained an output.
+
+**The accessible name is what made it a false statement.** It was assembled from
+`n`, so on the default pond a screen reader was told *"Brain: 120 weights, 54
+excitatory and 66 inhibitory, strongest 2.48."* about an animal whose brain is
+*"243 weights, 125 excitatory and 118 inhibitory, strongest 2.56"* — a
+complete-sounding sentence about a prefix, with the count wrong by a factor of
+two and the majority sign inverted. Over twelve seeds at 6,000 ticks, sampled
+every 500 (22,885 creature-frames), **the true strongest weight lies outside the
+drawn half on 58.6% of them**: the sentence named the wrong weight more often
+than the right one.
+
+The excitatory *share* is the control and it is the more interesting half. As a
+number it survives the cut almost intact — median error 1.5 points, worst 10.6 —
+which is what a ratio does when an unordered array is truncated. As a *statement*
+it does not: the true split sits within a few points of a half, so on **21.2%**
+of those frames the prefix and the brain disagree about whether the animal is
+mostly excitatory or mostly inhibitory. The default pond's first creature is one
+of them. So the rule to carry is not "a ratio is robust and a count is not" — it
+is that **a robust estimate of a quantity sitting on a threshold is not a robust
+answer to the question the reader is actually asking**.
+
+The strip draws every weight it is handed now, and all three numbers in its name
+are counted over the array the strip drew. Two tests hold it: one that the cell
+count, the split and the peak agree with the brain, and one that pins the old
+prefix as a *different sentence* so the cap cannot come back quietly.
+
+**Two smaller things the reading turned up.**
+
+- `brainGraphSVG` had `nIn = 16` and `nOut = 3` typed in beside a `NEAT_IO` that
+  says the same numbers. They agreed by luck. Node ids run `[0 .. inputs-1]`
+  then `[inputs .. inputs+outputs-1]`, so a copy one sense out of date would draw
+  an input on the motor rail, leave the last output unplaced, and drop every
+  edge touching it — silently, because a missing position is a `continue`. The
+  diagram reads the interface now.
+- A seven-deep ancestry hid one ancestor behind a "…" whose tooltip read **"1
+  older ancestors"**. Two counts in one row, and the guard had been on the other
+  one since v1.9.
+
+`src/registers.js`'s exclusion note gave two reasons for leaving the panel's
+pictures out of its sweep, and the load-bearing one — "`node --test` cannot reach
+the code that draws them" — is now false. It says so, and keeps the reason that
+is about kind rather than reach: a swatch is not a sentence.
+
 ## [1.107.0] — 2026-08-18
 
 v1.105 measured a mismatch and declined to fix it: both prices of the diet gene

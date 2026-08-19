@@ -7791,6 +7791,65 @@ become a barrier does to a set of otherwise identical worlds.
   it on a ramp has the same mismatch available, and the config has more genes
   than it has thresholds. Which is v1.105's closing sentence, still open.
 
+## The prefix that described itself as the brain (v1.108)
+
+Not a result about the pond — a result about an instrument, and it belongs here
+because the instrument was speaking to a reader who could not check it.
+
+The inspector's weight strip drew a creature's inherited brain as a row of small
+bars, and opened with `const n = Math.min(w.length, 120)`. A fixed-topology brain
+is 16 → 12 → 3, which `nn.js` lays out as 192 input weights, 12 hidden biases, 36
+output weights and 3 output biases: **243 numbers**. The figure drew the first
+120 — no biases, and none of the motor layer. Its `aria-label` was built from the
+same `n`, so the sentence a screen reader heard described the prefix as though it
+were the animal.
+
+### Twelve seeds at 6,000 ticks
+
+Sampled every 500 ticks over seeds 1, 7, 42, 99, 128, 256, 314, 777, 1024, 2026,
+4242 and 31337 — **22,885 creature-frames**. For each, the three numbers in the
+sentence computed over the drawn 120 and over the whole 243.
+
+| the claim | how truncation treats it |
+| --- | --- |
+| *"243 weights"* | wrong by construction on every frame, by a factor of 2.03 |
+| *"strongest 2.56"* | the true peak is **outside** the drawn half on **58.6%** of frames |
+| *"125 excitatory and 118 inhibitory"* | share accurate to a median **1.5 points**, worst 10.6 |
+
+The first two are what anyone would predict of a prefix of an unordered array.
+The third is the control, and it passes: a ratio is exactly the statistic that
+survives this kind of cut.
+
+### The control is the finding
+
+On **21.2%** of those same frames the prefix and the brain **disagree about the
+sign of the majority** — one says the animal is mostly excitatory, the other
+mostly inhibitory. Both are computed from a share that is accurate to a point and
+a half. They contradict each other one frame in five because the true split sits
+within a few points of a half, and a threshold at 0.5 is what the sentence
+actually asserts a side of.
+
+The default pond's creature #1 is one of them:
+
+```
+drawn:  Brain: 120 weights,  54 excitatory and  66 inhibitory, strongest 2.48.
+actual: Brain: 243 weights, 125 excitatory and 118 inhibitory, strongest 2.56.
+```
+
+**A robust estimate of a quantity that sits on a threshold is not a robust answer
+to the question the reader is asking.** The error bar has to be compared to the
+distance to the decision boundary, not to the quantity's own range. It is the
+same shape as v1.72 (a plateau read as an edge) and v1.107 (a ramp priced against
+a step): a continuous quantity meeting a threshold nobody had written down.
+
+### Reproducing it
+
+`test/inspectorview.test.js` holds the fixed figure — the cell count, the split
+and the peak all counted over the array the strip drew — and pins the old prefix
+as a *different sentence*, with both of creature #1's readings written out. The
+sweep above is a loop over `world.creatures[*].genome.brainWeights`; nothing in
+it steps a world differently, and the strip has never drawn a random number.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

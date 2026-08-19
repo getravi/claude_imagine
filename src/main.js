@@ -33,14 +33,16 @@ import {
   lineageFill,
   rgbCss,
   inspectorTrack,
-  inspectorSwatch,
   brainGraphBackground,
-  weightMark,
   weightMarkTones,
-  brainEdge,
-  brainNodeColours,
   refugeRing,
 } from "./palette.js";
+import {
+  EMPTY_HINT,
+  inspectorHTML,
+  inspectorKey,
+  sparkFromWeights,
+} from "./inspectorview.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -1198,10 +1200,12 @@ function applyInspectorColours() {
 // is detached before the mouse comes up. So the structure is now rebuilt only
 // when it actually changes — a different creature, an ancestry chain that
 // gained a link or lost a lineage, or a toggle that adds a row — and the fields
-// that tick are patched in place. What the rows *are* lives in `inspect.js`, so
-// the panel's wording, its coverage of a creature's fields and its idea of what
-// moves are all reachable by `node --test`; this file is the markup and the
-// two figures.
+// that tick are patched in place. What the rows *are* lives in `inspect.js`,
+// and since v1.108 the markup and the two figures live in `inspectorview.js` —
+// so the panel's wording, its coverage of a creature's fields, its idea of what
+// moves *and the strings it builds* are all reachable by `node --test`. What is
+// left here is the adapter: the element lookup, the innerHTML write, the two
+// click handlers and the per-frame patching.
 function updateInspector() {
   const panel = $("inspector");
   const c = renderer.selected;
@@ -1210,8 +1214,7 @@ function updateInspector() {
     if (view.inspKey !== "-") {
       view.inspKey = "-";
       panel.classList.add("empty");
-      panel.innerHTML =
-        '<div class="hint">Click a creature to inspect its brain and lineage.</div>';
+      panel.innerHTML = EMPTY_HINT;
     }
     return;
   }
@@ -1220,12 +1223,8 @@ function updateInspector() {
   const facts = creatureFacts(c, config);
   // The key decides when the panel's *structure* is rebuilt, so anything that
   // adds or removes a row belongs in it — otherwise flipping the toggle leaves
-  // a panel with no Underfoot row to patch, or one nothing updates. It used to
-  // name the one toggle that did that by hand; `inspect.js` owns the row set
-  // now, so the key is read off the rows themselves and a future row cannot be
-  // forgotten here.
-  const key =
-    c.id + "|" + chain.map((s) => s.id).join(",") + "|" + facts.map((f) => f.key).join(",");
+  // a panel with no Underfoot row to patch, or one nothing updates.
+  const key = inspectorKey(c, chain, facts);
   if (key !== view.inspKey) {
     view.inspKey = key;
     panel.classList.remove("empty");
@@ -1263,193 +1262,6 @@ function updateInspector() {
     const s = world.phylogeny.byId.get(Number(pip.dataset.id));
     if (s) pip.classList.toggle("gone", s.count === 0);
   }
-}
-
-function inspectorHTML(c, chain, facts) {
-  // The rows come from `inspect.js` — their wording, their order, which of them
-  // a switched-off mechanic removes, and which of them tick. This function's
-  // job is the part that is markup: the heading, the swatch, the two figures,
-  // and the ancestry, none of which is a fact about a field.
-  const rows = facts
-    .map(
-      (f) =>
-        `<div${f.wide ? ' class="insp-wide"' : ""}><dt>${f.term}</dt>` +
-        `<dd id="insp-${f.key}">${f.value}</dd></div>`
-    )
-    .join("\n      ");
-  // The swatch carries its own `color`, exactly as the species legend's dot has
-  // since v1.46, and for a reason that took until v1.79 to measure: the
-  // stylesheet glows it with `currentColor`, and a span with a background and
-  // no colour of its own inherits the paragraph's ink. The halo was near-white
-  // for all 360 hues, it is the surface the mark is actually read against, and
-  // 15.3% of lineage hues were under the bar against it. `palette.js` has the
-  // numbers and the two bands.
-  const sw = inspectorSwatch(c.hue);
-  return `
-    <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
-      <strong>Creature #${c.id}</strong></div>
-    <dl class="insp-grid">
-      ${rows}
-      <div class="insp-wide"><dt>Species</dt>
-        <dd><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></dd></div>
-      ${ancestryRow(c, chain)}
-    </dl>
-    ${
-      // The captions used to be `<label>` too, and these two label *figures*
-      // rather than values, so they are captions (`p`) and the figure carries
-      // the name itself. v1.42 said every canvas on the page has an accessible
-      // name; neither of these is a canvas — one is a strip of spans and the
-      // other an SVG — so the sweep walked past both, and they had none at all.
-      c.genome.conns // NEAT genome: show the evolved network graph
-        ? `<div class="brainwrap"><p class="fig-label">Brain — evolved network (${
-            c.genome.complexity.conns
-          } connections, ${c.genome.complexity.nodes} hidden) 🧬</p>${brainGraphSVG(
-            c.genome
-          )}</div>`
-        : `<div class="brainwrap"><p class="fig-label">Brain — inherited</p>${sparkFromWeights(
-            c.genome.brainWeights,
-            "Inherited brain"
-          )}${
-            c.brain.plastic
-              ? `<p class="fig-label learned-label">Brain — current (learned) 🧠</p><div id="insp-learned">${sparkFromWeights(
-                  c.brain.w,
-                  "Brain as learned so far"
-                )}</div>`
-              : ""
-          }</div>`
-    }
-  `;
-}
-
-// The genealogy of a survivor: the chain of species this creature descends
-// from, founder first, each one a clickable pip that spotlights that lineage.
-// Extinct ancestors are drawn hollow, so you can see at a glance how much of a
-// creature's family tree is already gone. Long chains keep only the most recent
-// links (the deep past is a wall of pips nobody can read) behind a "…" marker.
-const ANCESTRY_SHOWN = 6;
-function ancestryRow(c, chain) {
-  if (chain.length < 2) return ""; // a founder has no story to tell yet
-  const branchings = chain.length - 1;
-  const shown = chain.slice(-ANCESTRY_SHOWN);
-  const elided = chain.length - shown.length;
-  const pips = shown
-    .map((s) => {
-      const cls = "anc" + (s.count === 0 ? " gone" : "") + (s.id === c.speciesId ? " current" : "");
-      const title = `Species ${s.id} — born tick ${s.birthTick}`;
-      return `<button type="button" class="${cls}" data-id="${s.id}" title="${title}"
-        style="--anc-hue:${s.hue}">${s.id}</button>`;
-    })
-    .join('<span class="anc-arrow">›</span>');
-  return `<div class="insp-wide"><dt>Ancestry — ${branchings} branching${
-    branchings === 1 ? "" : "s"
-  } deep</dt>
-    <dd class="ancestry">${
-      elided ? `<span class="anc-arrow" title="${elided} older ancestors">…</span>` : ""
-    }${pips}</dd></div>`;
-}
-
-// Render a weight vector as a tiny bar strip — a visual "fingerprint" of the
-// brain. Positive weights are blue bars standing on the floor of their cell,
-// negative ones red bars hanging from the ceiling, and the height is the
-// magnitude. Colours and heights both come from `weightMark()`; see the note
-// there for why the magnitude stopped being an opacity in v1.49. With
-// plasticity on, showing this for both the inherited and current weights makes
-// within-lifetime learning visible as the strip shifts.
-function sparkFromWeights(w, name = "Brain") {
-  const n = Math.min(w.length, 120);
-  const track = rgbCss(inspectorTrack());
-  // A figure made of 120 unnamed spans says nothing at all to a screen reader,
-  // so it gets a name — and a name that reports the picture rather than merely
-  // announcing that a picture is here. The shape of a brain, in one sentence:
-  // how many weights, how they split by sign, and how strong the strongest is.
-  let pos = 0;
-  let peak = 0;
-  for (let i = 0; i < n; i++) {
-    if (w[i] > 0) pos++;
-    if (Math.abs(w[i]) > peak) peak = Math.abs(w[i]);
-  }
-  const label =
-    `${name}: ${n} weight${n === 1 ? "" : "s"}, ${pos} excitatory and ${n - pos} inhibitory, ` +
-    `strongest ${peak.toFixed(2)}.`;
-  let html = `<div class="genome" role="img" aria-label="${label}">`;
-  for (let i = 0; i < n; i++) {
-    const m = weightMark(w[i]);
-    const pct = (m.fill * 100).toFixed(0);
-    // A bar and its track in one background, so a cell is still one element.
-    const dir = m.sign > 0 ? "to top" : "to bottom";
-    html += `<span style="background:linear-gradient(${dir},${m.colour} 0 ${pct}%,${track} ${pct}% 100%)"></span>`;
-  }
-  html += "</div>";
-  return html;
-}
-
-// Render a NEAT genome as an actual network diagram: inputs on the left, evolved
-// hidden neurons in the middle, motor outputs on the right, connections coloured
-// by weight (blue positive, red negative). Makes evolved topology legible at a
-// glance — you can watch structure differ between creatures and grow over
-// generations. Built as an inline SVG string since the inspector is re-rendered
-// from innerHTML each frame.
-function brainGraphSVG(genome) {
-  const W = 288;
-  const H = 150;
-  const nIn = 16;
-  const nOut = 3;
-  const pad = 12;
-  const pos = new Map();
-  const place = (id, x, y) => pos.set(id, [x, y]);
-  const spread = (count, i) => pad + ((H - 2 * pad) * (count === 1 ? 0.5 : i / (count - 1)));
-  for (let i = 0; i < nIn; i++) place(i, pad, spread(nIn, i));
-  for (let o = 0; o < nOut; o++) place(nIn + o, W - pad, spread(nOut, o));
-  const hidden = genome.nodes;
-  hidden.forEach((id, i) => {
-    // Stagger hidden nodes horizontally so chains are visible, not overlapping.
-    const x = W * (0.36 + 0.28 * ((i % 3) / 2));
-    place(id, x, spread(Math.max(hidden.length, 1), i));
-  });
-
-  let edges = "";
-  for (const c of genome.conns) {
-    if (!c.on) continue;
-    const a = pos.get(c.from);
-    const b = pos.get(c.to);
-    if (!a || !b) continue;
-    // Sign by hue, magnitude by width. The opacity is constant — see
-    // `BRAIN_EDGE_ALPHA` for what it used to be and what that cost.
-    const e = brainEdge(c.w);
-    edges += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(
-      1
-    )}" y2="${b[1].toFixed(1)}" stroke="${e.colour}" stroke-width="${e.width.toFixed(2)}"/>`;
-  }
-  const role = brainNodeColours();
-  let nodes = "";
-  for (const [id, [x, y]] of pos) {
-    let fill = role.hidden;
-    let r = 4;
-    if (id < nIn) {
-      fill = role.input; // senses
-      r = 3;
-    } else if (id < nIn + nOut) {
-      fill = role.output; // motors
-    }
-    nodes += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}"/>`;
-  }
-  // The diagram has said green, white and orange since v1.5 without ever saying
-  // what any of them meant; the colours are load-bearing here, so they get a key.
-  const key = ["input", "hidden", "output"]
-    .map(
-      (k) =>
-        `<span class="bg-chip"><i style="background:${role[k]}"></i>${
-          { input: "senses", hidden: "hidden", output: "motors" }[k]
-        }</span>`
-    )
-    .join("");
-  // Named, like every other figure on the page: an SVG with no accessible name
-  // is an unlabelled graphic, and this one is the whole point of NEAT being on.
-  const label =
-    `Evolved brain: ${nIn} senses on the left, ${hidden.length} hidden neuron` +
-    `${hidden.length === 1 ? "" : "s"} in the middle, ${nOut} motors on the right, ` +
-    `wired by ${genome.complexity.conns} live connections.`;
-  return `<svg class="braingraph" role="img" aria-label="${label}" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${edges}${nodes}</svg><div class="bg-key">${key}<span class="bg-chip"><i class="bg-pos"></i>+ weight</span><span class="bg-chip"><i class="bg-neg"></i>− weight</span></div>`;
 }
 
 // Toggle the simulation between running and paused, keeping the button label in
