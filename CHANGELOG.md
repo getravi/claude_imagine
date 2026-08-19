@@ -4,6 +4,72 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.110.0] — 2026-08-19
+
+`creature.js` has been able to price one sense since v1.33. `auxSway` holds
+every other channel at what a creature perceived this tick, walks one channel
+from its floor to its ceiling, and reports the mean absolute change in the turn
+and thrust commands. The Underfoot row has printed that number since v1.33 and
+the Whisker row since v1.102 — the two senses this project has since measured as
+worth nothing to selection. The **sixteen channels of the original input
+vector** — where the food is, where the threat is, how fed it is, its own clock
+— had never had the same question asked of them, on any surface, in a hundred
+and nine releases. The instrument existed and was pointed at the two channels
+that arrived with an off switch, because a new mechanic is what makes somebody
+build a readout.
+
+**Added — `src/senses.js`, `test/senses.test.js`, and a `Steers by 🧭` row.**
+`INPUT_CHANNELS` is the numbered comment in `Creature.sense()` made into data: a
+name and, more usefully, the **range** each channel is written to occupy.
+`channelSway` is `auxSway` generalised over it, `senseSways` ranks every sense a
+world gives a creature, and the row takes the head of that ranking — *food
+left/right 0.86 · threat left/right 0.74 · its size 0.71 — strongest 3 of 15*.
+There is deliberately no spoken form: v1.103 wrote the rule that the sentence
+speaks perceptions and leaves the sways to the panel, and a ranking of fifteen
+hypotheticals is the furthest thing on this page from a clause read out on every
+arrow key.
+
+**What the pond steers by, and what it did not start out steering by.** Twelve
+seeds, 6,000 ticks, 20,551 creature-frames. At **t=1 the ranking is pure
+geometry**: eleven channels that span 2 sit at 0.458–0.507 and four that span 1
+at 0.237–0.265, two flat groups exactly 1.92× apart, spread within each group
+11%. There is nothing to read, which is what an unevolved brain should look
+like. By **t=6,000 the spread inside the span-2 group is 1.68×**, every channel
+is louder (+44%, mutation inflating weights), and the head of the ranking is a
+**food-bearing** channel on **7 seeds of 12** against the 2.2 chance would give.
+The channel that grew least is `its diet` (**+9.7%** against the group's +44%) —
+the one input a brain can do nothing with, since knowing its own diet gene
+changes nothing it can choose.
+
+**A weight is not an authority.** The obvious way to ask this question is to sum
+each input's weights into the hidden layer, and it gives a different answer:
+the loudest sense by weight mass and the loudest by sway are the same channel on
+**12.0%** of creature-frames, where two blind picks would agree on 6.7%. Weight
+mass spreads 26% across the sixteen; the sway spreads 2.5×. It ignores the
+second layer, the operating point and the width of the channel's own range, and
+those three are most of the answer.
+
+**Two channels cannot reach their ceilings, and both reasons are arithmetic on
+`config.js`.** `own speed` tops out at **0.520** on all twelve seeds, because
+`act()` accelerates by `thrustAccel` and keeps `drag` of the result, so full
+thrust converges on `thrustAccel·drag/(1−drag)` = 1.351 px/tick = **51.98% of
+`maxSpeed`**. Nothing else in this project writes a velocity: the clamp inside
+`act()` has never fired in any world it can build, and the top 48% of that
+channel is unreachable by construction rather than by ecology — `energyMax`'s
+dead clamp (v1.38) with a second job, four constants further down the same file.
+`how fed` tops out at **0.450** because a creature splits at
+`reproduceThreshold` before it can fill, so the top **27.3%** of that channel is
+a state no living creature can be sensed in. Both are pinned by tests that fail
+if a constant wakes them.
+
+**Fixed — the bias read 0 on a creature that had never sensed.** 15 creature-
+frames of 23,598, all of them age 0: `_in` is written by `sense()`, and a
+creature born on the last tick before a pause has never had one. The bias is not
+a perception — it is 1 in every input vector a brain has ever been run on — so
+it is set when the body is made. An exact no-op for the simulation, and the
+declared ranges now hold for every creature at every moment, which is what the
+test asserts.
+
 ## [1.109.0] — 2026-08-19
 
 v1.106 closed by naming a hole: "**`splash.css` and `style.css` are in no

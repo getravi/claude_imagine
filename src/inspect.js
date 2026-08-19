@@ -40,6 +40,7 @@
 
 import { groundSway, wallSway } from "./creature.js";
 import { creatureReaches, sightWindow } from "./reach.js";
+import { steeringText } from "./senses.js";
 
 /**
  * Energy as the share of `energyMax` the panel has always shown — the same
@@ -271,6 +272,17 @@ export function creatureFacts(c, config) {
     // world used to have. v1.86's rule about live flags is that they are
     // checked against what moves, and this one can.
     { key: "reach", term: "Reach 📏", value: reachText(c, config), wide: true, live: true },
+    // The senses ranked by what each is worth to the motors right now (v1.110).
+    // Ungated, unlike the two sway rows below it, because the sixteen channels
+    // of the input vector are in every brain this project has ever run — the
+    // count at the end of the line is what moves with the aux toggles.
+    {
+      key: "steering",
+      term: "Steers by 🧭",
+      value: steeringText(c, config),
+      wide: true,
+      live: true,
+    },
   ];
   if (config.groundSense) {
     facts.push({ key: "foot", term: "Underfoot 👣", value: footText(c), wide: true, live: true });
@@ -330,10 +342,10 @@ export const FIELD_REPORTS = {
   speciesId: "the Species link and the ancestry pips",
   genome: "the inherited-brain figure — the strip, or the evolved network diagram",
   brain:
-    "the learned-brain figure (plasticity) — and the Underfoot and Whisker rows, " +
-    "whose sway is this brain answering a hypothetical",
-  _in: "the Underfoot and Whisker rows — a sway holds every other sense at what this creature perceived, so both numbers are functions of this buffer",
-  _aux: "the Underfoot and Whisker rows — as _in, and it is the buffer the swept channel is swept *in*",
+    "the learned-brain figure (plasticity) — and the Steers-by, Underfoot and " +
+    "Whisker rows, whose sways are this brain answering a hypothetical",
+  _in: "the Steers-by, Underfoot and Whisker rows — a sway holds every other sense at what this creature perceived, so every number in all three is a function of this buffer",
+  _aux: "the Steers-by, Underfoot and Whisker rows — as _in, and it is the buffer an auxiliary sense is swept *in*",
   infected: "the Health row (disease)",
   immune: "the Health row (disease)",
   infectedAtAge: "the Health row (disease) — the countdown and the recovery age",
@@ -368,9 +380,16 @@ export const FIELD_SILENT = {
     "row prints the distance itself and a sway taken out of _aux, so no text on " +
     "the panel is a function of this field — it was filed as reported until " +
     "v1.103 swept the rows instead of reading them",
-  // The one with no argument. `walled` was the other until v1.102 gave the
-  // whisker a row and the rock a place to say so.
-  phase: "UNREPORTED — the internal oscillator, a brain input nothing on the page has ever shown",
+  // The one with no argument, and v1.110 narrowed rather than closed it: the
+  // Steers-by row names the clock and prices what it could do to the motors, so
+  // the channel is on the page now. Where in its cycle *this* animal is, is
+  // still nowhere — the row sweeps `_in[12]`, which is sin(phase), between its
+  // two ends, and a swept channel's own value is the one thing a sway holds
+  // nothing at. `walled` was the other silence of this kind until v1.102 gave
+  // the whisker a row.
+  phase:
+    "UNREPORTED — where in its cycle the internal oscillator is. The Steers-by " +
+    "row says what the clock is worth to the motors and never what it reads",
 };
 
 /**

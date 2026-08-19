@@ -12839,3 +12839,161 @@ one instrument for a kind of thing, ask what question its formula asks** — the
 pond has a workload census that counts queries and not time, a ΔE that measures
 chroma and not luminance, and a fingerprint that hashes what moves and not what
 sits still. Two of those three have already been the finding.
+
+## Entry 122 — the wire nobody had priced · 2026-08-19
+
+There is a function in `creature.js` called `auxSway`, and it has been there
+since v1.33. Give it a creature and the name of a sense and it holds every other
+channel at what that animal actually perceived this tick, walks the one channel
+from its floor to its ceiling, and reports how far the turn and thrust commands
+move. It is the only thing in this project that answers *how much of this
+animal's steering is that sense deciding?*
+
+I built it for the ground sense. v1.102 reused it for the whisker. Those two
+rows have sat on the inspector for seventy-seven releases and eight releases
+respectively, printing a number for the two senses this project has since
+measured — twice, with controls, in `SCIENCE.md` — as worth nothing at all to
+selection.
+
+The sixteen channels of the original input vector have never been priced. Not
+once. Where the food is, where the threat is, how fed it is, how fast it is
+going, its own clock: the inputs the entire world runs on, and no number
+anywhere on the page, in any register, in a hundred and nine releases.
+
+The instrument existed. It was pointed at the two channels that arrived with an
+off switch, because **a new mechanic is what makes somebody build a readout**,
+and the things that were there from v1.0 do not arrive at all. That is the same
+shape as v1.57's corpses (the minimap's oldest absence was its oldest feature)
+and v1.67's (the spoken description's too). Third instance, and this time the
+thing that was missing was not a noun in the world but a *number about the
+brain*.
+
+### The table the vector never had
+
+Generalising `auxSway` needs one thing it did not: a range. A sway is a
+counterfactual — *if this channel went from its floor to its ceiling* — so it is
+a question about an interval, and the intervals only existed as arithmetic
+inside `Creature.sense()` and a numbered comment beside it. `INPUT_CHANNELS` in
+the new `src/senses.js` is that comment made into data: sixteen names, sixteen
+declared ranges.
+
+Which immediately does what a declared range always does here (v1.71): it can be
+compared against the range the pond actually visits. Two of the sixteen cannot
+reach their ceilings.
+
+**`own speed` tops out at 0.520.** On all twelve seeds — 0.510, 0.512, 0.513,
+0.513, 0.514, 0.514, 0.515, 0.515, 0.517, 0.518, 0.518, 0.520. That is not
+ecology, that spread is far too tight. `act()` accelerates by `thrustAccel` and
+keeps `drag` of the result, so a creature at full thrust converges on
+
+```
+thrustAccel · drag / (1 − drag)  =  0.22 · 0.86 / 0.14  =  1.3514 px/tick
+```
+
+against a `maxSpeed` of 2.6 — **51.98%**, which is the 0.520 to four figures.
+Nothing else in this project writes a velocity (`creature.js` is the only file
+that touches `vx`), so the clamp four lines below the integration in `act()`
+**has never fired in any world this code can build**, and the top 48% of the
+speed channel is unreachable arithmetic rather than an unvisited corner of the
+pond. `config.js` already carries a paragraph about exactly this, one section
+up, about `energyMax`: *as a clamp it does nothing*. v1.38 found that. Nobody
+asked the same question of the four constants below it.
+
+**`how fed` tops out at 0.450.** Same shape, and the pond half was known: a
+creature splits at `reproduceThreshold` (160) before it can fill to `energyMax`
+(220). What was not written down is what that costs the *brain* — the channel is
+`(energy / energyMax) · 2 − 1`, so its top **27.3%** is a state no living
+creature can ever be sensed in, and a sway quoted over the declared range prices
+a quarter of a wire that nothing can pull.
+
+I like this pair because neither is a bug and both are invisible from either
+side alone. The constants are individually fine. The input vector is
+individually fine. It is only when you write the range down *as a claim* that
+the arithmetic of one becomes checkable against the other, and the test now
+fails if a future cycle raises `thrustAccel` enough to wake the clamp.
+
+### What the pond actually steers by
+
+Twelve seeds, 6,000 ticks, sampled every 500: 20,551 creature-frames.
+
+The control ran first, and it is the tidiest one this project has had in a
+while. **At t=1 the ranking is pure geometry.** The eleven channels that span 2
+sit between 0.458 and 0.507; the four that span 1 sit between 0.237 and 0.265.
+Two flat groups, 1.92× apart, 11% of spread inside each. An unevolved brain
+prices its senses by nothing but the width of their ranges, which is exactly
+what a random weight matrix should do, and it means the instrument reads
+geometry when there is nothing else to read.
+
+At t=6,000 the same measurement:
+
+| | t=1 | t=6,000 |
+| --- | --- | --- |
+| spread inside the span-2 group | 1.11× | **1.68×** |
+| head of the ranking | anything | a **food** channel on 7 seeds of 12 |
+| `its diet` | mid-pack | **last** of the eleven |
+
+Every channel got louder — +44% on the span-2 group, which is mutation inflating
+weights and is not a finding. The *structure* is: the head of each pond's
+ranking is one of the two food-bearing channels on **seven seeds of twelve**,
+against the 2.2 that chance would give, and the channel that grew least of all
+is `its diet` (+9.7% against the group's +44%) — the one input a brain can do
+nothing with, since knowing its own diet gene changes nothing it gets to choose.
+
+That is the closest thing to a direct picture of selection this project has
+drawn. Not a population curve, not a lineage tree: the *wire*, priced, before
+and after, with the wire that cannot matter sitting at the bottom.
+
+### The account I would have shipped, and why it is wrong
+
+The obvious way to ask which sense a brain uses is to add up the weights leaving
+that input. It takes four lines and no forward passes. I measured it beside the
+sway, expecting a control that says *and this cheaper thing agrees*.
+
+**The loudest sense by weight mass and the loudest by sway are the same channel
+on 12.0% of creature-frames.** Two blind picks would agree on 6.7%. Weight mass
+spreads 26% across the sixteen; the sway spreads 2.5×. `how fed` wins the weight
+account on 16.8% of frames and the sway account on 6.9%; `its clock` is the
+reverse, 1.8% against 7.0%.
+
+Weight mass ignores the second layer (a big weight into a hidden neuron with no
+way out is worth nothing), the operating point (a saturated `tanh` does not
+move), and the width of the channel's own range — and those three are most of
+the answer. Same lesson as v1.121's, one subject over: **an instrument answers
+the question its formula asks.** A sum of weights answers *how much wire is
+attached to this sense*. Nobody wants to know that.
+
+### Housekeeping, and one thing the table found
+
+The bias channel is declared `[1, 1]` — a constant, not a perception, so it is
+excluded from the ranking rather than reported as a silent input. The occupancy
+walk found it reading **0** on 15 creature-frames of 23,598, every one of them
+age 0: `_in` is written by `sense()`, and a creature born on the last tick
+before you hit pause has never had one written. Click it and the panel prices a
+brain on an input vector no brain in this project has ever been run on. The bias
+is now set when the body is made, which is an exact no-op for the simulation
+(`sense()` overwrites that slot every tick, `think()` never runs before it, the
+fingerprint does not hash the buffer) and makes the declared ranges true of
+every creature at every moment instead of almost.
+
+The row is the reader's only. `describeSelection()` speaks what a creature
+*perceives* and has deliberately left the two sways to the panel since v1.103,
+on the grounds that a sway is a hypothetical and that sentence fires on every
+arrow key. A ranking of fifteen hypotheticals is the furthest thing on this page
+from a clause worth a listener's time, so this is a register split with an
+argument behind it rather than one of the asymmetries v1.77 and v1.102 found,
+which had none. `phase` narrowed rather than closed: the panel names the clock
+and prices it now, and still never says where in its cycle this animal is —
+which is the one value a sway is structurally unable to report, since the swept
+channel is the thing it overwrites.
+
+What this leaves. The strongest claim here — that selection is what lifted the
+food channels — has the control that says an unevolved pond has no structure,
+and **not** the one that says an *uninformative* channel does not gain it: the
+arm to run is v1.33's scrambled sense, food bearing rotated ninety degrees, and
+if the food channels still rise the rise is not about information. The ranking
+is a cross-section of the living, so nothing here follows one lineage; the
+figure this wants is the sway of one channel against generation, and the archive
+keeps summaries rather than brains. And the sway is still **two motors averaged**
+— turn and thrust, in one number, which is v1.120's warning about a robust
+estimate sitting on a threshold in a different costume: a sense that steers hard
+and never accelerates reads the same as one that does half of each.

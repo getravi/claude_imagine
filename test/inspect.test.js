@@ -101,6 +101,7 @@ test("a mechanic that is off gets no row at all", () => {
     "metabolism",
     "diet",
     "reach",
+    "steering",
   ]);
 
   const on = new World(makeConfig(ALL_ON));

@@ -326,6 +326,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a scenario of its own; what has never been asked is whether *it* addressed the
   timescale the diagnosis named.
 
+- **What a brain steers by — closed in v1.110 (`src/senses.js`), and what it
+  left.** `auxSway` has priced one sense at a time since v1.33 and had only ever
+  been pointed at the ear, the foot and the whisker — the three channels that
+  arrived with an off switch, two of them measured as worth nothing to
+  selection. The sixteen channels of the original input vector had no number on
+  any surface in a hundred and nine releases. They have one now (the `Steers by
+  🧭` row), and the control is the tidy half: **at t=1 the ranking is pure
+  geometry** — two flat groups 1.92× apart, which is the width of the ranges and
+  nothing else — while at 6,000 ticks the span-2 group spreads 1.68×, the head
+  of it is a food-bearing channel on **7 seeds of 12** against a chance of 2.2,
+  and the channel that grows least is `its diet` (+9.7% against the group's
+  +44%), the one input a brain can do nothing with. The cheap account was the
+  finding's other half: the loudest sense **by weight mass** and the loudest by
+  sway agree on **12.0%** of creature-frames, against 6.7% for two blind picks.
+  And the table of declared ranges caught two ceilings nothing can reach —
+  `own speed` at 0.520 because terminal speed is `thrustAccel·drag/(1−drag)` =
+  51.98% of `maxSpeed` (so the clamp in `act()` is dead in every world this code
+  can build), and `how fed` at 0.450 because a creature splits before it can
+  fill. What it leaves: the **control that is missing is v1.33's scrambled
+  arm** — food bearing rotated ninety degrees, to say whether an *uninformative*
+  channel gains the same 44%, because "unevolved has no structure" is not the
+  same claim as "information is what built it"; the ranking is a cross-section
+  of the living, so **no lineage is followed** and the figure this wants is one
+  channel's sway against generation, which the archive cannot supply because it
+  keeps summaries rather than brains; and a sway is **two motors averaged into
+  one number**, so a sense that steers hard and never accelerates is
+  indistinguishable from one that does half of each.
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
   flocking, memory, tool-use, symbiosis, parasitism. (The rock sense shipped in
   v1.102 and is the third aux channel; a fourth is a well-worn path now — one
@@ -990,6 +1017,21 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **A readout gets built when a mechanic arrives, so whatever was there from
+  the start never gets one.** `auxSway` — the only function in this project that
+  can say how much of an animal's steering a sense is deciding — was written in
+  v1.33 for the ground sense and reused in v1.102 for the whisker. Between them
+  those are the two senses this project has since *measured as worth nothing*,
+  and for seventy-seven releases they were the only two channels with a number
+  anywhere on the page, while the sixteen inputs the whole world runs on had
+  none. Nothing was wrong; there was simply never a day when the food bearing
+  was new. This is v1.57's corpses and v1.67's corpses a third time (the oldest
+  feature is the one every view has never heard of), except that the missing
+  thing was not a noun in the world but a *number about a mechanism*. The
+  question that finds it: for every instrument here, list what it has been
+  pointed at, and then list what was in the codebase **before** it was written —
+  the second list is where its blind spot is, and it is never empty.
 
 - **An instrument answers the question its formula asks, and nothing else — so
   name the question, never the subject.** I would have said before v1.109 that

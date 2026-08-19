@@ -7850,6 +7850,98 @@ as a *different sentence*, with both of creature #1's readings written out. The
 sweep above is a loop over `world.creatures[*].genome.brainWeights`; nothing in
 it steps a world differently, and the strip has never drawn a random number.
 
+## What a brain steers by (v1.110)
+
+Every input into a creature's brain can be priced the same way: hold the other
+channels at what that animal perceived this tick, walk one channel from its
+floor to its ceiling, and measure how far the turn and thrust commands move.
+`creature.js` has done this for one sense at a time since v1.33 (`auxSway`);
+`src/senses.js` does it for all sixteen inputs, which had never been asked.
+
+Read a sway as *how much of this animal's steering this wire is deciding*, on
+the motor commands' own (−1, 1) scale — 0.8 means the channel is worth about
+40% of the full range of both.
+
+### Twelve seeds at 6,000 ticks
+
+Seeds 314, 77, 51, 13, 7, 23, 45, 99, 128, 256, 512 and 1024, sampled every 500
+ticks — **20,551 creature-frames**, plus the cross-sections at t=1 and t=6,000.
+
+**The control ran first, and it says the instrument reads geometry when there is
+nothing else to read.** At t=1 — brains straight out of the seed — the eleven
+channels whose range spans 2 sit between **0.458 and 0.507**, and the four that
+span 1 sit between **0.237 and 0.265**. Two flat groups, 1.92× apart, 11% of
+spread inside each. An unevolved pond prices its senses by the width of their
+ranges and by nothing else.
+
+| | t=1 | t=6,000 |
+| --- | --- | --- |
+| spread inside the span-2 group | 1.11× | **1.68×** |
+| loudest channel, mean sway | 0.507 | **0.863** (`food left/right`) |
+| quietest of the span-2 group | 0.458 | **0.514** (`its diet`) |
+| head of the ranking | — | a **food** channel on **7 seeds of 12** |
+
+Every channel grows — +44% on the span-2 group — which is mutation inflating
+weights and is not a result. The structure is: the head of each pond's ranking
+is one of the two food-bearing channels on seven seeds of twelve, against the
+**2.2** chance would give, and the channel that grows least is `its diet`
+(**+9.7%**) — the one input a brain can do nothing with, since knowing its own
+diet gene changes nothing it gets to choose.
+
+### The cheap account gives a different answer
+
+Summing each input's weights into the hidden layer takes four lines and no
+forward passes. The loudest sense by that account and the loudest by sway are
+the **same channel on 12.0%** of creature-frames; two blind picks over fifteen
+would agree on 6.7%. Weight mass spreads 26% across the sixteen channels while
+the sway spreads 2.5×, because a sum of weights ignores the second layer (a
+large weight into a hidden neuron with no way out is worth nothing), the
+operating point (a saturated `tanh` does not move) and the width of the
+channel's own range.
+
+### Two channels cannot reach the ceilings they declare
+
+`INPUT_CHANNELS` states the range each channel is *written* to occupy. Compared
+against the range twelve ponds actually visit, two fall short, and both reasons
+are arithmetic on `config.js` rather than ecology:
+
+- **`own speed` tops out at 0.520** (per-seed 0.510–0.520). `act()` accelerates
+  by `thrustAccel` and keeps `drag` of the result, so full thrust converges on
+  `thrustAccel · drag / (1 − drag)` = 0.22 · 0.86 / 0.14 = **1.3514 px/tick**,
+  which is **51.98%** of `maxSpeed`. `creature.js` is the only file in the
+  project that writes a velocity, so the clamp inside `act()` has never fired in
+  any world this code can build and the top 48% of the channel is unreachable by
+  construction. The same shape as `energyMax`'s dead clamp (v1.38), four
+  constants further down the same file.
+- **`how fed` tops out at 0.450.** A creature splits at `reproduceThreshold`
+  (160) before it can fill to `energyMax` (220), and the channel is
+  `(energy / energyMax) · 2 − 1`, so its top **27.3%** is a state no living
+  creature can be sensed in.
+
+The three proximity channels stop at 0.937–0.960 for a third reason worth a
+line: contact happens at a positive distance, so *on top of it* is not a state
+either.
+
+### What this does not measure
+
+The control here says an unevolved pond has no structure. It does **not** say
+that information is what built the structure — that arm is v1.33's scrambled
+sense, food bearing rotated ninety degrees, and it has not been run. The ranking
+is a cross-section of the living, so no lineage is followed; the figure this
+wants is one channel's sway against generation, and the archive keeps summaries
+rather than brains. And a sway averages the two motors into one number, so a
+sense that steers hard and never accelerates reads the same as one that does
+half of each.
+
+### Reproducing it
+
+`test/senses.test.js` pins the arithmetic (a hand-computable net), the purity
+(no world moves, no plastic brain learns), the declared ranges against a running
+pond, and both ceilings — including the inequality that would fail if a future
+constant woke the speed clamp. The sweep above is a loop over
+`senseSways(creature, config)` at every 500th tick; nothing in it steps a world
+differently, and pricing a sense has never drawn a random number.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

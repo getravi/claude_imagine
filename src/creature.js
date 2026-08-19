@@ -238,6 +238,15 @@ export class Creature {
 
     // Scratch input buffer reused every tick.
     this._in = new Float32Array(this.brain.nIn);
+    // The bias is not a perception — it is 1 in every input vector the brain
+    // has ever been shown — so it is set here rather than waiting for the first
+    // `sense()`. Without this a creature born on the last tick before a pause
+    // reads `bias 0` to any observer that looks at the buffer, which is a state
+    // no brain in this project has ever been run on. An exact no-op for the
+    // simulation: `sense()` writes this slot every tick and `think()` never runs
+    // before it, so no world moves (v1.53 — the cheapest way to protect
+    // determinism is a change that cannot be observed by the thing it protects).
+    this._in[0] = 1;
     // Scratch buffer for the auxiliary senses (see think()). Length 2 covers
     // both of them; the brain reads only as many as it was wired for.
     this._aux = new Float32Array(AUX_ORDER.length);
