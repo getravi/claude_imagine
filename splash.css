@@ -8,7 +8,11 @@
   --bg-2: #0a1119;
   --ink: #e6eef8;
   --ink-dim: #93a8bf;
-  --ink-faint: #5f7288;
+  /* Derived, not chosen (v1.109) — see the same note in style.css. It was
+     #5f7288, which measured 3.72:1 against the stat cards and 4.05:1 against the
+     page, under WCAG AA's 4.5 on all three grounds it sits on and 15 of this
+     page's text elements. `legibility.liftToBar` chose this one. */
+  --ink-faint: #6a8098;
   --accent: #62c8ff;
   --accent-2: #5adc96;
   --accent-3: #b98cff;

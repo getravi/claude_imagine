@@ -4,6 +4,68 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.109.0] — 2026-08-19
+
+v1.106 closed by naming a hole: "**`splash.css` and `style.css` are in no
+sweep's domain**". Those two files hold every colour a visitor reads *words* in,
+and this project has audited colour since v1.24 without once opening either.
+
+**Added — `src/legibility.js` and `test/legibility.test.js`.** The stylesheets'
+`color:` declarations, the inks they resolve to, and the grounds those inks are
+actually painted on — measured by walking both shipped pages in a headless
+Chromium (v1.84's recipe) and compositing every translucent layer and every
+gradient stop down to two opaque colours. 341 text-bearing elements, 39 distinct
+(ink, ground, size) triples. `palette.js` gains `contrastRatio` and
+`relativeLuminance` beside the ΔE it has judged colour with for eighty releases.
+
+**Seven pairs were under WCAG AA, and all seven are one line of CSS.**
+`--ink-faint` — the caption ink — measured **3.44:1** against the app's page glow
+and **3.60:1** against its panel, against a bar of 4.5, on 76 of the app's text
+elements and 15 of the front door's: the chronicle's subtitle and every one of
+its timestamps, the keyboard hints, the phylogeny caption, the axis labels. On
+either page nothing else failed, at any size.
+
+**The control is the finding.** Restore the old ink and every one of those seven
+pairs clears this project's own bar comfortably — **ΔE 41.1 against a bar of
+25** on the panel, 38.3 at worst. The instrument was never wrong; it answers
+*can these be told apart?*, which is the question a chevron or a ring or a dot
+on the little map asks. Reading 12.5 px type is a spatial-frequency task carried
+almost entirely by luminance, and ΔE spends most of its length on chroma. Two
+questions, two formulas, two bars, and a colour can sit a long way clear of one
+while failing the other. Every colour audit here for eighty releases has been
+about **marks**, because everything it was pointed at was a mark.
+
+**The fix is derived rather than chosen.** `liftToBar` returns the smallest
+uniform sRGB brightening that clears a bar on a given ground — uniform, so the
+channel ratios and therefore the tint survive; searched over the *rounded*
+eight-bit result, because that is all a stylesheet can say. `--ink-faint` goes
+`#5a6f85` → `#6a839c` in `style.css` and `#5f7288` → `#6a8098` in `splash.css`,
+and a re-walk of both pages reports zero pairs under bar. The test resolves the
+inks out of the stylesheets on every run rather than remembering them, so dimming
+one again is a red build.
+
+**Two inks are a ramp, not a pair, and one of them cannot be fixed from the ink
+side.** The ancestry pips carry a lineage's hue, so there is no pair to pin —
+there are 360, and a hue sweep needs no browser. A living ancestor's pip puts a
+dark label on `hsl(h, 70%, 62%)` and fails on **41 hues of 360**, worst 3.60:1 at
+pure blue; a dead one's fails on 5. The label is not the thing to move: at hue
+240 that fill is dark enough that **pure black scores 4.00**. `hsl()` lightness
+is not luminance, and 62% at hue 240 is 3.4× darker in relative luminance than
+62% at hue 60. Recorded, tested, and left for a cycle of its own — the pips are
+the one mark on that panel that carries identity, and moving them wants a
+control.
+
+**The domain is closed rather than patched.** Every stylesheet in the repository
+is swept here or named with a reason, which is v1.103's fix for the markdown
+hole applied to CSS; the exclusion the walk *cannot* cover is checked too (no
+`color:` in a `style=` attribute on either page). `colourliterals.test.js`
+correctly flagged the new module's inventory as unmeasured colours, so its
+`palette.js` skip is a declared `INSTRUMENTS` list now, and the exemption carries
+a falsifier — `legibility.js` is exempt while nothing draws with it, asserted
+rather than asserted-once. Five more headings turned up with no ink at all:
+`background-clip: text` moves the colour into a gradient, where both a `color:`
+sweep and a DOM walk read alpha zero. All ten stops are measured; all clear.
+
 ## [1.108.0] — 2026-08-19
 
 v1.98 carved the last two panels out of `main.js` and left one item behind:

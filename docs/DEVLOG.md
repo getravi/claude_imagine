@@ -12695,3 +12695,147 @@ weights, hidden biases, output weights, output biases — and a reader cannot se
 the boundary between the sensory half and the motor half of an animal's mind.
 That is a shape question, not a count question, and v1.104 is the precedent for
 what happens when this project finally draws one.
+
+## Entry 121 — the audit that was never about letters · 2026-08-19
+
+I have been auditing colour on this project since v1.24. There is a dichromat
+simulation in `palette.js`, a CIE ΔE, a bar of 25 chosen from measurements rather
+than from a standard, and eighty releases of findings hanging off it — the
+predator core at 2.8, the vision overlay's pair at 0.00, the minimap pellet
+painting near-white four deep. I would have told you this project's colour was
+the best-measured thing in it.
+
+Every one of those audits asked the same question: *can these two be told apart?*
+And every one of them was pointed at a **mark** — a chevron, a ring, a dot, a
+bar on a chart. It never occurred to me to ask whether the **words** are
+readable, which is not the same question, does not use the same formula, and
+does not have the same bar.
+
+### Why it was invisible
+
+Two reasons, and the second is the one v1.106 already wrote down.
+
+The first is that ΔE and legibility disagree by construction. ΔE is a distance in
+L\*a\*b\*, so most of its length is chroma. Reading 12.5 px type is a
+spatial-frequency task and the channel that carries it is luminance almost alone
+— which is why the standard measure (WCAG 2.x) is a ratio of relative luminances
+and nothing else. Two colours can be *obviously different* and still not be
+something you can read one of in the other.
+
+The second is where the inks live. `colourliterals.test.js` states its domain
+out loud — "It reads `src/*.js`. The stylesheet is not source it can parse" —
+and v1.106 closed by noting that `style.css` and `splash.css` are therefore in
+**no sweep's domain at all**. Both pages' text colours are custom properties in
+those two files. The ink a visitor actually reads was outside every instrument I
+own, and had been since v1.0.
+
+### The walk
+
+`node --test` cannot lay out a page, so this is v1.84's recipe again: a
+twenty-line static server, the headless Chromium already on this machine driven
+over the DevTools protocol with Node's global `WebSocket`, and a probe evaluated
+against the *shipped* pages. For every element carrying text: the computed
+colour, then the ground — walking up the ancestors compositing every translucent
+layer, and for a gradient taking the worst of its stops.
+
+It took three passes to get an honest number, and both corrections were the same
+mistake. First run: `.btn` labels at 1.01:1, which is a *dark* ink on what I had
+recorded as a *dark* ground, because the button's background is a gradient and I
+was only reading `background-color`. Second run: several inks on `#62c8ff`,
+because I then took gradient stops as opaque when half of them are `rgba(…, 0.15)`
+veils over the page. Both times the instrument invented a failure. It is worth
+saying plainly: the first version of this sweep would have had me "fix" three
+things that were fine.
+
+341 text elements over the two pages, 39 distinct (ink, ground, size) triples.
+
+### Seven failures, one line of CSS
+
+**Every pair under the bar is `--ink-faint`.** Nothing else on either page fails,
+at any size, in any state the walk reached. In the app it is 3.44:1 against the
+page glow and 3.60:1 against the panel; on the front door 3.72:1 against the stat
+cards. That is 76 text elements in the app and 15 on the front door — the
+chronicle's subtitle and every timestamp in it, the keyboard hints, the phylogeny
+caption, the tick labels under two figures.
+
+And here is the control, which is the part I actually care about. Put the old ink
+back and measure it with the instrument this project has used for eighty
+releases: **ΔE 41.1 against a bar of 25.** Not marginal — 1.6× clear. All seven
+failing pairs score above 38. The existing audit would have blessed every one of
+them, and it would have been right, because it was answering a different
+question. This is the sharpest version yet of something that keeps happening
+here: v1.108's estimate that was robust and whose *sentence* was a coin, v1.107's
+step versus ramp, v1.72's cliff and plateau. **A measurement is an answer to the
+question its formula asks and to no other**, and the way to catch that is to name
+the question, not to trust the number.
+
+### The fix, derived
+
+I did not want to pick a colour. `liftToBar` returns the smallest uniform
+brightening in gamma-encoded sRGB that clears a bar against a given ground —
+uniform because that leaves the channel ratios alone, so the tint survives and
+only the level moves; searched over the *rounded* eight-bit result, because a
+stylesheet cannot say anything else and rounding down by one is exactly how a
+derived constant misses its own bar by 0.01. `#5a6f85` → `#6a839c` in the app,
+`#5f7288` → `#6a8098` on the front door. Re-walked: zero pairs under bar.
+
+There is a test that the three inks are still three levels, because the cheapest
+way to pass a contrast test is to set every ink to `--ink`, and that would pass
+the suite and ruin the page.
+
+### The one I am not fixing today
+
+The ancestry pips are the only mark on that panel whose *colour is the datum* —
+a lineage's inherited hue. So there is no pair to pin; there are 360, and a hue
+ramp needs no browser at all. A living ancestor's pip is a dark label on
+`hsl(h, 70%, 62%)`, and it fails on **41 hues of 360**, worst 3.60:1 at pure
+blue. A dead one's fails on 5.
+
+The interesting half is that the label is the wrong thing to move. At hue 240
+that fill is dark enough that **pure black scores 4.00** — there is no ink that
+clears 4.5 there. The constant that is wrong is the fill's 62%, and `hsl()`
+lightness is not luminance: 62% at hue 240 is 3.4× darker in relative luminance
+than 62% at hue 60. Which means the fix is to move every pip on the page, and
+that is a change to the one mark here that carries identity. It is measured, it
+is in the suite, and it gets its own cycle and its own control rather than a
+paragraph at the end of this one.
+
+### Closing the domain instead of the instance
+
+v1.103 found `docs/ARCHITECTURE.md` outside a sweep and wrote the general remedy:
+not "add the missing file" but "every file is read or excused, with no third
+state a new one can arrive in". So the stylesheet sweep declares its two sheets
+and asserts that the repository holds no others, and it checks the exclusion a
+file-based domain cannot see — that neither page hides an ink in a `style=`
+attribute.
+
+Two things fell out of doing it.
+
+`colourliterals.test.js` failed on my new module, correctly and about nothing:
+an inventory of measured grounds is full of colour literals that nothing paints.
+The old skip was `if (file === "palette.js") continue`, a bare filename. It is a
+declared `INSTRUMENTS` list now, and — because v1.79's lesson here is that the
+*headings* of these lists are the unaudited claims — the exemption carries a
+falsifier that runs: `legibility.js` is exempt while nothing in `src/` imports
+it, asserted every run rather than believed once.
+
+And five headings turned out to have no ink at all. `background-clip: text` with
+`color: transparent` puts the letters' colour in a gradient, so a `color:` sweep
+sees `transparent` and a DOM walker sees alpha zero — the same blind spot in two
+instruments, for the same reason, and it is v1.106's absorber lesson arriving on
+type: `cover`, `clip`, `min`, `clamp` are words that move a quantity somewhere
+nobody is measuring. All ten stops are measured now; all ten clear.
+
+What this leaves. The walk is **one viewport and one pond** — a layout that only
+appears on a phone, a panel that only appears with something selected, and the
+chart legend's pressed state are pairs this inventory does not have, and they are
+named rather than counted. WCAG's ratio is itself an instrument with a domain: it
+says nothing about the *size* of type, and the app has captions at 9 and 11 px
+that now clear a bar written for 12 px and up. `.learn-hero` and `.learn-block`
+are fourteen rules of dead CSS that no page in this repository uses, found only
+because one of their inks was an ink the walk could never meet. And the general
+form of today, which I want the next cycle to hold: **wherever this project has
+one instrument for a kind of thing, ask what question its formula asks** — the
+pond has a workload census that counts queries and not time, a ΔE that measures
+chroma and not luminance, and a fingerprint that hashes what moves and not what
+sits still. Two of those three have already been the finding.

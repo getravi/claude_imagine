@@ -190,6 +190,43 @@ export function deltaE(a, b, type = "normal") {
   return Math.sqrt(dl * dl + da * da + db * db);
 }
 
+// ---- The other instrument: legibility ----
+//
+// ΔE answers *can these two be told apart?* Every colour audit this project has
+// run for eighty releases has asked that question, because everything it was
+// asking about is a mark — a chevron, a ring, a dot on the little map — and a
+// mark either reads as its own thing or it does not.
+//
+// A letter is not a mark. Reading 12.5 px type is a spatial-frequency task, and
+// the thing that carries it is luminance alone: hue and chroma contribute
+// almost nothing at the stroke widths a caption is made of. So the two
+// questions have two formulas and two bars, and a colour can be a long way
+// clear of one while sitting under the other. v1.109 measured that gap and it
+// is not small — the ink that fails below scores ΔE 38.3 against a bar of 25.
+//
+// This is the standard measure (WCAG 2.x): a ratio of relative luminances with
+// a 0.05 flare term, 4.5 for body text and 3 for large text. It is not a taste
+// and it is not tuned to this palette, which is the point of using it.
+
+/** Relative luminance of {r,g,b} (0..255), per WCAG 2.x. */
+export function relativeLuminance({ r, g, b }) {
+  return 0.2126 * toLinear(r / 255) + 0.7152 * toLinear(g / 255) + 0.0722 * toLinear(b / 255);
+}
+
+/**
+ * WCAG contrast ratio between two opaque colours, 1 (identical) to 21 (black on
+ * white). Order does not matter.
+ */
+export function contrastRatio(a, b) {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** WCAG AA for body text, and for large text (≥ 24 px, or ≥ 18.66 px bold). */
+export const WCAG_AA_TEXT = 4.5;
+export const WCAG_AA_LARGE = 3;
+
 // ---- The palette ----
 
 /**

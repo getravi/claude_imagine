@@ -31,7 +31,11 @@
 //     number stated in prose about a collection in code drifts (v1.52, v1.78).
 //     A surface that paints before any module runs, or one whose colour arrives
 //     as a custom property, needs its value in the CSS *and* in the palette, so
-//     the pair gets pinned rather than deduplicated.
+//     the pair gets pinned rather than deduplicated. **The other half of that
+//     exclusion closed in v1.109**: the stylesheets were in no sweep's domain at
+//     all, which is where the pages' *text* colours live, and
+//     `test/legibility.test.js` reads them now — against WCAG's contrast ratio
+//     rather than ΔE, because a letter and a mark are not the same question.
 //   - It says nothing about whether a colour is *good*. That is
 //     `test/palette.test.js`; this file only asks whether the palette knows
 //     about it. A literal on this list is a colour that has never been
@@ -164,10 +168,50 @@ function coloursIn(src) {
   return out;
 }
 
+/**
+ * The two modules whose colour literals are *subjects* rather than marks, and
+ * why each one is exempt from the sweep above.
+ *
+ * `palette.js` is the sweep's own reference point: every colour in it is by
+ * definition a colour the palette has heard of. `legibility.js` (v1.109) is the
+ * other kind — an instrument that holds the colours it *measures*, an inventory
+ * of grounds a headless walk of the two pages composited out of the
+ * stylesheets, none of which anything ever paints.
+ *
+ * An exemption stated as a filename is v1.79's warning about this file's own
+ * headings: a sentence that answers the question before an entry can be read. So
+ * each one carries a falsifier that is checked below rather than a reason that
+ * is merely written down.
+ */
+const INSTRUMENTS = {
+  "palette.js": "the palette itself — the thing every other module's colours are compared against",
+  "legibility.js": "an inventory of measured colours; nothing in this project draws with it",
+};
+
+test("an instrument is exempt only while it stays an instrument", () => {
+  // The falsifier for `legibility.js`: it is exempt because it paints nothing,
+  // and the moment a rendering module imports it that stops being true. The
+  // failure this guards against is the one v1.61 found six times over — a colour
+  // that never reached the audit because of a filing nobody re-read.
+  const importers = readdirSync(SRC)
+    .filter((f) => f.endsWith(".js") && f !== "legibility.js")
+    .filter((f) => /from "\.\/legibility\.js"/.test(readFileSync(join(SRC, f), "utf8")));
+  assert.deepEqual(
+    importers,
+    [],
+    "legibility.js is exempt from the colour sweep because nothing draws with it; " +
+      "these modules now do, so either they must not, or the exemption must go"
+  );
+  // And the palette's exemption is its identity, which cannot quietly expire —
+  // but the pair of them being a *declared* list is what stops a third arriving
+  // as a `continue` with no reason attached.
+  assert.deepEqual(Object.keys(INSTRUMENTS).sort(), ["legibility.js", "palette.js"]);
+});
+
 test("no module names a colour the palette has never heard of", () => {
   const unexplained = [];
   for (const file of readdirSync(SRC).filter((f) => f.endsWith(".js")).sort()) {
-    if (file === "palette.js") continue;
+    if (file in INSTRUMENTS) continue;
     for (const literal of coloursIn(readFileSync(join(SRC, file), "utf8"))) {
       if (!ALLOWED.some((a) => a.file === file && a.literal === literal)) {
         unexplained.push(`${file}: ${literal}`);
@@ -189,7 +233,7 @@ test("the list does not rot", () => {
   // which had been measuring against the pellet wash v1.57 deleted.
   const drawn = new Map();
   for (const file of readdirSync(SRC).filter((f) => f.endsWith(".js")).sort()) {
-    if (file === "palette.js") continue;
+    if (file in INSTRUMENTS) continue;
     drawn.set(file, coloursIn(readFileSync(join(SRC, file), "utf8")));
   }
   for (const { file, literal } of ALLOWED) {

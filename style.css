@@ -7,7 +7,13 @@
   --bg-panel-2: #111a26;
   --ink: #dce7f2;
   --ink-dim: #8299b0;
-  --ink-faint: #5a6f85;
+  /* Derived, not chosen (v1.109). It was #5a6f85 from v1.0 until a headless walk
+     of this page measured it at 3.44:1 against the page glow and 3.60:1 against
+     the panel — under WCAG AA's 4.5 on all four grounds it sits on, across 76 of
+     the app's text elements, while clearing this project's own ΔE bar at 41.1
+     against 25. `legibility.liftToBar` returns the smallest uniform sRGB
+     brightening that clears 4.5 on the worst of those grounds; this is it. */
+  --ink-faint: #6a839c;
   --accent: #62c8ff;
   --accent-2: #5adc96;
   --line: #1b2836;

@@ -991,6 +991,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **An instrument answers the question its formula asks, and nothing else — so
+  name the question, never the subject.** I would have said before v1.109 that
+  colour was the best-measured thing in this project: a dichromat simulation, a
+  CIE ΔE, a bar of 25 chosen from measurements, eighty releases of findings. Every
+  one of those audits asked *can these two be told apart?* and every one was
+  pointed at a **mark**. Nobody had asked whether the **words** are readable,
+  which is a different formula (luminance alone, because reading small type is a
+  spatial-frequency task and ΔE spends most of its length on chroma) with a
+  different bar. The seven pairs that failed WCAG AA all clear ΔE 25 by 1.5×, so
+  the existing instrument would have blessed every one and would have been right.
+  The tell is that an audit's name is usually its *subject* ("the colour audit"),
+  which reads as coverage of everything that subject has; write down the question
+  instead and the gap is visible in one sentence. Ask it of the others: the
+  workload census counts queries and not time, `stateFingerprint` hashes what
+  moves and not what sits still (already a finding, v1.91), `deltaE` measures
+  chroma and not luminance. And the second half of why this one hid: the inks
+  were in `style.css` and `splash.css`, which v1.106 had already recorded as being
+  in no sweep's domain — **a hole somebody wrote down is still a hole**, and it
+  sat there for three releases with the note attached.
+
+- **A sweep that composites is a sweep that can invent a failure, and the two
+  ways it does are the same mistake.** v1.109's browser walk reported `.btn`
+  labels at 1.01:1 on its first run (it read `background-color` and the button's
+  ground is a gradient) and several inks on a bright accent on its second (it then
+  took gradient stops as opaque when half of them are `rgba(…, 0.15)` veils).
+  Both times the *page* was fine and the instrument was wrong, and both times the
+  number looked like a serious finding. Before believing a contrast, an overlap or
+  an occlusion measurement, reconstruct one failing case by hand and check the two
+  colours are the two colours a reader's eye actually receives. A composite is a
+  claim about a stack, and a stack has to be walked all the way down.
+
 - **A robust estimate of a quantity that sits on a threshold is not a robust
   answer to the question the reader is asking.** The weight strip drew 120 of a
   brain's 243 numbers and described the prefix as though it were the brain. Two
@@ -1318,7 +1349,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   pond, so pointing at anything in it needs a device named; **`splash.css` and
   `style.css` are in no sweep's domain**, which is v1.103's hand-typed-domain
   hole a second time and wants the same closing move (every file either swept or
-  named with a reason); and `reveal.js` had never been on the module map since
+  named with a reason) — **closed in v1.109** (`src/legibility.js`), and the sheet
+  nobody had opened was holding the failure: `--ink-faint` is the ink of every
+  caption on both pages and it sat at 3.44:1–4.05:1 against a WCAG bar of 4.5, on
+  91 text elements, while clearing this project's own ΔE bar at 38.3–46.4 against
+  25. The instrument was never wrong; it answers a different question, and the
+  general form of that is a note above. What *it* leaves: the walk is one viewport
+  and one pond, so a phone layout and a selected-creature panel are pairs the
+  inventory does not have; the ancestry pips fail on **41 lineage hues of 360**
+  and cannot be fixed from the ink side (pure black scores 4.00 at hue 240 —
+  `hsl()` lightness is not luminance), which is a cycle of its own because the
+  pips are the one mark on that panel that carries identity; and `.learn-hero`
+  and `.learn-block` are fourteen rules of CSS no page in this repository uses,
+  found only because one of their inks was one the walk could never meet; and
+  `reveal.js` had never been on the module map since
   v1.88 — found by writing a row for something else, which is the argument for a
   test rather than another row. What v1.100 leaves: `--page-min` is enforced against the page's **grids only**, so a
   long unbreakable word in a heading reintroduces this where no grid rule looks;
