@@ -55,6 +55,7 @@
 // random number. It is a rendering of a creature, exactly like `inspect.js`'s
 // rows and `describe.js`'s sentence, and like them it is a pure observer.
 
+import { BRAIN } from "./genome.js";
 import { NEAT_IO } from "./neat.js";
 import {
   brainEdge,
@@ -64,6 +65,42 @@ import {
   rgbCss,
   weightMark,
 } from "./palette.js";
+
+/**
+ * The four blocks of a classic-topology brain's weight vector, in the order
+ * `nn.js` lays them out — the same order the strip draws. A reader looking at
+ * the figure has three questions about the shape: which cells are the *sensory*
+ * half, which are the *motor* half, and where the biases sit. The strip drew
+ * 243 undifferentiated cells until v1.114 and answered none of them, even after
+ * v1.108 gave it every weight it had — see the header, and v1.108's leaves in
+ * the DEVLOG.
+ *
+ * Sizes come from `BRAIN`; the names are what a reader has for these numbers,
+ * not the arithmetic (`nHidden * nIn` says nothing to somebody who is not
+ * reading `nn.js` open at that line). Order matches the flat vector — swap two
+ * and the strip's blocks and the label's clauses part company silently.
+ *
+ * @type {ReadonlyArray<{key:string, name:string, size:number}>}
+ */
+export const BRAIN_BLOCKS = Object.freeze([
+  { key: "sensory", name: "sensory", size: BRAIN.hidden * BRAIN.inputs },
+  { key: "hbias", name: "hidden biases", size: BRAIN.hidden },
+  { key: "motor", name: "motor", size: BRAIN.outputs * BRAIN.hidden },
+  { key: "mbias", name: "motor biases", size: BRAIN.outputs },
+]);
+
+/**
+ * Where each block begins in the flat weight vector — a walking sum of the
+ * sizes above, ending at `wLen`. `test/inspectorview.test.js` walks it against
+ * the layout comment in `nn.js`, since v1.108's whole finding is that a figure
+ * describing an array is only as honest as its offsets.
+ */
+export const BRAIN_BLOCK_STARTS = Object.freeze(
+  BRAIN_BLOCKS.reduce(
+    (starts, b) => [...starts, starts[starts.length - 1] + b.size],
+    /** @type {number[]} */ ([0])
+  )
+);
 
 /** The panel before anything is selected. */
 export const EMPTY_HINT =
@@ -192,6 +229,17 @@ export function ancestryRow(c, chain) {
  *
  * **Every** weight, since v1.108 — see the header. The cap that used to sit
  * here drew the first 120 of 243 and then described 120 as the number there is.
+ *
+ * **Blocked** since v1.114. A brain's flat weight vector is really four
+ * regions with different jobs — input → hidden weights (the sensory half),
+ * hidden biases, hidden → output weights (the motor half), and output biases —
+ * and the strip drew them as one uninterrupted row. When the vector matches
+ * the classic `BRAIN` topology the four regions get visible separators (a
+ * `.block-start` class on the first cell of each new block, styled in
+ * `style.css`) and the label names them in order. A vector of a different
+ * length draws as one block, unchanged: `sparkFromWeights` has always been
+ * generic over `w.length`, and the boundary is the `Genome`'s promise about
+ * what a `.brainWeights` array contains.
  */
 export function sparkFromWeights(w, name = "Brain") {
   const n = w.length;
@@ -202,23 +250,36 @@ export function sparkFromWeights(w, name = "Brain") {
   // how many weights, how they split by sign, and how strong the strongest is.
   // All three are now counted over the same array the strip draws, which is
   // what makes the sentence a description of the figure rather than of a
-  // prefix of it.
+  // prefix of it. The block clause is the same rule applied to *layout*: a
+  // reader wants to know where the sensory half ends and the motor half
+  // begins, and until v1.114 the picture said so with three straight rows of
+  // ink and the sentence with a single number.
   let pos = 0;
   let peak = 0;
   for (let i = 0; i < n; i++) {
     if (w[i] > 0) pos++;
     if (Math.abs(w[i]) > peak) peak = Math.abs(w[i]);
   }
+  // The layout the strip lays out for, if this vector matches it. `starts` is
+  // the boundaries a `.block-start` cell owns; `blocksClause` is the same list
+  // read out for the label. A mismatched length is a genome the strip has no
+  // structural claim about — one block, one clause.
+  const blocked = n === BRAIN_BLOCK_STARTS[BRAIN_BLOCK_STARTS.length - 1];
+  const starts = blocked ? new Set(BRAIN_BLOCK_STARTS.slice(1, -1)) : /** @type {Set<number>} */ (new Set());
+  const blocksClause = blocked
+    ? ` in four blocks — ${BRAIN_BLOCKS.map((b) => `${b.size} ${b.name}`).join(", ")}`
+    : "";
   const label =
-    `${name}: ${n} weight${n === 1 ? "" : "s"}, ${pos} excitatory and ${n - pos} inhibitory, ` +
-    `strongest ${peak.toFixed(2)}.`;
+    `${name}: ${n} weight${n === 1 ? "" : "s"}${blocksClause}, ` +
+    `${pos} excitatory and ${n - pos} inhibitory, strongest ${peak.toFixed(2)}.`;
   let html = `<div class="genome" role="img" aria-label="${label}">`;
   for (let i = 0; i < n; i++) {
     const m = weightMark(w[i]);
     const pct = (m.fill * 100).toFixed(0);
+    const cls = starts.has(i) ? ' class="block-start"' : "";
     // A bar and its track in one background, so a cell is still one element.
     const dir = m.sign > 0 ? "to top" : "to bottom";
-    html += `<span style="background:linear-gradient(${dir},${m.colour} 0 ${pct}%,${track} ${pct}% 100%)"></span>`;
+    html += `<span${cls} style="background:linear-gradient(${dir},${m.colour} 0 ${pct}%,${track} ${pct}% 100%)"></span>`;
   }
   html += "</div>";
   return html;

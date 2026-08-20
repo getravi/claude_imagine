@@ -31,6 +31,8 @@ import { inspectorSwatch } from "../src/palette.js";
 import { NEAT_IO } from "../src/neat.js";
 import {
   ANCESTRY_SHOWN,
+  BRAIN_BLOCKS,
+  BRAIN_BLOCK_STARTS,
   EMPTY_HINT,
   ancestryRow,
   brainGraphSVG,
@@ -38,6 +40,8 @@ import {
   inspectorKey,
   sparkFromWeights,
 } from "../src/inspectorview.js";
+import { BRAIN } from "../src/genome.js";
+import { NeuralNet } from "../src/nn.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -78,14 +82,31 @@ test("the strip's accessible name counts what the strip drew", () => {
   const html = sparkFromWeights(w);
   const cells = (html.match(/<span /g) || []).length;
   const label = nameOf(html);
-  // The sentence is a description of the figure, so its three numbers have to
-  // be counted over the same array the figure is: the count, the split, and
-  // the extremum.
-  const m = label.match(/^Brain: (\d+) weights, (\d+) excitatory and (\d+) inhibitory, strongest ([\d.]+)\.$/);
+  // The sentence is a description of the figure, so its numbers have to be
+  // counted over the same array the figure is: the count, the four block
+  // sizes, the excitatory/inhibitory split, and the extremum.
+  const m = label.match(
+    /^Brain: (\d+) weights in four blocks — (.+?), (\d+) excitatory and (\d+) inhibitory, strongest ([\d.]+)\.$/
+  );
   assert.ok(m, `unexpected shape for the strip's name: ${label}`);
-  const [, said, excit, inhib, peak] = m;
+  const [, said, blocks, excit, inhib, peak] = m;
   assert.equal(Number(said), cells, "the name says a different number of weights than the strip draws");
   assert.equal(Number(excit) + Number(inhib), cells, "the split does not account for every cell");
+  // The four block sizes have to sum to the total and stand in the order
+  // `nn.js` lays them out, or the visible gaps in the strip and the words
+  // beside them are two claims about different layouts.
+  const parts = blocks.split(", ").map((s) => s.match(/^(\d+) (.+)$/));
+  assert.equal(parts.length, BRAIN_BLOCKS.length, "the label does not name four blocks");
+  assert.deepEqual(
+    parts.map((p) => [Number(p[1]), p[2]]),
+    BRAIN_BLOCKS.map((b) => [b.size, b.name]),
+    "the label's blocks are not the ones the layout has"
+  );
+  assert.equal(
+    parts.reduce((s, p) => s + Number(p[1]), 0),
+    cells,
+    "the four blocks do not partition the strip"
+  );
   let truePeak = 0;
   let truePos = 0;
   for (const v of w) {
@@ -94,6 +115,50 @@ test("the strip's accessible name counts what the strip drew", () => {
   }
   assert.equal(Number(excit), truePos, "the excitatory count is not the brain's");
   assert.equal(Number(peak), Number(truePeak.toFixed(2)), "the strongest weight is not the brain's");
+});
+
+test("the strip's block boundaries match the layout `nn.js` writes", () => {
+  // v1.114 gave the strip visible seams between its four regions — sensory
+  // weights, hidden biases, motor weights, motor biases — so a reader can see
+  // where a brain's sensory half ends. The seams have to sit at exactly the
+  // offsets `nn.js` uses to walk the flat vector, or the picture and the
+  // arithmetic are two different claims about the same numbers. This is
+  // v1.108's lesson applied to *layout* rather than to *count*.
+  const { world } = pond();
+  const w = world.creatures[0].genome.brainWeights;
+  assert.equal(
+    BRAIN_BLOCK_STARTS[BRAIN_BLOCK_STARTS.length - 1],
+    w.length,
+    "the block starts must partition the whole vector"
+  );
+  assert.equal(
+    NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs),
+    w.length,
+    "the topology `BRAIN` names is not the topology `Genome` builds"
+  );
+  const html = sparkFromWeights(w);
+  const cellRe = /<span( class="block-start")? /g;
+  const cells = [...html.matchAll(cellRe)];
+  assert.equal(cells.length, w.length);
+  const flagged = cells
+    .map((m, i) => (m[1] ? i : -1))
+    .filter((i) => i >= 0);
+  // `.block-start` marks every boundary except the first cell (which is
+  // already at the strip's edge — no gap is needed there).
+  assert.deepEqual(flagged, BRAIN_BLOCK_STARTS.slice(1, -1));
+});
+
+test("a vector of an off-length draws as one block, unchanged", () => {
+  // The strip is called for a plastic brain's learned weights too, and one day
+  // it may be called for something else. When the length does not match the
+  // classic topology, the strip has no structural claim about the vector — one
+  // block, one clause, no `.block-start` cells and no "four blocks" mention.
+  const w = new Float32Array([0.1, -0.2, 0.3, 0.4, -0.5]);
+  const html = sparkFromWeights(w, "Scratch");
+  const label = nameOf(html);
+  assert.match(label, /^Scratch: 5 weights, 3 excitatory and 2 inhibitory, strongest 0\.50\.$/);
+  assert.doesNotMatch(label, /block/);
+  assert.doesNotMatch(html, /class="block-start"/);
 });
 
 test("the cap that used to sit here is pinned as a false sentence", () => {

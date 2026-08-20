@@ -1032,7 +1032,25 @@ DEVLOG as I ship them; add new ones as they occur to me.
   creature); and the strip is honest about *how many* weights it draws and
   still says nothing about **which** — 243 undifferentiated cells that are
   really four blocks, so nobody can see where the sensory half of a mind ends
-  and the motor half begins.
+  and the motor half begins. **The block half closed in v1.114**
+  (`BRAIN_BLOCKS`, `BRAIN_BLOCK_STARTS`, the `.block-start` cell): the strip
+  gains three visible seams at cells 192, 204 and 240 — the boundaries `nn.js`
+  has walked since v1.0 — and the label reads them out loud ("in four blocks —
+  192 sensory, 12 hidden biases, 36 motor, 3 motor biases"). Sizes come from
+  `BRAIN` so the picture's seams and the arithmetic's offsets cannot part
+  company silently, and a vector of an off-length draws as one block with no
+  four-blocks claim, because a claim about structure needs a promise about
+  what the array *is*. What it leaves: (a) the block *names* mix two
+  vocabularies — *sensory* / *motor* are what they do, *hidden biases* /
+  *motor biases* are what they are, chosen because a reader has no word for
+  "hidden→output weight block", and this reads as tidy from far enough away;
+  (b) the sensory block holds 192 cells against motor's 39, and the picture
+  says that as its own segment widths without ever quoting the 5:1 ratio as a
+  quantity — a fact about the topology the strip could carry and does not;
+  (c) `BRAIN_BLOCK_STARTS` is built from `BRAIN` in one direction, and
+  nothing walks the other way to ask whether `BRAIN` matches what `Genome`
+  actually issues — `weightCount` on both is the falsifier, and it is the
+  rails-vs-`NEAT_IO` shape v1.108 said to prefer.
   (b) The sweep this cycle did one site of: **grep for every early return in a
   per-frame updater**, because each is a promise that the state it skips was
   already correct, and after a reseed none of them are — the chart's captions,

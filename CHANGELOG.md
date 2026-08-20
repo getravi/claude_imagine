@@ -4,6 +4,47 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.114.0] — 2026-08-20
+
+The weight strip has drawn every weight since v1.108 fixed the `Math.min` that
+had drawn half. What it draws is 243 undifferentiated cells, and v1.108's own
+leaves said so: *the strip is honest about how many weights it draws and still
+says nothing about which — 243 cells that are really four blocks, so nobody can
+see where the sensory half of a mind ends and the motor half begins.* Six
+releases of a picture whose one job is to be a fingerprint, with no visible
+seam between its regions.
+
+**Added — a picture that says where its halves are.** The classic-topology
+weight vector has four regions with four different jobs — 192 input weights
+(the sensory half), 12 hidden biases, 36 output weights (the motor half), 3
+output biases. When `sparkFromWeights` recognises the length, it marks the
+first cell of each new region with `.block-start`, which `style.css` gives a
+wider left margin (5 px on top of the strip's 1 px `gap`). A vector of an
+off-length draws as one block, unchanged — the strip has always been generic
+over `w.length`, and the boundary is the `Genome`'s promise about what a
+`.brainWeights` array contains.
+
+**And the label names the blocks it now shows.** The accessible name reads
+*"Brain: 243 weights in four blocks — 192 sensory, 12 hidden biases, 36 motor,
+3 motor biases, 125 excitatory and 118 inhibitory, strongest 2.56."* The four
+sizes come from `BRAIN_BLOCKS`, which walks `BRAIN`, which walks
+`NeuralNet.weightCount` — the same layout every reader of a flat vector has
+had since v1.0, made into data so the picture's seams and the label's clauses
+cannot part company silently. A test on `BRAIN_BLOCK_STARTS` pins the two to
+one list.
+
+### Changed
+
+- `test/inspectorview.test.js` grows from ten claims to twelve: the strip's
+  seams sit at the offsets `nn.js` walks (the layout is the layout the arithmetic
+  uses, or the picture is a claim about a different array), and an
+  off-length vector still draws as one block with no `.block-start` cells and
+  no "four blocks" in its name. The existing name regex is updated to accept
+  the block clause.
+- `style.css` gains `.genome span.block-start` — margin only, so the strip's
+  existing 1 px `gap` still runs between every cell and this only adds to it
+  at the three block boundaries.
+
 ## [1.113.0] — 2026-08-20
 
 A sway has been the **mean of two motor commands** since v1.33 — turn and

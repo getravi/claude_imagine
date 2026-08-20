@@ -812,6 +812,16 @@ details .field {
      is only what an empty strip looks like. See src/palette.js weightMark(). */
   background: var(--insp-track, #142130);
 }
+/* The first cell of each new region in the classic-topology weight vector
+   (v1.114): a wider gap that says "the sensory half ends here" or "the motor
+   half begins here". Named `.block-start` and applied by `sparkFromWeights`
+   from BRAIN_BLOCK_STARTS, so the boundary the picture shows and the boundary
+   the label names cannot drift apart. Margin rather than a flex-gap override
+   because the strip's own 1px `gap` still runs between every cell — this adds
+   to it, it does not replace it. */
+.genome span.block-start {
+  margin-left: 5px;
+}
 
 /* The brain diagram's key. Three neuron roles and two connection signs, in the
    colours the diagram actually draws — v1.14's rule that a mechanic isn't

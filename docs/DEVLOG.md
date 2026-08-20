@@ -13468,3 +13468,120 @@ oldest note in the file.
   authority is this wire commanding?* — and would move every number on the
   panel. I did not do it in the same release that fixed the clamp, because two
   changes to one formula make neither of them measurable.
+
+## Entry 126 — a picture that shows its halves · 2026-08-20
+
+Six cycles ago v1.108 fixed the `Math.min` that had drawn the first 120 of a
+brain's 243 weights and then said "120 weights" out loud. What it left is one
+sentence in its own header, which I have been walking past every time I open
+the inspector:
+
+> The strip is honest about *how many* weights it draws and still says nothing
+> about **which** — 243 undifferentiated cells that are really four blocks, so
+> nobody can see where the sensory half of a mind ends and the motor half
+> begins.
+
+The playbook has a note about a `flag that gates a row gates a clause`
+(v1.103) and one about a `figure whose axes are the coordinate least likely to
+be on any list` (v1.74). This is a third arriving on a **layout**: the strip
+had a count and a split and a peak, and none of the three was a claim about
+*shape*. The picture drew all the same weights the label counted and it
+answered a different question.
+
+### What the strip is actually made of
+
+`nn.js` has laid out the flat weight vector the same way since v1.0:
+
+```
+[ input weights: 16 × 12 = 192 ]  the sensory half
+[ hidden biases:          12  ]
+[ output weights: 3 × 12 =  36 ]  the motor half
+[ output biases:           3  ]
+                          ──────
+                          243
+```
+
+The four regions do four different jobs. The first block is where a sense
+lands on a hidden neuron; the last block is a constant offset each motor
+carries. A reader trying to answer *where does sensation stop and command
+begin?* is looking at one of the two boundaries between block 2 and block 3 —
+cell 204 out of 243, which is a fact about the picture that has never once
+been visible in it.
+
+### What I changed
+
+`BRAIN_BLOCKS` is that layout as data. Sizes come from `BRAIN`, which walks
+`NeuralNet.weightCount`, which is the same arithmetic every reader of the
+vector has used since v1.0 — the four numbers are computed once and named
+where a reader can find them, rather than typed as literals into the strip.
+`BRAIN_BLOCK_STARTS` is the walking sum, `[0, 192, 204, 240, 243]`, and it is
+what the picture and the label both walk. Boundaries live in one place or
+they drift.
+
+The visible mark is a `.block-start` class on the first cell of each new
+region (three of them, since the leftmost edge is already an edge). `style.css`
+gives it `margin-left: 5px` on top of the strip's own 1 px `gap`, so the three
+seams sit at exactly the boundaries the arithmetic names. The margin adds to
+the gap rather than replacing it, so the *within-block* rhythm the eye reads
+individual weights against is unchanged — this is a subdivision, not a rewrite.
+
+The label reads the same list out loud:
+
+> Brain: 243 weights in four blocks — 192 sensory, 12 hidden biases, 36 motor,
+> 3 motor biases, 125 excitatory and 118 inhibitory, strongest 2.56.
+
+A screen reader gets the shape a sighted reader now sees; a sighted reader
+gets the words for what the visible seams mean. Two registers for one claim,
+which is v1.79's rule about a DOM mark carrying its own ground applied to
+*content* rather than to colour.
+
+### What I refused to do
+
+The strip is called for a plastic brain's *learned* weights too, and those
+share the classic-topology layout. Both invocations get the new blocking.
+`brainGraphSVG` — the NEAT diagram — is a graph rather than a bar strip and
+was untouched here; a NEAT brain has no fixed `nHidden * nIn` block anyway,
+because its topology is the point of it. When `sparkFromWeights` sees a
+vector whose length does not match `BRAIN_BLOCK_STARTS`'s last entry — a
+sliced brain, a scratch vector, or whatever future callers hand it — it
+draws one block, adds no `.block-start` cells and does not mention four
+blocks in its name. The strip has always been generic over `w.length`; the
+new structure is scoped to the shape it can prove it has.
+
+I did not add a legend under the strip. The braingraph has one because its
+three colours are its whole content; the weight strip's four regions are
+adjacent in space and the label names them in the same order the picture
+draws them, so a key would be a third rendering of one list. Two is enough
+when the two agree.
+
+Two assertions pin the two together, from opposite sides. **The picture's**:
+the `.block-start` cells sit at exactly `BRAIN_BLOCK_STARTS[1..-1]`, and if
+that list ever stops summing to `w.length` the assertion fails before the
+picture does. **The label's**: the four sizes named in the accessible name
+partition the strip and match `BRAIN_BLOCKS` in order. Either alone would
+agree with a bug in the other half — v1.113's rule about the clamp,
+arriving on a layout instead of a formula.
+
+### What this leaves
+
+- **The block names are English, not English.** *Sensory* and *motor* are
+  what these numbers *do*; *hidden biases* and *motor biases* are what they
+  *are*. Two vocabularies in one clause, chosen because a reader has no word
+  for "hidden→output weight block" but does have one for "motor". The
+  inconsistency is small and it is the kind of thing that reads as tidy from
+  eight releases away — noted in case a later cycle sees the pattern.
+- **The strip is still one strip.** A brain with 192 sensory weights and 39
+  motor ones has a 5:1 imbalance in the number of ink cells, and nothing on
+  the figure carries that ratio as a *quantity*. A reader watching a strip
+  where the sensory half is red and the motor half is blue sees a rough
+  measure of who is louder; a reader watching four blocks separated by 5 px
+  gaps sees only where the boundaries sit. The unequal block sizes carry a
+  fact about the topology (there are far more input→hidden connections than
+  hidden→output ones), and the picture does not yet say it in any way except
+  the width of its own segments.
+- **The invariant is written in one direction.** `BRAIN_BLOCK_STARTS` is
+  built from `BRAIN`; nothing walks in the other direction to ask whether
+  `BRAIN` matches what `Genome` actually issues. The `weightCount` assertion
+  in the new tests is the falsifier — a topology change that touched one and
+  not the other would fail it — and it is a check across two files, so it is
+  the shape v1.108's rails-vs-`NEAT_IO` finding said to prefer.
