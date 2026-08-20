@@ -4,6 +4,47 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.112.0] — 2026-08-20
+
+The body-size figure has shown a mean in its caption and never on its axis since
+v1.104, and the reason is written in v1.104's own hand: *a second rule on this
+axis would need a second measured ink to be told from the refuge's.* That is a
+claim about colour, and this project had already refuted it one figure up. The
+power strip draws two lines in **one** colour and tells them apart by dashing,
+because continuity is not a channel any vision model touches — a distinction that
+never depended on hue cannot be lost to one. Eight releases of deferral rested on
+a premise the repository contained a counter-example to.
+
+**Added — the mean, drawn.** A dashed rule at the pond's mean body radius, in the
+refuge ring's own ink, under the refuge line and over the bars. No fourth colour,
+no fourth pair to audit, and a legend chip that is dashed for the same reason the
+power strip's is. `meanFrac()` places it; `MEAN_DASH` is exported so the key and
+the figure cannot disagree about what the mark looks like.
+
+**And drawing it asked something the caption could not answer.** `nearest` is a
+distance on a continuous axis; what a reader actually reads is **the bar the rule
+stands in**, and the two disagree at a bar edge. Twelve seeds sampled every
+hundredth tick from 1,000 to 6,000, 612 pond-instants: the mean's bar holds
+nobody **18.0%** of the time, and **40.0% of those have a living body inside one
+bar width** — a boundary, not a hole. So `sizeProfile` gains `meanBin` and
+`meanHeld`, the caption gains `nobody in its bar` when the rule stands in
+nothing, and that clause is printed *beside* `nearest body` rather than instead
+of it, so the picture's claim and the pond's are never confused. At 6,000 ticks
+the two readings agree on which ponds are hollow — seeds 128 and 2718, the same
+two v1.104 named, are the only means in an empty bar and both sit two bars from
+the nearest occupied one — while seed 42's mean stands on 8 of 277 creatures,
+2.9%, which the one-pixel floor draws as the thinnest bar the figure can paint.
+
+### Changed
+
+- `describeSizes()` says *no body falls in the bar it stands in* in the same
+  state, so the listener and the reader get the same figure. Six things are
+  asserted in `test/sizeplot.test.js` now rather than five: the sixth is that
+  both rules are one colour, which is the decision most likely to be undone by
+  a future hand reaching for a palette entry.
+- The page ran in headless Chromium before the push (the v1.84 recipe), which is
+  where the legend chip and the two rules were checked side by side.
+
 ## [1.111.0] — 2026-08-20
 
 Two sweeps here switch a feature on and watch for the pond to move —

@@ -61,6 +61,17 @@
 //      39.8 at worst over the four vision models, against a bar of 25. See
 //      `sizePlotTones` in `palette.js`.
 //
+// v1.112 added the second rule, and the reason it took eight releases is
+// written above `sizeCaption` in v1.104's own hand: *a second rule on this axis
+// would need a second measured ink to be told from the refuge's*. That is a
+// claim about colour, and this project had already refuted it one figure up.
+// The power strip draws two lines in **one** colour and tells them apart by
+// dashing — "continuity is not a channel any vision model touches, and a
+// distinction that never depended on hue cannot be lost to one" (`powerLine()`,
+// v1.87). So the mean is a dashed rule in the refuge's own ink: no fourth
+// colour, no fourth pair to audit, and a distinction that survives every
+// dichromacy by construction rather than by measurement.
+//
 // Pure observer, like `refuge.js` and `foodweb.js`: it reads a list of
 // creatures, it draws no randomness, and nothing in the simulation reads
 // anything here.
@@ -85,6 +96,19 @@ import { refugeRadius } from "./refuge.js";
  * the size the figure is drawn.
  */
 export const SIZE_BINS = 30;
+
+/**
+ * The mean rule's dash, in backing-store pixels — `[on, off]`.
+ *
+ * Geometry rather than colour, so it lives with the figure's other geometry
+ * instead of in `palette.js`, and `main.js` imports it for the legend chip: a
+ * key that drew the mean solid would teach the wrong figure. Chosen against the
+ * height rather than by eye — this canvas is stretched horizontally to whatever
+ * the column is and never vertically, so 46 px is 46 px on every screen, and
+ * `[3, 3]` puts eight dashes on the rule. Fewer and a short rule could show one
+ * mark; many more and a hairline reads as a solid line again.
+ */
+export const MEAN_DASH = Object.freeze([3, 3]);
 
 /**
  * The axis this figure is drawn against: the range a genome can express, and
@@ -145,6 +169,8 @@ export function sizeBinOf(radius, axis) {
  * @property {number} max the largest
  * @property {number} mean the mean body radius, in px
  * @property {number} nearest how far the closest body is from that mean, in px
+ * @property {number} meanBin the bar the mean falls in
+ * @property {number} meanHeld how many bodies are in that bar
  */
 
 /**
@@ -156,6 +182,17 @@ export function sizeBinOf(radius, axis) {
  * 0.251 px, which is nearly two bars of empty axis, and says the mean is a size
  * this world does not contain. It costs one pass and answers the question the
  * three existing readouts raise and cannot settle.
+ *
+ * `meanHeld` is the same question asked the way a *reader* asks it, and the two
+ * are not the same question. `nearest` is a distance on a continuous axis;
+ * `meanHeld` is the height of the bar the rule is drawn in, which is what an
+ * eye actually reads off the picture. They disagree at a bar edge — a body
+ * 0.01 px from the mean and on the other side of a boundary leaves the rule
+ * standing in an empty bar — and over 612 pond-instants (twelve seeds, every
+ * hundredth tick from 1,000 to 6,000) the bar is empty 18.0% of the time and
+ * **40.0% of those have a body inside one bar width of the mean**. So the
+ * caption states both, and the mark is never left to make the stronger claim
+ * on its own.
  *
  * Every field is defined in every state — there is no early return in this file
  * and nothing downstream has one either, which is v1.98's rule about a readout
@@ -191,7 +228,10 @@ export function sizeProfile(creatures, config, axis = sizeAxis(config)) {
     if (c.radius > max) max = c.radius;
   }
   if (n === 0) {
-    return { grazer, carnivore, total: 0, carnivores: 0, peak: 0, min: 0, max: 0, mean: 0, nearest: 0 };
+    return {
+      grazer, carnivore, total: 0, carnivores: 0, peak: 0,
+      min: 0, max: 0, mean: 0, nearest: 0, meanBin: 0, meanHeld: 0,
+    };
   }
   let peak = 0;
   for (let i = 0; i < SIZE_BINS; i++) {
@@ -204,7 +244,12 @@ export function sizeProfile(creatures, config, axis = sizeAxis(config)) {
     const d = Math.abs(creatures[i].radius - mean);
     if (d < nearest) nearest = d;
   }
-  return { grazer, carnivore, total: n, carnivores, peak, min, max, mean, nearest };
+  const meanBin = sizeBinOf(mean, axis);
+  const meanHeld = grazer[meanBin] + carnivore[meanBin];
+  return {
+    grazer, carnivore, total: n, carnivores, peak,
+    min, max, mean, nearest, meanBin, meanHeld,
+  };
 }
 
 /**
@@ -224,6 +269,28 @@ export function sizeProfile(creatures, config, axis = sizeAxis(config)) {
 export function refugeFrac(config, axis) {
   if (!config.predation || !(axis.span > 0)) return null;
   const frac = (refugeRadius(config) - axis.lo) / axis.span;
+  return frac >= 0 && frac <= 1 ? frac : null;
+}
+
+/**
+ * Where the mean sits on this axis, 0–1, or `null` when there is nothing to
+ * draw.
+ *
+ * Two ways to have none, and unlike the refuge's three neither of them is about
+ * a rule: an empty pond has no mean, and an axis with no span has nowhere to
+ * put one. The range check is the same guard `refugeFrac` carries for the same
+ * reason — a *swept* `bodyRadiusMax` can shrink beneath bodies born under the
+ * old one, and a mean of bodies that are off the axis is a mark off the figure.
+ * There is no `config.predation` gate here: a mean body radius means exactly
+ * what it means in a pond where nothing hunts.
+ *
+ * @param {SizeProfile} profile
+ * @param {{lo:number, span:number}} axis
+ * @returns {number|null}
+ */
+export function meanFrac(profile, axis) {
+  if (profile.total === 0 || !(axis.span > 0)) return null;
+  const frac = (profile.mean - axis.lo) / axis.span;
   return frac >= 0 && frac <= 1 ? frac : null;
 }
 
@@ -275,19 +342,41 @@ export function drawSizes(ctx, W, H, profile, { config, axis }) {
       }
     }
   }
-  // The refuge, over the bars: a body to the right of this line cannot be eaten
-  // by anything this world is able to grow. Drawn last, because it is the one
-  // mark here that must survive whatever is under it, and in the same ink as
-  // the ring `render.js` puts around a body for the same threshold.
+  const ring = refugeRing();
+  // Inset by the line's own width at the far end, so a rule sitting on the
+  // ceiling of the range is a line inside the figure rather than half a line
+  // hanging off it. Both rules use it; both can land there.
+  const columnOf = (frac) => Math.min(W - 1, Math.round(frac * W));
+
+  // The mean (v1.112), under the refuge and over the bars: the pond's average
+  // body, in the picture the average is a summary *of*. Dashed, in the refuge's
+  // own ink — see the header — so the two rules are told apart by continuity
+  // rather than by a fourth colour.
+  //
+  // Under the refuge rather than over it because the collision is a real one:
+  // this axis is 4.5 px of radius across 300 backing pixels, so the two rules
+  // share a column only when the mean is within 0.015 px of
+  // `bodyRadiusMax / preySizeRatio` — a state in which the solid line is the
+  // honest mark, since both readings are the same number to anything the figure
+  // can draw. The caption carries both either way.
+  const mean = meanFrac(profile, axis);
+  if (mean !== null) {
+    const x = columnOf(mean);
+    const [on, off] = MEAN_DASH;
+    ctx.fillStyle = ring.ring;
+    for (let y = 0; y < H; y += on + off) {
+      ctx.fillRect(x, y, 1, Math.min(on, H - y));
+    }
+  }
+
+  // The refuge, over everything: a body to the right of this line cannot be
+  // eaten by anything this world is able to grow. Drawn last, because it is the
+  // one mark here that must survive whatever is under it, and in the same ink
+  // as the ring `render.js` puts around a body for the same threshold.
   const frac = refugeFrac(config, axis);
   if (frac !== null) {
-    const ring = refugeRing();
-    // Inset by the line's own width at the far end, so a threshold sitting on
-    // the ceiling of the range is a line inside the figure rather than half a
-    // line hanging off it.
-    const x = Math.min(W - 1, Math.round(frac * W));
     ctx.fillStyle = ring.ring;
-    ctx.fillRect(x, 0, 1, H);
+    ctx.fillRect(columnOf(frac), 0, 1, H);
   }
 }
 
@@ -298,11 +387,18 @@ export function drawSizes(ctx, W, H, profile, { config, axis }) {
  * The y axis is the one scale on this page's figures that is stated rather than
  * marked, which is the rule v1.41 wrote for the two strips — *a scale that is
  * stated exactly does not need marks, a scale that moves does* — and the peak
- * is what states it. The mean and its nearest neighbour are here rather than
- * drawn because a second rule on this axis would need a second measured ink to
- * be told from the refuge's, and two numbers side by side make the comparison
- * exactly: `mean 6.2px · nearest body 0.25px` is a pond with a hole where its
- * average is, and nobody has to find the line to see it.
+ * is what states it. The mean and its nearest neighbour are stated here **as
+ * well as** drawn since v1.112, and the pair is not redundant: the rule says
+ * where the average is and the two numbers say whether it is anybody.
+ *
+ * The `nobody in its bar` clause is the mark's own reading, written down so it
+ * cannot be over-read. It fires when the rule stands in an empty bar, and it
+ * sits next to `nearest body`, which is the thing that stops it being a claim
+ * about the pond: two of every five empty bars measured have a body inside one
+ * bar width of the mean, so the clause on its own would report a hole where
+ * there is a boundary. `mean 6.2px · nobody in its bar · nearest body 0.25px` is a
+ * pond with a hole where its average is; the same clause beside `0.01px` is a
+ * bar edge, and the reader can tell which without being told.
  *
  * @param {SizeProfile} profile
  * @param {object} config
@@ -310,9 +406,10 @@ export function drawSizes(ctx, W, H, profile, { config, axis }) {
  */
 export function sizeCaption(profile, config) {
   if (profile.total === 0) return "No bodies to measure.";
+  const held = profile.meanHeld === 0 ? " · nobody in its bar" : "";
   const parts = [
     `tallest bar ${profile.peak.toLocaleString()}`,
-    `mean ${profile.mean.toFixed(1)}px · nearest body ${profile.nearest.toFixed(2)}px`,
+    `mean ${profile.mean.toFixed(1)}px${held} · nearest body ${profile.nearest.toFixed(2)}px`,
   ];
   if (config.predation) parts.push(`refuge ${refugeRadius(config).toFixed(1)}px`);
   return parts.join(" · ");

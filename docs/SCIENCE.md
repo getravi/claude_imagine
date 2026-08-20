@@ -7555,12 +7555,47 @@ hunter's own *eligible set*, the victim sits −0.092 px away. What the figure a
 is that the earlier baseline's failure mode is now visible and has a number
 beside it.
 
+### The mean, drawn (v1.112)
+
+v1.104 shipped the mean as two numbers in the caption and not as a mark, for a
+reason it wrote down: *a second rule on this axis would need a second measured
+ink to be told from the refuge's*. That is a claim about colour, and the power
+strip one figure up had already refuted it — two lines, one colour, one of them
+dashed, because continuity is a channel no vision model touches. So the mean is
+a dashed rule in the refuge's own ink, and the figure still spends three colours.
+
+Drawing it raises a question the caption's own statistic cannot answer. `nearest`
+is a distance on a continuous axis; what a reader sees is **the bar the rule
+stands in**, and the two disagree at a bar edge. Same twelve ponds, sampled every
+hundredth tick from 1,000 to 6,000 — 612 pond-instants:
+
+| | |
+|---|---:|
+| instants where the mean's bar holds nobody | **18.0%** |
+| …of those, with a living body inside one bar width (0.15 px) | **40.0%** |
+
+At 6,000 ticks the two readings agree about which ponds are hollow: seeds 128 and
+2718 — the same two the table above singles out — are the only ones whose mean
+falls in an empty bar, and both are **two bars** from the nearest occupied one.
+The other ten hold between 8 and 175 bodies in the mean's own bar.
+
+**So the mark is never left to speak alone.** The caption gains
+`nobody in its bar` when the rule stands in nothing, and it sits beside
+`nearest body`, which is what stops it being a claim about the pond: two of every
+five empty bars are a boundary, not a hole. Seed 42 makes the opposite point —
+its mean's bar holds 8 of 277 creatures, 2.9%, which the one-pixel floor draws as
+the thinnest possible bar under a rule that is technically standing on somebody.
+
 ### What this does not measure
 
 - **`nearest` says the mean is nobody; it does not say the pond is bimodal.**
   They are different claims — one outlier moves the first and not the second —
   and modality is what an eye reads off this figure in a glance and what nothing
   here computes.
+- **`meanHeld` inherits the bin count.** It is a statistic about a *drawing*, so
+  changing `SIZE_BINS` changes it — 18.0% is the answer at thirty bars and
+  nothing has swept it at ten or sixty, where a wider bar would catch the edge
+  cases and a narrower one would manufacture more of them.
 - **The figure is a photograph of now.** There is no history behind it, and the
   archive cannot reconstruct one, because the archive keeps summaries and this is
   the shape those summaries are summaries of. *When* a pond splits is unasked.

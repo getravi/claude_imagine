@@ -834,6 +834,14 @@ export function describeChart(hist, axis, foodMax, season = null) {
  * animals have nothing they can eat, and a sentence calling them hunters would
  * put the error this project corrected one release ago back on the page.
  *
+ * v1.112 drew the mean as a rule, and this sentence gained the clause that
+ * makes the two registers say the same thing: *no body falls in the bar it
+ * stands in* is what a reader sees when the dashed line has nothing under it.
+ * It is said beside the distance rather than instead of it for the reason
+ * `sizeCaption` gives — two of every five empty bars measured have a body
+ * inside one bar width, so the clause is about the picture and the distance is
+ * about the pond.
+ *
  * @param {import("./sizeplot.js").SizeProfile} profile
  * @param {object} config
  */
@@ -847,7 +855,8 @@ export function describeSizes(profile, config) {
     `Body sizes: ${count(profile.total, "creature")} between ${px(profile.min)} and ` +
     `${px(profile.max)} across, ${profile.carnivores.toLocaleString()} of them carrying the diet gene. ` +
     `The tallest bar holds ${count(profile.peak, "body", "bodies")} near ${px(peakAt)}. ` +
-    `The mean is ${px(profile.mean)} and the nearest body to it is ${px(profile.nearest, 2)} away.` +
+    `The mean is ${px(profile.mean)}${profile.meanHeld === 0 ? ", and no body falls in the bar it stands in;" : " and"} ` +
+    `the nearest body to it is ${px(profile.nearest, 2)} away.` +
     refuge
   );
 }

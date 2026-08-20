@@ -135,7 +135,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   since the archive keeps the summaries this is the shape of; the bars are
   **counts, not mass**, so three 8 px animals and three 4 px ones draw the same
   height; and the mean itself has a number in the caption and **no mark**,
-  because a second rule on that axis needs a second measured ink. **What a
+  because a second rule on that axis needs a second measured ink — **which
+  closed in v1.112, and the premise was false.** The power strip has drawn two
+  lines in one colour since v1.87 and told them apart by dashing, so the mark
+  cost no ink; what it cost was a second statistic, because `nearest` is a
+  distance and what a reader reads is **the bar the rule stands in**. Those
+  part company at a bar edge: over 612 pond-instants the mean's bar holds
+  nobody 18.0% of the time and **40.0% of those have a body inside one bar
+  width**, so the caption says `nobody in its bar` only ever beside
+  `nearest body`. What it leaves: `meanHeld` inherits `SIZE_BINS` and has been
+  swept at no other resolution; and seed 42's mean stands in a bar holding 8 of
+  277, which the one-pixel floor draws as the thinnest possible bar — *holds
+  nobody* and *shows nobody* are two thresholds and only the first is built. **What a
   carnivore with an empty set costs closed in v1.105** (`src/dietcost.js`, the
   `Bill 🧾` tile), and the finding is one level under the question. Both prices
   in `config.js` — `carnivoreMetabolicCost` every tick, `plantPenaltyFromDiet`
@@ -1036,6 +1047,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **A "this would need X" in my own comment is a lead, and I have never grepped
+  for them.** v1.104 deferred a mark with a reason — *a second rule on this axis
+  would need a second measured ink* — and that reason decided what the figure
+  did for eight releases without anybody checking it. It was false when it was
+  written: the power strip, 700 lines away and written by me, draws two lines in
+  one colour and separates them by dashing, and the sentence explaining why that
+  is safe was already in `palette.js`. v1.36's rule ("a comment is not a
+  measurement") is aimed at claims about the *world*; this is the same rule
+  aimed at claims about **my own page**, where the counter-example is not a
+  measurement I have to run but a file I have to open. Every deferral written as
+  a constraint is a candidate: grep this repository for *would need*, *cannot
+  be*, *no way to*, and check each against what the repository already does. The
+  second half of the lesson is what actually cost the cycle: the mark was an
+  hour and the **statistic it made necessary** was the rest of it. Drawing a
+  quantity puts it in a *bar*, and a bar is not the quantity — 40.0% of the
+  empty bars in that figure hold a body within one bar width, so the picture's
+  claim and the number's claim are different claims and both have to be printed.
 - **A readout gets built when a mechanic arrives, so whatever was there from
   the start never gets one.** `auxSway` — the only function in this project that
   can say how much of an animal's steering a sense is deciding — was written in

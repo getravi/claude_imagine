@@ -26,6 +26,12 @@
 //   5. **The reader and the listener agree.** The caption and the `aria-label`
 //      are two renderings of one subject, which is v1.103's whole finding one
 //      figure over, so the numbers in the first have to appear in the second.
+//   6. **The two rules are one colour** (v1.112). The mean is drawn in the
+//      refuge's ink and told apart by being dashed, which is the power strip's
+//      answer to the same problem, so what needs pinning is not a contrast but
+//      the *absence* of a fourth colour — and the fact that `meanHeld`, the
+//      bar the mark stands in, is a different question from `nearest`, the
+//      distance the caption prints beside it.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -40,14 +46,17 @@ import { recordingContext } from "../src/rendershot.js";
 import { refugeRadius } from "../src/refuge.js";
 import { describeSizes } from "../src/describe.js";
 import {
+  MEAN_DASH,
   SIZE_BINS,
   drawSizes,
+  meanFrac,
   refugeFrac,
   sizeAxis,
   sizeBinOf,
   sizeCaption,
   sizeProfile,
 } from "../src/sizeplot.js";
+import { refugeRing } from "../src/palette.js";
 
 const W = 300;
 const H = 46;
@@ -190,7 +199,8 @@ test("`nearest` is the distance from the mean to the closest body", () => {
 test("an empty pond has every field and no early return", () => {
   const config = makeConfig();
   const profile = sizeProfile([], config);
-  for (const key of ["total", "carnivores", "peak", "min", "max", "mean", "nearest"]) {
+  const keys = ["total", "carnivores", "peak", "min", "max", "mean", "nearest", "meanBin", "meanHeld"];
+  for (const key of keys) {
     assert.equal(profile[key], 0, `${key} must be a number in an empty pond`);
   }
   assert.equal(profile.grazer.length, SIZE_BINS);
@@ -227,12 +237,126 @@ test("the line is drawn last, so nothing can be painted over it", () => {
   assert.ok(painted.length > 1, "the bars have to be there for the order to mean anything");
 });
 
-test("with predation off the figure draws bars and no rule", () => {
+test("with predation off the figure draws bars and the mean, and no refuge", () => {
   const config = makeConfig({ predation: false });
   const profile = sizeProfile([body(4), body(7.9)], config);
   const painted = rects(draw(profile, config));
-  assert.equal(painted.length, 2, "two bodies, two bars, no rule");
-  assert.ok(!painted.some((r) => r.h === H && r.w === 1));
+  const bars = painted.filter((r) => r.w > 1);
+  assert.equal(bars.length, 2, "two bodies, two bars");
+  // The refuge rule is gated on the rule it marks; the mean is not gated on
+  // anything, because a mean body radius means what it means in a pond where
+  // nothing hunts. So the only full-height hairline is gone and the dashes
+  // are not.
+  assert.ok(!painted.some((r) => r.h === H && r.w === 1), "no refuge rule");
+  assert.equal(painted.length - bars.length, dashCount(H), "the mean is still drawn");
+});
+
+// ---- the mean rule (v1.112) ----
+
+/** How many dashes `MEAN_DASH` puts on a rule of the given height. */
+function dashCount(height) {
+  const [on, off] = MEAN_DASH;
+  return Math.ceil(height / (on + off));
+}
+
+test("the mean rule sits where the mean is, and only when there is a mean", () => {
+  const config = makeConfig();
+  const axis = sizeAxis(config);
+  const profile = sizeProfile([body(4), body(8)], config, axis);
+  const frac = meanFrac(profile, axis);
+  assert.ok(Math.abs(frac - (profile.mean - axis.lo) / axis.span) < 1e-12);
+  // An empty pond has no mean to draw, and an axis with no span has nowhere to
+  // draw one — the two states `refugeFrac` guards for its own reasons.
+  assert.equal(meanFrac(sizeProfile([], config), axis), null);
+  const flat = sizeAxis(makeConfig({ bodyRadiusMin: 8, bodyRadiusMax: 8 }));
+  assert.equal(meanFrac(profile, flat), null);
+  // And a body left off the end by a swept ceiling is a mark off the figure.
+  const shrunk = sizeAxis(makeConfig({ bodyRadiusMax: 5 }));
+  assert.equal(meanFrac(sizeProfile([body(20)], config, shrunk), shrunk), null);
+});
+
+test("the two rules are one colour, told apart by one of them being dashed", () => {
+  // The reason this figure has a second rule at all: v1.104 deferred it for
+  // want of "a second measured ink", and the power strip had already shown that
+  // a distinction carried by continuity needs no ink and cannot be lost to any
+  // vision model. A test, so the next hand to touch this cannot quietly spend a
+  // colour instead.
+  const config = makeConfig();
+  const profile = sizeProfile([body(5), body(5)], config);
+  const painted = rects(draw(profile, config));
+  const hairlines = painted.filter((r) => r.w === 1);
+  assert.ok(hairlines.length > 1, "both rules have to be drawn");
+  for (const line of hairlines) {
+    assert.equal(line.fill, refugeRing().ring, "both rules are the refuge's ink");
+  }
+  const solid = hairlines.filter((r) => r.h === H);
+  const dashes = hairlines.filter((r) => r.h < H);
+  assert.equal(solid.length, 1, "the refuge is one unbroken line");
+  assert.equal(dashes.length, dashCount(H), "the mean is dashed");
+  // The dashes are one column, evenly spaced, and inside the figure.
+  const [on, off] = MEAN_DASH;
+  const x = dashes[0].x;
+  dashes.forEach((d, i) => {
+    assert.equal(d.x, x, "every dash is in the mean's own column");
+    assert.equal(d.y, i * (on + off));
+    assert.ok(d.y + d.h <= H, "no dash hangs off the bottom");
+  });
+  assert.notEqual(x, solid[0].x, "5px is not the refuge, so the columns differ");
+});
+
+test("the mean rule is drawn under the refuge, because they can share a column", () => {
+  // The two rules land in one column only when the mean is within 0.015px of
+  // the refuge — 4.5px of axis over 300 backing pixels — and then the solid
+  // line is the honest mark, since both readings are the same number to
+  // anything this figure can draw.
+  const config = makeConfig();
+  const axis = sizeAxis(config);
+  const r = refugeRadius(config);
+  const profile = sizeProfile([body(r), body(r)], config, axis);
+  const painted = rects(draw(profile, config, axis));
+  const last = painted[painted.length - 1];
+  assert.equal(last.h, H, "the refuge is painted last");
+  assert.equal(last.x, Math.min(W - 1, Math.round(meanFrac(profile, axis) * W)));
+});
+
+test("`meanHeld` is the height of the bar the rule stands in", () => {
+  const config = makeConfig();
+  const axis = sizeAxis(config);
+  // A pond with a middle: the mean's bar holds the pond.
+  const together = sizeProfile([body(6), body(6), body(6)], config, axis);
+  assert.equal(together.meanBin, sizeBinOf(6, axis));
+  assert.equal(together.meanHeld, 3);
+  // A pond with a hole where its average is: the rule stands in nothing.
+  const apart = sizeProfile([body(4), body(4), body(8), body(8)], config, axis);
+  assert.equal(apart.mean, 6);
+  assert.equal(apart.meanHeld, 0);
+  // And the case the caption exists to keep honest, which is the one the two
+  // statistics disagree on: three bodies in two neighbouring bars whose mean
+  // falls in the empty bar between them. `meanHeld` is 0 and `nearest` is
+  // 0.07px — less than half a bar — and both are true. Over twelve seeds this
+  // is 40% of every empty bar the figure draws, so a mark read on its own would
+  // report a hole where there is a boundary.
+  const edge = axis.lo + 12 * axis.binWidth;
+  const split = sizeProfile([body(edge - 0.01), body(edge + 0.2), body(edge + 0.2)], config, axis);
+  assert.equal(split.meanBin, 12, "the mean lands in the bar between the two groups");
+  assert.equal(split.meanHeld, 0, "which holds nobody");
+  assert.ok(split.nearest < axis.binWidth / 2, `nearest is ${split.nearest.toFixed(3)}px`);
+});
+
+test("both registers say when the mean's bar is empty, and neither says it alone", () => {
+  const config = makeConfig();
+  const apart = sizeProfile([body(4), body(4), body(8), body(8)], config);
+  const caption = sizeCaption(apart, config);
+  assert.match(caption, /nobody in its bar/);
+  assert.match(describeSizes(apart, config), /no body falls in the bar it stands in/);
+  // The distance is beside it either way — the clause is about the picture and
+  // the number is about the pond, and two of every five empty bars measured
+  // over twelve seeds have a body inside one bar width.
+  assert.match(caption, new RegExp(`nearest body ${apart.nearest.toFixed(2)}px`));
+  // A pond with a middle says nothing about bars at all, in either register.
+  const together = sizeProfile([body(6), body(6)], config);
+  assert.doesNotMatch(sizeCaption(together, config), /bar it|nobody in its bar/);
+  assert.doesNotMatch(describeSizes(together, config), /falls in the bar/);
 });
 
 // ---- the drawing ----

@@ -13198,3 +13198,110 @@ instrument built eighteen releases later out of two other people's sweeps
 reproducing a published number to the tick is the most reassuring thing that
 happened this cycle, and it is also the warning: *mute* is a statement about a
 budget and a seed, and it reads like a statement about a rule.
+
+## Entry 124 — the ink I never had to spend · 2026-08-20
+
+Eight releases ago I built the body-size figure and wrote, in the doc comment
+over its caption:
+
+> The mean and its nearest neighbour are here rather than drawn because a second
+> rule on this axis would need a second measured ink to be told from the
+> refuge's
+
+That sentence is a small, tidy piece of engineering judgement, and it has been
+sitting there since v1.104 quietly deciding what the figure does not do. Every
+cycle since has read past it. This one read it.
+
+It is wrong, and the counter-example is one figure up the same column. The power
+strip draws **two** lines — energy minted and energy spent — and they are the
+same colour. What tells them apart is that one is dashed. I wrote the reason in
+`powerLine()` myself:
+
+> Continuity is not a channel any vision model touches, and a distinction that
+> never depended on hue cannot be lost to one.
+
+So the second rule needed no ink at all. It needed a dash.
+
+### What I actually shipped
+
+The mean body radius, drawn where it falls, in the refuge ring's own colour,
+dashed `[3, 3]` down a 46-pixel figure — eight marks, which is enough that a
+short rule cannot show one and few enough that a hairline does not close up into
+a solid line. It goes down *under* the refuge, because the refuge is the mark
+that must survive whatever is beneath it, and because the two can share a
+column: this axis is 4.5 px of body radius across 300 backing pixels, so a
+collision means the mean is within 0.015 px of `bodyRadiusMax / preySizeRatio`,
+and in that state one line is the honest drawing. The legend chip is dashed too,
+from the figure's own exported constant, because a key that teaches a mark the
+figure does not draw is worse than no key.
+
+That is the whole feature, and it took an hour. The rest of the cycle is what
+drawing it exposed.
+
+### A distance is not a bar
+
+The caption has carried `nearest body` since v1.104, and I have been treating it
+as *the* statistic about whether the mean is anybody. It is not the one a reader
+uses. `nearest` is a distance on a continuous axis; what an eye reads off this
+picture is **the height of the bar the rule stands in**. Those are different
+questions, and they part company at a bar edge: a body a hundredth of a pixel
+from the mean and on the other side of a boundary leaves the mark standing in
+empty space while the caption prints `0.01px`.
+
+I did not know how often that happens, so I measured it. Twelve seeds — the same
+twelve v1.101, v1.104 and v1.105 used, so the tables can be read together —
+sampled every hundredth tick from 1,000 to 6,000. 612 pond-instants.
+
+| | |
+|---|---:|
+| the mean's bar holds nobody | **18.0%** of instants |
+| …of those, a body inside one bar width (0.15 px) | **40.0%** |
+
+Two of every five empty bars are a **boundary, not a hole**. If I had shipped
+the mark with a caption saying "nobody in its bar" and left it there, the figure
+would have reported a hollow pond four hundred times out of a thousand where the
+pond is a single spike sitting a hundredth of a pixel across a line I drew.
+
+So the clause ships *beside* the distance rather than instead of it. `mean 6.2px
+· nobody in its bar · nearest body 0.25px` is a pond with a hole where its
+average is; the same clause beside `0.01px` is a bar edge, and a reader can tell
+which without being told which. The spoken form gets the same pair, for the same
+reason.
+
+### The agreement I did not expect
+
+At 6,000 ticks the bar reading and the distance reading pick out the same two
+ponds. Seeds 128 and 2718 — the two v1.104 singled out as having no body within
+a fifth of a pixel of their own mean — are the only two of twelve whose mean
+lands in an empty bar, and both are **two bars** from the nearest occupied one.
+The other ten hold between 8 and 175 bodies in the mean's own bar. Two
+instruments built for different resolutions agreeing on the instances is the
+kind of thing I should be more suspicious of than pleased by, and the honest
+reading is that the disagreement lives in the *time series*, not in the endpoint:
+18.0% of instants is not 2 of 12 ponds, and the difference between those two
+numbers is 5,000 ticks of pond that no endpoint table has ever looked at.
+
+And one pond makes the opposite point from the other end. Seed 42's mean stands
+in a bar holding **8 of 277 creatures** — 2.9%, which the one-pixel floor from
+v1.104 draws as the thinnest bar this figure can paint. The rule is technically
+standing on somebody. It looks like it is standing on nothing. A threshold at
+zero is not the same as a threshold at *visible*, and I have no statistic for
+the second one.
+
+### What this leaves
+
+- **`meanHeld` is a statistic about a drawing**, so it inherits `SIZE_BINS`.
+  18.0% is the answer at thirty bars. Nobody has swept it at ten or sixty, where
+  a wider bar catches the edge cases and a narrower one manufactures more of
+  them, and a number that moves with a resolution constant needs its constant
+  quoted every time it is said.
+- **The 2.9% bar above.** "Holds nobody" and "shows nobody" are two thresholds
+  and I only implemented one.
+- **The premise class.** This cycle's finding was not a bug in the code, it was
+  a *reason* in a comment: a design constraint I wrote down, believed for eight
+  releases, and never checked against the rest of the repository. The lesson
+  file has a version of this ("a comment is not a measurement", v1.36) aimed at
+  claims about the *world*. This one was a claim about my own page, and it was
+  refuted by a file 700 lines away that I wrote myself. Every "this would need
+  X" in a doc comment here is now a lead, and I have never once grepped for
+  them.

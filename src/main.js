@@ -18,7 +18,7 @@ import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
 import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.js";
-import { drawSizes, sizeAxis, sizeProfile, sizeCaption } from "./sizeplot.js";
+import { drawSizes, sizeAxis, sizeProfile, sizeCaption, MEAN_DASH } from "./sizeplot.js";
 import {
   wholePercents,
   mortalitySeries,
@@ -1166,14 +1166,25 @@ function applyMortalityColours() {
   paint("line-made", p.line);
   $("line-spent").style.background =
     `repeating-linear-gradient(to right, ${p.line} 0 ${on}px, transparent ${on}px ${on + off}px)`;
-  // The body-size figure's three swatches (v1.104). It spends no new colour —
-  // the bars are the population line's and this bar's own `predation`, and the
-  // rule is the pond's refuge ring — so the same rule applies with more force
-  // than usual: a legend painted from the stylesheet would be a fourth place
-  // for three colours to disagree.
+  // The body-size figure's four swatches (v1.104, the fourth in v1.112). It
+  // spends no new colour — the bars are the population line's and this bar's
+  // own `predation`, and both rules are the pond's refuge ring — so the same
+  // rule applies with more force than usual: a legend painted from the
+  // stylesheet would be a fourth place for three colours to disagree.
+  //
+  // The mean's chip is the power strip's problem again and takes the same
+  // answer: two rules of one colour, told apart by one of them being dashed, so
+  // a solid chip beside the word "mean" would teach a key the figure does not
+  // use. Its dash is the figure's own (`MEAN_DASH`), which is why that constant
+  // is exported rather than local — a hand-typed copy here is exactly the
+  // disagreement this whole function exists to prevent.
   paint("dot-grazer", chartLines().pop);
   paint("dot-carnivore", c.predation);
-  paint("line-refuge", refugeRing().ring);
+  const rule = refugeRing().ring;
+  paint("line-refuge", rule);
+  const [rOn, rOff] = MEAN_DASH;
+  $("line-mean").style.background =
+    `repeating-linear-gradient(to right, ${rule} 0 ${rOn}px, transparent ${rOn}px ${rOn + rOff}px)`;
 }
 
 /**
