@@ -12997,3 +12997,204 @@ keeps summaries rather than brains. And the sway is still **two motors averaged*
 — turn and thrust, in one number, which is v1.120's warning about a robust
 estimate sitting on a threshold in a different costume: a sense that steers hard
 and never accelerates reads the same as one that does half of each.
+
+## Entry 123 — the number both sweeps threw away · 2026-08-20
+
+There are two feature sweeps in this project. `src/levers.js` (v1.38) moves
+every number in `config.js` and checks the pond moves. `test/fingerprint.test.js`
+(v1.36) flips every opt-in flag and checks the same. They were written eighteen
+months of releases apart and they have the same loop in the middle of them:
+
+```js
+for (let i = 0; i < budget && at < 0; i++) {
+  off.step();
+  on.step();
+  if (stateFingerprint(on) !== stateFingerprint(off)) at = i + 1;
+}
+assert.ok(at > 0, ...);
+```
+
+`at` is *the tick a rule first reached the pond*. Both sweeps compute it. Both
+then compare it to zero and drop it on the floor. In `levers.js` it survives as
+far as the return value and is read as `> 0` by three tests; in the flag sweep
+it is a local that goes out of scope on the next iteration.
+
+Seventy-five releases. The only readings that ever escaped are the three
+somebody found surprising enough to hand-copy into a comment — *disease arrives
+at 901, deathIsFinal at 3,587 on seed 314, kinRecognition at 4,910 on seed 23* —
+which is exactly the shape v1.85 built a whole test around, because a number in
+a paragraph is a number nothing reads.
+
+So this cycle is the number, promoted. And promoting it turned out to be the
+smaller half.
+
+### The verdict I did not expect to need
+
+The first sweep I ran printed a column of zeroes. Nine flags of twenty-five
+were already apart *before the first tick* — the two worlds disagreed the
+moment they were constructed. That is not a bug in any of them, and it took me
+a while to see why it is not a bug in them and is a bug in me.
+
+Switching `groundSense` on gives every creature twelve more genes. Those genes
+are drawn from the world RNG. Every draw after them is therefore a different
+number, and the forty founders get placed somewhere else. The arm with the flag
+on is not the same pond with a sense added. **It is a different sample.**
+
+Which means the sentence the sweep has been asserting —
+
+> switching it on changed the world
+
+— is, for those flags, true of *any two seeds*. I checked, because a claim like
+that deserves a null and this one has an easy one. Mean toroidal distance
+between founders that share an index, twelve seeds:
+
+| pair | min | median | max |
+| --- | ---: | ---: | ---: |
+| two unrelated seeds (66 pairs) | 250.7 | **294.3** | 337.5 |
+| `groundSense` off vs on, same seed | 261.7 | **294.8** | 329.0 |
+
+Half a pixel apart. Not one founder of forty survives the flip in place, on any
+seed, for any of the four sense-and-brain flags. Switching one of these on
+moves the pond exactly as far as changing the seed does, because that is the
+mechanism.
+
+Seven flags are in that position: `foodPatches`, `terrain`, `barriers`,
+`groundSense`, `wallSense`, `signalling`, `evolvableTopology`. Three of them
+lay out the pond before anybody is placed in it and three add a gene block and
+one builds a different brain, and the sweep cannot tell any of that from a rule
+firing. So `flagOnset` reports `resampled` instead of a tick, which is a
+refusal to answer rather than an answer, and that is the right output when the
+comparison is not one.
+
+### And then the part that stings
+
+Two of the seven are worse than uninformative. Here is `config.js` on the foot,
+written by me in v1.33:
+
+> the input reads exactly 0 in a world with no terrain at all
+
+And on the whisker, v1.102:
+
+> the input reads exactly 0 in a world with no rock in it at all
+
+The default pond has no terrain and no rock. The default pond is where the
+sweep runs them. A channel that is identically zero multiplies its weights by
+zero and contributes nothing to any hidden neuron — so for seventy-eight and
+nine releases respectively, `groundSense` and `wallSense` have been passing a
+test called *every opt-in feature is a lever when it is on*, in a world where
+they are provably incapable of moving a single creature, on the strength of the
+founders having been dealt a different hand.
+
+I wanted that stated as a measurement rather than as an argument, and the
+instrument for it is `statesweep.js`'s device pointed one level in. Build the
+same pond **twice** — same config, so the copies are identical to the bit —
+then overwrite one sense's whole gene block on every founder of one copy and
+run both. Nothing else moved, so anything that happens is the sense.
+
+| block | world | parts at |
+| --- | --- | --- |
+| foot | default pond, no terrain | **never**, twelve seeds of twelve |
+| foot | `terrain: true` | 68 (5–126) |
+| whisker | default pond, no rock | **never**, twelve of twelve |
+| whisker | `barriers: true` | 101 (49–246) |
+| ear | default pond, `signalling: true` | 45 (10–181) |
+
+The second arm of each pair is the whole reason the first one means anything.
+A control that only ever returns "no" is a broken probe wearing a result, and
+I have written that lesson down twice before without it protecting me from
+building one. Give the sense something to read and the same scramble parts the
+pond well inside the same budget.
+
+### The strict hash is a tick early, four times
+
+The other half of the audit is smaller and I nearly missed it because it looks
+like nothing. Both sweeps hash `stateFingerprint`, which walks every field a
+creature carries. `trajectoryFingerprint` — the one the golden constants use,
+the one that carries the promise across versions — walks only where things
+*are*. On four flags those two part at different ticks:
+
+| flag | strict hash | trajectory | gap |
+| --- | ---: | ---: | ---: |
+| `detritus` | 0 | 246 | 246 ticks |
+| `plasticity` | 0 | 80 | 80 |
+| `dayNightCycle` | 2 | 24 | 22 |
+| `seasons` | 2 | 21 | 19 |
+
+A lattice allocated. A coefficient block reserved at zero. A clock advanced. The
+strict hash sees a rule the moment it writes a number down, and for 246 ticks
+the pond is bit-for-bit the pond it would have been. Neither hash is wrong —
+that division *is* v1.36's design, and I wrote the paragraph in `fingerprint.js`
+explaining it — but a sweep asking *did this rule reach the simulation* is
+asking the blind hash's question and reading the strict hash's answer.
+
+Eleven of twenty-five flags, adding the two halves, report an onset that is not
+the tick the rule reached the pond.
+
+### What the number says now that somebody is reading it
+
+The sixteen flags that do fire sort into two kinds, and no comment in this
+repository had named the division. A rule on a **clock** arrives at the same
+tick in every world: `seasons` at 21 on all twelve seeds, `disease` at 901 on
+all twelve because `diseaseReintroduce` is 900, `autoReseed` at 200 on all
+twelve in a pond built to empty at 200. A rule waiting on an **ecology** has a
+distribution: predation 1–636, detritus and scavenging 10–540, sexual
+reproduction 9–383.
+
+Which turns the budgets into a question. `levers.js` allows a constant 600
+ticks; the flag sweep allows a flag 1,000. Both numbers were chosen by running
+seed 314, where predation's onset is 236. On seed 51 it is **636**. Nothing is
+broken today — the sweeps run on 314 — but a budget is a bound on a
+distribution, and until this cycle nobody had drawn the distribution.
+
+### The inventory hole, which is the oldest thing here
+
+`OPT_IN_FLAGS` is `Object.keys(DEFAULT_CONFIG).filter(k => DEFAULT_CONFIG[k] === false)`.
+That is the correct list for the test above it, which asks whether writing
+`false` explicitly is the same as leaving a flag out. It is the wrong list for a
+test about levers, because `seasons`, `foodPatches`, `autoReseed` and
+`predation` are flags too — they are just flipped the other way. **No sweep in
+this project has ever touched them.** Seventy-five releases, four features, and
+the reason is one predicate reused for two questions.
+
+They are swept now, in both files. `autoReseed` needed the emptying pond
+`levers.js` already hands `reseedCount`, for the same reason and with the same
+words in the exception, and it parts its arm at tick 200.
+
+### One thing I got wrong on the way
+
+The first version of the alignment probe read `world.rng.float()` on the two
+worlds it was measuring. There is no draw counter on `RNG` and there does not
+need to be one — if two streams are in step, the next number out of each is the
+same number — but *reading it takes it*. Every onset in that first table was a
+tick or two off, silently, because the instrument had spent a random number out
+of both ponds before letting them run. It now runs on two worlds built for the
+purpose and thrown away, and `test/onset.test.js` asserts that a pond built
+after the whole sweep is the pond built before it.
+
+That is a small, embarrassing, extremely characteristic bug, and it belongs to
+the same family as everything else in this entry: **a measurement that changes
+its subject is a comparison you no longer have.** The RNG one I found because
+two runs disagreed. The resampling one had been sitting in a green test for
+seventy-five releases, because there was nothing for it to disagree with.
+
+### What this leaves
+
+The `resampled` verdict is a refusal, and a refusal is a hole with a shape.
+Seven flags now have no honest liveness measurement at all, and `blockOnset`
+covers two of them (three counting the ear) because a gene block is the one
+thing a flag adds that I can perturb in place. The device generalises the
+moment I can name, for each of the other four, an *aligned* pair — both arms
+with the flag on, the rule neutralised on one by a constant. `terrain` has one
+sitting in `config.js` already (`terrainRoughCost: 0, terrainBarrenness: 0`
+keeps the roughness field and the draws and removes the bite); `barriers` may
+have one in `barrierGapWidth`; `evolvableTopology` and `foodPatches` I do not
+yet see. That is a cycle, and it is scheduled work rather than an idea, which
+is the distinction v1.74 taught me to make.
+
+And `mute` is still one clock. Two flags never fire in 2,000 ticks on eleven
+seeds of twelve and both fire on seed 512 — kin recognition at t1,983, which is
+the tick v1.92 published for the scenario that ships on that seed. An
+instrument built eighteen releases later out of two other people's sweeps
+reproducing a published number to the tick is the most reassuring thing that
+happened this cycle, and it is also the warning: *mute* is a statement about a
+budget and a seed, and it reads like a statement about a rule.

@@ -4,6 +4,105 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.111.0] — 2026-08-20
+
+Two sweeps here switch a feature on and watch for the pond to move —
+`src/levers.js` for every number in `config.js` since v1.38, and
+`test/fingerprint.test.js` for every opt-in flag since v1.36. Both compute the
+same quantity on the way to their assertion: **the first tick at which the two
+arms disagree.** Both then read it as a boolean. `worldAt` is returned and
+tested as `> 0`; the flag sweep's `at` is a local variable. The number itself
+has been discarded seventy-five releases running, except where a reading was
+surprising enough to be hand-copied into a comment — which is the place v1.85
+found three different counts of one array.
+
+**Added — `src/onset.js` and `test/onset.test.js`, ten tests.** The number as
+the subject: every boolean in `config.js` flipped away from its default, on
+twelve seeds, followed on both hashes at once. Four verdicts, and the middle
+one is the release.
+
+**Sixteen flags fire, and the onsets sort into two kinds nothing had named.** A
+rule on a clock arrives at the same tick in every world — `seasons` at 21 on
+all twelve seeds, `disease` at **901** on all twelve (`diseaseReintroduce` is
+900), `autoReseed` at 200 on all twelve in a pond built to empty at 200. A rule
+waiting on an ecology has a *distribution*: predation 1–**636**, detritus and
+scavenging 10–540, sexual reproduction 9–383. Which makes a budget a claim
+about a distribution measured on one draw: `levers.js` allows 600 ticks and the
+flag sweep 1,000, both chosen by running seed 314, where predation's onset is
+236. On seed 51 it is 636.
+
+**Seven flags are not a controlled comparison at all.** `foodPatches`,
+`terrain`, `barriers`, `groundSense`, `wallSense`, `signalling` and
+`evolvableTopology` draw extra random numbers while the world is being built —
+a gene block per founder, a rock layout, a patch map — so every draw after that
+is shifted and the arm with the flag on is a different **sample** of the world
+rather than the same world with a rule added. Not one of the forty founders is
+placed where it had been, on any seed, for any of them. Measured as the mean
+toroidal distance between founders sharing an index, `groundSense` off-vs-on is
+**294.8 px** against **294.3 px** for two *unrelated seeds* over 66 pairs.
+Switching the flag on moves the pond exactly as far as changing the seed does.
+
+**And for two of the seven the flip is provably measuring nothing else.**
+`config.js` says the foot "reads exactly 0 in a world with no terrain" and the
+whisker "reads exactly 0 in a world with no rock in it at all" — and the
+default pond, the one both are swept in, has neither. `blockOnset` is the
+honest instrument: build one pond **twice** so the copies are identical to the
+bit, then overwrite one sense's whole gene block on every founder of one copy.
+Scrambling the foot changes nothing in 600 ticks on all twelve seeds; so does
+scrambling the whisker. The genes are drawn, inherited and mutated, and there
+is no world-line between them and a motor command. The second arm is what makes
+that a control rather than a broken probe — give the sense something to read
+(`terrain: true`, `barriers: true`) and the same scramble parts the pond at a
+median 68 and 101 ticks, and the ear, which needs no world of its own, at 45.
+
+**Four more flags reach the strict hash before the pond moves.** `detritus`
+parts `stateFingerprint` at construction and `trajectoryFingerprint` a median
+90 ticks later; `plasticity` 0 against 58.5; `dayNightCycle` 2 against 31;
+`seasons` 2 against 21. A lattice allocated, a coefficient block reserved, a
+clock advanced — a hash that walks every field a creature carries sees a rule
+the moment it writes a number down. The two hashes are not in conflict, that
+division is v1.36's design; the sweeps are asking the blind hash's question and
+reading the strict hash's answer. **Counting both halves, 11 of 25 flags report
+an onset that is not the tick the rule reached the pond.**
+
+### Changed
+
+- **`test/fingerprint.test.js`'s lever sweep had half the flags.**
+  `OPT_IN_FLAGS` is "every key whose value is `false`", which is the right
+  inventory for the test above it — that one is about defaults — and the wrong
+  one for a test about levers. `seasons`, `foodPatches`, `autoReseed` and
+  `predation` are flags too, flipped the other way, and no sweep in this
+  project had touched them in seventy-five releases. They are swept now;
+  `autoReseed` gets the emptying pond `levers.js` already gives `reseedCount`,
+  for the same reason, and parts its arm at tick 200. The assertion is kept —
+  a flag that cannot move the world even by resampling it is dead in a way
+  worth catching — with the caveat written into it rather than left to be
+  inferred.
+- **`docs/ARCHITECTURE.md`** gains the `onset.js` row.
+
+### Notes
+
+- **Nothing in the pond moved.** No flag, no constant, no new draw, no import
+  into anything the app loads. `onset.js` is a test-only instrument in the
+  `levers.js` / `statesweep.js` / `dimensions.js` family; the default world is
+  bit-for-bit what it has been since v1.3.0.
+- The alignment probe is a pure observer *twice over*: there is no draw counter
+  on `RNG` and none is needed — two streams in step return the same next number
+  — but reading it takes it, so the probe runs on worlds built for the purpose
+  and thrown away. The first version of this sweep read the stream of the
+  ponds it was measuring and moved every onset it reported.
+- `kinRecognition` and `deathIsFinal` are `mute` on eleven seeds of twelve and
+  fire on seed 512 at t1,983 and t1,535. The first is the tick v1.92 published
+  for the `One Big Family` scenario, which ships on that seed — an instrument
+  assembled eighteen releases later out of two other sweeps reproduces it
+  exactly.
+- The `built` verdict — a flag that builds a different pond out of the *same*
+  draws — has no members. It exists so that the flag which one day has one is
+  not filed under either of the two verdicts that would be wrong for it, and a
+  test asserts the set is empty rather than assuming it.
+- The twelve-seed measurement is in `docs/SCIENCE.md`.
+- 1,115 tests green.
+
 ## [1.110.0] — 2026-08-19
 
 `creature.js` has been able to price one sense since v1.33. `auxSway` holds

@@ -23,6 +23,13 @@ import { trajectoryFingerprint, stateFingerprint, mathFingerprint } from "../src
 const OPT_IN_FLAGS = Object.keys(DEFAULT_CONFIG).filter((k) => DEFAULT_CONFIG[k] === false);
 
 /**
+ * Every flag, including the four that ship on. The lever sweep below wants
+ * this list rather than the one above; the default sweep above wants that one.
+ * Two questions, two inventories, and until v1.111 both used the smaller.
+ */
+const ALL_FLAGS = Object.keys(DEFAULT_CONFIG).filter((k) => typeof DEFAULT_CONFIG[k] === "boolean");
+
+/**
  * The engine's transcendental functions, as they were when the goldens below
  * were recorded (Node 22 / V8). ECMAScript leaves these implementation-defined,
  * so this is a precondition of the strict assertions, not a claim about them.
@@ -213,11 +220,29 @@ test("no opt-in feature costs anything while it is off", () => {
   }
 });
 
-test("every opt-in feature is a lever when it is on", () => {
+test("every feature is a lever when it is flipped", () => {
   // The other half, and the v1.27 lesson: a parameter that does nothing is
   // either irrelevant or clipped, so sweep every flag once purely to check it
   // *is* a flag. The budgets are measured, not guessed — the slowest is disease,
   // whose first case arrives at tick 901.
+  //
+  // **The inventory was half the flags until v1.111.** `OPT_IN_FLAGS` is every
+  // key whose value is `false`, which is the right list for the test above —
+  // that one is about defaults — and the wrong list for this one, which is
+  // about levers. `seasons`, `foodPatches`, `autoReseed` and `predation` are
+  // flags too; they are simply flipped the other way, and no sweep in this
+  // project had ever touched them. They are here now.
+  //
+  // **And what this test can prove is narrower than it reads.** Seven of the
+  // twenty-five arms below are not a controlled pair: switching the flag on
+  // draws extra random numbers — a gene block, a rock layout — so the second
+  // arm is a different *sample* of the world, not the same world with a rule
+  // added. `src/onset.js` measures which seven, and carries the honest control
+  // for the two whose divergence here is provably nothing else (`groundSense`
+  // and `wallSense` read exactly 0 in the very pond this sweep runs them in).
+  // The assertion is kept because a flag that cannot move the world even by
+  // resampling it is dead in a way worth catching; it is no longer read as
+  // evidence that the mechanic works.
   //
   // kinRecognition is the exception, and it is an honest one rather than a
   // dead flag: sparing family can only change a world where a predator meets a
@@ -246,23 +271,28 @@ test("every opt-in feature is a lever when it is on", () => {
   // massWeightedShove (v1.63) is the second of those and for the same reason:
   // a rule about *how* an overlap is split cannot be a lever in a pond where
   // no overlap is ever split, so its two arms run in a pond with solid bodies.
+  // autoReseed (v1.111) is the third, and the world is the one `levers.js`
+  // gives `reseedCount` for the same reason: the rule is read only when the
+  // pond is *completely* empty. No food, no trickle-rescue floor and a short
+  // life empties this one at tick 200.
   const NEEDS = {
     barrierOcclusion: { barriers: true },
     massWeightedShove: { bodyCollision: true },
+    autoReseed: { foodStart: 0, foodSpawnRate: 0, reseedFloor: 0, populationStart: 6, maxAge: 200 },
   };
   const skip = new Set(["kinRecognition", "deathIsFinal"]);
-  for (const flag of OPT_IN_FLAGS) {
+  for (const flag of ALL_FLAGS) {
     if (skip.has(flag)) continue;
     const world = { seed: 314, ...NEEDS[flag] };
-    const off = new World(makeConfig(world));
-    const on = new World(makeConfig({ ...world, [flag]: true }));
+    const off = new World(makeConfig({ ...world, [flag]: DEFAULT_CONFIG[flag] }));
+    const on = new World(makeConfig({ ...world, [flag]: !DEFAULT_CONFIG[flag] }));
     let at = -1;
     for (let i = 0; i < 1000 && at < 0; i++) {
       off.step();
       on.step();
       if (stateFingerprint(on) !== stateFingerprint(off)) at = i + 1;
     }
-    assert.ok(at > 0, `${flag}: switching it on changed nothing in 1000 ticks`);
+    assert.ok(at > 0, `${flag}: flipping it changed nothing in 1000 ticks`);
   }
 });
 

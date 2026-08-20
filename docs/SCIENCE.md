@@ -7942,6 +7942,150 @@ constant woke the speed clamp. The sweep above is a loop over
 `senseSways(creature, config)` at every 500th tick; nothing in it steps a world
 differently, and pricing a sense has never drawn a random number.
 
+## When a rule first happens (v1.111)
+
+Two sweeps in this project switch a feature on and watch for the pond to move:
+`src/levers.js` (v1.38) for every number in `config.js`, and
+`test/fingerprint.test.js` (v1.36) for every opt-in flag. Both compute the first
+tick at which the two arms disagree, and both then throw the number away and
+read it as a boolean. `src/onset.js` makes it the subject, on two hashes at
+once — `stateFingerprint`, which walks every field a creature carries, and
+`trajectoryFingerprint`, which is only where everything actually is.
+
+Twelve seeds (314, 7, 21, 42, 51, 77, 99, 128, 256, 512, 1024, 2026), each flag
+flipped away from its default, 2,000 ticks.
+
+### The four verdicts
+
+| verdict | flags | what it means |
+| --- | ---: | --- |
+| `fires` | 16 | the arms start identical and part at a measurable tick |
+| `resampled` | 7 | the arms' random streams part at construction — not a controlled pair |
+| `mute` | 2 | the arms start identical and never part inside the budget |
+| `built` | 0 | a different pond out of the same draws. Nothing here does this |
+
+### The sixteen that fire
+
+Trajectory onset, twelve seeds:
+
+| flag | median | range | |
+| --- | ---: | ---: | --- |
+| `foodRegrowth` | 1 | 1–1 | a pellet spawns on the first tick |
+| `barrierOcclusion` | 1 | 1–1 | |
+| `licensedDietCost` | 1 | 1–1 | the bill is charged every tick |
+| `shuffleTurnOrder` | 1 | 1–1 | |
+| `bodyCollision` | 2 | 1–93 | |
+| `massWeightedShove` | 2 | 1–213 | |
+| `exactVision` | 1 | 1–103 | 1 on eleven seeds, 103 on seed 51 |
+| `seasons` | 21 | 21–21 | |
+| `dayNightCycle` | 31 | 18–94 | |
+| `predation` | 41.5 | 1–**636** | |
+| `plasticity` | 58.5 | 9–104 | |
+| `detritus` | 90 | 10–540 | needs a death |
+| `scavenging` | 90 | 10–540 | the same death |
+| `sexualReproduction` | 95 | 9–383 | needs a birth |
+| `autoReseed` | 200 | 200–200 | in an emptying pond; the default never empties |
+| `disease` | 901 | 901–901 | |
+
+**The onsets sort into two kinds, and no comment in this repository had named
+the division.** A rule on a clock arrives at the same tick in every world:
+`seasons` at 21 on all twelve seeds, `disease` at 901 on all twelve
+(`diseaseReintroduce` is 900), `autoReseed` at 200 on all twelve in a pond
+built to empty at 200. A rule waiting on an ecology has a *distribution*:
+predation spreads 1–636 across the same twelve seeds, detritus and scavenging
+10–540, sexual reproduction 9–383.
+
+**Which makes a budget a claim about a distribution, measured on one draw.**
+`levers.js` gives a constant 600 ticks and the flag sweep gives a flag 1,000,
+both chosen by running seed 314. Predation's onset on seed 314 is 236 and on
+seed 51 it is **636** — past the first of those budgets. Neither budget is
+wrong; what had never existed is the measurement they are a bound on.
+
+### Seven flags are not a controlled comparison
+
+`foodPatches`, `terrain`, `barriers`, `groundSense`, `wallSense`, `signalling`
+and `evolvableTopology` all draw extra random numbers while the world is being
+built — a gene block per founder, a rock layout, a patch map. Every draw after
+that is shifted, so the arm with the flag on is a different **sample** of the
+world rather than the same world with a rule added, and a divergence in it
+attributes to nothing.
+
+The size of the confound, as the mean toroidal distance between a founder and
+the founder that shares its index in the other arm (900 × 620 pond, twelve
+seeds):
+
+| pair | min | median | max |
+| --- | ---: | ---: | ---: |
+| two **unrelated seeds** (66 pairs) | 250.7 | **294.3** | 337.5 |
+| `groundSense` off vs on, same seed | 261.7 | **294.8** | 329.0 |
+| `wallSense` off vs on, same seed | 261.7 | **294.8** | 329.0 |
+| `signalling` off vs on, same seed | 261.7 | **294.8** | 329.0 |
+| `evolvableTopology` off vs on, same seed | 249.9 | **280.7** | 308.2 |
+
+Not one of the forty founders is placed where it had been, on any seed, for any
+of the four. Switching one of these flags on moves the pond exactly as far as
+changing the seed does — because that is what it does. (The three senses agree
+to the decimal because each adds the same twelve genes per founder: one weight
+per hidden neuron. Three different senses, one block size, one displacement.)
+
+### Two of the seven cannot act at all in the pond they are swept in
+
+`config.js` says the foot "reads exactly 0 in a world with no terrain" and the
+whisker "reads exactly 0 in a world with no rock in it at all". The default
+pond has neither — and the default pond is where `test/fingerprint.test.js`
+proves both are levers.
+
+The honest instrument is not a flip. `blockOnset` builds one pond **twice**, so
+the two copies are identical to the bit, then overwrites one aux sense's whole
+gene block on every founder of one copy. Any divergence after that is the
+sense, because nothing else moved. Twelve seeds, 600 ticks:
+
+| block | world | parts at |
+| --- | --- | --- |
+| foot | default pond, no terrain | **never**, on all twelve |
+| foot | `terrain: true` | 68 (5–126) |
+| whisker | default pond, no rock | **never**, on all twelve |
+| whisker | `barriers: true` | 101 (49–246) |
+| ear | default pond (`signalling: true`) | 45 (10–181) |
+
+The genes are drawn, inherited and mutated, and in the pond the sweep uses
+there is no world-line between them and a motor command. The second arm of each
+pair is what makes that a control rather than a broken probe: give the sense
+something to read and the same scramble parts the pond well inside the budget.
+
+### The strict hash reaches the simulation before the simulation moves
+
+Four flags part their arms on `stateFingerprint` — the hash both older sweeps
+use — while every creature and every pellet is still exactly where it would
+have been:
+
+| flag | strict hash | trajectory | gap |
+| --- | ---: | ---: | ---: |
+| `detritus` | 0 | 246 | 246 ticks |
+| `plasticity` | 0 | 80 | 80 |
+| `dayNightCycle` | 2 | 24 | 22 |
+| `seasons` | 2 | 21 | 19 |
+
+A lattice allocated, a coefficient block reserved, a clock advanced: each is a
+number written down, and a hash that walks every field sees it immediately. The
+two are not in conflict — `fingerprint.js` has said since v1.36 that the strict
+hash covers representation and the blind one covers the world — but a sweep
+asking *does this rule reach the simulation* is asking the blind one's question
+and reading the strict one's answer.
+
+Counting both halves: **11 of 25 flags** report an onset that is not the tick
+the rule reached the pond.
+
+### The two mute flags, and the seed that is not mute
+
+`kinRecognition` and `deathIsFinal` never part their arms in 2,000 ticks on
+eleven of the twelve seeds. Both are real and both are rare — a predator has to
+meet a close relative, a corpse has to be handed a turn it would have taken —
+and both fire on **seed 512**, at t1,983 and t1,535. The first of those is the
+tick v1.92 published for the `One Big Family` scenario, which ships on seed
+512: an instrument assembled eighteen releases later out of two other sweeps
+reproduces it exactly.
+
 ## What this model deliberately leaves out
 
 Being honest about the boundaries:

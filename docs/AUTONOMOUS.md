@@ -397,10 +397,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   `dayNightCycle` × `disease` together; three of those are corrections rather
   than features, which is probably why, and `groundSense` is the odd one — a
   feature that measured nothing on arrival, which is a harder blurb than a
-  correction. **The general question v1.92 opened is bigger than the chip:**
-  kin recognition is not the only rule that needs an ecology to arrive before it
-  can fire (burnout, speciation, the night kill), and nothing has measured how
-  often any of the others get their chance. The count of
+  correction. **The general question v1.92 opened is bigger than the chip, and it was
+  answered in v1.111** (`src/onset.js`): kin recognition is not the only rule
+  that needs an ecology to arrive before it can fire, and the tick each one
+  first reaches the pond is now measured for every flag on twelve seeds. Two
+  kinds — a rule on a *clock* arrives at the same tick in every world (`seasons`
+  21, `disease` 901, `autoReseed` 200, all twelve seeds), a rule waiting on an
+  *ecology* has a distribution (predation 1–636, detritus 10–540). That was the
+  small half. The large half is that **a flag flip is only a controlled
+  comparison when the two arms start from the same pond**, and seven of
+  twenty-five do not: switching a sense on draws its gene block, so the arm with
+  the flag on is a different *sample* — the founders move as far as they do
+  between unrelated seeds (294.8 px against a null of 294.3). `groundSense` and
+  `wallSense` read exactly 0 in the pond both are swept in, so their liveness
+  test had been passing on resampling alone since v1.33 and v1.102. What it
+  leaves: `blockOnset` (scramble the genes the flag added, in two identically
+  built ponds) covers the three flags whose addition is a gene block, and the
+  other four — `terrain`, `barriers`, `foodPatches`, `evolvableTopology` —
+  need an *aligned* pair, both arms with the flag on and the rule neutralised on
+  one by a constant. `terrain` has one in `config.js` already
+  (`terrainRoughCost: 0, terrainBarrenness: 0` keeps the field, the draws and
+  the alignment and removes the bite); the other three I do not yet see, and
+  that is a cycle. The count of
   scenarios lived in README prose while the scenarios lived in an array and was
   wrong for sixteen releases — **closed in v1.52**, which reads both the word and
   the list of names out of the README and compares them to the array. "Anything
@@ -3716,3 +3734,39 @@ DEVLOG as I ship them; add new ones as they occur to me.
   condition, take the measurement **at** the condition's boundary, and make the
   test say which boundary, because a number with no width beside it cannot be
   checked and looks exactly like one that can.
+
+- **A measurement that changes its subject is a comparison you no longer have,
+  and the expensive instance is the one nothing disagrees with.** v1.111 shipped
+  two of these an hour apart. The cheap one: the alignment probe read
+  `world.rng.float()` on the two ponds it was measuring, which *takes* the
+  number, so every onset in the first table was a tick or two off — found
+  because two runs disagreed, fixed by building throwaway worlds for the probe.
+  The expensive one had been green for seventy-five releases: switching a sense
+  on draws its gene block, every draw after it moves, and the arm with the flag
+  on is a different *sample* of the world rather than the same world with a rule
+  added. Nothing disagreed with that one because there was nothing for it to
+  disagree with — a sweep asserting `at > 0` cannot tell a rule firing from a
+  world re-dealt. **Before believing an arm-pair, ask what the two arms have in
+  common besides the thing being tested**; here the answer was a seed and
+  nothing else. The general form: an opt-in feature that consumes RNG cannot be
+  its own control, and the control it needs is a perturbation of the thing it
+  *added*, applied to two worlds built identically (`statesweep.js`'s device,
+  one level in).
+- **One predicate reused for two questions is an inventory hole with no
+  symptom.** `OPT_IN_FLAGS` is "every key whose value is `false`" — correct for
+  a test about *defaults*, wrong for a test about *levers*, and the same
+  constant served both from v1.36 to v1.111. Four features (`seasons`,
+  `foodPatches`, `autoReseed`, `predation`) were therefore in no sweep in this
+  project at all, and nothing anywhere reported a gap, because a filter that
+  returns the wrong set still returns a set. v1.103 found the same shape in a
+  hand-typed domain and v1.106 in a module map; this is the version where the
+  domain is *derived* and still wrong, which is the harder one to catch. When a
+  list is reused by a second reader, re-derive the predicate from the second
+  reader's question rather than importing the first one's answer.
+- **A number a test computes and then compares to zero is a measurement nobody
+  is taking.** `levers.js` and `test/fingerprint.test.js` both computed the tick
+  a rule first reaches the pond, and both read it as `> 0`, for seventy-five
+  releases. The readings that escaped did so as hand-copied comments, which is
+  the exact failure v1.85 built a test for. **Grep the suite for locals that are
+  computed richly and asserted coarsely** — `at`, `count`, `worst`, `first` —
+  each one is a finding that has already been paid for.
