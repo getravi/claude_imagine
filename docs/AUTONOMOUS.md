@@ -363,7 +363,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   channel's sway against generation, which the archive cannot supply because it
   keeps summaries rather than brains; and a sway is **two motors averaged into
   one number**, so a sense that steers hard and never accelerates is
-  indistinguishable from one that does half of each.
+  indistinguishable from one that does half of each — **that last one closed in
+  v1.113 (`motorTilt`, the Steers-by row's word), and the mean of two was hiding
+  something bigger than the asymmetry it was asked about.** `act()` applies
+  `clamp(out[1], 0, 1)` and never `out[1]`, so the whole negative half of the
+  thrust output is a body standing still, and every sway printed since v1.33 had
+  been differencing the raw output across that flat. The control is a `tanh`
+  symmetric about zero and lands where arithmetic says: **50.5% of all raw
+  thrust movement absorbed at t=1**, 42.6% in an evolved pond, and the *head* of
+  the ranking changes on **23.8%** of creature-frames (24.1% on v1.110's own
+  seeds). Behaviourally, **23.8% of living creature-frames command a thrust the
+  floor eats** — 3.5% on seed 314, 42.5% on seed 99 — which is a fact about the
+  pond that no readout here had ever stated. What it leaves: (a) the dead half
+  is a **sign, not a size**, so nothing separates *sitting still is a strategy*
+  from *the thrust neuron drifted below zero and was never punished* — the arm
+  is one flag that lifts the floor and gives the world a reverse; (b) the **turn
+  command is applied raw**, so only one of two halves was ever wrong, which is
+  luck and means this measurement cannot see a second absorber; (c) the two
+  halves are still averaged **in the units they arrive in** — turn travels 2,
+  the thrust command travels 1 — so the tilt's null is +0.36 and not 0, and
+  dividing each half by its own travel is a different, arguably better question
+  that would move every number on the panel.
 - New **opt-in** creature or environment mechanics (RNG-neutral when off):
   flocking, memory, tool-use, symbiosis, parasitism. (The rock sense shipped in
   v1.102 and is the third aux channel; a fourth is a well-worn path now — one
@@ -1046,6 +1066,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   which is v1.67's and v1.79's question on a surface neither reached.
 
 ## Hard-won notes to self
+
+- **I wrote the grep down and then did not run it, and my own instrument was
+  standing in the hole.** v1.106's note says it in as many words: `clamp`,
+  `clip`, `min`, `max`, `cover`, `overflow: hidden` are instructions to *discard
+  a quantity rather than report it*, so grep for the absorbers and compute what
+  each one absorbs. Seven releases later v1.113 found `clamp(out[1], 0, 1)` in
+  `act()` — one line, unchanged since v1.0, throwing away the entire negative
+  half of a `tanh` — and every sway this project has printed since v1.33 had
+  been differencing the raw output across that flat. Half of a motor wire,
+  priced by an instrument, obeyed by nobody. Two rules meet here and they are
+  the same rule: *a hole somebody wrote down is still a hole* (v1.109), and **a
+  note that names a search is not the search**. So the note is now a chore:
+  before choosing a cycle, grep for one absorber class and price it. And the
+  reason this one hid in plain sight is worth keeping separately — the default
+  pond is the *least* affected of the twelve seeds (2.9% dead readings against
+  seed 99's 29.1%), so **the world I look at every cycle is a sample of one, and
+  it is not a random one.** Any surprise that is weak on seed 314 is a surprise
+  I will meet last.
 
 - **A "this would need X" in my own comment is a lead, and I have never grepped
   for them.** v1.104 deferred a mark with a reason — *a second rule on this axis

@@ -7966,7 +7966,9 @@ is a cross-section of the living, so no lineage is followed; the figure this
 wants is one channel's sway against generation, and the archive keeps summaries
 rather than brains. And a sway averages the two motors into one number, so a
 sense that steers hard and never accelerates reads the same as one that does
-half of each.
+half of each — **that last one is opened below (v1.113), and opening it changed
+the numbers in this section's own table**: every sway on this page was
+differenced on `out[1]` rather than on the thrust the body receives.
 
 ### Reproducing it
 
@@ -8120,6 +8122,103 @@ and both fire on **seed 512**, at t1,983 and t1,535. The first of those is the
 tick v1.92 published for the `One Big Family` scenario, which ships on seed
 512: an instrument assembled eighteen releases later out of two other sweeps
 reproduces it exactly.
+
+## The half of a wire the body never obeys (v1.113)
+
+A creature has two motor commands and a sway has reported their **mean** since
+v1.33. v1.110's own closing paragraph names the complaint: a sense that steers
+hard and never accelerates reads the same as one that does half of each. A mean
+of two is the smallest summary anything can hide in, so `channelSwayParts` and
+`auxSwayParts` return the walk before the average.
+
+Opening it found something one level under the question. `act()` does not apply
+`out[1]`:
+
+```js
+const thrust = thrustCommand(out[1]);   // clamp(out[1], 0, 1)
+```
+
+There is no reverse in this world, and `out[1]` is a `tanh` on (−1, 1), so **the
+entire negative half of the thrust output is a body standing still.** Every sway
+computed between v1.33 and v1.112 — including the table in the section above —
+differenced the raw output across that flat.
+
+### Twelve seeds at 6,000 ticks
+
+Seeds 314, 1, 2, 7, 13, 42, 51, 99, 128, 256, 512 and 2718, sampled every 500
+ticks: **22,921 creature-frames, 343,815 channel-readings**, plus the
+cross-section at t=1.
+
+| | unevolved (t=1) | evolved |
+| --- | ---: | ---: |
+| raw thrust movement absorbed by the floor | **50.5%** | 42.6% |
+| readings that move `out[1]` and not the animal | **37.0%** | 15.1% |
+| per-reading fall in the reported sway (p75 / p90) | 46.7% / 89.7% | 22.1% / 44.9% |
+| the ranking's **head** changes under the clamp | 24.0% | **23.8%** |
+
+The t=1 column is the control, and it lands exactly where a `tanh` symmetric
+about zero says it must: half of the movement, gone. Selection then pulls the
+operating point up out of the dead half — and only partway, since four tenths of
+every thrust wire is still on the floor at 6,000 ticks. The consequence for the
+readout is the last row: on **23.8% of creature-frames the loudest sense by the
+old formula is not the loudest sense the animal has.**
+
+Per seed, the share of readings that move the output and not the body runs
+**2.9% (seed 314) to 29.1% (seed 99)** — the default pond is the least affected
+of the twelve, which is part of why this went eighty releases unnoticed.
+
+**Repeated on v1.110's twelve** (314, 77, 51, 13, 7, 23, 45, 99, 128, 256, 512,
+1024 — a different set, chosen so this section and that one are not the same
+ponds twice): 20,551 creature-frames, 51.2% absorbed at t=1 against 39.9%
+evolved, 12.5% dead readings, and the head of the ranking changing on **24.1%**
+of frames against 23.8%. The per-seed spread above is wide and the pooled
+numbers barely move, which is what a seed set is for.
+
+### The animals ask for it
+
+The above is a counterfactual. The behavioural version is not: sampling every
+500th tick over the same twelve seeds, **23.8% of living creature-frames command
+a thrust the floor eats** (`out[1] ≤ 0`) — seed 314 at 3.5%, seed 99 at 42.5%.
+Roughly a quarter of the time an animal here is asking to reverse and receiving
+a standstill, and no readout in this project had ever said so.
+
+### Which motor, once the clamp is honest
+
+`motorTilt` is +1 for a wire that only steers, −1 for one that only drives:
+
+- On **91.3%** of creature-frames the loudest channel by turn and the loudest by
+  thrust are **different channels**.
+- **82.3%** of readings have one command worth at least twice the other; the
+  median |tilt| is **0.942**, a ratio near 33:1. A sway is a mean of two numbers
+  that are rarely within sight of each other.
+- All fifteen channels are turn-dominant in an evolved pond (+0.397 to +0.555),
+  and **zero is not the null**. The floor leaves the thrust command half the
+  travel the turn command has — `out[0]` spans (−1, 1), `thrustCommand(out[1])`
+  spans [0, 1] — so an unevolved pond already reads **+0.30 to +0.41 (mean
+  +0.36)** while its *raw* outputs are flat at −0.077 to +0.010. The asymmetry
+  has two authors and they separate cleanly: the body's, which sets the null,
+  and selection's, which adds **+0.21 to +0.38** in the raw outputs on top.
+
+### What this does not measure
+
+The tilt is an instant, like every sway here: it prices the wire at this
+creature's current operating point, not over its life. The dead half is a
+property of `out[1]`'s *sign*, so nothing above distinguishes a lineage that
+learned to sit still from one whose thrust neuron simply drifted below zero and
+was never selected against — a body that never accelerates pays no movement
+cost, and whether the floor is a bug the pond exploits or a cost the pond avoids
+is a question for an arm that moves the clamp. And the turn command is applied
+raw, so only one of the two halves was ever wrong; a second absorber of the same
+kind would not be visible from this measurement.
+
+### Reproducing it
+
+`test/senses.test.js` pins the clamp from both ends — a walk that stays in the
+dead half has a sway of exactly 0, and `act()` hands the animal one velocity for
+two different outputs — because one assertion about the instrument would agree
+with a bug in the body. The sweep is a loop over `channelSwayParts` at every
+500th tick; nothing in it steps a world differently and no sway has ever drawn a
+random number.
 
 ## What this model deliberately leaves out
 

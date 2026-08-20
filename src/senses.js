@@ -36,9 +36,23 @@
 // honest complaint about that is the one v1.89 made about the refuge — a number
 // derived from a range nobody checked is a claim about a world that may not be
 // this one. Hence the table, and hence the test.
+//
+// v1.113 takes the other end of the same walk seriously. A sway has been the
+// **mean of two motor commands** since v1.33, and a mean of two is a summary
+// small enough to be worth opening: `channelSwayParts` is that walk before the
+// average, `motorTilt` is which of the two the sense is talking to, and the
+// Steers-by row prints the word. Opening it found that one of the two halves
+// was not a command at all — `act()` applies `thrustCommand(out[1])`, not
+// `out[1]`, and the clamp inside it flattens the entire negative half of a
+// `tanh`. Half of every thrust wire in this project is nailed to the floor, and
+// for eighty releases the sway was pricing it: in an unevolved pond **50.5%**
+// of all raw thrust movement is absorbed there, and **37.0%** of channel
+// readings move the second output while moving the animal not at all. The parts
+// go through the same clamp the body does; `thrustRaw` keeps the old quantity
+// beside the new one so the difference stays measurable.
 
 import { AUX_ORDER, BRAIN } from "./genome.js";
-import { auxSway } from "./creature.js";
+import { auxSwayParts, motorParts, NO_SWAY } from "./creature.js";
 
 /**
  * The brain's input vector: one entry per channel, in the order
@@ -99,20 +113,85 @@ function ask(c, inputs) {
  * the mean absolute change in its turn and thrust commands between that
  * channel's two ends, with every other sense held at what it actually perceived
  * this tick. Same formula, same scale and same caveats as `auxSway` — 0.3 means
- * the channel is worth about 15% of the full range of both motors.
+ * the channel is worth about 0.3 of a command's travel, averaged over the two.
+ *
+ * The two commands do not have the same travel to spend, and since v1.113 they
+ * do not even pretend to: turn is `out[0]` on (-1, 1) and thrust is
+ * `thrustCommand(out[1])` on [0, 1], so the thrust half can contribute at most
+ * half of what the turn half can. That asymmetry is the body's, not the
+ * instrument's — it is the whole content of "there is no reverse in this world"
+ * — and `motorTilt` states where it puts the null.
  *
  * Exactly 0 for a channel with no range to walk.
  * @param {object} c
  * @param {{i:number, lo:number, hi:number}} ch an entry of `INPUT_CHANNELS`
  */
 export function channelSway(c, ch) {
-  if (!(ch.hi > ch.lo)) return 0;
+  const { turn, thrust } = channelSwayParts(c, ch);
+  return (turn + thrust) / 2;
+}
+
+/**
+ * The same walk, before the two motors are averaged (v1.113) — the input-vector
+ * half of `auxSwayParts`, and the number `motorTilt` is a function of.
+ *
+ * All zero for a channel with no range to walk.
+ * @param {object} c
+ * @param {{i:number, lo:number, hi:number}} ch an entry of `INPUT_CHANNELS`
+ * @returns {{turn:number, thrust:number, thrustRaw:number}} command changes
+ */
+export function channelSwayParts(c, ch) {
+  if (!(ch.hi > ch.lo)) return NO_SWAY;
   const inp = Float32Array.from(c._in);
   inp[ch.i] = ch.lo;
   const low = Float32Array.from(ask(c, inp));
   inp[ch.i] = ch.hi;
   const high = ask(c, inp);
-  return (Math.abs(high[0] - low[0]) + Math.abs(high[1] - low[1])) / 2;
+  return motorParts(low, high);
+}
+
+/**
+ * Which motor a sense is talking to: +1 a channel that only steers the animal,
+ * −1 one that only drives it, 0 an even split. Exactly 0 for a channel that
+ * moves neither, which is the reading a sway of 0 deserves.
+ *
+ * This is the half a sway has thrown away since v1.33. A sway is a mean of a
+ * set of **two** — the smallest set a summary can hide anything in — and the
+ * mean of `{0.6, 0}` and the mean of `{0.3, 0.3}` are one number describing two
+ * different animals.
+ *
+ * **Zero is not the null.** The thrust command has half the travel the turn
+ * command does (see `channelSway`), so an even-handed brain reads positive
+ * here: across twelve unevolved ponds the fifteen channels sit at +0.30 to
+ * +0.41, mean **+0.36**, with the raw outputs flat at −0.077 to +0.010. Read a
+ * tilt against that, not against 0 — it is the same warning v1.108 attached to
+ * an estimate sitting on a decision boundary, one register down.
+ * @param {{turn:number, thrust:number}} parts
+ */
+export function motorTilt({ turn, thrust }) {
+  const total = turn + thrust;
+  return total > 0 ? (turn - thrust) / total : 0;
+}
+
+/**
+ * The tilt at which one motor is worth twice the other — `(2 − 1) / (2 + 1)`,
+ * written as the ratio it is so that changing the ratio changes the constant.
+ *
+ * A threshold is a decision, and the honest place to put this one is where the
+ * word stops being an exaggeration: at 1/3 the louder command moves twice as
+ * far as the quieter one, and below it the channel is doing both jobs.
+ */
+export const TILT_RATIO = 2;
+export const TILT_EDGE = (TILT_RATIO - 1) / (TILT_RATIO + 1);
+
+/**
+ * A tilt as the word the panel prints for it: what this sense is *for*.
+ * @param {number} tilt
+ */
+export function motorSaid(tilt) {
+  if (tilt >= TILT_EDGE) return "turns";
+  if (tilt <= -TILT_EDGE) return "drives";
+  return "both";
 }
 
 /**
@@ -121,19 +200,32 @@ export function channelSway(c, ch) {
  *
  * The order is by sway, ties broken by name so two creatures with identical
  * brains produce identical text.
+ *
+ * Each entry carries the two motors it was averaged from, so a caller can rank
+ * on the summary and still ask what the summary is a summary of. `sway` is
+ * `(turn + thrust) / 2` and stays the number every earlier release quoted.
  * @param {object} c
  * @param {object} config
- * @returns {Array<{name:string, sway:number}>}
+ * @returns {Array<{name:string, sway:number, turn:number, thrust:number, tilt:number}>}
  */
 export function senseSways(c, config) {
   const ranked = [];
+  const add = (name, parts) =>
+    ranked.push({
+      name,
+      sway: (parts.turn + parts.thrust) / 2,
+      turn: parts.turn,
+      thrust: parts.thrust,
+      thrustRaw: parts.thrustRaw,
+      tilt: motorTilt(parts),
+    });
   for (const ch of INPUT_CHANNELS) {
     if (!(ch.hi > ch.lo)) continue;
-    ranked.push({ name: ch.name, sway: channelSway(c, ch) });
+    add(ch.name, channelSwayParts(c, ch));
   }
   for (const block of AUX_ORDER) {
     if (!config[block.flag]) continue;
-    ranked.push({ name: AUX_SAID[block.name], sway: auxSway(c, block.name) });
+    add(AUX_SAID[block.name], auxSwayParts(c, block.name));
   }
   ranked.sort((a, b) => b.sway - a.sway || (a.name < b.name ? -1 : 1));
   return ranked;
@@ -152,6 +244,12 @@ const NOTHING = 0.5 * 10 ** -PLACES;
  * would have to sort by eye. The count is the senses this *world* gives, which
  * moves with the aux toggles — the row is one of the few readouts here whose
  * denominator is a fact about the config.
+ *
+ * Each of the three carries the motor it is talking to (v1.113), because a sway
+ * is the mean of a set of two and 79% of the readings in this pond have one
+ * command worth twice the other. `turns`, `drives` or `both` — a word rather
+ * than the tilt itself, since the number is a ratio dressed as a coordinate
+ * and what a reader wants from it is which of three things this wire is.
  *
  * When nothing clears the second decimal the reading is a word: three zeroes in
  * a row is a formatted value standing in for "this brain's motors answer to
@@ -174,7 +272,7 @@ export function steeringText(c, config) {
   }
   const top = ranked
     .slice(0, 3)
-    .map((s) => `${s.name} ${s.sway.toFixed(PLACES)}`)
+    .map((s) => `${s.name} ${s.sway.toFixed(PLACES)} (${motorSaid(s.tilt)})`)
     .join(" · ");
   return `${top} — strongest 3 of ${ranked.length}`;
 }

@@ -78,6 +78,48 @@ export function auxChannel(config, name) {
 }
 
 /**
+ * The thrust the *body* receives for a raw brain output — `act()`'s own line,
+ * given a name so that something other than `act()` can ask it (v1.113).
+ *
+ * `out[1]` is a `tanh`, so it arrives on (-1, 1) and the whole negative half of
+ * it is a body sitting still: there is no reverse in this world. The upper
+ * clamp is unreachable for the same reason `own speed`'s ceiling is (v1.110) —
+ * a `tanh` does not reach 1 — so this is one live half and one dead one, and
+ * every reading of `out[1]` that is not taken through this function is a
+ * reading of a number the pond does not obey.
+ * @param {number} raw the brain's second output
+ * @returns {number} the thrust in [0, 1] that `act()` would apply
+ */
+export function thrustCommand(raw) {
+  return clamp(raw, 0, 1); // only forward thrust; no reverse
+}
+
+/**
+ * The two motor commands' response to a counterfactual, as the body would
+ * receive it: `low` and `high` are two brain output buffers and this is how far
+ * each command moved between them.
+ *
+ * `thrust` is taken through `thrustCommand`, so a walk whose two ends both sit
+ * below zero moves the *output* and not the animal, and reads 0 here.
+ * `thrustRaw` is the same difference before the clamp — the quantity every
+ * sway quoted between v1.33 and v1.113 — kept so the gap can be measured
+ * rather than argued about.
+ * @param {ArrayLike<number>} low
+ * @param {ArrayLike<number>} high
+ * @returns {{turn:number, thrust:number, thrustRaw:number}}
+ */
+export function motorParts(low, high) {
+  return {
+    turn: Math.abs(high[0] - low[0]),
+    thrust: Math.abs(thrustCommand(high[1]) - thrustCommand(low[1])),
+    thrustRaw: Math.abs(high[1] - low[1]),
+  };
+}
+
+/** A sway for a channel that has nothing to walk, or a sense a creature lacks. */
+export const NO_SWAY = Object.freeze({ turn: 0, thrust: 0, thrustRaw: 0 });
+
+/**
  * How much of a creature's steering one aux sense is currently deciding: the
  * mean absolute change in its turn and thrust commands between that channel's
  * two extremes, with every other sense held at what it actually perceived this
@@ -87,6 +129,13 @@ export function auxChannel(config, name) {
  * Exactly 0 when the creature does not have the sense, which is what makes it
  * worth showing: a readout that is non-zero with its mechanism off is not
  * measuring the mechanism.
+ *
+ * **The thrust half is the command, not the output (v1.113).** Between v1.33
+ * and v1.112 this differenced `out[1]` raw, and `act()` never applies `out[1]`
+ * — it applies `thrustCommand(out[1])`, which is zero across the whole negative
+ * half. So a channel that moved the second output from -0.9 to -0.1 was priced
+ * as worth 0.8 of a motor by a formula measuring a number the body ignores.
+ * `motorParts` takes both ends through the same clamp `act()` does.
  *
  * It is a *hypothetical*, so it runs with learning suppressed — asking a plastic
  * brain what it would do somewhere else must not teach it anything.
@@ -99,10 +148,28 @@ export function auxChannel(config, name) {
  * @param {number} [lowValue] the channel's floor; the ceiling is always 1
  */
 export function auxSway(c, sense, lowValue = 0) {
+  const { turn, thrust } = auxSwayParts(c, sense, lowValue);
+  return (turn + thrust) / 2;
+}
+
+/**
+ * The same walk, before the two motors are averaged into one number (v1.113).
+ *
+ * A creature has two commands and a sway has always reported their mean, which
+ * is a summary of a set of **two** — the smallest set a summary can hide
+ * anything in, and it hides the only thing about a sense that a mean of two
+ * cannot say: *which motor it is talking to*. A channel that turns the animal
+ * hard and never accelerates it reads exactly like one that does half of each.
+ * @param {Creature} c
+ * @param {string} sense one of `AUX_ORDER`'s names
+ * @param {number} [lowValue] the channel's floor; the ceiling is always 1
+ * @returns {{turn:number, thrust:number, thrustRaw:number}} command changes
+ */
+export function auxSwayParts(c, sense, lowValue = 0) {
   const brain = c.brain;
-  if (!brain.nAux) return 0;
+  if (!brain.nAux) return NO_SWAY;
   const k = auxChannel(c.config, sense);
-  if (k < 0) return 0;
+  if (k < 0) return NO_SWAY;
   const n = brain.nAux;
   const lo = new Float32Array(n);
   const hi = new Float32Array(n);
@@ -111,7 +178,7 @@ export function auxSway(c, sense, lowValue = 0) {
   hi[k] = 1;
   const low = Float32Array.from(brain.forward(c._in, n === 1 ? lo[0] : lo, false));
   const high = brain.forward(c._in, n === 1 ? hi[0] : hi, false);
-  return (Math.abs(high[0] - low[0]) + Math.abs(high[1] - low[1])) / 2;
+  return motorParts(low, high);
 }
 
 /**
@@ -398,7 +465,7 @@ export class Creature {
   act(out, barriers = null) {
     const cfg = this.config;
     const turn = out[0];
-    const thrust = clamp(out[1], 0, 1); // only forward thrust; no reverse
+    const thrust = thrustCommand(out[1]);
     this.signal = out[2];
 
     // Steer and accelerate along the (new) heading.

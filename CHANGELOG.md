@@ -4,6 +4,83 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.113.0] — 2026-08-20
+
+A sway has been the **mean of two motor commands** since v1.33 — turn and
+thrust, averaged, one number. v1.110 shipped it for all sixteen input channels
+and wrote its own complaint into `SCIENCE.md`: *a sense that steers hard and
+never accelerates reads the same as one that does half of each.* A mean of two
+is the smallest summary that can hide anything, so this release opened it. What
+was inside was not the asymmetry it went looking for.
+
+**One of the two halves was never a command.** `act()` applies
+`clamp(out[1], 0, 1)`, not `out[1]`, because there is no reverse in this world —
+and `out[1]` is a `tanh`, so the entire negative half of it is a body standing
+still. Every sway between v1.33 and v1.112 differenced the raw output. A walk
+that moved the second output from −0.9 to −0.1 was priced at 0.8 of a motor by a
+formula measuring a number the pond does not obey.
+
+### Added
+
+- **`thrustCommand(raw)` in `src/creature.js`** — `act()`'s own clamp, given a
+  name so something other than `act()` can ask it, and so the instrument and the
+  body cannot hold two different opinions about what a thrust is. `act()` calls
+  it; `motorParts(low, high)` calls it on both ends of a counterfactual and
+  returns `{turn, thrust, thrustRaw}`, the last being the pre-clamp quantity
+  kept beside the new one so the difference stays measurable instead of
+  arguable.
+- **`channelSwayParts` / `auxSwayParts` / `motorTilt` / `motorSaid`** — the walk
+  before the average, and which of the two commands it is talking to. A tilt of
+  +1 is a wire that only steers, −1 one that only drives, 0 an even split; the
+  word fires at `TILT_RATIO` = 2, written as the ratio it is.
+- **The Steers-by row names a motor for each sense it lists**: `food near 0.31
+  (turns) · its clock 0.22 (both) · how fed 0.20 (drives)`. Over 25,784
+  creature-frames the three words come out 58.2% / 30.9% / 10.9%, so the clause
+  is a reading rather than a decoration.
+
+### Changed — the numbers on the panel moved, and they were wrong before
+
+Twelve seeds (314, 1, 2, 7, 13, 42, 51, 99, 128, 256, 512, 2718) at 6,000 ticks
+sampled every 500: **22,921 creature-frames, 343,815 channel-readings.**
+
+| | unevolved (t=1) | evolved |
+|---|---:|---:|
+| raw thrust movement absorbed by the floor | **50.5%** | 42.6% |
+| readings that move `out[1]` and not the animal | **37.0%** | 15.1% |
+| the ranking's **head** changes under the clamp | 24.0% | **23.8%** |
+
+The unevolved column is the control and it lands where a symmetric `tanh` says
+it must: half. Selection then pulls the operating point up out of the dead half
+— and only partway, because four tenths of every thrust wire is still nailed to
+the floor at 6,000 ticks. On **23.8% of creature-frames the panel's loudest
+sense was the wrong sense**, and the default pond is the *least* affected of the
+twelve (2.9% dead readings against seed 99's 29.1%), which is a fair part of why
+this survived eighty releases. Repeated on v1.110's own twelve seeds — a
+different set, 20,551 frames — the head still changes on **24.1%**.
+
+**And the animals really do ask for it: 23.8% of living creature-frames command
+a thrust the floor eats** — seed 314 at 3.5%, seed 99 at 42.5%. That is a fact
+about the pond rather than about a counterfactual, and nothing here had ever
+reported it.
+
+**The tilt, once the clamp is honest.** On **91.3%** of creature-frames the
+loudest channel by turn and the loudest by thrust are different channels, and
+**82.3%** of readings have one command worth twice the other (median tilt 0.942
+— a ratio near 33:1). All fifteen channels are turn-dominant in an evolved pond
+(+0.397 to +0.555), and the control says why only half of that is biology: the
+floor leaves the thrust command half the travel the turn command has, so an
+unevolved pond already tilts **+0.30 to +0.41 (mean +0.36)** while its *raw*
+outputs are flat at −0.077 to +0.010. Two authors, separable — the body's
+asymmetry sets the null, and selection adds +0.21 to +0.38 on top of it in the
+outputs themselves.
+
+- `test/senses.test.js` grew from four claims to six. The clamp is pinned from
+  both ends — the sway of a walk that stays in the dead half is 0, *and* `act()`
+  itself leaves the animal with one velocity for two different outputs — because
+  one assertion about the instrument would agree with a bug in the body.
+- `docs/SCIENCE.md` gains the section, and the v1.110 section's own caveat now
+  says out loud that its table was computed on the raw output.
+
 ## [1.112.0] — 2026-08-20
 
 The body-size figure has shown a mean in its caption and never on its axis since

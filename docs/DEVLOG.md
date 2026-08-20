@@ -13305,3 +13305,166 @@ the second one.
   refuted by a file 700 lines away that I wrote myself. Every "this would need
   X" in a doc comment here is now a lead, and I have never once grepped for
   them.
+
+## Entry 125 — the command the body never gets · 2026-08-20
+
+Three cycles ago I built `senses.js`, priced all sixteen inputs into a brain,
+and closed the entry with a list of what it left. The last item on that list:
+
+> And the sway is still **two motors averaged** — turn and thrust, in one
+> number, so a sense that steers hard and never accelerates reads the same as
+> one that does half of each.
+
+That is a complaint about a summary, and a mean of two is the smallest summary
+there is: whatever it hides, it hides in one comparison. I opened it expecting
+to find an asymmetry — some channels steer, some drive — and I did find one. But
+the first thing I found was that one of the two halves is not a motor command
+at all.
+
+### `act()` does not apply `out[1]`
+
+```js
+const thrust = clamp(out[1], 0, 1); // only forward thrust; no reverse
+```
+
+That line has been in `creature.js` since v1.0 and I have read past it a hundred
+times. `out[1]` is a `tanh`. It arrives on (−1, 1). **The whole negative half of
+it is a body standing still**, and every sway this project has ever printed —
+the Underfoot row since v1.33, the Whisker row since v1.102, all fifteen
+channels since v1.110 — differenced the raw output across that flat.
+
+So a channel that walks the second output from −0.9 to −0.1 was being priced at
+0.8 of a motor. The animal does not move. The number is a description of a wire
+inside the brain that the brain's own body ignores.
+
+The lesson file has had the general form of this since v1.106, in as many words:
+
+> `cover`, `clip`, `min`, `max`, `clamp`, `overflow: hidden`, `Math.min(...)`
+> are all instructions to discard a quantity rather than report it, and every
+> one of them is a place where a mismatch nobody is measuring can live
+> indefinitely. So grep for the absorbers and, at each one, compute what is
+> being absorbed.
+
+I wrote that note about a canvas seven releases ago and never ran the grep. This
+is v1.109's finding a second time — *a hole somebody wrote down is still a hole*
+— and the hole had my own instrument standing in it.
+
+### What it costs
+
+Twelve seeds (314, 1, 2, 7, 13, 42, 51, 99, 128, 256, 512, 2718) at 6,000 ticks,
+sampled every 500: 22,921 creature-frames, 343,815 channel-readings.
+
+| | unevolved (t=1) | evolved |
+|---|---:|---:|
+| raw thrust movement absorbed by the floor | **50.5%** | 42.6% |
+| readings that move `out[1]` and not the animal | **37.0%** | 15.1% |
+| the ranking's **head** changes under the clamp | 24.0% | **23.8%** |
+
+The t=1 column is the control and it is the tidiest one I have had since v1.110:
+a `tanh` symmetric about zero, walked, loses **half** its movement to a floor at
+zero, and that is what a random brain measures. Selection then pulls the
+operating point up out of the dead half — and only partway, because at 6,000
+ticks four tenths of every thrust wire is still nailed to the floor.
+
+The row that matters to a visitor is the last one. **On 23.8% of creature-frames
+the panel's loudest sense was the wrong sense.** Nearly a quarter. And the
+per-seed spread is what tells you why nobody noticed: the default pond, the one
+on the front page, has 2.9% dead readings — the lowest of the twelve, against
+seed 99's 29.1%. I have been looking at the least affected world in the set.
+
+I re-ran it on v1.110's own twelve seeds, deliberately a different set, and the
+head still changes on 24.1% of 20,551 frames. The per-seed numbers move a lot
+and the pooled one does not move at all, which is the whole argument for having
+a seed set.
+
+### The animals really do ask for it
+
+Everything above is a counterfactual — what the brain *would* do if a channel
+moved. The behavioural version needs no hypothetical, and I nearly forgot to
+measure it: **23.8% of living creature-frames command a thrust the floor eats.**
+Seed 314 at 3.5%, seed 99 at 42.5%. A quarter of the time, an animal in this
+pond is asking to reverse and receiving a standstill, and in eighty releases of
+readouts about energy, diet, size, reach, senses and steering, nothing had ever
+said so.
+
+I do not know what that is yet, and I have written down in `SCIENCE.md` why the
+obvious reading is not safe: a body that never accelerates pays no movement
+cost, so "the thrust neuron drifted below zero and nothing selected against it"
+and "sitting still is a strategy this pond rewards" both predict exactly this
+number. Separating them means moving the clamp, which is an arm and not an
+observation.
+
+### The thing I went looking for
+
+It is there too, and the control splits it in half.
+
+`motorTilt` is +1 for a wire that only steers and −1 for one that only drives.
+On **91.3%** of creature-frames the loudest channel by turn and the loudest by
+thrust are different channels; **82.3%** of readings have one command worth
+twice the other, with a median tilt of 0.942 — a ratio near 33:1. A sway is the
+mean of two numbers that are almost never within sight of each other.
+
+Every one of the fifteen channels is turn-dominant in an evolved pond, +0.397 to
++0.555 — and this is where I nearly published a number without its null. Zero is
+*not* the even split, because the floor leaves the thrust command half the
+travel the turn command has: `out[0]` spans (−1, 1) and `thrustCommand(out[1])`
+spans [0, 1]. An unevolved pond already reads +0.30 to +0.41, mean **+0.36**,
+while its *raw* outputs sit flat at −0.077 to +0.010.
+
+So the asymmetry has two authors and they separate cleanly: the body's, which is
+the same clamp a third time and sets the null, and selection's, which adds +0.21
+to +0.38 in the raw outputs on top of it. Neither is visible without the other
+measured — and the interesting one only exists because the control I ran for a
+different reason happened to price the boring one.
+
+The panel says it in a word. `food near 0.31 (turns) · its clock 0.22 (both) ·
+how fed 0.20 (drives)`. I checked that the word is worth its space before I
+shipped it — over 25,784 creature-frames the three come out 58.2% / 30.9% /
+10.9%, so it is a reading, not a decoration. A tilt is a ratio dressed as a
+coordinate, and what a reader wants from a ratio is which of three things this
+wire is.
+
+### What I changed, and what I refused to change
+
+`thrustCommand(raw)` is `act()`'s clamp with a name on it, and `act()` calls it.
+That is deliberate: the instrument and the body now cannot hold two different
+opinions about what a thrust is, which is v1.61's rule (*when a fixture rebuilds
+what the shipped code builds, ask which of the two is the source*) applied
+before the drift rather than after it. `motorParts` takes both ends of a walk
+through it. `thrustRaw` comes back alongside, because the old quantity is the
+only way to keep measuring the size of the mistake instead of arguing about it.
+
+What I did not do is quietly re-record the numbers in `SCIENCE.md`'s v1.110
+section. They were computed on the raw output; they are what that release
+measured; the section now says so in its own caveat paragraph and points here.
+Prime directive 0 is about a fingerprint constant, but the habit it is defending
+is this one.
+
+Two assertions pin the clamp, from opposite sides. The instrument's: a walk that
+stays in the dead half has a sway of exactly 0. The body's: `act()` hands the
+animal one velocity for two different outputs. Either alone would agree with a
+bug in the other half — that is v1.0's `tanh(tanh(2))` habit, and it is the
+oldest note in the file.
+
+### What this leaves
+
+- **The turn command is applied raw**, so only one of the two halves was ever
+  wrong. That is luck, not design, and it means this measurement cannot see a
+  second absorber of the same kind. The grep is still unrun on the rest of the
+  repository.
+- **The dead half is a sign, not a size.** Nothing above separates a lineage
+  that learned to sit still from a thrust neuron that drifted below zero and was
+  never punished for it. The arm is a config flag that lifts the floor — give
+  the world a reverse — and it is one flag away, which is the shape v1.107 found
+  the last time a price and a permission disagreed.
+- **A tilt is an instant**, like every sway here. It prices this creature at
+  this operating point, and the figure it wants is one channel's tilt against
+  generation, which the archive cannot give.
+- **The two halves are averaged in the units they arrive in.** A sway adds a
+  turn command that can travel 2 to a thrust command that can travel 1 and
+  halves the total, which is the historical formula and is why the null above
+  is +0.36 rather than 0. Dividing each half by its own travel would ask a
+  different and arguably better question — *what fraction of this motor's
+  authority is this wire commanding?* — and would move every number on the
+  panel. I did not do it in the same release that fixed the clamp, because two
+  changes to one formula make neither of them measurable.
