@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.115.0] — 2026-08-21
+
+This project has audited its two shipped documents twice, and both audits were
+about a sense. v1.51 walked the app with a keyboard and asked whether every
+control can be **reached**. v1.109 walked both pages with a photometer and asked
+whether the text can be **read**. Nobody had ever asked whether a control can be
+**hit** — a question about geometry, with its own published bar (WCAG 2.2
+SC 2.5.8, Target Size (Minimum), Level AA: 24 × 24 CSS pixels), aimed at the one
+page this project built a pinch-zoom for in v1.31 and never measured with a
+pointer since.
+
+**Added — `src/targetsize.js`, and the thirty-one controls it found five pixels
+short.** A headless walk of both pages at two viewports, 90 distinct pointer
+targets. The world toggles measure **316 × 19** on a phone and **290 × 19** on a
+desktop: enormous along the axis a thumb does not miss in, five pixels short
+along the axis it does. They are stacked flush — the nearest neighbouring centre
+is 19 px, the row's own height — so WCAG's spacing exemption cannot rescue them
+either. **21 of 31 failed at 390 × 844 and 13 of 31 at 1280 × 900.**
+
+**The finding is underneath that one.** The toggles that passed passed because
+their caption is long enough to **wrap onto a second line** — `Licensed diet cost
+(only hunters pay for carnivory)` is 30 px tall and `Seasons ☀︎❄︎` is 19 — so
+which world rules were big enough to switch was decided by how many words their
+names have, and the answer changes with the width of the panel. That is why the
+count is *worse on the phone*: the sidebar is wider there (316 px against 290),
+fewer captions wrap, and ten more rows fall under the bar on the device most
+likely to be operated by a thumb.
+
+**Fixed — `.check { min-height: 24px }`.** One declaration, because the failure
+was one declaration wide. Every target on both pages now clears the bar at both
+viewports, and the toggles clear it **by size** rather than by their
+neighbourhood: 316 × 24 and 290 × 24, nearest centre exactly 24.
+
+### Added
+
+- `src/targetsize.js` — the arithmetic (`smallestSide`, `spacedClear`,
+  `verdictFor`, which names *why* a target passes because the three reasons are
+  not equally durable), the inventory of 36 measured groups covering all 90
+  targets, `WALKED` (how many targets each page has, so the inventory's
+  completeness is checkable), `UNMET` (what the walk could not put a pointer in
+  front of), `HIT_RULES` and `declaredMinHeight`.
+- `test/targetsize.test.js` — fifteen claims. Two of them are live rather than
+  remembered: `min-height` is resolved out of `style.css` on every run, so
+  deleting the fix is a failing build; and the toggle count is counted out of
+  `app/index.html`, so a thirty-second world rule invalidates the row until
+  somebody re-walks the page. The six targets that pass only by spacing or by
+  being inline are pinned as a list, because both exemptions are properties of a
+  control's *surroundings* and neither is visible in its own CSS.
+- A row for `targetsize.js` in `docs/ARCHITECTURE.md`.
+
+### Changed
+
+- `style.css`: `.check` gains `min-height: 24px` and a comment saying what it is
+  holding up. The panel grows about 150 px, all of it inside a column that
+  already scrolls.
+
+### Notes
+
+- **The instrument nearly invented thirty-one failures.** Every toggle is a
+  13 × 13 native checkbox, and a walker that measured the *control* would have
+  reported all thirty-one at 13 px — wrong about every one, because each sits
+  inside a `<label class="check">` and a click anywhere in the label toggles the
+  rule. The target is the label. This is v1.109's composite lesson (a claim
+  about a stack has to be walked all the way down) arriving on geometry instead
+  of on colour, and both boxes are kept in the inventory so the difference stays
+  visible.
+- Nothing in the simulation reads any of this, no random number is drawn, and
+  the default pond is bit-for-bit what it was in v1.3.0 —
+  `test/fingerprint.test.js` is untouched and green. 1,141 tests pass.
+
 ## [1.114.0] — 2026-08-20
 
 The weight strip has drawn every weight since v1.108 fixed the `Math.min` that

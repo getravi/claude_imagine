@@ -404,10 +404,18 @@ input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
 }
+/* A world rule's switch. The target is this label, not the 13 px checkbox
+   inside it — a click anywhere here toggles the rule — and until v1.115 the
+   label was 19 px tall: 316 px wide along the axis a thumb never misses in and
+   five short along the axis it does. Stacked flush, so WCAG 2.2 SC 2.5.8's
+   spacing exemption could not rescue them either, and the ten that passed did
+   so only because their caption wrapped onto a second line. See
+   `src/targetsize.js`. */
 .check {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 24px;
   font-size: 13px;
   color: var(--ink-dim);
   cursor: pointer;

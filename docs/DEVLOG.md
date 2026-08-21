@@ -13585,3 +13585,145 @@ arriving on a layout instead of a formula.
   in the new tests is the falsifier — a topology change that touched one and
   not the other would fail it — and it is a check across two files, so it is
   the shape v1.108's rails-vs-`NEAT_IO` finding said to prefer.
+
+## Entry 127 — the axis a thumb misses in · 2026-08-21
+
+The playbook's newest chore says to grep for one absorber class before choosing
+a cycle, so I did: `Math.min`, `Math.max`, `clamp`, everything that discards a
+quantity rather than reporting it. It turned up `detritus.js`'s soil cap, which
+I priced across twelve seeds — the ground refuses a median 0.50% of what the
+dead offer it, 0.00% on four ponds and 1.84% at worst — and that is a real
+number about a real absorber and it is not a cycle. So I went looking with the
+other question the playbook keeps recommending: **name the question an
+instrument asks, not its subject.**
+
+This project has audited its two shipped documents twice. v1.51 walked the app
+with a keyboard: *can every control be reached?* v1.109 walked both pages with a
+photometer: *can the text be read?* Both are audits of a **sense**, and both of
+them are, as a class, about whether information gets in. Nobody had ever asked
+whether anything can get **out** — whether a finger that means to hit a control
+hits it. That is not a question about sight or focus order. It is geometry, it
+has a published bar (WCAG 2.2 SC 2.5.8, Target Size (Minimum), Level AA:
+24 × 24 CSS pixels), and it is aimed at the page this project built a pinch-zoom
+for in v1.31 and has never once measured with a pointer.
+
+### The instrument nearly invented thirty-one failures
+
+First walk, at 390 × 844: thirty-one world toggles at **13 × 13**. A page full
+of controls a fifth of the area the bar asks for.
+
+It is wrong, and it is wrong in a way I have been warned about. Every one of
+those checkboxes sits inside a `<label class="check">`, and a click anywhere in
+that label toggles the rule. The target is the label, not the box. v1.109 wrote
+the general form of this after its own contrast sweep read a button's ground as
+a flat colour when it is a gradient: *a composite is a claim about a stack, and a
+stack has to be walked all the way down.* Here the stack is not paint, it is
+**activation** — what actually happens when the pointer goes down — and the rule
+is the same one. So the walker credits a control with its bound label's box, and
+records both, because the difference between them is exactly what a naïve
+instrument would have shouted about.
+
+### What is actually there
+
+With the labels credited, the toggles measure **316 × 19** on the phone and
+**290 × 19** on the desktop.
+
+That is the whole finding in one line. They are *enormous* along the axis a
+thumb does not miss in — a third of a metre of screen width, near enough — and
+five pixels short along the axis it does. A wide target is not a big target.
+Every readout this project has ever built about a size has been about an area or
+a radius; this bar is about the **shorter side**, on purpose, because a finger's
+contact patch is round and a hit is decided by the tighter of the two
+dimensions.
+
+And the spacing exemption cannot rescue them. WCAG lets an undersized target
+pass if a 24 px circle centred on it overlaps no other target's circle; these
+rows are stacked flush, so the nearest neighbouring centre is 19 px away, which
+is the row's own height. **21 of 31 failed at 390 × 844 and 13 of 31 at
+1280 × 900.**
+
+### The finding underneath the finding
+
+Why *those* twenty-one and not the others? Because the rows that passed are the
+ones whose caption **wrapped onto a second line**.
+
+```
+Seasons ☀︎❄︎                                        19 px  — fails
+Licensed diet cost (only hunters pay for carnivory) 🧾   30 px  — passes
+```
+
+Whether a world rule was big enough to switch was decided by how many words its
+name has. Nobody chose that, nobody could see it, and it is not stable: it moves
+with the panel's width, so the *same* rule is hittable on one device and not on
+another. Which is why the count is worse on the **phone** — the sidebar is wider
+there (316 px against 290), fewer captions wrap, ten more rows fall under the
+bar, and the device most likely to be operated by a thumb is the one that had
+the most misses. That inversion is the thing I would not have predicted, and it
+is v1.106's lesson again from a new side: this page's phone layout is not a
+smaller version of its desktop layout, and an audit run at one width is an audit
+of one width.
+
+### The fix
+
+```css
+.check { min-height: 24px; }
+```
+
+One declaration, because the failure was one declaration wide. Every target on
+both pages now clears the bar at both viewports, and the toggles clear it **by
+size** — 316 × 24 and 290 × 24, nearest centre exactly 24 — rather than by their
+neighbourhood. The panel grows about 150 px inside a column that already
+scrolls.
+
+`verdictFor` returns *why* a target passes, not just that it does, and that
+turned out to be the useful half of the arithmetic. `size` is a property of the
+control. `spacing` is a property of everything around it. `inline` is a property
+of the sentence it sits in. Only the first survives a layout change, so the six
+groups on these pages that pass by one of the other two are pinned as a list in
+the test rather than left to be rediscovered: the chart's scope button, the
+`Live parameters` summary, the home link, the panel's three header links, and
+two runs of footer links. None of them is a bug today. Every one of them is a
+control whose pass is held up by its neighbours.
+
+### What I refused to do
+
+I did not lift anything to 44 px. SC 2.5.5 (Enhanced, AAA) asks for 44 × 44 and
+this panel meets it nowhere; going there is a redesign of the control column,
+not a min-height, and this project holds AA for contrast so it holds AA here.
+The distance is written down instead of quietly claimed.
+
+I did not touch the six spacing-and-inline passes. They pass by the rule as the
+rule is written, and widening the change to things that are not failing is how a
+small cycle stops being one.
+
+### What this leaves
+
+- **`nearestCentre` is a number the inventory remembers, not one it derives.**
+  The spacing verdict for a group is the worst distance the walk measured, so a
+  layout change that crowds two controls together is invisible to `node --test`
+  until somebody re-walks the page. The `min-height` is live and the toggle
+  count is live; the geometry is not, and cannot be.
+- **Two viewports, one pond, and the page as it loads.** The inspector's buttons
+  are built from `innerHTML` when a creature is selected and the walk never
+  selected one, so the panel with the most controls per pixel in this project is
+  the panel this audit has not seen. `UNMET` says so.
+- **The 24 px rows are flush.** They clear the bar and they touch, so a thumb
+  that lands on a boundary switches a world rule it did not mean to — and the
+  rules are not all cheap (several restart the pond). WCAG's spacing exemption
+  is written for exactly this geometry and permits it; whether *this* page should
+  is a different question, and it is the first one I would ask next.
+- **The module map has four holes.** v1.109 noted that `reveal.js` had never been
+  on `docs/ARCHITECTURE.md` and said the closing move is a test rather than
+  another row. Writing this cycle's row I checked the rest: `bars.js`, `hud.js`,
+  `pondnav.js` and `viewstate.js` are on it nowhere. Four modules, no row, no
+  test — the same hand-typed-domain hole v1.103 found in `prosecounts` and
+  v1.109 found in the stylesheets, in the document that is supposed to be the
+  map. It wants a cycle: four accurate rows *and* the assertion that every
+  `src/*.js` has one, so there is no third state a new module can arrive in.
+- **The absorber chore paid, just not here.** The soil cap's 0.50% is a small
+  true number and it belongs on the record: `detritusFull` is documented as "the
+  smallest round number that never truncates a *single* body", which is a claim
+  about a deposit into an **empty** cell, and the pond deposits into a history.
+  1.3%–5.8% of deposits are truncated and a median 32% of each truncated deposit
+  is thrown away. A constant justified against one case, applied to another —
+  which is v1.107's shape, at a size not worth a release.

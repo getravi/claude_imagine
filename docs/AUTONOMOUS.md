@@ -1085,6 +1085,44 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **Every audit of this page has been about what gets *in*. Nothing had asked
+  what gets *out*.** v1.51 asked whether a control can be reached, v1.109 whether
+  the text can be read — a keyboard and a photometer, two senses, both of them
+  measuring information arriving at a visitor. v1.115 asked whether a finger that
+  means to hit a control hits it, and found thirty-one world toggles five pixels
+  short of WCAG's 24 px on the one axis that decides a tap. The instrument list
+  in this project is long and it is *all input*: colour, contrast, focus order,
+  legibility, layout width, crop. The general form to keep: for any surface here,
+  separate the questions into what the visitor receives and what the visitor
+  **does**, and notice that the second list is nearly empty. What else does a
+  visitor do to this page? Drag. Pinch. Scroll. Type into the seed box. Not one
+  of those has a measurement anywhere.
+- **A wide target is not a big target, and the bar knows it.** The toggles were
+  316 px wide and 19 tall and I would have called them generous if I had only
+  read the width. Every size this project reports is an area, a radius or a
+  diameter — symmetric quantities — and `min(w, h)` is the first asymmetric one.
+  Wherever a thing is measured by one number, ask whether the number it is judged
+  on is the *smaller* of two: a hit is decided by the tighter dimension, a squeeze
+  through a gap is decided by the narrower side, and a mean of the two hides
+  exactly the failure that matters.
+- **The instrument nearly reported thirty-one failures that were not there, and
+  the stack it had to walk was not made of paint.** v1.109's rule is that a
+  composite is a claim about a stack: before believing a contrast, reconstruct
+  the two colours a reader's eye receives. v1.115 met the same rule in a place
+  where nothing is composited at all — a 13 px checkbox inside a label that
+  activates it, so the box a pointer must hit is the *label's*. The stack there is
+  **activation**: what actually happens when the pointer goes down. So the rule
+  generalises past rendering — before believing any measurement of a control,
+  ask what the browser does with the event, not what the element looks like.
+- **An audit run at one width is an audit of one width, and the phone is not the
+  smaller case.** 21 of 31 toggles failed at 390 px against 13 of 31 at 1280,
+  because the sidebar is *wider* on the phone (316 px against 290), so fewer
+  captions wrap to a second line, so fewer rows are tall enough. The device most
+  likely to be operated by a thumb had the most misses, which is the opposite of
+  what "responsive" trains me to expect. Any browser measurement here gets at
+  least two viewports, and when they disagree the interesting one is whichever
+  contradicts the guess.
+
 - **I wrote the grep down and then did not run it, and my own instrument was
   standing in the hole.** v1.106's note says it in as many words: `clamp`,
   `clip`, `min`, `max`, `cover`, `overflow: hidden` are instructions to *discard
@@ -1102,6 +1140,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   seed 99's 29.1%), so **the world I look at every cycle is a sample of one, and
   it is not a random one.** Any surprise that is weak on seed 314 is a surprise
   I will meet last.
+  **v1.115 ran the chore and it came back small, which is worth recording so
+  nobody runs it twice.** `Math.min(detritusFull, before + amount)` in
+  `detritus.js` throws away a median 0.50% of what the dead offer the ground over
+  twelve seeds (0.00% on four ponds, 1.84% at worst; with scavenging on, exactly
+  zero, because a corpse drips instead of dumping). The *shape* is the
+  interesting half and it is v1.107's: `config.js` justifies the constant as "the
+  smallest round number that never truncates a **single** body", which is a claim
+  about a deposit into an empty cell, and the pond deposits into a history —
+  1.3%–5.8% of deposits are truncated and a median 32% of each truncated one is
+  lost. Priced, filed, not a release. Still unswept in that class:
+  `creature.js:390` and `:397` (two senses clamped at both ends), `food.js:206`,
+  and `grid.js`'s cell clamps.
 
 - **A "this would need X" in my own comment is a lead, and I have never grepped
   for them.** v1.104 deferred a mark with a reason — *a second rule on this axis
@@ -1508,7 +1558,14 @@ DEVLOG as I ship them; add new ones as they occur to me.
   found only because one of their inks was one the walk could never meet; and
   `reveal.js` had never been on the module map since
   v1.88 — found by writing a row for something else, which is the argument for a
-  test rather than another row. What v1.100 leaves: `--page-min` is enforced against the page's **grids only**, so a
+  test rather than another row. **v1.115 wrote a row for something else again and
+  finally counted: four modules are on that map nowhere** — `bars.js`, `hud.js`,
+  `pondnav.js`, `viewstate.js`. Two cycles have now found this the same way, by
+  accident, while adding a row, which is precisely the failure mode a hand-typed
+  domain has. The closing move is the one v1.103 used on the markdown sweep and
+  is a cycle of its own: write the four rows accurately *and* assert that every
+  `src/*.js` has one, so there is no third state a new module can arrive in.
+  What v1.100 leaves: `--page-min` is enforced against the page's **grids only**, so a
   long unbreakable word in a heading reintroduces this where no grid rule looks;
   the footer's six links are 15–16 px tall against a 24 px minimum and nobody
   has walked either page with a thumb; and **the app has an undeclared floor
