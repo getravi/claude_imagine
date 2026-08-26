@@ -43,6 +43,7 @@ import {
   inspectorKey,
   sparkFromWeights,
 } from "./inspectorview.js";
+import { nameSpecies, speciesLabel } from "./speciesnames.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -573,6 +574,22 @@ function updateSeasonBadge(world) {
 }
 
 // ---- Tree of Life (Muller plot + legend) ----
+
+// What the lineages are called (v1.116). `nameSpecies` is a pure function of the
+// whole tree, and the tree only ever grows: a species is appended, never
+// renumbered, and a name is chosen from the ids below it — so a name once given
+// never changes and the count is a sufficient key. The cache lives on `view`
+// rather than in a `let` here because it describes *one pond*: two ponds that
+// happen to open with the same forty founders would otherwise share a map, and
+// a cache keyed on a count is exactly the kind that cannot notice.
+function namesForTree(phylo) {
+  if (!view.lineageNames || view.lineageNameCount !== phylo.species.length) {
+    view.lineageNameCount = phylo.species.length;
+    view.lineageNames = nameSpecies(phylo.species);
+  }
+  return view.lineageNames;
+}
+
 let mullerCtx = null;
 function drawPhylogeny(world) {
   const canvas = $("muller");
@@ -591,7 +608,8 @@ function drawPhylogeny(world) {
     height: canvas.height,
     highlightId: renderer.highlightSpeciesId,
   });
-  setMullerLabel(describeMuller(shares, ph.snapshotSpan()));
+  const names = namesForTree(ph);
+  setMullerLabel(describeMuller(shares, ph.snapshotSpan(), names));
 
   // "45 ever" is mostly the opening deal, so the caption says which is which —
   // the split lives in `phylogeny.js` and the wording in `describe.js`, because
@@ -624,7 +642,7 @@ function drawPhylogeny(world) {
   const sig = living.map((s) => s.id).join(",") + "|" + renderer.highlightSpeciesId;
   if (sig !== view.legendSig) {
     view.legendSig = sig;
-    buildLegend(living, hatch);
+    buildLegend(living, hatch, names);
   } else {
     // Cheap in-place count refresh.
     for (const s of living) {
@@ -680,7 +698,7 @@ function setMullerLabel(text) {
   $("muller").setAttribute("aria-label", text);
 }
 
-function buildLegend(living, hatch) {
+function buildLegend(living, hatch, names) {
   const box = $("species-legend");
   box.innerHTML = "";
   for (const s of living.slice(0, 16)) {
@@ -698,10 +716,15 @@ function buildLegend(living, hatch) {
     // The dot wears the band's hatch and the band's colour, both from the same
     // module the plot draws from — the dot had its own hand-written `70%, 55%`
     // here until v1.46, one shade off the thing it was a key to.
+    // The chip says the lineage's name since v1.116 and keeps its number in the
+    // tooltip: the name is what makes the legend readable ("the Amber ones are
+    // all cousins"), and the number is still the identifier `docs/SCIENCE.md`,
+    // the CSV export and every other document here use.
+    chip.title = `species ${s.id}`;
     chip.innerHTML =
       `<span class="dot" style="background:${textureCss(hatch.get(s.id) || 0, s.hue)};` +
       `color:${lineageFill(s.hue, "dot")}"></span>` +
-      `species ${s.id} <span class="n" id="chip-n-${s.id}">${s.count}</span>`;
+      `${speciesLabel(names, s.id)} <span class="n" id="chip-n-${s.id}">${s.count}</span>`;
     chip.addEventListener("click", () => toggleHighlight(s.id));
     box.appendChild(chip);
   }
@@ -1239,7 +1262,7 @@ function updateInspector() {
   if (key !== view.inspKey) {
     view.inspKey = key;
     panel.classList.remove("empty");
-    panel.innerHTML = inspectorHTML(c, chain, facts);
+    panel.innerHTML = inspectorHTML(c, chain, facts, namesForTree(world.phylogeny));
     const link = document.getElementById("insp-species");
     if (link) {
       link.addEventListener("click", (e) => {

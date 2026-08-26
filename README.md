@@ -85,6 +85,14 @@ the ticks, so an event has a time you can read off rather than estimate. Click a
 creature's inspector) to **spotlight** it — the whole pond dims except that
 lineage, so you can see where it lives and how far it has spread.
 
+Every lineage has a **name**, and the name is two words whose first is the
+family: the *Shale Fins* and the *Shale Skimmers* both branched off the *Shale
+Sprigs*, and *Dusk Spindle* is nobody's relation. So the legend reads as a
+family tree at a glance, and the Chronicle can tell you that *"the Shale
+Skimmers have split away from the Shale Sprigs"* rather than that species 41
+branched off species 0. Names come from the tree alone, so the same seed always
+gives back the same cast, and each one keeps its number in its tooltip.
+
 Each band also wears a **hatch** — plain, `/`, `\`, `|`, `—`, `×` or `+` — and
 so does its chip in the legend, because the colour alone was never enough to
 name a lineage. A species' hue is its founder's and hue is inherited, so a

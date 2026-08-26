@@ -90,6 +90,15 @@ const FRESH = Object.freeze({
   mullerAxisKey: "",
   mullerMarks: [],
   mullerLabel: "",
+  // What the lineages are called (v1.116), and how many the map was built from.
+  // World-scoped for the reason `legendSig` is: the names are a pure function of
+  // one tree, and two ponds have two trees. Held as `null` rather than an empty
+  // `Map` because `reset` hands out the roster's own value for anything that is
+  // not an array, and a `Map` shared between two ponds is precisely the bug
+  // `mullerMarks` is spelled as an array to avoid. The count is the cache key:
+  // a species is appended, never renumbered, so a name once given cannot move.
+  lineageNames: null,
+  lineageNameCount: -1,
   // The chart stack: the population chart, the death strip, the power strip and
   // the one x-axis all three share.
   chartXKey: "",

@@ -13727,3 +13727,155 @@ small cycle stops being one.
   1.3%–5.8% of deposits are truncated and a median 32% of each truncated deposit
   is thrown away. A constant justified against one case, applied to another —
   which is v1.107's shape, at a size not worth a release.
+
+---
+
+## Entry 128 — the pond gets a cast · 2026-08-26
+
+This cycle came with a steer from the owner, and it is the first one I have had
+in a while that was about *direction* rather than about a bug: put a regular
+human hat on, make the app more interesting and easier to understand, optimise
+for mass appeal rather than for a nerdy fanbase.
+
+That is a fair note, and reading back over the last twenty entries I think I
+know what prompted it. The recent cycles are good work and they are all the same
+*kind* of work: measure a thing nobody had measured, find the number that was
+quietly wrong, publish the number. v1.104 through v1.115 are, between them, a
+size histogram, a diet bill, a wire census, a letter audit, a photometer and a
+tape measure. Each one made the app more *correct*. None of them made it more
+*fun*, and several of them added a tile with a caption like `Web 🕸️ 82% top 38%
+mid` to a panel that already had twenty-nine of those.
+
+So I went looking for the opposite kind of thing: something a visitor who will
+never read `docs/SCIENCE.md` would notice in the first thirty seconds.
+
+### The thing I found
+
+The Tree of Life is the figure this project leads with. It is on the landing
+page, it is in the README, it is the second screenshot. And every band in it is
+called **"species 7"**.
+
+I want to be precise about why that is bad, because "add nice names" is the kind
+of idea that sounds like decoration and can be argued away as such. A number is
+the right *identifier*: it is short, it is unambiguous, it sorts, and it is what
+the CSV export and the archive and every document in this repo use. It is the
+wrong *name*, for three reasons, and only the third one is really about this
+project:
+
+1. Nothing distinguishes 7 from 9. They are equally memorable, which is to say
+   not at all.
+2. You cannot tell a friend about species 7 an hour later. A name is a handle
+   for a story, and the entire pitch of this app is that the pond has stories.
+3. **A number carries no family.** Species 12 descends from species 7 and the
+   two numerals say nothing whatsoever about that. This is the one that stings,
+   because the plot has drawn descent in *inherited hue* since v1.6 — the whole
+   figure is about lines of descent — and every word printed beside it threw the
+   descent away. The picture knew something the caption did not.
+
+And it was worst exactly where the app is trying hardest to be readable. The
+Chronicle exists to turn the pond into prose, and the line it writes about the
+most interesting event this world produces was:
+
+> Species 12 has branched off species 7 — a new lineage, evolved here.
+
+That is a database row with an em-dash in it.
+
+### What I built
+
+`src/speciesnames.js`. A lineage's name is two words, and the first one is the
+family: a branch keeps its parent's stem, a founder starts a new one. The
+default pond at 6,000 ticks now looks like this:
+
+```
+150  Shale Sprig      44  Dusk Spindle     20  Shale Fin
+ 15  Shale Skimmer     7  Shale Spindle     6  Shale Plume
+```
+
+Five of the eight living lineages are Shales — which is to say, descendants of
+species 0 — and you can see that without clicking anything. That fact has been
+true and unstated for a hundred and ten releases. And the Chronicle line becomes
+
+> 🌿 The Shale Skimmers have split away from the Shale Sprigs — a new lineage,
+> evolved here.
+
+which is a sentence about animals.
+
+### The two things I was careful about
+
+**Uniqueness is built, not hoped for.** The first draft of this in my head was
+`STEMS[hash(id) % 64]`, and that is wrong in a way worth writing down. A default
+pond deals forty founders; forty draws from sixty-four words collide with
+probability very close to one. So the *likely* outcome of the obvious
+implementation is two unrelated founders sharing a family name — the scheme
+telling a lie about the tree, on the first load, on the default seed. `pickFree`
+probes forward from where the hash points until it finds a word nobody has
+taken, and the hash is then doing the only job it should do: spreading the
+choice, so the assignment does not read as an alphabetical march. The same
+probe runs one level down for the second word within a family. There is a test
+that a real 6,000-tick pond hands out no duplicate, and one that the forty
+founders of a default pond get forty distinct families.
+
+This is the *"a guard against an undefined case is a decision about what to
+draw in it"* lesson from the playbook, arriving early instead of late: `%` is
+not a way of avoiding the question of collisions, it is an answer to it, and the
+answer is "silently pretend two lineages are one family".
+
+**A name that moves is worse than a number.** Two ways it could have moved and
+both are closed. Across time: `nameSpecies` chooses each name from the ids below
+it and a species is appended rather than renumbered, so nothing on screen is
+ever renamed — sampled every 500 ticks over a full run and asserted. Across
+loads: the names are a pure function of the tree's ids and parent links, which
+are themselves a pure function of `(seed, config)`, so seed 314 gives back the
+same Shale Sprig tomorrow. That is the second prime directive applied to a
+label. A pond you cannot return to is not worth naming.
+
+Nothing was added to a species and nothing here draws a random number, so no
+fingerprint can see this release. `test/fingerprint.test.js` is untouched and
+green; the default pond is bit-for-bit what it was in v1.3.0. 1,154 tests pass.
+
+### What I refused to do
+
+**I did not name the creatures.** It is the obvious next thought and it is the
+better feature — a pond where you can follow *Kelp*, specifically, is a
+different app from one where you follow a dot. I looked, and the blocker is
+real: `Creature` takes its id from a module-level `NEXT_ID` that never resets,
+so the same seed loaded twice deals the same animals under different numbers.
+A name built on that would change between page loads, which is the one property
+I just spent a cycle guaranteeing a name must not have. Doing it properly means
+a per-world serial, which means a new field on `Creature`, which means
+`inspect.js`'s field-coverage table and a fingerprint conversation. That is its
+own cycle and it deserves to be one.
+
+**I did not remove the number anywhere.** Every place that gained a name kept
+its id in a `title`: the legend chip, the Species link, every ancestry pip. The
+name is for reading and the number is for cross-referencing `docs/SCIENCE.md`,
+the CSV export and the archive, and a release that made those two impossible to
+line up would have traded one kind of unreadable for another.
+
+### What this leaves
+
+- **The stat panel is still thirty tiles.** If the note was "optimise for mass
+  appeal", the Tree of Life was the highest-leverage single thing I could fix in
+  one cycle, but it is not the most *unwelcoming* thing on the page. A first
+  visitor gets `Web 🕸️ 82% top 38% mid`, `Bill 🧾 0.7/t 36% idle` and `Lag ⏳ …`
+  in the first screenful, at the same visual weight as Population. There is a
+  cycle in splitting that panel into the six numbers a person came for and a
+  disclosure holding the other twenty-four, and I think it is the next one.
+- **The names are absent from the picture.** They are in the legend, the
+  inspector, the Chronicle and the spoken description — everywhere words go.
+  The Muller plot itself still labels nothing, and a band wide enough to hold
+  "Shale Sprig" is the commonest band on the figure.
+- **`targetsize.js`'s chip sample is stale.** Its inventory records the legend
+  chip as 101.9 px wide with the sample text `species 0`, measured in v1.115's
+  headless walk. The text is longer now. The *verdict* does not move — a chip
+  passes on its 24 px height, not its width — but the remembered width no longer
+  describes what is on the page, which is exactly the failure mode that module's
+  own header warns about (`nearestCentre` is remembered, not derived). The fix
+  is a re-walk, not an edit of the number.
+- **The stems will run out.** Sixty-four families is comfortable for forty
+  founders and it is not a bound anyone chose against a real pond. A world
+  reseeded often enough — the `arrived` origin — starts families indefinitely,
+  and past sixty-four the probe reuses a stem and two unrelated lineages become
+  cousins in name. Nothing on screen would look wrong. It wants either a wider
+  list or a readout that says the list is exhausted, and I would rather have the
+  readout.

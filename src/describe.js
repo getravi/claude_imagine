@@ -45,6 +45,7 @@ import { refugeRadius } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
 import { readable } from "./seasonlag.js";
 import { sizeAxis, SIZE_BINS } from "./sizeplot.js";
+import { speciesLabel } from "./speciesnames.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -921,8 +922,12 @@ function describeSeason(season, tick) {
  *
  * @param {ReturnType<typeof import('./mullerplot.js').mullerShares>} shares
  * @param {{from:number, to:number}|null} [span] the ticks the record covers
+ * @param {Map<number, {name:string}>|null} [names] what the lineages are called
+ *   (v1.116). Optional, because a caller can hold a `shares` object without the
+ *   tree it came from — `speciesLabel` then says "species 7" as this sentence
+ *   always did.
  */
-export function describeMuller(shares, span = null) {
+export function describeMuller(shares, span = null, names = null) {
   const { shown, frac, other, live, n } = shares;
   if (n < 2) return "Species over time: not enough history yet.";
   const when = span
@@ -949,7 +954,7 @@ export function describeMuller(shares, span = null) {
   // reader can check rather than about pixels.
   const pct = wholePercents([...named.map((e) => e.now), other[i]]);
   const unnamed = pct[pct.length - 1];
-  const bits = named.slice(0, 3).map((e, k) => `species ${e.id} at ${pct[k]}%`);
+  const bits = named.slice(0, 3).map((e, k) => `${speciesLabel(names, e.id)} at ${pct[k]}%`);
   const rest = named.slice(3);
   if (rest.length) {
     const restPct = rest.reduce((s, _, k) => s + pct[3 + k], 0);
@@ -969,7 +974,7 @@ export function describeMuller(shares, span = null) {
   return (
     `Species over time${when}: ${count(shown.length, "lineage")} drawn as stacked bands, ` +
     `oldest at the bottom. Now ${bits.join(", ")}. ` +
-    `The largest, species ${lead.id}, ${start}.`
+    `The largest, ${speciesLabel(names, lead.id)}, ${start}.`
   );
 }
 

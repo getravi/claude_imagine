@@ -13,6 +13,7 @@
 
 import { RNG } from "./rng.js";
 import { MULLER_MIN_PEAK, speciesOrigin } from "./phylogeny.js";
+import { nameSpecies, speciesPlural } from "./speciesnames.js";
 
 /**
  * Consecutive observations the population must spend on smoother-than-average
@@ -448,6 +449,12 @@ export class Chronicle {
 
   _checkSpecies(world, tick, pop) {
     const ph = world.phylogeny;
+    // What to call them (v1.116). Built here rather than held on the chronicle
+    // because it is a pure function of the tree and the tree only ever grows:
+    // caching it would be a second copy of the same list, and this scan is
+    // throttled to begin with.
+    const names = nameSpecies(ph.species);
+    const they = (id) => speciesPlural(names, id);
     // New dominant species.
     if (pop > 60) {
       let top = null;
@@ -455,7 +462,7 @@ export class Chronicle {
       if (top && top.count >= 0.45 * pop && top.id !== this._dominant) {
         this._dominant = top.id;
         const pct = Math.round((top.count / pop) * 100);
-        this._push(tick, "👑", "lineage", `Species ${top.id} now dominates the pond (${pct}%).`);
+        this._push(tick, "👑", "lineage", `The ${they(top.id)} now hold the pond (${pct}%).`);
       }
     }
     // A branch — the one event the Tree of Life is actually about, and the one
@@ -479,7 +486,8 @@ export class Chronicle {
         tick,
         "🌿",
         "lineage",
-        `Species ${sp.id} has branched off species ${sp.parentId} — a new lineage, evolved here.`
+        `The ${they(sp.id)} have split away from the ${they(sp.parentId)} — ` +
+          `a new lineage, evolved here.`
       );
     }
     // Notable extinctions: a species that once grew large has just died out.
@@ -491,7 +499,7 @@ export class Chronicle {
           tick,
           "⚰️",
           "lineage",
-          `Species ${sp.id}, once ${sp.peak} strong, is gone after ~${gens} generations.`
+          `The ${they(sp.id)}, once ${sp.peak} strong, are gone after ~${gens} generations.`
         );
       }
     }

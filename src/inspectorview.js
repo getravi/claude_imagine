@@ -65,6 +65,7 @@ import {
   rgbCss,
   weightMark,
 } from "./palette.js";
+import { speciesLabel } from "./speciesnames.js";
 
 /**
  * The four blocks of a classic-topology brain's weight vector, in the order
@@ -129,8 +130,12 @@ export function inspectorKey(c, chain, facts) {
  * switched-off mechanic removes, and which of them tick. This function's job is
  * the part that is markup: the heading, the swatch, the two figures, and the
  * ancestry, none of which is a fact about a field.
+ *
+ * `names` (v1.116) is what the lineages are called; the number stays, in the
+ * `title`, because it is still the identifier every other document in this
+ * project uses.
  */
-export function inspectorHTML(c, chain, facts) {
+export function inspectorHTML(c, chain, facts, names = null) {
   const rows = facts
     .map(
       (f) =>
@@ -152,8 +157,11 @@ export function inspectorHTML(c, chain, facts) {
     <dl class="insp-grid">
       ${rows}
       <div class="insp-wide"><dt>Species</dt>
-        <dd><a href="#" id="insp-species">${c.speciesId} — spotlight lineage ›</a></dd></div>
-      ${ancestryRow(c, chain)}
+        <dd><a href="#" id="insp-species" title="species ${c.speciesId}">${speciesLabel(
+          names,
+          c.speciesId
+        )} — spotlight lineage ›</a></dd></div>
+      ${ancestryRow(c, chain, names)}
     </dl>
     ${
       // The captions used to be `<label>` too, and these two label *figures*
@@ -188,7 +196,7 @@ export function inspectorHTML(c, chain, facts) {
 // creature's family tree is already gone. Long chains keep only the most recent
 // links (the deep past is a wall of pips nobody can read) behind a "…" marker.
 export const ANCESTRY_SHOWN = 6;
-export function ancestryRow(c, chain) {
+export function ancestryRow(c, chain, names = null) {
   if (chain.length < 2) return ""; // a founder has no story to tell yet
   const branchings = chain.length - 1;
   const shown = chain.slice(-ANCESTRY_SHOWN);
@@ -196,7 +204,7 @@ export function ancestryRow(c, chain) {
   const pips = shown
     .map((s) => {
       const cls = "anc" + (s.count === 0 ? " gone" : "") + (s.id === c.speciesId ? " current" : "");
-      const title = `Species ${s.id} — born tick ${s.birthTick}`;
+      const title = `${speciesLabel(names, s.id)} (species ${s.id}) — born tick ${s.birthTick}`;
       return `<button type="button" class="${cls}" data-id="${s.id}" title="${title}"
         style="--anc-hue:${s.hue}">${s.id}</button>`;
     })

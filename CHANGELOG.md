@@ -4,6 +4,98 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.116.0] — 2026-08-26
+
+The Tree of Life is the figure this project leads with, and for a hundred and
+fifteen releases every band in it was called **"species 7"**. So was the chip in
+its legend, the link in the inspector, the pip in an ancestry row, and the three
+lines the Chronicle writes about lineages — *"Species 12 has branched off
+species 7 — a new lineage, evolved here."* That sentence is about the most
+interesting thing this world does and it reads like a database.
+
+A number is the right *identifier* and the wrong *name*. Nothing distinguishes 7
+from 9; you cannot tell a friend about species 7 an hour later; and — worst for
+the figure it labels — **a number carries no family**. Species 12 descends from
+species 7 and the two numerals say nothing about that. The plot has drawn the
+relationship in inherited hue since v1.6 and every word beside it threw the
+relationship away.
+
+**Added — `src/speciesnames.js`, and a pond with a cast.** A lineage's name is
+two words and the first one is the family: a branch keeps its parent's stem, a
+founder starts a new one. The default pond at 6,000 ticks now reads
+
+```
+150  Shale Sprig      44  Dusk Spindle     20  Shale Fin
+ 15  Shale Skimmer     7  Shale Spindle     6  Shale Plume
+```
+
+— five of the eight living lineages are Shales, which is to say descendants of
+species 0, and that is legible at a glance for the first time. The Chronicle
+says it in a sentence: *"The Shale Skimmers have split away from the Shale
+Sprigs — a new lineage, evolved here."*
+
+**Uniqueness is built, not hoped for.** Forty founders drawing from sixty-four
+family words collide with probability ~1, and two unrelated founders sharing a
+family name would be the scheme telling a lie about the tree — so `pickFree`
+probes forward from where the hash points until it finds a word nobody has, and
+the hash exists only to *spread* the choice (an alphabetical march would be a
+numbering with extra steps). The same guarantee runs one level down for the
+second word inside a family.
+
+**And the names hold still.** They are a pure function of the tree's ids and
+parent links, which are themselves a pure function of `(seed, config)` —
+`Phylogeny` numbers from zero per world — so seed 314 gives back the same Shale
+Sprig tomorrow. A species is appended and never renumbered, so a name once given
+never changes while you watch. Both are pinned by tests, because a name that
+moves is worse than a number.
+
+### Added
+
+- `src/speciesnames.js` — `STEMS` (64 family words), `EPITHETS` (32), the
+  `mix`/`pickFree` pair that makes a name unique by construction, `nameSpecies`
+  (a whole tree at once, walked in birth order so a parent is always named
+  first), and `speciesLabel`/`speciesPlural`, which fall back to the old number
+  for a caller that holds a `shares` object and no tree.
+- `test/speciesnames.test.js` — thirteen claims, three of them the load-bearing
+  ones: **unique** (no two lineages of a real 6,000-tick pond answer to one
+  name, and the forty founders of a default pond get forty distinct families),
+  **stable** (sampled every 500 ticks, no species is ever renamed; the same seed
+  twice gives the same cast), and **inherited** (every branch keeps its parent's
+  stem and takes a different second word). Plus the word lists' own invariant —
+  every epithet takes a plain `-s`, because the Chronicle writes in the plural
+  and a special case in a word list is a bug waiting for the release that adds
+  "Moss" to it.
+- A row for `speciesnames.js` in `docs/ARCHITECTURE.md`, and a paragraph in
+  `README.md`.
+
+### Changed
+
+- `src/chronicle.js`: the three lineage lines name their subject. Dominance,
+  branching and extinction now read *"The Shale Sprigs now hold the pond
+  (45%)"*, *"…have split away from…"*, *"…are gone after ~14 generations"*.
+- `src/main.js`: the legend chip says the name and keeps the number in its
+  `title`; the Muller plot's spoken form gets the names.
+- `src/inspectorview.js`: the Species link says the name with the number in its
+  `title`; every ancestry pip's tooltip carries both, so the name on screen and
+  the id in `docs/SCIENCE.md` and the CSV export are one click apart.
+- `src/describe.js`: `describeMuller` takes an optional name map.
+- `src/viewstate.js`: `lineageNames`/`lineageNameCount` join the world-scoped
+  roster. The names describe *one tree*, and the cache key is a species count —
+  two ponds that both open with forty founders would otherwise share a map, and
+  a cache keyed on a count is exactly the kind that cannot notice.
+- `app/index.html`: the Tree of Life's caption explains the two-word scheme.
+
+### Notes
+
+- **Nothing was added to a species.** The names live entirely outside the
+  simulation, computed from a list of `{id, parentId}`, so no fingerprint can
+  see this release: the default pond is bit-for-bit what it was in v1.3.0 and
+  `test/fingerprint.test.js` is untouched and green. No random number is drawn,
+  and a test replaces `Math.random` with a throw to say so.
+- The legend's last chip still reads **"too small to name"**. It has said that
+  since v1.62 as a figure of speech; as of this release it is literal.
+- 1,154 tests pass.
+
 ## [1.115.0] — 2026-08-21
 
 This project has audited its two shipped documents twice, and both audits were

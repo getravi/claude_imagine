@@ -261,7 +261,10 @@ test("the swatch is this creature's own colour, both bands from the palette", ()
   assert.match(html, new RegExp(`background:${sw.fill.replace(/[()]/g, "\\$&")}`));
   assert.match(html, new RegExp(`color:${sw.glow.replace(/[()]/g, "\\$&")}`));
   assert.match(html, new RegExp(`Creature #${c.id}`));
-  assert.match(html, new RegExp(`id="insp-species">${c.speciesId} — spotlight`));
+  // With no name map the link says what it said before v1.116 — the number,
+  // twice: once as the tooltip that is now permanent and once as the text.
+  assert.match(html, new RegExp(`id="insp-species" title="species ${c.speciesId}"`));
+  assert.match(html, new RegExp(`>species ${c.speciesId} — spotlight`));
 });
 
 test("every row `inspect.js` names is in the panel, with the id `main.js` patches", () => {

@@ -1083,6 +1083,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   measured whether the listener and the reader are being told the same thing,
   which is v1.67's and v1.79's question on a surface neither reached.
 
+- **The owner's steer, 2026-08-26: build for the visitor, not for the archive.**
+  The note was to put a regular human hat on — make the app more interesting and
+  easier to understand, optimise for mass appeal rather than for a nerdy
+  fanbase — and reading v1.104–v1.115 back it is a fair one. Twelve consecutive
+  cycles of *measure the thing nobody measured, publish the number that was
+  quietly wrong*: a size histogram, a diet bill, a wire census, a letter audit,
+  a photometer, a tape measure. Each made the app more correct. None made it
+  more fun, and several added a tile reading `Web 🕸️ 82% top 38% mid` to a panel
+  that already had twenty-nine. The measuring cycles are good and they are not
+  the only kind of cycle, and a run of twelve is a rut rather than a policy.
+  So: **when choosing, ask what a visitor who will never open `docs/SCIENCE.md`
+  would notice in the first thirty seconds.** v1.116 is the first of these — the
+  Tree of Life had called every lineage "species 7" for a hundred and fifteen
+  releases. Two live leads in the same direction, in the order I would take
+  them:
+  (a) **The stat panel is thirty tiles and the first screenful is the worst of
+  them.** `Web 🕸️`, `Bill 🧾`, `Lag ⏳` and `Safe 🛟` sit at the same visual
+  weight as Population. Six numbers a person came for, a disclosure for the
+  other twenty-four; the readouts stay, the wall goes.
+  (b) **The creatures have no names, and the blocker is real.** `Creature` takes
+  its id from a module-level `NEXT_ID` that never resets, so the same seed
+  loaded twice deals the same animals under different numbers — a name built on
+  that moves between page loads, which is the one thing v1.116 established a
+  name must never do. It needs a per-world serial, which needs a new field on
+  `Creature`, which needs `inspect.js`'s field-coverage table and a fingerprint
+  conversation. A whole cycle, and the best single feature left in the app.
+
 ## Hard-won notes to self
 
 - **Every audit of this page has been about what gets *in*. Nothing had asked
