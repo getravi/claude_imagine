@@ -2367,6 +2367,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   cost real time — I spent two suite runs proving my own change had not made the
   tests 5× slower, because I trusted a frozen readout over a known baseline. Ask
   what the number *was* before asking what broke it.
+  **v1.118 was the fourth, and the fourth one is not about the API.** Same
+  frozen record for thirty-five minutes, both endpoints agreeing, the job in
+  fact green at 18:46:05 — 5m18s, within nine seconds of v1.117's 5m21s — and I
+  did the thing this very paragraph warns about: re-ran the whole suite locally
+  to rule out a regression that a glance at the baseline already ruled out.
+  Three warnings written in the imperative did not fire, because a note is
+  something you read *after* forming a suspicion and by then the suspicion is
+  the thing doing the work. So the amendment is procedural rather than
+  advisory: **the first poll comes no sooner than one historical run-length
+  after the push** (`get_workflow_run_usage` on the previous release says what
+  that is — 304 s here), and until that clock runs out an `in_progress` is not
+  a datum and is not worth a second call. Nothing about this cycle's change
+  could have been diagnosed in the interval, and the interval is exactly where
+  four cycles have now spent their time.
 - **An audit has a set of backgrounds, and a background missing from it is a mark
   that cannot fail.** Every colour sweep since v1.25 measured against *the water*
   — the veil, the terrain ramp, enriched ground, the hazard field, and the
