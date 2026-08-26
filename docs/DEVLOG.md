@@ -13879,3 +13879,132 @@ line up would have traded one kind of unreadable for another.
   cousins in name. Nothing on screen would look wrong. It wants either a wider
   list or a readout that says the list is exhausted, and I would rather have the
   readout.
+
+## Entry 129 — the first thing you read · 2026-08-26
+
+The steer from the last cycle still stands — regular human hat, more
+interesting, easier to understand, mass appeal over the nerdy fanbase — so this
+is the second cycle under it, and I want to be honest about the order I took
+things in. My last entry nominated the stat panel as the next job: split thirty
+tiles into the six a person came for and a disclosure holding the rest. That is
+still the right job. I did a different one first, because of something I noticed
+while writing that sentence.
+
+Every surface on this page assumes you already know what you are looking at.
+
+The tiles assume it. The six figures assume it. The Chronicle — which I am fond
+of, and which is genuinely readable — is a *log*: it tells you what happened at
+tick 3,204, in the order it happened, and it is at its best for somebody who has
+been watching for a while. The scenario chips assume it hardest of all: "The
+Thinking Pond" means nothing to a person who has been on the page for four
+seconds.
+
+And then there is the one thing on this page that does answer "what am I looking
+at?" in plain sentences, which is `describePond` in `describe.js`. It is careful,
+it is well tested, it has been maintained for eighty releases — and it is
+`sr-only`. It is written for a screen reader and **invisible to everybody else**.
+The best prose this project has ever written about its own pond has never been
+seen by a sighted visitor.
+
+### What I built
+
+`src/headline.js` and one banner above the water: the single most newsworthy
+true thing about this pond, right now, as one sentence.
+
+```
+🥚  A brand-new pond: 40 creatures, and not one of them knows anything.
+    The ones that find food have young; the ones that don't, don't.
+
+📉  The pond is crashing — 61 left, down from 204 a little while ago.
+
+🔺  They hunt each other now: 34 of the 190 live on meat, and 512 have been eaten.
+
+👑  The Shale Sprigs have taken over — 63% of the pond is one family.
+```
+
+Nine rules, ranked, lowest rank wins. That ordering is the whole design and it
+is the part that would have been wrong if I had written it as a pile of ifs: a
+pond can be crashing *and* dominated by one family *and* full of hunters at the
+same moment, and all three sentences are true, and the reader needs the crash.
+Rank makes urgency a property of the list instead of a property of the order I
+happened to type them in — and it makes the interruption rule trivial, because
+"something more important happened" is just a smaller number.
+
+### The two things that would have made it useless
+
+**A banner that strobes is not a banner.** Every one of these predicates is a
+threshold on a live number, and a live number sits on its threshold and wobbles.
+Recomputed every frame, the line would flicker between two sentences several
+times a second, which is worse than showing nothing — a sentence nobody can
+finish reading is not a sentence. So `nextHeadline` gives a line the slot for 360
+ticks, and only a *strictly more urgent* rank may take it early. It also treats a
+tick earlier than the one it was chosen on as a reset, which is what stops a new
+pond opening under the old pond's headline.
+
+**A calm pond still has to say something.** The fallback is the case that
+matters most, because a healthy pond is most of every run. "Nothing to report"
+would have been the easy answer and it would have taught the reader to stop
+looking. Instead there are four plain facts about what this thing *is* —
+`Nobody told them how to eat — 14 generations of trial and error worked it
+out.` — rotating on the tick. On the tick, not on a draw: this module may not
+touch determinism, and a rotation keyed on arithmetic is the version of "keep it
+fresh" that cannot.
+
+### The test I care about
+
+Not the ranking tests, though those are there. The vocabulary sweep at the bottom
+of `test/headline.test.js` collects every sentence the module can produce and
+fails on fourteen patterns: `carnivore`, `lineage`, `species`, `genome`,
+`mutation`, `tick`, `px`, `predation`, and so on. Plus no decimals, because
+`37.4%` is a number a reader has to stop on.
+
+I wrote it because I know exactly how this surface degrades. Every readout on
+this page became technical the same way — one honest, precise, correct word at a
+time, each addition defensible on its own. The Chronicle started plain and now
+says "a new lineage, evolved here". The panel started at Population and Food. A
+future cycle of mine will have a genuinely good reason to write "carnivores"
+here, and the sweep is what makes that a decision instead of a drift.
+
+### What I refused to do
+
+**I did not make it a live region.** It rewrites itself as the pond changes, and
+announcing every rewrite would talk over the Chronicle's own polite channel,
+which already says the more interesting thing. A screen reader gets the pond
+described on the canvas and the Chronicle announced; this is a caption for the
+eyes.
+
+**I did not put it inside the stage.** `test/markup.test.js` classifies every
+element over the water and every one of them is anchored to the pond's own
+corners. This is a card on the page, not a mark on the pond, and the moment it
+sat inside `.stage` it would have inherited an argument about `right: 12px` it
+has nothing to do with.
+
+**I did not add a colour.** The banner declares no `color:` of its own — it
+inherits `--ink`, which is the ink v1.109's photometer measured against exactly
+this ground. A new pair in the legibility inventory would have been a new thing
+to keep true, for a card whose text is the same white as the Chronicle's.
+
+### What this leaves
+
+- **The stat panel is still thirty tiles**, and it is still the next job. Two
+  cycles have now named it. The headline helps the visitor who reads one line
+  and watches; it does nothing for the one who looks right and finds
+  `Bill 🧾 0.7/t 36% idle` at the same weight as Population.
+- **The banner cannot be clicked.** Every sentence it writes is *about*
+  something the page can already show — the crash is on the population chart,
+  the takeover is a band on the Tree of Life, the hunger is the mortality bar.
+  A headline that scrolled the figure it is talking about into view, or lit the
+  band it names, would turn the one line a visitor reads into the door to the
+  rest of the page. It would need each rule to name its own destination, which
+  is a field on a rule and not a rewrite.
+- **Nine rules is a guess, not a measurement.** I know a 6,000-tick default pond
+  reaches at least three of them because a test says so, but nothing counts how
+  often each rule fires across a spread of seeds. If one of them never fires in
+  practice it is dead prose, and if `calm` covers 90% of every run then the
+  rotation is carrying the whole feature and deserves more than four lines. That
+  is a sweep, and it is cheap.
+- **The front door has no headline.** `index.html` runs a live pond in its hero
+  and captions it with static prose. The same sentence over the same water is
+  the obvious next place for this, and I left it alone because the landing page
+  has its own reveal machinery and this cycle was already a page's worth of
+  change.

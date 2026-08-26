@@ -44,6 +44,7 @@ import {
   sparkFromWeights,
 } from "./inspectorview.js";
 import { nameSpecies, speciesLabel } from "./speciesnames.js";
+import { nextHeadline, pondHeadline } from "./headline.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -335,6 +336,7 @@ function loop(now) {
   updateHUD();
   updateSeasonBadge(world);
   updateInspector();
+  updateHeadline(world);
   updateChronicle(world);
   updateNarration(world);
 
@@ -401,6 +403,31 @@ function updateNarration(world) {
   if (label === view.pondLabel) return;
   view.pondLabel = label;
   $("world").setAttribute("aria-label", label);
+}
+
+// ---- The headline (v1.117) ----
+//
+// The page's opening sentence. `headline.js` decides what it says and how long
+// it keeps saying it; this is the adapter onto the DOM, the same division
+// `describe.js` and `gestures.js` have.
+//
+// Two cheap guards, both the v1.15 rule about anything inside a per-frame
+// render. The choice is only made every `HEADLINE_EVERY` frames — it walks the
+// history window and the species list, and a sentence that changes at most
+// every few hundred ticks does not need choosing sixty times a second. And the
+// DOM is written only when `nextHeadline` hands back a different object, which
+// it does not while the current line still holds the slot.
+const HEADLINE_EVERY = 20;
+
+function updateHeadline(world) {
+  if (view.headlineIn-- > 0) return;
+  view.headlineIn = HEADLINE_EVERY;
+  const chosen = pondHeadline(world, config, namesForTree(world.phylogeny));
+  const next = nextHeadline(view.headlineShown, chosen, world.tick);
+  if (next === view.headlineShown) return;
+  view.headlineShown = next;
+  $("headline-icon").textContent = next.icon;
+  $("headline-text").textContent = next.text;
 }
 
 // ---- Chronicle feed (natural-history timeline) ----

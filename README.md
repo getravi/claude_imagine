@@ -45,6 +45,12 @@ each a hand-picked doorway into what the simulation can do.
 | ![Sparse founders](docs/screenshots/early.png) | ![Teeming pond](docs/screenshots/pond.png) |
 | ~45 random founders drift aimlessly among abundant food. Most will starve. | The descendants of the few competent foragers now fill the pond — cool-coloured grazers with warm-glowing predators hunting among them. |
 
+- **The line above the pond says what is happening, right now, in one
+  sentence.** It is the one thing on the page you can read without knowing
+  anything: *"They hunt each other now: 34 of the 190 live on meat, and 512 have
+  been eaten."* It picks the most urgent true thing — a crash outranks a
+  takeover, four survivors outrank everything — and holds it long enough to
+  read.
 - **Each glowing chevron is a creature.** Its colour is an inherited trait, so
   a lineage shares a colour family — you can watch one lineage's colour take
   over the pond as it out-competes the others.
@@ -404,6 +410,7 @@ src/
   seasonlag.js      how far behind one of its clocks the pond runs (observation only)
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
+  headline.js       the pond in one plain sentence, ranked by urgency
   world.js          the simulation: steps everything forward
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it

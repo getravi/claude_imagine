@@ -3952,3 +3952,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the exact failure v1.85 built a test for. **Grep the suite for locals that are
   computed richly and asserted coarsely** — `at`, `count`, `worst`, `first` —
   each one is a finding that has already been paid for.
+
+- **The best prose in a project can be sitting inside `sr-only`.** For eighty
+  releases the only thing on this page that described the pond *as it stands* in
+  plain sentences was `describePond`, written for a screen reader and invisible
+  to everybody else, while every visible surface assumed a reader who already
+  knew what they were looking at. v1.117 put a ranked one-line version of that
+  above the water. **When asked to make something easier to understand, look
+  first for an explanation the project already writes and does not show.**
+- **A readout goes technical one correct word at a time.** Every caption here
+  started plain: the Chronicle said "a new kind of creature" before it said "a
+  new lineage, evolved here"; the panel was Population and Food before it was
+  `Web 🕸️ 82% top 38% mid`. No single addition was wrong. The remedy that works
+  is not resolve, it is a test: `test/headline.test.js` sweeps every sentence the
+  banner can produce against fourteen of this project's own words and fails on
+  any of them, which makes the next such addition a decision instead of a drift.
+  **A surface with a promise about its vocabulary needs that promise in the
+  suite.**
+- **A threshold on a live number is a flicker unless something holds it.** Any
+  rule of the form "say this when the share is above X" fires and unfires several
+  times a second, because the share sits on X and wobbles. A per-frame render of
+  such a rule is unreadable, and the fix is a hold with a priority escape rather
+  than a smoother number: `nextHeadline` keeps a line for 360 ticks and lets only
+  a strictly more urgent one interrupt. **Whenever a surface picks one of several
+  true things to say, the picking rule needs a clock as well as an order.**

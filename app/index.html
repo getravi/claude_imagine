@@ -47,6 +47,21 @@
 
     <main class="layout">
       <div class="left-col">
+        <!-- The one line above the water (v1.117). Everything else on this page
+             is a number, a figure or a log; this is the pond in a sentence, for
+             a reader who has just arrived and does not yet know what a Muller
+             plot is. `src/headline.js` chooses it; main.js only writes it here.
+             Deliberately outside `.stage`: the stage is the pond, and this is
+             a caption on the page rather than a mark over the water. Not a live
+             region — it rewrites itself as the pond changes, and a reader with
+             a screen reader already has the Chronicle announced to them. -->
+        <section class="headline" aria-label="What is happening in the pond right now">
+          <span class="h-icon" id="headline-icon" aria-hidden="true">🥚</span>
+          <p class="h-text" id="headline-text">
+            A brand-new pond, and not one of them knows anything yet.
+          </p>
+        </section>
+
         <section class="stage">
           <!-- Focusable since v1.60: the arrow keys step the selection from one
                creature to the next, so choosing one no longer needs a pointer.

@@ -77,6 +77,14 @@ const FRESH = Object.freeze({
   describeIn: 0,
   // The chronicle feed.
   lastChronKey: "",
+  // The headline above the water (v1.117). World-scoped for the plainest of the
+  // reasons on this list: it carries the tick it was chosen on, and a new pond
+  // starts its clock at zero — an inherited `since` would hold the old world's
+  // sentence on screen for the first six hundred ticks of the new one.
+  // `nextHeadline` also treats a tick before `since` as a reset, so the two
+  // agree even if this line is ever forgotten.
+  headlineShown: null,
+  headlineIn: 0,
   // The view badge and the ruler. Both are content-keyed and both name
   // something a new pond re-issues — the badge a creature id, the ruler
   // nothing — so the badge is the one that needed this and the ruler rides

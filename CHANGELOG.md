@@ -4,6 +4,88 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.117.0] — 2026-08-26
+
+Every surface on this page assumes you already know what you are looking at. The
+tiles do, the figures do, the scenario chips do — and the Chronicle, the one
+readable thing here, is a *log*: it tells you what happened at tick 3,204, which
+is at its best for somebody who has been watching a while.
+
+The one surface that does answer *"what am I looking at?"* in plain sentences is
+`describePond`, and it is `sr-only`. The best prose this project has written
+about its own pond has never been seen by a sighted visitor.
+
+**Added — `src/headline.js`, and one line above the water.** The single most
+newsworthy true thing about this pond, right now, as a sentence:
+
+```
+🥚  A brand-new pond: 40 creatures, and not one of them knows anything.
+    The ones that find food have young; the ones that don't, don't.
+
+📉  The pond is crashing — 61 left, down from 204 a little while ago.
+
+🔺  They hunt each other now: 34 of the 190 live on meat, and 512 have been eaten.
+
+👑  The Shale Sprigs have taken over — 63% of the pond is one family.
+```
+
+**Nine rules, ranked, lowest wins.** That ordering is the design. A pond can be
+crashing *and* dominated by one family *and* full of hunters in the same moment,
+every sentence is true, and the reader needs the crash — so urgency is a property
+of the list rather than of the order the `if`s happen to be typed in, and "a more
+important thing happened" becomes a smaller number.
+
+**Two things that would have made it useless.** A predicate on a live number sits
+on its threshold and wobbles, so a per-frame headline would flicker between two
+sentences several times a second — worse than nothing, because a sentence nobody
+can finish reading is not a sentence. `nextHeadline` gives a line the slot for
+360 ticks and lets only a strictly more urgent rank take it early. And a calm
+pond still has to say something, because a healthy pond is most of every run: the
+fallback is four plain facts about what this thing *is*, rotating on the tick —
+on the tick and not on a draw, because this module may not touch determinism.
+
+### Added
+
+- `src/headline.js` — `pondHeadline` (nine ranked rules: extinct, fragile, crash,
+  young, starving, hunting, dominant, boom, calm), `nextHeadline` (the hold, and
+  the rule that a tick earlier than the current line's is a reset rather than a
+  wobble), `RANK`, and the twelve thresholds as named constants.
+- `test/headline.test.js` — sixteen claims. The one that matters most is the
+  vocabulary sweep: every sentence the module can produce, against fourteen
+  patterns this project uses everywhere else (`carnivore`, `lineage`, `species`,
+  `genome`, `mutation`, `tick`, `px`, `predation`, …) and against decimals. Every
+  readout on this page became technical the same way — one honest, correct word
+  at a time — and the sweep makes the next one a decision instead of a drift.
+  Plus: a real 6,000-tick pond reaches at least three different ranks and always
+  has something sayable; two ponds of one seed write the same headline at every
+  step; and reading a pond does not move it (`stateFingerprint` equal against an
+  unwatched twin, with `Math.random` replaced by a throw).
+- A row for `headline.js` in `docs/ARCHITECTURE.md`, a bullet in
+  `README.md#what-am-i-looking-at`, and a line in the project layout.
+
+### Changed
+
+- `app/index.html`: the banner, above `.stage` rather than inside it — this is a
+  card on the page, not a mark on the pond, and `test/markup.test.js` classifies
+  every element over the water by the corner it is anchored to.
+- `style.css`: `.headline`, with no `color:` of its own. It inherits `--ink`,
+  which is the ink v1.109's photometer measured against exactly this ground, so
+  the legibility inventory gains no pair to keep true.
+- `src/main.js`: `updateHeadline`, the DOM adapter — the choice is made every
+  20 frames and written only when `nextHeadline` hands back a different object.
+- `src/viewstate.js`: `headlineShown`/`headlineIn` join the world-scoped roster.
+  The line carries the tick it was chosen on, and a new pond starts at zero.
+
+### Notes
+
+- **Nothing was added to the simulation.** A pure observer, like `chronicle.js`
+  and `phylogeny.js`: it reads a world, writes none, and draws no random number.
+  The default pond is bit-for-bit what it was in v1.3.0 and
+  `test/fingerprint.test.js` is untouched and green.
+- The stat panel is still thirty tiles. Two cycles have now named it as the next
+  job.
+- 1,170 tests pass.
+
 ## [1.116.0] — 2026-08-26
 
 The Tree of Life is the figure this project leads with, and for a hundred and

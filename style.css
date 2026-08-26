@@ -164,6 +164,39 @@ body {
   white-space: nowrap;
 }
 
+/* ---- The headline (v1.117) ----
+   One sentence above the water, in words that need no glossary. Larger than
+   anything else in the column on purpose: it is the first thing a visitor
+   should read and the only thing they have to. No `color:` of its own — it
+   inherits `--ink` from the body, which is the ink this ground was measured
+   against in v1.109, so the banner adds no pair to the legibility inventory. */
+.headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-2);
+  border-radius: var(--radius);
+  padding: 13px 17px;
+}
+.headline .h-icon {
+  font-size: 21px;
+  line-height: 1;
+  flex: none;
+}
+.headline .h-text {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  /* The line changes as the pond does, and a line of prose that resizes its own
+     card would nudge the whole column every time. Two lines' worth of room, so
+     the longest sentence in `headline.js` and the shortest sit at one height. */
+  min-height: 2.9em;
+  display: flex;
+  align-items: center;
+}
+
 .stage {
   position: relative;
   /* The stage is the containing block for five marks that all mean "in the
