@@ -1,5 +1,15 @@
 // hud.js — the thirty stat tiles at the top of the panel, as data.
 //
+// **v1.118 gave them sections.** For a hundred and seventeen releases this was
+// one flat four-column grid, and the first thing a visitor's eye landed on in
+// it was `Web 🕸️ 82% top 38% mid` sitting at exactly the visual weight of
+// `Population`. Six of these numbers are what a person came here to see; the
+// other twenty-four are the answer to a question they have not asked yet. So
+// each tile now declares the **section** it belongs to, `GROUPS` says what the
+// sections are and in what order, and `panelOrder()` derives the page's layout
+// from the two — the page cannot lay a tile outside its section without
+// `test/hud.test.js` going red. The readouts all stayed; only the wall went.
+//
 // These lines lived in `main.js` from v1.0 until v1.97, which is to say
 // they lived in the one module `node --test` cannot open. Every other figure on
 // this page has been carved out for exactly that reason — the chart in v1.41,
@@ -69,29 +79,90 @@ const share = (v) => {
 };
 
 /**
- * Every tile, in the order the page lays them out.
+ * The panel's own furniture: six panel sections, in the order the page lays
+ * them out.
  *
- * @type {Array<{id: string, gate?: string[], blank?: string, read: (c: TileContext) => string}>}
+ * `title` is the heading over the section and `hint` is the plain sentence
+ * under it — plain deliberately, because this is the one place on the page that
+ * gets to say what a group of numbers is *for* before the numbers say what they
+ * are. The hints avoid every word `src/headline.js`'s vocabulary sweep refuses
+ * (`carnivore`, `lineage`, `genome`, `px`, …) for the same reason that sweep
+ * exists: every readout here became technical one honest, correct word at a
+ * time, and a heading is where that starts.
+ *
+ * `glance` is first and is the only one always on screen; the other five sit
+ * behind a single disclosure under it. That is a fact about the markup rather
+ * than a field here, because it is the *page* that decides how much of itself
+ * to show at once.
+ *
+ * @type {Array<{key: string, title: string, hint: string}>}
+ */
+export const GROUPS = [
+  {
+    key: "glance",
+    title: "At a glance",
+    hint: "how many are alive, what there is to eat, and how the pond is turning over",
+  },
+  {
+    key: "hunting",
+    title: "🔺 Hunting",
+    hint: "who eats whom, who is out of reach, and what a taste for meat costs",
+  },
+  {
+    key: "bodies",
+    title: "🧠 Bodies and brains",
+    hint: "how unlike each other they are, how long they last, and what is in their heads",
+  },
+  {
+    key: "energy",
+    title: "⚡ Energy",
+    hint: "how much is in the water right now, and how fast it runs through",
+  },
+  {
+    key: "rules",
+    title: "🌍 Rules in play",
+    hint: "what the switches above are doing; a rule you have not turned on reads off",
+  },
+  {
+    key: "run",
+    title: "⏱ This run",
+    hint: "how long the pond has been going, and how fast your machine is drawing it",
+  },
+];
+
+/** Every group key, for the membership check a tile's `group` has to pass. */
+const GROUP_KEYS = new Set(GROUPS.map((g) => g.key));
+
+/**
+ * Every tile. This array is *not* the order the page lays them out: `group` is
+ * the tile's section, `panelOrder()` below turns the sections into a layout,
+ * and a tile moves between sections by editing one word here. Within a section
+ * the page follows this order, so this is still where a row is arranged.
+ *
+ * @type {Array<{id: string, group: string, gate?: string[], blank?: string, read: (c: TileContext) => string}>}
  */
 export const TILES = [
-  { id: "stat-pop", read: ({ world }) => `${world.creatures.length}` },
-  { id: "stat-food", read: ({ world }) => `${world.food.items.length}` },
-  { id: "stat-gen", read: ({ world }) => `${world.stats.currentMaxGeneration}` },
+  { id: "stat-pop", group: "glance", read: ({ world }) => `${world.creatures.length}` },
+  { id: "stat-food", group: "glance", read: ({ world }) => `${world.food.items.length}` },
+  { id: "stat-births", group: "glance", read: ({ world }) => world.stats.births.toLocaleString() },
+  { id: "stat-deaths", group: "glance", read: ({ world }) => world.stats.deaths.toLocaleString() },
+  { id: "stat-gen", group: "glance", read: ({ world }) => `${world.stats.currentMaxGeneration}` },
   // The diversity proxy is the one tile that costs a random draw. It samples
   // pairs, so it needs a stream — and it takes the UI's, never the pond's,
   // because a readout that consumed the world's RNG would make watching the
   // pond change it (v1.33's rule, and directive 2 of the playbook).
-  { id: "stat-div", read: ({ world, uiRng }) => world.stats.diversity(world, uiRng).toFixed(3) },
+  { id: "stat-div", group: "bodies", read: ({ world, uiRng }) => world.stats.diversity(world, uiRng).toFixed(3) },
   // Carnivores: count and share of the population.
   {
     id: "stat-carn",
+    group: "hunting",
     read: ({ world }) => {
       const pop = world.creatures.length;
       const carn = world.stats.carnivoreCount || 0;
       return `${carn} (${pop > 0 ? Math.round((carn / pop) * 100) : 0}%)`;
     },
   },
-  { id: "stat-kills", read: ({ world }) => world.stats.kills.toLocaleString() },
+  { id: "stat-kills", group: "glance", read: ({ world }) => world.stats.kills.toLocaleString() },
   // The refuge: what share of the pond is at or above the size nothing here can
   // eat, and where that line is. Both halves are needed — the percentage is the
   // news and the threshold is what makes it a fact rather than a mood — and the
@@ -100,6 +171,7 @@ export const TILES = [
   // from nobody is arithmetic and not a readout.
   {
     id: "stat-refuge",
+    group: "hunting",
     gate: ["predation"],
     read: ({ world, config }) =>
       `${Math.round(world.stats.refugeShare * 100)}% ≥${refugeRadius(config).toFixed(1)}px`,
@@ -116,6 +188,7 @@ export const TILES = [
   // there is none is the reading. Gated on `predation` like the tile above it.
   {
     id: "stat-safe",
+    group: "hunting",
     gate: ["predation"],
     read: ({ world }) => {
       const s = world.stats;
@@ -148,6 +221,7 @@ export const TILES = [
   // run in the second state (docs/SCIENCE.md).
   {
     id: "stat-web",
+    group: "hunting",
     gate: ["predation"],
     read: ({ world, config }) => {
       const web = webProfile(world.creatures, config);
@@ -186,6 +260,7 @@ export const TILES = [
   // real quantity would go is true symbols arranged into a falsehood.
   {
     id: "stat-bill",
+    group: "hunting",
     read: ({ world, config }) => {
       const bill = dietBill(world.creatures, config);
       if (bill.toll === 0) return "none";
@@ -214,6 +289,7 @@ export const TILES = [
   // `main.js` was the one module `node --test` could not open.
   {
     id: "stat-kin",
+    group: "hunting",
     gate: ["kinRecognition", "predation"],
     read: ({ world }) =>
       `${world.stats.kinSpared.toLocaleString()} · ${world.stats.kinSparedRate.toFixed(0)}/100t`,
@@ -221,6 +297,7 @@ export const TILES = [
   // Contagion: the live sick / immune split (both "off" without a pathogen).
   {
     id: "stat-sick",
+    group: "rules",
     gate: ["disease"],
     read: ({ world }) => {
       const pop = world.creatures.length;
@@ -228,19 +305,20 @@ export const TILES = [
       return `${n} (${pop > 0 ? Math.round((n / pop) * 100) : 0}%)`;
     },
   },
-  { id: "stat-immune", gate: ["disease"], read: ({ world }) => `${world.stats.immuneCount}` },
+  { id: "stat-immune", group: "rules", gate: ["disease"], read: ({ world }) => `${world.stats.immuneCount}` },
   // How much of the water is inside catching distance of somebody sick — the
   // number the blue field in the pond and the minimap draws. Zero on its own
   // whenever nobody is ill, which is every world with no pathogen in it.
   {
     id: "stat-reach",
+    group: "rules",
     gate: ["disease"],
     read: ({ world }) => `${Math.round(world.stats.hazardShare * 100)}%`,
   },
-  { id: "stat-learn", gate: ["plasticity"], read: ({ world }) => world.stats.avgLearning.toFixed(3) },
+  { id: "stat-learn", group: "bodies", gate: ["plasticity"], read: ({ world }) => world.stats.avgLearning.toFixed(3) },
   // Traffic on the signalling channel: how strong a call the average creature is
   // hearing right now. "off" where nobody can hear at all.
-  { id: "stat-heard", gate: ["signalling"], read: ({ world }) => world.stats.avgHeard.toFixed(2) },
+  { id: "stat-heard", group: "rules", gate: ["signalling"], read: ({ world }) => world.stats.avgHeard.toFixed(2) },
   // Terrain: how much smoother the ground under the living is than the
   // landscape as a whole. Negative — shown as a "flatter by" percentage — means
   // the pond has genuinely drifted into its basins rather than spreading evenly
@@ -248,6 +326,7 @@ export const TILES = [
   // shown as "off" rather than as a suspiciously steady zero.
   {
     id: "stat-ground",
+    group: "rules",
     gate: ["terrain"],
     read: ({ world }) => {
       const b = world.stats.groundBias;
@@ -269,6 +348,7 @@ export const TILES = [
   // nobody hunting and says "off" anyway.
   {
     id: "stat-biome",
+    group: "rules",
     gate: ["foodPatches"],
     read: ({ world }) => {
       const b = world.stats.patchBias;
@@ -280,7 +360,7 @@ export const TILES = [
   // the number that says what the layout is actually costing — and it is a rate
   // rather than the run's total, which would stop moving by tick 3,000. Reads
   // exactly 0 with no walls in the pond, so it says "off" instead.
-  { id: "stat-walled", gate: ["barriers"], read: ({ world }) => `${world.stats.walledRate.toFixed(1)}/100t` },
+  { id: "stat-walled", group: "rules", gate: ["barriers"], read: ({ world }) => `${world.stats.walledRate.toFixed(1)}/100t` },
   // Solid bodies: how many pairs the pond is pushing apart, per hundred ticks
   // over the same window. This is the only readout of a rule that is almost
   // invisible — two creatures that cannot overlap look very like two that can —
@@ -292,6 +372,7 @@ export const TILES = [
   // only a rate in front of them cannot tell the two rules apart (v1.13).
   {
     id: "stat-jostled",
+    group: "rules",
     gate: ["bodyCollision"],
     read: ({ world, config }) =>
       `${world.stats.jostledRate.toFixed(0)}/100t${config.massWeightedShove ? " ⚖" : ""}`,
@@ -299,7 +380,7 @@ export const TILES = [
   // Detritus: what share of the crop is currently growing out of the pond's own
   // dead, averaged over the last few hundred ticks. Exactly 0 without a nutrient
   // field, so it says "off" rather than showing a steady, plausible zero.
-  { id: "stat-soil", gate: ["detritus"], read: ({ world }) => `${Math.round(world.stats.soilShare * 100)}%` },
+  { id: "stat-soil", group: "rules", gate: ["detritus"], read: ({ world }) => `${Math.round(world.stats.soilShare * 100)}%` },
   // How far the pond is running behind its own year. Three states, and the
   // middle one is the point: "off" in a world with no seasons, "…" while the
   // record is still shorter than the three years the estimate needs (which is
@@ -313,6 +394,7 @@ export const TILES = [
   // whether the pond is keeping time.
   {
     id: "stat-lag",
+    group: "rules",
     gate: ["seasons"],
     read: ({ world }) => {
       const lag = readable(world.stats.seasonLag);
@@ -322,17 +404,17 @@ export const TILES = [
   },
   {
     id: "stat-brain",
+    group: "bodies",
     gate: ["evolvableTopology"],
     blank: "fixed",
     read: ({ world }) => `${world.stats.avgConns.toFixed(0)}c ${world.stats.avgHidden.toFixed(1)}h`,
   },
-  { id: "stat-births", read: ({ world }) => world.stats.births.toLocaleString() },
-  { id: "stat-deaths", read: ({ world }) => world.stats.deaths.toLocaleString() },
   // Mean lifespan over the rolling death window, or an em dash while nothing has
   // died yet — the same "no subject, so a mark rather than a number" move the
   // Safe tile makes, and the oldest instance of it on this panel.
   {
     id: "stat-life",
+    group: "bodies",
     read: ({ world }) => {
       const m = world.stats.mortality();
       return m ? Math.round(m.meanLifespan).toLocaleString() : "—";
@@ -351,13 +433,38 @@ export const TILES = [
   // therefore settles into a number that cannot change, which is v1.22's
   // complaint about readouts that look live and are not. On the default seed
   // power runs between about 5 and 78 over a single run.
-  { id: "stat-standing", read: ({ world }) => Math.round(EnergyLedger.standing(world)).toLocaleString() },
-  { id: "stat-power", read: ({ world }) => `${world.stats.power.toFixed(1)}/t` },
-  { id: "stat-tick", read: ({ world }) => world.tick.toLocaleString() },
+  { id: "stat-standing", group: "energy", read: ({ world }) => Math.round(EnergyLedger.standing(world)).toLocaleString() },
+  { id: "stat-power", group: "energy", read: ({ world }) => `${world.stats.power.toFixed(1)}/t` },
+  { id: "stat-tick", group: "run", read: ({ world }) => world.tick.toLocaleString() },
   // The only tile whose subject is the machine rather than the pond, which is
   // why it is the only one whose value cannot be derived from a world.
-  { id: "stat-fps", read: ({ fps }) => `${Math.round(fps)}` },
+  { id: "stat-fps", group: "run", read: ({ fps }) => `${Math.round(fps)}` },
 ];
+
+/**
+ * The tiles of one section, in the order they were declared.
+ *
+ * @param {string} key a member of `GROUPS`
+ */
+export function tilesIn(key) {
+  if (!GROUP_KEYS.has(key)) throw new RangeError(`hud: no section named "${key}"`);
+  return TILES.filter((t) => t.group === key);
+}
+
+/**
+ * Every tile in the order the page lays them out: section by section, and
+ * within a section in the order the table declares them.
+ *
+ * The page's layout is *derived* rather than typed twice. Before v1.118 the
+ * agreement between this module and `app/index.html` was "the same ids in the
+ * same order", which a section can break in a way that still passes — a tile
+ * drawn under the wrong heading is in the right position and says the wrong
+ * thing about itself. Deriving the order from the sections means the page and
+ * the table cannot disagree about which section a tile is in either.
+ */
+export function panelOrder() {
+  return GROUPS.flatMap((g) => tilesIn(g.key));
+}
 
 /** The word a gated tile shows when its rule is switched off. */
 export const blankOf = (tile) => tile.blank ?? "off";

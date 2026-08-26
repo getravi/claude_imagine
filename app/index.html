@@ -166,7 +166,11 @@
             <input id="speed" type="range" min="1" max="20" step="1" value="1" />
           </label>
 
-          <details open>
+          <!-- Classed since v1.118, when a second disclosure joined the panel:
+               `src/targetsize.js` records a target per *selector*, and two
+               `details summary` rows measured under one name is an inventory
+               that cannot say which of them a verdict is about. -->
+          <details class="levers" open>
             <summary>Live parameters</summary>
             <label class="field">
               <span>Food rate <b id="food-rate-label"></b></span>
@@ -319,39 +323,98 @@
              `for` and no control inside it is plain text in the accessibility
              tree, so the name and its number were a pair only by being next to
              each other on screen. A description list says the pairing in the
-             markup, where a screen reader can read it. -->
-        <dl class="stats">
-          <div class="stat"><dt>Population</dt><dd id="stat-pop">40</dd></div>
-          <div class="stat"><dt>Food</dt><dd id="stat-food">280</dd></div>
-          <div class="stat"><dt>Max gen</dt><dd id="stat-gen">0</dd></div>
-          <div class="stat"><dt>Diversity</dt><dd id="stat-div">1.111</dd></div>
-          <div class="stat"><dt>Carnivores 🔺</dt><dd id="stat-carn">21 (53%)</dd></div>
-          <div class="stat"><dt>Kills</dt><dd id="stat-kills">0</dd></div>
-          <div class="stat"><dt>Refuge 🔒</dt><dd id="stat-refuge">20% ≥7.3px</dd></div>
-          <div class="stat"><dt>Safe 🛟</dt><dd id="stat-safe">20% ≥7.2px</dd></div>
-          <div class="stat"><dt>Web 🕸️</dt><dd id="stat-web">82% top 38% mid</dd></div>
-          <div class="stat"><dt>Bill 🧾</dt><dd id="stat-bill">0.7/t 36% idle</dd></div>
-          <div class="stat"><dt>Kin 👪</dt><dd id="stat-kin">off</dd></div>
-          <div class="stat"><dt>Sick 🦠</dt><dd id="stat-sick">off</dd></div>
-          <div class="stat"><dt>Immune 🛡️</dt><dd id="stat-immune">off</dd></div>
-          <div class="stat"><dt>Contagious 💧</dt><dd id="stat-reach">off</dd></div>
-          <div class="stat"><dt>Learning 🧠</dt><dd id="stat-learn">off</dd></div>
-          <div class="stat"><dt>Heard 📣</dt><dd id="stat-heard">off</dd></div>
-          <div class="stat"><dt>Ground ⛰️</dt><dd id="stat-ground">off</dd></div>
-          <div class="stat"><dt>Biome 🌿</dt><dd id="stat-biome">+5%</dd></div>
-          <div class="stat"><dt>Walled 🧱</dt><dd id="stat-walled">off</dd></div>
-          <div class="stat"><dt>Jostled ↔️</dt><dd id="stat-jostled">off</dd></div>
-          <div class="stat"><dt>Soil 🍂</dt><dd id="stat-soil">off</dd></div>
-          <div class="stat"><dt>Lag ⏳</dt><dd id="stat-lag">…</dd></div>
-          <div class="stat"><dt>Brain 🧬</dt><dd id="stat-brain">fixed</dd></div>
-          <div class="stat"><dt>Births</dt><dd id="stat-births">0</dd></div>
-          <div class="stat"><dt>Deaths</dt><dd id="stat-deaths">0</dd></div>
-          <div class="stat"><dt>Lifespan ⏳</dt><dd id="stat-life">—</dd></div>
-          <div class="stat"><dt>Standing ⚡</dt><dd id="stat-standing">3,800</dd></div>
-          <div class="stat"><dt>Power ⚡</dt><dd id="stat-power">0.0/t</dd></div>
-          <div class="stat"><dt>Tick</dt><dd id="stat-tick">0</dd></div>
-          <div class="stat"><dt>FPS</dt><dd id="stat-fps">0</dd></div>
-        </dl>
+             markup, where a screen reader can read it.
+
+             v1.118 sorted them into six panel sections. They were one flat
+             grid until then, which meant `Web 🕸️ 82% top 38% mid` greeted a
+             first-time visitor at the same visual weight as the population —
+             so the six a person came for are the panel now, and the rest sit
+             behind one disclosure with a heading and a plain sentence over
+             each group. `src/hud.js#GROUPS` owns the order and the wording;
+             `test/hud.test.js` reads this markup back and fails if a tile is
+             drawn under a heading its table does not put it under. -->
+        <div class="statblock">
+          <section class="statgroup first" data-group="glance">
+            <h3>At a glance</h3>
+            <p class="statgroup-sub">how many are alive, what there is to eat, and how the pond is turning over</p>
+            <dl class="stats">
+              <div class="stat"><dt>Alive</dt><dd id="stat-pop">40</dd></div>
+              <div class="stat"><dt>Food</dt><dd id="stat-food">280</dd></div>
+              <div class="stat"><dt>Born</dt><dd id="stat-births">0</dd></div>
+              <div class="stat"><dt>Died</dt><dd id="stat-deaths">0</dd></div>
+              <div class="stat"><dt>Generations</dt><dd id="stat-gen">0</dd></div>
+              <div class="stat"><dt>Eaten 🔺</dt><dd id="stat-kills">0</dd></div>
+            </dl>
+          </section>
+
+          <details class="more-stats">
+            <!-- The marker is a character in the summary rather than the
+                 native `::marker`, which `display: flex` on a summary removes
+                 in every engine — and a disclosure with no marker at all is a
+                 heading a visitor has no reason to press. It turns over when
+                 the section opens, so the control says which way it goes. -->
+            <summary>More numbers<span class="chev" aria-hidden="true">▾</span></summary>
+
+            <section class="statgroup" data-group="hunting">
+              <h3>🔺 Hunting</h3>
+              <p class="statgroup-sub">who eats whom, who is out of reach, and what a taste for meat costs</p>
+              <dl class="stats">
+                <div class="stat"><dt>Carnivores 🔺</dt><dd id="stat-carn">21 (53%)</dd></div>
+                <div class="stat"><dt>Too big to eat 🔒</dt><dd id="stat-refuge">20% ≥7.3px</dd></div>
+                <div class="stat"><dt>Safe from hunters 🛟</dt><dd id="stat-safe">20% ≥7.2px</dd></div>
+                <div class="stat"><dt>Hunters' reach 🕸️</dt><dd id="stat-web">82% top 38% mid</dd></div>
+                <div class="stat"><dt>Cost of meat 🧾</dt><dd id="stat-bill">0.7/t 36% idle</dd></div>
+                <div class="stat"><dt>Family spared 👪</dt><dd id="stat-kin">off</dd></div>
+              </dl>
+            </section>
+
+            <section class="statgroup" data-group="bodies">
+              <h3>🧠 Bodies and brains</h3>
+              <p class="statgroup-sub">how unlike each other they are, how long they last, and what is in their heads</p>
+              <dl class="stats">
+                <div class="stat"><dt>Diversity</dt><dd id="stat-div">1.111</dd></div>
+                <div class="stat"><dt>Learning 🧠</dt><dd id="stat-learn">off</dd></div>
+                <div class="stat"><dt>Brain 🧬</dt><dd id="stat-brain">fixed</dd></div>
+                <div class="stat"><dt>Lifespan ⏳</dt><dd id="stat-life">—</dd></div>
+              </dl>
+            </section>
+
+            <section class="statgroup" data-group="energy">
+              <h3>⚡ Energy</h3>
+              <p class="statgroup-sub">how much is in the water right now, and how fast it runs through</p>
+              <dl class="stats">
+                <div class="stat"><dt>In the pond ⚡</dt><dd id="stat-standing">3,800</dd></div>
+                <div class="stat"><dt>Per tick ⚡</dt><dd id="stat-power">0.0/t</dd></div>
+              </dl>
+            </section>
+
+            <section class="statgroup" data-group="rules">
+              <h3>🌍 Rules in play</h3>
+              <p class="statgroup-sub">what the switches above are doing; a rule you have not turned on reads off</p>
+              <dl class="stats">
+                <div class="stat"><dt>Sick 🦠</dt><dd id="stat-sick">off</dd></div>
+                <div class="stat"><dt>Immune 🛡️</dt><dd id="stat-immune">off</dd></div>
+                <div class="stat"><dt>Contagious water 💧</dt><dd id="stat-reach">off</dd></div>
+                <div class="stat"><dt>Calls heard 📣</dt><dd id="stat-heard">off</dd></div>
+                <div class="stat"><dt>Ground ⛰️</dt><dd id="stat-ground">off</dd></div>
+                <div class="stat"><dt>Biome 🌿</dt><dd id="stat-biome">+5%</dd></div>
+                <div class="stat"><dt>Blocked by rock 🧱</dt><dd id="stat-walled">off</dd></div>
+                <div class="stat"><dt>Jostled ↔️</dt><dd id="stat-jostled">off</dd></div>
+                <div class="stat"><dt>Grown from the dead 🍂</dt><dd id="stat-soil">off</dd></div>
+                <div class="stat"><dt>Season lag ⏳</dt><dd id="stat-lag">…</dd></div>
+              </dl>
+            </section>
+
+            <section class="statgroup" data-group="run">
+              <h3>⏱ This run</h3>
+              <p class="statgroup-sub">how long the pond has been going, and how fast your machine is drawing it</p>
+              <dl class="stats">
+                <div class="stat"><dt>Tick</dt><dd id="stat-tick">0</dd></div>
+                <div class="stat"><dt>FPS</dt><dd id="stat-fps">0</dd></div>
+              </dl>
+            </section>
+          </details>
+        </div>
 
         <div class="mortality">
           <div class="mort-head">⚰️ What they die of <span id="mort-window">rolling window</span></div>

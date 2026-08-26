@@ -333,7 +333,7 @@ body {
   gap: 16px;
 }
 .controls,
-.stats,
+.statblock,
 .mortality,
 .chartwrap,
 .sizewrap,
@@ -471,12 +471,69 @@ details .field {
 /* ---- Stats grid ----
    A description list since v1.51: `dt` is the name, `dd` is the live number.
    The tiles look exactly as they did — the only thing that changed is that the
-   pairing is now stated rather than implied by being adjacent. */
+   pairing is now stated rather than implied by being adjacent.
+
+   Six sections since v1.118 (`src/hud.js#GROUPS`). The card is `.statblock`
+   and each section is one `.stats` grid inside it. Four columns at the top,
+   two inside the disclosure: the six a visitor came for have one-word names
+   and small numbers, and the twenty-four behind them got their real names in
+   the same release (`Web 🕸️` → `Hunters' reach 🕸️`). A 72-pixel column broke
+   `69% top 21% mid` over three lines — the width a name needs and the width a
+   reading needs are the same width, and the section is what made it affordable
+   to give them both. */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px 8px;
   margin: 0;
+}
+.more-stats .stats {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 11px 10px;
+}
+/* The disclosure over the rest of them. `details` carries a top rule and
+   ten pixels of air already (the Live parameters block above uses the same
+   rule), and `min-height` is what puts the summary over WCAG 2.2 SC 2.5.8's
+   24 px rather than leaving it to depend on whether its caption wrapped — the
+   v1.115 finding, applied on arrival this time. See `src/targetsize.js`. */
+.more-stats {
+  margin-top: 12px;
+}
+.more-stats > summary {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  margin-bottom: 0;
+  color: var(--ink-dim);
+}
+.more-stats > summary .chev {
+  margin-left: 7px;
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+.more-stats[open] > summary .chev {
+  transform: rotate(180deg);
+}
+.statgroup {
+  margin-top: 14px;
+}
+/* The six a visitor came for: the same section furniture as the other five, at
+   the top of the card rather than inside the disclosure, so the panel opens by
+   saying what it is instead of by showing a number. */
+.statgroup.first {
+  margin-top: 0;
+}
+.statgroup h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.statgroup-sub {
+  margin: 2px 0 9px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-faint);
 }
 .stat {
   display: flex;
@@ -546,7 +603,8 @@ details .field {
 }
 /* The bar animates its widths; with reduced motion it just snaps. */
 @media (prefers-reduced-motion: reduce) {
-  .mort-bar i {
+  .mort-bar i,
+  .more-stats > summary .chev {
     transition: none;
   }
 }

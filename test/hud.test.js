@@ -49,7 +49,7 @@ import { World } from "../src/world.js";
 import { makeConfig, DEFAULT_CONFIG } from "../src/config.js";
 import { RNG } from "../src/rng.js";
 import { stateFingerprint } from "../src/fingerprint.js";
-import { TILES, hudTiles, blankOf, isLive, UI_RNG_SEED } from "../src/hud.js";
+import { TILES, GROUPS, panelOrder, tilesIn, hudTiles, blankOf, isLive, UI_RNG_SEED } from "../src/hud.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PAGE = "app/index.html";
@@ -74,11 +74,71 @@ test("the panel and the page agree about which tiles exist", () => {
   // the first frame (`$(id)` is null); a tile the page carries and the module
   // never writes would sit at its placeholder forever, which is precisely the
   // failure this file is about and is *silent*.
+  //
+  // Against `panelOrder()` rather than `TILES` since v1.118: the layout is
+  // derived from the sections, so this assertion now pins where each tile sits
+  // *and* which section it sits in, in one comparison.
   assert.deepEqual(
-    TILES.map((t) => t.id),
+    panelOrder().map((t) => t.id),
     placeholders().map((p) => p.id),
-    "the tile table and the page's definition list must hold the same ids, in the same order"
+    "the tile table and the page's definition lists must hold the same ids, in the same order"
   );
+});
+
+test("every tile is in a section, and every section has tiles in it", () => {
+  // Both directions again, and the second one is the interesting half: an empty
+  // section draws a heading and a sentence over nothing, which is a promise the
+  // page cannot keep and which no assertion about tiles would ever notice.
+  const keys = GROUPS.map((g) => g.key);
+  assert.equal(new Set(keys).size, keys.length, "two sections share a key");
+  for (const tile of TILES) {
+    assert.ok(keys.includes(tile.group), `${tile.id} is in section "${tile.group}", which does not exist`);
+  }
+  for (const key of keys) {
+    assert.ok(tilesIn(key).length > 0, `the "${key}" section holds no tiles`);
+  }
+  assert.equal(panelOrder().length, TILES.length, "a tile was lost or doubled on the way to the page");
+});
+
+test("the page draws each tile under the heading its table puts it under", () => {
+  // The failure the order comparison above cannot see. Move `stat-power` into
+  // the hunting section in `hud.js` and *not* in the markup and the ids still
+  // line up perfectly — the page simply tells a visitor that the pond's energy
+  // is a fact about predators. The markup carries `data-group` for exactly this,
+  // so the claim is checkable rather than a matter of reading two files side by
+  // side.
+  const sections = [];
+  for (const m of html.matchAll(/data-group="([a-z]+)"([\s\S]*?)<\/dl>/g)) {
+    sections.push({ key: m[1], ids: [...m[2].matchAll(/id="(stat-[a-z]+)"/g)].map((x) => x[1]) });
+  }
+  assert.deepEqual(
+    sections.map((s) => s.key),
+    GROUPS.map((g) => g.key),
+    "the page's sections must be `GROUPS`, in order"
+  );
+  for (const section of sections) {
+    assert.deepEqual(
+      section.ids,
+      tilesIn(section.key).map((t) => t.id),
+      `the "${section.key}" section`
+    );
+  }
+});
+
+test("every section says what it is, in words a first-time visitor already has", () => {
+  // The headings and their sentences are the only prose on this panel, and the
+  // whole reason for them is that the tiles are not readable cold. So: the page
+  // must carry each one verbatim (a heading edited in one file and not the other
+  // is two answers to one question), and the sentences go through
+  // `headline.js`'s own vocabulary bar — the words that sweep refuses are
+  // exactly the ones that made every other readout here technical.
+  const JARGON = /\b(carnivor\w*|herbivor\w*|lineage|specie|genome|genotype|allele|mutation|neural|topology|tick|px|predation|metabolic|stochastic)\b/i;
+  for (const group of GROUPS) {
+    assert.ok(html.includes(group.title), `the page does not carry the heading "${group.title}"`);
+    assert.ok(html.includes(group.hint), `the page does not carry the sentence under "${group.title}"`);
+    assert.ok(group.hint.length <= 90, `${group.key}: the sentence is ${group.hint.length} characters`);
+    assert.ok(!JARGON.test(group.hint), `${group.key}: "${group.hint}" reaches for a word a visitor may not have`);
+  }
 });
 
 test("no tile is declared twice", () => {

@@ -14008,3 +14008,133 @@ to keep true, for a card whose text is the same white as the Chronicle's.
   the obvious next place for this, and I left it alone because the landing page
   has its own reveal machinery and this cycle was already a page's worth of
   change.
+
+## Entry 130 — six numbers and a drawer · 2026-08-26
+
+Third cycle under the owner's steer — regular human hat, mass appeal over the
+nerdy fanbase — and this time I did the job I have now nominated twice and
+skipped twice. The stat panel.
+
+Here is the thing I kept not doing anything about. A visitor arrives, the page
+loads, their eye goes to the right-hand column, and the fourth number they meet
+is:
+
+```
+WEB 🕸️
+82% top 38% mid
+```
+
+Thirty tiles, one flat four-column grid, every one of them at the same visual
+weight. `Bill 🧾 0.7/t 36% idle` sat beside `Population 40` as if the two were
+the same kind of fact. Eleven of the thirty read `off`, which to a first-time
+reader looks like eleven broken things rather than eleven rules they have not
+switched on. And the names were abbreviations of abbreviations: `Web`, `Bill`,
+`Lag`, `Safe`, `Soil`, `Heard`. Each one is a perfectly good name *for me*,
+because I wrote the release that measured it and I can unfold it back into a
+paragraph. Nobody else can.
+
+### What I built
+
+Six sections, declared in `src/hud.js` as `GROUPS`, with each tile naming the
+section it belongs to. The panel now opens with:
+
+```
+At a glance
+how many are alive, what there is to eat, and how the pond is turning over
+
+ALIVE   FOOD   BORN   DIED
+53      520    18     5
+
+GENERATIONS   EATEN 🔺
+2             5
+
+More numbers ▾
+```
+
+and the other twenty-four sit behind that disclosure in five sections —
+*Hunting*, *Bodies and brains*, *Energy*, *Rules in play*, *This run* — each
+with a heading and one plain sentence saying what its numbers are *for*. No
+readout was removed, no arithmetic changed, no tile lost its meaning. What went
+is the wall.
+
+The sections also paid for something I could not afford before: **real names**.
+`Web 🕸️` is *Hunters' reach*. `Bill 🧾` is *Cost of meat*. `Refuge 🔒` is *Too
+big to eat*. `Soil 🍂` is *Grown from the dead*. Those names never fitted in a
+72-pixel column, which is why they were never used — and the moment a section
+holds six tiles instead of thirty it can be two columns wide instead of four,
+and a name has room to be a name. That is the part of this cycle I did not see
+coming when I planned it: **the abbreviations were a layout problem wearing a
+vocabulary problem's clothes.**
+
+### The thing that keeps a grouping honest
+
+The obvious way to build this is to type the sections into the markup and leave
+`hud.js` as a flat list. Then the page and the module agree about which tiles
+exist — which is what `test/hud.test.js` has checked since v1.97 — and disagree
+silently about which section each one is in. Move `stat-power` into *Hunting* in
+one file and not the other and every id still lines up perfectly; the page
+simply tells a visitor that the pond's energy is a fact about predators.
+
+So the layout is *derived*. `panelOrder()` is `GROUPS` flat-mapped over the
+tiles that name each one, the markup carries `data-group`, and the test reads
+the sections back out of the shipped HTML and compares them section by section.
+The page cannot draw a tile under a heading its table does not put it under.
+
+There is a second guard I like more than I expected to. The five sentences are
+checked against `headline.js`'s own vocabulary bar — no *carnivore*, *lineage*,
+*genome*, *tick*, *px*, *predation*. Every readout on this page became technical
+one honest, correct word at a time, and headings are exactly where that starts
+again.
+
+### What re-walking the page turned up
+
+`.more-stats > summary` is a new pointer target, so `src/targetsize.js`'s
+inventory needed the row — and an inventory you cannot re-measure is a memory,
+so I re-ran v1.115's walk: a headless Chromium driven over CDP by node's own
+`WebSocket`, no dependency, the recipe in the playbook. The new summary is
+316 × 24 on a phone and 290 × 24 on the desktop, passing **by size** because
+`.more-stats > summary { min-height: 24px }` is in `HIT_RULES` and the suite
+resolves it live out of the stylesheet. Its neighbour — the `Live parameters`
+summary, 15 px tall — still passes only by having 38 px of nothing around it,
+which is a pass one layout change can take away.
+
+The walk also found something I was not looking for, and it is the more useful
+half. `w` and `h` are properties of a control. **`nearestCentre` is a property
+of everything around it**, so it goes stale for changes that never touch the
+control at all. Three groups have moved since v1.115 and not one of them because
+of anything done to a control: `canvas#world` (155.1 → 604.9 at 390 px),
+`#chart-scope` (774.6 → 1042.6), and `a.home-link` at 1280 px (92 → 621.8). What
+moved them is v1.117's headline card and v1.116's lineage names, which widened
+the legend chips those three were measured against. No verdict changes — all
+three pass by size or by hundreds of pixels of clearance — so I have written the
+drift down in the module rather than half-refreshing it from a walk whose pond
+had six named lineages in the legend where the original had two. The whole table
+wants re-recording in one *stated* pond state, and that is a cycle of its own.
+
+The general form, which is worth more than the instance: **a measurement whose
+subject is a neighbourhood has no owner.** Nothing about the control changes
+when it goes wrong, so nobody has a reason to look. Every fragile pass in that
+file is one of these.
+
+### What it leaves
+
+- **Eleven tiles still say `off`, and now they say it in a section called
+  *Rules in play*.** That is better than saying it in a wall — the heading turns
+  eleven broken-looking numbers into a list of things you could switch on — but
+  the honest version is a section that reads *"none of these are on; here is
+  what happens if you turn one on"* and links each row to its switch. A tile
+  cannot link to a checkbox today because nothing on this page connects a
+  readout to the control that feeds it.
+- **The disclosure does not remember.** Open it, reset the pond, and it shuts.
+  `viewstate.js` is world-scoped and this is a preference about a *reader*, not
+  about a world, and this project has never had anywhere to put one of those.
+- **The glance six are a judgement and nothing measured them.** I picked
+  *Alive, Food, Born, Died, Generations, Eaten* because they are the six I would
+  point at. There is no reason to believe that is the right six, and there is no
+  instrument here that could tell me — every measurement in this project is
+  about the pond, and this is a claim about a person.
+- **The panel is sorted and the thirty-one switches above it are not.** They are
+  still one alphabet-soup list, `Licensed diet cost (only hunters pay for
+  carnivory) 🧾` sitting between `Scavenging` and `Kin recognition`. Same
+  problem, same shape of fix, larger surface: they need grouping *and* an
+  ordering by how much each one changes what you see. That is the next one.

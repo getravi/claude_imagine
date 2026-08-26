@@ -114,7 +114,7 @@ test("the targets that pass only by spacing or by being inline are named, not di
     "app #chart-scope (spacing)",
     "app .appfoot-links a (inline)",
     "app a.home-link (spacing)",
-    "app details summary (spacing)",
+    "app details.levers summary (spacing)",
     "app nav.links a (spacing)",
     "front door footer a (inline)",
   ]);

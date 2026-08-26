@@ -120,6 +120,20 @@ export function verdicts(controls, min = TARGET_MIN) {
  * viewports, one pond, and the page as it loads. A control that only exists
  * while something is selected, or only in a state the walk did not put the page
  * into, is not here.
+ *
+ * **And one more limit, found by re-walking the page in v1.118 and worth more
+ * than the row it added.** `w` and `h` are properties of a control; and
+ * `nearestCentre` is a property of *everything around it*, which means it goes
+ * stale for changes that never touch the control at all. Three groups have
+ * moved since the v1.115 walk and none of them by anything either release did
+ * to a control: `canvas#world` (155.1 → 604.9 at 390 px), `#chart-scope`
+ * (774.6 → 1042.6) and `a.home-link` at 1280 px (92 → 621.8). What moved them
+ * is v1.117's headline card and v1.116's lineage names, which widened the
+ * legend chips these three were measured against. No verdict changes — all
+ * three pass by size or by hundreds of pixels of clearance — so the numbers are
+ * left as the v1.115 walk recorded them rather than half-refreshed from a walk
+ * with a different number of chips in the legend. The whole table wants
+ * re-recording in one stated pond state, and that is a cycle of its own.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -143,7 +157,8 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
-  { page: "app", vp: "390x844", sel: "details summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "390x844", sel: "details.levers summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "390x844", sel: ".more-stats > summary", n: 1, w: 316, h: 24, own: "316x24", via: "self", nearestCentre: 343.1, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "390x844", sel: "canvas#world", n: 1, w: 344, h: 237, own: "344x237", via: "self", nearestCentre: 155.1, inline: false, short: 0, sample: "the pond itself" },
   { page: "app", vp: "390x844", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 60.4, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "390x844", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 33.4, inline: false, short: 1, sample: "← Vivarium — the experiment" },
@@ -156,7 +171,8 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
-  { page: "app", vp: "1280x900", sel: "details summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "1280x900", sel: "details.levers summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "1280x900", sel: ".more-stats > summary", n: 1, w: 290, h: 24, own: "290x24", via: "self", nearestCentre: 338.3, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "1280x900", sel: "canvas#world", n: 1, w: 894, h: 615.9, own: "894x616", via: "self", nearestCentre: 345.6, inline: false, short: 0, sample: "the pond itself" },
   { page: "app", vp: "1280x900", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 67.7, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "1280x900", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 92, inline: false, short: 1, sample: "← Vivarium — the experiment" },
@@ -171,7 +187,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 71 });
+export const WALKED = Object.freeze({ "front door": 19, app: 72 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as
@@ -196,6 +212,11 @@ export const UNMET = Object.freeze({
  */
 export const HIT_RULES = Object.freeze({
   ".check": TARGET_MIN,
+  // v1.118's disclosure, sized on arrival rather than measured short later. The
+  // summary beside it (`Live parameters`) is 15 px and passes only because
+  // nothing sits within 38 px of it — a pass the panel's next layout change can
+  // take away — so the new one asks for the bar in its own rule instead.
+  ".more-stats > summary": TARGET_MIN,
 });
 
 /**

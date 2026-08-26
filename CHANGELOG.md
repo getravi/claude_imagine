@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.118.0] — 2026-08-26
+
+Thirty stat tiles in one flat four-column grid, every one of them at the same
+visual weight, and the fourth number a first-time visitor met was
+`Web 🕸️ 82% top 38% mid`. Eleven of the thirty read `off`, which looks less like
+eleven rules you have not switched on than like eleven broken things. The names
+were abbreviations of abbreviations — `Web`, `Bill`, `Lag`, `Safe`, `Soil`,
+`Heard` — each a perfectly good name for whoever wrote the release that measured
+it.
+
+**Changed — six sections, and the six a person came for on top.** The panel now
+opens with *Alive, Food, Born, Died, Generations, Eaten* and one plain sentence
+over them. The other twenty-four sit behind a **More numbers** disclosure in
+five sections — *Hunting*, *Bodies and brains*, *Energy*, *Rules in play*,
+*This run* — each with a heading and a sentence saying what its numbers are for.
+
+Nothing was removed and no arithmetic changed. What the sections bought is
+**room for real names**: a section of six tiles is two columns wide where a grid
+of thirty had to be four, so `Web 🕸️` is now *Hunters' reach*, `Bill 🧾` is
+*Cost of meat*, `Refuge 🔒` is *Too big to eat* and `Soil 🍂` is *Grown from the
+dead*. The abbreviations were a layout problem wearing a vocabulary problem's
+clothes.
+
+**The layout is derived, not typed twice.** `panelOrder()` is `GROUPS`
+flat-mapped over the tiles that declare each section, and the markup carries
+`data-group`. Before this the page and the module agreed about which tiles exist
+and could disagree *silently* about which section each was in — move a tile in
+one file and every id still lines up, while the page tells a visitor that the
+pond's energy is a fact about predators.
+
+### Added
+
+- `src/hud.js`: `GROUPS` (six sections, each with a title and a plain sentence),
+  a `group` field on every tile, `tilesIn(key)` and `panelOrder()`.
+- `test/hud.test.js`: three claims — every tile is in a section and every section
+  has tiles; the page draws each tile under the heading its table puts it under
+  (read back out of the shipped markup via `data-group`); and every section's
+  sentence is carried verbatim by the page and clears `headline.js`'s vocabulary
+  bar (no *carnivore*, *lineage*, *genome*, *tick*, *px*, *predation*).
+- `test/prosecounts.test.js`: a claim row for the sections, declared in the cycle
+  that creates the collection.
+- `src/targetsize.js`: rows for `.more-stats > summary` at both viewports
+  (316 × 24 and 290 × 24, measured), a `HIT_RULES` entry so its 24 px comes from
+  the stylesheet rather than from memory, and `WALKED.app` 71 → 72.
+
+### Changed
+
+- `app/index.html`: the definition list became a `.statblock` card holding six
+  `.stats` grids; the `Live parameters` disclosure gained `class="levers"` so the
+  target inventory can tell two summaries apart.
+- `style.css`: `.statblock`, `.statgroup`, `.more-stats`; four columns at the
+  top and two inside the disclosure; a chevron that turns over when the section
+  opens, and does not animate under `prefers-reduced-motion`.
+- `README.md`: the renamed tiles, and a bullet on what the panel opens with.
+
+### Notes
+
+- **Nothing was added to the simulation.** `hud.js` reads a world and draws from
+  the UI's own stream; the default pond is bit-for-bit what it was in v1.3.0 and
+  `test/fingerprint.test.js` is untouched and green.
+- **A re-walk of the page found drift nobody owns.** `w` and `h` belong to a
+  control; `nearestCentre` belongs to everything *around* it, so it goes stale
+  for changes that never touch the control. Three groups have moved since the
+  v1.115 walk — `canvas#world` 155.1 → 604.9 at 390 px, `#chart-scope`
+  774.6 → 1042.6, `a.home-link` at 1280 px 92 → 621.8 — moved by v1.117's
+  headline card and v1.116's wider legend chips. No verdict changes; the numbers
+  are left as recorded and the drift is written down in the module, because a
+  half-refresh from a walk with a different legend would be worse than a stated
+  memory.
+- 1,174 tests pass.
+
 ## [1.117.0] — 2026-08-26
 
 Every surface on this page assumes you already know what you are looking at. The

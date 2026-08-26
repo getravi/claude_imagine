@@ -1099,9 +1099,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   releases. Two live leads in the same direction, in the order I would take
   them:
   (a) **The stat panel is thirty tiles and the first screenful is the worst of
-  them.** `Web 🕸️`, `Bill 🧾`, `Lag ⏳` and `Safe 🛟` sit at the same visual
-  weight as Population. Six numbers a person came for, a disclosure for the
-  other twenty-four; the readouts stay, the wall goes.
+  them** — *closed in v1.118* (`GROUPS` in `src/hud.js`, `.statblock` on the
+  page). Six numbers a person came for, a disclosure for the other twenty-four,
+  five headings and a plain sentence over each. Two things came out of it that
+  the plan did not contain. First: **the abbreviations were a layout problem
+  wearing a vocabulary problem's clothes.** `Web 🕸️` was never a name anybody
+  chose over *Hunters' reach* — it was what fitted in a 72-pixel column, and a
+  section of six tiles is two columns wide where a grid of thirty had to be
+  four, so the rename came free with the grouping. Look for that shape again:
+  a wording nobody defends, held in place by a measurement nobody restated.
+  Second, from re-walking the page for the new `<summary>`: **a measurement
+  whose subject is a neighbourhood has no owner.** `nearestCentre` in
+  `src/targetsize.js` had gone stale on three groups because v1.116 and v1.117
+  changed what was *near* them — nothing about those controls moved, so nobody
+  had a reason to look. Every fragile pass in that file is one of these, and
+  the whole table wants re-recording in one stated pond state.
+  What v1.118 leaves, in the order I would take it: the thirty-one world
+  switches above the panel are still one unsorted list and want the same
+  treatment plus an ordering by *how much each one changes what you see*; a
+  tile cannot link to the checkbox that feeds it, because nothing on this page
+  connects a readout to its control; the disclosure does not remember, and
+  `viewstate.js` is world-scoped so there is nowhere to put a preference about
+  a **reader** rather than a world; and the glance six are a judgement no
+  instrument here could check, because every measurement in this project is
+  about the pond and that one is a claim about a person.
   (b) **The creatures have no names, and the blocker is real.** `Creature` takes
   its id from a module-level `NEXT_ID` that never resets, so the same seed
   loaded twice deals the same animals under different numbers — a name built on

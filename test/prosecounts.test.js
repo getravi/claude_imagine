@@ -53,7 +53,7 @@ import { DEFAULT_CONFIG } from "../src/config.js";
 import { numericKeys } from "../src/levers.js";
 import { SERIES, CLOCKS } from "../src/seasonlag.js";
 import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
-import { TILES } from "../src/hud.js";
+import { TILES, GROUPS } from "../src/hud.js";
 import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
@@ -182,7 +182,22 @@ const CLAIMS = [
     what: "the panel's tiles",
     size: () => TILES.length,
     phrase: "{n} stat tiles",
-    sites: ["src/hud.js", "test/hud.test.js"],
+    // `docs/ARCHITECTURE.md` joined in v1.118, when the map of the modules
+    // finally got a row for `hud.js` — the panel had been the largest thing in
+    // this project with no line in the document that claims to list everything.
+    sites: ["docs/ARCHITECTURE.md", "src/hud.js", "test/hud.test.js"],
+  },
+  {
+    // v1.118's collection, declared in the cycle that creates it — the habit
+    // three rows up asks for, applied on arrival. This one is stated on the
+    // *page* as well as in the module, which no other claim here is: the
+    // comment over the definition lists says how many sections a reader is
+    // looking at, and a section added in `hud.js` alone would leave the markup
+    // describing a panel that no longer exists.
+    what: "the panel's sections",
+    size: () => GROUPS.length,
+    phrase: "{n} panel sections",
+    sites: ["app/index.html", "src/hud.js"],
   },
   {
     // The collection v1.103 gave a second coverage table to, and the one that
