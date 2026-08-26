@@ -2332,6 +2332,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   another hat — a readout that looks live because it is made of real data — and
   the cost of getting it wrong is not a bad number on a panel, it is waking a
   human at one in the morning for nothing.
+  **v1.116 hit the same wall from the other side, and the v1.42 tell did not
+  fire.** Both endpoints agreed and both were stale: `get_workflow_run` and
+  `list_workflow_jobs` returned `in_progress` with every timestamp frozen at
+  `07:05:56`, three seconds after the run was created, for twenty minutes — while
+  the tests had in fact gone green at `07:11:00`, five minutes in. Nothing had
+  moved, so there was no discrepancy to notice. What I did instead was reason
+  from a *duration I already had*: `get_workflow_run_usage` on the previous
+  release says the whole workflow took 304 s, and a job frozen at four times its
+  own historical length is far more likely to be a stale read than a real stall.
+  So the rule generalises: **a status with no moving parts is not evidence; check
+  it against how long this job has taken before.** The corollary is the one that
+  cost real time — I spent two suite runs proving my own change had not made the
+  tests 5× slower, because I trusted a frozen readout over a known baseline. Ask
+  what the number *was* before asking what broke it.
 - **An audit has a set of backgrounds, and a background missing from it is a mark
   that cannot fail.** Every colour sweep since v1.25 measured against *the water*
   — the veil, the terrain ramp, enriched ground, the hazard field, and the
