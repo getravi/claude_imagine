@@ -4,6 +4,81 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.122.0] — 2026-08-27
+
+A screen of drifting coloured darts, and nothing anywhere saying what a dart is.
+
+Every mark in the water means something, and every one of those meanings is a
+decision taken in `render.js` and measured in `palette.js`. A body is an
+arrowhead pointing the way it swims. Its shade is inherited, so colour is
+family. Its lightness rises with what it has left to spend, so a fading one is
+starving. Its nose is longer if it eats its neighbours, and it wears a pale spot
+to say so. A green speck is food; a pale ring is a corpse; a sulphur glow is an
+illness; warm rings are a call. **A hundred and twenty-one releases of teaching
+this page to talk, and not one word of it was about the picture** — which is the
+first thing anybody sees and, for a visitor arriving cold, the only thing.
+
+**So: a placard under the pond, the way a museum labels a tank.** One row per
+mark, a swatch, and one plain sentence. Seven rows in the default world.
+
+**The swatches are drawn from the pond's own palette, not from a designer's
+guess at it.** The chevron is `render.js`'s chevron with its own nose ratios;
+the glow is the same radial fade at the same opacity, because a creature in the
+water is mostly *halo* and a bare arrowhead would be a key to a picture this
+page does not draw; the hunter's silhouette, its pale spot, the corpse's bone
+ring, the sulphur halo, the dashed immune ring and the white selection ring are
+all the functions the renderer calls. **No colour is named in `key.js` at all**,
+and the test sweeps what the module *produces* as well as what it contains —
+markup takes any string, which is exactly where a hand-typed shade would end up.
+
+**It only ever explains what is actually in the water.** Four rows wait on a
+rule that can be switched off, and `visibleMarks` takes them away with it: no
+hunter row in a pond where nothing hunts, no illness row without illness. A key
+that describes a mark the pond cannot draw is worse than no key — it sends a
+reader hunting for something that is not there, and they will conclude they
+failed to see it. Ten rows with every rule on, six with all of them off.
+
+**And no unit appears in it**, which is `cast.js`'s bar and the second release
+running to find that the bar improves the writing rather than constraining it.
+*Big is old* is a fact a reader can use; *bodies range 2.4–8.1 px* is a fact
+about the simulation.
+
+### Added
+
+- `src/key.js` — `MARKS` (the rows: an id, a name, a sentence, and the config
+  flag each one waits on), `visibleMarks`, `keySignature`, `chevron` (the
+  renderer's own body outline), `swatchShapes`, `swatchSvg`, `keyHTML`, `NOSE`,
+  `SWATCH`. Pure observer: reads the config and nothing else, touches no world,
+  draws no random number.
+- `test/key.test.js` — twelve claims. Every gated row names a real boolean rule
+  in `config.js` **and** a switch a visitor can reach, so no row is unreachable;
+  switching that rule adds and removes exactly that row and no other; with every
+  optional rule off the placard still says six things, so it cannot empty itself
+  under its own heading. `render.js` is read back and its two nose constants
+  compared with the copy in `key.js`, because a copy nothing checks is a copy
+  that drifts. Every swatch draws something, an unknown row throws rather than
+  rendering a quiet blank, no two gradients share an id, and every tone in the
+  produced markup is a colour in the form `palette.js` hands out. No sentence
+  uses a word only somebody already here knows. `main.js` is read back to check
+  the placard is content-keyed on the pond's rules rather than rebuilt every frame,
+  and that the frame loop calls it at all. And writing every placard the config
+  table can produce leaves the state fingerprint where it was.
+- `app/index.html`: `section.waterkey` between the stage and the Chronicle —
+  outside `.stage` for the reason the headline is, since the stage is the pond
+  and this is a caption on the page.
+- `style.css`: `.waterkey`, `.keylist`, `.keyrow`, `.keysw`. The panel's own box
+  and the panel's own inks, so this adds no ink/ground pair
+  `test/legibility.test.js` has not already walked; the columns are `auto-fit`
+  over a sentence's width, so the placard is one column on a phone and three on
+  a desk without a breakpoint of its own. The swatch sits on the deep the pond
+  is drawn on, because half these marks are only what they are against it.
+
+### Changed
+
+- `src/main.js`: `updateKey()` in the frame loop, keyed on `keySignature`.
+- `src/viewstate.js`: `keySig` joins the roster.
+- `README.md`, `docs/ARCHITECTURE.md`: a paragraph and a row for the key.
+
 ## [1.121.0] — 2026-08-27
 
 Meet somebody, watch them for two minutes, and they die, and the panel goes back

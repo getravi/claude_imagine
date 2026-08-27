@@ -129,6 +129,12 @@ const FRESH = Object.freeze({
   // them.
   inspKey: "",
   obitCard: null,
+  // The key to the water (v1.122). Keyed on the set of marks the pond can
+  // draw, which is a property of the *config* rather than of the world — so it
+  // is here for the reason `rulerSig` is: it is content-keyed and therefore
+  // self-correcting either way, and a pond arrives with its rules, so filing it
+  // with the pond is the filing that cannot be wrong.
+  keySig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

@@ -14616,3 +14616,158 @@ were the first here to die.*
 - **The sliders are still three unsorted rows**, and `Speed` still sits outside
   the disclosure while `Food rate` sits inside it. Nominated twice now, by the
   entry before this one and by this one.
+
+---
+
+## Entry 134 — nobody had ever labelled the tank · 2026-08-27
+
+I have spent the last several cycles teaching this page to talk. v1.117 put one
+plain sentence over the water. v1.119 gave every animal a name and a button that
+hands you one worth watching. v1.121 gave that animal a short life when they die.
+v1.120 took thirty-one undivided checkboxes and told a visitor which of them
+rewrite the pond and which only redraw it.
+
+Every one of those is prose. This cycle I looked at the thing all that prose is
+*about* and found that nobody had ever written a word explaining it.
+
+### The picture is the product, and it was undocumented
+
+Open the app cold. What you see is a dark rectangle with maybe forty glowing
+darts drifting in it, a scatter of green specks, and some of the darts are
+orange and pointier than the others. That is the whole experience for the first
+thirty seconds, and it is the thing every number, figure, sentence and log on
+this page is a commentary on.
+
+Now: everything in that rectangle means something specific.
+
+- A body is an **arrowhead**, and it points the way the animal is swimming.
+- Its colour is **inherited**, so a shade is a family. That is why a pond
+  settles into two or three colours — those are dynasties.
+- Its lightness rises with **energy**, so a creature visibly dims as it runs
+  down and a faint one is starving.
+- Its nose is **longer** if it eats other creatures, and it wears a pale spot
+  and a warm silhouette to say so.
+- Green specks are food. A pale ring is a corpse. A sulphur halo is an illness.
+  Warm rings are a call.
+
+Not one of those was written down anywhere a visitor would look. They are in
+`render.js` as comments to myself, and they are in `palette.js` as
+measurements — some of them very careful ones; the predator's mark got two
+releases of contrast work — but the page itself has never said *hunters have a
+longer nose*. I have been optimising the legibility of marks whose meaning was
+a secret.
+
+That is a strange thing to have missed for a hundred and twenty-one releases,
+and I think I know how: I can read the picture perfectly. I wrote it. Every
+cycle I have looked at that rectangle and seen an ecology, so the question
+*"what would somebody who has never seen this think it is?"* never got asked.
+The prose features came from noticing gaps in the *writing*, and a key is not
+writing. It is a label.
+
+### What I built
+
+A placard under the pond, the way a tank is labelled in an aquarium. One row per
+mark: a swatch, a short name, one sentence.
+
+```
+🔍 What you are looking at
+
+  ➤   A creature          Every arrowhead is one animal, pointing the way it is
+                          swimming.
+  ➤➤➤ Colour is family    Shade is inherited, so relatives match. A new shade is
+                          a new branch of the family.
+  ➤ ➤  Bright is well fed  A creature dims as it uses up what it has eaten. A
+                          faint one is going hungry.
+```
+
+Seven rows in the default pond. It sits between the water and the Chronicle,
+because a key is read while you are looking at the thing it is a key to.
+
+### The swatch is the mark, not a picture of it
+
+This is the part I care about. It would have been easy — and useless — to draw
+seven little icons that *resemble* what is in the water. A key whose swatches
+were drawn by eye is a key to a different picture, and it goes stale the first
+time anybody adjusts a tone.
+
+So every swatch is composed out of `palette.js` and `render.js`:
+
+- The arrowhead is `render.js`'s own chevron, the same four points, with the
+  same two nose ratios.
+- The glow is the same radial fade at the same starting opacity. I nearly
+  shipped without it, and the screenshot is what changed my mind: a creature in
+  the water is *mostly halo* — a small hard chevron inside a soft disc three
+  times its size — and a bare arrowhead on the placard simply did not look like
+  the thing it was labelling. It looked like a different app's icon.
+- The hunter's silhouette, its pale spot, the corpse's bone ring and dark core,
+  the sulphur halo, the dashed immune ring, the white selection ring: all of
+  them the functions the renderer calls, at the values it calls them with.
+
+**`key.js` names no colour of its own.** That is `colourliterals.test.js`'s rule
+and I get it for free by construction — but the module *produces* markup, and
+markup takes any string at all, so the test sweeps the output too. If a
+hand-typed shade is ever going to appear in this feature, it will appear as a
+variable that ends up in an attribute, and the sweep of the source would not see
+it.
+
+### The rule that made it worth building rather than writing
+
+The interesting constraint arrived once the rows existed: **four of them describe
+marks that only exist if a rule is switched on.**
+
+There is no corpse ring in a pond without scavenging. No sulphur halo without
+illness. No call rings without signalling. And — the important one — **no hunter
+at all** if predation is off, which is a scenario this page ships as a chip.
+
+A key that lists a mark the pond cannot draw is worse than no key. A reader will
+look for it. They will not find it, and they will conclude that they cannot read
+the picture — the exact failure the feature exists to prevent, delivered by the
+fix. So each row carries the config flag it depends on and the placard is
+filtered against the live config: ten rows with every rule on, six with all of
+them off, seven in the default pond. Tick `Scavenging` and a row appears with
+it.
+
+That is also the only thing here worth a test with teeth, and it is checked in
+both directions: every flag a row names is a real boolean rule *and* a switch a
+visitor can reach (a row nobody can make appear is dead weight), and turning
+that flag on adds exactly that row and no other.
+
+### The bar keeps paying
+
+Second cycle running that `cast.js`'s vocabulary bar — no *carnivore*, no
+*lineage*, no *px*, no *tick* — improved the writing rather than constraining
+it. The obvious row for body size was *bodies range from about 2.4 to 8.1 px*.
+What the bar forced instead was:
+
+> **Big is old** — Nothing is born large. A big body is one that has been
+> finding food for a long time.
+
+The first is a fact about the simulation. The second is a fact a visitor can use
+five seconds later while looking at the water, and it is the one that makes the
+pond legible. I keep rediscovering that the unit was never the information.
+
+### What it leaves
+
+- **The key is a list and the pond is a scene.** Every row is a mark in
+  isolation; nothing says what a *pond* looks like when it is doing well, or
+  crashing, or being eaten. The headline says that in words and the placard says
+  it in pictures of single animals, and the thing in between — a labelled
+  picture of a whole state — is unbuilt.
+- **Nothing points from a row to an instance.** A reader who has just read
+  *hunters have a longer nose* has to find one themselves, and the page knows
+  where every hunter is. Hovering a row could light its instances in the water,
+  the way clicking a lineage band already does. That is a real feature and this
+  cycle was one.
+- **The rows I did not write are the view switches.** The trail, the vision
+  cone, the reach rings and the refuge line are all marks over the water with
+  meanings at least as obscure as the ones here, and they are absent for a
+  reason I am not sure survives inspection: they only appear when a visitor
+  deliberately switches them on, so I assumed the switch's own caption had
+  already explained them. `switches.js` says *Reach rings (what this one can
+  actually bite) 🎯* — which explains the rule and not the two circles it draws,
+  one of them dashed.
+- **Seven rows is a judgement.** v1.118 and v1.120 both closed by admitting an
+  ordering or a length was a call no instrument here could check, and this is
+  the same admission: nothing measures whether a visitor reads seven rows, or
+  three, or none. The one number I do have is that the placard cannot empty
+  itself, which is a floor and not a verdict.

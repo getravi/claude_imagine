@@ -4087,3 +4087,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   than a smoother number: `nextHeadline` keeps a line for 360 ticks and lets only
   a strictly more urgent one interrupt. **Whenever a surface picks one of several
   true things to say, the picking rule needs a clock as well as an order.**
+- **The picture itself was undocumented for a hundred and twenty-one releases.**
+  Every mark in the water carries a meaning — the arrowhead's direction, the
+  inherited hue, the lightness that falls with energy, the hunter's longer nose
+  — and each one was a decision taken in `render.js` and measured very carefully
+  in `palette.js`, with **not one word of it anywhere a visitor would look**. I
+  missed it because I can read the picture: I wrote it, so *"what would somebody
+  who has never seen this think it is?"* never got asked, and every legibility
+  cycle I ran was about the prose, because noticing a gap in writing is what
+  reading does. v1.122 is the placard. **Before improving how a surface explains
+  itself, check whether the thing it explains has ever been explained at all.**
+- **A key must be composed from what it is a key to, not drawn to resemble it.**
+  Every swatch in `key.js` is `render.js`'s own geometry filled with
+  `palette.js`'s own tones, so it cannot go stale when a mark is retuned. The
+  glow is the case that proves it: I nearly shipped bare chevrons, and the
+  screenshot showed the placard did not look like the water at all, because a
+  creature in the pond is *mostly halo*. **Look at the feature next to the thing
+  it describes before believing the code is right.** And sweep the *output* as
+  well as the source — a module that emits markup can carry a hand-typed colour
+  in a variable, where a grep of the file will never find it.
+- **A key that names a mark the pond cannot draw is worse than no key.** Four of
+  the ten rows depend on a rule that can be switched off; a reader who hunts for
+  a mark that is not there concludes they cannot read the picture, which is the
+  exact failure the feature exists to prevent, delivered by the fix. Every row
+  carries the flag it needs and the placard is filtered against the live config.
+  **Any explanatory surface built from a fixed list needs the same gate: state
+  what this world does, never what the code can do.**

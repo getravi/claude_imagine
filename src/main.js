@@ -66,6 +66,7 @@ import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
 import { quietSwitches } from "./switches.js";
+import { keyHTML, keySignature } from "./key.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -340,6 +341,7 @@ function loop(now) {
   updateSeasonBadge(world);
   updateInspector();
   updateHeadline(world);
+  updateKey();
   updateChronicle(world);
   updateNarration(world);
 
@@ -431,6 +433,20 @@ function updateHeadline(world) {
   view.headlineShown = next;
   $("headline-icon").textContent = next.icon;
   $("headline-text").textContent = next.text;
+}
+
+// ---- The key to the water (v1.122) ----
+//
+// The placard under the pond that says what an arrowhead, a shade, a nose and a
+// green speck mean. Content-keyed on the marks this pond can draw, so switching
+// a rule on adds its row and switching it off takes the row away — a key that
+// explains a mark the water cannot draw is worse than no key. `src/key.js` owns
+// every word and every swatch; this is only the adapter onto the DOM.
+function updateKey() {
+  const sig = keySignature(config);
+  if (sig === view.keySig) return;
+  view.keySig = sig;
+  $("key-list").innerHTML = keyHTML(config);
 }
 
 // ---- Chronicle feed (natural-history timeline) ----

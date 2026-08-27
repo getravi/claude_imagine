@@ -16,6 +16,11 @@ And in some worlds it goes further: a lineage evolves to stop grazing and start
 warm-glowing hunters chasing shoals of cool-coloured prey. Nobody programmed the
 predators either.
 
+Under the water there is a **key** to it, the way a tank is labelled: what an
+arrowhead is, why two creatures are the same colour, what a fading one is short
+of, what the long-nosed ones do. It lists only the marks the pond you are
+looking at can actually draw, so switching a rule on adds its row.
+
 A live **Tree of Life** below the pond tracks the whole thing as a phylogeny —
 you can watch species branch, sweep to dominance, and go extinct in real time,
 and click any lineage to spotlight it. A **Chronicle** narrates the pond's
@@ -429,6 +434,7 @@ src/
   chronicle.js      narrates notable events into a timeline (observation only)
   headline.js       the pond in one plain sentence, ranked by urgency
   cast.js           what each animal is called, and which one is worth watching
+  key.js            the key to the water: what every mark in the pond means
   world.js          the simulation: steps everything forward
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it

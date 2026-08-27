@@ -110,6 +110,23 @@
           <p id="pond-say" class="sr-only" role="status"></p>
         </section>
 
+        <!-- The key to the water (v1.122). Everything in the pond means
+             something — the arrowhead, its colour, its lightness, the length of
+             its nose — and until this release nothing on the page said what.
+             `src/key.js` owns the rows, the sentences and the swatches, which
+             are drawn from `palette.js` so a mark here is the mark in the water
+             rather than something that resembles it. Rebuilt only when the set
+             of visible marks changes: a rule that is switched off draws nothing,
+             and a key that explains a mark the pond cannot draw sends a reader
+             hunting for something that is not there.
+
+             Outside `.stage` for the reason the headline is: the stage is the
+             pond, and this is a caption on the page. -->
+        <section class="waterkey" aria-labelledby="waterkey-h">
+          <h2 id="waterkey-h">🔍 What you are looking at</h2>
+          <ul class="keylist" id="key-list"></ul>
+        </section>
+
         <section class="chronicle">
           <div class="chronicle-head">
             <h2>📜 Chronicle</h2>
