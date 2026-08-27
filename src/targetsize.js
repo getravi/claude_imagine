@@ -134,6 +134,17 @@ export function verdicts(controls, min = TARGET_MIN) {
  * left as the v1.115 walk recorded them rather than half-refreshed from a walk
  * with a different number of chips in the legend. The whole table wants
  * re-recording in one stated pond state, and that is a cycle of its own.
+ *
+ * **v1.119's walk adds a number to that warning: the two walks disagree by
+ * exactly a scrollbar.** The `#btn-meet` rows were measured in a fresh CDP probe
+ * driving `headless_shell`, and at 390 px every full-width control in the panel
+ * came back **301** where the v1.115 walk recorded **316** — a 15 px difference,
+ * which is the classic scrollbar this build reserves and the earlier one did
+ * not. At 1280 px the same probe reproduced 290 exactly. So the new rows carry
+ * *their own* walk's width rather than their neighbours', and the honest reading
+ * of the panel's 390 px column is 301-or-316 depending on the browser. No
+ * verdict anywhere moves on it: width is the axis a thumb does not miss in, and
+ * every one of these passes on its height.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -154,6 +165,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
   { page: "app", vp: "390x844", sel: "button.primary, #btn-reset", n: 2, w: 154, h: 36, own: "154x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
+  { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 301, h: 35, own: "301x35", via: "self", nearestCentre: 90.4, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
@@ -168,6 +180,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
   { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
+  { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
@@ -187,7 +200,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 72 });
+export const WALKED = Object.freeze({ "front door": 19, app: 73 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

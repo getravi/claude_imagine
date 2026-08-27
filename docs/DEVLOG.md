@@ -14138,3 +14138,151 @@ file is one of these.
   carnivory) 🧾` sitting between `Scavenging` and `Kin recognition`. Same
   problem, same shape of fix, larger surface: they need grouping *and* an
   ordering by how much each one changes what you see. That is the next one.
+
+## Entry 131 — everybody was called Creature #147 · 2026-08-27
+
+Last cycle closed by nominating the next one: the thirty-one world switches are
+still an alphabet-soup list and they want grouping. I did not do that. I want to
+say why before anything else, because "I nominated it and skipped it" is a habit
+this file already has a name for.
+
+The toggle wall is the *same fix as last cycle* — sections, headings, a plain
+sentence over each. I would have shipped v1.118 again with different nouns. And
+sitting under it is a thing three cycles of mass-appeal work have walked past
+without touching, which is that this page has never once introduced a visitor to
+an animal.
+
+Look at what the last three releases actually did. v1.116 named the lineages.
+v1.117 wrote one sentence about the pond. v1.118 sorted the pond's numbers into
+six sections. Every one of those is *about the pond*. A person watching an
+aquarium does not watch the aquarium. They pick a fish.
+
+### Creature #147
+
+Here is what this page called an animal, everywhere, from v1.0 until this
+morning:
+
+```
+Creature #147                     ← the inspector's heading
+Following creature #147 — drag…   ← the banner, on a double-tap
+🎯 #147                            ← the badge over the water
+```
+
+v1.116 argued against exactly that number and then applied the argument one
+level too high. Its own words: a number is dense (nothing distinguishes 7 from
+9), it is unpronounceable in the sense that matters (you cannot tell a friend
+about species 7 an hour later), and it carries no family. All three are true of
+`#147` and the third is worse there, because a lineage at least has a coloured
+band on a figure and an animal has nothing.
+
+So: every creature has a name. `Pip`, `Wren`, `Juno` — one word from a list of
+sixty-four, hashed off the id, composing with the family into **Pip of the Amber
+Whorls**. It is the inspector's heading now, with the number moved into the
+tooltip exactly where v1.116 put the species number. It is the follow badge. It
+is what the banner says when you ride along with somebody.
+
+And under the heading, one plain sentence about what kind of animal this is:
+
+```
+Pip of the Amber Whorls
+They graze on plants, have raised 3 young, and are the 4th generation of their
+family.
+```
+
+Three clauses, always in that order, because they are the three questions a
+person asks about a creature in a tank. No unit appears in it — no pixels, no
+ticks, no gene between zero and one — which is `headline.js`'s vocabulary bar,
+and `test/cast.test.js` checks it the same way.
+
+### The button
+
+Naming everybody is only half of it. The other half is that a visitor still has
+to *find* somebody, and the whole interface for that was: click a dot, hope.
+
+**👋 Meet somebody**, or <kbd>M</kbd>. It ranks the living by how much of a
+story they have and hands you the winner — selected, followed, introduced:
+
+```
+👋 Meet Robin of the Shale Sprigs — parent to more of this pond than anyone else.
+They graze on plants, have raised 8 young, and were here when the pond began.
+```
+
+Six rules, lowest rank wins, and the ordering is about *story* rather than about
+size: the last of a family is a cliffhanger, a matriarch is a dynasty, a hunter
+is a threat, a giant and an elder are curiosities, and *best fed* is only ever
+the answer when nothing better is true. That ordering is a table somebody can
+argue with, which is the design `headline.js` settled on and the reason it is
+not the order the `if`s happen to be typed in.
+
+Two things it must not be. It must not be random — pressing the button twice on
+a paused pond has to give the same animal, and coming back to seed 314 tomorrow
+has to give that animal again, because a creature a visitor cannot return to is
+not worth meeting. And it must not depend on where a creature sits in
+`world.creatures`, which is birth order and which `shuffleTurnOrder` is allowed
+to permute; so ties break on the lowest id, and the suite reverses and rotates a
+pond and demands the same answer.
+
+### What the browser found in ninety seconds
+
+I opened the page, pressed the button, and it said:
+
+```
+👋 Meet Tamsin of the Silt Whorls — the last of the Silt Whorls.
+```
+
+on a pond that was four seconds old. It was true. It was true of *everybody*:
+`Phylogeny` gives each of the forty founders its own lineage, so at the start of
+a run every animal is the sole member of its family, and the most dramatic
+sentence in the set was a fact about the entire pond.
+
+The bug is one word wide and it is worth keeping. **A count of the living cannot
+tell *alone* from *only ever one*.** Those are different facts and only the
+first one is a story; separating them needs history, which the tree has kept in
+`peak` since v1.9 and which nothing outside the Muller plot had ever read. One
+`>= 4` and the rule means what it says.
+
+That is the general form and I do not think I have written it down before: every
+rule in `headline.js` and every rule here is a predicate on an *instant*, and
+some of the sentences those predicates produce are claims about a *trajectory*.
+"The last of" is one. "The oldest" is not — it is honestly instantaneous.
+Whenever a readout here says **still**, **now**, **left**, or **the last**, the
+number under it had better be a comparison against the past and not a census of
+the present, and I have not swept for the ones that aren't.
+
+### The one number in two places
+
+Second thing the browser found, smaller and about interfaces rather than about
+ponds. My first draft put the count in the reason — *"parent to more of this
+pond than anyone else — 7 young so far"* — and the panel's sentence one inch
+below it said *"have raised 8 young"*. Both correct. The banner freezes at the
+moment of the click and the panel is patched every frame, and a creature had had
+a child in between.
+
+So the count lives in the live sentence and the frozen one carries no digits at
+all. The rule: **when one quantity appears in a frozen surface and a live one,
+it is going to disagree with itself in front of a reader**, and the fix is not
+to synchronise them, it is to print it once, in the surface that moves.
+
+### What it leaves
+
+- **A name is a nickname here and a lineage's name is an identifier, and I made
+  that choice deliberately in one direction without measuring the other.**
+  Sixty-four names over three hundred animals means several Pips; the family
+  disambiguates most of them and nothing counts how often it fails to. The
+  measurement is cheap — how many living pairs share a full label, over twelve
+  seeds — and I have not run it.
+- **`pickStar` ranks by story and nothing has ever asked whether a visitor
+  agrees.** This is v1.118's leave in a new place: the glance six were a
+  judgement no instrument here could check, and so is this ordering. Every
+  measurement in this project is about the pond, and both of these are claims
+  about a person.
+- **The star is a pick, not a follow.** Meet somebody, watch them for two
+  minutes, and they die, and the panel goes back to a hint. Nothing tells you
+  *what happened to them* — the Chronicle narrates lineages and the pond, never
+  an individual, and the one animal a visitor has been given a reason to care
+  about is the one thing this page has no obituary for.
+- **The toggle wall is still there**, still unsorted, still `Licensed diet cost
+  (only hunters pay for carnivory) 🧾` between `Scavenging` and `Kin
+  recognition`. It is genuinely next. I am recording, though, that it has now
+  been nominated twice, which by this file's own standard makes it a thing I
+  should either do or stop putting in writing.

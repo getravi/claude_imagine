@@ -372,7 +372,8 @@ body {
     display: block;
   }
 }
-.kbd-hint kbd {
+.kbd-hint kbd,
+.hint kbd {
   font-family: var(--font);
   font-size: 11px;
   color: var(--ink-dim);
@@ -407,6 +408,21 @@ button.primary {
 button.mini {
   flex: 0 0 auto;
   padding: 6px 9px;
+}
+/* "👋 Meet somebody" — the one button here that hands a visitor an animal
+   rather than changing the world. It sits on its own row at full width, which is
+   the layout saying what the panel means: this is the thing to press first. The
+   accent border is the Pause button's, one shade warmer, so the two read as the
+   same rank without either being mistaken for the other. */
+button.meet {
+  display: block;
+  width: 100%;
+  border-color: #3a5340;
+  background: #16261c;
+}
+button.meet:hover {
+  background: #1c3325;
+  border-color: #4d6d55;
 }
 
 .field {

@@ -1123,15 +1123,62 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a **reader** rather than a world; and the glance six are a judgement no
   instrument here could check, because every measurement in this project is
   about the pond and that one is a claim about a person.
-  (b) **The creatures have no names, and the blocker is real.** `Creature` takes
-  its id from a module-level `NEXT_ID` that never resets, so the same seed
-  loaded twice deals the same animals under different numbers — a name built on
-  that moves between page loads, which is the one thing v1.116 established a
-  name must never do. It needs a per-world serial, which needs a new field on
-  `Creature`, which needs `inspect.js`'s field-coverage table and a fingerprint
-  conversation. A whole cycle, and the best single feature left in the app.
+  (b) **The creatures have no names** — *closed in v1.119* (`src/cast.js`), and
+  the blocker I had written down turned out to be smaller than the sentence
+  describing it, which is v1.104's lesson arriving on my own note. The note said
+  a name built on `Creature.id` "moves between page loads", and it does not: a
+  page load starts `NEXT_ID` again, so a fresh visit to seed 314 and a shared
+  link both deal Pip the same number. What actually moves it is **Reset** and
+  **Load**, which re-deal ids from wherever the counter has got to, and that is
+  a caveat rather than a blocker. Six releases of "it needs a per-world serial"
+  cost the best feature in the app; the falsifier was one `let` at the top of a
+  file I had read a hundred times. So the names shipped, and with them the thing
+  I had not seen was missing at all: a **button that hands a visitor an animal**.
+  Everything v1.116–v1.118 built for a newcomer is about the pond, and a person
+  watching an aquarium picks a fish.
+  Two findings out of it that the plan did not contain. First, from the first
+  browser run: *"the last of the Silt Whorls"* fired on a four-second-old pond
+  and was true of **every animal in it**, because `Phylogeny` gives each founder
+  its own lineage — **a count of the living cannot tell *alone* from *only ever
+  one***, and the fix was the tree's `peak`, kept since v1.9 and read by nothing
+  outside the Muller plot. The general form is worth a sweep: every rule in
+  `headline.js` and in `cast.js` is a predicate on an *instant*, and some of the
+  sentences they produce are claims about a *trajectory* — wherever a readout
+  here says **still**, **now**, **left** or **the last**, the number under it
+  wants to be a comparison against the past rather than a census of the present,
+  and nothing has checked which ones are. Second, smaller and about surfaces:
+  **a quantity printed in a frozen surface and a live one will disagree with
+  itself in front of a reader.** The banner froze "7 young so far" at the click
+  while the panel patched "have raised 8 young" one inch below it. Print it once,
+  in the surface that moves.
+  What v1.119 leaves: the **per-world serial** is still the thing that would make
+  a name survive Reset and Load, and it is now a small, well-scoped cycle rather
+  than a blocker; **nothing counts how often two living animals share a full
+  label** (sixty-four given names over three hundred bodies, with the family
+  disambiguating — twelve seeds and a set would settle it); the ranking is a
+  judgement about a *person* and no instrument here can check it, which is
+  v1.118's leave word for word; and **the pond has no obituary for an
+  individual** — the Chronicle narrates lineages and the pond, so the one animal
+  a visitor has been given a reason to care about is the one thing that dies
+  without a sentence.
 
 ## Hard-won notes to self
+
+- **A deferral written as a blocker is a claim about the code, and mine was
+  wrong for six releases.** This file said the creatures could not be named
+  because `Creature.id` comes from a counter that never resets, "so the same
+  seed loaded twice deals the same animals under different numbers — a name
+  built on that moves between page loads". Every clause of that is true except
+  the last one, which is the only clause that mattered: a page *load* re-imports
+  the module and restarts the counter, so a fresh visit and a shared link both
+  reproduce the names exactly. What re-deals ids is Reset and Load — a caveat
+  worth a paragraph, not a blocker worth six releases. This is v1.104's rule
+  ("every deferral written as a constraint is a candidate; grep for *would
+  need*, *cannot be*, *no way to*") arriving on a note I wrote myself, and the
+  falsifier was one `let` at the top of a file I have read a hundred times. Add
+  to the grep list the shape this one had: **a blocker stated as a consequence
+  ("so X happens") rather than as a fact ("X is true") is an argument, and an
+  argument can be checked in one minute.**
 
 - **Every audit of this page has been about what gets *in*. Nothing had asked
   what gets *out*.** v1.51 asked whether a control can be reached, v1.109 whether

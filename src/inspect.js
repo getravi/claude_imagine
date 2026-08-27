@@ -327,7 +327,7 @@ export function creatureFacts(c, config) {
  * while both sways are functions of them.
  */
 export const FIELD_REPORTS = {
-  id: "the panel heading — Creature #n",
+  id: "the panel heading — the creature's name, a pure function of it, with the number kept in the heading's title (v1.119)",
   hue: "the swatch beside the heading",
   generation: "the Generation row",
   age: "the Age row",
@@ -407,7 +407,7 @@ export const FIELD_SILENT = {
  * panel says in a picture and in words at once.
  */
 export const FIELD_OFF_GRID = {
-  id: "the panel heading, which main.js builds",
+  id: "the panel heading, which inspectorview.js builds — a name, not a row",
   hue: "the swatch beside the heading — a colour",
   speciesId: "the Species link and the ancestry pips",
   genome: "the inherited-brain figure — a strip or a diagram, never a row",

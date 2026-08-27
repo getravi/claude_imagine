@@ -58,6 +58,14 @@ each a hand-picked doorway into what the simulation can do.
   *This run*, each with a plain sentence saying what its numbers are for. They
   also got their real names there: the tile that said `Web 🕸️` says
   *Hunters' reach*.
+- **The animals have names, and one button hands you one.** Press **👋 Meet
+  somebody** (or <kbd>M</kbd>) and the pond picks the creature with the best
+  story in it right now — the last of a family, the parent of half the pond,
+  the biggest hunter in the water — selects it, follows it, and introduces it:
+  *"👋 Meet Robin of the Shale Sprigs — parent to more of this pond than anyone
+  else. They graze on plants, have raised 8 young, and were here when the pond
+  began."* Every creature has a name now, in the panel and on the follow badge,
+  instead of `Creature #147`.
 - **Each glowing chevron is a creature.** Its colour is an inherited trait, so
   a lineage shares a colour family — you can watch one lineage's colour take
   over the pond as it out-competes the others.
@@ -166,7 +174,8 @@ could have fixed it.
 | **Size at death** (under the mortality bar) | What size of body each way out of this world takes, against the pond that survived the tick it took it — signed, in pixels, run-to-date. Two of the three columns are the control and they are supposed to read zero: over twelve seeds and 20,000 ticks hunger takes a body **−0.008 px** from the pond around it and old age **+0.019**, while predation takes one **−1.448 px** smaller, negative on twelve seeds of twelve. It is the mechanism under the floor predation puts beneath body size — and the second control says the whole of it is `preySizeRatio` arithmetic rather than anything about the chase: measured against the mean of each hunter's own *eligible set*, a victim sits **−0.092 px** away, on 2,807 kills. Hunters take the nearest body they are allowed to eat, and are no better at catching a small one than a large one. The measurement is in [SCIENCE.md](docs/SCIENCE.md). |
 | **Save / Load** | Snapshot the whole world to your browser's local storage and restore it later. |
 | **Share 🔗** | Copy a permalink that encodes the seed and parameters — hand someone the exact world you're watching. |
-| **Click a creature** | Open the inspector: its generation, age, energy, offspring count, diet, **species**, body traits, a colour "fingerprint" of its brain weights, **what it steers by** — every sense ranked by how far it moves this animal's motors right now — and, where those mechanics are switched on, what it is standing on, where it is in the epidemic, and what it is saying. |
+| **👋 Meet somebody** (<kbd>M</kbd>) | Hands you an animal instead of asking you to find one. The pond is ranked by how much of a story each creature has — the last surviving member of a family that was once several, the parent of more of the pond than anyone else, the biggest hunter, a giant, the oldest, and, when nobody has a story, whoever is best fed — and the winner is selected, followed and introduced by name in one plain sentence. The choice is arithmetic, not a coin: the same pond gives back the same animal. |
+| **Click a creature** | Open the inspector: its name (*Pip of the Amber Whorls* — the number is the tooltip), one plain sentence saying what kind of animal it is, its generation, age, energy, offspring count, diet, **species**, body traits, a colour "fingerprint" of its brain weights, **what it steers by** — every sense ranked by how far it moves this animal's motors right now — and, where those mechanics are switched on, what it is standing on, where it is in the epidemic, and what it is saying. |
 | **Choose one with the keyboard** | <kbd>Tab</kbd> to the pond, then <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd>: the first press selects whatever the view is on, and each one after it steps to the nearest creature in that direction — across the seam, because the world is a torus. <kbd>Enter</kbd> follows the selection, <kbd>Esc</kbd> clears it, and every step is spoken for a screen reader. The whole pond is reachable this way: on twelve seeds, every living creature is at most thirteen presses from where you start. |
 | **Zoom & pan** | Scroll to zoom about the cursor (up to 8×), drag to move around, <kbd>0</kbd> for the whole pond again. The world is a torus, so the view can roam forever without meeting an edge. |
 | **Follow a creature 🎯** | Double-click a creature (or tick *Follow selected creature*) and the camera rides along with it — the closest you can get to watching one life from the inside. It lets go when the creature dies, or when you take the view back by hand. |
@@ -418,6 +427,7 @@ src/
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
   headline.js       the pond in one plain sentence, ranked by urgency
+  cast.js           what each animal is called, and which one is worth watching
   world.js          the simulation: steps everything forward
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it

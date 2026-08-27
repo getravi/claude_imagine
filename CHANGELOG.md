@@ -4,6 +4,108 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.119.0] — 2026-08-27
+
+Every animal in this pond was called `Creature #147`. v1.116 gave the *lineages*
+names for exactly the reasons that number is a bad one — nothing distinguishes
+147 from 149, you cannot tell a friend about it an hour later — and stopped one
+level short. A lineage is a band on a figure. The thing a visitor actually
+points at is an animal, and a swarm of numbered dots has no protagonist.
+
+**Added — `src/cast.js`, and one button.** Every creature has a name now, a pure
+function of its id: `Pip`, `Wren`, `Juno`, composing with the family into **Pip
+of the Amber Whorls**. It is the inspector's heading (the number moved into the
+tooltip, exactly where v1.116 put the species number), the follow badge over the
+water, and the sentence the banner writes when you double-tap somebody.
+
+And **👋 Meet somebody** (or <kbd>M</kbd>), which is the one control on this page
+that answers *"which of these should I watch?"*. Everything else here either
+changes the world or reports on all of it; picking an animal had always been the
+visitor's problem, solved by clicking a dot and hoping. `pickStar` ranks the
+living by how much of a story they have — the last of a family, the parent of
+more of the pond than anyone else, the biggest hunter, a giant, the oldest, and
+whoever is best fed when nobody has a story — and hands the winner over:
+selected, followed, and introduced.
+
+```
+👋 Meet Robin of the Shale Sprigs — parent to more of this pond than anyone else.
+They graze on plants, have raised 8 young, and were here when the pond began.
+```
+
+**The star is picked, never randomised.** Six ranked rules, lowest wins, ties to
+the lowest id — so nothing rests on the order of `world.creatures`, which is
+birth order and which `shuffleTurnOrder` (v1.47) may permute, and so the same
+pond gives back the same animal tomorrow. A creature a visitor cannot return to
+is not worth meeting.
+
+**The first browser run found the rule that needed history.** *The last of the
+Silt Whorls* fired on tick zero and was technically true: `Phylogeny` gives each
+of the forty founders its own lineage, so at the start of a run **everybody** is
+the last of their family, and the button's opening line to a first-time visitor
+was a dramatic-sounding fact about every animal in the pond. A count of the
+living cannot tell *alone* from *only ever one*. That needs the tree's `peak`,
+kept since v1.9 and read by nothing outside the Muller plot until now.
+
+### Added
+
+- `src/cast.js` — `GIVEN` (sixty-four given names), `givenName`,
+  `creatureLabel`, `dietClause`, `ordinal`, `creatureIntro`, `pickStar` (six
+  ranked rules under `STAR`), `introduceStar`. Pure observer: reads creatures,
+  writes nothing, adds no field, draws no random number.
+- `test/cast.test.js` — twenty-one claims: a name is stable and spread across the
+  list; the star survives reversing and rotating the pond and ties to the lowest
+  id; each rank fires on a pond built for it; a founder alone is not the last of
+  anything; the prose clears `headline.js`'s vocabulary bar on every rank; the
+  page carries the button and the shortcut and one function drives both; and a
+  pond read by the whole cast machinery every tick for 300 ticks has the same
+  `stateFingerprint` as one left alone.
+- `app/index.html`: the **👋 Meet somebody** button, full width on its own row,
+  and <kbd>M</kbd> in the keyboard hint.
+- `src/targetsize.js`: `#btn-meet` at both viewports (301 × 35 and 290 × 35,
+  measured), `WALKED.app` 72 → 73.
+- `src/legibility.js`: `--ink` on the button's `#16261c` — 12.62:1 against a bar
+  of 4.5.
+- `test/prosecounts.test.js`: a claim row for the given names, declared in the
+  cycle that creates the collection.
+
+### Changed
+
+- `src/inspectorview.js`: the heading is the animal's name with the number in
+  its `title`; a new `#insp-intro` sentence under it, patched every frame by
+  `main.js` because two of its three clauses move while you watch. `EMPTY_HINT`
+  now says how to be handed one.
+- `src/main.js`: `meetSomebody()`, the button and key bindings, names in both
+  follow banners and on the zoom badge, and `flash()` takes a duration — an
+  introduction is a sentence and 1.8 seconds is a glance.
+- `style.css`: `button.meet`, and `kbd` styling inside `.hint`.
+- `src/inspect.js`: the two coverage tables' `id` rows say what the heading is
+  now.
+- `README.md`, `docs/ARCHITECTURE.md`: the names, the button, the module.
+
+### Notes
+
+- **Nothing was added to the simulation.** The default pond is bit-for-bit what
+  it was in v1.3.0 and `test/fingerprint.test.js` is untouched and green.
+- **A name is stable for as long as the tab is.** `Creature.id` comes from a
+  module-level counter that never resets, so a fresh page load and a shared link
+  both reproduce the names, and **Reset** and **Load** re-deal them. The
+  playbook had this written down as a blocker on naming at all ("a name built on
+  that moves between page loads"), and the only clause that mattered was wrong:
+  a load re-imports the module and restarts the counter. The per-world serial
+  that would close the caveat is a cycle of its own.
+- **A given name is a nickname, not an identifier** — the one place this
+  departs from v1.116's rules on purpose. Species names are unique by
+  construction because the name is the thing you *click*; a creature's name is
+  not clicked. With sixty-four given names and a pond of three hundred there are
+  several Pips, as in any village, and the family disambiguates most of them.
+- **The two walks disagree by exactly a scrollbar.** A fresh CDP probe measured
+  every full-width control in the panel at 301 px at the 390 px viewport where
+  the v1.115 walk recorded 316 — 15 px, which is the classic scrollbar this
+  build reserves — while reproducing 290 exactly at 1280. The new rows carry
+  their own walk's number and `targetsize.js` says so. No verdict moves: width
+  is the axis a thumb does not miss in.
+- 1,196 tests pass.
+
 ## [1.118.0] — 2026-08-26
 
 Thirty stat tiles in one flat four-column grid, every one of them at the same

@@ -66,6 +66,7 @@ import {
   weightMark,
 } from "./palette.js";
 import { speciesLabel } from "./speciesnames.js";
+import { creatureIntro, creatureLabel } from "./cast.js";
 
 /**
  * The four blocks of a classic-topology brain's weight vector, in the order
@@ -105,7 +106,7 @@ export const BRAIN_BLOCK_STARTS = Object.freeze(
 
 /** The panel before anything is selected. */
 export const EMPTY_HINT =
-  '<div class="hint">Click a creature to inspect its brain and lineage.</div>';
+  '<div class="hint">Click a creature to meet it — or press <kbd>M</kbd> and the pond will pick one for you.</div>';
 
 /**
  * When the panel's *structure* has to be rebuilt rather than patched.
@@ -134,8 +135,15 @@ export function inspectorKey(c, chain, facts) {
  * `names` (v1.116) is what the lineages are called; the number stays, in the
  * `title`, because it is still the identifier every other document in this
  * project uses.
+ *
+ * v1.119 moved the number out of the heading and put the animal's own name
+ * there — *Pip of the Amber Whorls* — with one plain sentence under it saying
+ * what kind of creature this is. Both come from `cast.js`; the sentence carries
+ * `id="insp-intro"` because two of its three clauses move while you watch
+ * (a birth, a mutation crossing the licence to hunt), and `main.js` patches it
+ * the same way it patches a live row.
  */
-export function inspectorHTML(c, chain, facts, names = null) {
+export function inspectorHTML(c, chain, facts, names = null, config = undefined) {
   const rows = facts
     .map(
       (f) =>
@@ -153,7 +161,8 @@ export function inspectorHTML(c, chain, facts, names = null) {
   const sw = inspectorSwatch(c.hue);
   return `
     <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
-      <strong>Creature #${c.id}</strong></div>
+      <strong title="creature ${c.id}">${creatureLabel(c, names)}</strong></div>
+    <p class="insp-intro" id="insp-intro">${creatureIntro(c, config)}</p>
     <dl class="insp-grid">
       ${rows}
       <div class="insp-wide"><dt>Species</dt>

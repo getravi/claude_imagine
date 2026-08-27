@@ -44,6 +44,7 @@ import {
   sparkFromWeights,
 } from "./inspectorview.js";
 import { nameSpecies, speciesLabel } from "./speciesnames.js";
+import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -482,7 +483,7 @@ function updateViewBadge() {
   if (sig === "") return;
   badge.innerHTML =
     `<span class="icon">🔍</span> ${cam.zoom.toFixed(1)}×` +
-    (cam.target ? ` <span class="following">🎯 #${cam.target.id}</span>` : "");
+    (cam.target ? ` <span class="following">🎯 ${givenName(cam.target.id)}</span>` : "");
 }
 
 // ---- Scale bar ----
@@ -1289,7 +1290,7 @@ function updateInspector() {
   if (key !== view.inspKey) {
     view.inspKey = key;
     panel.classList.remove("empty");
-    panel.innerHTML = inspectorHTML(c, chain, facts, namesForTree(world.phylogeny));
+    panel.innerHTML = inspectorHTML(c, chain, facts, namesForTree(world.phylogeny), config);
     const link = document.getElementById("insp-species");
     if (link) {
       link.addEventListener("click", (e) => {
@@ -1311,6 +1312,11 @@ function updateInspector() {
     const cell = document.getElementById("insp-" + f.key);
     if (cell) cell.textContent = f.value;
   }
+  // The introduction moves for the same reason the live rows do: a birth
+  // changes its middle clause and a mutation across the licence to hunt changes
+  // its first. Built once with the panel, patched every frame after that.
+  const intro = document.getElementById("insp-intro");
+  if (intro) intro.textContent = creatureIntro(c, config);
   const learned = document.getElementById("insp-learned");
   // Repainted every frame, so it needs the name every frame: a figure that is
   // named when it is built and anonymous when it is refreshed is named for one
@@ -1330,6 +1336,32 @@ function updateInspector() {
 function togglePause() {
   running = !running;
   $("btn-pause").textContent = running ? "⏸ Pause" : "▶ Play";
+}
+
+// ---- "Meet somebody" ----
+// The one control on this page that answers *"which of these should I watch?"*.
+// Everything else here either changes the world or reports on all of it; picking
+// an animal has always been the visitor's problem, solved by clicking a dot and
+// hoping. `cast.js` ranks the living by how much of a story they have and this
+// hands the winner over: selected, followed, named, and introduced in one
+// sentence the panel then keeps up to date.
+//
+// The camera rides along because a named animal you immediately lose in three
+// hundred others is worse than no name at all. Escape and 0 let go, as they
+// already did for a double-tap.
+function meetSomebody() {
+  const names = namesForTree(world.phylogeny);
+  const star = pickStar(world, config, names);
+  const { title, line } = introduceStar(star, config, names);
+  if (!star) {
+    flash(line);
+    announce(line);
+    return;
+  }
+  renderer.selected = star.creature;
+  renderer.camera.setTarget(star.creature);
+  flash(`${title} — ${star.why}.`, MEET_FLASH_MS);
+  announce(`${title}. ${line}`);
 }
 
 // Advance exactly one simulation step, like a video player's frame-advance.
@@ -1368,6 +1400,10 @@ function wireKeyboard() {
       case "l":
       case "L":
         world.addRandomCreatures(12);
+        break;
+      case "m":
+      case "M":
+        meetSomebody();
         break;
       case "n":
       case "N": {
@@ -1426,6 +1462,7 @@ function wireControls() {
 
   $("btn-feed").addEventListener("click", () => world.addFood(60));
   $("btn-seedlife").addEventListener("click", () => world.addRandomCreatures(12));
+  $("btn-meet").addEventListener("click", meetSomebody);
 
   // Speed control.
   const speedInput = $("speed");
@@ -1810,7 +1847,7 @@ function wireCanvas(canvas) {
     if (c) {
       renderer.selected = c;
       cam().setTarget(c);
-      flash(`Following creature #${c.id} — drag, or press 0, to let go.`);
+      flash(`Following ${creatureLabel(c, namesForTree(world.phylogeny))} — drag, or press 0, to let go.`);
     } else {
       cam().reset();
     }
@@ -1858,8 +1895,9 @@ function wireCanvas(canvas) {
       const c = renderer.selected;
       if (c && !c.dead) {
         cam().setTarget(c);
-        flash(`Following creature #${c.id} — press Escape, or 0, to let go.`);
-        announce(`Following creature ${c.id}.`);
+        const who = creatureLabel(c, namesForTree(world.phylogeny));
+        flash(`Following ${who} — press Escape, or 0, to let go.`);
+        announce(`Following ${who}.`);
       }
       e.preventDefault();
       return;
@@ -1939,12 +1977,18 @@ function exportCSV() {
 }
 
 let flashTimer = null;
-function flash(msg) {
+// An introduction is two clauses and a name; 1.8 seconds is a glance, which is
+// enough for "Whole-run data exported." and not enough to read a sentence about
+// an animal. So the banner takes a duration now, and the only caller that asks
+// for a different one is the one with something to say.
+const FLASH_MS = 1800;
+const MEET_FLASH_MS = 4200;
+function flash(msg, ms = FLASH_MS) {
   const el = $("flash");
   el.textContent = msg;
   el.classList.add("show");
   clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => el.classList.remove("show"), 1800);
+  flashTimer = setTimeout(() => el.classList.remove("show"), ms);
 }
 
 boot();

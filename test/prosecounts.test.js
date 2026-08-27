@@ -55,6 +55,7 @@ import { SERIES, CLOCKS } from "../src/seasonlag.js";
 import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerprint.js";
 import { TILES, GROUPS } from "../src/hud.js";
 import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
+import { GIVEN } from "../src/cast.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -198,6 +199,18 @@ const CLAIMS = [
     size: () => GROUPS.length,
     phrase: "{n} panel sections",
     sites: ["app/index.html", "src/hud.js"],
+  },
+  {
+    // v1.119's list, declared in the cycle that creates it rather than after a
+    // later one has quietly renamed half of it — which is the habit this file
+    // exists to make cheap. Two sites, because a name list is only ever quoted
+    // where it lives and where it is tested; the sixty-four given names
+    // deliberately do *not* have to match `speciesnames.js`'s sixty-four
+    // family stems, and nothing here says they do.
+    what: "the given names",
+    size: () => GIVEN.length,
+    phrase: "{n} given names",
+    sites: ["docs/AUTONOMOUS.md", "src/cast.js", "test/cast.test.js"],
   },
   {
     // The collection v1.103 gave a second coverage table to, and the one that

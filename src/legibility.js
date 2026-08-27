@@ -219,6 +219,7 @@ export const TEXT_PAIRS = Object.freeze([
   { page: "app", ink: "chartLines().pop", ground: "#0c131c", px: 9, weight: 400, seen: 3, sample: "#chart-ticks span '40'" },
   { page: "app", ink: "--ink", ground: "#12293a", px: 13, weight: 400, seen: 1, sample: "button.primary '⏸ Pause'" },
   { page: "app", ink: "--ink", ground: "#111a26", px: 13, weight: 400, seen: 8, sample: "button '↻ Reset'" },
+  { page: "app", ink: "--ink", ground: "#16261c", px: 13, weight: 400, seen: 1, sample: "button.meet '👋 Meet somebody'" },
   { page: "app", ink: "--ink", ground: "#111821", px: 15, weight: 400, seen: 4, sample: "span.c-msg 'Predators are now half of the pond.'" },
   { page: "app", ink: "--ink", ground: "#0d1826", px: 34, weight: 400, seen: 2, sample: "h1 'Vivarium'" },
   { page: "app", ink: "--ink", ground: "#0d1826", px: 17, weight: 600, seen: 1, sample: "h2 '🌳 Tree of Life'" },

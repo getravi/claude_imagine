@@ -131,9 +131,16 @@
             <button id="btn-feed">✦ Feed</button>
             <button id="btn-seedlife">✚ Seed life</button>
           </div>
+          <!-- The only control here that answers "which of these should I
+               watch?". Full width and on its own row because it is the one
+               button on this page a first-time visitor should press, and
+               because a third button squeezed beside Feed would take all three
+               under the 24 px bar v1.115 measured. `src/cast.js` picks who. -->
+          <button id="btn-meet" class="meet">👋 Meet somebody</button>
           <p class="kbd-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
-            <kbd>F</kbd> feed · <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
+            <kbd>F</kbd> feed · <kbd>M</kbd> meet somebody ·
+            <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
             <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond ·
             <kbd>H</kbd> chart history
           </p>

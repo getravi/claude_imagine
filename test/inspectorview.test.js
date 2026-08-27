@@ -28,6 +28,7 @@ import { makeConfig } from "../src/config.js";
 import { World } from "../src/world.js";
 import { creatureFacts } from "../src/inspect.js";
 import { inspectorSwatch } from "../src/palette.js";
+import { givenName } from "../src/cast.js";
 import { NEAT_IO } from "../src/neat.js";
 import {
   ANCESTRY_SHOWN,
@@ -260,7 +261,9 @@ test("the swatch is this creature's own colour, both bands from the palette", ()
   const sw = inspectorSwatch(c.hue);
   assert.match(html, new RegExp(`background:${sw.fill.replace(/[()]/g, "\\$&")}`));
   assert.match(html, new RegExp(`color:${sw.glow.replace(/[()]/g, "\\$&")}`));
-  assert.match(html, new RegExp(`Creature #${c.id}`));
+  // v1.119: the heading is the animal's name and the number is the tooltip,
+  // which is exactly what v1.116 did to the species link one row down.
+  assert.match(html, new RegExp(`title="creature ${c.id}">${givenName(c.id)}<`));
   // With no name map the link says what it said before v1.116 — the number,
   // twice: once as the tooltip that is now permanent and once as the text.
   assert.match(html, new RegExp(`id="insp-species" title="species ${c.speciesId}"`));
@@ -276,6 +279,7 @@ test("every row `inspect.js` names is in the panel, with the id `main.js` patche
     assert.match(html, new RegExp(`id="insp-${f.key}"`), `no cell for the ${f.key} row`);
   }
   assert.match(EMPTY_HINT, /Click a creature/);
+  assert.match(html, /id="insp-intro"/);
 });
 
 test("the structure key moves when the row set does, and not when a value ticks", () => {
