@@ -469,6 +469,26 @@ input[type="range"] {
   color: var(--ink-dim);
   cursor: pointer;
 }
+/* A section of switches (v1.120, `src/switches.js#SWITCH_GROUPS`). The same
+   furniture the stat panel got in v1.118 — a heading and one plain sentence —
+   at the same sizes, deliberately: 13 px `--ink` and 12.5 px `--ink-faint` on
+   the panel's ground are two pairs v1.109's photometer already walked, so this
+   section adds no ink to the legibility inventory that nothing has measured. */
+.switchgroup {
+  margin-top: 15px;
+}
+.switchgroup h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.switchgroup-sub {
+  margin: 2px 0 7px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-faint);
+}
 details {
   border-top: 1px solid var(--line);
   padding-top: 10px;

@@ -10,7 +10,7 @@
 // this file holds the inventory plus the arithmetic that judges it. Two claims
 // here are *live* rather than remembered, and they are the ones that would rot
 // first: the `min-height` the fix rests on is resolved out of `style.css` on
-// every run, and the number of world toggles is counted out of `app/index.html`.
+// every run, and the number of switches is counted out of `app/index.html`.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -90,13 +90,13 @@ test("every target on both shipped pages clears the bar", () => {
   );
 });
 
-test("the world toggles pass by their own size, not by their neighbourhood", () => {
+test("the switches pass by their own size, not by their neighbourhood", () => {
   // The distinction this release exists for. Before v1.115 the label was 19 px
   // tall and stacked flush, so it failed both the size rule and the spacing one;
   // the ten that passed did so because a long caption wrapped onto a second
   // line, which is the pond's vocabulary deciding which rules are switchable.
   for (const c of verdicts(CONTROLS).filter((c) => c.sel === "label.check")) {
-    assert.equal(c.by, "size", `${c.vp}: the toggles must not need the spacing exemption`);
+    assert.equal(c.by, "size", `${c.vp}: the switches must not need the spacing exemption`);
     assert.ok(c.h >= TARGET_MIN, `${c.vp}: ${c.h} px tall`);
   }
 });

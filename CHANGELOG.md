@@ -4,6 +4,98 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.120.0] — 2026-08-27
+
+Thirty-one checkboxes in one undivided column, in the order I happened to add
+them across a hundred and nineteen releases. `Licensed diet cost (only hunters
+pay for carnivory) 🧾` between `Scavenging` and `Kin recognition`. `Reduce
+motion` two rows under `Evolvable brains`. Every row the same size, the same
+colour, the same weight — and nothing anywhere saying which of them rewrites the
+pond and which of them only redraws it.
+
+**Six of them only redraw it.** The trail, the reach, the vision cone, the
+refuge line, follow and reduced motion never touch the water: switch one and the
+pond runs on exactly as it would have, bit for bit. The other twenty-five change
+the world. `src/levers.js` has had the vocabulary for that difference since
+v1.40 — it calls them *channels* — and the page a person actually uses had never
+been told.
+
+**Added — `src/switches.js`, and seven sections.** *Who eats whom · What there
+is to eat · The place they live · What they can sense · How they change · The
+fine print · What you see.* Each with a heading and one plain sentence saying
+what its switches are for, and the last one saying in its heading that these
+change the picture only. No switch was removed and no rule changed. What went is
+the wall — and, with it, four glosses written for somebody who already knew the
+answer: *"only hunters pay for carnivory"*, *"sight the index can't clip"*,
+*"crossover"*, *"seniority stops paying"*.
+
+**I tried to order the rows by measurement and could not — and that is the
+finding.** v1.118 and v1.119 both closed by admitting an ordering was a
+judgement no instrument here could check, so this cycle built the instrument.
+Twice. The first sweep measured the *distance* between a control pond and a
+flipped one after 1,500 ticks and ranked `barriers` first and `predation`
+eighth, which is not an effect size — it is chaos. This world is deterministic
+and sensitive; any rule that bites at all sends it onto another trajectory, and
+the distance after that says only *that* it bit. The second sweep measured the
+paired, signed change in the numbers a visitor actually reads, which cancels out
+for a rule with no systematic effect — and the direction then disagreed across
+seeds for all but one rule. **Only `seasons` moves the population the same way
+on six ponds of six.** So the order inside a section is a judgement, and this
+release says so instead of dressing it up.
+
+**What the sweeps did settle: two switches do nothing.** `Kin recognition` and
+`Death is final` leave the pond **bit-for-bit identical** on all six seeds —
+the same state hash for 1,500 ticks, not merely a similar pond. Both were known
+one at a time (`levers.js` found the first, v1.45 the second) and neither fact
+had ever reached the page, so a visitor could tick either box and watch nothing
+happen forever with nothing to tell them why. They say so now, once, when
+switched on. That claim is re-derived on every build rather than remembered.
+
+### Added
+
+- `src/switches.js` — `SWITCH_GROUPS` (seven sections), `SWITCHES` (id, section,
+  the `config` key it writes, the caption), `SWEEP` (what the second sweep found
+  for each of the twenty-five world rules: the mean signed change in population,
+  **how many of the six ponds moved the same way**, and the change in standing
+  food), `UNEXPOSED`, `switchOrder`, `switchesIn`, `worldSwitches`,
+  `viewSwitches`, `quietSwitches`. Pure data: no DOM, no world, no RNG.
+- `test/switches.test.js` — thirteen claims. The page and the table hold the same
+  switches in the same order and under the same headings; every heading, sentence
+  and caption is on the page; the glosses clear `headline.js`'s vocabulary bar;
+  every rule in `config.js` is on the page or named in `UNEXPOSED` with a reason,
+  and every excuse still names a flag that exists; `main.js` is read back and
+  every world row must write the key its table declares *and* call `syncHash()`,
+  while **every view row must write neither** — the promise the last heading
+  makes, kept where it is actually made; and the two quiet rules are re-run
+  against the state fingerprint on three seeds every build.
+- `src/main.js`: `quietSwitches()` bound in one loop, so the sentence a visitor
+  reads and the measurement that justifies it cannot drift apart.
+- `test/prosecounts.test.js`: claim rows for the switches and for the world
+  rules among them. The first one found drift on arrival — `targetsize.js` has
+  opened with "thirty-one world rules" since v1.115, and six of the thirty-one
+  are not world rules at all. A number word can be right while the noun beside
+  it is wrong.
+
+### Changed
+
+- `app/index.html`: the switch column is seven `<section data-switches>` blocks,
+  generated from the table so the page cannot draw a switch under a heading its
+  table does not put it under. The disclosure over it is **Rules & settings**
+  rather than *Live parameters*.
+- `style.css`: `.switchgroup`, `.switchgroup h4`, `.switchgroup-sub` — the stat
+  panel's section furniture at the two ink/ground pairs v1.109's photometer had
+  already walked, so this adds no unmeasured colour.
+- `src/targetsize.js`: the count is switches, not world rules; the summary's
+  recorded sample follows its rename; and a note that headings between groups can
+  only push two rows further apart, so no verdict in the inventory can have
+  worsened.
+- `README.md`, `docs/ARCHITECTURE.md`: the control table's **Rules & settings**
+  row now says which six switches change only the picture, and the module map
+  has a row for `switches.js`.
+- `src/switches.js` gives `Kin recognition` the 👪 the panel's own *Family
+  spared* tile has carried since v1.118. It shared 🧬 with `Evolvable brains`,
+  which is a small lie about which readout answers which switch.
+
 ## [1.119.0] — 2026-08-27
 
 Every animal in this pond was called `Creature #147`. v1.116 gave the *lineages*

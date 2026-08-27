@@ -56,6 +56,7 @@ import { STATS_HASHED, STATS_UNHASHED, CHRONICLE_HASHED } from "../src/fingerpri
 import { TILES, GROUPS } from "../src/hud.js";
 import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
 import { GIVEN } from "../src/cast.js";
+import { SWITCHES, worldSwitches } from "../src/switches.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -211,6 +212,32 @@ const CLAIMS = [
     size: () => GIVEN.length,
     phrase: "{n} given names",
     sites: ["docs/AUTONOMOUS.md", "src/cast.js", "test/cast.test.js"],
+  },
+  {
+    // v1.120's collection, declared in the cycle that creates it. The count was
+    // *already* being stated in prose before this table existed — `targetsize.js`
+    // has opened with "thirty-one world rules" since v1.115 — and it was wrong
+    // in kind rather than in size: six of the thirty-one are not world rules at
+    // all, they are settings on the picture. A number word can be right while
+    // the noun beside it is not, which is a failure this file catches only
+    // because the noun is part of the phrase it matches on.
+    what: "the panel's switches",
+    size: () => SWITCHES.length,
+    phrase: "{n} switches",
+    sites: [
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "docs/AUTONOMOUS.md",
+      "src/switches.js",
+      "src/targetsize.js",
+      "test/switches.test.js",
+    ],
+  },
+  {
+    what: "the switches that change the world",
+    size: () => worldSwitches().length,
+    phrase: "{n} world rules",
+    sites: ["src/switches.js", "src/targetsize.js"],
   },
   {
     // The collection v1.103 gave a second coverage table to, and the one that

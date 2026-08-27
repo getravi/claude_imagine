@@ -14286,3 +14286,192 @@ to synchronise them, it is to print it once, in the surface that moves.
   recognition`. It is genuinely next. I am recording, though, that it has now
   been nominated twice, which by this file's own standard makes it a thing I
   should either do or stop putting in writing.
+
+## Entry 132 — the switch that does nothing · 2026-08-27
+
+Fourth cycle under the owner's steer — regular human hat, more interesting,
+easier to understand, mass appeal over the nerdy fanbase — and this time I did
+the job I have now nominated twice and skipped twice. The toggle wall.
+
+Here is what a visitor met. Thirty-one checkboxes in one undivided column, in
+the order I happened to add them across a hundred and nineteen releases:
+
+```
+Scavenging (corpses feed carnivores) 🦴
+Licensed diet cost (only hunters pay for carnivory) 🧾
+Kin recognition (predators spare close family) 🧬
+Day/night cycle (vision shrinks at night) 🌙
+```
+
+Every row the same size, the same colour, the same weight. Same shape of problem
+as v1.118's stat panel, larger surface, and the fix has the same skeleton: seven
+sections, a heading and one plain sentence each, the layout derived from a table
+so the page cannot draw a switch under a heading its table does not put it under.
+
+I could stop the entry there and it would be a fair account of the release. But
+the two things I actually learned this cycle are both about **the difference
+between a control and a control that does something**, and neither of them was
+what I set out to find.
+
+### The six that only redraw it
+
+Read the wall again and ask which of those switches change the pond.
+
+Six of the thirty-one do not. `Show the trail`, `Show the reach`, `Show vision`,
+`Show the refuge line`, `Follow selected creature`, `Reduce motion` — every one
+of them writes into the renderer or the camera and nowhere else. Tick any of
+them and the pond runs on bit for bit as it would have. The other twenty-five
+rewrite the world, and several rewrite it so hard that the pond you were
+watching is gone inside a minute.
+
+A page that draws both kinds identically is telling a first-time visitor that
+ticking `Show the trail 🧭` is the same size of decision as ticking
+`Predation 🔺`. It is not, and the project has known the difference since
+**v1.40**: `src/levers.js` calls it a *channel* and sweeps all eighty-five
+constants in `config.js` for which one they move. The instrument had the
+vocabulary for five years of releases and the page a person uses had never been
+told. That is a general shape worth writing down: **an idea that lives only in
+the test suite has not shipped.**
+
+So *What you see* is the last section, its heading says these change the picture
+only, and — because a heading is a promise about behaviour and a table of
+captions cannot keep one — `test/switches.test.js` reads `main.js`, cuts each
+switch's handler out of it, and holds every world row to writing the config key
+its table declares *and* calling `syncHash()`, and every view row to writing
+neither. A view switch that started writing into the config would make the
+section's own sentence a lie the page states in plain English.
+
+### The ordering I could not measure
+
+Both of the last two entries closed the same way. v1.118: *the glance six are a
+judgement and nothing measured them.* v1.119: *`pickStar` ranks by story and
+nothing has ever asked whether a visitor agrees.* I wrote in both that every
+measurement in this project is about the pond and both of those were claims
+about a person.
+
+Ordering switches by how much they change the pond is **not** a claim about a
+person. It is arithmetic, and I had all the parts. So I built it: flip one rule,
+run it against its own control, six seeds, 1,500 ticks.
+
+The first sweep measured the distance between the two ponds at the end — the
+relative gap in population, food, kills and mean body size. It ranked
+`barriers` first at 41.3% and `predation` **eighth** at 30.3%, with everything
+live landing between 10% and 41%.
+
+That is not an effect size. That is chaos. This pond is deterministic and
+sensitive to its own state; any rule that bites at all sends it onto a different
+trajectory, and 1,500 ticks later the distance between two trajectories says
+only *that* it bit. The band from 10% to 41% is the saturation level, not a
+ranking. **The instrument answered a different question than the one I asked
+it**, and the giveaway was `predation` in eighth place — the one rule whose
+effect nobody has ever needed a statistic for.
+
+So I rebuilt it. Second sweep: the *paired, signed* change in the numbers a
+visitor actually reads, averaged over the last 500 ticks so one crowded instant
+does not decide it. A signed measure cancels for a rule with no systematic
+effect, which is exactly what the first one could not do.
+
+```
+  alive   agree     food    flag
+ +68.0%   4/6    -0.7%    barrierOcclusion
+ -51.1%   5/6  +118.5%    signalling
+ -20.1%   6/6    +4.0%    seasons
+  -2.7%   4/6    +3.8%    predation
+  +0.0%   6/6    +0.0%    kinRecognition   [INERT]
+  +0.0%   6/6    +0.0%    deathIsFinal     [INERT]
+```
+
+Look at the `agree` column, which is how many of the six ponds moved the same
+way. **One rule of twenty-five reaches 6/6.** Most sit at 3/6 or 4/6, which is a
+coin. `groundSense` and `terrain` are at 2/6, meaning their means are averages
+of ponds that disagreed and the sign printed beside them belongs to whichever
+outlier was loudest.
+
+There is no ranking here. A rule's effect on this pond is conditional on the
+pond, and the second instrument is honest enough to say so where the first one
+was not. So the order inside each section is a judgement, stated as one — and
+what I get to write down instead of the ranking I wanted is the reason there
+cannot be one. That is a better answer than the one I went looking for, and it
+is the third time in three cycles that the interesting half was the control.
+
+### The switch that does nothing
+
+The two sweeps disagree about almost everything and agree completely about two
+rows. `kinRecognition` and `deathIsFinal` are **inert**. Not "small" — I checked
+the state hash directly, and they leave the world **bit-for-bit identical** on
+all six seeds for 1,500 ticks. The same pond.
+
+Neither fact is new. `src/levers.js` has carried a note since v1.36 that kin
+recognition has no reach in the default pond because no predator there ever
+meets a close relative; v1.45 shipped `deathIsFinal` knowing the dead rarely got
+another turn anyway; `SCIENCE.md` says two of the opt-in flags do not move the
+pond. Every one of those is written **for me**, in a file a visitor will never
+open. On the page, they are two checkboxes that look exactly like the
+twenty-three that work.
+
+That is the worst thing a control panel can contain. Not a confusing control —
+a *lying* one. You tick it, you watch, nothing happens, and the most reasonable
+conclusion available to you is that the page is broken.
+
+So they say so now, once, when you switch them on:
+
+```
+Kin recognition is on — but in every pond measured, no hunter ever meets a
+close relative, so nothing changes. Try another seed.
+```
+
+The mechanism already existed and I had built it myself without seeing what it
+generalised to. `toggle-refuge` has flashed *"The refuge line needs predation
+switched on — nothing hunts in this pond"* since the release that added it. That
+is the same courtesy, decided case by case, for a control that cannot act.
+Naming the class is what turns one handler's politeness into a rule the panel
+follows.
+
+The claim on the page is checked on every build rather than remembered:
+`test/switches.test.js` re-runs both rules against `stateFingerprint` on three
+seeds. If a future release gives either of them something to do, the failure is
+a red build, not a page quietly telling visitors a lie in plain English.
+
+### The count that was wrong in the noun
+
+One more, small, and my favourite kind. `test/prosecounts.test.js` (v1.103)
+checks that a number word standing in front of a collection's name is true of
+that collection today. I added a claim row for the new table, and it failed
+immediately — on `src/targetsize.js`, which has opened with **"thirty-one world
+rules"** since v1.115.
+
+Thirty-one is right. *World rules* is not: six of them are settings on the
+picture. **A count can be correct while the noun beside it is false**, and the
+only reason that was catchable is that the noun is part of the phrase this sweep
+matches on. I had written that file myself, four releases ago, in the cycle that
+measured every one of those thirty-one targets with a browser.
+
+It also caught a line in the new test file itself — *"two switches write the
+same config key"* — which is a claim about a hypothetical rather than about the
+collection, and which reads better as *"a config key is written by more than one
+switch"* anyway. The sweep is worth its weight three releases running.
+
+### What this leaves
+
+- **The sections are seven and nothing measured that either.** Same complaint
+  one level up: I grouped the rules the way I would explain them, and the sweep
+  that could not rank them within a section certainly cannot say whether *the
+  place they live* is one idea or three. This is the third cycle in a row to
+  close on a judgement about a reader, and I no longer think an instrument in
+  this repository can settle one. What would settle it is a person, and this
+  project has never had a way to ask.
+- **`SWEEP` records twenty-five rules and the page shows none of it.** The
+  agreement column is the most interesting number I measured this cycle —
+  *this rule does something, but not the same thing twice* is a real fact about
+  an ecology — and it lives in a module comment. A visitor deciding what to tick
+  would want it.
+- **The two quiet rules are quiet *in these ponds*.** `levers.js` found seed 23
+  is where kin actually meet, and my sentence says *in every pond measured*
+  precisely because six seeds is not every pond. The honest next step is the
+  flash naming a seed that does make the rule bite — the sweep already knows how
+  to find one, and `Try another seed` is currently an instruction with no
+  destination.
+- **The sliders are still three unsorted rows above all this**, and `Speed`
+  sits outside the disclosure while `Food rate` sits inside it, for no reason
+  either of them could give you.
+

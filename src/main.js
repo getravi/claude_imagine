@@ -64,6 +64,7 @@ import {
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
+import { quietSwitches } from "./switches.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -1729,6 +1730,21 @@ function wireControls() {
     resetWorld(config.seed);
     flash(config.evolvableTopology ? "Evolvable brains on — world restarted." : "Fixed brains restored — world restarted.");
   });
+
+  // Two of the world rules are measurably inert in the ponds anybody actually
+  // watches: v1.120 flipped each rule against its own control on six seeds for
+  // 1,500 ticks and found `kinRecognition` and `deathIsFinal` leaving the world
+  // bit-for-bit identical — the same state hash, not merely a similar pond. A
+  // control that cannot do anything is the most confusing thing a panel can
+  // hold, so each says so once when it is switched on. Same courtesy the refuge
+  // line has had since it learned to notice that predation was off, and bound
+  // from the table rather than typed into two handlers so the sentence and the
+  // measurement that justifies it live in one place.
+  for (const s of quietSwitches()) {
+    $(s.id).addEventListener("change", (e) => {
+      if (e.target.checked) flash(s.quiet, MEET_FLASH_MS);
+    });
+  }
 
   applyMortalityColours();
   applyInspectorColours();

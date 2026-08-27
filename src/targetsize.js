@@ -9,14 +9,19 @@
 // (Target Size (Minimum), Level AA) wants every pointer target to be at least
 // 24 × 24 CSS pixels, unless spacing, inline text, or the user agent excuses it.
 //
-// The app is a control panel — thirty-one world rules, five sliders, a dozen
+// The app is a control panel — thirty-one switches, five sliders, a dozen
 // scenario buttons, four file actions — and `gestures.js` has existed since v1.31
 // precisely because a visitor arrives on a phone with no wheel and no keyboard.
 // So the surface most in need of this question is the one this project built for
-// the pointer it never measured.
+// the pointer it never measured. (They divide into twenty-five world rules and
+// six settings on the picture, a difference the page only started drawing in v1.120,
+// which sorted the column into sections. Headings between groups can only push
+// two rows further apart, so no `nearestCentre` here got smaller and no verdict
+// below can have worsened — the one kind of layout change this inventory does
+// not have to be re-walked for.)
 //
-// **The target is not always the control.** Every one of the thirty-one world
-// toggles is a 13 × 13 native checkbox, and an instrument that measured the
+// **The target is not always the control.** Every one of the thirty-one
+// switches is a 13 × 13 native checkbox, and an instrument that measured the
 // checkbox would report thirty-one failures at 13 px and be wrong about all of
 // them: each sits inside a `<label class="check">`, and a click anywhere in that
 // label toggles it. The target is the label. This is v1.109's composite lesson
@@ -169,7 +174,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
-  { page: "app", vp: "390x844", sel: "details.levers summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "390x844", sel: "details.levers summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "390x844", sel: ".more-stats > summary", n: 1, w: 316, h: 24, own: "316x24", via: "self", nearestCentre: 343.1, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "390x844", sel: "canvas#world", n: 1, w: 344, h: 237, own: "344x237", via: "self", nearestCentre: 155.1, inline: false, short: 0, sample: "the pond itself" },
   { page: "app", vp: "390x844", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 60.4, inline: false, short: 3, sample: "Devlog" },
@@ -184,7 +189,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
-  { page: "app", vp: "1280x900", sel: "details.levers summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Live parameters" },
+  { page: "app", vp: "1280x900", sel: "details.levers summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "1280x900", sel: ".more-stats > summary", n: 1, w: 290, h: 24, own: "290x24", via: "self", nearestCentre: 338.3, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "1280x900", sel: "canvas#world", n: 1, w: 894, h: 615.9, own: "894x616", via: "self", nearestCentre: 345.6, inline: false, short: 0, sample: "the pond itself" },
   { page: "app", vp: "1280x900", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 67.7, inline: false, short: 3, sample: "Devlog" },
@@ -226,7 +231,7 @@ export const UNMET = Object.freeze({
 export const HIT_RULES = Object.freeze({
   ".check": TARGET_MIN,
   // v1.118's disclosure, sized on arrival rather than measured short later. The
-  // summary beside it (`Live parameters`) is 15 px and passes only because
+  // summary beside it (`Rules & settings`) is 15 px and passes only because
   // nothing sits within 38 px of it — a pass the panel's next layout change can
   // take away — so the new one asks for the bar in its own rule instead.
   ".more-stats > summary": TARGET_MIN,

@@ -178,7 +178,7 @@
                `details summary` rows measured under one name is an inventory
                that cannot say which of them a verdict is about. -->
           <details class="levers" open>
-            <summary>Live parameters</summary>
+            <summary>Rules &amp; settings</summary>
             <label class="field">
               <span>Food rate <b id="food-rate-label"></b></span>
               <input id="food-rate" type="range" min="0" max="8" step="0.1" />
@@ -191,130 +191,174 @@
               <span>Mutation rate <b id="mutation-label"></b></span>
               <input id="mutation" type="range" min="0" max="0.4" step="0.01" />
             </label>
-            <label class="check">
-              <input id="toggle-seasons" type="checkbox" />
-              <span>Seasons ☀︎❄︎</span>
-            </label>
-            <label class="check">
-              <input id="toggle-patches" type="checkbox" />
-              <span>Biomes (food patches) 🌿</span>
-            </label>
-            <label class="check">
-              <input id="toggle-drift" type="checkbox" />
-              <span>Drifting biomes 🧭</span>
-            </label>
-            <label class="check">
-              <input id="toggle-predation" type="checkbox" />
-              <span>Predation (carnivores hunt) 🔺</span>
-            </label>
-            <label class="check">
-              <input id="toggle-scavenging" type="checkbox" />
-              <span>Scavenging (corpses feed carnivores) 🦴</span>
-            </label>
-            <label class="check">
-              <input id="toggle-licensed" type="checkbox" />
-              <span>Licensed diet cost (only hunters pay for carnivory) 🧾</span>
-            </label>
-            <label class="check">
-              <input id="toggle-kin" type="checkbox" />
-              <span>Kin recognition (predators spare close family) 🧬</span>
-            </label>
-            <label class="check">
-              <input id="toggle-daynight" type="checkbox" />
-              <span>Day/night cycle (vision shrinks at night) 🌙</span>
-            </label>
-            <label class="check">
-              <input id="toggle-regrowth" type="checkbox" />
-              <span>Regrowth (plants breed; a herd can strip the pond) 🌾</span>
-            </label>
-            <label class="check">
-              <input id="toggle-disease" type="checkbox" />
-              <span>Contagion (disease spreads; survivors are immune) 🦠</span>
-            </label>
-            <label class="check">
-              <input id="toggle-signalling" type="checkbox" />
-              <span>Signalling (creatures hear each other's calls) 📣</span>
-            </label>
-            <label class="check">
-              <input id="toggle-terrain" type="checkbox" />
-              <span>Terrain (rough ground costs more to cross) ⛰️</span>
-            </label>
-            <label class="check">
-              <input id="toggle-barriers" type="checkbox" />
-              <span>Barriers (rock the pond has to walk around) 🧱</span>
-            </label>
-            <label class="check">
-              <input id="toggle-occlusion" type="checkbox" />
-              <span>Opaque rock (walls block sight, sound and disease) 🌒</span>
-            </label>
-            <label class="check">
-              <input id="toggle-groundsense" type="checkbox" />
-              <span>Ground sense (creatures feel the ground underfoot) 👣</span>
-            </label>
-            <label class="check">
-              <input id="toggle-whisker" type="checkbox" />
-              <span>Whisker (creatures feel the rock ahead) 📡</span>
-            </label>
-            <label class="check">
-              <input id="toggle-detritus" type="checkbox" />
-              <span>Detritus (the ground remembers its dead) 🍂</span>
-            </label>
-            <label class="check">
-              <input id="toggle-exactvision" type="checkbox" />
-              <span>Exact vision (sight the index can't clip) 👁️</span>
-            </label>
-            <label class="check">
-              <input id="toggle-deathfinal" type="checkbox" />
-              <span>Death is final (the dead take no further turn) ⚰️</span>
-            </label>
-            <label class="check">
-              <input id="toggle-turnorder" type="checkbox" />
-              <span>Shuffled turn order (seniority stops paying) 🔀</span>
-            </label>
-            <label class="check">
-              <input id="toggle-bodies" type="checkbox" />
-              <span>Solid bodies (two can't share a spot) ↔️</span>
-            </label>
-            <label class="check">
-              <input id="toggle-mass" type="checkbox" />
-              <span>Mass-weighted shove (the smaller body yields) ⚖️</span>
-            </label>
-            <label class="check">
-              <input id="toggle-sexual" type="checkbox" />
-              <span>Sexual reproduction (crossover)</span>
-            </label>
-            <label class="check">
-              <input id="toggle-plasticity" type="checkbox" />
-              <span>Neural plasticity (lifetime learning) 🧠</span>
-            </label>
-            <label class="check">
-              <input id="toggle-neat" type="checkbox" />
-              <span>Evolvable brains (NEAT) 🧬</span>
-            </label>
-            <label class="check">
-              <input id="toggle-vision" type="checkbox" />
-              <span>Show vision (what the selected one can really see)</span>
-            </label>
-            <label class="check">
-              <input id="toggle-refuge" type="checkbox" />
-              <span>Show the refuge line (who is still big enough to eat) 🔒</span>
-            </label>
-            <label class="check">
-              <input id="toggle-trail" type="checkbox" />
-              <span>Show the trail (where the selected one has been) 🧭</span>
-            </label>
-            <label class="check">
-              <input id="toggle-reach" type="checkbox" />
-              <span>Show the reach (how close the selected one has to be to touch something) 📏</span>
-            </label>
-            <label class="check">
-              <input id="toggle-follow" type="checkbox" />
-              <span>Follow selected creature 🎯</span>
-            </label>
-            <label class="check">
-              <input id="toggle-motion" type="checkbox" />
-              <span>Reduce motion (no comet trails) 🎞️</span>
-            </label>
+            <!-- Sectioned since v1.120. This was one undivided column of
+                 thirty-one checkboxes in the order they were added across a
+                 hundred and nineteen releases, with nothing saying which of
+                 them rewrites the pond and which only redraws it — six do only
+                 the latter, and they are the last section here for exactly that
+                 reason. `src/switches.js#SWITCH_GROUPS` owns the sections, the
+                 order and the captions; `test/switches.test.js` reads this
+                 markup back and fails if a switch is drawn under a heading its
+                 table does not put it under. -->
+            <section class="switchgroup" data-switches="hunting">
+              <h4>🔺 Who eats whom</h4>
+              <p class="switchgroup-sub">whether anything hunts, what a taste for meat costs, and who gets spared</p>
+              <label class="check">
+                <input id="toggle-predation" type="checkbox" />
+                <span>Predation (some of them hunt the others) 🔺</span>
+              </label>
+              <label class="check">
+                <input id="toggle-licensed" type="checkbox" />
+                <span>Licensed diet cost (only real hunters pay the meat bill) 🧾</span>
+              </label>
+              <label class="check">
+                <input id="toggle-scavenging" type="checkbox" />
+                <span>Scavenging (the dead can be eaten too) 🦴</span>
+              </label>
+              <label class="check">
+                <input id="toggle-kin" type="checkbox" />
+                <span>Kin recognition (hunters spare close family) 👪</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="food">
+              <h4>🌱 What there is to eat</h4>
+              <p class="switchgroup-sub">where the food is, whether it grows back, and how the year turns</p>
+              <label class="check">
+                <input id="toggle-regrowth" type="checkbox" />
+                <span>Regrowth (plants breed; a herd can strip the pond) 🌾</span>
+              </label>
+              <label class="check">
+                <input id="toggle-patches" type="checkbox" />
+                <span>Biomes (food clumps instead of spreading evenly) 🌿</span>
+              </label>
+              <label class="check">
+                <input id="toggle-seasons" type="checkbox" />
+                <span>Seasons (the food swings with the year) ☀︎❄︎</span>
+              </label>
+              <label class="check">
+                <input id="toggle-drift" type="checkbox" />
+                <span>Drifting biomes (the good places move) 🧭</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="place">
+              <h4>🏞 The place they live</h4>
+              <p class="switchgroup-sub">the ground, the rock, the dark and the illness that runs through it</p>
+              <label class="check">
+                <input id="toggle-barriers" type="checkbox" />
+                <span>Barriers (rock the pond has to walk around) 🧱</span>
+              </label>
+              <label class="check">
+                <input id="toggle-terrain" type="checkbox" />
+                <span>Terrain (rough ground costs more to cross) ⛰️</span>
+              </label>
+              <label class="check">
+                <input id="toggle-daynight" type="checkbox" />
+                <span>Day/night cycle (they see less at night) 🌙</span>
+              </label>
+              <label class="check">
+                <input id="toggle-disease" type="checkbox" />
+                <span>Contagion (illness spreads; survivors are immune) 🦠</span>
+              </label>
+              <label class="check">
+                <input id="toggle-detritus" type="checkbox" />
+                <span>Detritus (the ground remembers its dead) 🍂</span>
+              </label>
+              <label class="check">
+                <input id="toggle-occlusion" type="checkbox" />
+                <span>Opaque rock (walls block sight, sound and illness) 🌒</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="senses">
+              <h4>👀 What they can sense</h4>
+              <p class="switchgroup-sub">how much of the world reaches a creature before it has to guess</p>
+              <label class="check">
+                <input id="toggle-signalling" type="checkbox" />
+                <span>Signalling (they hear each other's calls) 📣</span>
+              </label>
+              <label class="check">
+                <input id="toggle-groundsense" type="checkbox" />
+                <span>Ground sense (they feel the ground underfoot) 👣</span>
+              </label>
+              <label class="check">
+                <input id="toggle-whisker" type="checkbox" />
+                <span>Whisker (they feel the rock ahead) 📡</span>
+              </label>
+              <label class="check">
+                <input id="toggle-exactvision" type="checkbox" />
+                <span>Exact vision (nothing slips past the edge of sight) 👁️</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="change">
+              <h4>🧠 How they change</h4>
+              <p class="switchgroup-sub">what a parent hands on, and what a life can learn on its own</p>
+              <label class="check">
+                <input id="toggle-sexual" type="checkbox" />
+                <span>Sexual reproduction (young mix two parents) 👫</span>
+              </label>
+              <label class="check">
+                <input id="toggle-neat" type="checkbox" />
+                <span>Evolvable brains (a brain can grow new parts) 🧬</span>
+              </label>
+              <label class="check">
+                <input id="toggle-plasticity" type="checkbox" />
+                <span>Neural plasticity (they learn during their own lives) 🧠</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="physics">
+              <h4>⚖️ The fine print</h4>
+              <p class="switchgroup-sub">small rules about bodies and turns; each one is a fair test of itself</p>
+              <label class="check">
+                <input id="toggle-bodies" type="checkbox" />
+                <span>Solid bodies (two can't share a spot) ↔️</span>
+              </label>
+              <label class="check">
+                <input id="toggle-mass" type="checkbox" />
+                <span>Mass-weighted shove (the smaller body yields) ⚖️</span>
+              </label>
+              <label class="check">
+                <input id="toggle-deathfinal" type="checkbox" />
+                <span>Death is final (the dead take no further turn) ⚰️</span>
+              </label>
+              <label class="check">
+                <input id="toggle-turnorder" type="checkbox" />
+                <span>Shuffled turn order (being born early stops paying) 🔀</span>
+              </label>
+            </section>
+
+            <section class="switchgroup" data-switches="view">
+              <h4>👁 What you see</h4>
+              <p class="switchgroup-sub">these change the picture only — the pond runs exactly the same either way</p>
+              <label class="check">
+                <input id="toggle-follow" type="checkbox" />
+                <span>Follow selected creature 🎯</span>
+              </label>
+              <label class="check">
+                <input id="toggle-trail" type="checkbox" />
+                <span>Show the trail (where the selected one has been) 🧭</span>
+              </label>
+              <label class="check">
+                <input id="toggle-vision" type="checkbox" />
+                <span>Show vision (what the selected one can really see)</span>
+              </label>
+              <label class="check">
+                <input id="toggle-reach" type="checkbox" />
+                <span>Show the reach (how close the selected one has to be to touch something) 📏</span>
+              </label>
+              <label class="check">
+                <input id="toggle-refuge" type="checkbox" />
+                <span>Show the refuge line (who is still big enough to eat) 🔒</span>
+              </label>
+              <label class="check">
+                <input id="toggle-motion" type="checkbox" />
+                <span>Reduce motion (no comet trails) 🎞️</span>
+              </label>
+            </section>
+
           </details>
 
           <div class="btn-row">

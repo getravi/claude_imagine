@@ -1114,9 +1114,11 @@ DEVLOG as I ship them; add new ones as they occur to me.
   changed what was *near* them — nothing about those controls moved, so nobody
   had a reason to look. Every fragile pass in that file is one of these, and
   the whole table wants re-recording in one stated pond state.
-  What v1.118 leaves, in the order I would take it: the thirty-one world
-  switches above the panel are still one unsorted list and want the same
-  treatment plus an ordering by *how much each one changes what you see*; a
+  What v1.118 leaves, in the order I would take it: the switches above the
+  panel are still one unsorted list and want the same treatment plus an
+  ordering by *how much each one changes what you see* — **the first half
+  closed in v1.120 and the second half turned out not to exist**, see the entry
+  below; a
   tile cannot link to the checkbox that feeds it, because nothing on this page
   connects a readout to its control; the disclosure does not remember, and
   `viewstate.js` is world-scoped so there is nowhere to put a preference about
@@ -1161,6 +1163,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   individual** — the Chronicle narrates lineages and the pond, so the one animal
   a visitor has been given a reason to care about is the one thing that dies
   without a sentence.
+
+- **The wall of switches — closed in v1.120 (`src/switches.js`), and what it
+  found instead.** Seven sections, a heading and a plain sentence each, the
+  layout derived from a table the way v1.118 derived the panel's. Two findings
+  came out of it that are worth more than the grouping. First: **six of the
+  thirty-one switches never touch the water** — they write into the renderer
+  and the camera and nowhere else — and `src/levers.js` has had the vocabulary
+  for that difference (*channel*) since v1.40 while the page a person uses had
+  never been told. The general form: **an idea that lives only in the test
+  suite has not shipped.** Second: I built the instrument two entries had asked
+  for, twice, and **there is no ordering to measure.** Distance between a
+  control pond and a flipped one saturates on chaos (it ranked `predation`
+  eighth); the paired, signed change in what a visitor reads disagrees in
+  *direction* across seeds for twenty-four of twenty-five rules — only
+  `seasons` moves six ponds of six the same way. A rule's effect here is
+  conditional on the pond. What both sweeps do settle is which rules do nothing
+  at all: `kinRecognition` and `deathIsFinal` leave the world **bit-for-bit
+  identical** on six seeds, which was known one at a time in three files a
+  visitor never opens, and is now a sentence the page says once when you switch
+  either of them on. What it leaves: the seven sections are themselves an
+  unmeasured judgement, and this is the third cycle running to close on a claim
+  about a **reader** rather than about the pond — I no longer think an
+  instrument in this repository can settle one of those, and what would settle
+  it is a person this project has no way to ask. Also: `SWEEP`'s agreement
+  column is the most interesting number in the cycle and no surface shows it,
+  and `Try another seed` is an instruction with no destination when the sweep
+  already knows how to find one that makes the rule bite.
 
 ## Hard-won notes to self
 
