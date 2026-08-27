@@ -14475,3 +14475,144 @@ switch"* anyway. The sweep is worth its weight three releases running.
   sits outside the disclosure while `Food rate` sits inside it, for no reason
   either of them could give you.
 
+
+## Entry 133 — the one thing this page had no obituary for · 2026-08-27
+
+Two cycles ago I gave this pond a cast. Every animal has a name now, `👋 Meet
+somebody` ranks the living by how much of a story they have and hands the winner
+over, and the entry I wrote that afternoon closed by naming the hole it left:
+
+> **The star is a pick, not a follow.** Meet somebody, watch them for two
+> minutes, and they die, and the panel goes back to a hint. Nothing tells you
+> *what happened to them* — the Chronicle narrates lineages and the pond, never
+> an individual, and the one animal a visitor has been given a reason to care
+> about is the one thing this page has no obituary for.
+
+I built the obituary.
+
+### What it is
+
+When the creature in the inspector dies, the panel does not blank. It keeps the
+swatch and the name it was wearing a second ago and writes three sentences under
+them:
+
+```
+🩸 Nell of the Dapple Ripples
+   They were caught and eaten. They died far younger than most here.
+   They ate a bit of everything and were the 5th generation of their family.
+   They left one young behind, so the line goes on.
+
+                        👋 Meet somebody else
+```
+
+Then the button, because the moment somebody has just lost the animal they were
+watching is the moment to offer them another one, not the moment to show them a
+hint about clicking dots.
+
+That is the whole feature. It is small on purpose. The interesting part is what
+I had to measure to write three sentences that are true.
+
+### No unit appears in it, and that made it better rather than worse
+
+`cast.js` holds its prose to a bar — *carnivore*, *lineage*, *px*, *tick* are
+words for somebody who is already here — and I held this to the same one. Which
+meant I could not write the obvious card. *Lived 412 ticks* was out. *Grew to
+5.1 px* was out.
+
+What replaced the number is better than the number was. **412** is a fact about
+the simulation's clock; *they lived far longer than most here* is a fact about
+this animal. A visitor cannot do anything with the first and understands the
+second immediately, and the second is the one that carries feeling. The bar I
+adopted to avoid jargon turned out to be a bar against a whole class of readouts
+that answer a question nobody asked.
+
+All five bands earn their place: over six ponds and 2,422 deaths they land
+34.4% / 21.4% / 19.9% / 13.5% / 10.7%, so none of them is decoration.
+
+### The measurement that came back with the sign the wrong way round
+
+*Most here* is a claim about a **middle**. My first build divided by the mean of
+`Stats.recentDeaths`, because that is the number `Stats.mortality()` already
+reports and it was sitting right there. A pond's lifespans are heavily right-
+skewed — almost everything that dies is a newborn that never fed — so the mean
+sits above the middle of the pond, and a sentence saying *most* while dividing
+by a mean is answering a different question by accident.
+
+So I switched it to the median and ran the sweep to confirm the fix. The sweep
+disagreed with me:
+
+| window | outlive the middle | outlive the mean |
+| --- | --- | --- |
+| ticks 1,000–6,000 | **61.3%** | 56.5% |
+| ticks 4,000–6,000 | 63.7% | 58.5% |
+| ticks 10,000–12,000 | 53.6% | 51.3% |
+
+Half of anybody cannot be longer-lived than most of them. Both numbers are
+nonetheless right, and the way they are both right is the finding:
+`recentDeaths` is a **rolling window of the last few hundred bodies**, so this
+card compares a life with *the recent past* and not with the run. A pond still
+learning to eat buries shorter lives than it is about to bury, and more than
+half of its dead really do beat what came before them. The number is a
+thermometer for how far the pond still has to improve, and it cools as the pond
+settles — 61.3% early, 53.6% by tick 12,000, with the residual gap being the
+skew the median was supposed to remove and mostly does.
+
+I kept the median. The right statistic for the word *most* is the median whether
+or not the aggregate happens to look tidy, and the sweep's answer is a fact
+about the ecology rather than a defect in the card.
+
+### The subject is not in its own comparison
+
+The other thing that had to be got right before a single sentence was true. The
+newest entry in that window **is the death being reported** — `recordDeath` runs
+inside the step that killed it, and the panel notices on the next frame. A middle
+that includes the subject pins the ratio near 1 however long the animal lived;
+with exactly one prior death, every obituary in the pond reads *about as long as
+most here*. `obituaryFor` drops one entry of its own age before doing anything
+else. It is exact whenever the subject is in the window, and harmless when it is
+not — removing some other animal that happened to die at the same age leaves the
+same multiset.
+
+The first death in a pond has nobody to be measured against, and says so: *they
+were the first here to die.*
+
+### The small things I got to reuse
+
+- `dietBand` came out of `cast.js#dietClause`, because I needed the same three
+  bands in the past tense and two `if` chains reading one gene against one
+  threshold is the shape that drifts. `dietClause` is now a lookup on it.
+- The card's heading row is the living panel's heading row, swatch and all. A
+  reader has to recognise this as the animal they were just watching, and the
+  cheapest way to say so is to change nothing about how it is drawn.
+- The paragraphs are the panel's own quiet ink at the column's own size, so this
+  release adds no ink/ground pair `test/legibility.test.js` has not walked.
+- The record is a **snapshot**. The body is off `world.creatures` by the time
+  the panel sees it, and a panel holding the creature itself would be the one
+  place on this page keeping a dead thing alive.
+
+### What it leaves
+
+- **A life has no deeds in it.** The card says what an animal *was* — its diet,
+  its generation, its young — and nothing about what it *did*. Nobody counts a
+  creature's meals or its kills, so *they never caught anything*, which is true
+  of a majority of the carnivores this project measured in v1.101, cannot be
+  said. Two counters on `Creature`, two increments in the eating block, and two
+  more names in `CREATURE_HASHED` and the inspector's field tables — I costed it
+  and left it, because it is a second feature and this cycle is one.
+- **The pond's other deaths are silent.** Hundreds die per thousand ticks and
+  exactly one of them ever gets a card: the one the visitor happened to be
+  looking at. That is the right scope — an obituary for everybody is a log — but
+  it means the feature only fires for a visitor who has already selected
+  somebody, and nothing invites them to.
+- **The comparison is against the recent past and the card does not say so.**
+  The table above is the reason it matters and the sentence a visitor reads is
+  *most here*, which sounds like the pond. It is the last few hundred to die.
+  I do not know how to say that in plain words without spending the whole line
+  on it, which is the same problem `chart.js`'s recent/whole toggle solved with
+  a button and this card has no room for.
+- **`peerTypical` is one window at one length.** `deathWindow` is a constant
+  nobody has swept for this purpose, and every number in the table above is a
+  property of whatever it happens to be.
+- **The sliders are still three unsorted rows**, and `Speed` still sits outside
+  the disclosure while `Food rate` sits inside it. Nominated twice now, by the
+  entry before this one and by this one.

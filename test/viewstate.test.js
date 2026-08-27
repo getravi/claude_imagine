@@ -13,7 +13,7 @@
 // which is `statesweep.js`'s method applied to the observer instead of to the
 // world. And the *page* is read: `src/main.js` is the file this module exists
 // to disarm, so the test scans the shipped source for a top-level binding that
-// belongs to neither list, and for any of the nineteen names growing a private
+// belongs to neither list, and for any of the roster's names growing a private
 // declaration again. A roster nothing compares to the code is a second copy of
 // the code.
 //

@@ -4,6 +4,81 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.121.0] — 2026-08-27
+
+Meet somebody, watch them for two minutes, and they die, and the panel goes back
+to a hint. v1.119 built the button that hands a first-time visitor an animal with
+a story and closed by naming what it had not built: *"the one animal a visitor
+has been given a reason to care about is the one thing this page has no obituary
+for."* This is that.
+
+**When the inspector's subject dies, it writes a short life instead of blanking.**
+The same swatch and the same name it was wearing a second ago, then three plain
+sentences: how they died, whether that was soon by this pond's standards, what
+they ate and how far down the family they were, and what they left. Then a
+button that hands over somebody new, because the moment a visitor has just lost
+somebody is the moment to offer them another.
+
+**No unit appears in it**, which is `cast.js`'s bar and the reason the card is
+better than the numbers it replaced. A life is not *412 ticks* — that is a fact
+about the simulation's clock. It is said as a **comparison**: *they lived far
+longer than most here*, *they died younger than most here*. All five bands are
+used in practice — 34%, 21%, 20%, 14%, 11% over six ponds and 2,422 deaths.
+
+**The comparison is a median, and the sweep run to confirm that came back with
+the sign the wrong way round — which is the finding.** *Most here* is a claim
+about a middle, so the card divides by the middle of `Stats.recentDeaths` rather
+than by the mean that `Stats.mortality()` already reports. Half of anybody
+cannot be longer-lived than most of them, and yet **61.3% of deaths between
+ticks 1,000 and 6,000 outlive the window they are measured against**. Both
+numbers are real, and the way they are both real is the point: `recentDeaths` is
+a rolling window of the last few hundred bodies, so this card compares a life
+with **the recent past** and not with the run. A pond still learning to eat
+buries shorter lives than it is about to. It settles as the pond does — 53.6%
+between ticks 10,000 and 12,000.
+
+**And the subject is not in its own comparison.** The newest entry in that
+window *is* the death being reported; a middle that includes it pins the ratio
+near 1 however long the animal lived, which with one prior death makes every
+verdict *about average*. One entry of the subject's own age comes out first.
+
+### Added
+
+- `src/obituary.js` — `CAUSES` (a sentence and a mark for each way a creature
+  can die, closed against `stats.js#DEATH_CAUSES` in both directions, so a
+  fourth cause cannot ship with nothing said about it), `LONGEVITY` (the bands,
+  as an ordered table rather than a chain of `if`s), `DIET_PAST`, `obituaryFor`
+  (the snapshot — plain data, so no panel keeps a dead body alive),
+  `longevityLine`, `obituaryLines`, `obituaryHTML`. Pure observer: no field is
+  added to anything, nothing writes to the world, and no random number is drawn.
+- `test/obituary.test.js` — thirteen claims. Every death cause has a sentence
+  and every sentence has a cause; the first death in a pond is not measured
+  against itself; a right-skewed window is measured against its middle and not
+  its mean; the bands descend, reach the floor, and each one claims the ratios
+  inside it; nothing the card says is a word only somebody already here knows,
+  and no sentence reads a gene out as a number; writing a card does not move the
+  state fingerprint; and `main.js` is read back to check it takes the record in
+  the frame it notices the death, releases the body, and binds the card's
+  button — a card with a dead button looks finished and is not.
+- `src/main.js`: `updateInspector` takes the record on the frame the death is
+  noticed, flashes the name and the cause, speaks the whole card to the live
+  region, and rebuilds on a key like the living panel does.
+- `style.css`: `.obit p`, `.obit button` — the panel's own quiet ink at the size
+  the rest of the column is set in, so this adds no ink/ground pair
+  `test/legibility.test.js` has not already walked.
+
+### Changed
+
+- `src/cast.js`: `dietBand` and `DIET_CLAUSE` split out of `dietClause`, so the
+  present tense and the past tense read one threshold instead of two copies of
+  it. `dietClause` is unchanged in what it returns.
+- `src/viewstate.js`: `obitCard` joins the roster, world-scoped — a card about
+  an animal is a card about *that pond's* animal. Its header's count of
+  `main.js`'s module state is marked as the count when that sweep ran, since
+  `WORLD_SCOPED` is the live one and this release grows it.
+- `README.md`, `docs/ARCHITECTURE.md`: a row for what the panel does when its
+  subject dies, and one for `obituary.js`.
+
 ## [1.120.0] — 2026-08-27
 
 Thirty-one checkboxes in one undivided column, in the order I happened to add

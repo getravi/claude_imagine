@@ -45,6 +45,7 @@ import {
 } from "./inspectorview.js";
 import { nameSpecies, speciesLabel } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
+import { OBITUARY_MEET_ID, obituaryFor, obituaryHTML, obituaryLines } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -366,7 +367,7 @@ function announce(text) {
 function updateNarration(world) {
   // These four used to be reset here, on the world's own identity — the one
   // place in this file that got the question right. `viewstate.js` is that idea
-  // generalised to all nineteen, so an arriving world still primes silently
+  // generalised to every surface, so an arriving world still primes silently
   // instead of reading out the chronicle it inherited, and the priming now
   // happens for every surface rather than for this one.
 
@@ -1273,14 +1274,34 @@ function updateInspector() {
   const panel = $("inspector");
   const c = renderer.selected;
   if (!c || c.dead) {
-    if (c && c.dead) renderer.selected = null;
-    if (view.inspKey !== "-") {
-      view.inspKey = "-";
-      panel.classList.add("empty");
-      panel.innerHTML = EMPTY_HINT;
+    // Somebody the visitor was watching has just died. Until v1.121 the panel
+    // simply blanked back to its hint, which is the one moment in a run where
+    // this page had a protagonist and nothing to say about them — see
+    // `obituary.js`. The record is taken here, in the frame the death is
+    // noticed, because the body is off `world.creatures` by now and the window
+    // it is measured against moves with every later death.
+    if (c && c.dead) {
+      view.obitCard = obituaryFor(c, namesForTree(world.phylogeny), world.stats.recentDeaths);
+      renderer.selected = null;
+      const { title, sentences } = obituaryLines(view.obitCard, config);
+      flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
+      announce(`${title}. ${sentences.join(" ")}`);
+    }
+    // The card is structure with a button in it, so it obeys the same rule the
+    // living panel does: rebuilt on a key, never on a frame.
+    const key = view.obitCard ? `obit${view.obitCard.id}` : "-";
+    if (view.inspKey !== key) {
+      view.inspKey = key;
+      panel.classList.toggle("empty", !view.obitCard);
+      panel.innerHTML = view.obitCard ? obituaryHTML(view.obitCard, config) : EMPTY_HINT;
+      const again = document.getElementById(OBITUARY_MEET_ID);
+      if (again) again.addEventListener("click", meetSomebody);
     }
     return;
   }
+  // A living subject clears the last card, so meeting somebody new never leaves
+  // the panel able to flip back to an obituary the visitor has moved on from.
+  view.obitCard = null;
 
   const chain = world.phylogeny.ancestry(c.speciesId);
   const facts = creatureFacts(c, config);

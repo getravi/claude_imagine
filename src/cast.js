@@ -135,10 +135,32 @@ export function creatureLabel(c, names = null) {
  * body splitting in two.
  */
 export const OMNIVORE_FROM = 0.33;
+
+/**
+ * Which of the three bands an animal's diet gene falls in — `meat`, `mixed` or
+ * `plants` — with no tense and no wording attached.
+ *
+ * Split out of `dietClause` in v1.121, when `obituary.js` needed the same three
+ * bands said in the past tense. Two `if` chains reading one gene against one
+ * threshold is exactly the shape that drifts: move `OMNIVORE_FROM` and one
+ * sentence follows it while the other quietly does not. The band is the fact;
+ * a clause is one way of saying it.
+ */
+export function dietBand(c, config = DEFAULT_CONFIG) {
+  if (c.carnivory >= config.carnivoreThreshold) return "meat";
+  if (c.carnivory >= OMNIVORE_FROM) return "mixed";
+  return "plants";
+}
+
+/** The present-tense clause for each band, as the inspector's sentence says it. */
+export const DIET_CLAUSE = Object.freeze({
+  meat: "live on meat",
+  mixed: "eat a bit of everything",
+  plants: "graze on plants",
+});
+
 export function dietClause(c, config = DEFAULT_CONFIG) {
-  if (c.carnivory >= config.carnivoreThreshold) return "live on meat";
-  if (c.carnivory >= OMNIVORE_FROM) return "eat a bit of everything";
-  return "graze on plants";
+  return DIET_CLAUSE[dietBand(c, config)];
 }
 
 /** `1st`, `2nd`, `3rd`, `11th` — the generation, read aloud rather than counted. */

@@ -823,6 +823,22 @@ details .field {
   gap: 8px;
   margin-bottom: 10px;
 }
+/* The card the panel writes when its subject dies (v1.121, `src/obituary.js`).
+   It reuses the living panel's heading row wholesale — the same swatch, the
+   same bold name — because a reader has to recognise it as the animal they were
+   just watching. Only the paragraphs are new, and they are the panel's own
+   quiet ink at the size the rest of the column is set in, so this adds no
+   ink/ground pair `test/legibility.test.js` has not already walked. */
+.obit p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+.obit button {
+  width: 100%;
+  margin-top: 4px;
+}
 /* The creature's hue, and the panel's only report of it (v1.77). `currentColor`
    is the creature's own colour because `main.js` sets it on the span — it was
    the paragraph's ink until v1.79, so the mark's own halo was the near-white

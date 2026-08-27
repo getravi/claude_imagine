@@ -4,10 +4,12 @@
 // and left the sweep behind: *which other surfaces are written conditionally,
 // and therefore survive a world they no longer describe?* This is that sweep,
 // and its answer is not the one the note expected. The early returns were not
-// the seam. `main.js` holds **nineteen** pieces of module state that describe
-// one pond, and thirteen of them are keyed on the very string they write — a
-// memo of that shape cannot outlive its world, because the frame after the
-// swap recomputes the key from the new pond, finds it different, and writes.
+// the seam. `main.js` held **nineteen** pieces of module state describing one
+// pond when this sweep ran — `WORLD_SCOPED` is the live count and it grows
+// whenever a surface does — and thirteen of them were keyed on the very string
+// they write. A memo of that shape cannot outlive its world, because the frame
+// after the swap recomputes the key from the new pond, finds it different, and
+// writes.
 // Self-correcting by construction, with nobody having arranged it.
 //
 // What the sweep found is the six that are keyed on nothing, and one that is
@@ -48,7 +50,7 @@
 //      a no-op today, and the difference between correct and correct-on-purpose
 //      the day a path forgets `setConfig`.
 //
-// So this module is one owner for all nineteen, keyed the way the narrator was
+// So this module is one owner for all of them, keyed the way the narrator was
 // already keying its four. `adopt()` is the only reset there is, it runs at the
 // top of the frame rather than in three event handlers, and the three lists in
 // `main.js` are gone rather than reconciled — a list that cannot be typed
@@ -121,8 +123,12 @@ const FRESH = Object.freeze({
   // key because nothing about a mark's *position* changes without its value.
   sizeAxisKey: "",
   sizeLabel: "",
-  // The inspector.
+  // The inspector — and, since v1.121, the life it writes when its subject dies
+  // (`obituary.js`). World-scoped for the plainest of reasons: a card about an
+  // animal is a card about *that pond's* animal, and a new pond has never met
+  // them.
   inspKey: "",
+  obitCard: null,
 });
 
 /** The names `ViewState` owns, in the order they are declared. */
