@@ -76,6 +76,20 @@
             aria-describedby="pond-keys"
             aria-label="The pond. Its contents are described here as they change."
           ></canvas>
+          <!-- The names (v1.126), on a layer of their own over the water.
+               The pond clears itself with a translucent veil so that motion
+               leaves comet trails, which is lovely for a glowing dart and
+               illegible for a word: the first browser run drew four stacked
+               copies of every name. This canvas is cleared outright every
+               frame. `aria-hidden` because every name on it is already a row on
+               the `🏅 Worth watching` board, in a button a reader can press. -->
+          <canvas
+            id="names"
+            class="namelayer"
+            width="900"
+            height="620"
+            aria-hidden="true"
+          ></canvas>
           <p id="pond-keys" class="sr-only">
             Arrow keys select a creature and step to the nearest one in that
             direction; Enter follows the selection with the camera; Escape clears
@@ -133,7 +147,13 @@
              that selects that animal and sends the camera after it.
              `src/whoswho.js` owns the rows and the wording, `src/cast.js` the
              list itself — so the board's first row is exactly what the button
-             would have handed over, by construction rather than by luck. -->
+             would have handed over, by construction rather than by luck.
+
+             Since v1.126 this board is also the key to the water: the animals
+             on it wear their names over the pond, with the same mark, in the
+             same order, off the same list (`src/nametag.js`). A name in a panel
+             that a reader cannot find in the picture is a caption for a
+             photograph nobody was shown. -->
         <section class="whoswho" aria-labelledby="whoswho-h">
           <div class="whoswho-head">
             <h2 id="whoswho-h">🏅 Worth watching</h2>

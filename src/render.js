@@ -25,10 +25,14 @@ import {
   selectionMark,
   biomeGlowStops,
   BIOME_GLOW_SPAN,
+  lineageFill,
+  nameTag,
+  nameTagFont,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
+import { tagText } from "./nametag.js";
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -51,6 +55,18 @@ const VISION_RAYS = 128;
  * backgrounds (v1.84, worst case ΔE 48.9).
  */
 const REACH_DASH = [3, 3];
+
+/**
+ * The most a name tag may be enlarged to survive a canvas the page is showing
+ * smaller than it is (v1.126).
+ *
+ * 3 is the scale at a 390 px phone with a little room to spare: the pond is
+ * shown at 346 there, which is 2.6×. Past that the plate would start to be
+ * furniture rather than a label — at 5× a two-word name is a third of the width
+ * of the water — and a name too big to sit over its animal has stopped being
+ * about the animal.
+ */
+const MAX_TAG_SCALE = 3;
 
 /** Start a closed circular path. Kept as a function so it can be a clip *and* a stroke. */
 function circlePath(ctx, x, y, r) {
@@ -110,6 +126,15 @@ export class Renderer {
     // overlay here.
     this.showReach = false;
     this.showEnergy = true;
+    // The name tags (v1.126): one plate per animal this page has a reason to
+    // name, filled in by `main.js` from `src/nametag.js` before each frame. Empty
+    // here rather than computed here, because *who is worth naming* is an
+    // ecological question and this class paints.
+    /** @type {Array<{id: number, x: number, y: number, radius: number, hue: number, mark: string, name: string, chosen: boolean}>} */
+    this.nameTags = [];
+    /** The surface the names are drawn on — see `attachNameLayer`. */
+    this._nameCanvas = null;
+    this._nameCtx = null;
     this.selected = null; // a creature to highlight/inspect
     this.highlightSpeciesId = null; // when set, other species are dimmed
     // Reduced motion: when true, each frame clears fully instead of leaving a
@@ -134,6 +159,45 @@ export class Renderer {
     this._resize();
   }
 
+  /**
+   * Hand the renderer a second canvas to write the names on, laid over the pond.
+   *
+   * **This is a fix the screenshot found and the tests could not.** The tags
+   * were drawn onto the pond itself for exactly one browser run, and every one
+   * of them left a legible ghost of itself behind: this scene clears with a
+   * translucent veil rather than a hard clear, on purpose, so that motion leaves
+   * comet trails — and a comet trail made of *letters* is four stacked copies of
+   * a word. Every other mark here is a small glowing shape the veil flatters. A
+   * word is the one thing on this canvas that must not smear.
+   *
+   * So the names get a layer of their own, cleared outright on every frame. It
+   * also makes the release's other claim structural rather than careful: this
+   * surface never has the camera applied to it, so a name cannot scale with the
+   * zoom even by accident.
+   *
+   * Optional. With no layer attached — the landing page's hero, and every test
+   * that does not ask for one — nothing is named and the pond is drawn exactly
+   * as it was before this release.
+   *
+   * @param {HTMLCanvasElement|null} canvas
+   */
+  attachNameLayer(canvas) {
+    this._nameCanvas = canvas || null;
+    this._nameCtx = canvas ? canvas.getContext("2d") : null;
+    if (canvas) this._resizeNameLayer();
+  }
+
+  /** Match the name layer to the pond's backing store and device pixel ratio. */
+  _resizeNameLayer() {
+    const canvas = this._nameCanvas;
+    if (!canvas) return;
+    canvas.width = this.config.width * this.dpr;
+    canvas.height = this.config.height * this.dpr;
+    canvas.style.width = this.config.width + "px";
+    canvas.style.height = "auto";
+    this._nameCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+  }
+
   /** Point the renderer and its lens at a new config (after a reset or scenario). */
   setConfig(config) {
     this.config = config;
@@ -147,6 +211,8 @@ export class Renderer {
     this._soilCanvas = null;
     this._soilImage = null;
     this._soilFor = null;
+    // A new config can be a new world size, which the layer over it has to be.
+    this._resizeNameLayer();
   }
 
   _resize() {
@@ -305,6 +371,88 @@ export class Renderer {
 
     // Leave the context in screen space for whoever draws next.
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    // The names, last of all and on a layer of their own — see `_drawNameTags`.
+    this._drawNameTags();
+  }
+
+  /**
+   * The name tags (v1.126): a plate over each animal this page has a reason to
+   * name, carrying its given name and the mark of what makes it worth watching.
+   *
+   * `main.js` fills `this.nameTags` from `src/nametag.js` before each frame, the
+   * way it hands over the trail and the selection — this class paints, and who
+   * is worth naming is an ecological question that has one home already.
+   *
+   * **Drawn in screen space, on purpose.** Everything else in this scene is laid
+   * down through the camera and therefore grows with the zoom. Letters must not:
+   * a name that doubles when you lean in is a mark about the lens rather than
+   * about the animal, and at 8× it would be a word the width of the pond. The
+   * name layer never has the camera applied to it at all, the tag's own geometry
+   * is in screen pixels, and only the *anchor* comes through the lens.
+   */
+  _drawNameTags() {
+    const ctx = this._nameCtx;
+    if (!ctx) return;
+    const cfg = this.config;
+    // Cleared before the early return, not after it: a layer that keeps its
+    // last frame when the list empties is a name over an animal that has died.
+    ctx.clearRect(0, 0, cfg.width, cfg.height);
+    const tags = this.nameTags;
+    if (!tags || !tags.length) return;
+    const t = nameTag();
+    // A name is a mark on the *page* drawn on a canvas measured in *world*
+    // pixels, and on a narrow window those are not the same unit: the pond is
+    // 900 canvas pixels wide and the stylesheet shows it at whatever the column
+    // allows — 346 on a 390 px phone, where an 11 px name would land at 4.2 and
+    // be unreadable. So the tag's whole geometry is divided by the scale the
+    // page is displaying the canvas at, which is `scalebar.js`'s trick (v1.82)
+    // applied to type instead of to a ruler. Capped, because a canvas displayed
+    // at a fifth of its size would otherwise get a plate a third of the pond
+    // wide, and unscaled wherever the display width cannot be read — every test
+    // in this suite, and any embedding with no layout.
+    const shown = Math.round(this.canvas.clientWidth) || cfg.width;
+    const k = Math.min(MAX_TAG_SCALE, cfg.width / shown);
+    const font = nameTagFont(t.fontPx * k);
+    const padX = t.padX * k;
+    const barW = t.barW * k;
+    const height = t.height * k;
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    for (const tag of tags) {
+      const p = this.camera.worldToScreen(tag.x, tag.y);
+      // The animal is off the edge of the view: no plate. A tag whose anchor is
+      // not on screen would be a name floating over somebody else's water,
+      // which is the one thing a label may never do.
+      if (p.x < 0 || p.x > cfg.width || p.y < 0 || p.y > cfg.height) continue;
+      // The body's glow reaches three radii (`_drawCreature`), and the plate
+      // clears it: a label sitting inside the halo reads as part of the animal
+      // rather than as a thing said about it.
+      const lift = tag.radius * 3 * this.camera.zoom + t.lift * k;
+      const text = tagText(tag);
+      const w = ctx.measureText(text).width + padX * 2 + barW;
+      // Held inside the view, once the anchor is known to be in it. The first
+      // browser run of this feature drew half a name off each edge of the
+      // canvas, because an animal at the edge of the water is an ordinary thing
+      // and a plate is thirty pixels wider than the body it belongs to. Nudging
+      // it costs at most half a plate of offset and keeps the name beside its
+      // animal; letting the edge cut it costs the word.
+      const x = Math.max(0, Math.min(cfg.width - w, p.x - w / 2));
+      const y = Math.max(0, p.y - lift - height);
+      ctx.fillStyle = t.plate;
+      ctx.fillRect(x, y, w, height);
+      // The family stripe: the animal's own lineage colour down the leading
+      // edge, so a plate is tied to a body by the channel this pond has used
+      // for family since v1.2. It is also the only part of a tag that differs
+      // between two animals wearing the same mark.
+      ctx.fillStyle = lineageFill(tag.hue, "dot");
+      ctx.fillRect(x, y, barW, height);
+      ctx.fillStyle = t.ink;
+      ctx.fillText(text, x + barW + padX, y + height / 2);
+    }
+    ctx.restore();
   }
 
   /**

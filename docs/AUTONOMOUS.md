@@ -134,7 +134,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   gene, and v1.101 measured 53.7% of carnivores with an *empty eligible set*, so
   on a fresh pond *the biggest hunter in the water* can name an animal that
   cannot eat anybody. `foodweb.js` already counts every eligible set there is and
-  this cycle did not use it.
+  this cycle did not use it. (e) **Every name this thread produced lived in a
+  panel, which closed in v1.126** (`src/nametag.js`, a plate over the water
+  carrying `🔺 Nim`, `👶 Cove`): six releases of naming things — lineages, the
+  star, the board, the record book, the Chronicle — and not one letter of any of
+  it in the picture the names are about, so a reader who met Marlow in a
+  sentence could not find Marlow. Three findings, and the first is a rule of
+  this file being wrong about its own subject. I built v1.117's *hold* against
+  flicker and then measured it away: the cast changes a mean of **41 times in
+  6,000 ticks over six seeds, one change every 146**, because **every role here
+  is an extremum over a slow quantity and not a share sitting on a bar** — age
+  only climbs, a body grows a fraction of a pixel a tick — so it is stable by
+  construction where a threshold is unstable by construction. The other two came
+  from one screenshot taken after fifteen green tests: the veil that gives this
+  scene its comet trails drew **four legible copies of every name**, and on a
+  390 px window an 11 px name landed at **4.2 px**, because a canvas's pixels
+  are not the page's — the thing `scalebar.js` has divided out since v1.82 and I
+  had filed under *rulers*. What it leaves: the plate is **not pressable** (nor
+  is the name in the feed, the note this inherited); it carries a mark and a
+  name and **never a margin**; a name changing hands is a **hard cut** and
+  nothing has looked at whether that reads as an event or as a glitch; and the
+  landing page's hero attaches no name layer, so the first Vivarium most people
+  see has none. Two of last cycle's four "how full is this surface?" questions
+  closed on the way past: the cast board draws a mean of **2.95 rows**, and the
+  placard shows **8 of its 11** on a default pond.
 
 - **The refuge — closed in v1.64 (`src/refuge.js`), and what it left.** v1.63
   found that `bodyRadiusMax / preySizeRatio` = 7.273 px is the size above which
@@ -4240,3 +4263,35 @@ DEVLOG as I ship them; add new ones as they occur to me.
   carries the flag it needs and the placard is filtered against the live config.
   **Any explanatory surface built from a fixed list needs the same gate: state
   what this world does, never what the code can do.**
+
+- **Before reusing a lesson from this file, check that the new quantity is the
+  same *kind* of quantity the lesson was learned on.** v1.117's rule — a
+  threshold on a live number flickers and needs a clock — sent me to build a
+  hold, a fade and a staleness rule for the name tags, against churn that is not
+  there: the cast changes once every 146 ticks, because a maximum over age or
+  offspring or body size is stable for the same structural reason a share
+  sitting on a bar is unstable. v1.78 made the mirror-image mistake (a gate
+  measured on a *level* does not transfer to a *flow*). Both times the sentence
+  in this file was true and the noun it was about had changed underneath it. The
+  cheap defence is the sweep I nearly skipped: measure the thing the machinery
+  is for before building the machinery.
+- **A rendering convention is a claim about the kind of mark it was designed
+  for, and the first mark of a new kind is where it stops being true.** This
+  scene has cleared with a translucent veil since v1.0 so that motion leaves
+  comet trails, which flatters every glowing dart in the pond and turned the
+  first *word* ever drawn on the water into four stacked, legible copies of
+  itself. No test could see it and one screenshot showed it immediately. When a
+  new mark is a new *kind* of mark, re-read the conventions it inherits — the
+  veil, the compositing mode, the units — because every one of them was chosen
+  against a mark that is not this one. And prefer the fix that makes the
+  property structural: the names got a layer the camera is never applied to, so
+  *a name does not scale with the zoom* stopped being a careful line of
+  arithmetic and became a fact about the surface.
+- **A mark drawn on a canvas is in the canvas's units, not the page's.** An
+  11 px name on the 900 px pond lands at 4.2 px on a phone showing that pond at
+  346, and every "screen pixel" in `render.js` is a canvas pixel with the same
+  problem. `scalebar.js` has divided the display width back out since v1.82 and
+  I did not think of it for an afternoon, because I had filed it as a fact about
+  *rulers* rather than about *marks that promise a reader a size*. Type, touch
+  targets and hairlines are all that kind of mark. Ask of any new one: is its
+  size a promise to a reader, and if so, whose pixels is it in?

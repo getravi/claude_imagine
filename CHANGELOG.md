@@ -4,6 +4,86 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.126.0] — 2026-08-28
+
+The names come out of the panels and onto the water.
+
+Six releases went into teaching this page to call things by name — the lineages
+(v1.116), the animal the button hands you (v1.119), the cast board (v1.123), the
+record book (v1.124), and a Chronicle that now says *"Marlow raises their 6th"*
+(v1.125). Every one of those names lives in a **panel**. The picture they are
+all about has never carried a single letter. So a visitor reads that Marlow has
+raised six young, looks up at three hundred identical darts, and has no way
+whatever of finding Marlow. **A name nobody can point at is a caption for a
+photograph nobody was shown.**
+
+So: name tags. A small plate over the handful of animals this page already has a
+reason to name — the one you picked, and the stand-outs on `🏅 Worth watching` —
+carrying the given name and the mark of what makes them worth watching. The
+board under the water is now the key to the water: same animals, same marks,
+same order, one list.
+
+**I built a hold, measured it, and deleted it.** v1.117's rule is that a
+threshold on a live number flickers several times a second and needs a clock to
+be readable, so the first design here had a hold, a fade, and a rule for what a
+tag says while it is out of date. None of it shipped. Six seeds, six thousand
+ticks, the cast sampled every tick: the set changes a mean of **41 times in
+6,000 ticks — one change every 146** — and the median stretch with nobody moving
+runs 38–152 ticks depending on the pond. The reason is structural rather than
+lucky, and it is the finding: **every cast role is an extremum over a slow
+quantity** — age, young raised, body radius — and not one of them is a share
+sitting on a bar. Age only climbs; a body grows by a fraction of a pixel a tick;
+the animal with the most young keeps them. A maximum over a slow quantity is
+stable *because of what it is*. The churn does rise as a pond settles (2 changes
+in the first 300 ticks across six seeds, 148 between t3,000 and t6,000), and
+even at the end it is a change every two seconds of watching.
+
+**Two bugs the tests could not see and one screenshot could.** The first browser
+run of this feature drew every name **four times**: this scene clears with a
+translucent veil so that motion leaves comet trails, which flatters a small
+glowing dart and turns a word into a stack of legible ghosts. Names have a
+canvas of their own now, cleared outright every frame — which also makes the
+release's other claim structural, since the camera is never applied to that
+surface and a name therefore cannot scale with the zoom even by accident. The
+second was the phone: the pond is 900 canvas pixels wide and a 390 px window
+shows it at 346, so an 11 px name landed at **4.2** and could not be read. The
+tag divides the display scale back out, which is `scalebar.js`'s own trick from
+v1.82 applied to type instead of to a ruler.
+
+### Added
+
+- **`src/nametag.js`** — who is wearing their name and what it says. Pure
+  observer: `castRoles` holds the predicates and `whoswho.js#ROLE_MARK` the
+  marks, and this imports both rather than restating either, so the plate and
+  the board cannot disagree. Capped at four; the cast runs a mean of 2.95 rows,
+  which answers one of the four "how full is this surface, actually?" questions
+  v1.125 closed with.
+- **`src/render.js#attachNameLayer`, `_drawNameTags`** — a second canvas over
+  the pond, sized to the world and cleared every frame. A tag whose animal is
+  off screen is not drawn; one whose animal is at the edge is nudged to stay
+  whole, because the alternative is half a name.
+- **`src/palette.js#nameTag`, `nameTagFont`, `nameTagTones`** — the first
+  **letters** this project has drawn on the water, so the first colour here
+  measured with WCAG's contrast ratio rather than ΔE: **16.6:1**, against a bar
+  of 4.5. The plate is opaque on purpose, which is what makes that a fact about
+  two colours instead of a hope about a background.
+- **`src/key.js`** — an eleventh row on the placard, because a key that omits a
+  mark the pond draws is the same failure as one that invents a mark it does
+  not. Eight rows on the default pond.
+- **`src/rendershot.js`** — `fillText`, `measureText`, `font`, `textAlign`,
+  `textBaseline`, and the names surface itself. The recorder's own header says
+  to sweep it whenever the renderer learns a new call; this is that.
+- **`test/nametag.test.js`** — fifteen tests: the board and the water are one
+  list, only the living wear a name, the ink clears the reading bar on the plate
+  it is printed on, the plate is opaque, and a name neither grows with the lens
+  nor shrinks with the window.
+
+### Notes
+
+- Determinism untouched: `nametag.js` draws no random number and writes nothing,
+  the name layer is a second canvas rather than a rule, and the golden
+  fingerprints are unmoved. 1,291 tests.
+
 ## [1.125.0] — 2026-08-28
 
 The pond starts calling out names.

@@ -530,6 +530,20 @@ body {
 .chronicle-feed li.cat-record { border-left-color: #d8c26a; }
 .chronicle-feed li.cat-diversity { border-left-color: #5adc96; }
 .chronicle-feed li.cat-night { border-left-color: #8a93e8; }
+/* The name layer (v1.126): the pond's own geometry, laid exactly over it. It
+   inherits `max-width` and `height: auto` from the canvas below so the two
+   scale together on a narrow window, and it never takes a pointer event — a
+   click on a name is a click on the water under it, which is the animal the
+   name is about. */
+.namelayer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  pointer-events: none;
+}
 #world {
   display: block;
   max-width: 100%;

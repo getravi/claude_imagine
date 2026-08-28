@@ -64,6 +64,12 @@ class RecordingContext {
     // could see it, which is v1.50's warning about this module in its own
     // words: the recorder is a claim of equivalence like any other accelerator,
     // so sweep it when `render.js` learns a new call.
+    // `font`, `textAlign` and `textBaseline` joined in v1.126, with `fillText`
+    // and `measureText` below them: that release drew the first letters this
+    // project has ever put on the water, and a recorder that could not see a
+    // typeface would be blind to the whole feature — a name in the wrong size,
+    // or laid out from the wrong baseline, is exactly the invisible-mark bug
+    // this stub exists to catch.
     for (const prop of [
       "fillStyle",
       "strokeStyle",
@@ -72,6 +78,9 @@ class RecordingContext {
       "lineJoin",
       "globalAlpha",
       "globalCompositeOperation",
+      "font",
+      "textAlign",
+      "textBaseline",
     ]) {
       let value = null;
       Object.defineProperty(this, prop, {
@@ -113,6 +122,24 @@ class RecordingContext {
   strokeRect(x, y, w, h) { this.op("strokeRect", x, y, w, h); }
   clearRect(x, y, w, h) { this.op("clearRect", x, y, w, h); }
   setLineDash(d) { this.op("setLineDash", ...d); }
+
+  // --- Type ---
+  fillText(text, x, y) { this.op("fillText", text, x, y); }
+
+  /**
+   * A width, from the font size and the number of characters.
+   *
+   * There is no type engine here and there cannot be one, so this is an
+   * estimate and says so: 0.55 em a character is about right for a humanist
+   * sans at small sizes. What it buys is the only thing the suite needs — a
+   * plate whose width grows with its text, so the layout arithmetic in
+   * `render.js#_drawNameTags` runs and can be asserted about. A tag's exact
+   * width on a real canvas is the browser's business.
+   */
+  measureText(text) {
+    const px = Number((/(\d+(?:\.\d+)?)px/.exec(this.font || "") || [])[1]) || 10;
+    return { width: String(text).length * px * 0.55 };
+  }
 
   // --- State & transform ---
   save() { this.op("save"); }
@@ -222,6 +249,10 @@ export function renderOps(world, config = null, tune = null) {
   withStubDom(ops, () => {
     const canvas = new RecordingCanvas("pond", ops);
     const renderer = new Renderer(canvas, config || world.config);
+    // The names are drawn on a layer of their own (v1.126), so a recording made
+    // without one would be blind to every word on the page — the same gap the
+    // offscreen surfaces had before v1.50, one release after the feature.
+    renderer.attachNameLayer(new RecordingCanvas("names", ops));
     if (tune) tune(renderer);
     renderer.draw(world);
   });

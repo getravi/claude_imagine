@@ -39,6 +39,7 @@ import {
   foodMote,
   immuneRing,
   lineageFill,
+  nameTag,
   predatorMark,
   predatorOutline,
   selectionMark,
@@ -140,6 +141,12 @@ export const MARKS = Object.freeze([
     line: "A white ring. Click any creature to be told who they are and watch what becomes of them.",
     needs: null,
   },
+  {
+    id: "named",
+    term: "A name",
+    line: "A few wear one: the animal you picked, and whoever the board below has a reason to point at.",
+    needs: null,
+  },
 ]);
 
 /**
@@ -167,9 +174,9 @@ export function keySignature(config) {
 
 // ---- the swatches ----
 //
-// SVG rather than a canvas, for one reason: there are up to ten of these and
-// they never change, so a canvas each would be ten contexts and a redraw path
-// to keep in step with the pond. A path string is written once and the browser
+// SVG rather than a canvas, for one reason: there is one per visible mark, they
+// never change, and a canvas each would be a context each and a redraw path to
+// keep in step with the pond. A path string is written once and the browser
 // keeps it. The geometry is the renderer's own, so the arrowhead in the placard
 // is the arrowhead in the water at a different size.
 
@@ -244,8 +251,8 @@ function body(
 
 /**
  * The marks of a single row, as SVG shapes. One function rather than a field on
- * each row, because a row is data — a table with ten drawing closures in it is
- * a table nothing can compare against anything.
+ * each row, because a row is data — a table with a drawing closure on every row
+ * is a table nothing can compare against anything.
  *
  * @param {string} id one of `MARKS`
  * @returns {string} SVG markup for the inside of the swatch box
@@ -337,6 +344,24 @@ export function swatchShapes(id) {
     case "chosen": {
       const sel = selectionMark();
       return body(h1, { r: 3.4, gid: gid() }) + ring(cx, cy, 7, sel.ring, sel.width);
+    }
+    case "named": {
+      // The one swatch here that is a *plate* rather than a mark on a body, so
+      // it is built the way `render.js#_drawNameTags` builds it — the family
+      // stripe, the plate, and a word in the tag's own ink — rather than being
+      // drawn to resemble it. The word is a name off `cast.js`'s own list: a
+      // placard showing lorem ipsum where the pond shows a name is a swatch
+      // about the design and not about the water.
+      const t = nameTag();
+      const plateW = 21;
+      const px = cx - plateW / 2 + 1;
+      return (
+        body(h1, { cx, cy: cy + 5, r: 3, gid: gid() }) +
+        `<rect x="${px}" y="1" width="${plateW}" height="9" fill="${t.plate}" />` +
+        `<rect x="${px}" y="1" width="1.6" height="9" fill="${lineageFill(h1, "dot")}" />` +
+        `<text x="${px + 3.4}" y="7.4" fill="${t.ink}" font-size="6.5" ` +
+        `font-family="system-ui, sans-serif" font-weight="600">Pip</text>`
+      );
     }
     default:
       throw new Error(`no swatch for "${id}"`);

@@ -70,6 +70,7 @@ import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
+import { nameTags } from "./nametag.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -210,6 +211,9 @@ function boot() {
   const canvas = $("world");
   renderer = new Renderer(canvas, config);
   renderer.trail = trail;
+  // The names get a canvas of their own over the pond — see
+  // `Renderer#attachNameLayer` for why they cannot share the water's.
+  renderer.attachNameLayer($("names"));
   renderer.reducedMotion = motionQuery.matches;
   $("toggle-motion").checked = renderer.reducedMotion;
   motionQuery.addEventListener("change", (e) => {
@@ -330,6 +334,11 @@ function loop(now) {
   // The camera catches up to whatever it is following before anything is drawn,
   // so a followed creature never lags a frame behind its own halo.
   renderer.camera.update();
+  // Who is wearing their name over the water this frame (v1.126). Recomputed
+  // per frame rather than held: `nametag.js` carries the measurement that says
+  // the cast is stable enough not to need a hold, and a name held past its
+  // moment is a label that has started lying.
+  renderer.nameTags = nameTags(world, config, namesForTree(world.phylogeny), renderer.selected);
   renderer.draw(world);
   updateViewBadge();
   updateMinimap();

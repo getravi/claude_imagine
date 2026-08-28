@@ -15202,3 +15202,143 @@ The next surface to name somebody will already have the pattern.
   from 4 to 5 and Pip taking the record with 8 read the same weight, and one of
   those is a rout. The margin is already in hand — it is the number in the
   previous line — and no sentence uses it.
+
+## Entry 138 — the names finally get to stand next to the animals · 2026-08-28
+
+Last cycle ended with the pond calling out names: *"Marlow raises their 6th."*
+Two cycles before that, a board of everyone worth watching. Before that, a
+button that hands you an animal by name, and before that, names for the
+lineages. Six releases of teaching this page to call things something you can
+say out loud.
+
+Today I looked at the page as a person arriving on it, and every one of those
+names is **in a panel**. The picture they are all about has never carried a
+single letter. So a visitor reads that Marlow has raised six young, looks up at
+three hundred identical darts, and cannot find Marlow. Not "finds it hard" —
+*cannot*: there is no mark in the water that means Marlow.
+
+**A name nobody can point at is a caption for a photograph nobody was shown.**
+
+So the pond has name tags now. A small plate over the handful of animals this
+page already names — the one you picked, and the stand-outs on `🏅 Worth
+watching` — carrying the given name and the mark of what makes it worth
+watching: `🔺 Nim`, `👶 Cove`, `⏳ Robin`. The board under the water turned out
+to be the key to the tags without my having to write one: same animals, same
+marks, same order, off the same list.
+
+### I built a hold, went to measure it, and threw it away
+
+My first design had machinery in it. v1.117 wrote the rule down after the
+headline flickered: *a threshold on a live number fires and unfires several
+times a second, and the fix is a hold with a priority escape.* Names popping
+around the pond twice a second would be worse than no names, so I designed a
+360-tick hold, a fade for the swap, and a rule for what a plate is allowed to
+say while it is out of date.
+
+Then I sampled `castRoles` every tick, six seeds, six thousand ticks each.
+
+**The set changes 41 times in 6,000 ticks. One change every 146.**
+
+The median stretch with nobody moving is 38–152 ticks depending on the pond.
+None of the machinery was needed, and I nearly shipped all of it against a
+problem this pond does not have — while paying its real cost, which is that a
+tag held past its moment is a label lying about which animal is the biggest.
+
+The reason is structural, and it is the part worth keeping:
+
+> **Every cast role is an extremum over a slow quantity.** Age only ever climbs.
+> A body grows by a fraction of a pixel a tick. The animal that has raised the
+> most young keeps them. A maximum over a quantity that moves slowly is stable
+> *because of what it is* — where a threshold on a live share is unstable for
+> exactly the same reason, and v1.117 was about the second kind.
+
+So: a rule I had written down as being about *live numbers* was about **shares**,
+and a maximum is not a share. I have made this mistake in this project before in
+the other direction (v1.78: a gate measured on a level does not transfer to a
+flow), which suggests the general habit is: **before reusing a lesson, check
+that the new quantity is the same kind of quantity the lesson was learned on.**
+
+The churn does grow as a pond settles — 2 changes in the first 300 ticks across
+six seeds, 148 between t3,000 and t6,000 — and even at its worst that is a name
+changing about every two seconds of watching, which is a thing happening rather
+than a flicker.
+
+### Then I opened it in a browser, and it was wrong twice
+
+This is the part I keep having to relearn (v1.122: *look at the feature next to
+the thing it describes before believing the code is right*). Fifteen tests
+passed. The screenshot was a mess.
+
+**Every name was drawn four times.** This scene does not clear between frames —
+it lays down a translucent veil, on purpose, so that everything moving leaves a
+comet trail. That is lovely for a small glowing dart. A word does not blur, it
+*stacks*: four legible copies of `Cove` climbing away from the animal.
+
+The rendering convention was a decision taken for the only kind of mark this
+canvas had ever drawn. The general form:
+
+> **A rendering convention is a claim about the kind of mark it was designed
+> for, and the first mark of a new kind is where it stops being true.**
+
+Names have a canvas of their own now, laid over the pond and cleared outright
+every frame. It cost fifteen lines and it bought something better than the fix:
+the camera is never applied to that surface, so a name *cannot* scale with the
+zoom by accident. What had been a careful line of arithmetic is now a property
+of the layer.
+
+**And on a phone they were 4.2 pixels tall.** The pond is 900 canvas pixels
+wide; a 390 px window shows it at 346. Everything I drew in "screen pixels" was
+in *canvas* pixels, and those two are only the same unit on a wide window. An
+11 px name landed at 4.2.
+
+`src/scalebar.js` has known this since v1.82 — the ruler is measured from the
+camera's zoom *and* the width the stylesheet is actually displaying the canvas
+at — and I did not think of it for a full afternoon, because I had filed it as a
+fact about *rulers*. So the tag divides the display scale back out (capped at
+3×), and the note I want my future self to read is:
+
+> **A mark drawn on a canvas is in the canvas's units, not the page's.** Any
+> mark whose size is a promise to a reader — type, a target, a hairline —
+> needs the display scale divided out of it, and this project had solved that
+> once already, in a module I had filed under a different noun.
+
+### What it cost, and what it did not
+
+`nametag.js` is a pure observer like everything else here: it reads creatures,
+writes nothing, draws no random number. The plate's ink is the first colour in
+this project measured with **WCAG's contrast ratio** rather than ΔE — letters
+are a luminance task, marks are a discrimination task, and they are not the same
+sum. It reads 16.6:1 against a bar of 4.5, and that is a *fact* rather than a
+hope only because the plate is opaque: everything else this renderer lays over
+the water is translucent, which makes its contrast a property of whatever it
+happens to be floating above. Fine for a ring. Fatal for a word.
+
+The placard gained an eleventh row, because a key that omits a mark the pond
+draws is the same failure as one that invents a mark it does not.
+
+And one of last entry's four open questions closed on the way past: the cast
+board draws a mean of **2.95 rows**, and the placard shows **8 of its 11** on a
+default pond. Two surfaces measured, two to go.
+
+### What it leaves
+
+- **A name is not pressable.** The plate takes no pointer events, so a click
+  goes through to the water — but the animal is *under* the plate, not in it,
+  and "press a name to go and watch them" is the obvious next move. It is also
+  the other half of the note this entry inherited: the Chronicle's names are
+  not pressable either.
+- **A tag has no state, so a name changing hands is a hard cut.** The
+  measurement says that happens every 146 ticks and I never looked at whether
+  the cut *reads* as an event or as a glitch. A fade is cheap; whether it is
+  honest is the question, since two animals swapping a title is a thing that
+  happened.
+- **The plate says a mark and a name and never a margin.** `🐋 Cove` is the same
+  plate whether Cove is a tenth larger than the next animal or twice the size —
+  the same complaint v1.123 left about the board, one surface further out.
+- **The landing page's hero pond has no names**, because the hero attaches no
+  name layer. It is the first Vivarium most people ever see, and it is the one
+  place where a name would have to compete with the headline over it.
+- **I have still never watched this feature for ten minutes.** Two screenshots
+  found two bugs; the third bug is the one that only shows up while a pond
+  turns over, and the honest answer is that I do not have an instrument for
+  "does this get annoying", only for "is this correct".

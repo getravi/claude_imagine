@@ -535,6 +535,73 @@ export function selectionMarkTones() {
 export const SELECTION_OLD_INK = Object.freeze({ rgb: { r: 255, g: 255, b: 255 }, alpha: 0.8 });
 
 /**
+ * The name tag: the first **letters** this project has ever drawn on the water
+ * (v1.126), so the first colour here that has to answer a different question.
+ *
+ * Every other mark in this file is measured with ΔE, because the question asked
+ * of a mark is *can these two be told apart?*. Type is not that question. Small
+ * letters are a spatial-frequency task carried almost entirely by luminance, so
+ * the bar is WCAG's contrast ratio — 4.5 for body text — which is the
+ * instrument `legibility.js` brought in for the stylesheets in v1.109 and which
+ * has never had anything on the canvas to point at.
+ *
+ * **The plate is opaque, and that is the whole design.** Everything else this
+ * renderer lays over the pond is translucent, which makes its contrast a
+ * property of whatever it happens to be floating above — fine for a ring, fatal
+ * for a word. An opaque plate makes the ratio a fact about two colours instead
+ * of a hope about a background: ink on plate is **16.6:1** wherever the tag
+ * lands, over the deep, over a biome glow, over a body. `test/nametag.test.js`
+ * holds it to 4.5.
+ *
+ * The plate is `selectionMark`'s own rim, and deliberately: a tag and the ring
+ * around the animal you picked are one vocabulary — *this page is pointing at
+ * somebody* — and the rim is already the most measured near-black here. The
+ * hue bar down its left edge is the animal's own lineage colour, so a tag is
+ * tied to its body by the one channel this pond has always used for family.
+ */
+export function nameTag() {
+  return {
+    plate: "hsl(232, 55%, 7%)",
+    ink: "hsl(210, 24%, 93%)",
+    // The tag's own geometry, in screen pixels — it is drawn after the camera
+    // has been taken back off, so a label is the same size at every zoom. A
+    // name that grew with the magnification would be a mark about the lens
+    // rather than about the animal.
+    fontPx: 11,
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    fontWeight: 600,
+    padX: 5,
+    height: 16,
+    /** Width of the lineage-coloured bar on the plate's leading edge. */
+    barW: 2,
+    /** Gap between the animal's glow and the underside of its plate. */
+    lift: 9,
+  };
+}
+
+/**
+ * The tag's type at a given size, as a CSS `font`.
+ *
+ * A size rather than a constant string because a name is a *page* mark drawn on
+ * a *world* canvas, and on a narrow window those two are not the same pixel:
+ * the pond is 900 canvas pixels wide and the stylesheet may be showing it at
+ * 350, which would render an 11 px name at 4.3. `render.js` divides that scale
+ * back out, the way `scalebar.js` has measured its ruler in the picture rather
+ * than in the page since v1.82.
+ *
+ * @param {number} [px] type size in the canvas's own pixels
+ */
+export function nameTagFont(px = nameTag().fontPx) {
+  const t = nameTag();
+  return `${t.fontWeight} ${px}px ${t.fontFamily}`;
+}
+
+/** The name tag's two tones as RGB, for the audit and the contrast test. */
+export function nameTagTones() {
+  return { ink: hslToRgb(210, 24, 93), plate: hslToRgb(232, 55, 7) };
+}
+
+/**
  * The same mark at minimap scale, where a creature is a single square of a few
  * pixels and there is no room for a rim drawn as a stroke.
  *

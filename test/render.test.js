@@ -107,7 +107,12 @@ test("the recording reaches the offscreen layers too", () => {
   // the terrain map and the entire content of the nutrient map.
   const plain = renderOps(pond());
   const layered = renderOps(pond({ terrain: true, detritus: true }, 700));
-  assert.deepEqual([...new Set(plain.map((o) => o[0]))], ["pond"]);
+  // Two surfaces on a plain pond since v1.126, and the second one is not
+  // offscreen: the names are written on a layer laid over the water (it cannot
+  // share the water's canvas, which clears with a veil and would smear a word
+  // into four copies of itself). A world with no terrain and no soil still
+  // makes no *offscreen* canvas, which is what this line is here to say.
+  assert.deepEqual([...new Set(plain.map((o) => o[0]))], ["pond", "names"]);
   const surfaces = new Set(layered.map((o) => o[0]));
   assert.ok(surfaces.size >= 3, `only ${surfaces.size} drawing surfaces in a world with terrain and soil`);
   assert.ok(opsNamed(layered, "putImageData").length >= 2, "no pixels were pushed into the offscreen layers");

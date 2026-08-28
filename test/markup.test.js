@@ -356,6 +356,13 @@ test("the page's script does not build a world before it shows the page", () => 
 /** Everything with an `id` inside `<section class="stage">`, and what it is. */
 const STAGE = {
   world: { kind: "the picture itself" },
+  // The names (v1.126). Not a *mark* in this table's sense — those are five
+  // badges hung off a named corner of the pond, and this is a second picture
+  // laid exactly over the first one, positioned at the origin rather than
+  // against an edge. It cannot share the water's canvas: that one clears with a
+  // translucent veil so motion leaves comet trails, which turns a word into
+  // four stacked copies of itself.
+  names: { kind: "a second picture over the picture" },
   "pond-keys": { kind: "prose for a screen reader" },
   "pond-say": { kind: "prose for a screen reader" },
   // The marks, with the edge each one names and the gap it asks for. The
