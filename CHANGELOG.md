@@ -4,6 +4,110 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.123.0] — 2026-08-28
+
+The button decides for you.
+
+`👋 Meet somebody` is the best control on this page. It is also the one that
+takes the choice away: press it and you get Pip, press it again on a paused pond
+and you get Pip again, because the pick is a total order and the head of a total
+order does not move. Everything the pond had a reason to point at *other* than
+Pip — the biggest hunter in the water, the last of a dying family, the animal
+that has parented a fifth of the pond — was computed inside `pickStar`,
+compared, and thrown away, four times a press, for four releases.
+
+**So: the shortlist, on the page.** A board under the pond with one row per
+stand-out, in the pond's own order of interest, each a button that selects that
+animal and sends the camera after them. The button still hands over its pick for
+a visitor who does not want to choose; this is for the one who does.
+
+**It is the same list, not a second opinion.** `castRoles` is now the one place
+the five predicates live, and both surfaces render what it returns — so the
+board's first row *is* what the button would have handed over, by construction
+rather than by a test that hopes so. The board is empty exactly when the button
+falls through to its last resort, and that is the same sentence said the other
+way round. This project's own note: when two surfaces have to agree and each
+decides somewhere else, one of them is silently losing the difference.
+
+**A row is a claim, so a row that is not true is not drawn.** No role has a floor
+of "whoever is biggest": every one carries a threshold from `cast.js`, and on a
+young pond where nobody has yet outgrown, outlived or outbred anybody, the board
+says so in one line rather than naming five arbitrary animals. An empty board is
+a fact about the pond. `STAR.FED` never reaches it at all — *the best-fed animal
+right now* is a fallback, not a stand-out, and the animal holding it changes
+almost every tick.
+
+**One animal, one row, and the measurement found the wrong pair.** Twelve ponds
+sampled every hundred ticks to six thousand: **18.2% of instants have an animal
+holding two roles**, and I expected that to be *hunter* and *giant* — the
+ecology's own pair, the biggest thing in the water being the thing that eats. It
+is second, at 32 of 137 doubled rows. The commonest is **parent and elder, 83 of
+137**, because the animal that has raised the most young is usually just the one
+that has been alive long enough to do it: in a settled pond those two roles are
+nearly the same claim, and nothing on this page had ever said so. The
+higher-ranked reason wins, which is the more newsworthy of the two by the
+ordering the button already uses.
+
+**And the empty state is one a default visitor never sees.** I designed it
+carefully — an honest line, no jargon, a pointer at the button — and then
+measured it: over twelve default ponds sampled from tick 1 the board is empty on
+**0 of 1,044 instants**, because the founders already carry diet genes above the
+licence and *the biggest hunter in the water* is true before anything has
+happened. With hunting switched off it is the ordinary early state — 67.2% of
+the first three hundred ticks, 7.0% after, four of twelve ponds taking nine
+hundred to fourteen hundred ticks to fill. The line is not dead code; it is a
+line for a world most visitors do not choose.
+
+**And the phone found the layout bug the desktop could not.** At 1280 px a row
+is a name and a reason side by side. At 390 px the name takes the whole row, and
+the first build's ellipsis left *"parent to …"* — a row that says who but not
+why is half a row. The reason wraps to its own line now; the name never wraps,
+because a name in two lines reads as two animals. Rows measure 862×32 on a desk
+and 312×48 on a phone, so the tap target clears v1.115's 24 px bar on its
+smaller axis at both widths — which is the axis that decides a tap.
+
+### Added
+
+- `src/whoswho.js` — `castRows`, `castSignature`, `castHTML`, `ROLE_MARK`,
+  `CAST_EMPTY`, `CAST_ID_ATTR`. Pure observer: reads creatures, writes nothing,
+  draws no random number.
+- `src/cast.js`: `castRoles` — every animal the pond has a reason to point at,
+  best story first. `pickStar` is now its head, plus the best-fed fallback when
+  the list is empty; the five predicates, their order and their tie-break are
+  unchanged and untouched by this release.
+- `test/whoswho.test.js` — fifteen claims. The board's first row is the button's
+  answer and the board is empty exactly when the button falls through, on six
+  ponds at four moments each; the rows are in rank order and every one of them
+  is a role `cast.js` returned; the board does not move when `world.creatures` is
+  permuted, which is `shuffleTurnOrder`'s licence; one animal never appears
+  twice, checked along a run rather than at an instant because a single frame
+  misses it about half the time; every row names somebody still alive; a pond
+  with no hunting never puts a hunter on the board; the marks are one per rank,
+  all different, and the fallback has none; the signature holds still on an
+  unchanged pond and moves the moment the animal at the top of it dies; no
+  sentence uses a word only somebody already here knows; every row carries the
+  number the click needs and an `aria-label` that names the animal; every colour
+  in the produced markup is one `palette.js` hands out; `main.js` is read back to
+  check the board is content-keyed rather than rebuilt every frame, that the
+  frame loop calls it, that the handler looks its creature up in the living, and
+  that the memo is the one `viewstate.js` owns; and a fingerprint and a draw
+  count either side of a run of the board.
+- `app/index.html`: `section.whoswho` between the key and the Chronicle — after
+  the thing that says what a mark *is*, before the thing that says what has
+  *happened*, because a name is read while looking at the water.
+- `style.css`: `.whoswho`, `.whoswho-head`, `.whoswho-sub`, `.castlist`,
+  `.castrow`, `.castempty`. The panel's own box and the panel's own inks, so
+  this adds no ink/ground pair `test/legibility.test.js` has not already walked.
+
+### Changed
+
+- `src/main.js`: `updateCast()` in the frame loop, keyed on `castSignature`;
+  `wireCastList()`, one listener on the list rather than one per row; and
+  `watchCreature()`, the tail of "Meet somebody" carved out so a row and the
+  button hand a visitor exactly the same thing.
+- `src/viewstate.js`: `castSig` joins the roster.
+- `README.md`, `docs/ARCHITECTURE.md`: a row each for the board.
+
 ## [1.122.0] — 2026-08-27
 
 A screen of drifting coloured darts, and nothing anywhere saying what a dart is.

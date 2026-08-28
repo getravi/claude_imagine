@@ -73,6 +73,32 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The shortlist — closed in v1.123 (`src/whoswho.js`), and what it left.**
+  `pickStar` (v1.119) computed five candidates and returned one, so the board
+  that lets a visitor *choose* cost five `push`es instead of five `return`s and
+  no new measurement at all. What it found on the way: 18.2% of pond-instants
+  have one animal holding two of the five roles, and the commonest pair is not
+  the ecological one (*hunter* + *giant*, 32 of 137) but **parent + elder, 83 of
+  137** — in a settled pond "has raised the most young" and "has been alive
+  longest" are close to the same claim, which no readout here says. What it
+  leaves: (a) **every value on the board is an extremum and none carries a
+  margin** — *the oldest animal in the pond* reads the same whether the elder
+  leads by a fifth or by three times, and the margin is one more pass over a
+  list already being walked; (b) **a role is an instant and a life is not** —
+  nothing here remembers that somebody *held* the longest life for four thousand
+  ticks before dying, so the pond's **records**, the first thing anybody asks of
+  an aquarium, are still nobody's surface (the Chronicle narrates the pond, the
+  obituary narrates one death you happened to be watching); (c) **I wrote an
+  empty state a default visitor never sees** — 0 of 1,044 sampled instants over
+  twelve default ponds, because the board fills on tick *one*; with hunting off
+  it is ordinary (67.2% of the first 300 ticks, 7.0% after). v1.113's rule again:
+  the world I look at every cycle is a sample of one. (d) **The row that fires
+  first is the weakest claim on the board** — the hunter role reads the diet
+  gene, and v1.101 measured 53.7% of carnivores with an *empty eligible set*, so
+  on a fresh pond *the biggest hunter in the water* can name an animal that
+  cannot eat anybody. `foodweb.js` already counts every eligible set there is and
+  this cycle did not use it.
+
 - **The refuge — closed in v1.64 (`src/refuge.js`), and what it left.** v1.63
   found that `bodyRadiusMax / preySizeRatio` = 7.273 px is the size above which
   nothing this world can grow is able to eat you, and left it as a lead. It has
@@ -1192,6 +1218,33 @@ DEVLOG as I ship them; add new ones as they occur to me.
   already knows how to find one that makes the rule bite.
 
 ## Hard-won notes to self
+
+- **An `if` that returns is a shortlist that exists only as control flow, and I
+  have never once grepped for one.** `pickStar` ranked the living by five
+  predicates and returned the first that fired. Every animal it considered and
+  passed over — the biggest hunter, the last of a family, the parent of a fifth
+  of the pond — was found, named, compared and dropped on the floor, four times
+  a press, for four releases, while the page it feeds had no way to point at any
+  of them. Turning the five `return`s into five `push`es was the whole of v1.123
+  and it cost nothing, because the *work* was already being done. So the class:
+  **anywhere a chain of guarded returns picks one answer, the rejected
+  candidates are a computed collection the code is throwing away**, and the
+  question to ask of each is whether a surface would want the list. Grep for the
+  shape — a function whose body is `if (…) return {…};` three or more times over
+  — and for each one ask what the second-place answer would be worth. It is the
+  cheapest kind of feature there is: no new measurement, no new state, no new
+  RNG, and the thing it exposes is already tested. The companion half is why it
+  is safe: when two surfaces must agree about *what counts as a giant*, do not
+  test that they agree — give them one function and delete the possibility.
+- **A rule that is only sometimes true needs a sample, not a snapshot.** The
+  de-duplication rule on the new board fires on 18.2% of pond-instants, and my
+  first test checked one frame on each of four ponds and reported that it never
+  fires at all — a coin landing the same way four times. I nearly deleted a
+  correct rule as dead code on the strength of it. Any test whose subject is a
+  *frequency* has to walk a run; the tell is a test asserting something happens
+  and a subject whose rate nobody has measured. Measure the rate first, then
+  size the sample from it, and put the rate in the test's comment so the next
+  reader knows how many frames it takes to be sure.
 
 - **A deferral written as a blocker is a claim about the code, and mine was
   wrong for six releases.** This file said the creatures could not be named

@@ -135,6 +135,12 @@ const FRESH = Object.freeze({
   // self-correcting either way, and a pond arrives with its rules, so filing it
   // with the pond is the filing that cannot be wrong.
   keySig: "",
+  // The cast list (v1.123). Keyed on the ranks and ids on the board, so it is
+  // here for `legendSig`'s reason rather than `keySig`'s: a new pond re-issues
+  // creature numbers from where the old one left off within a page load, but a
+  // *reload* restarts the counter, and a signature naming id 41 in two ponds is
+  // exactly the collision that keeps a dead animal's row on screen.
+  castSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

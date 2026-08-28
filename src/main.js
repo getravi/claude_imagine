@@ -67,6 +67,7 @@ import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
 import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
+import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -218,6 +219,7 @@ function boot() {
   wireKeyboard();
   wireCanvas(canvas);
   wireMinimap($("minimap"));
+  wireCastList();
   buildScenarioChips();
   syncHash();
   requestAnimationFrame(loop);
@@ -342,6 +344,7 @@ function loop(now) {
   updateInspector();
   updateHeadline(world);
   updateKey();
+  updateCast(world);
   updateChronicle(world);
   updateNarration(world);
 
@@ -447,6 +450,57 @@ function updateKey() {
   if (sig === view.keySig) return;
   view.keySig = sig;
   $("key-list").innerHTML = keyHTML(config);
+}
+
+// ---- Worth watching (the cast list, v1.123) ----
+//
+// The shortlist "👋 Meet somebody" picks off, on the page. `whoswho.js` owns
+// every word and every row; this is the adapter onto the DOM and the click.
+// Content-keyed on the cast itself, so the rows are rebuilt when somebody joins
+// or leaves the board and not when the pond breathes — the same memo every
+// other panel here uses.
+//
+// The handler is one listener on the list rather than one per row, because the
+// rows are replaced whenever the cast changes and a listener per row would be a
+// listener per rebuild. It looks the creature up in the *living* rather than
+// holding a reference: a board is a picture of the frame it was drawn in, and
+// an animal named on it can be eaten before the pointer arrives.
+function updateCast(world) {
+  const rows = castRows(world, config, namesForTree(world.phylogeny));
+  const sig = castSignature(rows);
+  if (sig === view.castSig) return;
+  view.castSig = sig;
+  $("cast-list").innerHTML = castHTML(rows);
+}
+
+function wireCastList() {
+  $("cast-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(`[${CAST_ID_ATTR}]`);
+    if (!btn) return;
+    const id = Number(btn.getAttribute(CAST_ID_ATTR));
+    const c = world.creatures.find((x) => x.id === id && !x.dead);
+    if (!c) {
+      flash("They are gone — the pond has moved on.");
+      return;
+    }
+    const title = `👋 ${creatureLabel(c, namesForTree(world.phylogeny))}`;
+    // No reason in the toast: the row the visitor just pressed is still on
+    // screen saying it, and a toast that repeats the control that opened it is
+    // the same fact twice.
+    watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
+  });
+}
+
+// Hand a creature over: select it, follow it, and say who it is. The tail of
+// "Meet somebody", shared with the cast list so a row and the button do exactly
+// the same four things and cannot drift apart. The camera rides along for
+// v1.119's reason — a named animal you immediately lose in three hundred others
+// is worse than no name at all.
+function watchCreature(c, flashText, sayText) {
+  renderer.selected = c;
+  renderer.camera.setTarget(c);
+  flash(flashText, MEET_FLASH_MS);
+  announce(sayText);
 }
 
 // ---- Chronicle feed (natural-history timeline) ----
@@ -1396,10 +1450,7 @@ function meetSomebody() {
     announce(line);
     return;
   }
-  renderer.selected = star.creature;
-  renderer.camera.setTarget(star.creature);
-  flash(`${title} — ${star.why}.`, MEET_FLASH_MS);
-  announce(`${title}. ${line}`);
+  watchCreature(star.creature, `${title} — ${star.why}.`, `${title}. ${line}`);
 }
 
 // Advance exactly one simulation step, like a video player's frame-advance.

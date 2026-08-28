@@ -28,6 +28,11 @@
 //     worth watching *right now* and returns the winner with the reason, so
 //     "👋 Meet somebody" can hand a first-time visitor an animal with a story
 //     instead of asking them to click a dot and hope.
+//  3. **The shortlist that pick came off** (v1.123). `castRoles` returns *every*
+//     animal the pond has a reason to point at, best story first, and `pickStar`
+//     is its head. The board in `whoswho.js` is the rest of it: the button hands
+//     over one animal, the board lets a visitor choose from the same list. They
+//     cannot disagree, because there is only one list.
 //
 // **A given name is a nickname, not an identifier, and this is the one place
 // this project departs from v1.116's rules on purpose.** Species names are
@@ -272,16 +277,34 @@ function best(list, score) {
 }
 
 /**
- * The animal most worth watching in this pond right now, with the reason.
+ * Everybody this pond has a reason to point at, best story first.
+ *
+ * `pickStar` used to be five `if`s that each returned, so the pond's *shortlist*
+ * existed only as control flow — the four animals it considered and passed over
+ * were computed and thrown away on every call. v1.123 wanted them: a board that
+ * names the stand-outs is the same question asked of the whole list rather than
+ * of its head. Collecting instead of returning is the whole change, and it is
+ * the one that makes the button and the board incapable of disagreeing — one
+ * set of predicates, one order, one tie-break. Two surfaces reading one world
+ * through two copies of a rule is the shape this project keeps finding on the
+ * wrong side of a bug.
+ *
+ * Every entry is a *claim about an animal*, so a role only appears when its
+ * threshold is met. There is deliberately no `FED` entry: "the best-fed animal
+ * right now" is a fallback for a pond where nothing has happened yet, not a
+ * stand-out, and the animal holding it changes almost every tick. `pickStar`
+ * adds it when this list is empty; a board that showed it would be a row of
+ * flicker.
  *
  * @param {{creatures:Array}} world
  * @param {object} config
  * @param {Map<number, {plural:string}>|null} [names]
- * @returns {{creature:object, rank:number, why:string}|null} null on an empty pond
+ * @returns {Array<{creature:object, rank:number, why:string}>} possibly empty
  */
-export function pickStar(world, config, names = null) {
+export function castRoles(world, config, names = null) {
   const alive = world.creatures.filter((c) => !c.dead);
-  if (alive.length === 0) return null;
+  const out = [];
+  if (alive.length === 0) return out;
 
   // The last of a family. *Alone* is counted over the living rather than read
   // off the tree, because a lineage's own count includes animals this pond has
@@ -297,7 +320,7 @@ export function pickStar(world, config, names = null) {
       );
       const c = best(lonely, (x) => x.age);
       if (c) {
-        return { creature: c, rank: STAR.LAST, why: `the last of the ${speciesPlural(names, c.speciesId)}` };
+        out.push({ creature: c, rank: STAR.LAST, why: `the last of the ${speciesPlural(names, c.speciesId)}` });
       }
     }
   }
@@ -309,29 +332,50 @@ export function pickStar(world, config, names = null) {
     // patched every frame, so a number in both means a visitor reads "7 young"
     // beside "have raised 8 young" the first time somebody is born while they
     // are looking. One quantity, one place, and the place is the live one.
-    return { creature: parent, rank: STAR.PARENT, why: "parent to more of this pond than anyone else" };
+    out.push({ creature: parent, rank: STAR.PARENT, why: "parent to more of this pond than anyone else" });
   }
 
   if (config.predation) {
     const hunters = alive.filter((c) => c.carnivory >= config.carnivoreThreshold);
     const hunter = best(hunters, (c) => c.radius);
     if (hunter) {
-      return { creature: hunter, rank: STAR.HUNTER, why: "the biggest hunter in the water" };
+      out.push({ creature: hunter, rank: STAR.HUNTER, why: "the biggest hunter in the water" });
     }
   }
 
   const midSize = median(alive.map((c) => c.radius));
   const giant = best(alive, (c) => c.radius);
   if (giant && midSize > 0 && giant.radius >= midSize * GIANT_RATIO) {
-    return { creature: giant, rank: STAR.GIANT, why: "the largest animal here by some way" };
+    out.push({ creature: giant, rank: STAR.GIANT, why: "the largest animal here by some way" });
   }
 
   const midAge = median(alive.map((c) => c.age));
   const elder = best(alive, (c) => c.age);
   if (elder && midAge > 0 && elder.age >= midAge * ELDER_RATIO) {
-    return { creature: elder, rank: STAR.ELDER, why: "the oldest animal in the pond" };
+    out.push({ creature: elder, rank: STAR.ELDER, why: "the oldest animal in the pond" });
   }
 
+  return out;
+}
+
+/**
+ * The animal most worth watching in this pond right now, with the reason.
+ *
+ * The head of `castRoles`, or — when nothing on that list stands out — whoever
+ * is carrying the most energy, which is always true of somebody and is why this
+ * never comes back empty on a pond that has anybody in it.
+ *
+ * @param {{creatures:Array}} world
+ * @param {object} config
+ * @param {Map<number, {plural:string}>|null} [names]
+ * @returns {{creature:object, rank:number, why:string}|null} null on an empty pond
+ */
+export function pickStar(world, config, names = null) {
+  const roles = castRoles(world, config, names);
+  if (roles.length > 0) return roles[0];
+
+  const alive = world.creatures.filter((c) => !c.dead);
+  if (alive.length === 0) return null;
   const fed = best(alive, (c) => c.energy);
   return { creature: fed, rank: STAR.FED, why: "the best-fed animal in the pond right now" };
 }

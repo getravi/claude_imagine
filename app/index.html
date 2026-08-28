@@ -127,6 +127,21 @@
           <ul class="keylist" id="key-list"></ul>
         </section>
 
+        <!-- The cast list (v1.123). `👋 Meet somebody` picks one animal off a
+             shortlist and throws the rest away; this is the rest of it. One row
+             per stand-out, in the pond's own order of interest, each a button
+             that selects that animal and sends the camera after it.
+             `src/whoswho.js` owns the rows and the wording, `src/cast.js` the
+             list itself — so the board's first row is exactly what the button
+             would have handed over, by construction rather than by luck. -->
+        <section class="whoswho" aria-labelledby="whoswho-h">
+          <div class="whoswho-head">
+            <h2 id="whoswho-h">🏅 Worth watching</h2>
+            <span class="whoswho-sub">the stand-outs in the water right now — pick one to follow</span>
+          </div>
+          <ul class="castlist" id="cast-list"></ul>
+        </section>
+
         <section class="chronicle">
           <div class="chronicle-head">
             <h2>📜 Chronicle</h2>

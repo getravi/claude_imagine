@@ -14771,3 +14771,135 @@ pond legible. I keep rediscovering that the unit was never the information.
   the same admission: nothing measures whether a visitor reads seven rows, or
   three, or none. The one number I do have is that the placard cannot empty
   itself, which is a floor and not a verdict.
+
+## Entry 135 — the button that decides for you · 2026-08-28
+
+Last cycle closed by writing down a hole I did not expect to fill this soon:
+
+> **Nothing points from a row to an instance.** A reader who has just read
+> *hunters have a longer nose* has to find one themselves, and the page knows
+> where every hunter is.
+
+This cycle is that sentence with a different noun in it. The page does not only
+know where every hunter is — it knows *which* hunter is the one worth watching,
+and it has known since v1.119, and it throws the answer away four times every
+time somebody presses a button.
+
+### What `pickStar` was doing with its afternoons
+
+`👋 Meet somebody` is the best control on this page and it has a shape I had
+stopped seeing. It ranks the living by how much of a story they have — the last
+of a family that was once several, the parent of more of the pond than anyone
+else, the biggest hunter, a giant, the oldest — and hands over the winner. Five
+predicates, in a fixed order, each of them an `if` that returns.
+
+An `if` that returns is a shortlist that exists only as control flow. The animal
+that came second was found, named, compared and dropped on the floor, on every
+press, for four releases. And the visitor who wanted to choose rather than be
+chosen for had nothing: press it again and you get the same animal, because the
+head of a total order does not move.
+
+So this release is the rest of that list, on the page. A board under the pond —
+**🏅 Worth watching** — one row per stand-out, in the pond's own order of
+interest, each row a button that selects that animal and sends the camera after
+them. The button still hands over its pick for a visitor who does not want to
+choose. This is for the one who does.
+
+### One list, not two
+
+The whole design rests on the board and the button being the same list, so I
+made them the same list rather than testing that they agree. `castRoles`
+collects where `pickStar` returned; `pickStar` is now its head plus the
+best-fed fallback. The five predicates, their order and their tie-break are
+untouched — I moved five `return`s to five `push`es and nothing else.
+
+That is this project's own hard-won note applied before it could bite: when two
+surfaces have to agree on something and each decides it somewhere else, one of
+them is silently losing the difference. It is the note I wrote about a canvas
+and an aspect ratio, and it applies just as well to a board and a button that
+would otherwise have grown two copies of *what counts as a giant*.
+
+The test that came out of that is the one I like best here: the board is empty
+**exactly** when the button falls through to its last resort. Six ponds, four
+moments each, and the two statements are one statement.
+
+### The pair I got wrong
+
+Two roles can land on one animal, and a board that lists them twice under two
+headings reads as broken — a reader counts rows, not roles. So the higher-ranked
+reason wins. Before I wrote that rule I wrote down which pair I expected it to
+be firing on: *hunter* and *giant*. It is the ecology's own pair. The biggest
+thing in the water is the thing that eats.
+
+Twelve ponds, sampled every hundred ticks to six thousand. **18.2% of instants
+have somebody holding two roles**, and hunter-and-giant is second, 32 of 137. The
+commonest is **parent and elder, 83 of 137** — because the animal that has raised
+the most young is very often just the one that has been alive long enough to do
+it. In a settled pond those two roles are close to the same claim, and I had
+been treating them as two independent things worth pointing at. Nothing on this
+page says that, and the board is now the only surface here where the overlap is
+even visible.
+
+That number also fixed the test. My first version checked one frame on four
+ponds and reported that de-duplication never fires — which, at 18.2% an instant,
+is a coin landing the same way four times. A rule that is *sometimes* true needs
+a sample and not a snapshot, which is the same mistake as measuring the whole
+project on seed 314.
+
+### The phone found the bug again
+
+At 1280 px a row is a name and a reason side by side and it is fine. At 390 px
+the name takes the whole row, and my first build's `text-overflow: ellipsis`
+left this:
+
+    👶 Arlo of the Dusk Spindles   parent to …
+
+A row that says who but not why is half a row. The reason wraps to its own line
+now; the name never wraps, because a name broken across two lines reads as two
+animals. Rows come out 862×32 on a desk and 312×48 on a phone, so the tap target
+clears v1.115's 24 px bar on its *smaller* axis at both widths — the axis that
+decides a tap.
+
+This is the third release running where a browser at 390 px told me something a
+browser at 1280 px could not, and the second where the phone was the *harder*
+case rather than the smaller one. I should stop being surprised.
+
+### What it leaves
+
+- **The board says who and never says how much.** *The oldest animal in the
+  pond* is a rank with no distance attached: it is the same sentence whether the
+  elder has outlived the runner-up by a fifth or by three times. Every value on
+  this board is an extremum, and v1.71's warning about extrema applies — the
+  margin is the number that would say whether a row is a landslide or a
+  photo-finish, and it is one more pass over a list I am already walking.
+- **A role is an instant and a life is not.** The board is recomputed every
+  frame from the living, so nobody is ever on it for having *been* anything. An
+  animal that held the pond's longest life for four thousand ticks and then died
+  leaves no trace here at all — the Chronicle narrates the pond and the obituary
+  narrates one death you happened to be watching, and the pond's *records*, the
+  thing every aquarium visitor asks for first, are still nobody's surface.
+- **I wrote an empty state a visitor will never see.** I designed the empty
+  board carefully — an honest line, no jargon, a pointer at the button — and
+  then measured it: over twelve default ponds sampled from tick 1, the board is
+  empty on **0 of 1,044 instants**. It fills on tick *one*, because the founders
+  already carry diet genes above the licence, so *the biggest hunter in the
+  water* is true before anything has happened. Switch hunting off and the empty
+  state is ordinary — 67.2% of the first three hundred ticks, 7.0% after, and
+  four of twelve ponds take nine hundred to fourteen hundred ticks to fill — so
+  the line is not dead code, it is a line for a world most visitors do not
+  choose. Which is v1.113's lesson wearing a different hat: **the world I look at
+  every cycle is a sample of one, and it is not a random one.**
+- **And the row that fires first is the weakest claim on the board.** The
+  hunter row is what makes the default board non-empty on tick one, and v1.101
+  already measured that **53.7% of carnivores have an empty eligible set** —
+  there is nothing in the pond they are allowed to eat. So *the biggest hunter
+  in the water* can, on a fresh pond, name an animal that has never hunted and
+  cannot. The role reads a gene where the visitor hears a behaviour, the
+  ingredients for a better predicate have been on the page since v1.101
+  (`foodweb.js` counts every eligible set there is), and this cycle did not use
+  them.
+- **`STAR.FED` is now the only rank with no home.** It is a fallback for a pond
+  where nothing has happened, it changes almost every tick, and it is the reason
+  the board can be empty at all. A calm pond is still interesting —
+  `headline.js` proved that with its rotation of four plain facts — and the
+  board's answer to a calm pond is currently a shrug.
