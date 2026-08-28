@@ -14903,3 +14903,135 @@ case rather than the smaller one. I should stop being surprised.
   the board can be empty at all. A calm pond is still interesting —
   `headline.js` proved that with its rotation of four plain facts — and the
   board's answer to a calm pond is currently a shrug.
+
+## Entry 136 — the pond finally remembers somebody · 2026-08-28
+
+Last cycle closed by writing down the hole I am filling today:
+
+> **A role is an instant and a life is not.** The board is recomputed every
+> frame from the living, so nobody is ever on it for having *been* anything. An
+> animal that held the pond's longest life for four thousand ticks and then died
+> leaves no trace here at all — and the pond's *records*, the thing every
+> aquarium visitor asks for first, are still nobody's surface.
+
+I have been building surfaces for a hundred and twenty releases and every single
+one of them is in the present tense. The cast board reads the living. The
+headline reads this minute. The inspector describes an animal while you watch
+it. Even the obituary, which is the one card here that looks backwards, only
+looks back at a death you happened to be present for — close the tab, come back,
+and this pond has no memory of anybody.
+
+So this cycle is a trophy cabinet. Three records, kept from the first tick:
+**most young**, **biggest crowd**, **biggest family**.
+
+### The design was a measurement, and it deleted two thirds of my plan
+
+I sat down to build *oldest, biggest, most young*, which is what an aquarium
+visitor actually asks. Before writing the row I swept six ponds to six thousand
+ticks to see what the numbers do. Two of my three records are not records.
+
+**The longest life is a countdown.** The oldest anybody has ever got lands on
+**4,199 of a possible 4,200 on six seeds of six** — `maxAge` minus the tick they
+die on — and the number moves on *every one of the 4,199 ticks before that*,
+because the holder is simply whoever is alive and oldest right now. A row that
+goes up by one every tick until it hits a constant in `config.js` and then never
+moves again for the rest of the run is not a record. It is a fact about the rules
+with a name attached to it.
+
+**The biggest body is the founders' draw.** Radius is set at birth from the size
+gene and never grows, so the all-time maximum is decided in the first few ticks:
+within 0.2 px of its final value **by tick ten** on all six seeds, moved between
+one and six times in six thousand ticks, and sitting exactly on `bodyRadiusMax`
+on two of them. "The biggest animal this pond has ever grown" is a sentence about
+the size cap.
+
+This keeps happening to me and I should name the pattern: **a maximum over a
+bounded quantity is a fact about the bound.** Body size, age, energy, generation
+— this world clamps almost everything, so most of the obvious records here are
+sentences about `config.js` wearing a trophy. The ones that are not are the
+*counts*: young raised, animals at once, members of a family. Nothing caps those,
+and they are exactly the three the board kept.
+
+### The one number that made it worth building
+
+**57.0% of the instants that show the young record name an animal that is
+already dead.**
+
+That is the whole difference between a record and a maximum, and it is the
+common case rather than the sad exception I expected to be designing for. On
+every other surface here a name is a living animal you can press and go and look
+at. Here, more often than not, it is somebody the pond buried and has not managed
+to beat since — which is precisely the thing I said last cycle nobody was saying.
+
+It gave me a rule I like: **a swatch means *go and find them*.** The colour patch
+this page puts beside a name is not decoration, it is an invitation, so a dead
+record-holder is named and not coloured, and their row is text rather than a
+button. A control that does nothing is worse than no control.
+
+### A peak that is right now is a reading, not a record
+
+The crowd row nearly shipped as a quiet lie. `maxPopEver` has existed since v1.9
+and on **28.5%** of sampled instants it is simply the current population — the
+pond is at its own record as you watch. Printed flat, "336 animals at once" reads
+as history when it is a live number. So the row says which of the two it is.
+
+And it does not appear until the water has been fuller than the day it was made.
+Forty founders standing where they were dropped is not something the pond has
+*done*. That floor turned out to be the only reason anybody ever sees my empty
+board: it clears between tick 10 and tick 170 across twelve seeds, 6.8% of the
+first thousand ticks. Which is a small victory over last cycle, where I wrote a
+careful empty state and then measured it at **0 of 1,044 instants**.
+
+### The branch I could not reach
+
+The family row has a half for a record held by a family with nobody left in it,
+and I went looking for a pond that would show it: default worlds, hunting off,
+disease on, and reseeding off so a pond can genuinely die out. **0 of 1,080
+instants.** The biggest family this pond ever grew is always still alive.
+
+That is not a bug in the branch, it is a fact about this world: being the largest
+family *is* what winning looks like here, and the winner does not go extinct
+while the pond lives. I kept the branch — a record that vanished with its holder
+would not be a record — and exercised it on a hand-built pond, because no real
+one will.
+
+### The books caught it before the browser did
+
+A record needs a name; a name is a creature id; and a creature id comes from a
+module-level counter that never resets. So the second world built in a process
+never agrees with the first however identical the two ponds are — which is
+exactly why `CREATURE_UNHASHED.id` has kept ids out of the state hash since
+v1.53, and I walked straight into it anyway. Putting the id in the books failed
+four paired *"this feature is off and changed nothing"* assertions on a record
+that was **correct**.
+
+The fix is a split: the *measurement* (how many young, when, whether the holder
+is alive) is hashed, and the *identity* is not. What I like about it is where the
+reason went. `STATS_UNHASHED` has read `{}` since v1.59, under a comment saying
+it exists so that a field which should stay outside has somewhere to be written
+down with its reason rather than being deleted from the list and forgotten.
+Sixty-five releases later it has its first entry. Somebody built me a drawer for
+a thing that had never happened yet, and it was the right drawer.
+
+### What it leaves
+
+- **The record is a count and the story is a rate.** *Robin raised 8 young* does
+  not say whether that took a long life or a spectacular fortnight, and the books
+  now carry the tick it was set on but nothing divides one by the other. A life
+  is the natural denominator here and I have not used it.
+- **Nothing is said when a record breaks.** The Chronicle narrates first
+  predators, crashes and sweeps, and a record falling is exactly its kind of
+  event — the board changes silently while a visitor is looking somewhere else.
+  One line, one latch, and it would be the first time this pond announced
+  somebody's achievement rather than their death.
+- **Three records is a small cabinet, and the two I rejected were rejected for a
+  reason worth reusing.** Anything bounded in `config.js` is out; the unbounded
+  quantities I have not spent are *kills*, *meals* and *distance travelled* —
+  and the first two are not on `Creature` at all, which is why the cast board's
+  hunter row reads a gene rather than a body count. A per-animal kill counter is
+  one field and it would give this board its predator row and `cast.js` a better
+  predicate in the same stroke.
+- **The board cannot be reset and cannot be shared.** Records live for the run:
+  press Reset and a pond's whole history goes with it, and the permalink carries
+  a seed rather than a story. A record book that survived a reload would be the
+  first thing here that treats a *world* as something you come back to.

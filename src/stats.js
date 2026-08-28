@@ -382,6 +382,47 @@ export class Stats {
     this.power = 0;
     this.maxGeneration = 0;
     this.maxPopEver = 0;
+    /**
+     * The tick the pond was at its fullest. `maxPopEver` has been a number with
+     * no date since v1.9, which is enough to normalise a chart and not enough
+     * to say *when* — and "the most crowded this water has ever been" is a
+     * record rather than a statistic only once it has a moment attached to it.
+     * One field beside the max it dates, set in the same `if`, so the two
+     * cannot come apart (v1.123's rule: one fact, one place).
+     */
+    this.maxPopTick = 0;
+    /**
+     * The most young any one animal has raised here, and who.
+     *
+     * The pond's only all-time record about an *individual* — see
+     * `src/records.js` for why the two other obvious ones (the longest life,
+     * the biggest body) are not records at all but ceilings out of `config.js`.
+     * It is kept here, in the books, because that is where this world's other
+     * bests already live (`maxPopEver`, `maxGeneration`, `peakInfected`), and
+     * because a record has to be taken **every tick**: the holder can die
+     * between two frames, and a board whose contents depended on how fast the
+     * browser drew would not be a record of anything.
+     *
+     * Numbers and no reference. The creature is off the world's list a moment
+     * after this is written, and a book holding the body itself would be the
+     * one place here keeping a dead thing alive (`obituary.js`'s rule).
+     *
+     * The *identity* is next door in `recordYoungId` rather than in this
+     * object, and the split is the one thing here worth reading twice. A
+     * creature's id is a module-level counter that never resets, so the second
+     * world built in a process never agrees with the first however identical
+     * the two ponds are — which is why `CREATURE_UNHASHED.id` has kept ids out
+     * of the state hash since v1.53. Put one in the books and every paired
+     * "this feature is off and changed nothing" assertion in the suite fails on
+     * a record that is *correct*. So the record is hashed and the name on it is
+     * not. (Nor is the *family* stored at all: that is `speciesId`, which the
+     * observer writes, and the books do not read from the observer.)
+     *
+     * @type {{children:number, tick:number, alive:number}}
+     */
+    this.recordYoung = { children: 0, tick: 0, alive: 0 };
+    /** Who holds it. Outside every hash — see `recordYoung`, and `STATS_UNHASHED`. */
+    this.recordYoungId = -1;
     this.carnivoreFrac = 0; // fraction of the population that are carnivores
     // What share of the living nothing in this world is able to eat: bodies at
     // or above `bodyRadiusMax / preySizeRatio`, which is 7.273 px of a range
@@ -451,7 +492,10 @@ export class Stats {
   sample(world) {
     this.tick = world.tick;
     const pop = world.creatures.length;
-    if (pop > this.maxPopEver) this.maxPopEver = pop;
+    if (pop > this.maxPopEver) {
+      this.maxPopEver = pop;
+      this.maxPopTick = world.tick;
+    }
 
     let maxGen = 0;
     let sumGen = 0;
@@ -466,6 +510,20 @@ export class Stats {
     // before it can be compared against anything, so the count beyond it is a
     // second pass — one multiply and one compare per creature, below.
     let ceiling = 0;
+    // The record for young raised, taken in the same pass. `parent` is the best
+    // of the living by children with ties going to the lowest id, which is
+    // `cast.js#best`'s tie-break and for its reason: `reduce` keeping the first
+    // maximum makes the answer depend on the order of `world.creatures`, and
+    // v1.47 is allowed to shuffle that. A record that moved when a switch
+    // nobody pressed was flipped would not be a record.
+    let parent = null;
+    // Whether the animal that holds the record is still in the water, answered
+    // by the pass that is already looking at every one of them rather than by a
+    // search of its own. It is the whole point of keeping a record instead of
+    // reading a maximum: 57.0% of the instants that show this row name somebody
+    // the pond has already buried (see `src/records.js`).
+    let holderAlive = 0;
+    const held = this.recordYoungId;
     const threshold = world.config.carnivoreThreshold;
     for (let i = 0; i < pop; i++) {
       const cr = world.creatures[i];
@@ -477,6 +535,16 @@ export class Stats {
         if (cr.radius > ceiling) ceiling = cr.radius;
       }
       if (inRefuge(cr.radius, world.config)) safe++;
+      if (cr.id === held) holderAlive = 1;
+      if (!parent || cr.children > parent.children || (cr.children === parent.children && cr.id < parent.id)) {
+        parent = cr;
+      }
+    }
+    if (parent && parent.children > this.recordYoung.children) {
+      this.recordYoung = { children: parent.children, tick: world.tick, alive: 1 };
+      this.recordYoungId = parent.id;
+    } else {
+      this.recordYoung.alive = holderAlive;
     }
     let livedSafe = 0;
     for (let i = 0; i < pop; i++) {

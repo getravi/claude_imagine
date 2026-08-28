@@ -141,6 +141,13 @@ const FRESH = Object.freeze({
   // *reload* restarts the counter, and a signature naming id 41 in two ponds is
   // exactly the collision that keeps a dead animal's row on screen.
   castSig: "",
+  // The book of records (v1.124). Keyed on the board's own sentences, which is
+  // the strongest key any surface here uses and the only one that has to be:
+  // a record's line changes when its holder dies while the record itself holds
+  // still, so a key made of what is *recorded* would leave "still in the water"
+  // under a name the pond has buried. Here for `castSig`'s reason as well — the
+  // sentences carry a creature's given name, and a name is an id.
+  recordSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

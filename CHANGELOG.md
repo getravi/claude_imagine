@@ -4,6 +4,133 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.124.0] — 2026-08-28
+
+The pond finally remembers somebody.
+
+Every named surface on this page is about **now**. The cast board reads the
+living, the headline reads this minute, the inspector describes an animal while
+you watch it, and the obituary — the one backward-looking card here — writes up
+a single death you happened to be present for. So nobody is ever on this page
+for having *been* anything: an animal that held the pond's longest life for four
+thousand ticks and then died leaves no trace at all. The first thing anybody
+asks of an aquarium — who is the biggest, who has had the most young — was
+nobody's surface.
+
+**So: 🏆 Pond records, under the pond.** Three all-time bests, kept from the
+first tick of the run — the most young one animal has raised, the fullest the
+water has ever been, and the largest family it has grown. It is the only board
+here that keeps a name after the animal is gone.
+
+**The measurement designed it, and it deleted two rows.** The obvious hall of
+fame is *oldest, biggest, most young*, and two of those three are not records at
+all. The longest life lands on **4,199 of a possible 4,200 on six seeds of six**
+— `config.maxAge` minus the tick they die on — and it moves on *every one of the
+4,199 ticks before that*, because whoever is currently alive and oldest holds it:
+a row that increments every tick until it hits a constant and then never moves
+again is a countdown, and what it counts down to is a fact about the rules. The
+biggest body is the same thing one gene over: body radius is drawn at birth and
+never grows, so the all-time maximum is settled by the founders — within 0.2 px
+of its final value **by tick ten** on all six seeds, moved between one and six
+times in six thousand ticks, and sitting exactly on `bodyRadiusMax` on two of
+them. Both would have been sentences about `config.js` wearing a trophy. What is
+left is the one individual record with no ceiling to walk into — young raised,
+which runs 9–12 over the same runs — and two about the water itself.
+
+**And the number the board exists for: 57.0% of the instants that show the young
+row name somebody who is already dead.** That is the whole difference between a
+record and a maximum, and it is the common case rather than a curiosity.
+Everywhere else here a name is a living animal you can press and go and look at;
+here, more often than not, it is somebody the pond buried and has not managed to
+beat since. The row says which of the two it is, and only a living holder gets a
+swatch and a button — a colour patch means *go and find them*, and there is
+nothing to find.
+
+**A peak that is the present moment is a reading, not a record.** The crowd row
+would otherwise quietly imply a past: on 28.5% of sampled instants the pond is at
+its own record right now, so the row says `— and that is right now` instead of
+dating it. And it does not appear at all until the water has been fuller than the
+day it was made (`populationStart`), because founders standing where they were
+dropped are not something the pond has *done*. That floor is the only reason a
+visitor ever sees the empty board: it clears between tick 10 and tick 170 over
+twelve seeds, 6.8% of the first thousand ticks — unlike v1.123's empty state,
+which I measured at 0 of 1,044 instants after I had finished writing it.
+
+**The biggest family is never a dead one.** The row has a branch for a record
+held by a family with nobody left in it, and I could not reach it: **0 of 1,080
+instants across five configurations** — default ponds, hunting off, disease on,
+and ponds with no reseeding at all, which can die out entirely. In this world
+being the largest family is what winning looks like, and the winner does not go
+extinct while the pond lives. The branch stays, because a record that vanished
+with its holder would not be a record; `test/records.test.js` exercises it on a
+hand-built pond, since no real one will.
+
+**The books caught the bug before the browser did, and the list that caught it
+was empty until today.** The record needs a name, a name is a creature id, and a
+creature id comes from a module-level counter that never resets — so the second
+world built in a process never agrees with the first however identical the two
+ponds are. Putting one in the books failed four paired *"this feature is off and
+changed nothing"* assertions in the suite on a record that was **correct**.
+`STATS_UNHASHED` has read `{}` since v1.59 under a comment explaining that it
+exists so a field which should stay outside has somewhere to be written down
+with its reason. It has its first entry: the identity is outside the instrument,
+the measurement beside it is in.
+
+### Added
+
+- `src/records.js` — `recordRows`, `recordSignature`, `recordsHTML`,
+  `RECORD_MARK`, `RECORD_TITLE`, `RECORDS_EMPTY`, `RECORD_ID_ATTR`, `yearOf`,
+  and the two floors, which are `cast.js#PARENT_MIN_CHILDREN` and
+  `phylogeny.js#MULLER_MIN_PEAK` imported rather than retyped. Pure observer:
+  reads the books, the tree and the living, writes nothing, draws no random
+  number.
+- `src/stats.js`: `maxPopTick` — the tick the pond was at its fullest, set in
+  the same `if` as the maximum it dates, so the two cannot come apart; and
+  `recordYoung` / `recordYoungId`, the most young any one animal has raised
+  here and who, taken in the pass that already walks every creature once a
+  tick. Ties go to the lowest id, which is `cast.js#best`'s tie-break and for
+  its reason: `shuffleTurnOrder` may permute `world.creatures`, and a record
+  that moved when a switch nobody pressed was flipped would not be a record.
+- `test/records.test.js` — sixteen claims. The record never goes backwards and
+  nobody in the water has beaten it without it moving; it survives a reversal of
+  `world.creatures`; it keeps the name after the animal is buried and stops
+  offering to follow them; every number on the board is one the books or the
+  tree can produce; the crowd row knows whether its own record is the present
+  moment; a pond with no seasons is not given a year to be in; nothing below a
+  floor is drawn and the founders are not a crowd; an extinct family still holds
+  its record; the signature moves when a holder dies though the record does not;
+  no sentence uses a word only somebody already here knows; only a row you can
+  act on is a control, and only a living holder carries a swatch; the page holds
+  the board between the cast list and the Chronicle; `main.js` is read back for
+  the memo, the frame-loop call and a handler that looks its creature up in the
+  living; the two new books are inside the books' hash and the id is outside it
+  with a reason; and a fingerprint and a draw count either side of a run of the
+  board.
+- `app/index.html`: `section.records` between the cast list and the Chronicle —
+  after who is worth watching *now*, before what has happened, because all-time
+  is the third tense and the last of the three a visitor wants.
+- `style.css`: `.records`, `.records-head`, `.records-sub`, `.reclist`,
+  `.recrow`, `.recempty`. The cast board's box and inks, so this adds no
+  ink/ground pair `test/legibility.test.js` has not already walked. Rows measure
+  862×32 on a desk and 312×48 on a phone, driven in a real browser at both
+  widths — the tap target clears v1.115's 24 px bar on its smaller axis.
+
+### Changed
+
+- `src/main.js`: `updateRecords()` in the frame loop, keyed on
+  `recordSignature`; `wireRecordList()`, one listener on the list, and only the
+  living holder's row is pressable.
+- `src/viewstate.js`: `recordSig` joins the roster. Keyed on the board's own
+  sentences rather than on what is recorded — the line changes when a holder
+  dies while the record itself holds still, and that is the change most worth
+  redrawing for.
+- `src/fingerprint.js`: `maxPopTick` and `recordYoung` join `STATS_HASHED`;
+  `STATS_UNHASHED` gains its first entry ever.
+- `test/books.test.js`: the books are sixty-six hashed fields now, not
+  sixty-four. Re-measured, not re-recorded — the two new ones are swept for
+  feedback into the simulation like every other field there.
+- `README.md`, `docs/ARCHITECTURE.md`: a row each for the board.
+
 ## [1.123.0] — 2026-08-28
 
 The button decides for you.

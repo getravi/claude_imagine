@@ -120,6 +120,13 @@ export const SITE_SILENT = {
   "corpseGrid.cells": "the same, one index over",
   "stats.runHistory.fields": "the archive's column *names* — strings, which " +
     "this sweep has no perturbation for. `booksFingerprint` hashes them",
+  "stats.recordYoungId": "the name on the pond's one individual record " +
+    "(v1.124). A creature id, and an id is a module-level counter that never " +
+    "resets, so hashing it would make two identical ponds built in one process " +
+    "disagree — the reason `CREATURE_UNHASHED.id` has been outside the state " +
+    "hash since v1.53, arriving in the books. The record it names is hashed " +
+    "beside it, so what this channel cannot see is the identity and not the " +
+    "measurement",
   "chronicle.rng.seed": "a record of how the narrator's diversity probe " +
     "started and not the stream, exactly as `world.rng.seed` is for the pond. " +
     "The channel for it is a `drawStream` on the generator itself",

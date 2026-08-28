@@ -68,6 +68,7 @@ import { ViewState } from "./viewstate.js";
 import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
+import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -220,6 +221,7 @@ function boot() {
   wireCanvas(canvas);
   wireMinimap($("minimap"));
   wireCastList();
+  wireRecordList();
   buildScenarioChips();
   syncHash();
   requestAnimationFrame(loop);
@@ -345,6 +347,7 @@ function loop(now) {
   updateHeadline(world);
   updateKey();
   updateCast(world);
+  updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
 
@@ -501,6 +504,44 @@ function watchCreature(c, flashText, sayText) {
   renderer.camera.setTarget(c);
   flash(flashText, MEET_FLASH_MS);
   announce(sayText);
+}
+
+// ---- The book of records (v1.124) ----
+//
+// The all-time board: the most young anybody has raised here, the fullest the
+// water has ever been, the largest family it has grown. `records.js` owns every
+// word; this is the adapter onto the DOM and the click, exactly as `updateCast`
+// is for the cast board.
+//
+// Keyed on the sentences rather than on ids, for the reason this board exists:
+// a record's line changes when its holder *dies* while the record itself does
+// not move at all, and that is the change most worth redrawing for.
+function updateRecords(world) {
+  const rows = recordRows(world, config, namesForTree(world.phylogeny));
+  const sig = recordSignature(rows);
+  if (sig === view.recordSig) return;
+  view.recordSig = sig;
+  $("record-list").innerHTML = recordsHTML(rows);
+}
+
+// One listener on the list, not one per row — and only the living holder's row
+// is pressable, so most of the time this handler has nothing to catch. It looks
+// the creature up in the living rather than holding a reference: a record is a
+// picture of the frame it was drawn in, and the animal on it can be eaten
+// between the draw and the press.
+function wireRecordList() {
+  $("record-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(`[${RECORD_ID_ATTR}]`);
+    if (!btn) return;
+    const id = Number(btn.getAttribute(RECORD_ID_ATTR));
+    const c = world.creatures.find((x) => x.id === id && !x.dead);
+    if (!c) {
+      flash("They are gone — the record is theirs all the same.");
+      return;
+    }
+    const title = `🏆 ${creatureLabel(c, namesForTree(world.phylogeny))}`;
+    watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
+  });
 }
 
 // ---- Chronicle feed (natural-history timeline) ----

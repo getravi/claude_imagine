@@ -99,7 +99,7 @@ function nudgeInside(obj) {
 test("every field the books carry is either hashed or excluded with a reason", () => {
   // v1.53 put this walk on the creature and it found twelve fields outside the
   // state hash, three of which moved the pond. The books never got one. Note
-  // that the world is *stepped*: six of `Stats`'s fifty-six own properties are
+  // that the world is *stepped*: six of `Stats`'s fifty-nine own properties are
   // written by `sample()` and do not exist on a fresh instance, so a list
   // written by reading the constructor is complete-looking and six short.
   const w = warm();
@@ -209,7 +209,7 @@ test("nothing in the simulation reads the books", () => {
   // `stats.js` has opened with "none of this feeds back into the simulation"
   // since v1.0 and `energy.js` with "nor is read by the simulation" since v1.29.
   // Both are comments, and a comment is not a measurement (v1.28). So: hold each
-  // of the sixty-four fields wrong for sixty consecutive ticks and check the
+  // of the sixty-six fields wrong for sixty consecutive ticks and check the
   // pond does not notice. Per-field rather than all at once, because an aggregate two
   // cancelling errors can satisfy is not a test of either (v1.24).
   const reference = new World(makeConfig({ seed: 21 }));
@@ -239,5 +239,5 @@ test("nothing in the simulation reads the books", () => {
     }
   }
   assert.equal(swept, STATS_HASHED.length + ENERGY_HASHED.length);
-  assert.equal(swept, 64, "the books changed size; the claim above needs re-measuring");
+  assert.equal(swept, 66, "the books changed size; the claim above needs re-measuring");
 });

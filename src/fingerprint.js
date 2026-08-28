@@ -510,9 +510,9 @@ function mixValue(h, v, depth = 0) {
 /**
  * Every own property of `world.stats` that `booksFingerprint` hashes.
  *
- * Six of these — the last six — do not exist until the first `sample()`. A list
- * written by reading the constructor, which is the obvious way to write one,
- * gets fifty of the fifty-six and looks complete. That is why the test
+ * Six of these do not exist until the first `sample()`. A list written by
+ * reading the constructor, which is the obvious way to write one, gets
+ * fifty-two of the fifty-eight and looks complete. That is why the test
  * that walks this list walks a *stepped* world.
  */
 export const STATS_HASHED = [
@@ -523,7 +523,8 @@ export const STATS_HASHED = [
   "jostled", "jostledRate", "_jostledRing",
   "kinSpared", "kinSparedRate", "_kinSparedRing", "infections", "recoveries",
   "infectedCount", "immuneCount", "peakInfected", "hazardShare", "power",
-  "maxGeneration", "maxPopEver", "carnivoreFrac", "avgLearning", "avgVoice",
+  "maxGeneration", "maxPopEver", "maxPopTick", "recordYoung",
+  "carnivoreFrac", "avgLearning", "avgVoice",
   "avgHeard", "groundBias", "patchBias", "soilShare", "_lastSpawned", "_lastSprouted",
   "refugeShare", "hunterCeiling", "livedRefugeRadius", "livedRefugeShare",
   "avgGeneration", "currentMaxGeneration", "carnivoreCount",
@@ -544,7 +545,18 @@ export const STATS_HASHED = [
  * this question. A derived total that disagreed with its own inputs would be a
  * bug in the getter, not a difference between two worlds.)
  */
-export const STATS_UNHASHED = {};
+export const STATS_UNHASHED = {
+  recordYoungId: "the *name* on the pond's one individual record (v1.124) — a " +
+    "creature id, which is a module-level counter that never resets, so the " +
+    "second world built in a process never agrees with the first however " +
+    "identical the two ponds are. `CREATURE_UNHASHED.id` has kept ids out of " +
+    "the state hash for that reason since v1.53, and a book carrying one " +
+    "fails every paired 'this feature is off and changed nothing' assertion " +
+    "in the suite on a record that is correct. The record itself — how many " +
+    "young, when, and whether the holder is still alive — is in " +
+    "`STATS_HASHED` beside it, so what is outside the instrument here is the " +
+    "identity and not the measurement",
+};
 
 /** Every own property of `world.energy`: the eight stored fields, `buried` split by cause. */
 export const ENERGY_HASHED = [
@@ -560,7 +572,7 @@ export const ENERGY_UNHASHED = {};
  *
  * The four channels below and above are the world, its representation, the
  * observer's tree, and the random stream — and none of them touches a counter.
- * `world.stats` carries fifty-six own properties and `world.energy` eight;
+ * `world.stats` carries fifty-nine own properties and `world.energy` eight;
  * until v1.59 the shared paired assertion named **three** of them by hand, and a
  * feature that was switched off and wrote to any of the others left every
  * fingerprint in this project bit-identical.

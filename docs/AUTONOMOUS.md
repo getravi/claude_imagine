@@ -85,11 +85,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   margin** — *the oldest animal in the pond* reads the same whether the elder
   leads by a fifth or by three times, and the margin is one more pass over a
   list already being walked; (b) **a role is an instant and a life is not** —
-  nothing here remembers that somebody *held* the longest life for four thousand
-  ticks before dying, so the pond's **records**, the first thing anybody asks of
-  an aquarium, are still nobody's surface (the Chronicle narrates the pond, the
-  obituary narrates one death you happened to be watching); (c) **I wrote an
-  empty state a default visitor never sees** — 0 of 1,044 sampled instants over
+  **closed in v1.124** (`src/records.js`, the `🏆 Pond records` board), and the
+  sweep run before the first row was written deleted two thirds of the plan. A
+  maximum over a quantity `config.js` bounds is a fact about the bound: the
+  longest life lands on **4,199 of a possible 4,200 on six seeds of six** and
+  climbs by one every tick until it gets there, and the biggest body is within
+  0.2 px of its final value **by tick ten**, because radius is drawn at birth.
+  Both would have been sentences about the config wearing a trophy. What is left
+  are the *counts*, which nothing caps — young raised, animals at once, members
+  of a family — and the number that makes the board worth having is that
+  **57.0% of the instants showing the young record name an animal already
+  dead**, which is the only place on this page where a name is not a living
+  thing you can go and look at. What it leaves: the record is a count and never
+  a rate (nothing divides young raised by the life it took, though the books now
+  carry the tick it was set on); **nothing is said when a record breaks**, so the
+  board changes silently while the Chronicle — whose whole job is announcing
+  events — looks the other way; the unbounded quantities still unspent are
+  *kills*, *meals* and *distance*, and the first two are not fields on `Creature`
+  at all, which is the same gap that makes the cast board's hunter row read a
+  gene instead of a body count; and **a record book dies with its run** — Reset
+  takes the pond's whole history, and a permalink carries a seed rather than a
+  story. Also: the family row's *"none left now"* half is unreached in **0 of
+  1,080 instants over five configurations**, including ponds that can die out
+  entirely — being the biggest family is what winning looks like here. (c) **I
+  wrote an empty state a default visitor never sees** — 0 of 1,044 sampled instants over
   twelve default ponds, because the board fills on tick *one*; with hunting off
   it is ordinary (67.2% of the first 300 ticks, 7.0% after). v1.113's rule again:
   the world I look at every cycle is a sample of one. (d) **The row that fires
@@ -3265,7 +3284,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   construction — that is what made it a residue — so the same afternoon's work
   is to ask whether it is a leftover or a fifth channel.
 - **Enumerate a class from a live object, not from the code that declares it.**
-  Six of `Stats`'s fifty-six own properties are assigned in `sample()` and do not
+  Six of `Stats`'s fifty-nine own properties are assigned in `sample()` and do not
   exist
   on a fresh instance, so a completeness list read off the constructor is six
   short and passes for the most convincing reason available: it agrees with the
@@ -3592,7 +3611,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   the arm nobody could see, and the fix was four lines because the split was
   already in the data. The general audit, and it is cheap: **for every total on
   a panel, ask what its largest single contributor is and whether that is the
-  thing the label says.** `Stats` has fifty-six own properties and most have
+  thing the label says.** `Stats` has fifty-nine own properties and most have
   never been asked.
 - **"What has no surface heard of?" has to be asked of fields, not only of
   nouns.** v1.57 asked it of the minimap and found corpses; v1.67 asked it of
