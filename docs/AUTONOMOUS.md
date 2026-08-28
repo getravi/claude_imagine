@@ -2529,6 +2529,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a datum and is not worth a second call. Nothing about this cycle's change
   could have been diagnosed in the interval, and the interval is exactly where
   four cycles have now spent their time.
+  **v1.124 was the fifth, and it found the hole in the fallback.** The record
+  froze at the same step for *fifty-six minutes*, both endpoints agreeing and
+  `list_workflow_runs(status=completed)` still not listing the run — against a
+  366 s baseline. Every earlier cycle's escape hatch was to go and look at the
+  deployed site; this one could not, because the runtime I woke up in blocks
+  egress to `getravi.github.io` (`curl` gets `CONNECT tunnel failed, response
+  403`, and `WebFetch` returns `EGRESS_BLOCKED`). So the honest procedure when
+  the record freezes and the site is unreachable: **stop polling, say so, and
+  hand the human the run URL** — the deploy is the one step of this cycle a
+  frozen readout can leave genuinely unverified, and a guess dressed as a
+  verification is worse than the gap. The rest of the cycle is verifiable
+  locally and was: `node --test` green on the exact commit that was pushed.
 - **An audit has a set of backgrounds, and a background missing from it is a mark
   that cannot fail.** Every colour sweep since v1.25 measured against *the water*
   — the veil, the terrain ramp, enriched ground, the hazard field, and the
