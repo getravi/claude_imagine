@@ -602,7 +602,7 @@ export function booksFingerprint(world) {
 
 /**
  * Every own property of `world.chronicle` that `chronicleFingerprint` hashes:
- * the feed itself, the length it is capped at, and all thirty-six latches.
+ * the feed itself, the length it is capped at, and all thirty-nine latches.
  *
  * A latch is not bookkeeping about the past — it is a decision about the
  * future. `_firstKill` says whether "first blood" can ever be written again;
@@ -624,10 +624,51 @@ export const CHRONICLE_HASHED = [
   "_peakFood", "_stripped", "_regreened", "_leadingCause",
   "_settled", "_settleStreak", "_soilFed", "_soilStreak",
   "_refugeCrossed", "_sawBelowRefuge",
+  "_recordYoung", "_highMark", "_lostHigh",
 ];
 
-/** The two fields outside the channel, and why each is right to be. */
+/**
+ * Every field of one *event* that `chronicleFingerprint` hashes: when it was
+ * said, what mark it wears, what class of thing it is, and the words.
+ *
+ * An event is the only record in this project the generic mixer walks that
+ * carries an identity, so it is the only one that needs a list of its own.
+ * Without it `mixValue` would take `Object.keys` of each line and hash `who`
+ * along with the rest.
+ */
+export const EVENT_HASHED = ["tick", "year", "icon", "cat", "msg"];
+
+/** The one field of an event outside the channel, and why. */
+export const EVENT_UNHASHED = {
+  who: "the animal a line is about (v1.125) — a creature id, and an id comes " +
+    "from a module-level counter that never resets, so two identical ponds " +
+    "built in one process name the same animal differently. Hashing it would " +
+    "make every paired 'this changed nothing' assertion fail on a narration " +
+    "that is word-for-word correct. It is the split `stats.recordYoungId` " +
+    "made in the books one release earlier, arriving in the narration: the " +
+    "sentence is in the channel and the name on it is not. Nothing is lost " +
+    "that the channel was ever for — a line naming the wrong animal still " +
+    "moves `msg` if it is a different line, and if it is the same line about " +
+    "the same animal the two ponds agree",
+};
+
+/** One event, projected onto the fields the channel is allowed to see. */
+function hashableEvent(e) {
+  const o = {};
+  for (const k of EVENT_HASHED) o[k] = e[k];
+  return o;
+}
+
+/** The three fields outside the channel, and why each is right to be. */
 export const CHRONICLE_UNHASHED = {
+  _recordHolder: "who held the young record when it was last announced " +
+    "(v1.125). The same creature id `EVENT_UNHASHED.who` is, kept for the " +
+    "same reason: it decides *wording* — whether the next line says a " +
+    "champion beat their own number or that somebody took the record from " +
+    "them — and that decision is a comparison of two ids, which comes out " +
+    "identically in two ponds whose ids differ. The wording it chooses is in " +
+    "`msg`, and `msg` is hashed, so a narrator that would say the wrong thing " +
+    "is caught on the line it says it",
   config: "the question, not the answer — the same object `WORLD_UNHASHED` " +
     "names, reached through the narrator instead of through the world",
   rng: "the diversity probe's own stream, and its position lives in the " +
@@ -668,7 +709,12 @@ export const CHRONICLE_UNHASHED = {
 export function chronicleFingerprint(world) {
   const h = new Hash();
   h.word(0x53414944); // domain separator: "SAID"
-  return mixBook(h, world.chronicle, CHRONICLE_HASHED).digest();
+  const c = world.chronicle;
+  // The feed goes in projected onto `EVENT_HASHED`; every other field goes in
+  // as it stands. A spread rather than a special case inside `mixBook`, so the
+  // generic mixer stays generic and the exception is visible in one line.
+  const said = c ? { ...c, events: c.events.map(hashableEvent) } : c;
+  return mixBook(h, said, CHRONICLE_HASHED).digest();
 }
 
 /** Mix one ledger's named fields, by name, so a rename is a difference. */

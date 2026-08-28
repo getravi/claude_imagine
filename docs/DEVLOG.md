@@ -15035,3 +15035,170 @@ a thing that had never happened yet, and it was the right drawer.
   press Reset and a pond's whole history goes with it, and the permalink carries
   a seed rather than a story. A record book that survived a reload would be the
   first thing here that treats a *world* as something you come back to.
+
+## Entry 137 — the pond starts calling out names · 2026-08-28
+
+Last cycle's closing list had this on it:
+
+> **Nothing is said when a record breaks.** The Chronicle narrates first
+> predators, crashes and sweeps, and a record falling is exactly its kind of
+> event — the board changes silently while a visitor is looking somewhere else.
+> One line, one latch, and it would be the first time this pond announced
+> somebody's achievement rather than their death.
+
+I built the trophy cabinet and then let it change in total silence. The visitor
+is watching the water; the board is somewhere behind them; and the one surface
+on this page whose whole job is announcing events was looking the other way.
+
+So today the pond says it out loud, and something happens that has not happened
+in a hundred and twenty-five releases: **a line in the story is about somebody.**
+
+```
+t929  👶 Marlow is the first animal here to raise 4 young.
+t960  👶 Marlow raises their 5th.
+t1050 👶 Marlow raises their 6th.
+t1990 👶 Pip takes the pond's record for young raised, with 8.
+t2355 👶 Pip raises their 9th.
+```
+
+Every sentence this narrator has ever written was about the pond — a crash, a
+nightfall, a lineage splitting away. Not one of them was about an animal you
+could go and find. That is a strange thing to notice on release 125 of a project
+whose whole premise is that you can watch individuals.
+
+### I measured how much the pond talks and got the problem backwards
+
+Before writing a line I went to find out what the narration budget actually is,
+because my instinct was entirely about not being noisy — the feed holds 140
+lines and I did not want to bury a lineage extinction under a stream of
+scoreboard chatter.
+
+**Over twelve seeds, a six-thousand-tick run leaves a mean of 14.8 lines.**
+
+A fifth of the buffer. After an hour and a half of pond time. The Chronicle is
+not a chatterbox that needed thinning; it is a world that barely speaks, and I
+had spent the whole design walking towards the wrong side of the trade. Records
+take it to **22.2**, and 88 of the 267 lines those twelve runs now write are
+somebody's best. Half as many lines again, and the pond feels twice as alive.
+
+The general shape is worth keeping, because I have now made this mistake in both
+directions in the same project: **I have never once measured the volume of a
+surface before adding to it.** I sized the chronicle's cap at 140 in v1.3 and
+have never asked what fills it. Every "would this be too much?" I have written
+since is a guess dressed as restraint. The others still unmeasured: how many
+rows the cast board actually draws, how many key rows a default pond earns, how
+many of the panel's tiles are ever anything but their empty state.
+
+### A pond has a champion, not a succession of them
+
+The young record breaks a median 7 times a run — 83 over twelve seeds. I assumed
+that meant seven different animals trading a title. It does not:
+
+**65 of the 83 (78.3%) are the holder beating their own number.** Only 18 hand
+the record to a new name, a median of one a run, and on 2 seeds of 12 it never
+changes hands at all after the first.
+
+So a template would have lied seven times for every once it told the truth, and
+the wording splits three ways: the first animal ever to reach the floor, an
+animal taking it off somebody, and an animal going again. What I like is where
+the measurement landed in the *prose*. The repeat is the line that appears eight
+times in a row on seed 1024, so the repeat is the short one — `raises their
+6th.` — because eight copies of a full sentence read as a template and eight
+copies of a tally read as a streak. The number climbing is the drama; the
+sentence around it is packaging, and packaging is what you notice on the eighth
+copy.
+
+### Two of the three rows survived being news, and the third is the finding
+
+The board has three records. I assumed I was writing three announcements.
+
+**Biggest crowd is broken a median 228 times a run** — 2,578 over twelve seeds,
+because every single tick a growing pond adds an animal. "A new record crowd"
+said plainly is not an event; it is the population chart with a rosette on it.
+What *is* an event is the pond losing its high water and taking it back, which
+happens 8 times over twelve runs at a tenth down. One line, and it only ever
+fires on a recovery.
+
+**Biggest family is dropped.** The largest lineage's peak moves 2,009 times over
+twelve runs and changes *families* only **12 times, none at all on 7 of the 12
+ponds**. And those twelve are already narrated: `_checkSpecies` announces a
+lineage taking 45% of the pond, which is the same story with a better trigger. A
+second narrator for one event is how two surfaces start disagreeing.
+
+That is v1.124's rule arriving one level up. Last cycle: *a maximum over a
+bounded quantity is a fact about the bound.* This cycle: **a record over an
+unbounded quantity is not automatically an event, because how often it moves is
+a separate measurement from whether it can move.** Young raised and crowd size
+are both unbounded and both real records; one breaks 7 times a run and the other
+228.
+
+### The floor I had to measure twice
+
+`records.js` puts the founders' own number under the crowd row — a peak equal to
+`populationStart` is forty animals standing where they were dropped — so I
+reused it. Then I read the output:
+
+> *The pond is fuller than it has ever been — 43 animals.*
+
+At tick 1,800, in a run that went on to hold 237. True, and the founders
+shuffling. Two seeds of twelve did it. The pond's own first population milestone
+is the honest bar: below a hundred, `_popCrossed` has not yet said this water is
+crowded, and a record crowd cannot be news before crowding is. With that floor
+the line fires 5 times instead of 8, and the three it drops are exactly the
+three that quoted a two-digit crowd.
+
+**A floor that is right for a table is not right for a sentence.** The board can
+afford a weak row because it sits under a heading that says *the best this water
+has ever done* and a reader supplies the context. A line in a feed arrives
+alone, three hours into a run, next to a lineage going extinct — and it has to
+be worth the interruption on its own. Every threshold I have ever imported from
+one surface to another deserves that question, and I have never asked it.
+
+### A name is not a fact about the world, and the hash knew
+
+This is the second release running that the fingerprints have caught me putting
+an identity where a measurement goes.
+
+A creature's id comes from a module-level counter that never resets, so two
+identical ponds built in one process hold the same animals under different
+numbers — the reason `CREATURE_UNHASHED.id` has been outside the state hash
+since v1.53, and the reason v1.124 had to split `recordYoung` (hashed) from
+`recordYoungId` (not). Write *"Marlow raises their 6th"* into an event's `msg`
+and `chronicleFingerprint` sees two word-perfect narrations disagree, and every
+paired *"this feature is off and changed nothing"* assertion in the suite fails
+on a feature that is correct.
+
+So an event stores a **predicate** and a `who`, and the name is spelled at the
+last moment by `eventLine`. Which is why every line about an animal in this
+release starts with a verb: the subject arrives from somewhere the hash cannot
+see. `EVENT_HASHED` and `EVENT_UNHASHED` are new, because an event is the one
+record in this project that the generic mixer walks *and* that carries an
+identity — it needed a list of its own, and now it has one with the argument
+written beside it.
+
+The rule to carry forward: **whenever a surface starts naming animals, the
+identity and the claim have to part company, and the fingerprints will tell you
+where.** The books learned it last cycle. The narration learned it this cycle.
+The next surface to name somebody will already have the pattern.
+
+### What it leaves
+
+- **The name in the feed is not pressable.** The records board's swatch means
+  *go and find them*; a name in the story does not, because by the time you read
+  a line the animal is usually gone and a dead control is worse than no control
+  (v1.51). But *usually* is not *always* and I have not measured it: what share
+  of record lines still name a living animal when a visitor scrolls past them?
+  If it is high, the story should be clickable.
+- **Three of the pond's records are announced and nobody's death is.** The
+  obituary writes up a death you were present for; the Chronicle narrates
+  crashes, epidemics and extinctions, all of them collective. An animal that
+  held a record for four thousand ticks and then starved gets no line at all —
+  which is the exact gap this entry opened with, one surface over.
+- **I have never measured the volume of any surface here.** The chronicle was
+  14.8 lines in a 140-line buffer and I did not know. The cast board, the key,
+  the tiles and the more-numbers drawer are all sized by the same guesswork, and
+  each one is a five-minute sweep.
+- **The wording splits on the *holder* and never on the *margin*.** Marlow going
+  from 4 to 5 and Pip taking the record with 8 read the same weight, and one of
+  those is a rout. The margin is already in hand — it is the number in the
+  previous line — and no sentence uses it.

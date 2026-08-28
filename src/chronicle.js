@@ -10,10 +10,31 @@
 // changes it, and it draws its randomness (for the diversity probe) from its own
 // seeded generator, so it can't affect the world's determinism. Two identical
 // worlds therefore write identical chronicles.
+//
+// **A line can now be about somebody (v1.125).** Until this release every
+// sentence here was about the pond — a crash, a nightfall, a lineage — and the
+// one thing a visitor watching an aquarium actually asks is *who*. An event
+// carries an optional `who`, a creature id, and `eventLine` puts that animal's
+// name in front of the sentence. The id is deliberately **not** part of the
+// stored text and not part of the narration's hash: see `EVENT_UNHASHED` in
+// `fingerprint.js`, and `stats.recordYoungId`, which is outside the books'
+// hash for exactly the same reason one release earlier.
+//
+// The measurement that shaped this: over twelve seeds, a six-thousand-tick run
+// left a mean of **14.8 lines** in a feed that holds 140 — a fifth full, after
+// an hour and a half of pond time. The narrator was never at risk of being
+// noisy; it was a world that barely spoke. Records take that to **22.2**, and
+// 88 of the 267 lines those twelve runs now write are somebody's best.
 
 import { RNG } from "./rng.js";
 import { MULLER_MIN_PEAK, speciesOrigin } from "./phylogeny.js";
 import { nameSpecies, speciesPlural } from "./speciesnames.js";
+// The floor below which "the most young anybody has raised" is not a record,
+// and the name to put in front of the line. Both from `cast.js` rather than
+// from `records.js`, which re-exports the first as `YOUNG_MIN`: the board pulls
+// the whole palette in behind it, and the narrator has no use for a colour.
+// One definition either way — the number lives in `cast.js` and nowhere else.
+import { PARENT_MIN_CHILDREN, givenName, ordinal } from "./cast.js";
 
 /**
  * Consecutive observations the population must spend on smoother-than-average
@@ -33,10 +54,43 @@ const DETRITUS_MIN_DEATHS = 60;
 /** Share of new pellets sprouting from nutrient that counts as "the crop". */
 const DETRITUS_FED_SHARE = 0.3;
 
+/**
+ * How far the pond has to fall below its own best before climbing back over it
+ * counts as news.
+ *
+ * `stats.maxPopEver` is broken a median **228 times in a six-thousand-tick run**
+ * (2,578 over twelve seeds) — every single tick a growing pond adds an animal —
+ * so "a new record crowd" said plainly is not an event, it is the population
+ * line with a rosette on it. What *is* an event is the pond losing its high
+ * water and taking it back, and that is rare enough to be worth a line: at this
+ * threshold it happens **8 times over those same twelve runs** before
+ * `HIGH_WATER_MIN` takes two of the ponds out of it. Loosen it to 0.95 and it
+ * doubles to 16; tighten it to 0.7 and it halves to 4. A tenth is the point
+ * where the fall is visible on the chart without being a crash — the crash
+ * line has its own detector, at 0.45.
+ */
+const HIGH_WATER_LOST = 0.9;
+
+/**
+ * How full the pond has to have been for its own fullness to be worth a line.
+ *
+ * `records.js` puts the founders' own number under the board's crowd row — a
+ * peak equal to `populationStart` is forty animals standing where they were
+ * dropped — and that floor is too low for a *sentence*. Written that way, two
+ * of twelve seeds announced "the pond is fuller than it has ever been — 43
+ * animals" at tick 1,800, which is true, and is the founders shuffling. The
+ * pond's first population milestone is the honest floor: below a hundred,
+ * `_popCrossed` has not yet said this water is crowded, and a record crowd
+ * cannot be news before crowding is. With it the line fires **5 times over
+ * twelve runs instead of 8, on 5 ponds** — and the three it drops are the three
+ * that quoted a two-digit crowd.
+ */
+const HIGH_WATER_MIN = 100;
+
 export class Chronicle {
   constructor(config) {
     this.config = config;
-    /** @type {Array<{tick:number, year:number, icon:string, cat:string, msg:string}>} */
+    /** @type {Array<{tick:number, year:number, icon:string, cat:string, msg:string, who:number}>} */
     this.events = [];
     this.max = 140;
     this.rng = new RNG((config.seed ^ 0x9e3779b9) >>> 0); // own stream
@@ -78,11 +132,34 @@ export class Chronicle {
     this._soilStreak = 0;
     this._refugeCrossed = false;
     this._sawBelowRefuge = false;
+    /** The best "young raised" this narrator has already announced. */
+    this._recordYoung = 0;
+    /**
+     * Who held it when it was last announced, so the next line can tell a
+     * champion beating themselves from a champion being dethroned — 65 of the
+     * 83 breaks over twelve runs are the same animal going again.
+     *
+     * A creature id, and therefore **outside the narration's hash**: ids come
+     * from a module-level counter that never resets, so two identical ponds
+     * built in one process hold the same animals under different numbers. What
+     * this latch decides is a *comparison* of two ids, and that comes out the
+     * same in both. `CHRONICLE_UNHASHED` carries the argument in full.
+     */
+    this._recordHolder = -1;
+    /** The high-water mark as of the last observation. */
+    this._highMark = 0;
+    /** Whether the pond has been well below that mark since it was set. */
+    this._lostHigh = false;
   }
 
-  _push(tick, icon, cat, msg) {
+  /**
+   * @param {number} who the creature this line is about, or -1 for the pond
+   *   itself. Never written into `msg`: a name is a function of an id, and an
+   *   id is not comparable between two worlds in one process.
+   */
+  _push(tick, icon, cat, msg, who = -1) {
     const year = this.config.seasons ? Math.floor(tick / this.config.seasonLength) + 1 : 0;
-    this.events.push({ tick, year, icon, cat, msg });
+    this.events.push({ tick, year, icon, cat, msg, who });
     if (this.events.length > this.max) this.events.shift();
   }
 
@@ -229,11 +306,92 @@ export class Chronicle {
       }
     }
 
+    // --- Records falling ---
+    this._checkRecords(tick, pop, s);
+
     // --- Throttled scans ---
     if (tick % 32 === 0) this._checkMortality(tick, s);
     if (tick % 32 === 0) this._checkOldest(world, tick);
     if (tick % 64 === 0) this._checkDiversity(world, tick);
     if (tick % 48 === 0) this._checkSpecies(world, tick, pop);
+  }
+
+  /**
+   * A record falling, in words.
+   *
+   * `🏆 Pond records` (v1.124) is the one board here that remembers an animal
+   * after it sinks, and it has been changing in total silence: the visitor is
+   * watching the water, the board is behind them, and the surface whose whole
+   * job is announcing events was looking the other way. This is that line.
+   *
+   * **Two of the board's three rows survived being measured as news.**
+   *
+   *   * *Most young* is the one record here about an individual, and it breaks
+   *     a median **7 times** in six thousand ticks — 83 over twelve seeds, and
+   *     the closest two are 30 ticks apart, so no cooling-off period is needed
+   *     in a feed that averages 14.8 lines. **65 of those 83 (78.3%) are the
+   *     holder beating their own number**, and only 18 hand the record to a new
+   *     name (median 1 a run; on 2 seeds of 12 it never changes hands at all
+   *     after the first). A pond, it turns out, mostly has *a* champion rather
+   *     than a succession of them — so the wording splits three ways, because
+   *     "Robin takes the record" said seven times about the same animal would
+   *     be a lie told by a template.
+   *   * *Biggest crowd* only counts when it is a comeback — see
+   *     `HIGH_WATER_LOST` for why the raw record is not an event.
+   *   * *Biggest family* is **dropped**, and the number is the reason: the
+   *     largest lineage's peak is broken 2,009 times over twelve runs and
+   *     changes *families* only **12 times, none at all on 7 of the 12 ponds**.
+   *     A line that fires two thousand times is the Muller plot read aloud, and
+   *     the twelve that mean anything are already narrated — `_checkSpecies`
+   *     announces a lineage taking 45% of the pond, which is the same story
+   *     with a better trigger. One event, one narrator.
+   *
+   * No cap, no throttle, and no latch set: the guard is that a record only
+   * moves upward, so a line per break is a line per genuine improvement.
+   */
+  _checkRecords(tick, pop, s) {
+    // --- The one individual record. ---
+    const rec = s.recordYoung;
+    if (rec && rec.children >= PARENT_MIN_CHILDREN && rec.children > this._recordYoung) {
+      const holder = s.recordYoungId ?? -1;
+      const first = this._recordYoung === 0;
+      const again = holder === this._recordHolder;
+      const young = `${rec.children} young`;
+      this._recordYoung = rec.children;
+      this._recordHolder = holder;
+      this._push(
+        tick,
+        "👶",
+        "record",
+        first
+          ? `is the first animal here to raise ${young}.`
+          : again
+            ? // Short, because this is the line that repeats: a champion beats
+              // their own number seven times for every once they are dethroned,
+              // and eight copies of a full sentence read as a template while
+              // eight copies of a tally read as a streak.
+              `raises their ${ordinal(rec.children)}.`
+            : `takes the pond's record for young raised, with ${rec.children}.`,
+        holder
+      );
+    }
+
+    // --- The pond's own record, but only when it is a recovery. ---
+    const peak = s.maxPopEver || 0;
+    if (peak > this._highMark) {
+      if (this._lostHigh && this._highMark >= HIGH_WATER_MIN) {
+        this._push(
+          tick,
+          "🌊",
+          "record",
+          `The pond is fuller than it has ever been — ${peak} animals, past a high it had lost.`
+        );
+      }
+      this._highMark = peak;
+      this._lostHigh = false;
+    } else if (pop < HIGH_WATER_LOST * peak) {
+      this._lostHigh = true;
+    }
   }
 
   /**
@@ -504,4 +662,37 @@ export class Chronicle {
       }
     }
   }
+}
+
+/**
+ * One line of the chronicle as a sentence, name and all.
+ *
+ * The name is composed here rather than stored in `msg` for the reason
+ * `EVENT_UNHASHED` gives: a creature id is a module-level counter, so two
+ * identical ponds in one process would write differently-named narrations of
+ * the same events, and the narration has a hash that would call that a
+ * difference. Storing the id and spelling the name at the last moment keeps the
+ * measurement in the channel and the identity out of it — the split v1.124 made
+ * in the books, one surface over.
+ *
+ * Every line this returns therefore reads *subject verb*: a `who` event's `msg`
+ * is a predicate with no subject of its own, which is why they are written
+ * starting with a verb.
+ *
+ * @param {{msg:string, who?:number}} e
+ * @returns {string} plain text — the feed marks the name up itself
+ */
+export function eventLine(e) {
+  return e.who >= 0 ? `${givenName(e.who)} ${e.msg}` : e.msg;
+}
+
+/**
+ * The name a line names, or "" when it is about the pond rather than a body.
+ * Split out so the feed can put it in its own element without re-deriving the
+ * rule, and so a test can hold the two halves to the same answer.
+ *
+ * @param {{who?:number}} e
+ */
+export function eventWho(e) {
+  return e.who >= 0 ? givenName(e.who) : "";
 }

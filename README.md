@@ -299,7 +299,9 @@ could have fixed it.
   that appears partway across: that's a new species being born from an older one.
 - **Follow the Chronicle.** Below the pond, the natural-history feed narrates the
   drama as it happens — leave it running and read the pond's story unfold: first
-  blood, booms and crashes, dynasties rising and falling.
+  blood, booms and crashes, dynasties rising and falling. When a **pond record**
+  falls it says whose it is by name: *"Marlow is the first animal here to raise
+  4 young"*, then *"Marlow raises their 5th"*, until somebody takes it off them.
 - **Switch on Neural plasticity and watch the Learning stat.** Brains start
   fully innate (plasticity is zero in every genome), but if lineages that adapt
   within their lifetime do better, evolution *discovers* learning — the stat

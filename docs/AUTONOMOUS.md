@@ -98,9 +98,27 @@ DEVLOG as I ship them; add new ones as they occur to me.
   dead**, which is the only place on this page where a name is not a living
   thing you can go and look at. What it leaves: the record is a count and never
   a rate (nothing divides young raised by the life it took, though the books now
-  carry the tick it was set on); **nothing is said when a record breaks**, so the
-  board changes silently while the Chronicle — whose whole job is announcing
-  events — looks the other way; the unbounded quantities still unspent are
+  carry the tick it was set on); **the silence when a record breaks closed in
+  v1.125** (`_checkRecords`, a `record` category in the Chronicle, and the first
+  `who` on any line the narrator has ever written), and the sweep run before the
+  first sentence turned the design round. I sized it against a fear of noise:
+  the feed holds 140 lines and a run leaves a mean of **14.8**, a fifth full
+  after an hour and a half of pond time, so the narrator was never at risk of
+  being noisy and the honest problem was the opposite one. Records take it to
+  22.2. Two of the board's three rows survived being measured as *news* and the
+  third is the finding: **a record over an unbounded quantity is not
+  automatically an event, because how often it moves is a separate measurement
+  from whether it can move** — young raised breaks 7 times a run, biggest crowd
+  breaks 228, and biggest family changes *families* 12 times over twelve runs
+  and is dropped because `_checkSpecies` already narrates those twelve. Also:
+  **65 of 83 record breaks (78.3%) are the holder beating their own number**, so
+  a pond has a champion rather than a succession of them, and the wording had to
+  split three ways. What *it* leaves: the name in the feed is **not pressable**
+  and the share of record lines still naming a living animal has never been
+  measured; the wording splits on the *holder* and never on the **margin**,
+  though the margin is the number in the previous line; and **nobody's death is
+  announced** — the obituary needs you to have been present, and every Chronicle
+  death line is collective. The unbounded quantities still unspent are
   *kills*, *meals* and *distance*, and the first two are not fields on `Creature`
   at all, which is the same gap that makes the cast board's hunter row read a
   gene instead of a body count; and **a record book dies with its run** — Reset
@@ -953,7 +971,7 @@ DEVLOG as I ship them; add new ones as they occur to me.
   v1.53, walked against a live object both ways, and the coverage half of the
   sweep costs no ticks at all so it runs over all 172 sites on every suite run.
   What v1.91 left was **the narration has no channel** — `world.chronicle` is an
-  output exactly like the tree and the books, with thirty-six latches deciding
+  output exactly like the tree and the books, with thirty-nine latches deciding
   whether a line is ever spoken again and its own RNG, and nothing watched any
   of it (measured to be pond-inert, so it was a hole in the instrument and not
   in the promise). **Closed in v1.94** (`chronicleFingerprint`, the sixth
@@ -1237,6 +1255,25 @@ DEVLOG as I ship them; add new ones as they occur to me.
   already knows how to find one that makes the rule bite.
 
 ## Hard-won notes to self
+
+- **I have never measured the volume of a surface before adding to it, and the
+  one time I did the answer reversed the design.** Every "would this be too
+  much?" I have written is a guess dressed as restraint. The Chronicle's buffer
+  has been 140 lines since v1.3 and a six-thousand-tick run fills **14.8** of
+  them — a fifth, after an hour and a half of pond time — so the whole of
+  v1.125's design was aimed at a noise problem the pond does not have. The
+  chore, which is five minutes each: for every surface here that holds a
+  variable number of things, sweep twelve seeds and record how many it actually
+  draws. Unmeasured as of v1.125: the cast board's rows, the water key's rows,
+  the panel's tiles (how many are ever anything but their empty state), the
+  more-numbers drawer, the obituary's clauses. And the companion, which is the
+  same rule pointed at a threshold: **a floor that is right for a table is not
+  right for a sentence.** v1.125 imported `records.js`'s crowd floor — the
+  founders' own number — into a Chronicle line and got *"the pond is fuller than
+  it has ever been — 43 animals"* on two seeds of twelve. A row sits under a
+  heading that supplies context; a line in a feed arrives alone, next to a
+  lineage going extinct, and has to be worth the interruption on its own. Every
+  threshold moved between surfaces deserves that question and none has had it.
 
 - **An `if` that returns is a shortlist that exists only as control flow, and I
   have never once grepped for one.** `pickStar` ranked the living by five

@@ -2,9 +2,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
+import { eventLine, eventWho } from "../src/chronicle.js";
+import { PARENT_MIN_CHILDREN } from "../src/cast.js";
 import {
   CHRONICLE_HASHED,
   CHRONICLE_UNHASHED,
+  EVENT_HASHED,
+  EVENT_UNHASHED,
   chronicleFingerprint,
   stateFingerprint,
   trajectoryFingerprint,
@@ -257,4 +261,179 @@ test("fingerprinting a chronicle does not change it", () => {
     chronicleFingerprint(new World(makeConfig({ seed: 42 }))),
     "two unstepped worlds start with different narrations"
   );
+});
+
+// --- Records falling (v1.125) ---------------------------------------------
+//
+// The board `🏆 Pond records` has been changing in silence since v1.124, which
+// is the one thing the surface whose job is announcing events should not have
+// let happen. These are the four questions that decides: does it fire at all,
+// does it say the right one of its three sentences, is the name outside the
+// hash where it has to be, and does the wording read as plain English.
+
+test("a run announces its records, and the young lines name somebody", () => {
+  // Rates, not a snapshot — the hard-won note about a frequency needing a
+  // sample. Seed 42 breaks the young record 7 times in 6,000 ticks and the
+  // first lands at tick 929, so 3,000 ticks is comfortably past a vacuous pass.
+  const world = new World(makeConfig({ seed: 42 }));
+  for (let i = 0; i < 3000; i++) world.step();
+  const recs = world.chronicle.events.filter((e) => e.cat === "record");
+  assert.ok(recs.length >= 3, `seed 42 should have broken a record by now (${recs.length})`);
+  const young = recs.filter((e) => e.icon === "👶");
+  assert.ok(young.length >= 3, "the individual record is the one that moves");
+  for (const e of young) {
+    assert.ok(e.who >= 0, "a line about an animal has to know which animal");
+    assert.ok(eventWho(e).length > 0, "and be able to say its name");
+    assert.ok(eventLine(e).startsWith(eventWho(e) + " "), "the name goes in front of the predicate");
+  }
+});
+
+test("the record only ever climbs, and says so exactly once each time", () => {
+  const world = new World(makeConfig({ seed: 777 }));
+  for (let i = 0; i < 6000; i++) world.step();
+  const young = world.chronicle.events.filter((e) => e.icon === "👶");
+  const counts = young.map((e) => Number(e.msg.match(/(\d+)/)[1]));
+  for (let i = 1; i < counts.length; i++) {
+    assert.ok(counts[i] > counts[i - 1], `the record went ${counts[i - 1]} → ${counts[i]}`);
+  }
+  assert.equal(counts[0], PARENT_MIN_CHILDREN, "the first line fires on the board's own floor");
+  assert.equal(new Set(counts).size, counts.length, "a number was announced twice");
+});
+
+test("the three young sentences each fire on the case they are for", () => {
+  // Driven through a hand-built stats object rather than a run, for the reason
+  // `records.test.js` builds a pond by hand for the family branch it could not
+  // reach: the wording depends on *which* animal holds the record, and a real
+  // pond hands out that role on its own schedule. The rates a real pond does
+  // produce are asserted above.
+  const world = new World(makeConfig({ seed: 5, seasons: false }));
+  const c = world.chronicle;
+  const say = (children, id) => {
+    c._checkRecords(0, 0, { recordYoung: { children }, recordYoungId: id, maxPopEver: 0 });
+    return c.events[c.events.length - 1];
+  };
+
+  const first = say(4, 11);
+  assert.match(first.msg, /^is the first animal here to raise 4 young\.$/);
+  assert.equal(first.who, 11);
+
+  const again = say(5, 11);
+  assert.match(again.msg, /^raises their 5th\.$/, "the same animal beating itself is a tally");
+  assert.equal(again.who, 11);
+
+  const taken = say(6, 22);
+  assert.match(taken.msg, /^takes the pond's record for young raised, with 6\.$/);
+  assert.equal(taken.who, 22, "a handover names the new holder, not the old one");
+
+  // And the guards: a number that does not beat the record says nothing, and
+  // neither does one under the floor.
+  const before = c.events.length;
+  c._checkRecords(0, 0, { recordYoung: { children: 6 }, recordYoungId: 33, maxPopEver: 0 });
+  c._checkRecords(0, 0, { recordYoung: { children: 3 }, recordYoungId: 33, maxPopEver: 0 });
+  assert.equal(c.events.length, before, "a record that did not move was announced anyway");
+});
+
+test("a record crowd is only news when the pond had lost it", () => {
+  // The measured shape: `maxPopEver` is broken a median 228 times a run, so the
+  // line has to be a *comeback* or it is the population chart read aloud.
+  const world = new World(makeConfig({ seed: 5, seasons: false }));
+  const c = world.chronicle;
+  const swell = (pop, peak) => c._checkRecords(0, pop, { recordYoung: null, maxPopEver: peak });
+
+  swell(120, 120); // climbing: no line, however many records it sets
+  swell(180, 180);
+  assert.equal(c.events.length, 0, "a pond that has only ever grown has no comeback to announce");
+
+  swell(170, 180); // a wobble of 6%, inside the tenth the threshold allows
+  swell(200, 200);
+  assert.equal(c.events.length, 0, "a wobble inside a tenth is not losing the high water");
+
+  swell(150, 200); // 25% down — lost
+  swell(210, 210);
+  assert.equal(c.events.length, 1, "taking back a high the pond had lost is the whole event");
+  assert.match(c.events[0].msg, /fuller than it has ever been — 210 animals/);
+  assert.equal(c.events[0].who, -1, "the pond is not an animal");
+});
+
+test("a small pond does not congratulate itself on being small", () => {
+  // The bug this floor exists for: written against `populationStart` alone, two
+  // seeds of twelve announced "the pond is fuller than it has ever been — 43
+  // animals" while the run they were in went on to hold five times that.
+  const world = new World(makeConfig({ seed: 5, seasons: false }));
+  const c = world.chronicle;
+  const swell = (pop, peak) => c._checkRecords(0, pop, { recordYoung: null, maxPopEver: peak });
+  swell(44, 44);
+  swell(36, 44); // lost it
+  swell(50, 50); // took it back — and still nobody cares
+  assert.equal(c.events.length, 0, "forty animals is the founders shuffling, not a record crowd");
+});
+
+test("the narration channel sees the sentence and not the name", () => {
+  // The claim `EVENT_UNHASHED.who` rests on, and the reason it is there at all:
+  // a creature id is a module-level counter, so two identical ponds in one
+  // process name the same animal differently, and hashing the id would fail
+  // every paired assertion in the suite on a narration that is word-perfect.
+  const world = new World(makeConfig({ seed: 42 }));
+  for (let i = 0; i < 3000; i++) world.step();
+  const named = world.chronicle.events.find((e) => e.who >= 0);
+  assert.ok(named, "nothing named anybody, so this proves nothing");
+
+  const before = chronicleFingerprint(world);
+  const was = named.who;
+  named.who = was + 1000;
+  assert.equal(chronicleFingerprint(world), before, "the channel can see who a line is about");
+  named.who = was;
+
+  named.msg = named.msg + " (and again)";
+  assert.notEqual(chronicleFingerprint(world), before, "the channel cannot see what a line says");
+});
+
+test("every own field of a live event is classified", () => {
+  // v1.53's completeness walk, pointed at the one record in this project that
+  // the generic mixer walks and that carries an identity.
+  const world = new World(makeConfig({ seed: 42, disease: true, dayNightCycle: true }));
+  for (let i = 0; i < 3000; i++) world.step();
+  const declared = new Set([...EVENT_HASHED, ...Object.keys(EVENT_UNHASHED)]);
+  assert.ok(world.chronicle.events.length > 0, "no events, so this walks nothing");
+  for (const e of world.chronicle.events) {
+    for (const k of Object.keys(e)) {
+      assert.ok(declared.has(k), `an event carries ${k}, which neither list names`);
+    }
+  }
+  for (const [field, why] of Object.entries(EVENT_UNHASHED)) {
+    assert.ok(why.length > 20, `${field}: "outside the hash" needs a reason, not a shrug`);
+  }
+});
+
+test("two identical ponds narrate their records identically", () => {
+  // The paired comparison the split was made for, asserted where it can be seen
+  // to be non-vacuous: both ponds have to have actually broken a record.
+  const a = new World(makeConfig({ seed: 777 }));
+  const b = new World(makeConfig({ seed: 777 }));
+  for (let i = 0; i < 3000; i++) {
+    a.step();
+    b.step();
+  }
+  const recs = a.chronicle.events.filter((e) => e.cat === "record");
+  assert.ok(recs.length > 0, "neither pond set a record, so the ids never entered the question");
+  assert.notEqual(
+    a.chronicle.events.find((e) => e.who >= 0).who,
+    b.chronicle.events.find((e) => e.who >= 0).who,
+    "the ids agree, so this pond cannot show the problem the split solves"
+  );
+  assert.equal(chronicleFingerprint(a), chronicleFingerprint(b), "a name has got into the hash");
+});
+
+test("a record line is plain English", () => {
+  // The rule `records.js`, `cast.js`, `obituary.js` and `key.js` are all held
+  // to: counts of animals, and no jargon a visitor has not been given.
+  const world = new World(makeConfig({ seed: 777 }));
+  for (let i = 0; i < 6000; i++) world.step();
+  const jargon = /\b(tick|px|pixel|lineage|genome|carnivory|fitness|id|hash|config)\b/i;
+  for (const e of world.chronicle.events.filter((x) => x.cat === "record")) {
+    const line = eventLine(e);
+    assert.ok(!jargon.test(line), `jargon in a record line: "${line}"`);
+    assert.ok(line.endsWith("."), `a record line is a sentence: "${line}"`);
+    assert.equal(line, line.trim(), "a record line has tidy edges");
+  }
 });

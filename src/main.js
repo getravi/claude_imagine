@@ -62,6 +62,7 @@ import {
   seasonLabel,
   timeOfDayLabel,
 } from "./describe.js";
+import { eventWho } from "./chronicle.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
@@ -548,7 +549,7 @@ function wireRecordList() {
 function updateChronicle(world) {
   const ev = world.chronicle.events;
   const newest = ev.length ? ev[ev.length - 1] : null;
-  const key = ev.length + "|" + (newest ? newest.tick + newest.msg : "");
+  const key = ev.length + "|" + (newest ? newest.tick + newest.msg + newest.who : "");
   if (key === view.lastChronKey) return; // nothing changed since last render
   view.lastChronKey = key;
 
@@ -562,9 +563,15 @@ function updateChronicle(world) {
     const e = ev[i];
     const when = "t" + e.tick.toLocaleString() + (e.year ? ` · yr${e.year}` : "");
     const fresh = i === ev.length - 1 ? " fresh" : "";
+    // A line about an animal stores a predicate and gets its subject here
+    // (v1.125) — the name is marked up rather than run into the sentence,
+    // because the whole point of putting one in the story is that a reader can
+    // find it again three lines down.
+    const who = eventWho(e);
+    const said = who ? `<b class="c-who">${who}</b> ${e.msg}` : e.msg;
     html +=
       `<li class="cat-${e.cat}${fresh}"><span class="c-icon">${e.icon}</span>` +
-      `<span class="c-when">${when}</span><span class="c-msg">${e.msg}</span></li>`;
+      `<span class="c-when">${when}</span><span class="c-msg">${said}</span></li>`;
   }
   feed.innerHTML = html;
 }

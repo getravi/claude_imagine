@@ -157,6 +157,12 @@
           <ul class="reclist" id="record-list"></ul>
         </section>
 
+        <!-- The pond's story. Since v1.125 a line can be about an *animal* and
+             not only about the water: when a record above falls, the Chronicle
+             names whoever broke it. The name is composed at render time from
+             the event's `who` rather than stored in its text — see
+             `EVENT_UNHASHED` in `src/fingerprint.js` — so every line about
+             somebody is written subject-first here and verb-first there. -->
         <section class="chronicle">
           <div class="chronicle-head">
             <h2>📜 Chronicle</h2>

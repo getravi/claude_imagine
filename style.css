@@ -504,6 +504,12 @@ body {
 .chronicle-feed .c-msg {
   flex: 1;
 }
+/* The animal a line is about (v1.125). No colour of its own — it inherits the
+   `--ink` the sentence around it is already set in, so the emphasis costs a
+   weight and not a hue, and the legibility audit has one fewer pair to price. */
+.chronicle-feed .c-who {
+  font-weight: 600;
+}
 .chronicle-feed .chronicle-empty {
   color: var(--ink-faint);
   font-style: italic;
@@ -517,7 +523,11 @@ body {
 .chronicle-feed li.cat-recover { border-left-color: #5adc96; }
 .chronicle-feed li.cat-brain,
 .chronicle-feed li.cat-learning { border-left-color: #78beff; }
-.chronicle-feed li.cat-longevity { border-left-color: #d8c26a; }
+/* A record falling wears the same gold as a long life: both are the pond
+   handing somebody a trophy, and a second yellow would be a distinction
+   without a difference. */
+.chronicle-feed li.cat-longevity,
+.chronicle-feed li.cat-record { border-left-color: #d8c26a; }
 .chronicle-feed li.cat-diversity { border-left-color: #5adc96; }
 .chronicle-feed li.cat-night { border-left-color: #8a93e8; }
 #world {

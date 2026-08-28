@@ -127,6 +127,14 @@ export const SITE_SILENT = {
     "hash since v1.53, arriving in the books. The record it names is hashed " +
     "beside it, so what this channel cannot see is the identity and not the " +
     "measurement",
+  "chronicle._recordHolder": "who held the pond's young record when the " +
+    "narrator last announced it (v1.125). A creature id, outside the " +
+    "narration's hash for the reason `stats.recordYoungId` is outside the " +
+    "books' — see `CHRONICLE_UNHASHED`. What it decides is the *wording* of " +
+    "the next record line, and the wording is in `msg`, which this channel " +
+    "does see: move this and the narrator says 'takes the record' where it " +
+    "should have said 'raises another', and the channel catches it on that " +
+    "line rather than on the latch",
   "chronicle.rng.seed": "a record of how the narrator's diversity probe " +
     "started and not the stream, exactly as `world.rng.seed` is for the pond. " +
     "The channel for it is a `drawStream` on the generator itself",

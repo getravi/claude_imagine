@@ -46,6 +46,7 @@ import { creatureReaches } from "./reach.js";
 import { readable } from "./seasonlag.js";
 import { sizeAxis, SIZE_BINS } from "./sizeplot.js";
 import { speciesLabel } from "./speciesnames.js";
+import { eventLine } from "./chronicle.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -718,7 +719,10 @@ export function pendingSpeech(events, spoken) {
 
   const shown = fresh.slice(-MAX_SPOKEN);
   const skipped = fresh.length - shown.length;
-  const parts = shown.map((e) => e.msg);
+  // `eventLine` and not `e.msg`: a line about an animal stores a predicate and
+  // spells its subject at the last moment (v1.125), so the raw message would
+  // read out "raises another — 6 young now" with nobody in front of it.
+  const parts = shown.map(eventLine);
   if (skipped > 0) parts.unshift(`${count(skipped, "earlier event")} not read out.`);
   return { text: parts.join(" "), spoken: newest };
 }

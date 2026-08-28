@@ -4,6 +4,86 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.125.0] — 2026-08-28
+
+The pond starts calling out names.
+
+Last cycle built `🏆 Pond records` — the only board here that remembers an
+animal after it sinks — and then let it change in total silence. The visitor is
+watching the water; the board is somewhere behind them; and the one surface on
+this page whose entire job is announcing events was looking the other way. So
+this cycle the Chronicle says it out loud, and for the first time in a hundred
+and twenty-five releases a line in the pond's story is **about somebody**:
+
+```
+t929  👶 Marlow is the first animal here to raise 4 young.
+t960  👶 Marlow raises their 5th.
+t1050 👶 Marlow raises their 6th.
+t1990 👶 Pip takes the pond's record for young raised, with 8.
+t2355 👶 Pip raises their 9th.
+```
+
+**The number that made this worth doing is not about records at all.** Before
+writing a line I measured how much the narrator already says: over twelve seeds,
+a six-thousand-tick run leaves a mean of **14.8 lines in a feed that holds
+140** — a fifth full, after an hour and a half of pond time. Every instinct I
+had was about not being noisy. The pond was not noisy. It was a world that
+barely spoke, and the honest problem was the opposite one. Records take it to
+**22.2 lines**, and 88 of the 267 that those runs now write are somebody's best.
+
+**A pond has a champion, not a succession of them.** The young record breaks a
+median 7 times a run — 83 over twelve seeds — and **65 of those 83 (78.3%) are
+the holder beating their own number**. Only 18 hand it to a new name, a median
+of one a run, and on 2 seeds of 12 it never changes hands at all after the
+first. So the wording splits three ways, because "Marlow takes the record" said
+seven times about the same animal would be a lie told by a template — and the
+repeat is the *short* one (`raises their 6th.`), because eight copies of a full
+sentence read as a template while eight copies of a tally read as a streak.
+
+**Two of the board's three rows survived being measured as news, and the third
+is the finding.** *Biggest crowd* is broken a median **228 times a run** — every
+tick a growing pond adds an animal — so a plain "new record crowd" is the
+population chart with a rosette on it. What is an event is the pond *losing* its
+high water and taking it back: 8 times over twelve runs at a tenth down. And
+*biggest family* is dropped outright: the largest lineage's peak moves **2,009
+times over twelve runs and changes families only 12, none at all on 7 of the 12
+ponds** — and those twelve are already narrated, because `_checkSpecies` calls a
+lineage taking 45% of the pond. One event, one narrator.
+
+**A floor I had to measure twice.** Written against the founders' own number —
+the floor `records.js` puts under the same row — two seeds of twelve announced
+*"the pond is fuller than it has ever been — 43 animals"* at tick 1,800, in runs
+that went on to hold five times that. True, and the founders shuffling. The
+pond's own first population milestone is the honest bar: below a hundred,
+nothing has yet said this water is crowded, and a record crowd cannot be news
+before crowding is. The three lines it drops are the three that quoted a
+two-digit crowd.
+
+### Changed
+
+- **`src/chronicle.js` — records fall out loud.** A `record` category, two
+  triggers, three sentences, and the first `who` on any line the narrator has
+  ever written. `eventLine` and `eventWho` compose the name at the last moment;
+  the feed marks it up (`.c-who`, a weight and no new colour) so a reader can
+  find the same animal three lines down.
+- **`src/fingerprint.js` — `EVENT_HASHED` / `EVENT_UNHASHED`.** An event is now
+  the one record the generic mixer walks that carries an *identity*, so it needs
+  a list of its own. A creature id comes from a module-level counter that never
+  resets, so two identical ponds in one process name the same animal
+  differently: hashing `who` would fail every paired "this changed nothing"
+  assertion in the suite on a narration that is word-perfect. The sentence is in
+  the channel and the name on it is not — the split `stats.recordYoungId` made
+  in the books one release earlier, arriving in the narration.
+- **`src/describe.js`** — the spoken channel reads `eventLine`, so a listener
+  hears "Marlow raises their 6th" rather than a predicate with no subject.
+- **`src/statesweep.js`** — `chronicle._recordHolder` joins the sites the
+  narration channel deliberately cannot see, with the argument written down.
+
+### Notes
+
+- Determinism untouched: the Chronicle remains a pure observer, `_checkRecords`
+  draws no random number, and the golden fingerprints are unmoved. 1,276 tests.
+
 ## [1.124.0] — 2026-08-28
 
 The pond finally remembers somebody.
