@@ -70,6 +70,7 @@ import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
+import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { nameTags } from "./nametag.js";
 
 const $ = (id) => document.getElementById(id);
@@ -205,6 +206,14 @@ const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 function adoptWorld() {
   if (!view.adopt(world, renderer)) return;
   $("btn-clear-highlight").classList.add("hidden");
+  // The pond's opening line, taken here and nowhere else (v1.128). This runs at
+  // the top of the frame, *before* anything is stepped, so a world built since
+  // the last frame is still standing exactly as it was dealt — which is what
+  // makes `foundingSnapshot`'s `tick === 0` test the whole of the condition
+  // "these are the animals it started with". A world that arrives already
+  // running — `📂 Load` pours a saved run into a fresh `World` — has no
+  // beginning here to record, gets `null`, and the board says so.
+  view.founding = foundingSnapshot(world);
 }
 
 function boot() {
@@ -357,6 +366,7 @@ function loop(now) {
   updateHeadline(world);
   updateKey();
   updateCast(world);
+  updateEvolved(world);
   updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
@@ -524,6 +534,31 @@ function watchCreature(c, flashText, sayText) {
   renderer.camera.setTarget(c);
   flash(flashText, MEET_FLASH_MS);
   announce(sayText);
+}
+
+// ---- How they have changed (v1.128) ----
+//
+// The board that answers the tagline: the animals in the water now, against the
+// ones this pond was handed on its first tick. `evolved.js` owns every word;
+// this is the adapter onto the DOM, and there is no click to wire because every
+// row is about a population rather than about an animal anybody could go and
+// press.
+//
+// Keyed on the sentences, as the record board is, and for a sharper version of
+// its reason: the underlying means move in the sixth decimal place every time
+// anybody is born, and every number the board prints is rounded to a whole
+// percent or a whole animal. A key made of the measurements would rebuild this
+// list sixty times a second to draw exactly the same five lines. The signature
+// carries whether the opening line was seen, so that the board's two *empty*
+// states are distinguishable from each other and from the state before any pond
+// has been drawn — see `evolvedSignature`.
+function updateEvolved(world) {
+  const sawStart = view.founding !== null;
+  const rows = evolvedRows(world, view.founding);
+  const sig = evolvedSignature(rows, sawStart);
+  if (sig === view.evolvedSig) return;
+  view.evolvedSig = sig;
+  $("evolved-list").innerHTML = evolvedHTML(rows, sawStart);
 }
 
 // ---- The book of records (v1.124) ----

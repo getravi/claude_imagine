@@ -148,6 +148,18 @@ const FRESH = Object.freeze({
   // under a name the pond has buried. Here for `castSig`'s reason as well — the
   // sentences carry a creature's given name, and a name is an id.
   recordSig: "",
+  // How they have changed (v1.128), and the thing it is measured against. This
+  // is the first entry on the roster that is not a cache at all: `founding` is
+  // the pond's opening line — the mean body of the animals it was handed, and
+  // their ids — taken on the frame this state adopts the world and never again.
+  // World-scoped is not a nicety here, it is the whole correctness argument: an
+  // opening line inherited across a reset would have the new pond's animals
+  // measured against the old pond's founders, which is a board that is wrong in
+  // a way no visitor could catch. Held as `null` rather than an empty object,
+  // for `lineageNames`' reason and for one more of its own: `null` is also what
+  // a *loaded* world leaves here, and the board has a sentence for it.
+  founding: null,
+  evolvedSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

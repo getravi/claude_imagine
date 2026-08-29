@@ -4,6 +4,105 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.128.0] — 2026-08-29
+
+The pond finally shows its work.
+
+The line under the logo says *a digital pond where little brains evolve to
+survive*. A visitor reads that, watches three hundred darts chase green specks
+for ninety seconds, and asks the only question that matters:
+
+> **Have these things actually changed since it started, or am I watching a
+> screensaver?**
+
+Vivarium has been able to answer that since v1.9 and has never once answered it
+in a sentence. The surfaces that hold the answer are a **Muller plot**, a
+**histogram with a mean dash on it**, and **three time series sharing an axis** —
+the best things on this page and every one of them written for somebody who
+already knows what those are. The surfaces anybody can read — the headline, the
+cast board, the record book, the Chronicle — are all about *this minute, this
+animal, this crowd*. Fifteen releases of making the pond legible, and the thing
+the page is actually for was still behind a chart.
+
+**🧬 How they have changed** is that answer in five sentences with no chart in
+any of them. It holds the pond's opening line — the mean body of the forty
+animals it was handed on tick one — and says how far the animals alive now have
+moved from it:
+
+> 👥 **The first animals** — not one of the 40 this pond started with is left — everybody here is a descendant
+> 🌳 **Generations** — the animals here now are, on average, 7 generations from the founders
+> 📏 **Bodies** — 32% bigger than the animals this pond started with
+> 🥣 **Diet** — meat has fallen from 55% of what they eat to 11% — this water is turning vegetarian
+> 🔥 **Appetite** — they burn energy 6% faster than the founders did
+
+No pixel, no tick, no gene, no lineage. Percentages and counts of animals, which
+are the two quantities everybody already has.
+
+**The row I nearly cut for being noise is the best row on the board.** Twelve
+seeds, six thousand ticks, sampled every fifty — 1,440 pond-instants:
+
+- **Bodies** grow, and mostly one way: bigger on **70.8%** of instants, smaller
+  on 9.2%, level on 20.1%. By t6,000 the mean body is 1.20×–1.38× the founders'
+  on eleven seeds — and **0.88× on seed 2718**, which is why the row says
+  *smaller* as fluently as it says *bigger*.
+- **Diet** moves furthest and moves away from meat: down on **56.3%**, up on
+  19.6%, level on 24.2%.
+- **Appetite** has no direction at all: faster on **35.5%**, slower on **30.8%**,
+  level on 33.7%. Twelve ponds under identical rules disagree about whether it
+  pays to burn energy quickly.
+
+I wrote that third line down as a reason to delete the row and then read it
+again. A trait whose answer depends on *which pond you are in* is the strongest
+evidence on this page that nobody wrote the answer down in advance. It stays.
+
+**Two more numbers, and the second one is what the board is really for.**
+Auto-reseed fired on **0 of the 12** default ponds, so *everybody here is a
+descendant* is true of a default world rather than merely likely. And the last
+of the original forty dies at **tick 4,200 on eleven seeds of twelve** — which
+is `config.maxAge` exactly. The founders do not lose. They run out of time.
+That moment now has a line on the page that changes when it happens.
+
+**A direction is not a destination, and the first draft of the diet row
+conflated them.** Written the obvious way — read the sign, print the verdict —
+it called a pond sitting on **43% meat** *"turning vegetarian"* on the strength
+of a seven-point drop. The move is now always reported and the *name* has to be
+earned by crossing a quarter of the plate, which happens on 37.2% of the rows
+this board writes (30.3% vegetarian against 6.9% hunting).
+
+### Added
+
+- **`src/evolved.js`** — the whole board: five rows, three thresholds with the
+  sweeps that sized them, and every word it says. A pure observer that reads the
+  living and writes to nothing.
+- **`src/evolved.js#foundingSnapshot`** — a pond's opening line, and `null` for
+  any world that is not on its first tick. The founders are remembered **by
+  identity**, not by generation: `autoReseed` and `✚ Seed life` both post fresh
+  generation-0 animals into the water, so a count that read the generation could
+  climb — the one thing a row about the originals must never do.
+- **`src/viewstate.js#founding`** — the first entry on that roster that is not a
+  cache. World-scoped is the correctness argument rather than a nicety: an
+  opening line inherited across a reset would measure a new pond's animals
+  against an old pond's founders, and no visitor could catch it.
+- **`src/main.js#updateEvolved`** and the capture in `adoptWorld`, which runs at
+  the top of the frame and before anything is stepped — that ordering is the
+  whole of what makes `tick === 0` mean *as it was dealt*.
+- **`test/evolved.test.js`** — 20 tests. The originals never gain a member even
+  with twenty-four strangers posted into the water mid-run; a loaded pond gets a
+  sentence saying the comparison cannot be made rather than being compared
+  against itself; a trait inside its threshold says so in words; the board's two
+  empty states have different signatures, because a shared one leaves the
+  previous pond's five rows on screen after a reset.
+
+### Notes
+
+- Determinism untouched: the board reads means and ids, writes nothing to any
+  world, and draws no random number. The golden fingerprints are unmoved. 1,321
+  tests.
+- Board volume, per the playbook's chore: a mean of **4.85 rows of a possible
+  5**, all five 84.9% of the time, never fewer than four once a pond has bred.
+  The wait for the first row is 9–120 ticks — seconds at 1×.
+- Verified in a browser at 1,400 px and at 390 px.
+
 ## [1.127.0] — 2026-08-29
 
 Press a name, and go and watch them.

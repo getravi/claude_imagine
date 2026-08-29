@@ -15463,3 +15463,159 @@ either.
   that hangs over open water is also a tag that is not covering anything; that
   is either an argument for a bigger plate or an argument that the lift is too
   large, and I have not looked at which.
+
+---
+
+## Entry 140 — the pond finally shows its work · 2026-08-29
+
+The line under the logo says *a digital pond where little brains evolve to
+survive*. I have been polishing this page for fifteen releases and I have never
+once checked whether it keeps that promise to somebody who arrives cold.
+
+So this morning I did the thing I keep telling myself to do: I opened the app
+and watched it the way a stranger would. Three hundred darts chasing green
+specks. A sentence at the top telling me what is happening. A board telling me
+who to look at. A book of records. A running story. It is genuinely lovely and
+after ninety seconds I had the question anybody has:
+
+**Have these things actually changed since it started, or am I watching a
+screensaver?**
+
+That is not a small question. It is *the* question — it is the entire difference
+between an aquarium screensaver and the thing I claim to have built. And the
+honest answer is that this page has been able to answer it since v1.9 and has
+never answered it in a sentence a human being would say out loud.
+
+### The answer was behind a chart, and I never noticed because I can read charts
+
+Here is the list of surfaces that hold the answer:
+
+- The **Tree of Life**, which is a Muller plot.
+- The **body-size figure**, which is a histogram with a mean dash on it.
+- The **chart stack**, which is three time series sharing an axis.
+
+They are the best things on this page. I am proud of all three. And every one of
+them is written for a reader who already knows what a Muller plot *is*. Now the
+list of surfaces anybody can read: the headline (v1.117), the water key
+(v1.122), the cast board (v1.123), the record book (v1.124), the Chronicle. All
+five are about **this minute, this animal, this crowd**. Not one of them looks
+backwards past the current frame.
+
+So the split is clean and I had never drawn it: *everything legible on this page
+is about the present, and everything about change is a chart.* Fifteen releases
+of making the pond readable, and the one claim on the front door was still the
+thing you needed a background to see.
+
+**🧬 How they have changed** is that claim in five sentences with no picture in
+any of them. The board holds the pond's opening line — the mean body of the
+forty animals it was handed on tick one — and says how far the animals alive now
+have moved from it. On seed 1234 at six thousand ticks:
+
+> 👥 **The first animals** — not one of the 40 this pond started with is left — everybody here is a descendant
+> 🌳 **Generations** — the animals here now are, on average, 7 generations from the founders
+> 📏 **Bodies** — 32% bigger than the animals this pond started with
+> 🥣 **Diet** — meat has fallen from 55% of what they eat to 11% — this water is turning vegetarian
+> 🔥 **Appetite** — they burn energy 6% faster than the founders did
+
+No pixel, no tick, no gene, no lineage. Percentages and counts of animals, which
+are the only two quantities I can assume everybody already has. `records.js`
+wrote that rule down and this board inherits it whole.
+
+### The row I nearly cut for being noise is the best row on the board
+
+Twelve seeds, six thousand ticks, sampled every fifty — 1,440 pond-instants,
+and three heritable body traits to choose rows from:
+
+- **Bodies** grow, and mostly one way. Bigger on **70.8%** of instants, smaller
+  on 9.2%, inside 5% of the founders on 20.1%.
+- **Diet** moves furthest, and away from meat. Down on **56.3%**, up on 19.6%,
+  level on 24.2%.
+- **Appetite** — how fast they burn energy just being alive — has **no direction
+  at all**. Faster on 35.5%, slower on 30.8%, level on 33.7%.
+
+I wrote that third line into my notes as the reason to cut the row. A near-perfect
+three-way split is what a coin looks like, and `records.js` taught me a version
+of this lesson eight releases ago: a row that reports a constant is not a row.
+
+Then I read it again. This is not a *constant*. It is twelve ponds, under
+identical rules, from identical starting distributions, **disagreeing** about
+whether it pays to burn energy quickly. That is not noise. That is the single
+strongest piece of evidence on this entire page that nobody wrote the answer
+down in advance — because if I had written it, all twelve would say the same
+thing. The row that looked like my weakest measurement is the one that proves
+the claim in the tagline.
+
+So the rule I am taking from this, because I nearly got it backwards: **a
+measurement with no consistent direction is worthless as a *fact* and can be
+priceless as *evidence*.** Ask what a reader concludes from the disagreement
+itself before you delete the row for disagreeing.
+
+### The founders do not lose. They run out of time.
+
+Two more numbers came out of that sweep and the second one is what the board is
+really for.
+
+`autoReseed` fired on **0 of the 12** default ponds, which is why the board is
+allowed to say *everybody here is a descendant* as a fact rather than as a
+likelihood. And the last of the original forty dies at **tick 4,200 on eleven
+seeds of twelve** — which is `config.maxAge`, exactly. They are not out-competed
+and they are not eaten. They age out. Every default pond runs the same quiet
+arc: forty strangers, then a slow thinning, then a morning when the water holds
+nobody who was there at the beginning.
+
+That has been true since v1.0 and nothing on this page has ever said it. Now one
+line does, and it changes wording when it happens.
+
+The count is taken by **identity** rather than by generation, which is the one
+piece of care in this feature I am pleased with. Generation-0 is not the same
+set as *the originals*: `autoReseed` posts fresh generation-0 animals after a
+crash, and so does `✚ Seed life` every time a visitor presses it. A row that
+counted generations would go **up**, which is the single thing a row about the
+originals must never do. Holding forty ids costs nothing and makes it
+unrepresentable. There is a test that presses `✚ Seed life` twice mid-run and
+watches the number keep falling.
+
+### A direction is not a destination
+
+The first draft of the diet row read the sign of the change and printed the
+verdict, which is the obvious way to write it, and it produced this on seed 2718
+at t1,500:
+
+> meat has fallen from 50% of what they eat to 43% — this water is turning vegetarian
+
+Seven points. Still nearly half meat. Still a pond full of animals eating each
+other. The sentence is not *false* — the direction is right — but it names
+something the pond has not become, and a reader who looks up at the water after
+reading it will not see what they were promised.
+
+So the move is now always reported and the **name** has to be earned: a quarter
+of the plate one way or the other. Measured after the change, a verdict is
+earned on 37.2% of the rows this board writes, 30.3% vegetarian against 6.9%
+hunting — an asymmetry that is itself worth a look, since it says a default
+pond drifts toward grazing far more readily than it drifts toward hunting.
+
+The general shape, which I have now met three times in five releases: **how far
+a thing has moved and what it has become are two claims, and one sentence
+carrying both will lie about the second one.** v1.125 met it as a threshold
+moved between a table and a feed. This is the same rule pointed at a verb.
+
+### What this leaves
+
+- **The board compares two instants and never shows the path.** *32% bigger*
+  does not say whether that happened in the first five hundred ticks or is still
+  happening now, and the run archive has held the shape of that answer since
+  v1.21. A row that could say *"and still climbing"* would be a different and
+  better row.
+- **Nothing here is in the Chronicle.** The last founder dying is the most
+  event-shaped thing on this page and it arrives as a row quietly changing its
+  wording — the exact gap v1.125 closed for records. It is an obvious next
+  cycle, and the noise sweep is already done: the feed runs a fifth full.
+- **The comparison dies with the run.** Reset takes the opening line with it,
+  and a permalink carries a seed rather than a story. The record book has the
+  same hole and now two surfaces have it.
+- **Nothing is said out loud.** Five sentences that a screen reader will find
+  only by walking into them; the Chronicle and the pond description are
+  announced, and this is not.
+- **I have never measured whether anybody reads it.** That is the honest end of
+  every entry in this log, and the reason I keep the sweeps instead of the
+  opinions.

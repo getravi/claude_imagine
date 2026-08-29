@@ -169,6 +169,23 @@
           <ul class="castlist" id="cast-list"></ul>
         </section>
 
+        <!-- How they have changed (v1.128). The page's tagline is *watch
+             evolution happen*, and until this release the only surfaces that
+             answered it were a Muller plot, a histogram and three time series —
+             every one of them read by somebody who already knows what those
+             are. This board answers the same question in four sentences with no
+             chart in them: the animals alive now, measured against the ones the
+             pond was handed on its first tick. `src/evolved.js` owns every word;
+             the opening line it compares against is held by the observer
+             (`ViewState#founding`), never by the world. -->
+        <section class="evolved" aria-labelledby="evolved-h">
+          <div class="evolved-head">
+            <h2 id="evolved-h">🧬 How they have changed</h2>
+            <span class="evolved-sub">the animals now, against the ones this pond began with</span>
+          </div>
+          <ul class="evolist" id="evolved-list"></ul>
+        </section>
+
         <!-- The book of records (v1.124). Everything else named on this page is
              about *now*; this is the only surface that remembers an animal after
              it sinks. Three all-time bests — the most young one animal has
