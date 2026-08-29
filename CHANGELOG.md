@@ -4,6 +4,85 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.129.0] — 2026-08-29
+
+The page finally introduces itself.
+
+Fifteen releases of this project have been spent teaching this page to *say*
+things. It has a sentence over the water, a placard naming every mark in it, a
+board of animals worth watching, a record book, a running chronicle, and — since
+yesterday — five lines saying how far the animals have moved from the ones this
+pond started with. Every one of them is a good answer to a question a visitor
+has.
+
+Nobody has ever told them which question to ask first.
+
+What a person actually meets at `app/index.html` is a canvas of moving darts,
+six panels, three figures, a column of switches and a plot of species over time,
+all of it arriving at once and none of it ranked. The page has no front. A
+reader who already knows what this is finds the Muller plot in four seconds;
+everybody else watches the darts for twenty and leaves, having been shown an
+aquarium screensaver by a program that could have told them it was evolution.
+
+**🧭 Show me around** is six stops, one at a time, each one a ring drawn around
+a real thing on the page and two sentences saying what it is and why anybody
+should care:
+
+> 🌊 **This is the pond** — every arrowhead is one animal, steered by a tiny
+> brain it was born with
+> 📰 **What is happening right now** — one line, rewritten as the water changes
+> 🔍 **How to read the water** — colour is family, bright is well fed, big is old
+> 👋 **Pick somebody to follow** — the pond hands you one animal with a name
+> 🧬 **Proof that it is evolving** — nothing here was here at the beginning
+> 🌍 **Now go change the world** — an island, a drought, a pond with hunters
+
+It opens itself once, on a first visit, and never again: every route out — Skip,
+Done, Escape, a press anywhere outside the ring — remembers that it ran. After
+that it lives on a button under **👋 Meet somebody**, and on <kbd>?</kbd>.
+
+**The finding is about the scrim, and it inverts the received wisdom of the
+form.** Every product tour ever built dims the page outside its ring, and this
+one does too — 74% black over everything but the highlighted box. Measured
+against this page's own four grounds, that scrim moves them by a contrast ratio
+of **1.012 to 1.121**. It does *nothing*. The same scrim over a white page moves
+it by **9.32**. And the text it dims comes out fractionally *more* readable than
+it went in (14.89:1 → 15.84:1 for `--ink` on the panel), because darkening a
+near-black ground under unchanged ink raises the ratio rather than lowering it.
+
+A scrim is an instrument for light pages. What it still does here is dim the one
+region of this page that is genuinely bright — the paint inside the canvas,
+where three hundred creatures glow — so the spotlight works over the *picture*
+and is invisible over the *page*, and on five of the six stops the thing doing
+the pointing is the ring. It stays, because it is also the click target that
+means "anywhere outside this is a way out", but it is not what makes the feature
+work and I would have gone on believing it was.
+
+**Twelve placements, swept in a real browser.** Six stops at 1440×900 and at
+390×844: the card lands fully inside the window on **12 of 12**, and it overlaps
+the ring it belongs to on **2 of 12** — the pond at 1440×900 (a 632 px ring in a
+900 px window) and the placard on the phone (438 px of 844). Both are the same
+case: a target taller than half the window has no clear side, and the rule is
+that something readable and slightly overlapping beats something correct and
+off-screen.
+
+### Added
+
+- **`src/tour.js`** — the six stops, the order, the counter, the storage key and
+  `cardPlacement`, the arithmetic that keeps the card inside the window and
+  flips it to the side that has room. Pure: no DOM, no world, no random number,
+  and `test/tour.test.js` reads the module back to prove it.
+- **The guide's overlay in `app/index.html`** — a `role="dialog"` with a ring, a
+  card and three buttons, at the end of the body rather than in the column,
+  because it is fixed to the window and every mark inside `.stage` is anchored
+  to the pond's own edges (v1.87).
+- **<kbd>?</kbd>** opens it; ←/→ step; Escape leaves. While it is up the page's
+  own shortcuts stand down, so Space cannot pause a pond from inside a dialog.
+
+### Changed
+
+- `src/viewstate.js` names the guide's two page-scoped bindings, so v1.99's
+  roster still accounts for every `let` in `main.js`.
+
 ## [1.128.0] — 2026-08-29
 
 The pond finally shows its work.

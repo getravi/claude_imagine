@@ -234,12 +234,18 @@
                because a third button squeezed beside Feed would take all three
                under the 24 px bar v1.115 measured. `src/cast.js` picks who. -->
           <button id="btn-meet" class="meet">👋 Meet somebody</button>
+          <!-- The guide (v1.129). Six stops around the page for somebody who has
+               just arrived; `src/tour.js` holds the words and the arithmetic and
+               main.js draws the ring. It opens itself once on a first visit and
+               lives here afterwards, because the visitor who wants it a second
+               time is the one who came back with a friend. -->
+          <button id="btn-tour" class="tour-open">🧭 Show me around</button>
           <p class="kbd-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
             <kbd>F</kbd> feed · <kbd>M</kbd> meet somebody ·
-            <kbd>N</kbd> new seed · <kbd>V</kbd> vision ·
-            <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>0</kbd> whole pond ·
-            <kbd>H</kbd> chart history
+            <kbd>?</kbd> show me around · <kbd>N</kbd> new seed ·
+            <kbd>V</kbd> vision · <kbd>+</kbd>/<kbd>−</kbd> zoom ·
+            <kbd>0</kbd> whole pond · <kbd>H</kbd> chart history
           </p>
           <p class="kbd-hint" aria-label="Choosing a creature with the keyboard">
             <kbd>Tab</kbd> to the pond, then <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd
@@ -758,6 +764,38 @@
       <div class="phylo-range" id="phylo-range"></div>
       <div class="legend" id="species-legend"></div>
     </section>
+
+    <!-- The guide's overlay (v1.129). Deliberately at the end of the body and
+         outside `main.layout`: it is fixed to the window rather than placed in
+         the column, and every mark inside `.stage` is anchored to the pond's own
+         edges (v1.87) — a ring that has to reach the scenario chips at the top
+         of the page belongs to neither. Hidden until asked for; `src/tour.js`
+         holds the six stops and main.js positions the ring over whatever the
+         current stop names. -->
+    <div
+      id="tour"
+      class="tour hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tour-title"
+      aria-describedby="tour-line"
+    >
+      <div id="tour-scrim" class="tour-scrim"></div>
+      <div id="tour-ring" class="tour-ring" aria-hidden="true"></div>
+      <div id="tour-card" class="tour-card" tabindex="-1">
+        <p class="tour-count" id="tour-count">1 of 6</p>
+        <h2 class="tour-title" id="tour-title">
+          <span class="tour-icon" id="tour-icon" aria-hidden="true">🌊</span>
+          <span id="tour-title-text">This is the pond</span>
+        </h2>
+        <p class="tour-line" id="tour-line"></p>
+        <div class="tour-btns">
+          <button id="tour-skip" class="tour-skip">Skip</button>
+          <button id="tour-back">← Back</button>
+          <button id="tour-next" class="primary">Next →</button>
+        </div>
+      </div>
+    </div>
 
     <footer class="appfoot">
       <a class="home-link" href="../">← Vivarium — the experiment</a>

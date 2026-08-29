@@ -15619,3 +15619,102 @@ moved between a table and a feed. This is the same rule pointed at a verb.
 - **I have never measured whether anybody reads it.** That is the honest end of
   every entry in this log, and the reason I keep the sweeps instead of the
   opinions.
+
+## Entry 141 — the page finally introduces itself · 2026-08-29
+
+I have spent fifteen releases teaching this page to talk and never once told
+anybody where to start.
+
+Count what a first-time visitor meets on `app/index.html`: a canvas of three
+hundred moving darts, a sentence above it, six panels below and beside it, three
+stacked figures, a column of switches, a plot of species over time, a footer.
+Every one of those is something I built because a reader needed it, and they all
+arrive in the same second with nothing ranking them. The page has no front door.
+Somebody who already knows what a Muller plot is finds the best thing here in
+four seconds. Everybody else watches the darts for twenty and closes the tab,
+having been shown an aquarium screensaver by a program that could have told them
+it was evolution.
+
+So this cycle is the oldest mass-market affordance there is, pointed at the page
+that most needs it: **🧭 Show me around** — six stops, a ring around a real
+element and two sentences saying what it is and why anybody should care. The
+pond, the headline, the placard, the Meet button, the *how they have changed*
+board, and then the scenario chips as the way out, because the visitor most
+likely to stay is the one who pressed something.
+
+It opens itself once, on a first visit, which is a deliberate piece of rudeness
+and the smallest amount of it I could get away with. A page this dense has to
+volunteer its own front door; a guide nobody can find is a guide for the people
+who least need one. Every route out marks it seen — Skip, Done, Escape, a press
+anywhere outside the ring — so a visitor who dismisses it in half a second never
+meets it again.
+
+### The scrim does nothing, and I would have shipped believing it did
+
+Every tour of this shape dims the page outside its ring. Mine does too: 74%
+black over everything but the highlighted box, painted as one enormous spread
+shadow on the ring itself. Then I measured it against this page's own grounds.
+
+| ground | dimmed to | contrast lit:dimmed |
+| --- | --- | --- |
+| `--bg` `#060a10` | `rgb(5,8,12)` | **1.012** |
+| `--bg-panel` `#0c131c` | `rgb(6,10,15)` | **1.064** |
+| `--bg-panel-2` `#111a26` | `rgb(7,12,18)` | **1.121** |
+| the pond's page glow `#0d1826` | `rgb(6,11,18)` | **1.105** |
+
+Nothing. A ratio of 1.0 is *the same colour*. The identical scrim over a white
+page moves it by **9.32**. And the text sitting on those grounds comes out
+fractionally more readable than it went in — `--ink` on the panel goes 14.89:1
+→ 15.84:1 — because darkening a near-black ground under unchanged ink *raises*
+the ratio. The instrument every tour in the world relies on to say "look here,
+not there" is, on a dark page, a decoration that slightly improves the legibility
+of the thing you are trying to look away from.
+
+What saves it is where this page keeps its brightness. Everything genuinely
+bright here is *paint* — three hundred glowing creatures inside the canvas — and
+74% black over that is very visible indeed. So the spotlight works over the
+picture and is invisible over the page, and on five of the six stops the thing
+doing the pointing is the ring and only the ring. The scrim stays, because it is
+also the click target that means "anywhere outside this is a way out", but it is
+not what makes the feature work.
+
+The general rule, which I think is the transferable half: **a technique carries
+the assumptions of the pages it was invented on.** Scrims were invented on white
+pages, where a black veil has 9.32 of room to work in. This project has audited
+its colours since v1.24 and has never once asked what a *convention* assumes
+about its ground.
+
+### Twelve placements, in a real browser
+
+`cardPlacement` is the only part of this that is arithmetic rather than CSS, so
+it is the only part a test can hold, and the tests sweep it over four windows and
+a ring in every corner. Then I ran the actual page at 1440×900 and 390×844 and
+stepped all six stops in each:
+
+- The card lands **fully inside the window on 12 of 12** — the thing the sweep
+  was written to guarantee.
+- It **overlaps the ring it belongs to on 2 of 12**: the pond at 1440×900 (a
+  632 px ring in a 900 px window) and the placard on the phone (438 px of 844).
+  Both are one case — a target taller than half the window has no clear side —
+  and the rule I settled on is that something readable and slightly overlapping
+  beats something correct and off-screen.
+- No console errors at either size, the pond was still running at 42 alive when
+  the guide closed, and a reload did not reopen it.
+
+### What this leaves
+
+- **The overlap is a fact about the ring, not about the card.** A target taller
+  than half the window is not really a spotlight target at all; a stop that rang
+  the *top edge* of the pond would have room on both sides. Nothing here reasons
+  about which part of a large element is worth ringing.
+- **Nothing is said out loud.** The card is a dialog and gets focus, so a screen
+  reader lands in it, but the guide never announces the stop it has moved to and
+  the ring is decorative to anybody not looking at it.
+- **The tour is fixed, and the page is not.** The stops are the same six whatever
+  the switch column says, while `key.js` grows and shrinks its rows with the
+  rules in play — a pond with hunting off is toured past a placard that no longer
+  mentions hunters.
+- **I have never measured whether it helps.** No telemetry, by design and by
+  taste, so the honest position is that the *page* is now legible in the order I
+  intended and whether anybody follows that order is unknown. Which is where
+  every entry in this log ends.

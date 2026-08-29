@@ -72,6 +72,15 @@ import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { nameTags } from "./nametag.js";
+import {
+  cardPlacement,
+  hasSeenTour,
+  markTourSeen,
+  nextLabel,
+  stepIndex,
+  stopAt,
+  stopCounter,
+} from "./tour.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -236,9 +245,16 @@ function boot() {
   wireMinimap($("minimap"));
   wireCastList();
   wireRecordList();
+  wireTour();
   buildScenarioChips();
   syncHash();
   requestAnimationFrame(loop);
+
+  // The one thing on this page that introduces itself. Opened on the frame
+  // after the first, so the ring is drawn around a pond that has been painted
+  // rather than around an empty canvas — and only for a visitor this browser
+  // has never shown it to.
+  if (!hasSeenTour(tourStore())) requestAnimationFrame(() => openTour(0));
 }
 
 // ---- Scenarios (curated one-click worlds) ----
@@ -597,6 +613,168 @@ function wireRecordList() {
     const title = `🏆 ${creatureLabel(c, namesForTree(world.phylogeny))}`;
     watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
   });
+}
+
+// ---- The guide (v1.129) ----
+//
+// Six stops around the page for somebody who has just arrived. `src/tour.js`
+// owns the words, the order and the arithmetic; this is the adapter onto the
+// DOM, which is three jobs and nothing else: put the ring over the element the
+// current stop names, put the card somewhere it fits, and get out of the way.
+//
+// It opens itself exactly once, on a first visit. That is a deliberate piece of
+// rudeness and the smallest possible amount of it: a page this dense has to
+// volunteer its own front door, and a guide nobody can find is a guide for the
+// people who least need one. Every route out — Skip, Done, Escape, the scrim —
+// marks it seen, so a visitor who dismisses it in half a second is never shown
+// it again.
+let tourAt = 0;
+/** Where focus was when the tour opened, so leaving puts it back (v1.51's rule). */
+let tourReturn = null;
+
+/** `localStorage`, or nothing — reading it throws outright where site data is blocked. */
+function tourStore() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+const tourIsOpen = () => !$("tour").classList.contains("hidden");
+
+function openTour(at = 0) {
+  tourAt = stepIndex(at, 0);
+  tourReturn = document.activeElement;
+  $("tour").classList.remove("hidden");
+  drawTourStop();
+  $("tour-card").focus();
+}
+
+function closeTour() {
+  if (!tourIsOpen()) return;
+  $("tour").classList.add("hidden");
+  markTourSeen(tourStore());
+  // Back where they were, unless where they were has gone. `focus` on a
+  // detached node is a silent no-op that leaves the focus ring on `<body>`,
+  // which is a keyboard visitor at the top of the page again.
+  if (tourReturn && tourReturn.isConnected) tourReturn.focus();
+  else $("btn-tour").focus();
+  tourReturn = null;
+}
+
+function moveTour(delta) {
+  const next = stepIndex(tourAt, delta);
+  if (next === tourAt && delta > 0) return closeTour(); // "Done" on the last stop
+  tourAt = next;
+  drawTourStop();
+}
+
+/**
+ * Draw the current stop: the words in the card, the thing they are about
+ * brought into view, and then the ring and the card placed against it.
+ *
+ * The order matters. The card is written *first*, because its height depends on
+ * how long the sentence is and the placement depends on its height; the target
+ * is scrolled into view *before* it is measured, because a rectangle taken
+ * before the scroll is a rectangle of where the element used to be.
+ */
+function drawTourStop() {
+  const stop = stopAt(tourAt);
+  $("tour-count").textContent = stopCounter(tourAt);
+  $("tour-icon").textContent = stop.icon;
+  $("tour-title-text").textContent = stop.title;
+  $("tour-line").textContent = stop.line;
+  $("tour-back").disabled = tourAt === 0;
+  $("tour-next").textContent = nextLabel(tourAt);
+  const target = document.getElementById(stop.target);
+  if (target) target.scrollIntoView({ block: "center", inline: "nearest" });
+  placeTourStop();
+}
+
+/**
+ * Put the ring where the current stop's element is, and the card where it fits.
+ *
+ * Split from `drawTourStop` because this half has to run again on every scroll
+ * and every resize — the ring is a rectangle in the window's own frame, so
+ * anything that moves the window moves what it is drawn around — and the other
+ * half must not: a redraw that re-scrolled the page would fight a visitor
+ * trying to scroll it.
+ */
+function placeTourStop() {
+  const stop = stopAt(tourAt);
+  const target = document.getElementById(stop.target);
+  const ringEl = $("tour-ring");
+  const cardEl = $("tour-card");
+  if (!target) {
+    // Nothing to point at. Rather than ring a rectangle at the origin, hide the
+    // ring and centre the card: the sentence is still true even when the thing
+    // it describes has been taken off the page.
+    ringEl.classList.add("hidden");
+    cardEl.style.left = `${Math.max(10, (window.innerWidth - cardEl.offsetWidth) / 2)}px`;
+    cardEl.style.top = `${Math.max(10, (window.innerHeight - cardEl.offsetHeight) / 2)}px`;
+    return;
+  }
+  ringEl.classList.remove("hidden");
+  const r = target.getBoundingClientRect();
+  const pad = 6;
+  const ring = {
+    left: r.left - pad,
+    top: r.top - pad,
+    width: r.width + pad * 2,
+    height: r.height + pad * 2,
+  };
+  ringEl.style.left = `${ring.left}px`;
+  ringEl.style.top = `${ring.top}px`;
+  ringEl.style.width = `${ring.width}px`;
+  ringEl.style.height = `${ring.height}px`;
+
+  const win = { width: window.innerWidth, height: window.innerHeight };
+  const card = { width: cardEl.offsetWidth, height: cardEl.offsetHeight };
+  const at = cardPlacement(ring, win, card, stop.prefer);
+  cardEl.style.left = `${at.left}px`;
+  cardEl.style.top = `${at.top}px`;
+}
+
+function wireTour() {
+  $("btn-tour").addEventListener("click", () => openTour(0));
+  $("tour-next").addEventListener("click", () => moveTour(1));
+  $("tour-back").addEventListener("click", () => moveTour(-1));
+  $("tour-skip").addEventListener("click", closeTour);
+  $("tour-scrim").addEventListener("click", closeTour);
+
+  // The tour's own keys, taken on the overlay before the page's shortcuts see
+  // them — Space would otherwise pause the pond from inside a dialog, which is
+  // a control doing something the thing under the pointer does not say.
+  $("tour").addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    switch (e.key) {
+      case "Escape":
+        closeTour();
+        break;
+      case "ArrowRight":
+      case "Enter":
+      case " ":
+        moveTour(1);
+        break;
+      case "ArrowLeft":
+        moveTour(-1);
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // The ring is a rectangle in window coordinates, so anything that moves the
+  // window moves the thing it is drawn around. Re-place rather than close: a
+  // visitor turning a phone sideways mid-tour has not asked to leave.
+  const refit = () => {
+    if (tourIsOpen()) placeTourStop();
+  };
+  window.addEventListener("resize", refit);
+  window.addEventListener("scroll", refit, { passive: true });
 }
 
 // ---- Chronicle feed (natural-history timeline) ----
@@ -1572,8 +1750,14 @@ function wireKeyboard() {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+    // The guide is a dialog, and a dialog owns the keyboard while it is up. Its
+    // own handler has already taken the keys it uses; everything else waits.
+    if (tourIsOpen()) return;
 
     switch (e.key) {
+      case "?":
+        openTour(0);
+        break;
       case " ":
         togglePause();
         break;

@@ -192,6 +192,8 @@ export const PAGE_SCOPED = Object.freeze({
   sizeCtx: "the body-size figure's drawing context, likewise, and caching its canvas's size",
   chartScope: "a visitor's choice of window, which outlives the run it was made in",
   flashTimer: "a `setTimeout` handle for the toast, measured in seconds of real time",
+  tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
+  tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
 });
 
 /**

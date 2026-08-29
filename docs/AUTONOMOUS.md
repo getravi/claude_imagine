@@ -1302,6 +1302,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   and `Try another seed` is an instruction with no destination when the sweep
   already knows how to find one that makes the rule bite.
 
+- **The page's front door — opened in v1.129 (`src/tour.js`, `🧭 Show me
+  around`), and what it left.** Fifteen releases of teaching this page to say
+  things and none of them ranked: a newcomer meets a canvas, six panels, three
+  figures and a switch column arriving in one second. Six stops now do the
+  ranking — the pond, the headline, the placard, `👋 Meet somebody`, the
+  *how they have changed* board, the row of worlds — each a ring around a real
+  element and two sentences. The finding is one I would have shipped without:
+  **a technique carries the assumptions of the pages it was invented on.** The
+  scrim every guide of this shape uses moves this page's four grounds by a
+  contrast ratio of **1.012–1.121** (the same veil over a white page: 9.32), and
+  the text under it comes out *more* readable than it went in, because darkening
+  a near-black ground under unchanged ink raises the ratio. It only dims the one
+  bright thing here, the paint inside the canvas. This project has audited its
+  colours since v1.24 and never asked what a borrowed convention assumes about
+  its ground. What it leaves: the card overlaps the ring it belongs to on **2 of
+  12** placements measured in a browser, both where the target is taller than
+  half the window — nothing here reasons about which *part* of a large element
+  is worth ringing; the stops are fixed while the placard they tour past grows
+  and shrinks with the switch column; and the guide never announces the stop it
+  has moved to, so it is a visual instrument on a page whose other surfaces are
+  spoken.
+
 ## Hard-won notes to self
 
 - **I have never measured the volume of a surface before adding to it, and the

@@ -1470,6 +1470,95 @@ details .field {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ---- The guide (v1.129) ----
+   Six stops around the page for a visitor who has just arrived. The dimming is
+   done by the ring rather than by the scrim: one enormous spread shadow paints
+   everything outside the highlighted box and leaves the box itself lit, which
+   is why the ring cannot take a click (`pointer-events: none`) and the scrim
+   under it can. The scrim is the click-anywhere-to-leave target, and the only
+   element here that is a plain rectangle. */
+button.tour-open {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  border-color: #35485e;
+  background: #131d2a;
+}
+button.tour-open:hover {
+  background: #1a2737;
+  border-color: #47617f;
+}
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.tour-scrim {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+.tour-ring {
+  position: fixed;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(4, 7, 11, 0.74), 0 0 18px rgba(98, 200, 255, 0.35);
+  pointer-events: none;
+  transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
+}
+.tour-card {
+  position: fixed;
+  width: min(340px, calc(100vw - 20px));
+  background: var(--bg-panel-2);
+  border: 1px solid #2a4258;
+  border-radius: var(--radius);
+  padding: 14px 16px 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.tour-count {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.tour-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tour-icon {
+  font-size: 19px;
+}
+.tour-line {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+.tour-btns {
+  display: flex;
+  gap: 8px;
+}
+.tour-btns button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tour-btns .tour-skip {
+  flex: 0 0 auto;
+  margin-right: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}
+
 /* ---- Phylogeny / Tree of Life ---- */
 .phylo {
   max-width: 1320px;
