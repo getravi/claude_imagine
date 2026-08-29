@@ -73,6 +73,25 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The family portrait — shipped in v1.130 (`src/portrait.js`), and what it
+  leaves.** The 🧬 panel now opens with a *picture*: the average animal this pond
+  was dealt beside the average animal in it now, one shared scale, the pond's own
+  `chevron()`. Four leads came out of it. (a) **A mean is nobody** — both animals
+  in this figure are fictions, and a pond that is half tiny grazers and half huge
+  hunters draws one medium animal that does not exist. `sizeplot.js` three panels
+  down knows the distribution and the two have never been put next to each other;
+  the honest version of this figure might be a portrait with the histogram's
+  spread behind it. (b) **Metabolism has no mark in the water at all**, so the
+  one heritable trait twelve identical ponds *disagree* about — the strongest
+  evidence on this page that nobody wrote the answer in advance — cannot be
+  drawn by anything, here or in the pond. Inventing a mark for it is a real
+  release and it starts in `render.js`, not in a panel. (c) **The portrait is a
+  before and an after with nothing between them**, while `archive.js` holds every
+  intermediate mean the run has ever taken; a third silhouette at the halfway
+  point, or a slow morph, is a picture of a *trajectory* rather than of two
+  endpoints. (d) **The placard's rows have never been checked as claims** — see
+  the caption note below, which is what this cycle actually found.
+
 - **The shortlist — closed in v1.123 (`src/whoswho.js`), and what it left.**
   `pickStar` (v1.119) computed five candidates and returned one, so the board
   that lets a visitor *choose* cost five `push`es instead of five `return`s and
@@ -1325,6 +1344,50 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A caption is checked against the identifiers it mentions and never against
+  the world, and one of mine was false for eight releases in the row written to
+  stop exactly that.** The placard said *Big is old — nothing is born large, a
+  big body is one that has been finding food for a long time*, and
+  `creature.js:270` assigns `radius` once, at birth, off a gene, and no line in
+  this project ever writes it again. Nothing here grows. Every instrument this
+  project points at the placard asks whether a row is consistent with the *code
+  it names* — `test/key.test.js` fails if a nose length moves, `switches.test.js`
+  checks every config key exists — and none of them can read a sentence. Worse,
+  I had the fact three times over and never collided it with the row: v1.124
+  measured "the biggest body is within 0.2 px of its final value by tick ten,
+  because radius is drawn at birth", `nametag.js` argues the cast board's
+  stability from "a body grows by a fraction of a pixel a tick" (wrong, and
+  relying on the truth to be true), and v1.129's tour *copied the false row into
+  stop three* a day before I found it. So: **a caption that describes a mechanism
+  is unchecked until somebody reads the mechanism.** The chore, five minutes a
+  cycle: take one row off the placard, the guide, a board or the inspector, find
+  the line of code that implements what it claims, and read it. What found this
+  one is worth repeating too — it fell out of building a feature that *depended*
+  on the claim, because "the animals are 25% bigger" cannot become a picture
+  until "bigger" means one thing rather than two.
+- **When one mark encodes two quantities, the reader gets their product and
+  neither of them.** The family portrait draws two animals with the pond's own
+  arrowhead, whose length is `radius × (nose + 1)` and whose nose is a threshold
+  on the diet gene. The default pond grew **25%** and stopped hunting, so the
+  two portraits came out at 18.68 and 18.09 units — a quarter bigger and 3%
+  *shorter* — and the picture said nothing had happened about a pond that had
+  changed twice. Every colour, contrast, hit-size and legibility instrument here
+  asks whether a mark can be **perceived**; not one asks what a mark is being
+  asked to **carry**. The fix is not to drop a mark (both were the pond's own):
+  it is to print the quantity the marks cancel. Grep the drawing code for any
+  dimension computed from two variables — a length from a radius and a ratio, an
+  area from two axes, an alpha from two states — and ask what a reader can
+  actually recover from it.
+- **The constant that decides how big a figure draws is often not the size
+  constant.** The portrait's layout fits on the *glow*, because a halo reaches
+  three radii and the longest body only 1.55, so `PORTRAIT_GLOW` is the size
+  control and `PORTRAIT_BOX` is not. At 1.9 the first browser run drew two
+  arrowheads filling their halves like a pair of logos; the renderer's own three
+  made them animals. Whenever a fit is a `min` over several limits, the one that
+  binds is the knob, and it is worth writing down which one it is — otherwise
+  the next person to adjust the figure turns the wrong dial and concludes it
+  does nothing.
 
 - **I have never measured the volume of a surface before adding to it, and the
   one time I did the answer reversed the design.** Every "would this be too

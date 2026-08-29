@@ -100,9 +100,19 @@ export const MARKS = Object.freeze([
     needs: null,
   },
   {
+    // Corrected in v1.130, having been wrong since this placard was written.
+    // It said *Big is old — nothing is born large, a big body is one that has
+    // been finding food for a long time*, and `creature.js:270` is the whole
+    // refutation: `radius` is assigned once, at birth, from `genome.sizeGene`,
+    // and no line in this project ever writes it again
+    // (`test/portrait.test.js` reads the source back and fails if one does).
+    // Nothing here grows. The row a visitor reads to understand the most
+    // visible variable in the picture was telling them it was a biography when
+    // it is the clearest thing in the water that selection can move — which is
+    // exactly what the 🧬 panel's new portrait draws.
     id: "grown",
-    term: "Big is old",
-    line: "Nothing is born large. A big body is one that has been finding food for a long time.",
+    term: "Big is inherited",
+    line: "Nobody grows. A body is the size it was born, and big parents have big young.",
     needs: null,
   },
   {

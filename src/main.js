@@ -71,6 +71,7 @@ import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
+import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
 import {
   cardPlacement,
@@ -383,6 +384,7 @@ function loop(now) {
   updateKey();
   updateCast(world);
   updateEvolved(world);
+  updatePortrait(world);
   updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
@@ -575,6 +577,24 @@ function updateEvolved(world) {
   if (sig === view.evolvedSig) return;
   view.evolvedSig = sig;
   $("evolved-list").innerHTML = evolvedHTML(rows, sawStart);
+}
+
+// The picture over those five rows (v1.130): the average animal this pond was
+// handed, beside the average animal in it now, at one shared scale.
+//
+// Its own signature rather than a ride on `evolvedSig`, and the reason is the
+// direction the two round in. The board prints whole percents, so its sentences
+// hold still while the bodies drift; this figure draws the radii themselves, so
+// a hundredth of a pixel of mean body is a mark that has moved and a whole
+// percent of diet is not necessarily one. Two surfaces reading the same means
+// at two resolutions need two keys — the one thing a shared key could not be is
+// right for both.
+function updatePortrait(world) {
+  const pair = portraitPair(world, view.founding, world.config);
+  const sig = portraitSignature(pair);
+  if (sig === view.portraitSig) return;
+  view.portraitSig = sig;
+  $("portrait").innerHTML = portraitHTML(pair);
 }
 
 // ---- The book of records (v1.124) ----

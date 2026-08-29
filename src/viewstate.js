@@ -160,6 +160,14 @@ const FRESH = Object.freeze({
   // a *loaded* world leaves here, and the board has a sentence for it.
   founding: null,
   evolvedSig: "",
+  // The family portrait over those rows (v1.130). A second key on the same two
+  // means, because the board rounds them to whole percents and the picture does
+  // not: the figure has to redraw for a body that has moved a hundredth of a
+  // pixel, and the board must not rebuild five sentences for it. World-scoped
+  // for `evolvedSig`'s reason and with the same safety net — it is a signature
+  // over what is *drawn*, so a pond that inherited it would find it wrong on
+  // the first frame and write.
+  portraitSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

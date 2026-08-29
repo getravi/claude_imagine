@@ -424,6 +424,68 @@ body {
   padding: 4px 2px;
 }
 
+/* The family portrait (v1.130). Empty until the pond has bred, and empty is the
+   whole of its hidden state: `portrait.js` writes "" and a container with no
+   children and no padding of its own takes no room. */
+.portrait:empty {
+  display: none;
+}
+.portrait {
+  margin: 2px auto 10px;
+  max-width: 340px;
+}
+/* Capped rather than fluid, and centred. The panel runs the width of the pond
+   on a desktop, and an arrowhead stretched to 900 px is a logo rather than an
+   animal — the figure has to stay the size of the thing it is a portrait of. */
+.portrait-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.portrait-legend {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-top: 2px;
+}
+.portrait-legend .pcell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.portrait-legend b {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* The margin, under the shape it decides. The nose is a threshold on the diet
+   gene and every pond opens within a few points of it, so a portrait that drew
+   the silhouette and not the number would turn a one-point difference into two
+   completely different animals with nothing to say so. */
+.portrait-legend i {
+  font-size: 11.5px;
+  font-style: normal;
+  color: var(--ink-dim);
+}
+/* The middle column carries the one thing the two pictures cannot say between
+   them. A hunter's nose is half again a grazer's, so a pond that grew a quarter
+   and stopped hunting draws two animals of almost exactly the same length —
+   two changes cancelling on the dimension the eye reads a pair on. */
+.portrait-legend .parrow {
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+.portrait-note {
+  margin: 6px 0 0;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* ---- Pond records (v1.124) ----
    The cast board's box, one section down, and its inks: no ink/ground pair here
    that `test/legibility.test.js` has not already walked. The one shape it does

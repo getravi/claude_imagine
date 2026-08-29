@@ -33,8 +33,12 @@
 // 38–152 ticks depending on the pond. The reason is structural rather than
 // lucky, and it is worth keeping: **every cast role is an extremum over a slow
 // quantity** — age, young raised, body radius — and none of them is a share
-// sitting on a bar. Age only ever climbs; a body grows by a fraction of a pixel
-// a tick; the animal with the most young keeps them. A maximum over a quantity
+// sitting on a bar. Age only ever climbs; the animal with the most young keeps
+// them; and a body does not move at all, which v1.130 had to correct here as
+// well — this note said *a body grows by a fraction of a pixel a tick*, and
+// `radius` is dealt at birth and never written again, so the biggest animal in
+// the water changes only when the biggest animal dies. The argument holds; the
+// case for it is stronger than the sentence that was making it. A maximum over a quantity
 // that moves slowly is stable *because* of what it is, where a threshold on a
 // live share is unstable for the same reason. The hold would have been
 // machinery guarding against a problem this pond does not have — and would have

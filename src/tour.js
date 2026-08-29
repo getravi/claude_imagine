@@ -95,9 +95,15 @@ export const STOPS = Object.freeze(
       icon: "🔍",
       title: "How to read the water",
       line:
+        // The third clause said *big means it has been finding food for a long
+        // time* until v1.130, copied from the placard's own row, which was
+        // wrong: a body is the size its genes were dealt at birth and never
+        // changes. Two surfaces built to teach a newcomer how to read the
+        // picture, both teaching the same false thing, is the reason this
+        // sentence lives beside the one it paraphrases.
         "Colour is family, so relatives match. Bright means well fed and faint means hungry. " +
-        "Big means it has been finding food for a long time. This card names every mark in " +
-        "the picture, and it grows and shrinks with the rules you switch on.",
+        "Big means it was born big — size is inherited here, not earned. This card names " +
+        "every mark in the picture, and it grows and shrinks with the rules you switch on.",
       prefer: "above",
     },
     {

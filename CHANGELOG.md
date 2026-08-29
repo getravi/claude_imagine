@@ -4,6 +4,99 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.130.0] — 2026-08-29
+
+Big was never old.
+
+The placard that exists to teach a newcomer how to read this water has carried
+this row since v1.122, and yesterday's guided tour copied it into stop three:
+
+> 🔵 **Big is old** — Nothing is born large. A big body is one that has been
+> finding food for a long time.
+
+It is false. `creature.js:270` is the whole of the refutation, and it has been
+sitting in the constructor since v1.0:
+
+```js
+this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
+```
+
+One assignment, at birth, off a gene. `radius` is never written again anywhere in
+this project. **Nothing in this pond grows.** A big animal is one whose parents
+were big — which does not make the placard slightly imprecise, it makes it wrong
+about the most visible variable in the picture, and wrong in the direction that
+costs the most: it told every visitor that the thing they can actually see
+changing was a **biography** when it is the clearest evidence of **selection**
+this page has.
+
+Both surfaces say so now — *Big is inherited. Nobody grows. A body is the size it
+was born, and big parents have big young* — and `test/portrait.test.js` reads
+`creature.js` back on every run and fails the day a second write appears, because
+on that day the old sentence is true again and the new figure is a picture of two
+life stages.
+
+**And the corrected sentence is what makes the new figure worth drawing.** 🧬 How
+they have changed has said in words since v1.128 that the animals are a fifth
+bigger than the ones this pond started with. It now says it in the medium this
+page is otherwise entirely made of: **the average animal this pond was handed,
+beside the average animal in it now**, drawn with the pond's own arrowhead — the
+same `chevron()` path the water and the placard use — at **one shared scale**, so
+the difference on screen is the difference in the water. Two animals, two labels,
+and the meat on each one's plate underneath.
+
+**The finding is a mark carrying two quantities, and it nearly shipped saying the
+opposite of the truth.** The first browser run drew the default pond, whose
+founders eat 55.4% meat and whose animals now eat 17.4% — so the left-hand
+portrait is a hunter and the right-hand one is not. A hunter's nose is 2.1 radii
+against a grazer's 1.4. The pond had grown **25%**, and the two portraits came
+out at 18.68 and 18.09 units of animal: a quarter bigger and, on the one
+dimension the eye measures a side-by-side pair on, **3% shorter**. Two real
+changes, in opposite directions, on one mark — and their product is what the
+reader gets. The general rule, which is not about arrowheads: **when one mark
+encodes two quantities, a reader cannot recover either.** Both marks stay, because
+both are the pond's own; the number they cancel is now printed between the two
+portraits, which is what the middle column of the legend is.
+
+**The margin is under each portrait because the silhouette is decided by a
+hair.** Founders are dealt a diet gene uniform on 0..1, so every pond opens at a
+coin-flip plate — the twelve seeds swept for this open between **46% and 56%**
+meat — and `carnivoreThreshold` is 0.55. Two of the twelve draw a dagger for
+their founders, and both are over the line by **less than a point**: seed 99 by
+0.77, and the default pond by **0.44**. A picture that turns a 0.44-point
+difference into a completely different animal has to show its margin, so each
+portrait carries its own 🥩 share. That the pond I look at every cycle is one of
+the two is v1.113's rule arriving again: the world I open by default is a sample
+of one, and it is not a random one.
+
+**What the sweep says the figure will show** — 12 seeds, 6,000 ticks, sampled
+every 50, 1,440 pond-instants. The bodies end a median **1.195×** the founders
+(quartiles 1.025–1.240, range 0.767–1.438), so on **20.6%** of instants the two
+portraits are honestly the same size. The **shape** changes on **27.3%**, which
+is the loudest thing this figure can do and the half a reader sees first.
+
+### Added
+
+- **`src/portrait.js`** — the two subjects, the shared scale, the SVG and every
+  letter under it. Pure: no DOM, no world, no random number, and no colour of its
+  own (the body's fill is `palette.js`'s, the path is `key.js`'s). SVG rather
+  than a canvas, so there is no drawing context to cache and no device pixel
+  ratio to divide out — the figure adds nothing to `viewstate.js`'s page-scoped
+  half and one signature to its world-scoped one.
+- **`test/portrait.test.js`** — that nothing grows (in the source and over a
+  1,200-tick run), that the figure and the board share one gate exactly, that the
+  drawn ratio is the measured ratio, that neither body nor glow leaves its half
+  at either end of what a genome can express, and that the spoken form carries
+  both plates and the comparison.
+
+### Changed
+
+- **`src/key.js`** — the `grown` row is *Big is inherited*, and says what a body
+  size actually is.
+- **`src/tour.js`** — stop three no longer repeats it.
+- **`src/nametag.js`** — a note explaining why the cast board is stable said *a
+  body grows by a fraction of a pixel a tick*. A body does not move at all; the
+  argument was right for a stronger reason than the one it gave.
+
 ## [1.129.0] — 2026-08-29
 
 The page finally introduces itself.

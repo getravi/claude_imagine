@@ -183,6 +183,20 @@
             <h2 id="evolved-h">🧬 How they have changed</h2>
             <span class="evolved-sub">the animals now, against the ones this pond began with</span>
           </div>
+          <!-- The family portrait (v1.130). The five rows below say how far the
+               animals have moved in words; this says it in the picture the page
+               is otherwise entirely made of — the average animal this pond was
+               handed, beside the average animal in it now, at one shared scale
+               and drawn with the pond's own arrowhead (`key.js#chevron`, the
+               same path the water and the placard use).
+
+               It is here rather than under the rows because it is the hook: a
+               reader who takes one look at this panel should get the answer to
+               *have they changed?* before reading a word. `src/portrait.js`
+               owns every mark and every letter in it, and writes the whole
+               thing as one `innerHTML` — including the two labels, so a figure
+               with no pair to draw leaves no orphan captions behind it. -->
+          <div class="portrait" id="portrait"></div>
           <ul class="evolist" id="evolved-list"></ul>
         </section>
 

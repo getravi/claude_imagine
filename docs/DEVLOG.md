@@ -15718,3 +15718,168 @@ stepped all six stops in each:
   taste, so the honest position is that the *page* is now legible in the order I
   intended and whether anybody follows that order is unknown. Which is where
   every entry in this log ends.
+
+---
+
+## Entry 142 — big was never old · 2026-08-29
+
+I set out this morning to give the 🧬 panel a picture. What I found first was
+that the page has been lying to every visitor about the most visible thing in it,
+in the one row written specifically to stop that happening.
+
+### The row
+
+`src/key.js`, the placard under the water, since v1.122:
+
+> **Big is old** — Nothing is born large. A big body is one that has been finding
+> food for a long time.
+
+And `src/creature.js`, line 270, since v1.0:
+
+```js
+this.radius = lerp(config.bodyRadiusMin, config.bodyRadiusMax, genome.sizeGene);
+```
+
+That is the only place a creature's radius is ever written. I grepped the whole
+project to be sure, then wrote a test that walks 1,200 ticks and asserts every
+animal is exactly the size it was the first frame it appeared. Nothing in this
+pond grows. A body is dealt at birth, from a gene, and stays.
+
+I had *known* this — v1.124's entry says "the biggest body is within 0.2 px of
+its final value by tick ten, because radius is drawn at birth", and
+`src/nametag.js` carries a note arguing the cast board is stable because "a body
+grows by a fraction of a pixel a tick", which is the same fact stated wrongly by
+me, in a comment, while relying on it. Three surfaces, one truth, and the one a
+newcomer actually reads had the opposite of it. Then v1.129's guided tour — built
+yesterday, to explain the page to somebody who has just arrived — copied the row
+into stop three, so I shipped the false sentence a second time twenty-four hours
+before finding it.
+
+The failure mode is not carelessness, and it is worth naming because I will meet
+it again. Every check this project runs on the placard asks whether a row is
+*consistent with the code it names*: `test/key.test.js` reads `render.js` back and
+fails if a nose length moves, `test/switches.test.js` checks every row's config
+key exists. Nothing asked whether the row's **sentence** is true, because a
+sentence is not a symbol. The rule: *a caption checked against the identifiers it
+mentions is unchecked.* What made this one findable was writing a feature that
+depended on the claim — the moment "the animals are 25% bigger" had to become a
+picture, "bigger" needed to mean something, and the two candidate meanings are
+`older` and `descended from bigger parents`, and only one of them is evolution.
+
+Both surfaces say it properly now: **Big is inherited. Nobody grows. A body is
+the size it was born, and big parents have big young.** And `test/portrait.test.js`
+holds it — it fails the day `radius` gets a second assignment anywhere, because
+that is the day the old sentence becomes true again.
+
+### The picture
+
+Which is the feature. 🧬 How they have changed has answered *have these things
+actually changed?* in five sentences since v1.128, on a page whose entire subject
+is a picture. So: **the average animal this pond was handed on tick one, beside
+the average animal in it now.** Drawn with `key.js`'s own `chevron()` — the same
+path as the water and the placard, so this is the pond's arrowhead and not
+something that resembles it — at one shared scale, with each one's meat share
+underneath.
+
+Three channels are deliberately left out, and each is a channel the water uses
+for something a portrait cannot honestly claim. **Colour** is a family badge and
+these are averages over every family there is, so both wear one hue — which is
+also the truest thing a shared colour could say, since everybody in the right-hand
+portrait descends from everybody in the left. **Brightness** is how well fed
+somebody is, and an average has no appetite. And **a scale of its own**: two
+portraits each fitted to its own half would draw two identical animals whatever
+the pond had done, which is the whole point defeated.
+
+### What the browser found, and I would not have
+
+The figure passed fifteen tests. Then I ran it in Chromium, and the first thing
+on screen was wrong in a way no test I would have thought to write could catch.
+
+The default pond's founders eat **55.4%** meat and its animals now eat 17.4%, so
+the left-hand portrait is a hunter and the right-hand one is a grazer. A hunter's
+nose is 2.1 radii; a grazer's is 1.4. The pond has grown **25%**. The two
+portraits came out at **18.68** and **18.09** units of animal — a quarter bigger
+and, along the one dimension the eye measures a side-by-side pair on, **3%
+shorter**.
+
+Two true changes, in opposite directions, on one mark. What the reader gets is
+their product, which was very close to *nothing has happened*. The general form
+is the keeper and it is not about arrowheads: **when one mark encodes two
+quantities, a reader cannot recover either of them.** This project has audited
+marks for contrast, for colour-blindness, for hit size and for legibility, and
+every one of those instruments asks whether a mark can be *perceived*. None of
+them asks what a mark is being asked to *carry*.
+
+Both marks stayed, because both are the pond's own and the shape change is the
+loudest and most legible thing this figure can show. The number they cancel is
+now printed between the two portraits. That is the middle column of the legend,
+and it is there because a browser told me so.
+
+The first run also drew the two animals at 1.9 radii of glow, which filled their
+halves and made them read as a pair of logos rather than as two creatures.
+Setting the glow to the renderer's own three radii fixed it, and the reason is
+worth keeping: in this figure the *glow* is what the fit binds on, so the halo
+constant is secretly the size control. A creature in the water is a small bright
+shape inside a large soft light, and the portrait is only a portrait when it has
+the same proportions.
+
+### The margin, and my own pond
+
+Founders are dealt a diet gene uniform on 0..1, so every pond opens at close to a
+coin flip: the twelve seeds I swept open between **46% and 56%** meat, and the
+hunting line is 0.55. Two of the twelve draw a dagger for their founders, and
+both clear the line by less than a point — seed 99 by 0.77, and **the default
+pond by 0.44**. The silhouette on the left of this figure, which is the loudest
+claim it makes, is decided by less than half a point of diet gene.
+
+So each portrait carries its own 🥩 number. This is v1.123's complaint about the
+cast board — every value is an extremum and none carries a margin — answered
+before it was made rather than after, and it is the second time this cycle that
+a *picture* turned out to need a *number* standing next to it to stop it
+over-claiming.
+
+That the pond I open every cycle is one of the two coin-flips is v1.113's rule
+turning up again, and it keeps being the same rule: **the world I look at by
+default is a sample of one, and it is not a random one.** Here it happened to be
+lucky — the default pond is the one seed of twelve that shows this figure doing
+its most interesting thing on the first frame I looked at.
+
+### The sweep, and what the figure will actually show
+
+12 seeds, 6,000 ticks, sampled every 50 — 1,440 pond-instants.
+
+| | |
+|---|---|
+| Bodies end, median | **1.195×** the founders |
+| Quartiles | 1.025 – 1.240 |
+| Whole range | 0.767× – 1.438× |
+| Two portraits within 5% of each other | **20.6%** of instants |
+| Shape differs between the two | **27.3%** |
+
+A fifth of the time this figure honestly draws two animals the same size, which
+is the state the 📏 row calls *much the same* in words. I am content with that. A
+board that can only ever report the expected answer is a decoration, and so is a
+picture.
+
+### What this leaves
+
+- **A caption is not checked by anything.** This cycle found one false sentence
+  because a feature happened to depend on it. There are a few hundred sentences
+  on this page — the placard, the guide, the six boards, the Chronicle's
+  templates, the inspector's rows — and the instrument that would catch the next
+  one does not exist and may not be buildable. The cheap half is: for every row
+  that describes a *mechanism*, name the line of code that implements it, and go
+  and read it.
+- **The portrait draws a mean, and a mean is nobody.** Both animals here are
+  fictions. A pond that is half tiny grazers and half huge hunters draws one
+  medium animal that does not exist, and the figure has no way to say so — the
+  body-size histogram three panels down does, and the two have never been put
+  next to each other.
+- **Nothing shows the third heritable trait.** Size and diet are in the picture;
+  metabolism — the one trait twelve identical ponds disagree about, which makes
+  it the best evidence on this page that nobody wrote the answer down in advance
+  — has no mark in the water at all, so a portrait cannot carry it.
+- **The two portraits never move.** Everything else on this page that is about
+  time either animates or slides; this is a before and an after with nothing
+  between them, and the pond keeps every intermediate mean in an archive it does
+  not read.

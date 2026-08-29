@@ -95,6 +95,22 @@ each a hand-picked doorway into what the simulation can do.
   neural networks. Foraging, fleeing, hunting, and loitering in food-rich
   patches are *emergent* — selection, not code.
 
+### Have they actually changed?
+
+The question everybody asks about ninety seconds in, answered as a picture: the
+**average animal this pond was handed on its first tick, beside the average
+animal in it now**, drawn with the pond's own arrowhead at one shared scale.
+
+![Then and now: the average founder beside the average animal alive now, with five sentences under them](docs/screenshots/portrait.png)
+
+Under it, the same answer in five sentences with no chart in any of them — how
+many of the originals are left, how far down the line the water is, and what has
+moved on the way. Body size is the one to watch, because **nothing here grows**:
+a body is dealt at birth from a gene and never changes, so a pond whose animals
+are a quarter bigger is a pond that has *bred* bigger animals. In the picture
+above, the founders were hunters at 55% meat and their descendants are grazers at
+18% — the long nose has gone, and nobody wrote that outcome down.
+
 ### The Tree of Life
 
 Below the pond, a live **Muller plot** groups creatures into species by genetic
