@@ -490,18 +490,28 @@ function wireCastList() {
   $("cast-list").addEventListener("click", (e) => {
     const btn = e.target.closest(`[${CAST_ID_ATTR}]`);
     if (!btn) return;
-    const id = Number(btn.getAttribute(CAST_ID_ATTR));
-    const c = world.creatures.find((x) => x.id === id && !x.dead);
-    if (!c) {
-      flash("They are gone — the pond has moved on.");
-      return;
-    }
-    const title = `👋 ${creatureLabel(c, namesForTree(world.phylogeny))}`;
     // No reason in the toast: the row the visitor just pressed is still on
     // screen saying it, and a toast that repeats the control that opened it is
     // the same fact twice.
-    watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
+    watchNamed(Number(btn.getAttribute(CAST_ID_ATTR)));
   });
+}
+
+// Press a name and go and watch that animal — a row on the board, or, since
+// v1.127, the plate floating over the water. One function for both, because
+// they are two pictures of one list (`nametag.js` draws exactly the animals
+// `whoswho.js` lists) and a visitor pressing either has asked for the same
+// thing. It looks the animal up in the living rather than holding a reference:
+// a name is a picture of the frame it was drawn in, and its owner can be eaten
+// between the draw and the press.
+function watchNamed(id) {
+  const c = world.creatures.find((x) => x.id === id && !x.dead);
+  if (!c) {
+    flash("They are gone — the pond has moved on.");
+    return;
+  }
+  const title = `👋 ${creatureLabel(c, namesForTree(world.phylogeny))}`;
+  watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
 }
 
 // Hand a creature over: select it, follow it, and say who it is. The tail of
@@ -1982,6 +1992,12 @@ function wireCanvas(canvas) {
 
   canvas.addEventListener("pointermove", (e) => {
     const p = toCanvas(e);
+    // A word you can press should look like one (v1.127). The plates are the
+    // only marks on this canvas that are controls, and on a machine with a
+    // cursor this is the whole of the affordance — the pond keeps its crosshair
+    // everywhere else, which is the stylesheet's own rule and stays true the
+    // moment the hand leaves the plate.
+    canvas.style.cursor = renderer.tagAt(p.x, p.y) ? "pointer" : "";
     const g = gestures.move(e.pointerId, p.x, p.y);
     if (!g) return;
     // Taking the view by hand — with one finger or two — releases the follow lock.
@@ -1996,6 +2012,18 @@ function wireCanvas(canvas) {
   const lift = (e, cancelled) => {
     const g = cancelled ? gestures.cancel(e.pointerId) : gestures.up(e.pointerId, e.timeStamp);
     if (!g) return;
+    // A press on a name is a press on the animal wearing it (v1.127), and it is
+    // tested before the water for two reasons. A plate is sixteen pixels tall
+    // where the dart under it is four, so it is by some distance the easiest
+    // target on this canvas and the one a thumb will actually find; and someone
+    // aiming at a word has not aimed at whatever happens to be swimming behind
+    // it. Pressing a name does what pressing the name on the board does —
+    // selects them, and rides along — so the two surfaces cannot part company.
+    const plate = renderer.tagAt(g.x, g.y);
+    if (plate) {
+      watchNamed(plate.id);
+      return;
+    }
     if (g.count === 1) {
       renderer.selected = pickAt(g.x, g.y);
       // Following, then picking someone else, hands the camera over.

@@ -4,6 +4,74 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.127.0] — 2026-08-29
+
+Press a name, and go and watch them.
+
+Last cycle put the pond's names on the pond: a small plate over the handful of
+animals this page has a reason to point at, carrying `👶 Marlow` or `🔺 Nim`.
+They were beautiful and completely inert. Everybody who has ever used a map
+knows what a word floating over a thing means — **the word is the place** — and
+a visitor's first instinct on seeing a name over an animal is to press it.
+Nothing happened.
+
+It happens now. Press a name and that animal is selected, introduced by name,
+and followed by the camera — exactly what pressing its row on the `🏅 Worth
+watching` board does, through exactly the same function, because the plate and
+the row are two pictures of one list. On a machine with a cursor the plate says
+so: the pond keeps its crosshair everywhere else and a name gets a pointer.
+
+**This is a target where the water had none, which is not what I set out to
+build.** I wrote it as *a bigger version of the animal's own hit box* — a plate
+is 62 × 24 page pixels and, on a 390 px phone, the circle a creature is actually
+caught by is 11 pixels across, so it is the only thing on this canvas a thumb
+can reliably hit. Then I asked what a press at each plate's centre would have
+caught before this release, over six seeds sampled every 250 ticks to t6,000,
+416 plates:
+
+- **75.7% caught nobody at all.**
+- 20.2% caught *somebody else*.
+- **4.1% caught the animal whose name it is.**
+
+A plate is lifted clear of its animal's glow on purpose — a label inside the
+halo reads as part of the animal rather than as a thing said about it — so three
+quarters of it hangs over open water. The name is not a larger door onto the
+same room. It is a door where there was a wall, and the fifth of presses that
+used to land on a passing stranger is the price: those presses were aimed at a
+word, and now they arrive where they were aimed.
+
+### Added
+
+- **`src/nametag.js#tagAt`, `TAG_TOUCH_PAD`** — which plate a press landed on,
+  last plate first, the way a browser resolves two overlapping elements. Four
+  pixels of slack around each plate for a finger, which grows the *target*
+  without growing the *mark*; it is deliberately smaller than the gap a tag is
+  lifted above its animal, so a padded plate can never swallow a press aimed at
+  the body underneath.
+- **`src/render.js#nameTagBoxes`, `tagAt`** — every plate recorded as it is laid
+  down, after the lift and after the nudge away from the edge, so the hit test
+  reads the layout rather than re-deriving it. The list is emptied before the
+  frame's early returns: a stale box is a name you can press over water where no
+  name is drawn.
+- **`src/main.js#watchNamed`** — the one handler both surfaces press through.
+  The cast board's own click handler is now three lines of adapter and the
+  look-up-in-the-living it has done since v1.123 happens in one place.
+- **`src/key.js`** — the placard's `A name` row says the plate is a button. A
+  control nobody is told about is a control nobody uses.
+- **`test/nametag.test.js`** — ten more tests: a press lands on the plate the
+  drawing actually laid down, open water is not a button, a name that was not
+  drawn cannot be pressed, an emptied list leaves nothing pressable behind it, a
+  pond with no name layer answers no press at all, and the slack rides the same
+  scale as the type.
+
+### Notes
+
+- Determinism untouched: a hit test is arithmetic over rectangles, draws no
+  random number and writes nothing to the world. The golden fingerprints are
+  unmoved. 1,301 tests.
+- Verified in a browser at 1,400 px and at 390 px, which is where the last two
+  bugs in this feature were found and where this one's pad was sized.
+
 ## [1.126.0] — 2026-08-28
 
 The names come out of the panels and onto the water.

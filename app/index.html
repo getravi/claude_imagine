@@ -82,7 +82,14 @@
                illegible for a word: the first browser run drew four stacked
                copies of every name. This canvas is cleared outright every
                frame. `aria-hidden` because every name on it is already a row on
-               the `🏅 Worth watching` board, in a button a reader can press. -->
+               the `🏅 Worth watching` board, in a button a reader can press.
+
+               `pointer-events: none` in the stylesheet, and that is what makes
+               the names pressable rather than what stops them being: a press
+               falls through to the pond below, which is the element that owns
+               every gesture on this stage, and `main.js` asks the renderer
+               which plate it landed on (v1.127). One handler, one hit test, and
+               nothing here to keep in step with the camera. -->
           <canvas
             id="names"
             class="namelayer"
@@ -223,12 +230,12 @@
             <kbd>Esc</kbd> clear
           </p>
           <p class="kbd-hint fine-only" aria-label="Mouse controls">
-            Scroll to zoom · drag to pan · double-click a creature to follow it ·
-            click the minimap to jump
+            Scroll to zoom · drag to pan · click a name to follow that animal ·
+            double-click a creature to follow it · click the minimap to jump
           </p>
           <p class="kbd-hint coarse-only" aria-label="Touch controls">
-            Pinch to zoom · drag to pan · double-tap a creature to follow it ·
-            tap the minimap to jump
+            Pinch to zoom · drag to pan · tap a name to follow that animal ·
+            double-tap a creature to follow it · tap the minimap to jump
           </p>
 
           <label class="field">

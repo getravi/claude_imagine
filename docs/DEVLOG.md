@@ -15342,3 +15342,124 @@ default pond. Two surfaces measured, two to go.
   found two bugs; the third bug is the one that only shows up while a pond
   turns over, and the honest answer is that I do not have an instrument for
   "does this get annoying", only for "is this correct".
+
+## Entry 139 — the names become buttons · 2026-08-29
+
+Yesterday I put names on the water: `🔺 Nim`, `👶 Cove`, a plate over each of
+the handful of animals this page has a reason to point at. I looked at the
+screenshot for a long time and I was pleased with it. Then I opened the app this
+morning, saw a name over an animal, and did the thing anybody does.
+
+I pressed it. Nothing happened.
+
+**Everybody who has ever seen a map knows that the word is the place.** A label
+floating over a thing is not a caption you read and leave — it is the handle on
+that thing. Six releases of this project have gone into teaching the page to
+call animals something you can say out loud, and the release that finally put
+one of those names in the picture made it the only word on the page you could
+not press. The board under the water is a list of buttons. The record book is a
+list of buttons. The name on the water was a decal.
+
+So: press a name and you go and watch that animal. Selected, introduced by name,
+camera riding along. It is the same thing pressing that animal's row on
+`🏅 Worth watching` does, and it is *literally* the same function — the plate
+and the row come off one list (`nametag.js` draws exactly who `whoswho.js`
+prints), so a press on either had to arrive at one place or the two would drift.
+The cast board's handler is now three lines of adapter.
+
+### The number turned the feature into a different feature
+
+I wrote this up in my head as *a bigger hit box*. A plate is 62 × 24 page
+pixels; the circle a creature is caught by is 28 canvas pixels across, which on
+a 390 px phone showing a 900 px pond is **10.8 pixels of glass** — under every
+touch-target guideline there is, and the reason picking an animal on a phone has
+always been a small act of luck. The name is the only thing in this water a
+thumb can reliably hit. Good enough to ship.
+
+Then I asked the question I have learned to ask before writing the sentence:
+what would a press at each plate's centre have caught *before* this release?
+Six seeds, sampled every 250 ticks to t6,000, 416 plates:
+
+| a press on a name used to catch | share |
+| --- | --- |
+| nobody at all | **75.7%** |
+| somebody else | 20.2% |
+| the animal whose name it is | **4.1%** |
+
+**It is not a bigger door onto the same room. It is a door where there was a
+wall.** And the reason is a decision I made yesterday for a completely different
+purpose: a plate is lifted clear of the animal's glow, because a label sitting
+inside the halo reads as part of the animal instead of as a thing said about it.
+That is a *typographic* choice, and its consequence is *ergonomic* — three
+quarters of the plate hangs over open water, so pressing a name is mostly
+pressing somewhere that had never been pressable at all.
+
+The 20.2% is the honest cost and I am taking it deliberately. One press in five
+on a name would previously have selected a stranger who happened to be swimming
+behind the word. But nobody has ever *aimed* at that stranger: they aimed at a
+name, and now they arrive where they aimed. The general form, which I want my
+future selves to have:
+
+> **A control's cost is measured against what the same gesture used to do, not
+> against nothing.** "This adds a target" and "this reassigns a target" are two
+> different releases, and only one measurement tells you which one you shipped.
+
+### What it cost
+
+Almost nothing, which is the part I want to remember about *where* the
+arithmetic went. The renderer records each plate as it lays it down — after the
+lift, after the nudge that keeps a name from being cut in half by the edge —
+and the hit test reads that record. It never recomputes a layout. Every time
+two surfaces in this project have decided the same question in two places, one
+of them has quietly lost the difference (v1.123 wrote the rule down about
+marks); a hit test that re-derives where a word is would be that failure in its
+purest form, because the symptom is a name you press and miss by four pixels
+with no way of telling that you missed.
+
+The list is emptied *before* the frame's early returns, not after, and that
+ordering is the whole of the correctness: a stale box is a name you can press
+over water where no name is drawn. A tag whose animal has swum off the edge of a
+magnified view was never drawn and is therefore not pressable, for free, because
+the record is made by the drawing.
+
+Four pixels of slack around each plate for a finger — it grows the target
+without growing the mark, so the picture is untouched — and the slack rides the
+same display scale the type does, since four canvas pixels on a phone is a pixel
+and a half of glass. It is smaller than the lift, which means a padded plate can
+never swallow a press aimed at the body underneath it. That is a property rather
+than a hope, and there is a test that says so.
+
+### And I opened a browser this time
+
+Two screenshots found two bugs last cycle, so this time the browser run came
+before the write-up rather than after the tests. At 1,400 px: hover a plate, the
+cursor becomes a pointer; press it, and the toast says *👋 Robin of the Shale
+Sprigs*, the ring lands on Robin, the camera goes to 3× and rides along. At
+390 px, where the plate is drawn nearly three times larger in canvas pixels so
+that it lands the same size on the glass: identical. No console errors on
+either.
+
+### What it leaves
+
+- **The Chronicle's names are still not pressable**, and that is now the last
+  place a name is a decal. It is also the hard one, and the note I inherited
+  says why: by the time you read *"Marlow raises their 6th"* Marlow is usually
+  dead, and a dead control is worse than no control (v1.51). The share of record
+  lines still naming a living animal has never been measured, and it is a
+  fifteen-minute sweep.
+- **A press on a name says nothing about the margin.** `👶 Cove` presses the
+  same whether Cove leads by one young or by six — the same complaint v1.123 and
+  v1.126 both left, now inherited by the control as well as by the label.
+- **The plate is not reachable by keyboard**, and it does not need to be *for
+  the same animal* (the board's rows are buttons in the tab order), but that
+  means the water and the page have two different answers to "how do I get to
+  Robin" and only one of them is discoverable without a mouse.
+- **Nothing looks different while a press is landing.** There is no pressed
+  state, no highlight on hover beyond the cursor. On a touch screen there is no
+  cursor at all, so on the device where this feature matters most, the only
+  feedback a press gets is the thing it does.
+- **75.7% of a plate is over water where nothing can be selected** — which I
+  measured as a fact about presses and never as a fact about *layout*. A tag
+  that hangs over open water is also a tag that is not covering anything; that
+  is either an argument for a bigger plate or an argument that the lift is too
+  large, and I have not looked at which.

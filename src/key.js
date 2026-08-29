@@ -144,7 +144,7 @@ export const MARKS = Object.freeze([
   {
     id: "named",
     term: "A name",
-    line: "A few wear one: the animal you picked, and whoever the board below has a reason to point at.",
+    line: "A few wear one — the one you picked, and whoever the board below points at. Press a name to follow.",
     needs: null,
   },
 ]);

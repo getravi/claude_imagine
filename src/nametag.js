@@ -49,6 +49,13 @@
 // most: the cast runs a mean of 2.95 rows, so the cap is a guard against a pond
 // I have not seen rather than a routine trim.
 //
+// **And a name is a button (v1.127).** The release that put these plates on the
+// water left them inert, which is the one thing a label with a name on it can
+// never be: everybody who has ever seen a map knows that the word is the place.
+// A tag is now the easiest thing on this page to press — sixteen pixels tall
+// against a four-pixel dart — and pressing it does the whole job in one go:
+// picks that animal, and rides along with them. `tagAt` below is that hit test.
+//
 // Determinism: PURE OBSERVER. It reads creatures, writes nothing, adds no field
 // to anything and draws no random number — a pond with names on it is bit for
 // bit a pond with none. There is a test.
@@ -108,6 +115,50 @@ export function nameTags(world, config, names = null, selected = null) {
   if (selected) add(selected, markOf.get(selected.id) ?? "", true);
   for (const role of roles) add(role.creature, ROLE_MARK[role.rank] ?? "", false);
   return out;
+}
+
+/**
+ * How far outside a plate a press still counts as a press on it, in the same
+ * pixels the plate is drawn in.
+ *
+ * v1.115 measured this page's controls against a thumb and found thirty-one
+ * that a finger could not reliably hit; a plate is sixteen pixels tall, which
+ * is under every guideline there is for a touch target. The pad is the cheapest
+ * honest fix — it grows the *target* without growing the *mark*, so the picture
+ * is unchanged and the press is easier. It is deliberately smaller than the gap
+ * a tag is lifted above its animal (`nameTag().lift`), so a padded plate can
+ * never swallow a press aimed at the body underneath it.
+ */
+export const TAG_TOUCH_PAD = 4;
+
+/**
+ * Which plate a press landed on, or `null`.
+ *
+ * Last first, because the renderer draws in list order and the last plate down
+ * is the one on top — the same rule a browser uses for two overlapping
+ * elements, and the one a visitor's eye is already applying.
+ *
+ * The boxes are the renderer's own, recorded as it laid each plate down rather
+ * than recomputed here: a hit test that re-derives a layout is a second opinion
+ * about where a thing is, and the whole failure this project keeps finding is
+ * two surfaces deciding the same question in two places. The arithmetic lives
+ * here, where `node --test` can reach it without a canvas; the geometry lives
+ * where the drawing does.
+ *
+ * @param {Array<{id: number, x: number, y: number, w: number, h: number}>} boxes
+ *   the plates as drawn, in drawing order
+ * @param {number} x press position, in the canvas's own pixels
+ * @param {number} y
+ * @param {number} [pad] slack around each plate — see `TAG_TOUCH_PAD`
+ * @returns {{id: number, x: number, y: number, w: number, h: number}|null}
+ */
+export function tagAt(boxes, x, y, pad = TAG_TOUCH_PAD) {
+  if (!boxes || !boxes.length) return null;
+  for (let i = boxes.length - 1; i >= 0; i--) {
+    const b = boxes[i];
+    if (x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) return b;
+  }
+  return null;
 }
 
 /**

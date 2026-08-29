@@ -32,7 +32,7 @@ import {
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
-import { tagText } from "./nametag.js";
+import { tagText, tagAt, TAG_TOUCH_PAD } from "./nametag.js";
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -132,6 +132,14 @@ export class Renderer {
     // ecological question and this class paints.
     /** @type {Array<{id: number, x: number, y: number, radius: number, hue: number, mark: string, name: string, chosen: boolean}>} */
     this.nameTags = [];
+    // Where each of those plates actually landed, in the canvas's own pixels,
+    // recorded as it was drawn (v1.127) so that a press can find it. Written by
+    // `_drawNameTags` and read by `tagAt`; nothing else may fill it, because a
+    // second opinion about where a name is would be a name you cannot press.
+    /** @type {Array<{id: number, x: number, y: number, w: number, h: number}>} */
+    this.nameTagBoxes = [];
+    /** Slack around a plate for a finger — `TAG_TOUCH_PAD`, at the drawn scale. */
+    this._tagPad = TAG_TOUCH_PAD;
     /** The surface the names are drawn on — see `attachNameLayer`. */
     this._nameCanvas = null;
     this._nameCtx = null;
@@ -393,6 +401,10 @@ export class Renderer {
    */
   _drawNameTags() {
     const ctx = this._nameCtx;
+    // Emptied before anything else, and before the early returns: a stale box is
+    // a name you can press over water where no name is drawn, which is worse
+    // than a name you cannot press at all.
+    this.nameTagBoxes = [];
     if (!ctx) return;
     const cfg = this.config;
     // Cleared before the early return, not after it: a layer that keeps its
@@ -414,6 +426,9 @@ export class Renderer {
     const shown = Math.round(this.canvas.clientWidth) || cfg.width;
     const k = Math.min(MAX_TAG_SCALE, cfg.width / shown);
     const font = nameTagFont(t.fontPx * k);
+    // The finger's slack rides the same scale as the plate, for the same reason:
+    // four canvas pixels on a phone is one and a half pixels of glass.
+    this._tagPad = TAG_TOUCH_PAD * k;
     const padX = t.padX * k;
     const barW = t.barW * k;
     const height = t.height * k;
@@ -451,8 +466,31 @@ export class Renderer {
       ctx.fillRect(x, y, barW, height);
       ctx.fillStyle = t.ink;
       ctx.fillText(text, x + barW + padX, y + height / 2);
+      // The plate as it was actually laid down — after the lift, after the
+      // nudge away from the edge — so that pressing the word presses this
+      // animal. Recorded here rather than computed anywhere else: the layout
+      // has four terms and every one of them is a chance for a hit test to
+      // disagree with the picture.
+      this.nameTagBoxes.push({ id: tag.id, x, y, w, h: height });
     }
     ctx.restore();
+  }
+
+  /**
+   * Which name plate a press at (x, y) landed on, or `null` (v1.127).
+   *
+   * `x` and `y` are in the canvas's own pixels — what `main.js#toCanvas` hands
+   * back — because that is the space the plates are drawn in. The camera does
+   * not enter into it: the name layer never has the lens applied to it, which
+   * is why a name is the same size at every zoom and why this needs no
+   * projection to undo.
+   *
+   * @param {number} x
+   * @param {number} y
+   * @returns {{id: number, x: number, y: number, w: number, h: number}|null}
+   */
+  tagAt(x, y) {
+    return tagAt(this.nameTagBoxes, x, y, this._tagPad);
   }
 
   /**

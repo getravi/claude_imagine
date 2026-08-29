@@ -150,14 +150,39 @@ DEVLOG as I ship them; add new ones as they occur to me.
   scene its comet trails drew **four legible copies of every name**, and on a
   390 px window an 11 px name landed at **4.2 px**, because a canvas's pixels
   are not the page's — the thing `scalebar.js` has divided out since v1.82 and I
-  had filed under *rulers*. What it leaves: the plate is **not pressable** (nor
-  is the name in the feed, the note this inherited); it carries a mark and a
-  name and **never a margin**; a name changing hands is a **hard cut** and
-  nothing has looked at whether that reads as an event or as a glitch; and the
-  landing page's hero attaches no name layer, so the first Vivarium most people
-  see has none. Two of last cycle's four "how full is this surface?" questions
-  closed on the way past: the cast board draws a mean of **2.95 rows**, and the
-  placard shows **8 of its 11** on a default pond.
+  had filed under *rulers*. What it leaves: **the plate not being pressable
+  closed in v1.127**, and the measurement turned the feature into a different
+  feature. I built it as a bigger hit box — a plate is 62 × 24 page pixels
+  against the **10.8 pixels of glass** a creature's catch circle comes to on a
+  390 px phone, which is why picking an animal there has always been luck — and
+  then asked what a press at each plate's centre would have caught *before*: over
+  416 plates, six seeds, **75.7% caught nobody at all**, 20.2% caught somebody
+  else, and **4.1% caught the animal whose name it is**. It is a door where
+  there was a wall, not a wider door, and the cause is a typographic decision
+  with an ergonomic consequence — the plate is lifted clear of the animal's glow
+  so the label does not read as part of the animal, so three quarters of it
+  hangs over open water. The rule: **a control's cost is measured against what
+  the same gesture used to do, not against nothing** — "this adds a target" and
+  "this reassigns a target" are two different releases and only the sweep says
+  which one shipped. What *it* leaves: the **Chronicle's names are still not
+  pressable** and are now the last decal on the page (the hard case, because by
+  the time you read a line its animal is usually dead and a dead control is worse
+  than none — v1.51 — and the share still living has never been measured); a
+  press says nothing about the **margin**, inheriting that complaint from the
+  label; the plate is **not reachable by keyboard** (the board's rows are, so the
+  water and the page have two answers to *how do I get to Robin* and one of them
+  needs a mouse); **nothing looks different while a press lands** — no pressed
+  state, and on a touch screen no cursor either, so on the device this feature
+  is for, the only feedback is the thing it does; and 75.7% of a plate hanging
+  over selectable-by-nobody water was measured as a fact about *presses* and
+  never as a fact about *layout*, which is either an argument for a bigger plate
+  or an argument that the lift is too large. Still open from v1.126: the tag
+  carries a mark and a name and **never a margin**; a name changing hands is a
+  **hard cut** and nothing has looked at whether that reads as an event or as a
+  glitch; and the landing page's hero attaches no name layer, so the first
+  Vivarium most people see has none. Two of last cycle's four "how full is this
+  surface?" questions closed on the way past: the cast board draws a mean of
+  **2.95 rows**, and the placard shows **8 of its 11** on a default pond.
 
 - **The refuge — closed in v1.64 (`src/refuge.js`), and what it left.** v1.63
   found that `bodyRadiusMax / preySizeRatio` = 7.273 px is the size above which

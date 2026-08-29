@@ -24,9 +24,18 @@
 //  5. **Reading the pond does not move it.** The purity claim this project makes
 //     of every observer: a fingerprint either side, and a count of the random
 //     numbers drawn.
+//  6. **A name is a button (v1.127).** The word is where the drawing put it —
+//     after the lift, after the nudge away from the edge — because a hit test
+//     that recomputes a layout is a second opinion about where a thing is. A
+//     plate that was not drawn cannot be pressed, an emptied list leaves nothing
+//     pressable behind it, and the plate and the board hand a visitor to the
+//     same animal by the same function.
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 import { makeConfig } from "../src/config.js";
 import { World } from "../src/world.js";
@@ -34,8 +43,9 @@ import { nameSpecies } from "../src/speciesnames.js";
 import { stateFingerprint, trajectoryFingerprint, observationFingerprint } from "../src/fingerprint.js";
 import { castRoles, givenName } from "../src/cast.js";
 import { ROLE_MARK, castRows } from "../src/whoswho.js";
-import { MAX_TAGS, nameTags, tagSignature, tagText } from "../src/nametag.js";
+import { MAX_TAGS, TAG_TOUCH_PAD, nameTags, tagAt, tagSignature, tagText } from "../src/nametag.js";
 import { contrastRatio, nameTag, nameTagFont, nameTagTones, WCAG_AA_TEXT } from "../src/palette.js";
+import { MARKS } from "../src/key.js";
 import { renderOps } from "../src/rendershot.js";
 
 /** A pond stepped far enough to have a cast, with its family names. */
@@ -295,4 +305,184 @@ test("naming the pond draws no random numbers", () => {
   nameTags(world, config, names, world.creatures[0]);
   world.rng.next = real;
   assert.equal(draws, 0, `naming drew ${draws} random numbers`);
+});
+
+// ---- 6. a name is a button (v1.127) ----
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const read = (p) => readFileSync(join(ROOT, p), "utf8");
+
+/** Draw one frame with these tags on it and hand back the renderer that drew it. */
+function drawnWith(world, tags, tune = null) {
+  let renderer = null;
+  const ops = renderOps(world, null, (r) => {
+    renderer = r;
+    r.nameTags = tags;
+    if (tune) tune(r);
+  });
+  return { renderer, ops };
+}
+
+/** The plates as the recorder saw them: the wide `fillRect` of each tag. */
+function platesDrawn(ops, height = nameTag().height) {
+  return ops
+    .filter((o) => o[0] === "names" && o[1] === "fillRect" && o[5] === height && o[4] > height)
+    .map((o) => ({ x: o[2], y: o[3], w: o[4], h: o[5] }));
+}
+
+test("a press lands on the plate the drawing actually laid down", () => {
+  const { world, config, names } = stepped(314, 1500);
+  const tags = nameTags(world, config, names, null);
+  assert.ok(tags.length > 0, "nothing was named");
+  const { renderer, ops } = drawnWith(world, tags);
+  const plates = platesDrawn(ops);
+
+  assert.equal(renderer.nameTagBoxes.length, plates.length, "the boxes and the plates are different lists");
+  for (let i = 0; i < plates.length; i++) {
+    const box = renderer.nameTagBoxes[i];
+    assert.deepEqual({ x: box.x, y: box.y, w: box.w, h: box.h }, plates[i], "a box is not where its plate is");
+    // The word's own middle, which is where a visitor aims.
+    assert.equal(renderer.tagAt(box.x + box.w / 2, box.y + box.h / 2).id, box.id);
+    // And the animal it hands over is the animal wearing the name.
+    assert.ok(
+      tags.some((t) => t.id === box.id),
+      "a press found somebody the list never named",
+    );
+  }
+});
+
+test("open water is not a button", () => {
+  const { world, config, names } = stepped(42, 1500);
+  const tags = nameTags(world, config, names, null);
+  const { renderer } = drawnWith(world, tags);
+  const box = renderer.nameTagBoxes[0];
+  assert.ok(box, "nothing was drawn to miss");
+  // Far enough outside the plate that no slack could reach: a whole plate away.
+  assert.equal(renderer.tagAt(box.x + box.w + box.w, box.y), null, "water to the right of a name was pressable");
+  assert.equal(renderer.tagAt(box.x, box.y - box.h * 3), null, "water above a name was pressable");
+});
+
+test("a thumb gets slack the picture does not", () => {
+  // The pad grows the target without growing the mark: a press just off the
+  // plate is a press on it, and the plate is drawn exactly where it was.
+  const { world, config, names } = stepped(42, 1500);
+  const tags = nameTags(world, config, names, null);
+  const { renderer } = drawnWith(world, tags);
+  const box = renderer.nameTagBoxes[0];
+  assert.ok(TAG_TOUCH_PAD > 0, "there is no slack at all");
+  assert.equal(renderer.tagAt(box.x - TAG_TOUCH_PAD + 0.5, box.y + box.h / 2)?.id, box.id, "a near miss missed");
+  assert.equal(renderer.tagAt(box.x - TAG_TOUCH_PAD - 1, box.y + box.h / 2), null, "the slack has no edge");
+  // And it stays smaller than the gap between a plate and its animal, so a name
+  // can never swallow a press aimed at the body under it.
+  assert.ok(TAG_TOUCH_PAD < nameTag().lift, "the slack reaches down onto the animal");
+});
+
+test("the slack grows with the plate on a canvas the page has shrunk", () => {
+  // Same trick as the type: four canvas pixels on a phone is a pixel and a half
+  // of glass, so the pad rides the scale the plate is drawn at. Asked as a
+  // press rather than as a number, because the press is the feature.
+  const { world, config, names } = stepped(314, 1200);
+  const tags = nameTags(world, config, names, null);
+  const wide = drawnWith(world, tags).renderer;
+  const phone = drawnWith(world, tags, (r) => {
+    r.canvas.clientWidth = 346;
+  }).renderer;
+  const off = (r) => {
+    const b = r.nameTagBoxes[0];
+    return r.tagAt(b.x - TAG_TOUCH_PAD * 2, b.y + b.h / 2);
+  };
+  assert.equal(off(wide), null, "a full-width pond gave a press more slack than it was drawn");
+  assert.ok(off(phone), "a shrunk pond kept the full-width slack, which is a third of a finger");
+});
+
+test("a name that was not drawn cannot be pressed", () => {
+  // The off-screen case: an animal on the far side of a magnified pond gets no
+  // plate, and a box left over from the frame where it did have one would be a
+  // press landing on empty water.
+  const { world, config, names } = stepped(314, 1200);
+  const tags = nameTags(world, config, names, null);
+  const near = drawnWith(world, tags, (r) => {
+    r.camera.setZoom(8);
+    r.camera.moveTo(tags[0].x, tags[0].y);
+  }).renderer;
+  assert.ok(near.nameTagBoxes.length >= 1, "a tag under the lens was not recorded");
+  const away = drawnWith(world, tags, (r) => {
+    r.camera.setZoom(8);
+    r.camera.moveTo(tags[0].x + world.config.width / 2, tags[0].y + world.config.height / 2);
+  }).renderer;
+  assert.ok(away.nameTagBoxes.length < near.nameTagBoxes.length, "a tag off the edge of the view stayed pressable");
+});
+
+test("an emptied list leaves nothing pressable behind it", () => {
+  const { world, config, names } = stepped(128, 900);
+  const tags = nameTags(world, config, names, null);
+  let renderer = null;
+  renderOps(world, null, (r) => {
+    renderer = r;
+    r.nameTags = tags;
+  });
+  assert.ok(renderer.nameTagBoxes.length > 0, "nothing was recorded to clear");
+  const where = renderer.nameTagBoxes[0];
+  renderer.nameTags = [];
+  renderer._drawNameTags();
+  assert.deepEqual(renderer.nameTagBoxes, [], "the last frame's names are still pressable");
+  assert.equal(renderer.tagAt(where.x + 1, where.y + 1), null, "a dead name kept its button");
+});
+
+test("a pond with no name layer has no names to press", () => {
+  // The landing page's hero attaches none, and neither does anything embedding
+  // this renderer without one. It must not answer a press with somebody.
+  const { world, config, names } = stepped(7, 900);
+  const tags = nameTags(world, config, names, null);
+  let renderer = null;
+  renderOps(world, null, (r) => {
+    renderer = r;
+  });
+  renderer.attachNameLayer(null);
+  renderer.nameTags = tags;
+  renderer._drawNameTags();
+  assert.deepEqual(renderer.nameTagBoxes, []);
+  assert.equal(renderer.tagAt(10, 10), null);
+});
+
+test("the topmost plate wins, the way two overlapping labels do", () => {
+  const boxes = [
+    { id: 1, x: 0, y: 0, w: 40, h: 16 },
+    { id: 2, x: 20, y: 0, w: 40, h: 16 },
+  ];
+  assert.equal(tagAt(boxes, 30, 8, 0).id, 2, "the plate underneath took the press");
+  assert.equal(tagAt(boxes, 5, 8, 0).id, 1);
+  assert.equal(tagAt(boxes, 70, 8, 0), null);
+  assert.equal(tagAt([], 5, 5), null, "an empty pond answered a press");
+  assert.equal(tagAt(null, 5, 5), null, "no list at all answered a press");
+});
+
+test("the water and the board hand a visitor to the same animal", () => {
+  // Two surfaces, one list (`nameTags` draws what `castRows` prints), so one
+  // function has to serve both presses — the failure this project keeps finding
+  // is two places deciding the same question.
+  const main = read("src/main.js");
+  const fn = main.match(/function watchNamed\(id\) \{[\s\S]*?\n\}/);
+  assert.ok(fn, "main.js has no shared handler for a press on a name");
+  assert.ok(fn[0].includes("watchCreature("), "pressing a name does not select and follow");
+  assert.ok(/They are gone/.test(fn[0]), "a name whose owner has died says nothing");
+  const calls = main.match(/watchNamed\(/g) || [];
+  assert.ok(calls.length >= 3, `only ${calls.length - 1} surface(s) press a name`);
+  // The plate is consulted before the water, and through the renderer's own
+  // record of what it drew.
+  const lift = main.match(/const lift = \(e, cancelled\) => \{[\s\S]*?\n  \};/);
+  assert.ok(lift, "main.js no longer has one adapter for a tap");
+  assert.ok(
+    lift[0].indexOf("renderer.tagAt(") < lift[0].indexOf("pickAt("),
+    "a press on a word is answered by whatever is swimming behind it",
+  );
+  assert.ok(/style\.cursor/.test(main), "a pressable word does not look like one");
+});
+
+test("the placard says the names can be pressed", () => {
+  // A control nobody is told about is a control nobody uses — and the placard is
+  // the one surface on this page whose whole job is saying what a mark means.
+  const row = MARKS.find((m) => m.id === "named");
+  assert.ok(row, "the placard no longer has a row for a name");
+  assert.match(row.line, /[Pp]ress/, "the key describes the plate and not the button");
 });

@@ -276,7 +276,14 @@ test("main.js rebuilds the board only when the cast changes, and the rows do som
   const wire = main.match(/function wireCastList\(\) \{[\s\S]*?\n\}/);
   assert.ok(wire, "nothing wires the board up");
   assert.ok(wire[0].includes(`[${"${CAST_ID_ATTR}"}]`) || wire[0].includes("CAST_ID_ATTR"), "the handler does not use the module's attribute");
-  assert.ok(wire[0].includes("!x.dead"), "a row can follow an animal the pond has already buried");
+  // The look-up moved into `watchNamed` in v1.127, when the plates on the water
+  // became pressable and a press on a name got two surfaces to arrive from. The
+  // claim it has always made is unchanged and is now made in one place: a row
+  // holds an id, not an animal, and the animal is fetched from the living.
+  assert.ok(wire[0].includes("watchNamed("), "the board no longer hands a press to the shared handler");
+  const watch = main.match(/function watchNamed\(id\) \{[\s\S]*?\n\}/);
+  assert.ok(watch, "nothing takes a press on a name");
+  assert.ok(watch[0].includes("!x.dead"), "a row can follow an animal the pond has already buried");
   assert.ok(/\n  wireCastList\(\);/.test(main), "the handler is never attached");
 });
 
