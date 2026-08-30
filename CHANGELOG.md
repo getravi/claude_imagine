@@ -4,6 +4,94 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.132.0] — 2026-08-30
+
+The pond starts celebrating.
+
+Yesterday's release taught this page to say *what to wait for*: a ladder of six
+things a pond does as it grows up, ticked as it does them. It made the promise
+and then, when the waiting paid off, **said nothing**. The row grew a tick mark
+in a panel three hundred pixels below the water the visitor was actually looking
+at, and the moment the whole panel exists to promise went past unmarked.
+
+That is the wrong half of a progress bar to leave open. A checklist nobody
+congratulates you for finishing is a tax form. Every aquarium, every game, every
+progress bar anybody has ever enjoyed does the same two things — it says what is
+coming, and it makes a fuss when it arrives — and this project has spent fifteen
+releases teaching the page to *explain* itself to a newcomer without once giving
+that newcomer a reason to feel good about having stayed.
+
+So when the pond climbs a rung it now says so, over the water:
+
+> 🌿 **A family takes hold** — one bloodline is now big enough to have a name of
+> its own. **Next: a dynasty.**
+
+The banner names the rung, says in one sentence what it means, and then points
+at the next one, because the point of a moment is the one after it. The ladder
+below the pond lights up at the same time, which is the other half of the job:
+a visitor who has never scrolled past the water is shown, once, where this page
+keeps the progress it has just made a fuss about.
+
+**Could it be noisy? Measured, not guessed.** Twelve seeds, six thousand steps
+each: the ladder is climbed in **69 separate moments** across those twelve
+ponds — about six banners a run, one every five hundred steps. `records.js`
+sized the Chronicle against the same fear in v1.125 and got the same answer:
+the risk on this page has never been too much news.
+
+**68 of those 69 moments were a single rung, and one was a pair** — a dynasty
+and twice as full landing together on seed 10 at step 1,068. Rare enough to be
+tempting to ignore, and exactly the day the feature would look broken: a second
+banner overwriting the first before it can be read. So the lines come out of
+`cheer.js` as a list and are shown one after the other, in ladder order.
+
+**And a pond can arrive with a past.** 📂 Load builds a world, hands it a saved
+population and re-latches the ladder against it, so a restored pond ticks a
+family on the step it is loaded and, in the sweep, one to three more within six
+steps of that — a burst of congratulations for things that happened before the
+visitor pressed the button. `SETTLE_STEPS` is the window in which arriving is
+not an event. A pond born at step zero gets none of it: seed 9's first young
+lands on step **9**, and that is the most deserved banner on the list.
+
+**The bug the first green test caught was a sentence.** `nextUp` read the ladder
+for the first unticked rung, and handed a ladder read *before* the latch it
+found the rung being announced — so the banner for the first birth ended
+*"Next: the first young."* It cannot happen in the page, where the rows are
+read after the latch, and it is one line to make it impossible rather than
+accidental.
+
+### Added
+
+- **`src/cheer.js`** — the sentences, the "next", and the rule about what counts
+  as news. Stateless observer, and the strongest version of that claim this
+  project has made: it is never handed a world at all, only the rows the ladder
+  already computed from one, so it has nothing to move.
+- **`test/cheer.test.js`** — that every rung has a line and no line outlives its
+  rung; that a rung is announced exactly once, on the step the world latched it;
+  that a pond watched from birth is congratulated for everything however early;
+  that a restored pond is silent about the life it was saved from and loud again
+  once the window closes; that seed 10's pair comes out as two banners in ladder
+  order; and that every word clears the vocabulary bar `milestones.js`,
+  `records.js`, `cast.js`, `headline.js`, `key.js` and `whoswho.js` clear.
+
+### Changed
+
+- **`src/main.js`** — `watchForCheers` on the pond's clock, `pumpCheers` on the
+  browser's, split because a rung is climbed on a step and a banner is read in
+  seconds. `flash()` takes a kind, so a celebration does not look like a
+  receipt.
+- **`src/viewstate.js`** — `cheerWatch` and `cheerQueue`, world-scoped: a watch
+  inherited across a reset would let a new pond climb its whole ladder in
+  silence, and an inherited queue would congratulate it on what the last one
+  did. `cheerFree` and `cheerGlow` join the page-scoped list, both wall-clock.
+- **`style.css`** — `.flash.cheer` and `.milestones.cheering`, the ladder's own
+  green on a border and a glow. The glow goes on the *section*, not on the row
+  that earned it: the list inside is rebuilt from `innerHTML` every time a
+  pending rung's counter moves, so a class on a row would be wiped by the next
+  birth. Ink and ground are untouched, so nothing here moves a measured contrast
+  pair.
+- **`app/index.html`** — an `id` on the ladder, for the panel to be lit by.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each.
+
 ## [1.131.0] — 2026-08-30
 
 The page finally says what to wait for.

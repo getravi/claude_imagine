@@ -176,6 +176,18 @@ const FRESH = Object.freeze({
   // visible, because a stale row here is a claim about history rather than
   // about an animal.
   milestoneSig: "",
+  // The banner that ladder now raises (v1.132), in two halves. `cheerWatch` is
+  // what the visitor has already been told about *this* pond and `cheerQueue`
+  // is what it has not read yet. World-scoped for a reason stronger than the
+  // ladder's own: a watch inherited across a reset would hold six rungs as
+  // already-announced and the new pond would climb its whole ladder in silence,
+  // and a queue inherited across one would congratulate a pond on something the
+  // last one did. Held as `null` rather than an instance for `lineageNames`'
+  // reason — one watch shared between two ponds is the bug the roster's fresh
+  // arrays exist to prevent — and built on the first frame a pond is looked at,
+  // which is also where it learns whether the pond arrived newborn or restored.
+  cheerWatch: null,
+  cheerQueue: [],
 });
 
 /** The names `ViewState` owns, in the order they are declared. */
@@ -208,6 +220,9 @@ export const PAGE_SCOPED = Object.freeze({
   sizeCtx: "the body-size figure's drawing context, likewise, and caching its canvas's size",
   chartScope: "a visitor's choice of window, which outlives the run it was made in",
   flashTimer: "a `setTimeout` handle for the toast, measured in seconds of real time",
+  cheerFree:
+    "wall-clock, the moment the banner over the water is free for the next celebration",
+  cheerGlow: "a `setTimeout` handle for the ladder's glow, likewise real time rather than pond time",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
 });

@@ -499,6 +499,16 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 12px 16px 14px;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+/* The panel answering the banner over the water (v1.132). A visitor who has
+   never scrolled past the pond is told, once, where this page keeps the
+   progress it has just made a fuss about. Border and shadow only: no movement,
+   no text colour, nothing that reflows a panel a reader may be mid-sentence
+   in. */
+.milestones.cheering {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 22px rgba(90, 220, 150, 0.14);
 }
 .milestones-head {
   display: flex;
@@ -1638,6 +1648,14 @@ details .field {
 .flash.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+/* A celebration, not a receipt (v1.132). The ladder's own green, on the border
+   and as a glow — the ink and the ground are left exactly as they are, so the
+   banner that says a pond has grown a family is measured for contrast by the
+   same pair as the one that says a file was saved. */
+.flash.cheer {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 1px rgba(90, 220, 150, 0.18), 0 8px 28px rgba(90, 220, 150, 0.16);
 }
 
 /* ---- The guide (v1.129) ----

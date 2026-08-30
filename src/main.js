@@ -80,6 +80,7 @@ import {
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
+import { CheerWatch } from "./cheer.js";
 import {
   cardPlacement,
   hasSeenTour,
@@ -396,6 +397,9 @@ function loop(now) {
   updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
+  // Last, and on the browser's clock: the panel pass above is what notices a
+  // rung being climbed, and this is what puts the banner up and takes it down.
+  pumpCheers(now);
 
   requestAnimationFrame(loop);
 }
@@ -618,6 +622,12 @@ function updatePortrait(world) {
 // creeping toward five is the reason a visitor stays to watch it get there.
 function updateMilestones(world) {
   const rows = milestoneRows(world, config);
+  // Before the gate, not after it. A rung climbing does move the signature, so
+  // the two orders agree today — but the banner is about the pond and the gate
+  // is about the DOM, and a moment that can only be noticed on a frame that
+  // happens to redraw a panel is a moment waiting to be missed by the next
+  // optimisation.
+  watchForCheers(world, rows);
   const sig = milestoneSignature(rows);
   if (sig === view.milestoneSig) return;
   view.milestoneSig = sig;
@@ -626,6 +636,53 @@ function updateMilestones(world) {
   $("milestone-count").textContent = progress.text;
   $("milestone-say").textContent = milestonesSay(rows);
   $("milestone-fill").style.width = `${(progress.fraction * 100).toFixed(1)}%`;
+}
+
+// ---- The pond cheers (v1.132) ----
+//
+// The other half of the ladder. v1.131 taught this page to say what to wait
+// for and left it silent when the waiting paid off: the row grew a tick mark
+// in a panel below the fold and the moment went past unmarked, which is the
+// wrong half of a progress bar to leave open.
+//
+// `cheer.js` owns the sentences and the rule about what counts as news; these
+// two functions are the adapter, split because they answer to different clocks.
+// `watchForCheers` runs on the *pond's* clock, inside the frame's panel pass —
+// a rung is climbed on a step, not on a frame. `pumpCheers` runs on the
+// *browser's*, because how long a banner stays up is a fact about reading
+// speed. Between them sits `view.cheerQueue`, which is world-scoped: a pond
+// replaced mid-celebration takes its unread banners with it rather than
+// congratulating the new one on something the old one did.
+function watchForCheers(world, rows) {
+  if (!view.cheerWatch) view.cheerWatch = new CheerWatch(rows, world.tick);
+  for (const line of view.cheerWatch.observe(rows, world.tick)) view.cheerQueue.push(line);
+}
+
+// Long enough to read a sentence and its "next", which is the meet banner's
+// problem one clause longer. Two rungs landing on the same step is a measured
+// 1-in-69, and this is the gap that keeps the second from erasing the first.
+const CHEER_MS = 5200;
+let cheerFree = 0;
+let cheerGlow = null;
+function pumpCheers(now) {
+  if (!view.cheerQueue.length || now < cheerFree) return;
+  const line = view.cheerQueue.shift();
+  cheerFree = now + CHEER_MS;
+  flash(line, CHEER_MS, "cheer");
+  // Said as well as shown. A listener gets the banner through the same live
+  // region a keystroke uses, so the moment is not a thing only sighted readers
+  // are told about — and the ladder's own spoken sentence, which names what is
+  // still ahead, is rewritten by the panel pass either way.
+  announce(line);
+  // And the panel it came from lights up, so a visitor who has never scrolled
+  // past the water learns where this page keeps its progress. The glow goes on
+  // the section, which is static markup — the list inside it is rebuilt from
+  // `innerHTML` whenever a pending row's counter moves, and a class on a row
+  // would be wiped by the next birth.
+  const panel = $("milestones");
+  panel.classList.add("cheering");
+  clearTimeout(cheerGlow);
+  cheerGlow = setTimeout(() => panel.classList.remove("cheering"), CHEER_MS);
 }
 
 // ---- The book of records (v1.124) ----
@@ -2442,9 +2499,18 @@ let flashTimer = null;
 // for a different one is the one with something to say.
 const FLASH_MS = 1800;
 const MEET_FLASH_MS = 4200;
-function flash(msg, ms = FLASH_MS) {
+/**
+ * The toast over the water.
+ *
+ * `cheer` is the one kind this banner has, and it is a *class* rather than a
+ * second element for the reason the ladder's rows are text: two overlapping
+ * banners would be two things to read at once. A celebration and a receipt
+ * ("World saved to your browser.") look different and queue in the same place.
+ */
+function flash(msg, ms = FLASH_MS, kind = "") {
   const el = $("flash");
   el.textContent = msg;
+  el.classList.toggle("cheer", kind === "cheer");
   el.classList.add("show");
   clearTimeout(flashTimer);
   flashTimer = setTimeout(() => el.classList.remove("show"), ms);

@@ -16045,3 +16045,112 @@ because it has a generator and latches of its own. This has neither.
   visit does not get pointed at, which is a joke at my expense.
 
 Shipped as v1.131.0.
+
+## Entry 144 — the fuss · 2026-08-30
+
+Yesterday I built a checklist and forgot the confetti.
+
+That is the entire finding of this cycle and I want to write it plainly, because
+it is the sort of thing fifteen releases of instrument-building makes a person
+blind to. The ladder I shipped in v1.131 tells a visitor what to wait for. It is
+the best thing on this page for a newcomer and I was pleased with it. Then I
+opened the pond this morning, watched it for a minute with my ordinary human hat
+on rather than my measuring one, and noticed what actually happens when the
+promise is kept: a small circle in a panel below the fold silently becomes a
+tick.
+
+Nothing over the water. No sound, no colour, no sentence. The thing the whole
+panel exists to promise arrives, and the page — which has a banner, a narrator,
+a chronicle and a live region — does not mention it.
+
+A checklist nobody congratulates you for finishing is a tax form. Every game,
+every aquarium, every progress bar anybody has ever *enjoyed* does two things:
+it says what is coming, and it makes a fuss when it arrives. I had built the
+first half and called it a release.
+
+So: when the pond climbs a rung, it says so, over the water, in the plainest
+sentence the rung has — and then names the next one, because the point of a
+moment is the one after it.
+
+### Sizing it against the fear, not against my taste
+
+The instinct with anything celebratory is to worry it will be annoying, and this
+project has a habit of answering that instinct with a measurement rather than a
+guess. v1.125 sized the Chronicle's record lines the same way and found the
+opposite of what I feared.
+
+Twelve seeds, six thousand steps each. The ladder is climbed in **69 separate
+moments** across those twelve ponds — six banners in an hour and a half of pond
+time, one every five hundred steps. There was never a noise problem. There was a
+*silence* problem, which is what the whole cycle is about.
+
+The number that changed the design is the other one. Of those 69 moments, **68
+were a single rung and one was a pair**: a dynasty and twice as full, both
+latching on step 1,068 of seed 10. One in sixty-nine is exactly rare enough to
+shrug at, and it is precisely the day the feature would look broken — the second
+banner overwriting the first before anybody could read it, on the one occasion
+the pond did two interesting things at once. So the lines come out of `cheer.js`
+as a list and go up one after another.
+
+### The rule that took the work: a pond can arrive with a past
+
+📂 Load builds a world, hands it a saved population and re-latches the ladder
+against it. So a restored pond ticks *a family takes hold* on the step it is
+loaded, and — measured, seeds 3, 5 and 7 — one to three more rungs within six
+steps of that: a birth, a crowd, sometimes both. Wire the banner up naively and
+pressing Load fires a burst of congratulations at a visitor for things that
+happened before they pressed the button.
+
+`SETTLE_STEPS` is the answer: sixty steps in which a pond that arrived mid-life
+is *catching up*, and catching up is not an event. A twelvefold margin on the
+six steps I measured, and deliberately not a wall-clock second, because at 20×
+a second of arriving is twelve hundred steps of pond.
+
+The half of that rule I like is the other half. A pond that arrives at step
+**zero** gets no window at all, because everything a newborn pond does happens
+in front of somebody. Seed 9's first birth lands on step 9. A settling window
+applied evenly would have eaten the most deserved banner on the list, and the
+version of this feature that "plays it safe" is the version that is silent for
+the first ten seconds of every fresh pond — which is the exact ten seconds the
+ladder was built for.
+
+### Two small things worth writing down
+
+**The first green test caught a sentence, not a crash.** `nextUp` looks down the
+ladder for the first unticked rung, and if it is handed the rows as they read
+*before* the latch, the first unticked rung is the one being announced. The
+banner for the first birth ended *"Next: the first young."* It cannot happen in
+the page — the panel pass reads the rows after `World.step` has latched them —
+but "cannot happen given the order of two lines in `main.js`" is not a property,
+it is a coincidence, and one filter turns it into the former.
+
+**The glow goes on the panel, not on the row that earned it.** My first instinct
+was to light up the rung itself, which is obviously right and does not work: the
+list is rebuilt from `innerHTML` every time a *pending* rung's counter moves, and
+those move constantly — the busiest parent raises another young, the crowd grows
+— so the class on the celebrating row is wiped by the next birth. The section is
+static markup. This is the same shape as v1.124's key-on-the-sentences rule: what
+you can decorate is decided by what gets rebuilt, and I keep learning it one
+surface at a time.
+
+### What it leaves
+
+- **Every banner reads the same on every pond.** *A family takes hold* is the
+  same sentence on a pond that got there in 276 steps and one that took 1,257 —
+  which is yesterday's "a rung is dated and never ranked" showing up in a second
+  surface before I have fixed it in the first. The banner is where a margin would
+  be most legible, because it is the only place the pond is talking about *now*.
+- **The banner is not pressable.** *A dynasty* has a specific animal behind it,
+  `stats.recordYoungId` knows their number, and v1.127 built the machinery to
+  send the camera after them. The one moment a visitor is most likely to want to
+  go and look at somebody is the moment there is nothing to press.
+- **Only the ladder gets a fuss.** The Chronicle narrates a species going
+  extinct, a population crash, a takeover — real drama, all of it, and none of it
+  makes the page do anything. The ladder was the easy half because it is already
+  latched; the interesting question is which chronicle lines deserve the water.
+- **A restored pond is still dated to its restore.** The banner now stays quiet
+  about a past it did not watch, and the panel behind it still stamps every
+  already-passed rung with the moment of the load. The two surfaces now disagree
+  about what "arriving" means, and the ladder is the one that is wrong.
+
+Shipped as v1.132.0.

@@ -73,6 +73,35 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The fuss — shipped in v1.132 (`src/cheer.js`), and what it leaves.** The
+  ladder promises a moment and, until this cycle, went silent the instant one
+  arrived: a rung was climbed and a circle in a panel below the fold quietly
+  became a tick. The pond now says so over the water — the rung, one sentence of
+  what it means, and the next rung to wait for — and the ladder lights up behind
+  it. Three findings. (i) **The noise fear was backwards, again.** Twelve seeds
+  over six thousand steps climb the ladder in **69** separate moments, one every
+  five hundred steps, which is v1.125's Chronicle answer arriving one surface
+  over: the risk on this page has never once been too much news. (ii) **68 of
+  those 69 are a single rung and one is a pair** (seed 10, step 1,068: a dynasty
+  and twice as full together), so the one-in-sixty-nine case is the day the
+  feature would have looked broken, and a queue is four lines. (iii) **A pond
+  can arrive with a past**: `loadJSON` re-latches the ladder against a saved
+  population, so a restored pond ticks a family at the moment of the load and
+  one to three more within six steps — hence `SETTLE_STEPS`, a window in which
+  *arriving* is not an event, and no window at all for a pond born at step zero,
+  because seed 9's first birth lands on step 9 and a window applied evenly would
+  eat the banner the ladder exists for. What it leaves: (a) **every banner reads
+  the same on every pond** — *a family takes hold* is one sentence whether the
+  pond took 276 steps or 1,257, which is the ladder's own missing *margin*
+  showing up in a second surface; (b) **the banner is not pressable**, and *a
+  dynasty* is the one moment a visitor most wants to go and look at somebody —
+  `stats.recordYoungId` has their number and v1.127 built the camera move; (c)
+  **only the ladder gets a fuss** — the Chronicle narrates extinctions, crashes
+  and takeovers and none of them makes the page do anything, and which of those
+  lines deserves the water is a real design question; (d) **the two surfaces now
+  disagree about arriving** — the banner stays quiet about a restored pond's
+  past and the panel still dates every already-passed rung to the load.
+
 - **The ladder — shipped in v1.131 (`src/milestones.js`), and what it leaves.**
   `🌱 How far this pond has got` is the first surface here that points *forwards*:
   six things a pond does as it grows up, ticked with how far in each happened or
@@ -1377,6 +1406,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Put the ordinary visitor's hat on for one minute before choosing what to
+  build.** v1.132 came out of watching my own page the way a stranger would
+  rather than the way its author does, and what that minute found was not a bug
+  or a gap in the science: it was that the thing the newest panel promises
+  arrives, and the page says *nothing*. Fifteen releases of instrument-building
+  makes a person read a surface for whether it is *correct* rather than for
+  whether it is any good to sit in front of. The owner's standing steer is mass
+  appeal over the specialist audience, and the cheapest way to serve it is this:
+  open the pond, watch it for sixty seconds with the measuring hat off, and write
+  down the moment where an ordinary person would have expected the page to react
+  and it did not. That list is never empty, and everything on it is small.
 
 - **A caption is checked against the identifiers it mentions and never against
   the world, and one of mine was false for eight releases in the row written to
