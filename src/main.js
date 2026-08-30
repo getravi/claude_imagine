@@ -93,6 +93,7 @@ import {
   stopAt,
   stopCounter,
 } from "./tour.js";
+import { pondName, pondTitle, shareLine, welcomeTo } from "./pondname.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -260,6 +261,10 @@ function boot() {
   wireMilestoneList();
   wireTour();
   buildScenarioChips();
+  // Before the first frame, so the tab a visitor opened in the background is
+  // already a place by the time they look at it. The return is dropped: the
+  // pond you arrive on is not somewhere you have *arrived* from.
+  syncPondName();
   syncHash();
   requestAnimationFrame(loop);
 
@@ -293,6 +298,10 @@ function launchScenario(scn) {
   // this function used to name four things, `resetWorld` named the same four,
   // and `loadWorld` named one of them.
   syncControlsFromConfig();
+  // The plate follows, and the welcome does not: a scenario arrives with a
+  // banner of its own that says more than a place name does, and two toasts
+  // racing for one element means the second one wins by accident.
+  syncPondName();
   // Mark the active chip.
   [...$("scenario-chips").children].forEach((b, i) => {
     b.classList.toggle("active", SCENARIOS[i].id === scn.id);
@@ -2301,11 +2310,32 @@ function bindSlider(configKey, elId, fmt) {
   });
 }
 
+// ---- The pond's name (v1.134) ----
+// One function writes the plate and the browser tab, and every path that can
+// move the seed calls it: Reset, the dice, the field, a scenario, a saved world
+// and the permalink the page opened with. It returns whether the name *moved*,
+// so the rule about saying hello lives here rather than being decided again at
+// each call site: **arriving somewhere new is an event and rebuilding where you
+// already are is not.** Reset on the same seed is therefore silent, which is
+// v1.132's finding read from the other end — a banner that fires on every press
+// of a button is a banner a reader stops seeing.
+let pondNamed = null;
+function syncPondName() {
+  const { name } = pondName(config.seed);
+  const moved = name !== pondNamed;
+  pondNamed = name;
+  $("pond-name").textContent = name;
+  $("pond-seed").textContent = String(config.seed);
+  document.title = pondTitle(config.seed);
+  return moved;
+}
+
 function resetWorld(seed) {
   // Preserve any live-tuned parameters, just change the seed and rebuild.
   config = makeConfig({ ...config, seed });
   world = new World(config);
   renderer.setConfig(config);
+  if (syncPondName()) flash(welcomeTo(config.seed));
   syncHash();
 }
 
@@ -2313,7 +2343,7 @@ function resetWorld(seed) {
 function shareLink() {
   syncHash();
   const url = location.href;
-  const done = () => flash("Link copied — share this world!");
+  const done = () => flash(shareLine(config.seed));
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(done, () => flash(url));
   } else {
@@ -2493,8 +2523,11 @@ function loadWorld() {
     world.loadJSON(obj);
     renderer.setConfig(config);
     $("seed-input").value = config.seed;
+    // The name is written before the receipt names it, so the plate and the
+    // banner cannot disagree for the length of a frame.
+    syncPondName();
     syncHash();
-    flash("World loaded.");
+    flash(`Loaded — you are back in ${pondName(config.seed).name}.`);
   } catch (err) {
     flash("Could not load world.");
   }

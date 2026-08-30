@@ -170,6 +170,37 @@ body {
    should read and the only thing they have to. No `color:` of its own — it
    inherits `--ink` from the body, which is the ink this ground was measured
    against in v1.109, so the banner adds no pair to the legibility inventory. */
+/* The pond's nameplate (v1.134). Sits above the headline because it is the
+   title of the column and the headline is the caption under it: one says where
+   you are, the other says what is happening there.
+
+   No new ink and no new pair. The plate sits on the page itself rather than in
+   a card, which is `#0d1826` in `legibility.js` — the page glow at its
+   brightest — and both of its inks are already measured on exactly that ground:
+   the sub-line is `--ink-faint` at 12.5 px, which is the row the walk sampled as
+   `p.phylo-sub`, and the name inherits `--ink` from `body` between the two rows
+   recorded for `h1 'Vivarium'` (34 px) and `h2 '🌳 Tree of Life'` (17 px, 600).
+   A colour this page has never shown would need the browser walk again; a pair
+   it already carries does not. */
+.pondplate {
+  padding: 0 2px;
+  /* Against the column's 20 px, so the title and the sentence under it read as
+     one thing rather than as two of the seven cards in this column. */
+  margin-bottom: -8px;
+}
+.pp-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+}
+.pp-sub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
 .headline {
   display: flex;
   align-items: center;

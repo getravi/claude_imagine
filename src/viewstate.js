@@ -223,6 +223,10 @@ export const PAGE_SCOPED = Object.freeze({
   cheerFree:
     "wall-clock, the moment the banner over the water is free for the next celebration",
   cheerGlow: "a `setTimeout` handle for the ladder's glow, likewise real time rather than pond time",
+  pondNamed:
+    "what the nameplate currently reads — a fact about the page, and deliberately not " +
+    "reset with the world: it is how `syncPondName` tells arriving somewhere new from " +
+    "rebuilding where you already are, and a pond adopted afresh would say hello to itself",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
 });

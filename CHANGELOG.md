@@ -4,6 +4,115 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.134.0] — 2026-08-30
+
+Every pond gets a name.
+
+For a hundred and thirty-three releases the world you are watching has been an
+integer. The field in the panel says `Seed`. The permalink says `#seed=42`. The
+whole promise this project is built on — *the same seed always grows the same
+pond* — is a sentence with a number in the middle of it. That is the right
+**identifier** and it has never once been a **name**.
+
+Nobody has ever told a friend about seed 1837465. Nobody has ever come back to
+one of three browser tabs, all reading "Vivarium", and known which pond was
+which. Eighteen releases have gone into teaching this page to explain itself to
+somebody who arrived by accident — a headline, a cast board, a record book, a
+family portrait, a ladder, a guided tour, a name over every animal worth
+watching — and the thing all of it is *about* stayed anonymous.
+
+So a seed is now a place:
+
+> ## Western Mere
+> seed 314 — the same seed always grows the same pond
+
+The plate sits above the water, the browser tab says it, the share button says
+it (*Link copied — share Sleeping Millpond!*), and typing a new seed says hello:
+**🪷 Welcome to Sleeping Millpond.**
+
+**Three decisions, and each one is a way this could have gone wrong.**
+
+*A pond is an adjective and a landform; a lineage is two nouns.*
+`speciesnames.js` already names things here, and it puts the **family** first —
+Amber Ripple and Amber Whorl are cousins and a reader can see it. If a pond
+could be called "Slate Tarn" that reader would have every reason to think the
+water was somehow kin to the Slate Darts swimming in it. The two vocabularies
+are therefore disjoint *and of different word classes*, which is the stronger
+guarantee: no adjective is ever a family and no landform is ever a branch.
+
+*The name follows the seed and not the config.* Folding the rules in was
+tempting — a pond with hunting switched off is arguably a different world — and
+wrong twice over: the sliders move continuously, so a name that read them would
+rename itself under a dragging finger, and the seed is already the identity
+every other surface here uses. A place keeps its name when the weather changes.
+
+*A name is a handle, never an identifier.* 48 adjectives × 32 landforms = 1,536
+names against an unbounded seed space, and the sweep says exactly how soon that
+bites: **the first repeat is seed 62, which is seed 34's Nameless Ford** — the
+birthday problem landing inside the first hundred seeds a person would ever type
+by hand, four collisions where the arithmetic predicts 3.2, and 96 distinct
+names for those hundred. That is fine, and it is why the seed stays printed on
+the plate beside the name rather than replaced by it. `speciesnames.js` buys
+uniqueness by construction because a lineage name is a thing you *click*;
+nothing here is clicked, so nothing here needs it.
+
+**What the mixer buys is the absence of local structure.** An alphabetical march
+would be just as deterministic and would give seeds 0, 1 and 2 the same
+adjective, so a visitor stepping the field with the arrow keys would think the
+name was broken. Over a hundred thousand neighbouring seeds, two in a row share
+a name **69 times against a chance expectation of 65.1** — and share just the
+adjective 221 times against 208.3. Neighbours are strangers, which is the only
+property this hash exists to have.
+
+**And the narrowing is agreement, not defence.** `pondName` takes `>>> 0` on the
+way in, which is the same line `RNG` runs in its own constructor — so seed −1 and
+seed 4,294,967,295 are one world in the water and one name on the plate, and
+`#seed=banana` is pond zero rather than a thrown exception in a heading during
+boot. The test compares the two functions rather than restating either, so
+moving one moves the test.
+
+### Added
+
+- **`src/pondname.js`** — `ADJECTIVES` (48), `LANDFORMS` (32), `pondName`,
+  `pondTitle`, `welcomeTo` and `shareLine`. It imports nothing, draws nothing,
+  and nothing reads it back: a pure function of one integer, which is the second
+  prime directive applied to a label. There is a test that asserts the import
+  list is empty, because that property is the whole design.
+- **`app/index.html`**, **`style.css`** — the `.pondplate`, above the headline
+  and outside the stage. **No new ink and no new pair**: the plate sits on the
+  page ground `legibility.js` records as `#0d1826`, the sub-line is
+  `--ink-faint` at 12.5 px (the row the v1.109 walk sampled as `p.phylo-sub`),
+  and the name inherits `--ink` from `body` between the rows already recorded
+  for `h1 'Vivarium'` and `h2 '🌳 Tree of Life'`. A colour this page has never
+  shown would need the browser walk again; a pair it already carries does not.
+- **`test/pondname.test.js`** — thirteen tests: the two vocabularies are
+  disjoint from the lineage words; every name resolves to one adjective and one
+  landform; all 1,536 are reachable inside the first ten thousand seeds and
+  every word of both lists is used; the first repeat and the neighbour rate,
+  pinned as measurements; the seed narrowing compared against `RNG`'s; and that
+  nothing a URL hash or a number input can hold makes a heading throw.
+
+### Changed
+
+- **`src/main.js`** — `syncPondName()`, called from boot, `resetWorld`,
+  `launchScenario` and `loadWorld`. It returns whether the name **moved**, so
+  the rule about saying hello lives in one place instead of being decided again
+  at four call sites: *arriving somewhere new is an event and rebuilding where
+  you already are is not.* Reset on the same seed is therefore silent, which is
+  v1.132's finding read from the other end — a banner that fires on every press
+  of a button is a banner a reader stops seeing. A scenario keeps its own
+  banner, because its name says more than a place name does and two toasts
+  racing for one element means the second wins by accident.
+- **`src/main.js`** — the share receipt and the load receipt name the pond.
+  *"Link copied — share this world!"* and *"World loaded."* were the last two
+  sentences on this page that pointed at something without saying what.
+- **`src/viewstate.js`** — `pondNamed` classified in `PAGE_SCOPED`. The guard
+  that says every top-level binding in `main.js` belongs to a pond or to the
+  page caught the new one on the first run, which is what that list is for: the
+  plate's memory is deliberately *not* reset with the world, because a pond
+  adopted afresh would otherwise say hello to itself.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each.
+
 ## [1.133.0] — 2026-08-30
 
 The pond starts pointing.

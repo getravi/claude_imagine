@@ -73,6 +73,38 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond's name — shipped in v1.134 (`src/pondname.js`), and what it
+  leaves.** For a hundred and thirty-three releases the world a visitor watches
+  was an integer, and eighteen of those releases went into teaching this page to
+  explain itself while the thing all of it is *about* stayed anonymous. Seed 314
+  is now **Western Mere**, on a plate above the water, in the browser tab, in
+  the share receipt and in a hello when you type a new one. Three findings.
+  (i) **A name and an identifier are two jobs, and a collision is what makes you
+  write that down.** 48 × 32 = 1,536 names against an unbounded seed space, and
+  the first repeat is **seed 62 sharing seed 34's Nameless Ford** — inside the
+  first hundred seeds a person types by hand, four collisions where the birthday
+  arithmetic predicts 3.2. `speciesnames.js` buys uniqueness by construction
+  because a lineage name is a thing you *click*; nothing here is clicked, so the
+  seed stays printed under the name and does the identifying. The general rule:
+  **ask what a label is for before deciding whether it must be unique.**
+  (ii) **`>>> 0` was agreement, not defence.** `RNG` narrows its seed on the
+  first line of its constructor, so seed −1 and seed 4,294,967,295 are one world;
+  the plate had to agree or it would have been a label disagreeing with the thing
+  it labels, and the test compares the two functions rather than restating
+  either. Every other place this project coerces an input is now worth the same
+  question. (iii) **An inventory of measurements is not a form to fill in
+  whenever you add markup.** I had drafted two `legibility.js` rows before
+  noticing the plate's ground (`#0d1826`) and both its inks were already measured
+  on exactly that pair; a row added without the walk would have been a guess
+  wearing an inventory's clothes. What it leaves: (a) **the landing page's hero
+  pond is still nameless**, and it is the first Vivarium most people see;
+  (b) **the Chronicle does not know where it is** — every line is about this pond
+  and none says which, so an exported chart or a screenshot is evidence from an
+  unnamed place; (c) **a name says which pond and never what kind**, which is the
+  ladder's missing *margin* turning up on a second surface and starting to look
+  like a shape rather than an oversight; (d) **nothing measures whether anybody
+  presses anything**, three releases running.
+
 - **Which one? — shipped in v1.133 (`src/milestones.js`), and what it leaves.**
   The ladder announced *a dynasty — one animal has raised five young* and gave a
   reader no way to ask which one. Three of the six rungs are about an animal

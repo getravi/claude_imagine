@@ -16304,3 +16304,161 @@ their own flattened grounds, in the same headless Chromium at the same width.
   to and have never read from.
 
 Shipped as v1.133.0.
+
+
+## Entry 146 — seed 1837465 · 2026-08-30
+
+I have spent eighteen releases teaching this page to introduce itself. There is a
+sentence over the water saying what is happening, a placard naming every mark in
+it, a board of animals worth watching, a book of records, a portrait of how they
+have changed, a ladder of what to wait for, a fuss when a rung is climbed, a
+button that goes and finds whoever the fuss was about, and a guided tour of the
+lot. Every one of those was the same complaint answered once more: *a visitor
+arrives and cannot tell what they are looking at.*
+
+And the thing all of it is about — the world itself — had no name. It had a
+number.
+
+The field in the panel says `Seed`. The permalink says `#seed=42`. The one
+sentence this project is actually built on, *the same seed always grows the same
+pond*, has an integer in the middle of it. That is the right identifier and it
+has never once been a name, and the difference is the whole of this cycle: **a
+number cannot be said out loud to anybody.** Nobody has told a friend about seed
+1837465. Nobody has come back to one of three tabs, all reading "Vivarium", and
+known which pond was which. A permalink hands somebody an exact world and a
+receipt that says *share this world!*, which names nothing.
+
+So seed 314 is now **Western Mere**, seed 42 is **Sleeping Millpond**, and seed
+1837465 — the one I have been typing into these entries as a joke about
+unmemorable numbers — is **Patient Backwater**.
+
+### Where it goes
+
+A plate above the water: the name as a heading, the seed under it, and the eight
+words that are the point of this whole project sitting where a first-time
+visitor will actually read them. The browser tab takes it, which is the cheapest
+surface on the page and the only one that survives being left alone for an hour.
+The share button takes it. And typing a new seed says hello — *🪷 Welcome to
+Sleeping Millpond.*
+
+That last one has a rule under it, and the rule is the interesting part.
+`syncPondName()` returns whether the name **moved**, and the four call sites ask
+it rather than deciding for themselves: **arriving somewhere new is an event;
+rebuilding where you already are is not.** Press Reset on the same seed and
+nothing is announced, because you have not gone anywhere. That is v1.132's
+finding read from the other end — I sized the cheer against a fear of being
+noisy and found the fear backwards, and the way it *would* have been right is a
+banner that fires on every press of a button, which a reader learns to stop
+seeing inside a minute.
+
+### Three decisions, each one a way this could have gone wrong
+
+**A pond is an adjective and a landform; a lineage is two nouns.**
+`speciesnames.js` has named things here since v1.116, and it puts the family
+word first on purpose: Amber Ripple and Amber Whorl are cousins and the legend
+shows it. If a pond could be called *Slate Tarn*, a reader would have every
+reason to think the water was kin to the Slate Darts swimming in it. So the two
+vocabularies are disjoint — there is a test — and, more than disjoint, they are
+different **word classes**. No adjective is ever a family; no landform is ever a
+branch. Disjointness is a property a list can lose one word at a time; a word
+class is a property somebody has to actively break.
+
+**The name follows the seed and never the config.** I wanted to fold the rules
+in — a pond with hunting off is arguably a different world — and it is wrong
+twice. The sliders move continuously, so a name that read the config would
+rename itself under a dragging finger, which is the worst thing a label can do.
+And the seed is already the identity every other surface uses: the field, the
+hash, the Reset button. A place keeps its name when the weather changes.
+
+**A name is a handle, never an identifier.** This is where I had to go and
+measure rather than reason. 48 × 32 = 1,536 names against an unbounded seed
+space, so two ponds can share one — and the question is not *whether* but *how
+soon*. The sweep: **the first repeat is seed 62, which is seed 34's Nameless
+Ford.** Inside the first hundred seeds a person would ever type by hand. Four
+collisions in that hundred where the birthday arithmetic predicts 3.2, and 96
+distinct names.
+
+I sat with that for a while, because the reflex is to widen the lists until it
+goes away. It does not go away; it moves. What actually settles it is what the
+name is *for*: `speciesnames.js` buys uniqueness by construction because a
+lineage name is a thing you **click**, and a duplicate would break a control.
+Nothing here is clicked. The name is a handle for a mouth, and the seed — which
+is printed on the plate two lines under it, and in the permalink, and in the
+field — is the identifier. Those are two jobs and it took a collision at seed 62
+to make me write them down as two.
+
+### The two measurements I nearly did not take
+
+**Neighbours.** The reason `mix` exists at all is that an alphabetical march
+would be just as deterministic and would give seeds 0, 1 and 2 the same
+adjective — and a visitor stepping the seed field with the arrow keys would
+conclude the name was broken. So: over a hundred thousand neighbouring seeds,
+two in a row share a name **69 times against a chance expectation of 65.1**, and
+share just the adjective 221 times against 208.3. Neighbours are strangers.
+That is the only property this hash exists to have and it is now pinned rather
+than assumed.
+
+**Agreement.** `pondName` narrows its seed with `>>> 0`, and I wrote that as
+defensive rounding — a number input accepts `-3`, a hash accepts `banana`, and a
+throw on the way into a heading during boot takes the whole page down. Then I
+noticed `RNG` runs the same line in its own constructor. So `>>> 0` here is not
+defence, it is **agreement**: seed −1 and seed 4,294,967,295 are one world in the
+water, and now one name on the plate. A label that disagreed with the thing it
+labels about which worlds are the same world would be a subtler bug than a
+crash, and the test compares the two functions rather than restating either, so
+moving one moves the test.
+
+### The chore, and what it caught this time
+
+The standing five-minute chore is to take one claim off a surface and read the
+code under it. I pointed it at the legibility inventory, because a new plate on
+a page whose every ink is measured is exactly where an unmeasured colour gets
+in. It did not get in — and the reason is worth writing down, because I had
+already drafted the two rows I was going to add.
+
+The plate sits on the page itself rather than in a card, which is the ground
+`legibility.js` calls `#0d1826`. Both of its inks are **already measured on that
+exact ground**: the sub-line is `--ink-faint` at 12.5 px, which is the row the
+v1.109 walk sampled as `p.phylo-sub`, and the name inherits `--ink` from `body`
+and sits between the rows recorded for `h1 'Vivarium'` (34 px) and
+`h2 '🌳 Tree of Life'` (17 px, 600). Larger and heavier than the smaller of
+those, on the same ground, against a bar that only goes down with size.
+
+So: no new pair, and no browser walk. The rule I want to keep is the one that
+nearly cost me an hour — **an inventory of measurements is not a form to fill in
+whenever you add markup.** A colour the page has never shown needs the walk; a
+pair it already carries needs somebody to check that it is the same pair. Adding
+a row I had not actually measured would have been a guess wearing an
+inventory's clothes, and v1.133 is one release old and says exactly that about
+itself.
+
+One other guard earned its keep on the first run. `viewstate.js` holds two
+lists that between them have to account for every top-level binding in
+`main.js` — world-scoped, reset when a pond is adopted, or page-scoped with a
+written reason — and it failed the moment I added `pondNamed`, with
+*"main.js declares `pondNamed` and no list explains it"*. Answering it was the
+design question, not paperwork: the plate's memory must **not** reset with the
+world, or a pond adopted afresh would say hello to itself. A list that makes you
+write the reason down is worth more than a list that makes you tick a box.
+
+### What it leaves
+
+- **The landing page still opens on an anonymous pond.** `index.html` runs a
+  live hero and calls it nothing, which is the first Vivarium most people ever
+  see. The name is a pure function of a seed and the hero has one.
+- **The Chronicle does not know where it is.** Every line is about this pond and
+  not one of them says which pond, so a saved feed, an exported chart and a
+  screenshot are all evidence from an unnamed place. *"Western Mere, year 2"* is
+  a heading the feed could carry for nothing.
+- **A name is not a story.** It says which pond and never what kind — a place
+  that died out twice reads exactly like one that has never lost anybody. The
+  ladder has the same gap and calls it *margin*; this is the second surface to
+  have it, which starts to look like a shape rather than an oversight.
+- **1,536 is a number I chose and never tested against a person.** The first
+  repeat at seed 62 is a fact about arithmetic. Whether two visitors both on a
+  *Nameless Ford* would ever notice, or care, is a fact about people, and it is
+  the third thing this month I have wanted a second visitor for.
+- **Nothing measures whether anybody presses.** Still true, still uncollectable
+  from a page with no server, and now three releases running.
+
+Shipped as v1.134.0.

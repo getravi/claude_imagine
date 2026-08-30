@@ -47,6 +47,26 @@
 
     <main class="layout">
       <div class="left-col">
+        <!-- The pond's own name (v1.134). Every world here had an identity and
+             it was an integer: the field says `Seed`, the permalink says
+             `#seed=42`, and nobody has ever told a friend about seed 1837465.
+             `src/pondname.js` turns the seed into a place — a pure function of
+             the number and nothing else, so the same link always arrives
+             somewhere with the same name. The seed stays on the plate beside
+             it, because 1,536 names against an unbounded seed space is a handle
+             and not an identifier.
+
+             A heading rather than a caption: it is the title of everything
+             below it, and it puts the pond into the document outline where a
+             screen reader's heading walk starts. -->
+        <section class="pondplate" aria-labelledby="pond-name">
+          <h2 class="pp-name" id="pond-name">Western Mere</h2>
+          <p class="pp-sub">
+            seed <span id="pond-seed">314</span> — the same seed always grows the
+            same pond
+          </p>
+        </section>
+
         <!-- The one line above the water (v1.117). Everything else on this page
              is a number, a figure or a log; this is the pond in a sentence, for
              a reader who has just arrived and does not yet know what a Muller
