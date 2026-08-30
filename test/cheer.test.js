@@ -52,7 +52,9 @@ function watch(p, steps) {
   const said = [];
   for (let i = 0; i < steps; i++) {
     p.world.step();
-    for (const line of w.observe(p.rows(), p.world.tick)) said.push({ at: p.world.tick, line });
+    // A banner is an object as of v1.133 — the sentence, the rung it is about
+    // and who to go and watch — so this flattens it and keeps the step.
+    for (const b of w.observe(p.rows(), p.world.tick)) said.push({ at: p.world.tick, ...b });
   }
   return { watch: w, said };
 }
@@ -259,10 +261,55 @@ test("watching the ladder moves nothing and draws no random number", () => {
   assert.doesNotMatch(src, /\brng\b|Math\.random/, "cheer.js draws a random number");
 });
 
+// ---- 8. a banner can lead somewhere (v1.133) ----
+
+test("a banner carries its rung and whoever it is about, and nothing more", () => {
+  const p = pond(314);
+  const { said } = watch(p, 2400);
+  assert.ok(said.length >= 3, "2,400 steps and this pond was congratulated twice");
+  for (const b of said) {
+    assert.ok(MILESTONE_KEYS.includes(b.key), `a banner is about "${b.key}"`);
+    assert.equal(typeof b.line, "string");
+    assert.equal(typeof b.whoIs, "string");
+    // Never an id and never an animal: the subject is looked up at the moment
+    // the visitor presses, out of the pond as it stands then, so five seconds
+    // of banner cannot promise a corpse.
+    assert.deepEqual(Object.keys(b).sort(), ["at", "key", "line", "whoIs"]);
+  }
+  const rungs = new Set(said.filter((b) => b.whoIs).map((b) => b.key));
+  for (const key of rungs) assert.ok(["family", "dynasty", "deep"].includes(key));
+  assert.ok(rungs.size > 0, "not one banner on this pond led to anybody");
+});
+
+test("a banner offers nobody exactly when its row does", () => {
+  // The two surfaces are the same rung read seconds apart, so they cannot
+  // disagree about whether there is somebody to go and see. This is the join:
+  // `cheer.js` never reads a world, it only passes the ladder's own answer on.
+  const p = pond(10);
+  const w = new CheerWatch(p.rows(), p.world.tick);
+  let seen = 0;
+  for (let i = 0; i < 1500; i++) {
+    p.world.step();
+    const rows = p.rows();
+    for (const b of w.observe(rows, p.world.tick)) {
+      const row = rows.find((r) => r.key === b.key);
+      assert.equal(Boolean(b.whoIs), row.who >= 0, `"${b.key}" disagrees with its own row`);
+      if (b.whoIs) assert.equal(b.whoIs, row.whoIs);
+      seen++;
+    }
+  }
+  assert.ok(seen >= 4, `only ${seen} banners — too few to have tested the join`);
+});
+
 // ---- the wiring ----
 
 test("the page holds the banner's state through the view, and the panel it lights up exists", () => {
   const main = read("src/main.js");
+  // The offer on the banner is built as an element and removed when the words
+  // go: an invisible control is still in the keyboard walk (v1.51).
+  assert.match(main, /function offerToShow/, "the banner cannot lead anywhere");
+  assert.match(main, /\.flash-go/, "nothing ever takes the offer back off the banner");
+  assert.match(read("style.css"), /\.flash\.show \.flash-go\s*\{/, "a faded banner still takes a press");
   assert.match(main, /view\.cheerWatch/, "main.js does not own a watch");
   assert.match(main, /view\.cheerQueue/, "main.js does not queue what it has not shown");
   // The glow goes on the section, not on a row: the list inside is rebuilt from

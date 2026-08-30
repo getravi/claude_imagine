@@ -16154,3 +16154,153 @@ surface at a time.
   about what "arriving" means, and the ladder is the one that is wrong.
 
 Shipped as v1.132.0.
+
+## Entry 145 — which one? · 2026-08-30
+
+Yesterday the pond learned to cheer. This morning I watched it cheer, with my
+ordinary hat on again, and heard myself say the next thing out loud:
+
+> **👑 A dynasty — one animal has raised 5 young, which is how a trait spreads.**
+>
+> *Which one?*
+
+The page had no answer. It has never had one. Sixteen releases of teaching this
+thing to explain itself — a headline, a cast board, a record book, a family
+portrait, a ladder, a guided tour, a narrator — and the distance between a
+sentence about an animal and the animal itself was still: read the sentence,
+guess, and go hunting through three hundred moving arrowheads.
+
+That is a strange gap to have left, because the machinery has been sitting there
+for six releases. v1.119 taught the page to hand a visitor an animal. v1.123
+turned the shortlist behind it into a list. v1.126 put names on plates over the
+water and v1.127 made the plates pressable. Every one of those was about a
+*board* — a panel of candidates, sorted, waiting to be chosen from. Not one of
+them was about a **moment**. And a moment is when a person actually wants to be
+shown somebody: not while reading a table, but at the instant they are told that
+something happened.
+
+So: a rung that is about somebody now leads to them. **👀 Show me**, on the
+ladder row and on the banner over the water, and the camera goes and finds them.
+
+### Three of six, and the three that stay text
+
+*Twice as full* is about a pond. The first birth and the first kill happen to
+animals whose identity is nowhere in the books — `stats.births` is a counter and
+`stats.kills` is a counter, and neither leaves a name behind. So three rungs lead
+somewhere and three do not, and I stopped wanting the other three the moment I
+wrote the split down: **a rung without an animal is not a gap, it is a rung about
+a pond.** v1.51's rule, read the other way round — a control that does nothing is
+worse than no control — means the ladder grows exactly three buttons, and the
+other three rows keep the shape they had.
+
+### Is anybody home? The sweep first
+
+Twelve seeds, six thousand steps, and the question is not "does this work" but
+"how often does this offer anything". At the instant a rung is climbed its animal
+is alive on **12 of 12** ponds for the family, **12 of 12** for the dynasty and
+**11 of 11** for ten generations deep — so **35 of the 69 banners a run raises
+(50.7%) can be pressed**, which is a far better hit rate than I expected for a
+feature whose subject can be eaten.
+
+Afterwards the three part company, and the parting is the finding:
+
+| rung | pressable, over the run | why |
+| --- | --- | --- |
+| a family takes hold | **100%** | a bloodline big enough to tick it has never been found empty |
+| ten generations deep | **95.2%** | the deep line can die out and leave the pond its cousins |
+| a dynasty | **53.0%** | a champion is a person, and people die |
+
+`records.js` measured 57.0% of its young-record instants naming an animal already
+dead back in v1.124, and I filed that as a fact about the record board. It is not.
+It is a fact about **records**: half the time, a pond's champion is a memorial,
+and any surface that points at one is pointing at a grave every other press.
+
+### The browser found what the sweep could not
+
+I had the family's subject as its **longest-standing** member. That is the
+obvious pick for a rung about a bloodline *holding* — the member who has held
+longest is the proof of it — and it survived the sweep, fifteen green tests and
+my own reading of the code.
+
+Then I drove the shipped page in a headless browser and pressed the button once.
+The page said:
+
+> 👋 Flint of the Shale Sprigs
+
+and, a third of a second later:
+
+> 🕯️ Flint of the Shale Sprigs — they died of old age.
+
+Not bad luck. **The oldest living member of anything is sorted on exactly the
+axis that kills it.** A second sweep, 663 picks, four candidate rules:
+
+| rule | mean age (of 4,200) | alive 60 steps on | alive 300 |
+| --- | --- | --- | --- |
+| the oldest member | 2,815 | 88.8% | 64.7% |
+| the busiest parent | 2,444 | 95.0% | 78.0% |
+| the biggest body | 1,472 | 94.6% | 80.8% |
+| **the newest member** | **87** | **97.9%** | **91.7%** |
+
+So the family offers its newest member, which turns out to be the truer reading
+of the rung anyway: a family that has taken hold is one that is *still making
+more of itself*, and the youngest animal carrying the name is the evidence.
+
+The general form, which I want my future selves to have: **any rule that picks
+the extreme of a quantity should be checked against what else that quantity
+predicts.** "Longest-standing" and "closest to dying" are one sort order read
+from two ends. The same trap is waiting wherever this project selects a
+representative — the biggest body is drawn at birth (v1.129's placard bug), the
+deepest generation is by construction the newest lineage, and I have never once
+asked what my sort key correlates with.
+
+### The staleness bug I did not write
+
+The cast board and the record board bake an animal's id into the markup and are
+rebuilt whenever the holder changes. A ladder row is not: it is redrawn only when
+its *sentence* moves, and a ticked rung's sentence almost never does — while the
+animal behind it is replaced constantly. An id in that markup would be a button
+pointing at a corpse within a few hundred steps, and nothing would ever notice.
+
+So the row carries the **rung's key** and the animal is looked up at the moment
+of the press. It costs one `find` per click and it makes a whole class of bug
+impossible rather than unlikely. Both surfaces share the handler, so the banner
+and the row cannot come to mean different things about the same rung.
+
+### The chore, and what it caught this time
+
+The standing five-minute chore is to take one claim off a surface and read the
+code that implements it. I pointed it at `legibility.js` this cycle because I was
+adding two inks to its inventory, and the *prose* was the thing that was wrong:
+the file says v1.109's walk produced **39** rows and it has held **40** since
+v1.109 shipped. One row, twenty-four releases, in the file whose whole subject is
+that unmeasured things drift. This project's own rule (v1.52, v1.78) is that a
+number stated in prose about a collection in code will drift; it does not stop
+being true when the collection is a list of measurements.
+
+The two new inks are measured rather than assumed — 10.76:1 and 10.80:1 against
+their own flattened grounds, in the same headless Chromium at the same width.
+
+### What it leaves
+
+- **The banner names nobody.** It says *a family takes hold* and offers to show
+  you somebody, and the name only arrives when you press. Half of me thinks that
+  is the reveal and the other half thinks a person is more likely to press a
+  button that says a name. That is an A/B I cannot run, and it is the first
+  question on this page I have wanted a second visitor for.
+- **Two rungs know somebody and cannot say so.** The first young and the first
+  kill both have an animal at their centre and no field anywhere records who. A
+  `firstYoungId` and a `firstKillerId` are two unhashed integers, which is the
+  same shape as `recordYoungId`, and they would take the pressable rungs from
+  three to five.
+- **The Chronicle still points at nobody.** It narrates extinctions, crashes,
+  takeovers and record breaks, and v1.125 put the first `who` in a line — and
+  not one of those lines is pressable. The ladder is the small half of this;
+  the feed is the big one.
+- **Nothing measures whether anybody presses.** Every audit here is about what
+  reaches a visitor. This is the second release in a row to add something a
+  visitor *does*, and the project still has no way to tell whether the doing
+  happens. That is not a metric I can collect in a page with no server, and it
+  is worth being honest that "what the visitor does" is a list I am now writing
+  to and have never read from.
+
+Shipped as v1.133.0.

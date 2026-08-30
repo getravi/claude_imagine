@@ -71,9 +71,12 @@ import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
 import {
+  MILESTONE_WHO_ATTR,
+  WATCH_LABEL,
   milestoneProgress,
   milestoneRows,
   milestoneSignature,
+  milestoneWho,
   milestonesHTML,
   milestonesSay,
 } from "./milestones.js";
@@ -254,6 +257,7 @@ function boot() {
   wireMinimap($("minimap"));
   wireCastList();
   wireRecordList();
+  wireMilestoneList();
   wireTour();
   buildScenarioChips();
   syncHash();
@@ -638,6 +642,33 @@ function updateMilestones(world) {
   $("milestone-fill").style.width = `${(progress.fraction * 100).toFixed(1)}%`;
 }
 
+// A rung that is about somebody leads to them (v1.133). One listener on the
+// list, like the cast board's and the record board's — but this one resolves a
+// *rung key* rather than an id, because a ladder row is redrawn only when its
+// sentence moves and the animal behind it is replaced far more often than that.
+// `milestoneWho` answers for the pond as it stands at the moment of the press,
+// which is the only frame that can be right.
+function wireMilestoneList() {
+  $("milestone-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(`[${MILESTONE_WHO_ATTR}]`);
+    if (!btn) return;
+    watchMilestone(btn.getAttribute(MILESTONE_WHO_ATTR));
+  });
+}
+
+// Go and watch whoever a rung is about. Shared by the ladder's rows and the
+// banner over the water, so the two cannot come to mean different things — the
+// banner is the same rung read five seconds earlier, and an animal that has
+// died in between gets the same sentence either way.
+function watchMilestone(key) {
+  const id = milestoneWho(world, key);
+  if (id < 0) {
+    flash("They are gone — the pond has moved on.");
+    return;
+  }
+  watchNamed(id);
+}
+
 // ---- The pond cheers (v1.132) ----
 //
 // The other half of the ladder. v1.131 taught this page to say what to wait
@@ -666,9 +697,15 @@ let cheerFree = 0;
 let cheerGlow = null;
 function pumpCheers(now) {
   if (!view.cheerQueue.length || now < cheerFree) return;
-  const line = view.cheerQueue.shift();
+  const { key, line, whoIs } = view.cheerQueue.shift();
   cheerFree = now + CHEER_MS;
   flash(line, CHEER_MS, "cheer");
+  // And, on the half of moments that are about an animal rather than about a
+  // pond, a way to go and see them. The banner is the one place on this page
+  // where a visitor is already looking at the water and has just been told that
+  // somebody did something — the shortest distance there has ever been between
+  // a sentence and the animal it is about.
+  if (whoIs) offerToShow(key, whoIs);
   // Said as well as shown. A listener gets the banner through the same live
   // region a keystroke uses, so the moment is not a thing only sighted readers
   // are told about — and the ladder's own spoken sentence, which names what is
@@ -2509,11 +2546,39 @@ const MEET_FLASH_MS = 4200;
  */
 function flash(msg, ms = FLASH_MS, kind = "") {
   const el = $("flash");
+  // Text, not markup, and it takes any offer the last banner made with it: a
+  // receipt that inherited "👀 Show me" from the celebration before it would
+  // send a visitor to whoever the previous rung was about.
   el.textContent = msg;
   el.classList.toggle("cheer", kind === "cheer");
   el.classList.add("show");
   clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => el.classList.remove("show"), ms);
+  flashTimer = setTimeout(() => {
+    el.classList.remove("show");
+    // The offer goes when the words do, rather than fading with them. An
+    // invisible control is still in the keyboard walk (v1.51) and still under a
+    // finger, and a banner is transparent for as long as the page is open.
+    const go = el.querySelector(".flash-go");
+    if (go) go.remove();
+  }, ms);
+}
+
+// The banner's own control: press it and the camera goes and finds whoever the
+// rung was about. Built here rather than in `cheer.js` for the reason that
+// module states about itself — it is handed rows and never a world, so it can
+// name a subject and cannot resolve one — and appended as an element rather
+// than written into the banner's markup, because `flash` sets `textContent` and
+// this page has kept its one toast free of `innerHTML` since it was written.
+function offerToShow(key, whoIs) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "flash-go";
+  btn.textContent = WATCH_LABEL;
+  // *Show me* is two words a person says out loud and names nobody, which is
+  // right on a row a reader can see and wrong read alone out of a live region.
+  btn.setAttribute("aria-label", `Watch ${whoIs}`);
+  btn.addEventListener("click", () => watchMilestone(key));
+  $("flash").append(btn);
 }
 
 boot();

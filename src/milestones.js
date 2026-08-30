@@ -68,6 +68,34 @@
 // a unit one tick wide for the only panel that needed a finer one. Fifteen green
 // tests said nothing about it.
 //
+// **v1.133: a rung leads to somebody.** The ladder said *a dynasty — one animal
+// has raised five young* and gave a reader no way to find out which one, which
+// is the question anybody asks next and the one this page was worst at
+// answering. Three of the six rungs are about an animal rather than about a
+// pond, and those three are now pressable: press one and the camera goes and
+// finds them. The other three stay text, because *twice as full* is about a
+// pond and neither the first birth nor the first kill leaves a name anywhere in
+// the books.
+//
+// **The sweep that decided which rungs, and when a row is a button.** Twelve
+// seeds, six thousand steps: at the moment a rung is climbed its animal is
+// alive on **12 of 12** ponds for the family, **12 of 12** for the dynasty and
+// **11 of 11** for ten generations deep — so a moment that has a subject at all
+// essentially always has a living one, and **35 of the 69 banners a run raises
+// (50.7%) can now be pressed**. Afterwards the three diverge, and the divergence
+// is the finding: a family row is pressable on **100%** of ticked instants, a
+// deep row on **95.2%**, and a dynasty row on **53.0%** — `records.js` measured
+// 57.0% of its young-record instants naming an animal already dead in v1.124,
+// and this is the same fact from the other side. Half the time, a pond's
+// champion is a memorial.
+//
+// **And the browser found what the sweep could not.** The family's subject was
+// the bloodline's *longest-standing* member for exactly as long as it took to
+// press the button once: the page said hello and then read the obituary, and
+// the second sweep — survival of each candidate rule, 663 picks — explains it.
+// See `familyWho`. A rule that picks the oldest of anything is sorting on the
+// axis that kills it.
+//
 // Determinism: PURE OBSERVER, and latched on the world's clock rather than the
 // browser's. Every predicate reads a monotone quantity the books or the tree
 // already keep, so *whether* a rung is reached could be recomputed from
@@ -102,6 +130,31 @@ export const DEEP_GENERATIONS = 10;
 export const CROWD_MULTIPLE = 2;
 
 /**
+ * The attribute a pressable rung carries in the markup. One name, exported,
+ * because `main.js` reads it back off the click and `records.js` set the
+ * precedent: a magic string typed in two files is a bug waiting for a rename.
+ *
+ * It holds the **rung's key, not an animal's id**, and that is the whole of why
+ * this surface cannot go stale. The cast board and the record board both bake an
+ * id into the markup and are rebuilt whenever the holder changes; a ladder row
+ * is redrawn only when its *sentence* moves, which for a ticked rung is almost
+ * never, while the animal behind it — the family's oldest living member — is
+ * replaced about once every five hundred steps. Carrying the key instead means
+ * the subject is resolved at the moment of the press, out of the pond as it
+ * stands then, and a button is never pointing at somebody the water has
+ * finished with.
+ */
+export const MILESTONE_WHO_ATTR = "data-milestone-who";
+
+/**
+ * What a pressable rung says out loud, on the row and on the banner over the
+ * water alike. Two words, one of them the visitor's: *show me* is the sentence
+ * a person actually says when a page announces that something happened, and it
+ * is the only wording here that promises a *place* rather than a fact.
+ */
+export const WATCH_LABEL = "👀 Show me";
+
+/**
  * The largest a bloodline has ever been, read live off the tree.
  *
  * The tree has kept every lineage's peak since v1.9 and forgets nobody, so this
@@ -114,6 +167,93 @@ function largestFamilyEver(world) {
   let peak = 0;
   for (const s of species) if (s.peak > peak) peak = s.peak;
   return peak;
+}
+
+/**
+ * A living animal by id, or null. The lookup every pressable surface here does:
+ * a subject is a picture of the frame it was drawn in, and its owner can be
+ * eaten between the draw and the press.
+ */
+function livingById(world, id) {
+  if (!(id >= 0)) return null;
+  for (const c of world.creatures) if (c.id === id && !c.dead) return c;
+  return null;
+}
+
+/**
+ * The animal a dynasty is about: whoever holds the young record, if they are
+ * still in the water.
+ *
+ * **Alive on 12 of 12 ponds at the moment the rung is climbed, and on 53.0% of
+ * the ticked instants after it** — which is `records.js`'s v1.124 finding
+ * arriving on a second surface (57.0% of its young-record instants name an
+ * animal already dead), and the reason a ticked rung is a control only
+ * sometimes. A champion here outlives their own coronation about half the time.
+ */
+function dynastyWho(world) {
+  if ((world.stats.recordYoung?.children || 0) < DYNASTY_YOUNG) return null;
+  return livingById(world, world.stats.recordYoungId);
+}
+
+/**
+ * The animal a family is about: the newest living member of the biggest
+ * bloodline this pond has grown.
+ *
+ * **This was the elder, and the first press in a browser buried them.** The
+ * obvious pick for a rung about a bloodline *holding* is the member who has
+ * held longest, and the first time that button was pressed the page answered
+ * `👋 Flint of the Shale Sprigs` and then, a third of a second later,
+ * `🕯️ Flint of the Shale Sprigs — they died of old age`. It is not bad luck.
+ * **The longest-standing member of anything is sorted on exactly the axis that
+ * kills it**, and the sweep says so: over 663 sampled instants the elder's mean
+ * age is 2,815 of a possible 4,200 and only **88.8%** of them are still in the
+ * water sixty steps later, against **97.9%** for the newest member — and at 300
+ * steps, 64.7% against 91.7%. A button that offers to introduce you to somebody
+ * should not be picking the animal closest to dying.
+ *
+ * So the newest, which is also the truer reading of the rung: a family that has
+ * taken hold is one that is still making more of itself, and the proof of it is
+ * the youngest animal carrying the name. Ids only ever climb, so the highest
+ * living id in a species is its newest member and no birthday needs storing.
+ *
+ * Somebody is home on **100%** of the sampled instants — a bloodline big enough
+ * to tick this rung has never been found empty — while the *face* of it turns
+ * over constantly, which costs nothing here: the markup carries the rung's key
+ * and the animal is looked up at the press.
+ */
+function familyWho(world) {
+  const species = (world.phylogeny && world.phylogeny.species) || [];
+  let best = null;
+  for (const s of species) {
+    if (s.peak < FAMILY_MIN_PEAK) continue;
+    if (!best || s.peak > best.peak || (s.peak === best.peak && s.id < best.id)) best = s;
+  }
+  if (!best) return null;
+  let who = null;
+  for (const c of world.creatures) {
+    if (c.dead || c.speciesId !== best.id) continue;
+    if (!who || c.id > who.id) who = c;
+  }
+  return who;
+}
+
+/**
+ * The animal ten generations deep is about: whoever alive is furthest from the
+ * founders, ties going to the elder.
+ *
+ * Guarded on the depth rather than on the latch, so this can never point at
+ * somebody shallower than the rung claims. It can go empty — the deep line dies
+ * out and the pond is left with cousins — which the sweep puts at 4.8% of
+ * ticked instants.
+ */
+function deepWho(world) {
+  let who = null;
+  for (const c of world.creatures) {
+    if (c.dead) continue;
+    if (!who || c.generation > who.generation || (c.generation === who.generation && c.id < who.id))
+      who = c;
+  }
+  return who && who.generation >= DEEP_GENERATIONS ? who : null;
 }
 
 /**
@@ -132,6 +272,14 @@ function largestFamilyEver(world) {
  * `blocked` is the one honest way a rung can be unreachable: a rule switched
  * off. Only the kill has one — every other rung is something a pond does under
  * any settings this page offers.
+ *
+ * `who` is the animal the rung is *about*, if the pond still holds them, and
+ * `whoIs` is what to call them. Three of the six have one and three do not, and
+ * the split is a fact about the rungs rather than a gap: *twice as full* is
+ * about a pond, and neither the first birth nor the first kill leaves a name
+ * behind anywhere in the books. A rung without a `who` is never a control —
+ * v1.51's rule read the other way round, that a control which does nothing is
+ * worse than no control at all.
  */
 export const MILESTONES = Object.freeze(
   [
@@ -163,6 +311,8 @@ export const MILESTONES = Object.freeze(
       mark: "🌿",
       title: "A family takes hold",
       reached: (w) => largestFamilyEver(w) >= FAMILY_MIN_PEAK,
+      who: familyWho,
+      whoIs: "the newest member of that family",
       done: () => "a bloodline big enough to earn a name and a band on the tree",
       standing: (w) => {
         const peak = largestFamilyEver(w);
@@ -174,6 +324,8 @@ export const MILESTONES = Object.freeze(
       mark: "👑",
       title: "A dynasty",
       reached: (w) => (w.stats.recordYoung?.children || 0) >= DYNASTY_YOUNG,
+      who: dynastyWho,
+      whoIs: "the animal that has raised the most young here",
       done: () => `one animal has raised ${DYNASTY_YOUNG} young — this is how a trait spreads`,
       standing: (w) => {
         const best = w.stats.recordYoung?.children || 0;
@@ -197,6 +349,8 @@ export const MILESTONES = Object.freeze(
       mark: "🧬",
       title: "Ten generations deep",
       reached: (w) => (w.stats.maxGeneration || 0) >= DEEP_GENERATIONS,
+      who: deepWho,
+      whoIs: "the animal furthest from the founders",
       done: () =>
         `${DEEP_GENERATIONS} generations of descent from the animals this pond was handed`,
       standing: (w) =>
@@ -281,16 +435,24 @@ function count(n, noun) {
  * happen does not need it explained. The pending ones carry the live number the
  * rung is standing at, because that number is the reason to keep watching.
  *
+ * A ticked row also carries `who`: the id of the animal the rung is about, or
+ * −1 for the three rungs that are about nobody and for the ones whose animal
+ * the pond has since buried. It is resolved *live*, on every call, rather than
+ * remembered from the tick the rung was latched on — a row is a statement about
+ * the pond now, and a button that offers to show a visitor a corpse is worse
+ * than a row that never offered.
+ *
  * @param {{stats:object, phylogeny:object, milestones:Milestones}} world
  * @param {object} config
  * @returns {Array<{key:string, mark:string, title:string, done:boolean,
- *   blocked:boolean, why:string, when:string}>}
+ *   blocked:boolean, why:string, when:string, who:number, whoIs:string}>}
  */
 export function milestoneRows(world, config) {
   const at = (world.milestones && world.milestones.at) || {};
   return MILESTONES.map((m) => {
     const tick = at[m.key] ?? -1;
     if (tick >= 0) {
+      const subject = m.who ? m.who(world) : null;
       return {
         key: m.key,
         mark: m.mark,
@@ -299,6 +461,8 @@ export function milestoneRows(world, config) {
         blocked: false,
         why: m.done(world),
         when: whenReached(tick),
+        who: subject ? subject.id : -1,
+        whoIs: subject ? m.whoIs : "",
       };
     }
     const stop = m.blocked ? m.blocked(config) : null;
@@ -310,8 +474,32 @@ export function milestoneRows(world, config) {
       blocked: Boolean(stop),
       why: stop || m.standing(world),
       when: "",
+      who: -1,
+      whoIs: "",
     };
   });
+}
+
+/**
+ * Who a rung leads to right now, as an id, or −1 for nobody.
+ *
+ * The press-time half of the pair with `milestoneRows`: the markup carries a
+ * rung's key and this turns that key back into an animal, out of the pond as it
+ * stands at the moment of the press rather than the frame the row was drawn in.
+ * A rung still ahead leads nowhere even if its predicate would find somebody —
+ * a ladder that could take a visitor to the animal behind a rung the pond has
+ * not climbed would be showing them the answer to the question it just asked.
+ *
+ * @param {{creatures:Array, stats:object, phylogeny:object, milestones:Milestones}} world
+ * @param {string} key a rung's key
+ * @returns {number} a living creature's id, or −1
+ */
+export function milestoneWho(world, key) {
+  const m = MILESTONES.find((x) => x.key === key);
+  if (!m || !m.who) return -1;
+  if (((world.milestones && world.milestones.at[key]) ?? -1) < 0) return -1;
+  const c = m.who(world);
+  return c ? c.id : -1;
 }
 
 /**
@@ -339,24 +527,38 @@ export function milestoneProgress(rows) {
  * sentence carries a live counter and that counter moving is the one change on
  * this panel most worth redrawing for.
  *
- * @param {Array<{key:string, done:boolean, why:string, when:string}>} rows
+ * Whether a row is pressable joins it, and *only* whether — not who. The
+ * identity behind a family row changes about once every five hundred steps as
+ * its elder dies, and rebuilding the panel for that would redraw six rows to
+ * change one number nothing prints. What a reader can see is the button
+ * appearing and disappearing, so that is what the key carries.
+ *
+ * @param {Array<{key:string, done:boolean, why:string, when:string, who:number}>} rows
  */
 export function milestoneSignature(rows) {
-  return rows.map((r) => `${r.key}:${r.done ? 1 : 0}:${r.when}:${r.why}`).join("|");
+  return rows
+    .map((r) => `${r.key}:${r.done ? 1 : 0}:${r.who >= 0 ? 1 : 0}:${r.when}:${r.why}`)
+    .join("|");
 }
 
 /**
  * The whole ladder, as markup for one list container.
  *
- * Nothing here is a control. Every rung is a statement about the pond and there
- * is no animal behind it to go and look at — v1.51's rule read the other way, a
- * control that does nothing is worse than no control — so the rows are text and
- * `test/targetsize.test.js` has nothing new to walk. The tick and the ring are
- * `aria-hidden`; the row's state is in the words either way, so a listener is
- * told "reached in year 2" rather than a bare glyph.
+ * **A row is a control exactly when pressing it would do something** — that is,
+ * when the rung is about an animal and that animal is still in the water. This
+ * is `records.js`'s rule and v1.51's read the other way: a control that does
+ * nothing is worse than no control, and a listener told that six rows are
+ * pressable when three of them are statements about a pond has been misled
+ * about all six. The other rows keep the shape they had, in a `span`, so the
+ * two kinds of row line up on the same grid.
+ *
+ * The tick and the ring are `aria-hidden`; the row's state is in the words
+ * either way, so a listener is told "1,004 steps in" rather than a bare glyph.
+ * `👀 Show me` is hidden from them too, because the button's own label already
+ * says what pressing it does and says it better — *Show me* names nobody.
  *
  * @param {Array<{key:string, mark:string, title:string, done:boolean,
- *   blocked:boolean, why:string, when:string}>} rows
+ *   blocked:boolean, why:string, when:string, who:number, whoIs:string}>} rows
  */
 export function milestonesHTML(rows) {
   return rows
@@ -364,14 +566,19 @@ export function milestonesHTML(rows) {
       const cls = r.done ? "msrow done" : r.blocked ? "msrow blocked" : "msrow";
       const tick = r.done ? "✓" : r.blocked ? "—" : "○";
       const when = r.done ? `<span class="mswhen">${r.when}</span>` : "";
-      return (
-        `<li class="${cls}">` +
+      const inner =
         `<span class="msstate" aria-hidden="true">${tick}</span>` +
         `<span class="msmark" aria-hidden="true">${r.mark}</span>` +
         `<span class="msname">${r.title}</span>` +
-        `<span class="mswhy">${r.why}</span>${when}` +
-        `</li>`
-      );
+        `<span class="mswhy">${r.why}</span>${when}`;
+      if (r.who >= 0) {
+        return (
+          `<li class="${cls}"><button type="button" ${MILESTONE_WHO_ATTR}="${r.key}" ` +
+          `aria-label="Watch ${r.whoIs}">${inner}` +
+          `<span class="msgo" aria-hidden="true">${WATCH_LABEL}</span></button></li>`
+        );
+      }
+      return `<li class="${cls}"><span class="msstill">${inner}</span></li>`;
     })
     .join("");
 }

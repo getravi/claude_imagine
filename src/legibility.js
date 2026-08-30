@@ -177,7 +177,15 @@ export function toHex({ r, g, b }) {
  * its brightest and `#0c131c` is the panel, and both are grounds no single
  * declaration in either sheet contains.
  *
- * The walk saw 341 text-bearing elements and 39 distinct triples. It is one
+ * v1.109's walk saw 341 text-bearing elements and 40 rows came out of it — the
+ * sentence here said **39** for twenty-four releases, which is this project's
+ * own rule about prose describing a collection (v1.52, v1.78) failing on the
+ * file that states it. The list is 42 now: v1.133 put two more inks on the app
+ * page and measured them with the same probe in the same headless Chromium at
+ * 1280 × 900, flattening the same stack of translucent layers. A row added
+ * without that measurement would be a guess wearing an inventory's clothes.
+ *
+ * It is one
  * viewport and one pond, which is the honest limit of it: a layout that only
  * appears on a phone, or a panel that only appears when something is selected,
  * is a pair this list does not have. `UNMET` below is that gap, said out loud.
@@ -226,6 +234,12 @@ export const TEXT_PAIRS = Object.freeze([
   { page: "app", ink: "--ink", ground: "#0c131c", px: 13, weight: 400, seen: 63, sample: "button 'Genesis'" },
   { page: "app", ink: "--ink", ground: "#070c13", px: 12.5, weight: 400, seen: 2, sample: "div.season-badge 'Summer'" },
   { page: "app", ink: "--ink", ground: "#04070b", px: 16, weight: 400, seen: 1, sample: "p.sr-only 'Arrow keys select a creature…'" },
+  // v1.133's two: the offer on a ladder row that is about an animal, and the
+  // same offer on the banner over the water. One ink, two grounds — the panel
+  // and the toast's own dark plate — and the row's was measured at 390 px as
+  // well as at 1280, where it comes out on the same panel composite.
+  { page: "app", ink: "--accent-2", ground: "#0c131c", px: 12, weight: 400, seen: 2, sample: "span.msgo '👀 Show me'" },
+  { page: "app", ink: "--accent-2", ground: "#09131c", px: 12.5, weight: 400, seen: 1, sample: "button.flash-go '👀 Show me'" },
 ]);
 
 /**

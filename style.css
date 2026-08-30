@@ -554,20 +554,38 @@ body {
   flex-direction: column;
   gap: 2px;
 }
-.msrow {
+/* A rung that is about an animal is a button and the other rows are text
+   (v1.133) — the record board's rule, and the reason both kinds carry their
+   contents in a child rather than in the `li` itself: the two have to lay out
+   on exactly the same grid, or the column of ticks would step sideways three
+   times down the ladder. The pressable ones take the hit bar's 32 px (v1.115),
+   and the rest take it too so the rows stay even. */
+.msrow button,
+.msrow .msstill {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 2px 8px;
+  width: 100%;
+  min-height: 32px;
   padding: 5px 4px;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
   font-size: 13.5px;
   color: var(--ink-faint);
   line-height: 1.45;
 }
+.msrow button:hover {
+  background: var(--bg-panel-2);
+  border-color: var(--line);
+}
 /* A ticked rung is the pond's full-strength ink and a pending one is the
    faintest this page has. That hierarchy *is* the state: it survives a reader
    who cannot tell a tick from a ring, and it costs no colour nobody measured. */
-.msrow.done {
+.msrow.done button,
+.msrow.done .msstill {
   color: var(--ink);
 }
 .msstate {
@@ -601,6 +619,16 @@ body {
   flex: 0 0 auto;
   color: var(--ink-faint);
   font-size: 11.5px;
+  white-space: nowrap;
+}
+/* The offer, in the ladder's own green so that the three rows a visitor can
+   *do* something with read as one thing rather than as three sentences that
+   happen to be underlined. Last in the row and never wrapped: it is the end of
+   the sentence "this happened — 1,004 steps in — show me". */
+.msgo {
+  flex: 0 0 auto;
+  color: var(--accent-2);
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1656,6 +1684,28 @@ details .field {
 .flash.cheer {
   border-color: var(--accent-2);
   box-shadow: 0 0 0 1px rgba(90, 220, 150, 0.18), 0 8px 28px rgba(90, 220, 150, 0.16);
+}
+/* The banner's offer (v1.133): press it and go and find whoever the rung was
+   about. The banner itself takes no pointer — it sits over the water and a
+   toast that eats a drag would be worse than no toast — so the exception is
+   made here and made *conditional on the banner being up*: a control that has
+   faded to nothing is still under a finger, and this one is removed from the
+   markup when it goes, so the rule is a belt to that brace. */
+.flash .flash-go {
+  margin-left: 10px;
+  padding: 4px 10px;
+  min-height: 24px;
+  border-color: var(--accent-2);
+  background: none;
+  color: var(--accent-2);
+  font-size: 12.5px;
+}
+.flash.show .flash-go {
+  pointer-events: auto;
+}
+.flash .flash-go:hover {
+  background: rgba(90, 220, 150, 0.12);
+  border-color: var(--accent-2);
 }
 
 /* ---- The guide (v1.129) ----

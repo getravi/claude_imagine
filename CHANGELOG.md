@@ -4,6 +4,90 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.133.0] — 2026-08-30
+
+The pond starts pointing.
+
+Yesterday the pond learned to make a fuss. It says **👑 A dynasty — one animal
+has raised 5 young, which is how a trait spreads**, and a reader watching the
+water asks the next question immediately and out loud:
+
+> *Which one?*
+
+And the page had no answer. It had never had one. Sixteen releases of teaching
+this page to explain itself have produced a headline, a cast board, a record
+book, a family portrait, a ladder and a guided tour, and the shortest distance
+between a sentence about an animal and *the animal* was still: read the
+sentence, guess, and go hunting through three hundred moving arrowheads.
+
+So a rung that is about somebody now leads to them. Press **👀 Show me** — on
+the ladder row, or on the banner over the water the moment it arrives — and the
+camera goes and finds them, names them, and follows.
+
+**Three of the six rungs, and the other three stay text.** *Twice as full* is
+about a pond; the first birth and the first kill leave no name anywhere in the
+books. A control that does nothing is worse than no control (v1.51 read the
+other way), so the ladder grows exactly three buttons and never six.
+
+**How often is there anybody home? Measured.** Twelve seeds, six thousand steps.
+At the instant a rung is climbed its animal is alive on **12 of 12** ponds for
+the family, **12 of 12** for the dynasty and **11 of 11** for ten generations
+deep — so **35 of the 69 banners a run raises (50.7%) can now be pressed**.
+Afterwards the three part company, and that is the finding: a family row is
+pressable on **100%** of ticked instants, a deep row on **95.2%**, and a dynasty
+row on **53.0%**. `records.js` measured 57.0% of its young-record instants
+naming an animal already dead in v1.124; this is the same fact from the other
+side. **Half the time, a pond's champion is a memorial.**
+
+**And then the browser found what the sweep could not.** The family's subject
+was its *longest-standing* member — the obvious pick for a rung about a
+bloodline holding — and the first press of the first build answered
+`👋 Flint of the Shale Sprigs` and then, a third of a second later,
+`🕯️ Flint of the Shale Sprigs — they died of old age`. Not bad luck: **the
+oldest living member of anything is sorted on exactly the axis that kills it.**
+A second sweep over 663 picks put numbers on it — the elder's mean age is 2,815
+of a possible 4,200 and **88.8%** are still in the water sixty steps later,
+against **97.9%** for the newest member. So the family offers its newest
+member, which is also the truer reading of the rung: a family that has taken
+hold is one still making more of itself.
+
+### Added
+
+- **`milestones.js`** — `who` and `whoIs` on three of the six rungs,
+  `milestoneWho()` for the press, `WATCH_LABEL`, and `MILESTONE_WHO_ATTR`. The
+  attribute carries a **rung's key and never an animal's id**, which is what
+  keeps this surface from going stale: a ladder row is redrawn only when its
+  sentence moves, and the animal behind it is replaced far more often than that.
+- **`test/milestones.test.js`** — that a row is a button exactly when pressing
+  it would find somebody; that every subject offered is alive and is the animal
+  its own rung claims; that a rung still ahead leads nowhere however good a
+  candidate its predicate could find; and the survival rate that chose the
+  family's member, as a rate over a walked run rather than a snapshot.
+- **`test/cheer.test.js`** — that a banner carries its rung and a name for who
+  it leads to and nothing else, and that it offers nobody exactly when its own
+  row does.
+
+### Changed
+
+- **`src/cheer.js`** — `observe()` returns `{ key, line, whoIs }` rather than a
+  string. Still stateless, still never handed a world: it passes the ladder's
+  own answer through and cannot resolve an animal itself.
+- **`src/main.js`** — `wireMilestoneList`, `watchMilestone` (shared by the row
+  and the banner, so the two cannot come to mean different things) and
+  `offerToShow`, which appends the banner's button as an element rather than
+  markup and takes it back off when the words go: an invisible control is still
+  in the keyboard walk (v1.51).
+- **`style.css`** — `.msrow button` / `.msrow .msstill` on one grid, so the
+  ladder's column of ticks does not step sideways three times; `.msgo` and
+  `.flash-go` in the ladder's own green; and the banner's pointer exception,
+  granted only while the banner is up.
+- **`src/legibility.js`** — the two new inks, measured in the same headless
+  Chromium at 1280 × 900 (10.76:1 and 10.80:1 against their own grounds). While
+  there: the prose said the walk produced **39** rows and it has produced **40**
+  since v1.109 — this project's own rule about a number stated in prose about a
+  collection, failing on the file that states it.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each.
+
 ## [1.132.0] — 2026-08-30
 
 The pond starts celebrating.

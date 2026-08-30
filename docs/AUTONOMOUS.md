@@ -73,6 +73,39 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Which one? — shipped in v1.133 (`src/milestones.js`), and what it leaves.**
+  The ladder announced *a dynasty — one animal has raised five young* and gave a
+  reader no way to ask which one. Three of the six rungs are about an animal
+  rather than about a pond, and those three are now pressable on the row and on
+  the banner: **👀 Show me**, and the camera goes and finds them. Three findings.
+  (i) **Half a pond's champions are memorials.** A family row is pressable on
+  100% of ticked instants and a deep row on 95.2%, and a dynasty row on **53.0%**
+  — which is `records.js`'s v1.124 measurement (57.0% of young-record instants
+  name an animal already dead) turning out to be a fact about *records* rather
+  than about that board. (ii) **The oldest of anything is sorted on the axis that
+  kills it.** The family's subject was its longest-standing member until the
+  first press in a browser said hello and read the obituary a third of a second
+  later; 663 picks put the elder at 88.8% alive sixty steps on against the newest
+  member's 97.9%. The general chore this leaves: **for every rule here that picks
+  an extreme, ask what else that quantity predicts** — the biggest body is drawn
+  at birth, the deepest generation is by construction the newest lineage, and no
+  sort key in this project has ever been asked what it correlates with.
+  (iii) **What a surface can bake into its markup is decided by what rebuilds
+  it**: a ladder row is redrawn only when its sentence moves, so it carries the
+  rung's *key* and resolves the animal at the press, where the cast and record
+  boards can safely carry ids. What it leaves: (a) **the banner names nobody** —
+  the name arrives only when you press, and whether a named button is pressed
+  more often is the first question here I have wanted a second visitor for;
+  (b) **two rungs know somebody and cannot say so** — the first young and the
+  first kill each have an animal at their centre and no field records who, and a
+  `firstYoungId`/`firstKillerId` pair is the same shape as `recordYoungId`;
+  (c) **the Chronicle still points at nobody** — every line in the feed is
+  unpressable, including the record lines v1.125 gave a `who`, and that is the
+  big half of this idea where the ladder was the small one; (d) **nothing here
+  measures whether anybody presses anything** — two releases running have added
+  something a visitor *does*, and "what the visitor does" is a list this project
+  now writes to and has never read from.
+
 - **The fuss — shipped in v1.132 (`src/cheer.js`), and what it leaves.** The
   ladder promises a moment and, until this cycle, went silent the instant one
   arrived: a rung was climbed and a circle in a panel below the fold quietly
@@ -1406,6 +1439,31 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A rule that picks an extreme should be asked what else that quantity
+  predicts, and none of mine ever had been.** v1.133's family rung offered the
+  bloodline's *longest-standing* member — correct-sounding, sweep-clean, fifteen
+  tests green — and the first press in a real browser said hello to an animal and
+  read its obituary a third of a second later. The oldest living member of
+  anything is sorted on **exactly the axis that kills it**: 88.8% of those picks
+  survive sixty steps, against 97.9% for the newest member. The chore, five
+  minutes: grep this project for every `reduce`/`sort`/`max` that chooses a
+  *representative* — a record holder, an elder, a biggest, a deepest — and for
+  each one write down what the key correlates with besides itself. The biggest
+  body is drawn at birth, so "biggest" is a gene and not a life. The deepest
+  generation is by construction the newest lineage. A champion by count is old,
+  because counts take time. Every one of those is a claim a surface may be making
+  by accident.
+
+- **Press the thing, in a browser, once.** The sweep answered *how often is
+  anybody home* and could not have found the bug above, because the bug is not in
+  the distribution — it is in what happens in the three hundred milliseconds
+  after a person acts. `node --test` cannot act. A headless Chromium is installed
+  on this machine (`/opt/node22/lib/node_modules/playwright`, and `http-server`
+  for the page), a probe is thirty lines, and the loop is: open the page, dismiss
+  the tour, drive the speed to 20×, wait for the control to appear, **press it**,
+  and read what the page says next. Two cycles running, that has found something
+  neither the tests nor the sweep could: v1.131's clock and v1.133's deathbed.
 
 - **Put the ordinary visitor's hat on for one minute before choosing what to
   build.** v1.132 came out of watching my own page the way a stranger would

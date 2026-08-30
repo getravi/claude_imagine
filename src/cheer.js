@@ -43,6 +43,14 @@
 // gets no settling window at all — its first young can land on step 9 and that
 // is the most deserved banner on the list.
 //
+// **v1.133: a banner can lead somewhere.** Three of the six rungs are about an
+// animal, and `milestones.js` now says which and whether the pond still holds
+// them. A banner carries that through as its rung's key and a flag — never as
+// an id, and never as a creature. The animal is looked up at the moment the
+// visitor presses, out of the pond as it stands then, so a five-second banner
+// cannot promise a corpse: on the measured half of moments that carry a subject
+// at all, the subject can still die inside the five seconds the words are up.
+//
 // Determinism: pure observer, and a *stateless* one — the world is never read
 // here, only the rows `milestones.js` already computed from it. Nothing in this
 // module draws a random number, touches a creature or writes anything a pond
@@ -160,17 +168,20 @@ export class CheerWatch {
    * a grudge against it every frame.
    *
    * @param {Array<{key:string, mark:string, title:string, why:string,
-   *   done:boolean, blocked:boolean}>} rows
+   *   done:boolean, blocked:boolean, who:number}>} rows
    * @param {number} step the pond's clock now
-   * @returns {string[]} banners, in ladder order, oldest rung first
+   * @returns {Array<{key:string, line:string, whoIs:string}>} banners, in
+   *   ladder order, oldest rung first. `whoIs` names who the rung is about, or
+   *   is empty for a rung that is about a pond.
    */
   observe(rows, step) {
-    const lines = [];
+    const said = [];
     for (const row of rows) {
       if (!row.done || this.seen.has(row.key)) continue;
       this.seen.add(row.key);
-      if (step > this.settleUntil) lines.push(cheerLine(row, rows));
+      if (step > this.settleUntil)
+        said.push({ key: row.key, line: cheerLine(row, rows), whoIs: row.whoIs || "" });
     }
-    return lines;
+    return said;
   }
 }

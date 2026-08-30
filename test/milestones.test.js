@@ -49,10 +49,13 @@ import {
   FAMILY_MIN_PEAK,
   MILESTONES,
   MILESTONE_KEYS,
+  MILESTONE_WHO_ATTR,
   Milestones,
+  WATCH_LABEL,
   milestoneProgress,
   milestoneRows,
   milestoneSignature,
+  milestoneWho,
   milestonesHTML,
   milestonesSay,
 } from "../src/milestones.js";
@@ -290,17 +293,184 @@ test("nothing on the ladder uses a word only somebody already here knows", () =>
     assert.doesNotMatch(t, JARGON, `"${t}" is jargon`);
     assert.ok(t.length <= 24, `"${t}" is too long to sit on one line beside a sentence`);
   }
+  // And what a pressable rung promises (v1.133), which is read out of context —
+  // off a row by somebody scanning and off a banner by a screen reader that has
+  // just said the rung — so it clears the same bar.
+  for (const m of MILESTONES) {
+    if (!m.who) continue;
+    assert.doesNotMatch(m.whoIs, JARGON, `"${m.whoIs}" is jargon`);
+    assert.ok(m.whoIs.startsWith("the "), `"${m.whoIs}" does not name a somebody`);
+    assert.ok(m.whoIs.length <= 48, `"${m.whoIs}" is too long for the end of a row`);
+  }
+});
+
+// ---- who a rung is about (v1.133) ----
+//
+// The ladder said *a dynasty — one animal has raised five young* and gave a
+// reader no way to ask which one. Three rungs are about an animal and three are
+// about a pond; these are the claims that keep the first three honest.
+
+test("the rungs that are about an animal are the ones that name who", () => {
+  const withWho = MILESTONES.filter((m) => m.who);
+  assert.deepEqual(
+    withWho.map((m) => m.key),
+    ["family", "dynasty", "deep"],
+    "the set of rungs that lead somewhere has changed without a word being written"
+  );
+  for (const m of withWho) {
+    assert.equal(typeof m.whoIs, "string");
+    // The label is read out of context, off a banner and off a row, so it has
+    // to name somebody rather than repeat the rung. The vocabulary bar it
+    // clears is the ladder's own, checked with the rest of the prose above.
+    assert.ok(m.whoIs.length > 8, `"${m.key}" has a subject and nothing to call them`);
+  }
+  for (const m of MILESTONES) {
+    if (m.who) continue;
+    assert.equal(m.whoIs, undefined, `"${m.key}" is about a pond and has a subject anyway`);
+  }
+});
+
+test("every subject a rung offers is alive, and is the animal that rung claims", () => {
+  // Several ponds at several depths, because which rungs are pressable at any
+  // one instant is exactly what varies: seed 314 at 2,400 steps offers only its
+  // family (the young record's holder is dead and the deep rung is still
+  // ahead), which is the 53.0% and the 4.8% from the sweep showing up in a
+  // fixture rather than in a table.
+  let checked = 0;
+  for (const seed of [42, 314]) {
+    for (const ticks of [1500, 3000, 4500]) checked += auditSubjects(seed, ticks);
+  }
+  assert.ok(checked >= 6, `only ${checked} subjects were offered across six ponds`);
+});
+
+/** Every subject the ladder offers this pond, checked against its own rung. */
+function auditSubjects(seed, ticks) {
+  const { world, config } = stepped(seed, ticks);
+  const rows = milestoneRows(world, config);
+  const alive = (id) => world.creatures.find((c) => c.id === id && !c.dead) || null;
+  let checked = 0;
+  for (const r of rows) {
+    if (r.who < 0) continue;
+    checked++;
+    const c = alive(r.who);
+    assert.ok(c, `the "${r.key}" row offers an animal the pond has buried`);
+    if (r.key === "dynasty") {
+      assert.equal(c.id, world.stats.recordYoungId, "the dynasty is not the record holder");
+      assert.ok(world.stats.recordYoung.children >= DYNASTY_YOUNG);
+    }
+    if (r.key === "deep") {
+      assert.ok(c.generation >= DEEP_GENERATIONS, "the deep rung offers a shallow animal");
+      const deepest = Math.max(...world.creatures.filter((x) => !x.dead).map((x) => x.generation));
+      assert.equal(c.generation, deepest, "somebody living is further from the founders");
+    }
+    if (r.key === "family") {
+      const species = world.phylogeny.species.filter((s) => s.peak >= MULLER_MIN_PEAK);
+      const biggest = species.reduce((a, s) => (a && a.peak >= s.peak ? a : s), null);
+      assert.equal(c.speciesId, biggest.id, "the family rung offers somebody else's relative");
+      // The newest, which is the whole of the fix below.
+      const newest = world.creatures
+        .filter((x) => !x.dead && x.speciesId === biggest.id)
+        .reduce((a, x) => (a && a.id >= x.id ? a : x), null);
+      assert.equal(c.id, newest.id, "the family offers somebody other than its newest member");
+    }
+  }
+  return checked;
+}
+
+test("the family offers its newest member, because its oldest is the one about to die", () => {
+  // The browser found this and the sweep explained it: the first press of the
+  // first build said hello to the family's elder and read their obituary a
+  // third of a second later. Over 663 sampled instants the elder's mean age is
+  // 2,815 of a possible 4,200 and 88.8% of them are still in the water sixty
+  // steps on; the newest member's numbers are 87 and 97.9%. The oldest of
+  // anything is sorted on the axis that kills it.
+  //
+  // The measurement below is one pond of that sweep, so it is deterministic:
+  // seed 42 offers 39 subjects at this stride and 39 of them are alive sixty
+  // steps later. The bar is 90% because that is the number the rejected rule
+  // fails and this one clears by a distance.
+  const { world } = stepped(42, 1200);
+  const picks = [];
+  for (let i = 0; i < 3600; i++) {
+    world.step();
+    // The verdicts first: a pick made on a multiple of a hundred falls due
+    // sixty steps later, which is never one.
+    for (const p of picks) {
+      if (p.dueAt === world.tick) p.survived = world.creatures.some((c) => c.id === p.id && !c.dead);
+    }
+    if (world.tick % 100 !== 0) continue;
+    const id = milestoneWho(world, "family");
+    if (id >= 0) picks.push({ id, dueAt: world.tick + 60 });
+  }
+  const judged = picks.filter((p) => p.survived !== undefined);
+  const lived = judged.filter((p) => p.survived).length;
+  assert.ok(judged.length >= 20, `only ${judged.length} picks — too few to be a rate`);
+  assert.ok(
+    lived / judged.length >= 0.9,
+    `the family's subject survives sixty steps only ${((100 * lived) / judged.length).toFixed(1)}% ` +
+      `of the time (${lived}/${judged.length}) — the elder rule scored 88.8%`
+  );
+});
+
+test("a rung still ahead leads nowhere, whoever its predicate could find", () => {
+  const { world } = stepped(314, 2400);
+  assert.ok(milestoneWho(world, "family") >= 0, "the fixture pond has no family to offer");
+  // The latch is what makes a subject offerable, not the predicate: a ladder
+  // that could walk a visitor to the animal behind a rung the pond has not
+  // climbed would be answering the question it is in the middle of asking.
+  const at = world.milestones.at.family;
+  world.milestones.at.family = -1;
+  assert.equal(milestoneWho(world, "family"), -1, "an unticked rung handed over an animal");
+  world.milestones.at.family = at;
+  assert.equal(milestoneWho(world, "young"), -1, "a rung about a pond handed over an animal");
+  assert.equal(milestoneWho(world, "nonesuch"), -1, "an unknown rung is an animal");
+});
+
+test("the offer says the same two words wherever it appears", () => {
+  assert.match(WATCH_LABEL, /Show me/);
+  const pond = stepped(314, 2400);
+  const html = milestonesHTML(milestoneRows(pond.world, pond.config));
+  assert.ok(html.includes(WATCH_LABEL), "the ladder writes its own wording");
+  // The banner over the water uses the constant too, so the row and the toast
+  // cannot come to say different things about the same rung.
+  assert.match(main, /WATCH_LABEL/, "main.js retypes the offer instead of importing it");
+  assert.match(main, /milestoneWho\(/, "main.js resolves a subject some other way");
+  assert.match(main, /function wireMilestoneList/, "nothing listens to the ladder");
+  assert.match(main, /function watchMilestone/, "the row and the banner do not share a handler");
 });
 
 // ---- the markup ----
 
-test("the ladder draws one row per rung and no controls at all", () => {
+test("a rung is a control exactly when pressing it would find somebody", () => {
   const { world, config } = stepped(314, 1200);
   const rows = milestoneRows(world, config);
   const html = milestonesHTML(rows);
   assert.equal((html.match(/<li class="msrow/g) || []).length, rows.length);
-  assert.equal((html.match(/<button/g) || []).length, 0, "a rung is not something to press");
   assert.equal((html.match(/<a /g) || []).length, 0, "a rung is not somewhere to go");
+  // v1.133's rule, and `records.js`'s before it: a control that does nothing is
+  // worse than no control, so the count of buttons is the count of rows with a
+  // living animal behind them and never the count of ticked rows.
+  const pressable = rows.filter((r) => r.who >= 0);
+  assert.equal((html.match(/<button/g) || []).length, pressable.length);
+  assert.ok(pressable.length > 0, "1,200 steps and no rung on this pond leads anywhere");
+  for (const r of pressable) {
+    assert.ok(r.done, `"${r.key}" is pressable while it is still ahead`);
+    assert.ok(
+      html.includes(`${MILESTONE_WHO_ATTR}="${r.key}"`),
+      `"${r.key}" is pressable and carries no rung to look up`
+    );
+    assert.ok(html.includes(`aria-label="Watch ${r.whoIs}"`), `"${r.key}" promises nobody`);
+    assert.ok(world.creatures.some((c) => c.id === r.who && !c.dead), "a row names the dead");
+  }
+  // The markup carries the rung's key and never an animal's id, which is what
+  // lets a row outlive the animal behind it without going stale.
+  assert.doesNotMatch(html, /data-milestone-who="\d/, "a row has baked in an id");
+  assert.equal(
+    (html.match(/class="msstill"/g) || []).length,
+    rows.length - pressable.length,
+    "a row that is not a button has lost the shape of one"
+  );
+  assert.equal((html.match(/class="msgo"/g) || []).length, pressable.length);
   for (const r of rows) {
     assert.ok(html.includes(`>${r.title}</span>`), `"${r.title}" is not on the ladder`);
     assert.ok(html.includes(`>${r.why}</span>`), `"${r.why}" is not on the ladder`);
