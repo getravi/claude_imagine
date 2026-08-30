@@ -70,6 +70,13 @@ import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
+import {
+  milestoneProgress,
+  milestoneRows,
+  milestoneSignature,
+  milestonesHTML,
+  milestonesSay,
+} from "./milestones.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
@@ -385,6 +392,7 @@ function loop(now) {
   updateCast(world);
   updateEvolved(world);
   updatePortrait(world);
+  updateMilestones(world);
   updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
@@ -595,6 +603,29 @@ function updatePortrait(world) {
   if (sig === view.portraitSig) return;
   view.portraitSig = sig;
   $("portrait").innerHTML = portraitHTML(pair);
+}
+
+// ---- How far this pond has got (v1.131) ----
+//
+// The one panel here that points forward. `milestones.js` owns the rungs, the
+// wording and the arithmetic; the latch is in `World.step`, so this is only an
+// adapter onto three elements — exactly as `updateRecords` is one onto a list.
+//
+// Keyed on the rows' own sentences, which is the record board's key and for a
+// sharper version of its reason: a pending rung carries a live counter ("the
+// busiest parent so far has raised 3"), so this panel has a signature that
+// moves while nothing on it has been *reached*. That is the point. The number
+// creeping toward five is the reason a visitor stays to watch it get there.
+function updateMilestones(world) {
+  const rows = milestoneRows(world, config);
+  const sig = milestoneSignature(rows);
+  if (sig === view.milestoneSig) return;
+  view.milestoneSig = sig;
+  const progress = milestoneProgress(rows);
+  $("milestone-list").innerHTML = milestonesHTML(rows);
+  $("milestone-count").textContent = progress.text;
+  $("milestone-say").textContent = milestonesSay(rows);
+  $("milestone-fill").style.width = `${(progress.fraction * 100).toFixed(1)}%`;
 }
 
 // ---- The book of records (v1.124) ----

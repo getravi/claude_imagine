@@ -75,10 +75,17 @@ import {
  * half, and `test/statesweep.test.js` holds the two in step both ways so
  * neither can grow a field the other has not heard of.
  *
- * `null` means no channel watches it. Two fields carry it, both recomputed from
- * the tick at the end of every step, so there is nothing for a channel to
- * watch. The third — `chronicle`, a real output that nothing watched — is the
- * lead this sweep left in v1.91 and got its own channel in v1.94.
+ * `null` means no channel watches it. Three fields carry it. Two are
+ * recomputed from the tick at the end of every step, so there is nothing for a
+ * channel to watch. The third is the ladder (v1.131), and it is the one case
+ * where "no channel" is an argument rather than an absence: every rung is a
+ * predicate on quantities `booksFingerprint` and `observationFingerprint`
+ * already cover, so two ponds agreeing on those cannot disagree here unless
+ * `milestones.js` is broken — which is a claim `test/milestones.test.js` makes
+ * directly, and is what a seventh channel would have been testing indirectly.
+ * `chronicle` was the same shape of gap in v1.91 and did *not* survive the
+ * argument, because it has a generator and latches of its own; this has
+ * neither.
  */
 export const STATE_OWNERS = {
   config: "config",
@@ -101,6 +108,7 @@ export const STATE_OWNERS = {
   corpseGrid: "state",
   stats: "books",
   chronicle: "chronicle",
+  milestones: null,
 };
 
 /**

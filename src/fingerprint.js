@@ -219,6 +219,14 @@ export const WORLD_UNHASHED = {
     "it moves no picture of the pond; v1.91 measured it inert with respect to " +
     "the simulation, which made it a hole in the instrument rather than in " +
     "determinism, and a hole in an instrument is still a hole",
+  milestones: "the ladder (v1.131) — six integers, each one the tick a " +
+    "predicate on the books first read true. Outside the state hash for the " +
+    "tree's and the books' reason, and it needs no channel of its own: every " +
+    "rung is a pure function of quantities `booksFingerprint` and " +
+    "`observationFingerprint` already cover, so two worlds agreeing on those " +
+    "and disagreeing here would be a bug in this file rather than in the pond. " +
+    "`test/milestones.test.js` asserts exactly that, which is the check a " +
+    "seventh channel would have been",
 };
 
 /**

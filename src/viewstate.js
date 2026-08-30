@@ -168,6 +168,14 @@ const FRESH = Object.freeze({
   // over what is *drawn*, so a pond that inherited it would find it wrong on
   // the first frame and write.
   portraitSig: "",
+  // The ladder (v1.131). World-scoped, and this one could not be anything else:
+  // the panel's rows are latched *in the world*, so a reset hands the page a
+  // pond whose six ticks are all −1 again. A signature inherited across that
+  // reset would leave six ticked rungs on screen over a pond that has done
+  // nothing — the same failure as `castSig`'s, one panel down and far more
+  // visible, because a stale row here is a claim about history rather than
+  // about an animal.
+  milestoneSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

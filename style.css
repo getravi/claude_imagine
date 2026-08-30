@@ -486,6 +486,114 @@ body {
   text-align: center;
 }
 
+/* ---- How far this pond has got (v1.131) ----
+   The records board's box and the records board's three inks, and no fourth:
+   the one colour on this panel that is not already in `test/legibility.test.js`'s
+   inventory is the progress fill, and that is a `background` on an empty span
+   rather than an ink on a letter. A ladder whose green carried meaning nobody
+   had measured would be a legibility regression dressed as encouragement — the
+   state of every rung is in its words, its tick and its ink hierarchy, and the
+   bar is the only thing that is merely nice. */
+.milestones {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px 14px;
+}
+.milestones-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 7px;
+}
+.milestones-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.milestones-count {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+/* Three pixels of the only quantity on this page a person can read without
+   reading anything. Empty and `aria-hidden`, because the same fraction is
+   spelled out in the count beside the heading. */
+.msbar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bg-panel-2);
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+.msbar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: var(--accent-2);
+  transition: width 0.4s ease;
+}
+.mslist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.msrow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 5px 4px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  line-height: 1.45;
+}
+/* A ticked rung is the pond's full-strength ink and a pending one is the
+   faintest this page has. That hierarchy *is* the state: it survives a reader
+   who cannot tell a tick from a ring, and it costs no colour nobody measured. */
+.msrow.done {
+  color: var(--ink);
+}
+.msstate {
+  flex: 0 0 auto;
+  width: 13px;
+  font-size: 12px;
+  text-align: center;
+}
+.msmark {
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+.msname {
+  flex: 0 0 auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* The sentence wraps to its own line on a narrow screen for the record board's
+   measured reason: at 390 px the label takes the row, and a rung that says
+   *A dynasty* without saying how close it is is half a row. */
+.mswhy {
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.msrow:not(.done) .mswhy {
+  color: var(--ink-faint);
+}
+.mswhen {
+  flex: 0 0 auto;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
 /* ---- Pond records (v1.124) ----
    The cast board's box, one section down, and its inks: no ink/ground pair here
    that `test/legibility.test.js` has not already walked. The one shape it does

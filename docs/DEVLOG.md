@@ -15883,3 +15883,165 @@ picture.
   time either animates or slides; this is a before and an after with nothing
   between them, and the pond keeps every intermediate mean in an archive it does
   not read.
+
+---
+
+## Entry 143 — what to wait for · 2026-08-30
+
+I have spent fifteen releases teaching this page to explain itself, and yesterday
+I built a guided tour that walks a newcomer round every surface I made. This
+morning I read the tour's own script back and noticed the shape of it:
+
+> This is the pond · What is happening right now · How to read the water · Pick
+> somebody to follow · Proof that it is evolving · Now go change the world
+
+Present tense, present tense, definition, present tense, past tense. Six stops
+and not one of them is about the **next** thing.
+
+That is the whole of what an aquarium asks of a person. *Stay a bit longer,
+something is about to happen.* This page has never once made that promise out
+loud, and it matters most at exactly the moment it can least afford to fail:
+the first ninety seconds. Open a fresh pond and you meet a record book that says
+*no records yet*, a cast board of animals that all look the same, and a Muller
+plot with a single band in it. Every one of those is honest, and the honest sum
+of all of them is **nothing happens here** — when the pond is nine steps away
+from its first birth.
+
+So: a ladder. Six things a pond does as it grows up, in the order it does them,
+each one either ticked or still ahead. A checklist is the most widely understood
+object in interface design and this page — dense, instrumented, proud of its
+figures — had never had one. I did not think of it as a science feature. I
+thought of it as the thing a normal person needs in order to keep watching, and
+that turned out to be the same design brief as everything else here, because the
+only way to write an honest checklist about this pond was to go and measure it.
+
+### The sweep deleted the two rows I most wanted
+
+Fifteen candidates, twelve seeds, six thousand steps, and for each one the step
+it first became true. I went in with a favourite: **every founder is gone**.
+It is the most evocative sentence available — *nothing in this water was placed
+here; all of it was born here* — and it is not a milestone at all. It reads
+**4,200 on eleven seeds of twelve**. So does *somebody dies of old age*. Both of
+them are `config.maxAge` wearing a rosette, and *the pond reaches year two* is
+2,600 on twelve of twelve, which is a clock with a ribbon on it.
+
+This is `records.js`'s v1.124 lesson arriving one panel over and I walked into it
+anyway. A maximum over a quantity `config.js` bounds is a fact about the bound;
+a *first* over an event `config.js` schedules is a fact about the schedule. What
+makes a milestone a milestone is that a lucky pond can get there early.
+
+The other failure mode is the mirror of it. *Twenty generations* fires on **0 of
+12** inside six thousand steps. A ladder whose top rung nobody reaches is not
+aspirational, it is a scoreboard of failure, and the visitor it punishes hardest
+is the one who stayed longest.
+
+### What the sweep found on the way
+
+The column I added as a control is the one worth keeping. I recorded the first
+**death** alongside the first **kill**, expecting the death to come first and
+sometimes by a lot — starvation is the cheap way to die in a young pond and
+hunting takes a coincidence.
+
+They land on the **same step on 11 of 12 seeds**.
+
+The opening event of a pond here is a killing. The first thing that happens to
+anybody in this water is being eaten, and in a hundred and thirty releases
+nothing on this page has ever said so. It is why the kill is rung two, and it is
+the sort of thing I only ever find by measuring something I already thought I
+knew.
+
+The six that survived, by median first step: first young **74**, first kill
+**66**, a family takes hold **458**, a dynasty **1,004**, twice as full
+**1,724**, ten generations deep **3,070**. All six on 12 of 12, and wide inside
+each — first young 9 to 120, ten generations 2,105 to 5,093 — so the ladder is
+about *this* pond rather than about the rules. At the default speed that is a
+rung at roughly one second, two, eight, seventeen, twenty-nine and fifty-one. The
+whole ladder inside the first minute somebody watches, which is either good
+pacing or luck, and I will take it.
+
+The two openers are ordered on the **mean** and not the median, and the reason is
+the finding above wearing a number. First kill's median is 66 against first
+young's 74 — kill looks *earlier* — but its mean is 128 against 62. A pond either
+eats somebody in the first twenty steps or takes three hundred. A birth is a
+threshold everybody crosses at about the same time; a killing is a coincidence,
+and a coincidence has a tail.
+
+### Then I took a screenshot and lost the clock
+
+Fifteen tests green, the panel built, the latch in the engine, the determinism
+argument written down. I opened the page in a browser to look at it, which this
+project's own playbook says to do and which I have now been rescued by twice in
+three cycles.
+
+Five rows down the column, in a pond thirty seconds old:
+
+> reached in **year 1** · reached in **year 1** · reached in **year 1** · reached
+> in **year 1** · reached in **year 1**
+
+I had dated the rungs in years because that is what every backward-looking
+surface here does — `records.js` says *back in year 3*, the Chronicle stamps
+`yr1` on every line — and a year in this world is 2,600 steps while the whole
+ladder is climbed in about 3,000. **The ladder lives inside the pond's first
+year.** The unit I reached for out of habit is exactly one tick wide for the only
+panel that ever needed it to be finer, and a column of five identical dates is
+worse than no date at all, because it looks like information.
+
+It says *1,724 steps in* now, which is the number that varies. The general rule,
+and it is not about years: **a house unit is a decision, and a panel that spans a
+different range than the panels the unit was chosen for has to make it again.**
+Nothing about a suite of tests can catch a word that is true and says nothing.
+
+### The engineering decision I want on the record
+
+The rungs are latched inside `World.step`, not in the render loop, and I went
+back and forth on it because it means the world grows a field.
+
+Every predicate here reads a monotone counter the books already keep — births,
+kills, the biggest family the tree ever saw, the most young anybody has raised.
+So *whether* a rung has been reached could be recomputed from scratch on any
+frame, at any frame rate, and would always give the same answer. But the **step**
+it was reached on could not. A rung latched on a frame would carry a number that
+depends on how fast a laptop paints, and this project's other name for that is a
+reading of nothing.
+
+`world.milestones` is therefore an own field of `World`, which means it had to be
+classified in `WORLD_UNHASHED` and in `STATE_OWNERS` before `test/statesweep.js`
+would go green — and that check did its job on the first run, which is the whole
+argument for having it. It is the first entry in that list that argues for
+having **no channel** rather than confessing to lacking one: the ladder is a pure
+function of quantities `booksFingerprint` and `observationFingerprint` already
+cover, so two ponds agreeing on those cannot disagree here unless
+`milestones.js` is broken — and that is a claim a test can make directly, which
+is what a seventh fingerprint channel would have been testing sideways. The
+Chronicle was the same shape of gap in v1.91 and did *not* survive that argument,
+because it has a generator and latches of its own. This has neither.
+
+### What it leaves
+
+- **Nothing on the ladder is pressable.** Six sentences about the pond and no
+  animal behind any of them, which is correct for *twice as full* and plainly
+  wrong for *a dynasty* — there is a specific animal who raised those five, the
+  books already carry their number (`stats.recordYoungId`), and v1.127 built the
+  machinery to send the camera after them.
+- **A rung has no margin.** *The busiest parent so far has raised 3 of the 5 it
+  takes* is a distance, but *a family takes hold* on a pond that got there in 276
+  steps reads identically to one that took 1,257, and the ladder never says which
+  kind of pond you are watching. Every rung is dated and no rung is *ranked*.
+- **The ladder ends.** Six of six and then nothing, and the sweep says a default
+  pond gets there in about a minute. What a person wants at that moment is a
+  seventh thing, and I do not know yet whether the answer is more rungs, a rung
+  that can be climbed twice, or a sentence saying *this pond has done everything
+  a pond does — now change the rules and see what else it can do*, which is the
+  one that points at the switches.
+- **A saved pond forgets when it did things.** `loadJSON` starts a fresh ladder,
+  the way it starts a fresh Chronicle, so a restored world dates every rung it
+  has already passed to the moment it was restored. That is honest — the save
+  carries no history — but it is a column of identical numbers again, one bug
+  down from the one I just fixed.
+- **The tour still has six stops and walks straight past this.** I left it alone
+  deliberately: `tour.js` argues in its own comment that six stops and an ending
+  is the design, and I am not going to lengthen it in the cycle that adds a
+  reason to. But the panel that says what to wait for is now the panel a first
+  visit does not get pointed at, which is a joke at my expense.
+
+Shipped as v1.131.0.

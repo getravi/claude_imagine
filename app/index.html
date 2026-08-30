@@ -148,6 +148,31 @@
           <ul class="keylist" id="key-list"></ul>
         </section>
 
+        <!-- The ladder (v1.131). Every other panel on this page points at the
+             present tense or at the past; this is the only one that says what to
+             *wait* for. Six things a pond does as it grows up, in the order the
+             sweep says it does them, each either ticked with the year it
+             happened or still ahead with the live number it is standing at.
+             `src/milestones.js` owns the rungs, the wording and the arithmetic;
+             the latch itself lives in `World.step` beside the Chronicle's,
+             because a rung's *tick* cannot be recovered at frame rate even
+             though its truth can. No row here is a control: there is no animal
+             behind a rung to go and look at. -->
+        <section class="milestones" aria-labelledby="milestones-h">
+          <div class="milestones-head">
+            <h2 id="milestones-h">🌱 How far this pond has got</h2>
+            <span class="milestones-count" id="milestone-count">none of 6 yet</span>
+          </div>
+          <div class="msbar" aria-hidden="true"><span id="milestone-fill"></span></div>
+          <!-- The panel in one sentence, before the six rows a listener would
+               otherwise have to walk to find the one that matters. It names
+               what is still *ahead*, because that is what this panel is for and
+               it is the half a sighted reader gets from the ink hierarchy at a
+               glance. `milestonesSay` writes it. -->
+          <p class="sr-only" id="milestone-say"></p>
+          <ul class="mslist" id="milestone-list"></ul>
+        </section>
+
         <!-- The cast list (v1.123). `👋 Meet somebody` picks one animal off a
              shortlist and throws the rest away; this is the rest of it. One row
              per stand-out, in the pond's own order of interest, each a button

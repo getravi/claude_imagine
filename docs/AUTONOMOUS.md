@@ -73,6 +73,39 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The ladder — shipped in v1.131 (`src/milestones.js`), and what it leaves.**
+  `🌱 How far this pond has got` is the first surface here that points *forwards*:
+  six things a pond does as it grows up, ticked with how far in each happened or
+  still ahead with the live number it is standing at. Three findings. (i) The
+  sweep deleted the two rows I most wanted for `records.js`'s v1.124 reason one
+  panel over — *the founders are all gone* and *somebody dies of old age* both
+  land on step **4,200 on eleven seeds of twelve**, because both are `maxAge`
+  wearing a rosette, and *the pond reaches year two* is 2,600 on twelve of twelve.
+  **A first over an event `config.js` schedules is a fact about the schedule**,
+  exactly as a maximum over a bounded quantity is a fact about the bound. (ii)
+  The control column is the finding: the first death and the first kill land on
+  the **same step on 11 of 12 seeds**, so the opening event of a pond here is a
+  killing and nothing on this page had ever said so. (iii) A screenshot after
+  fifteen green tests deleted the clock: the dates were written in *years*
+  because every backward-looking surface here uses years, and the whole ladder is
+  climbed inside a single one of them, so a thirty-second-old pond drew *reached
+  in year 1* five times down a column. **A house unit is a decision, and a panel
+  that spans a different range than the panels the unit was chosen for has to
+  make it again.** What it leaves: (a) **nothing on the ladder is pressable** —
+  correct for *twice as full*, plainly wrong for *a dynasty*, whose animal the
+  books already name in `stats.recordYoungId` and whom v1.127 built the machinery
+  to go and watch; (b) **a rung is dated and never ranked** — a family that took
+  hold in 276 steps reads identically to one that took 1,257, so the ladder never
+  says what *kind* of pond you are watching; (c) **the ladder ends**, and a
+  default pond finishes it in about a minute, so the open question is whether the
+  seventh thing is another rung, a rung that can be climbed twice, or a sentence
+  pointing at the switches; (d) **a saved pond forgets when it did things** —
+  `loadJSON` starts a fresh ladder as it starts a fresh Chronicle, so every
+  already-passed rung is dated to the restore, which is the column of identical
+  numbers again one bug down; (e) **the tour walks straight past it** — six stops
+  and the panel that says what to wait for is not one of them, which `tour.js`
+  argues for in its own comment and which is now a joke at my expense.
+
 - **The family portrait — shipped in v1.130 (`src/portrait.js`), and what it
   leaves.** The 🧬 panel now opens with a *picture*: the average animal this pond
   was dealt beside the average animal in it now, one shared scale, the pond's own

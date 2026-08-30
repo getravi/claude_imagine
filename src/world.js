@@ -45,6 +45,7 @@ import { NeatGenome } from "./neat.js";
 import { Stats } from "./stats.js";
 import { Phylogeny } from "./phylogeny.js";
 import { Chronicle } from "./chronicle.js";
+import { Milestones } from "./milestones.js";
 import { FertilityField, seasonalFactor, seasonPhase, dayNightVisionFactor } from "./environment.js";
 import { TerrainField } from "./terrain.js";
 import { BarrierField } from "./barriers.js";
@@ -132,6 +133,15 @@ export class World {
     // The chronicle narrates the world's history. Pure observer, like the
     // phylogeny — reads state, never changes it, uses its own RNG.
     this.chronicle = new Chronicle(config);
+
+    // The ladder of things a pond does as it grows up (v1.131). Pure observer
+    // again, and here for a reason the panel could not supply itself: every
+    // rung is a predicate on a monotone counter the books already keep, so
+    // *whether* it has been reached could be recomputed at any frame — but the
+    // *tick* it was reached on could not, and a readout that reads differently
+    // on a slow laptop is not a reading of this pond.
+    this.milestones = new Milestones();
+    this.milestones.observe(this, 0);
   }
 
   /**
@@ -842,6 +852,7 @@ export class World {
     this.stats.sample(this);
     this.phylogeny.sample(this, this.tick);
     this.chronicle.observe(this, this.tick);
+    this.milestones.observe(this, this.tick);
   }
 
   /**
@@ -969,5 +980,10 @@ export class World {
     for (const c of this.creatures) this.phylogeny.assign(c, this.tick, null);
     this.phylogeny.sample(this, this.tick);
     this.chronicle = new Chronicle(this.config); // fresh history for the loaded world
+    // And a fresh ladder, for the Chronicle's reason: a save carries no record
+    // of when this pond did anything, so a restored world dates its milestones
+    // to the moment it was restored rather than inventing years it cannot know.
+    this.milestones = new Milestones();
+    this.milestones.observe(this, this.tick);
   }
 }

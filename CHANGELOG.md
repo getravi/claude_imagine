@@ -4,6 +4,120 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.131.0] — 2026-08-30
+
+The page finally says what to wait for.
+
+Fifteen releases of this project have gone into teaching this page to explain
+itself, and yesterday's guided tour walked a newcomer round all of it. Every one
+of those surfaces answers a question in the present tense or the past. The
+headline says what is happening now. The cast board names who is worth watching
+now. `🧬 How they have changed` says how far the animals have moved from the ones
+this pond started with. `🏆 Pond records` keeps the best this water has ever done,
+and the Chronicle is a log of things that have finished happening.
+
+Not one of them tells a visitor **what to wait for** — which is the whole of what
+an aquarium asks of a person.
+
+It matters most at exactly the moment the page has the least room for error. Open
+a fresh pond and you are shown a record book that says *no records yet*, a cast
+of animals that all look alike, and a plot of species with one band in it.
+Everything on the screen is honest, and the honest sum of all of it is **nothing
+happens here** — when the pond is *nine steps* from its first birth and four
+hundred from its first family.
+
+**🌱 How far this pond has got** is a ladder of six things a pond does as it
+grows up, in the order it does them: the first young, one animal eating another,
+a family taking hold, a dynasty, twice as full as it started, ten generations
+deep. A rung it has climbed is ticked and says how far in it happened. A rung
+still ahead carries the live number it is standing at — *the busiest parent so
+far has raised 3 of the 5 it takes* — because that number creeping toward its
+threshold is a reason to stay and *not yet* is a reason to leave. A checklist is
+the most widely understood object in interface design, and this page — dense,
+instrumented, proud of its figures — has never had one.
+
+**The sweep that chose the rungs deleted the two rows I most wanted, for
+`records.js`'s reason one panel over.** Twelve seeds, six thousand steps, the
+first-occurrence step of fifteen candidates. *The founders are all gone* reads
+**4,200 on eleven seeds of twelve**, and *somebody dies of old age* reads the
+same number, because both of them are `maxAge` wearing a rosette; *the pond
+reaches year two* is 2,600 on twelve of twelve, which is a clock. A milestone
+that lands on the same step on every pond is a fact about `config.js`. The other
+failure mode is the opposite one: *twenty generations* fires on **0 of 12**
+inside six thousand steps, and a ladder whose top rung is unreachable is a
+scoreboard of failure.
+
+**And it found something nothing else on this page has ever said.** The first
+death and the first kill land on the *same step* on **11 of 12 seeds**. The
+opening event of a pond here is not a starvation, it is a killing — the first
+thing that happens to anybody in this water is being eaten.
+
+The six that survived, by median first step: first young **74**, first kill
+**66**, a family takes hold **458**, a dynasty **1,004**, twice as full
+**1,724**, ten generations deep **3,070**. All six fire on 12 of 12, and the
+spread inside each is wide enough that the ladder is about *this* pond rather
+than about the rules — first young ranges 9–120, ten generations 2,105–5,093. At
+the default speed that is a rung at about one second, two, eight, seventeen,
+twenty-nine and fifty-one: the whole ladder inside the first minute somebody
+watches.
+
+The two openers are ordered on the **mean** and not the median, which is the
+finding above wearing a number. The first kill's median is 66 against the first
+birth's 74, but its mean is 128 against 62, because a pond either eats somebody
+in the first twenty steps or takes three hundred. A birth is a threshold
+everybody crosses at about the same time; a killing is a coincidence.
+
+**A fourth finding, and the sweep did not produce it — a screenshot did.** The
+dates were written in *years*, because that is the clock every backward-looking
+surface here uses: `records.js` has said *back in year 3* since v1.124 and the
+Chronicle stamps every line `yr1`. Thirty seconds of a default pond drew
+**reached in year 1** five times down one column. A year in this world is 2,600
+steps and the whole ladder is climbed in about 3,000, so **the ladder lives
+inside the pond's first year**, and the unit this project reaches for by habit is
+one tick wide for the only panel that needed it to be finer. Fifteen green tests
+had nothing to say about it. The rung now says *1,724 steps in*, which is the
+number that actually varies.
+
+### Added
+
+- **`src/milestones.js`** — the six rungs, their two sentences each, the latch
+  and every letter on the panel. Pure observer: no DOM, no world it writes to,
+  no random number, no colour of its own. The floors are imported rather than
+  retyped — a family is the Muller plot's own `MULLER_MIN_PEAK`, for the reason
+  `records.js` gives: two surfaces disagreeing about the same word is the shape
+  this project keeps finding on the wrong side of a bug.
+- **`World.milestones`** — the latch itself, run inside `World.step` beside the
+  Chronicle's. Every rung is a predicate on a monotone counter the books already
+  keep, so *whether* it has been reached could be recomputed at any frame rate —
+  but the *step* it was reached on could not, and a readout that reads
+  differently on a slow laptop is not a reading of this pond.
+- **`test/milestones.test.js`** — that a rung never comes back unticked and
+  carries the first step it was true on; that two ponds agreeing on
+  `booksFingerprint` and `observationFingerprint` agree on the ladder; that
+  latching and drawing it move nothing and draw nothing; that every rung fires on
+  every pond swept and none of them fires on the same step twice; that a rung a
+  switched-off rule forbids says so instead of waiting forever, without changing
+  the denominator; and that both halves of every sentence clear the vocabulary
+  bar `records.js`, `cast.js`, `headline.js`, `key.js` and `whoswho.js` clear.
+
+### Changed
+
+- **`src/fingerprint.js`** — `WORLD_UNHASHED.milestones`, and it is the first
+  entry there that argues for having no channel rather than confessing to one.
+  The Chronicle was the same shape of gap in v1.91 and did not survive the
+  argument, because it has a generator and latches of its own; the ladder has
+  neither, and `test/milestones.test.js` makes the equivalence claim directly.
+- **`src/statesweep.js`** — `STATE_OWNERS.milestones`, so the walk over a live
+  world's own fields still accounts for every one of them.
+- **`src/viewstate.js`** — `milestoneSig`, world-scoped. It could not be
+  anything else: the rows are latched *in the world*, so a signature inherited
+  across a reset would leave six ticked rungs on screen over a pond that has done
+  nothing.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each for the new panel.
+- **`test/prosecounts.test.js`** — a claim row for the ladder's size, declared by
+  the cycle that creates the collection rather than six releases after it goes
+  stale.
+
 ## [1.130.0] — 2026-08-29
 
 Big was never old.

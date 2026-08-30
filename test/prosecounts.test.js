@@ -57,6 +57,7 @@ import { TILES, GROUPS } from "../src/hud.js";
 import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
 import { GIVEN } from "../src/cast.js";
 import { SWITCHES, worldSwitches } from "../src/switches.js";
+import { MILESTONES } from "../src/milestones.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -256,6 +257,18 @@ const CLAIMS = [
     size: () => Object.keys(FIELD_REPORTS).length + Object.keys(FIELD_SILENT).length,
     phrase: "{n} fields of a creature",
     sites: ["docs/ARCHITECTURE.md", "src/inspect.js", "test/inspect.test.js"],
+  },
+  {
+    // v1.131's collection, declared in the cycle that creates it — the habit
+    // this file keeps asking for, applied on arrival rather than six releases
+    // later. The panel itself states the same count in *digits* ("3 of 6 so
+    // far"), which is deliberate and is not a site: a progress line is read at
+    // a glance and a glance reads a numeral, so the count on the page is pinned
+    // by `test/milestones.test.js` against `MILESTONES.length` instead.
+    what: "the ladder's rungs",
+    size: () => MILESTONES.length,
+    phrase: "{n} milestones",
+    sites: ["src/milestones.js", "test/milestones.test.js"],
   },
 ];
 
