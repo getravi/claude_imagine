@@ -2732,6 +2732,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   a datum and is not worth a second call. Nothing about this cycle's change
   could have been diagnosed in the interval, and the interval is exactly where
   four cycles have now spent their time.
+  **v1.131 is the fifth real one, it cost nothing, and it added a tell none of
+  the paragraphs above names.** `get_workflow_run` sat at `in_progress` with
+  `updated_at` frozen at `01:02:31` — four seconds after creation — while
+  `list_workflow_jobs` correctly showed both jobs `completed: success`, the
+  deploy step finishing at `01:08:50`. That is v1.42's cross-check working
+  exactly as written, so there is no new lesson in it. The new *datum* is the
+  third endpoint: **`get_workflow_run_usage` returned `run_duration_ms: 386000`,
+  and a run duration is a number a finished run has.** A frozen record cannot
+  fake it, because it is computed from the jobs rather than copied from the run
+  row — so it is a one-call, unambiguous answer to *did this finish?* and it
+  should be the second call after a suspect `in_progress`, before any waiting at
+  all. And one environment fact worth having in the file: **the fallback of just
+  looking at the deployed page was not available this cycle.** This container's
+  network policy returns `403` for `getravi.github.io`, and it returns it as an
+  empty body — so a `curl | grep` for the new markup answers "not there" whether
+  the deploy failed or the proxy refused, which is a readout whose negative
+  answer and whose failure mode are the same string (v1.60). Check the status
+  line, never the grep count.
   **v1.124 thought it was the fifth and was not, and the correction is better
   than the note.** I watched an `in_progress` record and read it as frozen for
   what felt like an hour against a 366 s baseline — every symptom the four
