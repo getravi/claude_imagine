@@ -4,6 +4,103 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.138.0] — 2026-08-31
+
+The narrator that summarises a streak.
+
+Three releases running, this project's own notes ended with the same complaint
+about the panel a visitor actually sits and reads:
+
+> **the champion streak reads like a log file** — eight *Onyx raises their Nth*
+> in a row, and the fix is not fewer controls, it is a narrator that summarises
+> a streak.
+
+A champion beats their own record seven times for every once they are
+dethroned, so the Chronicle's best story arrived as a stack of one sentence with
+a different ordinal in it:
+
+```
+👶  3,144 steps in   Tamsin raises their 9th.                      👀 Show me
+👶  3,283 steps in   Tamsin raises their 10th.                     👀 Show me
+👶  3,366 steps in   Tamsin raises their 11th.                     👀 Show me
+```
+
+Now it arrives as one line that says more than any of them did:
+
+```
+👶  3,366 steps in   Tamsin raises their 11th — 5 times in a row,  👀 Show me
+                     over 668 steps.
+```
+
+**The measurement.** Twelve seeds, six thousand steps, sampled every fifty —
+the feed as a reader finds it, not as it ends:
+
+- **13.3%** of adjacent lines on screen were the line above them restated.
+  Afterwards, **1.6%**.
+- **11.1%** of all lines fold away (2,286 of 20,541), and the panel goes from a
+  mean of **14.50** lines to **12.88**.
+- **58.3%** of sampled instants have a streak on screen. The longest run is
+  **six**: seed 80808's champion goes from their 7th young to their 12th across
+  847 steps, six lines differing by one word.
+
+**Only somebody can be on a streak, and a real pond had to say so.** The obvious
+rule — group lines that read alike — quietly collapsed the pond's own
+milestones. *The pond swells past 100 creatures* and *…past 200 creatures* are
+one sentence shape and **170 adjacent pairs** over the sweep, and a summary of
+them would have printed the 200 and swallowed the 100. Those are two different
+facts wearing one sentence, where a champion's tally is one fact restated. So a
+run needs a `who`: a lineage is a population and the pond is everybody, and
+neither of them is *somebody again*.
+
+**A shape, not a prefix.** Sentences are compared with their numbers blanked
+out, so *raises their 11th* and *raises their 12th* are the same line while *is
+the first animal here to raise 5 young* is not — that one is the interesting
+line in the run, the moment a pond first had a champion, and a rule that grouped
+by subject alone would have folded it into the tally under it. The naive rule
+folds 17.3% of lines; this one folds 11.1%, and the difference is entirely lines
+worth keeping.
+
+**Two, not three.** A run of three is unambiguously a log file and a run of two
+is only a repetition, and the tighter floor was the honest-looking choice until
+the sweep priced it: at three, **half the seeds never fold a single line**, and
+one of them is seed 314 — the default pond, the one every screenshot and the
+landing page use. A feature the front door never shows is a feature nobody has.
+
+**Nothing is hidden and nothing is dropped.** The row says how many lines it
+stands for and over what stretch, it keeps the newest line's subject — so the
+press that was on the top of the run is the press that is on the summary — and
+it takes its *identity* from the run's first line. That last part is what lets
+the panel patch one row when a champion goes again instead of rebuilding a list
+full of buttons, which is v1.136's finding: a row rebuilt under a pointer is a
+press the browser throws away.
+
+**A row stopped being an event**, and two comparisons had to be told. The
+panel's "did this change?" test has now been widened twice by a release that
+gave a row a new way to change — a subject dying in v1.137, a streak growing in
+this one — so it compares the whole painted row rather than a field of it.
+v1.137's note was that a boolean is only as good as the number of states its
+subject has; the answer to that is to stop counting states.
+
+### Added
+
+- `src/streak.js` — the fold and the sentence, in a module of its own because
+  the record board points at champions too and will want it. Pure function of an
+  array of events: no world, no drawing, no random number.
+- `pondclock.js` learns the clock's second question: `stepsOver`, how *long*
+  something took. The difference from `stepsIn` is exactly the word "in" — a
+  moment against a length — and it lives with the other one because three
+  panels once spelled a moment three ways, each of them where it was needed.
+- `test/streak.test.js` — six claims, including one that finds the pond's own
+  same-shape milestones in a real chronicle and insists they stay separate.
+
+### Changed
+
+- `feed.js` builds one row per *line on screen* rather than one per event, and
+  rows carry `count`, a stable `key` and a `paint` signature.
+- `test/memorial.test.js`'s whole-share claim now checks both halves of what it
+  meant: every row about an animal is a press, and the rows account for every
+  line the chronicle wrote.
+
 ## [1.137.0] — 2026-08-31
 
 The book of the dead.

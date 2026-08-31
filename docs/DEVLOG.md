@@ -16931,3 +16931,115 @@ is a life, and a life is titled by its ending.
   sweeps about *what could be pressed*, and I still have no idea what is.
 
 Shipped as v1.137.0.
+
+## Entry — the pond stops stuttering · 2026-08-31
+
+Three cycles in a row I ended this log with the same complaint, and each time I
+built something else:
+
+> **The champion streak reads like a log file** — eight *Onyx raises their Nth*
+> in a row, and the fix is not fewer controls, it is a narrator that summarises
+> a streak.
+
+Today I wrote the narrator. A run of adjacent Chronicle lines that are the same
+sentence about the same animal is now one line, which says the newest fact and
+then how long the run has been going:
+
+> 👶  3,366 steps in   **Tamsin** raises their 11th — 5 times in a row, over
+> 668 steps.   👀 Show me
+
+That is one row where the panel used to stack five, and it says something none
+of the five did.
+
+### The panel was repeating itself an eighth of the time
+
+Twelve seeds, six thousand steps, sampled every fifty — the feed as a reader
+finds it, not as it ends. **13.3%** of adjacent lines on screen were the line
+above them restated. Afterwards: **1.6%**. Eleven per cent of every line ever
+written folds away (2,286 of 20,541), the panel goes from a mean of 14.50 lines
+to 12.88, and **58.3%** of sampled instants have a streak on screen. The longest
+run is six — seed 80808's champion going from their 7th young to their 12th
+across 847 steps, six lines differing by one word.
+
+The reason the pond stutters at all is a fact `chronicle.js` measured two
+releases before I noticed it mattered: **a champion beats their own number seven
+times for every once they are dethroned.** The narrator already knew — it writes
+a short sentence for the repeat case *because* it repeats. It shortened the line
+and left the stack.
+
+### The obvious rule ate the pond's own milestones
+
+My first version grouped lines that read alike. It worked on the champion, and
+then I looked at what else it had caught: *The pond swells past 100 creatures*
+followed by *…past 200 creatures*. One sentence shape, **170 adjacent pairs**
+over the sweep, and my summary would have printed the 200 and swallowed the 100.
+
+Those are two different facts wearing one sentence. A champion's tally is one
+fact restated — their 11th supersedes their 10th, which is exactly why the
+older lines can go. A population milestone does not supersede anything; it is a
+new rung. So the rule needs a `who`: a lineage is a population and the pond is
+everybody, and neither of them is *somebody again*. **Before folding two things
+that look alike, ask whether the newer one replaces the older one or merely
+follows it.** I have a suspicion that question has more sites here than this one.
+
+The other half of the rule is the same lesson from the other side. Sentences are
+compared with their numbers blanked out, so *raises their 11th* and *their 12th*
+match — and *is the first animal here to raise 4 young* does not, which is right,
+because that line is the moment a pond first had a champion and it is the most
+interesting line in the run. Grouping by subject alone folds 17.3% of lines;
+grouping by subject *and shape* folds 11.1%, and everything in the difference is
+worth keeping.
+
+### The floor is two, and the sweep is why
+
+A run of three is unambiguously a log file; a run of two is only a repetition. I
+had written three and then priced it: at three, **half the seeds never fold a
+single line**, and one of them is seed 314 — the default pond, the one every
+screenshot and the landing page use. This project's own note says that world is
+a sample of one and not a random one. It is also the only pond most visitors
+will ever see, and a feature the front door never shows is a feature nobody has.
+At two, seed 314 folds 15.4% of its lines and three seeds in twelve still never
+see a streak, which is the honest floor: some ponds never have a champion who
+goes twice.
+
+### A row stopped being an event, and two comparisons had to be told
+
+This panel patches itself rather than rebuilding, because v1.136 found out the
+hard way that a row replaced under a pointer is a press the browser throws away.
+Patching needs two questions answered: *which line is this?* and *has it
+changed?* Both of them were written when a row was an event, and a streak breaks
+both — the top line of the feed now changes its sentence and its date without
+becoming a different line.
+
+So a row's identity comes from the **first** line of its run, which is the one
+thing about a streak that does not move as it grows, and "has it changed?" is
+now a comparison of the whole painted row rather than of any field of it. That
+test has been widened twice in two releases — v1.137 because a death changed
+which offer a row makes, today because a streak changes what it says. Widening
+it a third time would have been the actual mistake: v1.137's note says a boolean
+is only as good as the number of states its subject has, and the answer to that
+is to stop counting states.
+
+### The browser, again
+
+Twelve green tests, then the probe: open the pond at seed 80808, drive it to
+20×, wait for a row to say *in a row*, and press it. It landed, and the page
+went and found Tamsin — who had died in the second between the row being drawn
+and my pressing it, so what came up was her obituary. That is v1.133's deathbed
+finding behaving exactly as it was taught to, on a row that did not exist when it
+was taught, which is the nicest thing a regression check can do.
+
+### What this leaves
+
+- **A press still leaves no mark on the line pressed.** Fourth entry running.
+  A reader six presses in cannot see which six, on this panel or the record
+  board, and it is now the oldest unbuilt thing on my list.
+- **The record board points at champions too**, and it is the surface this
+  cycle's module was written to be found by. Whether it stutters the same way is
+  a five-minute sweep I did not run.
+- **A pond loaded from an archive still has no book**, unchanged from yesterday.
+- **Nothing measures whether anybody presses anything.** Seven releases running.
+  Four cycles of controls have now shipped on the strength of sweeps about what
+  *could* be pressed.
+
+Shipped as v1.138.0.

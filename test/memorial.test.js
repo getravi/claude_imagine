@@ -97,8 +97,18 @@ test("every animal line has somewhere to lead: the water, or the book", () => {
   // Claim 2, which is claims 1 and 3 arriving on the panel. Measured over
   // twelve seeds at 100.0% of 8,402 lines; three seeds here, because what is
   // protected is that the share is *whole* rather than its third decimal.
+  //
+  // **A row stopped being an event in v1.138** and the arithmetic here had to
+  // say which of the two it is counting. A streak of a champion's tallies is
+  // one row standing for several lines, so "every animal line leads somewhere"
+  // is now two statements: every row about an animal is a press, and the rows
+  // between them account for every line the chronicle wrote. Both are checked,
+  // because only the second is the claim this test was written for — a fold
+  // that quietly dropped a line would keep the first one true.
   let lines = 0;
   let pressable = 0;
+  let animalRows = 0;
+  let covered = 0;
   for (const seed of [42, 123, 777]) {
     const { world, memorial } = watchedPond(seed);
     const alive = living(world);
@@ -109,10 +119,21 @@ test("every animal line has somewhere to lead: the water, or the book", () => {
       remembered: (id) => memorial.has(id),
     });
     for (const e of world.chronicle.events) if (e.who >= 0) lines++;
-    for (const r of rows) if (r.kind === "watch" || r.kind === "story") pressable++;
+    for (const r of rows) {
+      if (r.kind === "watch" || r.kind === "story") pressable++;
+      if (r.name) {
+        animalRows++;
+        covered += r.count;
+      }
+    }
   }
   assert.ok(lines > 20, "too few animal lines to make a claim about");
-  assert.equal(pressable, lines, `${lines - pressable} of ${lines} animal lines still lead nowhere`);
+  assert.equal(
+    pressable,
+    animalRows,
+    `${animalRows - pressable} of ${animalRows} animal rows still lead nowhere`
+  );
+  assert.equal(covered, lines, `${lines - covered} animal lines are on no row at all`);
 });
 
 test("the book has no size of its own — the panel's buffer bounds it", () => {

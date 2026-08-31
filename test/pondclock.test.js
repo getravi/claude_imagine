@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
-import { stepsIn, yearOf } from "../src/pondclock.js";
+import { stepsIn, stepsOver, yearOf } from "../src/pondclock.js";
 import { milestoneRows } from "../src/milestones.js";
 import { recordRows } from "../src/records.js";
 import { seasonLabel } from "../src/describe.js";
@@ -29,6 +29,19 @@ test("a step is said the way a person says an elapsed time", () => {
   assert.equal(stepsIn(2), "2 steps in");
   assert.equal(stepsIn(1724), "1,724 steps in", "a four-figure number is not grouped");
   assert.equal(stepsIn(1000000), "1,000,000 steps in");
+});
+
+test("a stretch is said in the same unit and without the moment's preposition", () => {
+  // The second thing a clock is asked (v1.138). The difference between the two
+  // is exactly the "in": *1,724 steps in* is when something happened and *847
+  // steps* is how long something took, and a summary that borrowed the first
+  // would read "6 times in a row, over 847 steps in", which dates the end of a
+  // streak instead of measuring it.
+  assert.equal(stepsOver(847), "847 steps");
+  assert.equal(stepsOver(1), "1 step");
+  assert.equal(stepsOver(1200), "1,200 steps", "a stretch is grouped like a moment");
+  assert.ok(!stepsOver(847).endsWith(" in"), "a length is not a coordinate");
+  assert.equal(stepsIn(847), `${stepsOver(847)} in`, "the two disagree about the number or the unit");
 });
 
 test("the clock never uses a word only somebody already here knows", () => {

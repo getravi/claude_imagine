@@ -53,6 +53,16 @@
 // Chronicle prints is now a door: the living ones lead to the water, and the
 // rest tell you what happened.
 //
+// **v1.138 stopped it stuttering.** A champion beats their own record seven
+// times for every once they are dethroned, so the panel's best story arrived as
+// eight copies of one sentence with a different ordinal in it — 13.3% of the
+// lines on screen repeated the line above them. `streak.js` folds a run of those
+// into the newest of them plus how long the run has been going, which takes that
+// figure to **1.6%** and the panel from a mean of 14.50 lines to 12.88. Nothing
+// is dropped: the row says how many lines it stands for and over what stretch,
+// and it keeps the newest line's subject, so the press that was on the top of
+// the run is the press that is on the summary.
+//
 // Three rules, all of them borrowed from panels that got here first:
 //
 //  1. **A row is a control exactly when pressing it would do something**
@@ -81,6 +91,7 @@ import { WATCH_LABEL } from "./milestones.js";
 import { STORY_LABEL } from "./memorial.js";
 import { stepsIn } from "./pondclock.js";
 import { eventWho } from "./chronicle.js";
+import { streakMsg, streakRuns } from "./streak.js";
 
 /** Marks the button that leads to an animal; carries the creature id. */
 export const FEED_WHO_ATTR = "data-feed-who";
@@ -93,7 +104,13 @@ export const FEED_STORY_ATTR = "data-feed-story";
 export const FEED_EMPTY = "The pond is young. Its story will appear here…";
 
 /**
- * The feed's rows: plain data, newest first, one per event.
+ * The feed's rows: plain data, newest first, one per line on screen.
+ *
+ * One per *event* until v1.138, and the difference is the streak: a run of the
+ * same sentence about the same animal is one row that says the newest of them.
+ * `streak.js` owns which lines those are and how the summary reads; what
+ * happens here is that the row takes its subject, its date and its press from
+ * the newest line of the run, which is the only one of them still current.
  *
  * @param {Array<{tick:number, icon:string, cat:string, msg:string, who:number,
  *   sp:number}>} events oldest first, as the chronicle keeps them
@@ -102,7 +119,8 @@ export const FEED_EMPTY = "The pond is young. Its story will appear here…";
  *   the pond as it stands now, and the book of the dead beside it
  * @returns {Array<{tick:number, when:string, icon:string, cat:string,
  *   who:number, sp:number, told:number, name:string, msg:string, kind:string,
- *   live:boolean, line:string, action:string, label:string, fresh:boolean}>}
+ *   live:boolean, count:number, key:string, paint:string, line:string,
+ *   action:string, label:string, fresh:boolean}>}
  */
 export function feedRows(events, lookups = {}) {
   const alive = lookups.alive || (() => false);
@@ -110,8 +128,8 @@ export function feedRows(events, lookups = {}) {
   const familyName = lookups.familyName || (() => "");
   const remembered = lookups.remembered || (() => false);
   const rows = [];
-  for (let i = events.length - 1; i >= 0; i--) {
-    const e = events[i];
+  for (const run of streakRuns(events)) {
+    const e = run.event;
     const name = eventWho(e);
     // The page's one clock (v1.135). This column read `t244 · yr1` for a
     // hundred and thirty-four releases; `pondclock.js` has the argument.
@@ -130,6 +148,14 @@ export function feedRows(events, lookups = {}) {
     // itself has to be told the difference or it leaves the offer to walk over
     // to a body that is no longer there.
     const kind = watchable ? "watch" : tellable ? "story" : highlightable ? "family" : "";
+    // What the row says. A run of one says what its event said; a run of more
+    // says the newest of them and then how long the run has been going.
+    const msg = run.count > 1 ? streakMsg(e.msg, run.count, run.span) : e.msg;
+    // The line as one spoken sentence, for the accessible name of the button —
+    // which replaces its contents rather than adding to them, so a label of
+    // "Watch Cove" would hand a listener the verb and take the story away.
+    const line = `${when}. ${name ? `${name} ` : ""}${msg}`;
+    const label = kind === "" ? "" : tellable ? STORY_LABEL : WATCH_LABEL;
     rows.push({
       tick: e.tick,
       when,
@@ -139,13 +165,27 @@ export function feedRows(events, lookups = {}) {
       sp: highlightable ? e.sp : -1,
       told: tellable ? e.who : -1,
       name,
-      msg: e.msg,
+      msg,
       kind,
       live: kind !== "",
-      // The line as one spoken sentence, for the accessible name of the button
-      // — which replaces its contents rather than adding to them, so a label of
-      // "Watch Cove" would hand a listener the verb and take the story away.
-      line: `${when}. ${name ? `${name} ` : ""}${e.msg}`,
+      /** How many of the chronicle's lines this row stands for. */
+      count: run.count,
+      // Which line this *is*, taken from the **oldest** member of the run — the
+      // one thing about a streak that does not move when it grows. Keyed on the
+      // newest, a champion going again would replace the row at the top of the
+      // panel with a stranger, and a panel that cannot recognise its own head
+      // rebuilds itself from scratch — which is v1.136's finding, that a
+      // rebuilt row is a press the browser throws away.
+      key: `${run.first.tick}|${run.first.msg}`,
+      // Everything the markup below is made of, as one string. A row used to
+      // change in exactly one way while staying the same line — a subject dying
+      // — and its `kind` was enough to notice. A streak growing changes the date
+      // and the sentence too, so what the caller compares is now the whole
+      // painted row rather than a field of it: v1.137's note said a boolean is
+      // only as good as the number of states its subject has, and the answer to
+      // that is to stop counting states.
+      paint: `${kind}|${line}|${label}`,
+      line,
       action: watchable
         ? `Watch ${name}`
         : tellable
@@ -156,12 +196,12 @@ export function feedRows(events, lookups = {}) {
       // The words on the offer itself. Two of the three presses put the thing
       // the sentence is about into the water and share the ladder's promise;
       // the third opens a card, and says so — see `STORY_LABEL`.
-      label: kind === "" ? "" : tellable ? STORY_LABEL : WATCH_LABEL,
+      label,
       // The newest line, which the panel flashes in. Not the newest *event* —
       // the pond does two things on one step often enough to matter (v1.135
       // measured 7.4% of adjacent lines sharing a step) and the animation is
       // about a line arriving, not about a step turning over.
-      fresh: i === events.length - 1,
+      fresh: rows.length === 0,
     });
   }
   return rows;
@@ -170,15 +210,18 @@ export function feedRows(events, lookups = {}) {
 /**
  * One line's identity: what makes it *that* line rather than a redraw of it.
  *
- * Not whether it is a control — that is the one thing about a row that changes
- * while the row stays the same line, and telling those two apart is the whole
+ * Not whether it is a control, and since v1.138 not what it says either — a
+ * streak keeps its identity while its sentence and its date both change, which
+ * is the point. Both of those are things about a row that move while the row
+ * stays the same line, and telling those apart from a *new* line is the whole
  * reason this exists. The caller uses it to work out how many lines have
  * arrived since the last frame, so it can leave the rest of the panel alone.
  *
- * @param {{tick:number, msg:string}} row
+ * @param {{key:string}} row a row from `feedRows`, which is where the answer
+ *   is worked out — a run knows where it started and a row on its own does not
  */
 export function feedLineKey(row) {
-  return `${row.tick}|${row.msg}`;
+  return row.key;
 }
 
 /**
@@ -208,7 +251,14 @@ export function feedSignature(rows) {
   let sig = rows.length + "|";
   const newest = rows[0];
   if (newest) sig += newest.tick + newest.msg + newest.who + newest.sp + "|";
-  for (const r of rows) sig += r.kind === "" ? "-" : r.kind[0];
+  // Per row: which control it is, and — since v1.138 — how many lines it stands
+  // for. A streak that grows moves the newest line's own text and is caught
+  // above; a streak at the *bottom* shrinks silently as the chronicle's buffer
+  // drops its oldest member, which changes what a row says without changing the
+  // number of rows or the head of the list. It takes a feed of 140 lines to see
+  // that and a mean pond writes 14, so this is a character against a rare day
+  // rather than a cost anybody pays.
+  for (const r of rows) sig += (r.kind === "" ? "-" : r.kind[0]) + (r.count > 1 ? `+${r.count}` : "");
   return sig;
 }
 

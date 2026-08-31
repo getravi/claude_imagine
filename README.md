@@ -463,6 +463,7 @@ src/
   chronicle.js      narrates notable events into a timeline (observation only)
   feed.js           the Chronicle as a panel: which lines lead somewhere, and where
   memorial.js       the book of the dead: every name in the story opens something
+  streak.js         when the same thing keeps happening, say it once and say how often
   headline.js       the pond in one plain sentence, ranked by urgency
   cast.js           what each animal is called, and which one is worth watching
   key.js            the key to the water: what every mark in the pond means

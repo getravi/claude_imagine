@@ -96,3 +96,26 @@ export function yearOf(tick, config) {
 export function stepsIn(tick) {
   return `${tick.toLocaleString()} ${tick === 1 ? "step" : "steps"} in`;
 }
+
+/**
+ * How *long* something took, in the same unit: `"847 steps"`.
+ *
+ * The second thing a clock is asked and the first time this page has needed it.
+ * `stepsIn` dates a moment and this measures a stretch, and the difference is
+ * exactly the "in" — v1.131 chose that word against a browser because *1,724
+ * steps in* is how a person says an elapsed time and *at step 1,724* is a
+ * coordinate. A duration is neither: it is a length, and a length that borrowed
+ * the coordinate's clause would read *six records over 847 steps in*, which
+ * says when the last one landed and not how far apart they were.
+ *
+ * It lives here rather than in the one narrator that wants it (v1.138's streaks)
+ * for this module's founding reason: three panels spelled a moment three ways
+ * because each of them spelled it where it was needed. A second unit is a second
+ * chance to end up with three dialects, and this one starts with one.
+ *
+ * @param {number} span how many steps the stretch covers
+ * @returns {string} a phrase, no preposition and no full stop
+ */
+export function stepsOver(span) {
+  return `${span.toLocaleString()} ${span === 1 ? "step" : "steps"}`;
+}

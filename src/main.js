@@ -1076,16 +1076,17 @@ function paintChronicle(feed, rows) {
   if (head > 0) feed.insertAdjacentHTML("afterbegin", feedHTML(rows.slice(0, head)));
   while (feed.children.length > rows.length) feed.lastElementChild.remove();
   // Everything from `head` down is a line that was already on screen. It needs
-  // redrawing only if it has changed state — which is a button becoming a span,
-  // or the other way round, or (since v1.137) one offer becoming a different
-  // one, and none of the three can be patched with a `textContent`. The test is
-  // the row's *kind* rather than whether it is a control at all: an animal
-  // dying turns `👀 Show me` into `📖 Their story`, and a boolean holds both
-  // frames identical while the offer goes on pointing at an empty pond.
+  // redrawing only if something about it moved — a button becoming a span, one
+  // offer becoming a different one (v1.137), or a streak taking in another line
+  // and restating its own sentence (v1.138) — and none of those can be patched
+  // with a `textContent`. The test is the row's whole painted form rather than
+  // any one field of it: this comparison has now been widened twice by a
+  // release that gave a row a new way to change, and `paint` is the version of
+  // it that does not need widening again.
   for (let i = head; i < rows.length; i++) {
     const before = prev[i - head];
     const li = feed.children[i];
-    if (!li || !before || before.kind === rows[i].kind) continue;
+    if (!li || !before || before.paint === rows[i].paint) continue;
     li.outerHTML = feedHTML([rows[i]]);
   }
   // The flash belongs to the newest line and to nothing else.

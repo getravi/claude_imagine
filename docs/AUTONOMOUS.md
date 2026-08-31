@@ -73,6 +73,42 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The narrator that summarises a streak — shipped in v1.138 (`src/streak.js`),
+  and what it leaves.** Three cycles running this list ended with the same
+  sentence: the champion streak reads like a log file. It did, and the panel was
+  repeating itself an eighth of the time — **13.3% of adjacent lines on screen
+  were the line above them restated**, against 1.6% now. A run of the same
+  sentence about the same animal is one line that says the newest fact and the
+  stretch behind it (*Tamsin raises their 11th — 5 times in a row, over 668
+  steps*), which folds **11.1%** of all lines and takes the panel from a mean of
+  14.50 lines to 12.88. Four findings. (i) **Before folding two things that look
+  alike, ask whether the newer one replaces the older one or merely follows it.**
+  My first rule grouped lines that read alike and quietly ate the pond's own
+  milestones — *swells past 100 creatures* then *…past 200*, one shape, **170
+  adjacent pairs** over the sweep, and the summary would have printed the 200 and
+  swallowed the 100. A champion's tally supersedes itself; a rung does not
+  supersede the rung below it. That question has more sites here than this one.
+  (ii) **The tighter-looking floor was the one the default pond could not
+  show.** A run of three is unambiguously a log file, so I wrote three — and at
+  three, half the seeds fold nothing at all and one of them is seed 314, the pond
+  behind every screenshot and the landing page. This project's note about seed
+  314 being a sample of one usually argues for *distrusting* it; here it argues
+  the other way, because it is also the only pond most visitors ever see. A
+  feature the front door never shows is a feature nobody has. (iii) **A
+  comparison widened twice is a comparison asking to be replaced.** The feed's
+  "has this row changed?" test grew from a boolean (v1.136) to a `kind`
+  (v1.137) to the whole painted row (this cycle), because each release gave a
+  row a new way to change while staying the same line. Counting states loses to
+  comparing the artefact. (iv) **A rule with a subject test needs a pond to test
+  it**, not a fixture: the milestone collision was invisible in unit tests and
+  obvious the moment I printed a real chronicle. What it leaves: (a) **a press
+  still leaves no mark on the line pressed**, fourth cycle running and now the
+  oldest unbuilt thing here; (b) **the record board points at champions too** and
+  nobody has asked whether it stutters the same way — a five-minute sweep;
+  (c) **a pond loaded from an archive still has no book**; (d) **nothing measures
+  whether anybody presses anything**, seven releases running, and this is the
+  fourth cycle of press-work shipped on a sweep about what *could* be pressed.
+
 - **The book of the dead — shipped in v1.137 (`src/memorial.js`), and what it
   leaves.** Four cycles running this list ended with the same unbuilt thing:
   63.4% of the Chronicle's animal lines name somebody buried, and
@@ -1586,6 +1622,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Before folding two things that look alike, ask whether the newer one
+  replaces the older one or merely follows it.** v1.138's streak narrator worked
+  on the first try and was quietly wrong about a second population of lines: I
+  grouped Chronicle lines that read alike, which is correct for *Onyx raises
+  their 10th / 11th / 12th* — each of those supersedes the one before it, which
+  is exactly why the older ones can go — and wrong for *The pond swells past 100
+  creatures / …past 200*, which are two rungs and 170 adjacent pairs over the
+  sweep. A summary of those prints the 200 and swallows the 100. The guard is
+  that a streak needs a `who`, and the general question is the first sentence
+  above: *supersedes* and *follows* look identical in the markup and are opposite
+  facts. The chore: every place here that summarises, dedupes, debounces or
+  latches a repeat — the chronicle's own one-shot sets, the headline's ranking,
+  the records board, the signatures that skip a repaint — is answering that
+  question, and most of them answered it by reflex.
+
+- **A comparison that has been widened twice is asking to be replaced.** The
+  feed's "did this row change?" test was a boolean in v1.136 (is it a control?),
+  a `kind` in v1.137 (which control is it?), and the whole painted row in v1.138
+  (a streak restates its own sentence and date while staying the same line).
+  Each widening was a correct local fix and the third one was the tell: if two
+  consecutive releases both taught the same comparison a new state, the
+  comparison is enumerating something whose states I do not control. Comparing
+  the rendered artefact costs a string concat per row on a panel of twenty and
+  cannot be wrong again. The chore, one grep: the other places here that diff a
+  rendered thing against its predecessor — the inspector's key, the ladder's
+  rows, the cast board — and for each, whether it enumerates states or compares
+  output.
 
 - **A store that exists to answer one surface should be bounded by that
   surface's question, not by a number I chose.** I had a `MEMORIAL_MAX`
