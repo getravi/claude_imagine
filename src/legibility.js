@@ -240,6 +240,14 @@ export const TEXT_PAIRS = Object.freeze([
   // well as at 1280, where it comes out on the same panel composite.
   { page: "app", ink: "--accent-2", ground: "#0c131c", px: 12, weight: 400, seen: 2, sample: "span.msgo '👀 Show me'" },
   { page: "app", ink: "--accent-2", ground: "#09131c", px: 12.5, weight: 400, seen: 1, sample: "button.flash-go '👀 Show me'" },
+  // v1.136's: the same offer a third time, at the end of a Chronicle line. The
+  // ink and the size are the ladder's on purpose — this is one promise wearing
+  // one face, and a dimmer version of it would have been a new pair to price
+  // for no reader's benefit. The ground is the *striped* row, `#111821`, which
+  // is where the row above already puts `span.c-when`: the panel's own
+  // `#0c131c` is the lighter case and is already measured two rows up, so the
+  // stripe is the one that decides.
+  { page: "app", ink: "--accent-2", ground: "#111821", px: 12, weight: 400, seen: 2, sample: "span.c-go '👀 Show me'" },
 ]);
 
 /**

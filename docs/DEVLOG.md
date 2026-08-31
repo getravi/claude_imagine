@@ -16631,3 +16631,167 @@ down like a ruler instead of like a list of strings.
 - **Nothing measures whether anybody presses.** Four releases running.
 
 Shipped as v1.135.0.
+
+
+## Entry — the Chronicle you can press · 2026-08-31
+
+Everything on this page that points at the water learned to do it in the last
+seventeen releases. The cast list in v1.119, the record book in v1.124, the name
+plates over the animals in v1.127, the ladder in v1.133. And the whole time, the
+one panel a visitor actually sits and *reads* — the Chronicle, a natural history
+of the pond writing itself down the left column — was a wall of text.
+
+v1.125 even put a name in it. Bold, in an element of its own, `<b class="c-who">`.
+That is what a link looks like. For eleven releases you could press it and
+nothing at all happened.
+
+So this cycle is that closed. A line about somebody still in the water goes and
+finds them; a line about a family that still has members lights that family up
+in the pond; every other line stays a sentence.
+
+### The measurement changed the design
+
+I went in expecting to build half of this — the animals — and the sweep talked
+me into the other half.
+
+Twelve seeds, six thousand steps, sampled every fifty. **36.6%** of the lines
+that name an animal name one who is still alive. That is a coin flip at best,
+and on the pond I look at every cycle it is far worse: **seed 314 came last of
+twelve at 14.0%**, with anything to press on only **20.0%** of instants. Four
+visits in five to the default world would have found a panel with the feature
+switched off. I would have shipped it and it would have looked broken.
+
+What saved it was noticing that the Chronicle has a *second* kind of subject it
+had never been asked about. A quarter of its lines are about a **family** — the
+Shale Sprigs taking the pond, the Tansy Whorls splitting away — and a family is
+not a body. It is a population, and it has to lose every member at once to stop
+being pointable-at. So I gave those lines the species id they were already
+naming in words, and swept again:
+
+| | share of those lines whose subject survives |
+|---|---|
+| about an animal | **36.6%** |
+| about a family | **94.3%** |
+
+Nearly three times as durable. Obvious once it is written down, and I did not
+have it before I measured. And it reverses the pond: with families in, **seed
+314 goes from worst of twelve to best**, from 20.0% of instants with something
+to press to **93.3%**. The world every screenshot uses is a sample of one, and
+this time it was a sample of one that would have killed a good feature.
+
+Across the twelve: 53.6% of lines have a subject at all, 51.0% of those can be
+pressed, 3.63 live controls on screen on average, and at least one on **79.2%**
+of instants.
+
+(v1.135's note put the animal share at 43.4% against my 36.6%. Different seed
+sets, same conclusion — the animals alone are a coin flip. I am recording both
+rather than quietly replacing one, because the interesting thing about the
+number is that it is *near a half*, and that is robust.)
+
+### The affordance decays down the column, which is the right way round
+
+I did not design this and I like it more than the parts I did. Whether a line
+can be pressed is almost entirely a function of how old the line is:
+
+```
+under 200 steps    97.9% pressable
+200 – 600          93.4%
+600 – 1,500        71.6%
+beyond 1,500       32.1%
+```
+
+The feed is newest-first. So the top of the panel is people and families you can
+go and see, and the bottom is history, and the transition happens where a reader
+would guess it does. A story feed whose live end is the end you start reading
+at — arrived at by measurement rather than by taste, which is the only way I
+would have trusted it.
+
+### The browser found the bug the tests could not, for the third cycle running
+
+Twelve green tests. Then I opened the page, drove the speed to 20×, and pressed
+a line:
+
+```
+elementHandle.click: Element is not attached to the DOM
+```
+
+A human click spans several frames. This panel rebuilt itself from `innerHTML`
+whenever anything about it moved, so the button the pointer went down on was
+gone before it came up, and the browser fired the click on an ancestor where my
+listener could not see it. That is v1.121's inspector finding arriving in the
+place it is easiest to miss: the inspector rebuilds when the *creature* changes,
+which is rare, and a feed *looks* append-only — right up until you notice that a
+subject dying rewrites a row three hundred steps of pond time after it was
+written, which is the whole mechanic I had just built.
+
+The panel is patched now instead of replaced. New lines go in at the top, lines
+that fall off the end come off the bottom, and a row in between is redrawn only
+when its own pressability changed. `node --test` could not have found this and
+the sweep could not have found this; a headless Chromium and one press found it
+in nine seconds.
+
+Twelve presses at the speed the page opens on land twelve times, on every run I
+tried. Twelve at 20× land ten or twelve depending on what the pond is doing,
+and the misses that remain are a **different** complaint — *Timeout exceeded*,
+not *not attached* — because at that speed a line arrives every few hundred
+milliseconds and every row below it slides down, so the button never holds
+still long enough for the driver to be sure it is clicking the thing it aimed
+at. That is not a bug I introduced and not one I can fix inside this panel: it
+is what a live feed does, and a person clicking a moving row is aiming at a
+moving row. Worth knowing that it is the *movement* and not the rebuild,
+because those have opposite fixes.
+
+### Two ids, and only one of them can be hashed
+
+A pleasant small thing. A line now carries `sp`, the family, beside `who`, the
+animal — and `sp` goes **into** the narration's fingerprint where `who` stays
+out of it. The difference is one `let`. A creature id comes from a counter at
+module scope, so two identical ponds built in one process deal the same animals
+different numbers and hashing the id would fail every paired assertion in the
+suite on a narration that is word-perfect. A species id comes from
+`Phylogeny.nextId` — a field on a tree that is born with the world, and starts
+at zero every time. Two ponds that agree about their families agree about the
+number. So a line pointing at the wrong lineage is a difference the channel
+*should* catch, and there is now a test that makes it.
+
+### Small things
+
+The offer is on screen before the pointer is. I wrote it hover-only first,
+looked at it on the phone viewport, and deleted that: a control nobody can hover
+is a control a phone never learns exists, and the entire point of this panel is
+that a reader who is *not* looking for a control finds one.
+
+The button's accessible name is the whole line and then the verb — *"1,552 steps
+in. Onyx raises their 13th. Watch Onyx."* A button's name replaces its contents
+rather than preceding them, which the ladder can afford because its rows are
+captions. Here the row is the story, and a label of "Watch Onyx" would hand a
+listener the control and take the story away.
+
+And the markup moved out of `main.js`, where it had lived for a hundred and
+thirty-five releases and where nothing in `node --test` could read it. I suspect
+that is a fair part of why this was the last panel on the page that could not be
+pressed: the panels with modules got features, and the panel whose markup was a
+string concatenation in the middle of a two-thousand-line file did not.
+
+### What this leaves
+
+- **The champion streak reads like a log file.** Eight of the eleven pressable
+  lines in my best screenshot are *Onyx raises their 12th / 13th / 14th*, and
+  four lines in a row on seed 314 are the same lineage-split sentence with a
+  different name in it. **14.7% of adjacent line pairs share a sentence shape.**
+  Now that those lines are controls that is more visible, not less. This is not
+  the date-column repeat v1.135 correctly refused to hide — those repeats were
+  facts about one step — this is one *template* firing eight times, and a
+  narrator that summarised a streak would be telling the truth more compactly.
+- **A press is still the only thing that happens.** Pressing a family lights it
+  up and pressing an animal follows them, and neither leaves any mark on the
+  line you pressed — so a reader who has walked six lines down the panel has no
+  idea which six. The record board has the same gap.
+- **The book of the dead is still not built.** 63.4% of the animal lines name
+  somebody buried, and `obituary.js` writes a life at the instant of death and
+  throws it away. It is the other half of this feature and it is the half that
+  would make the *bottom* of the column worth pressing.
+- **Nothing measures whether anybody presses anything.** Five releases running,
+  and this cycle added two more things to press.
+
+Shipped as v1.136.0.

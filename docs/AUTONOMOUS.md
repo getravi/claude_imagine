@@ -73,6 +73,49 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The Chronicle you can press — shipped in v1.136 (`src/feed.js`), and what
+  it leaves.** The last inert panel on the page, and the one a visitor actually
+  sits and reads. Every other board learned to point at the water between v1.119
+  and v1.133; v1.125 put a name in this one, in bold, in an element of its own,
+  which is what a link looks like, and pressing it did nothing for eleven
+  releases. Four findings. (i) **The measurement chose the design, and the
+  default pond would have vetoed it.** 36.6% of the lines about an animal name
+  one still alive — and seed 314, the world every screenshot uses, came *last of
+  twelve* at 14.0%, with anything to press on 20.0% of instants. The feature
+  only works because the Chronicle has a second kind of subject nobody had asked
+  about: a quarter of its lines are about a **family**, and **94.3%** of those
+  still have members, because an animal is one body and a lineage is a
+  population that has to lose every member at once. With families in, seed 314
+  goes from worst to **best at 93.3%**. The general chore: **for every surface
+  that points at something, list the *kinds* of thing it points at and price
+  each kind separately** — a mean over two populations with a threefold gap
+  between them is a number about neither. (ii) **The affordance decays with a
+  line's age** (97.9% under 200 steps to 32.1% beyond 1,500) and the feed is
+  newest-first, so the live end is the end a reader starts at. Nobody designed
+  that; it fell out of the sort order, and it is worth asking of any other list
+  here whether its order and its liveness agree. (iii) **The browser found it
+  again, third cycle running.** Twelve green tests, then one press at 20×:
+  *Element is not attached to the DOM*. A panel that rebuilds from `innerHTML`
+  cannot be clicked, because a human press spans frames — v1.121's inspector
+  finding, in the place it is easiest to miss, since a feed *looks* append-only
+  until you notice that a subject dying rewrites an old row. **Any panel that
+  grows a control needs one press in a browser before it is believed.**
+  (iv) **Two ids in this project and only one is comparable between ponds**:
+  `who` is a counter at module scope, `sp` is `Phylogeny.nextId`, a field born
+  with the world — so the family is hashed and the animal is not. What it
+  leaves: (a) **the champion streak reads like a log file** — 14.7% of adjacent
+  line pairs share a sentence shape, eight *Onyx raises their Nth* in a row, and
+  making them controls made that more visible, not less; a narrator that
+  summarised a streak would be saying the same truth more compactly, and this is
+  *not* the date repeat v1.135 rightly refused to hide; (b) **a press leaves no
+  mark on the line pressed**, on this panel or the record board, so a reader six
+  presses in cannot see which six; (c) **the book of the dead is still not
+  built** — 63.4% of the animal lines name somebody buried, `obituary.js` writes
+  a life at the instant of death and throws it away, and it is the half that
+  would make the *bottom* of the column worth pressing; (d) **nothing measures
+  whether anybody presses anything**, five releases running, and this one added
+  two more things to press.
+
 - **One clock — shipped in v1.135 (`src/pondclock.js`), and what it leaves.**
   Three panels here date an event and each said it differently: the ladder
   *1,724 steps in*, the record book *back in year 1*, the Chronicle `t244 · yr1`
@@ -1504,6 +1547,47 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **When a surface points at things, price each *kind* of thing separately —
+  a mean over two populations with a threefold gap is a number about neither.**
+  I sized the pressable Chronicle at 36.6% and nearly abandoned it, because that
+  is the share of its lines about an *animal* whose animal is still alive. A
+  quarter of its lines are about a **family**, and those run at **94.3%**: an
+  animal is one body with a death in its future, a lineage is a population that
+  has to lose every member at once. The single blended number would have been
+  51% and would have hidden both facts. The chore, five minutes: for every
+  surface here that points at something, write down the kinds of subject it has
+  and measure each one. The cast board points at animals only. The record board
+  points at animals and at ponds. The Chronicle points at animals, families and
+  the pond. `key.js` points at marks, which never die at all. Nobody has ever
+  asked whether those behave alike, and the one time I did the answer was a
+  factor of three. And the companion, which nearly cost the release: **seed 314
+  came last of twelve on the animal number and first of twelve on the blended
+  one.** The default pond is a sample of one; when a design decision turns on a
+  share, look at the spread before the mean.
+
+- **A panel that rebuilds itself from `innerHTML` cannot be clicked, and it
+  takes a browser eight seconds to say so.** Twelve green tests and then one
+  press at 20× speed: *Element is not attached to the DOM*. A human click spans
+  several frames; if the element the pointer went down on is detached before it
+  comes up, the browser fires the click on an ancestor and the press is simply
+  lost. v1.121 found this on the inspector and wrote the fix into the inspector,
+  where the next panel could not find it — the same shape as v1.131's clock. So,
+  as a rule rather than as one panel's comment: **the moment a surface here
+  grows its first control, its render has to stop being a rewrite.** Which
+  surfaces are still a rewrite is a one-minute grep for `innerHTML =`, and the
+  answer to "is that safe?" is *only while nothing in it is pressable*. I ran
+  the grep: **`cast-list`, `milestone-list` and `record-list` are all rewrites
+  and all three are full of buttons.** Then I pressed all four in a browser at
+  20×: the ladder took 6 of 6, the cast board 5 of 6, the record board had
+  nothing pressable on that pond, and the patched feed 10–12 of 12 (12 of 12 at
+  the speed the page opens on). So the class is real and the exposure is small
+  — but read the failure text before believing it. The feed's remaining misses
+  are *Timeout exceeded*, not *not attached*: at 20× a line arrives every few
+  hundred milliseconds and every row below slides down, and a control that will
+  not hold still is a different complaint from a control that has been
+  replaced, with the opposite fix. The chore that is left: press the cast
+  board's rows the same way and find out which of the two it is failing on.
 
 - **A sweep that samples one instant of a run has measured that instant, and
   the end of a run is the most biased instant there is.** I asked how many of

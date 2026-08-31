@@ -461,6 +461,7 @@ src/
   seasonlag.js      how far behind one of its clocks the pond runs (observation only)
   phylogeny.js      groups creatures into species (observation only)
   chronicle.js      narrates notable events into a timeline (observation only)
+  feed.js           the Chronicle as a panel: which lines lead somewhere, and where
   headline.js       the pond in one plain sentence, ranked by urgency
   cast.js           what each animal is called, and which one is worth watching
   key.js            the key to the water: what every mark in the pond means

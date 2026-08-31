@@ -782,17 +782,58 @@ body {
   gap: 2px;
 }
 .chronicle-feed li {
+  border-radius: 7px;
+  border-left: 2px solid transparent;
+}
+/* The row itself (v1.136). The layout moved off the `li` and onto this so that
+   a pressable line can be a `button` filling its row and an ordinary line can
+   be a `span` of exactly the same shape — a subject dying then swaps one
+   element for the other and moves no text. The button resets everything a
+   button brings with it and inherits the font, because what is on this panel is
+   a sentence and not a label. */
+.chronicle-feed .c-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  width: 100%;
   padding: 6px 8px;
+  border: 0;
   border-radius: 7px;
+  background: none;
+  font: inherit;
   font-size: 13.5px;
+  text-align: left;
   color: var(--ink);
-  border-left: 2px solid transparent;
 }
 .chronicle-feed li:nth-child(odd) {
   background: rgba(255, 255, 255, 0.018);
+}
+button.c-row {
+  cursor: pointer;
+  /* v1.115's bar: a hit is decided by the tighter dimension, and this one is
+     the height. A one-line row is 13.5px of text and 12px of padding, so the
+     floor only ever binds on a narrow window where the sentence has not
+     wrapped. */
+  min-height: 24px;
+}
+button.c-row:hover,
+button.c-row:focus-visible {
+  background: rgba(90, 220, 150, 0.09);
+}
+/* The offer, at the end of the line: the ladder's words, so a visitor who has
+   met one of these already knows what it does.
+   **It is on screen before the pointer is.** A hover-only affordance is a
+   feature a phone never learns about and a first-time visitor never discovers
+   — v1.14's rule is that the screen has to say a thing is on, and the whole
+   point of this panel is that a reader who is not looking for a control finds
+   one. Same ink and size as the ladder's `.msgo`, so `legibility.js` prices one
+   pair rather than inventing a dimmer one. */
+.chronicle-feed .c-go {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent-2);
+  white-space: nowrap;
 }
 .chronicle-feed li.fresh {
   animation: chron-in 0.5s ease;
@@ -2253,7 +2294,7 @@ button.tour-open:hover {
    reads does at this size, and it is the same words either way — a layout that
    changes with the screen, not a second clock that changes with it. */
 @media (max-width: 560px) {
-  .chronicle-feed li {
+  .chronicle-feed .c-row {
     flex-wrap: wrap;
     column-gap: 8px;
     row-gap: 1px;
@@ -2264,5 +2305,14 @@ button.tour-open:hover {
   }
   .chronicle-feed .c-msg {
     flex: 1 0 100%;
+    order: 2;
+  }
+  /* The offer joins the mark and the date on the top line rather than taking a
+     third one of its own: at this width the sentence already has the panel to
+     itself, and the gutter beside the date is the empty space v1.135 made. It
+     is later in the source than the sentence, so it takes an `order` to get in
+     front of it — the reading order stays sentence-then-control. */
+  .chronicle-feed .c-go {
+    order: 1;
   }
 }

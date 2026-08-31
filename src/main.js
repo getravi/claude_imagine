@@ -43,7 +43,7 @@ import {
   inspectorKey,
   sparkFromWeights,
 } from "./inspectorview.js";
-import { nameSpecies, speciesLabel } from "./speciesnames.js";
+import { nameSpecies, speciesLabel, speciesPlural } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
 import { OBITUARY_MEET_ID, obituaryFor, obituaryHTML, obituaryLines } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
@@ -62,7 +62,14 @@ import {
   seasonLabel,
   timeOfDayLabel,
 } from "./describe.js";
-import { eventWho } from "./chronicle.js";
+import {
+  FEED_SP_ATTR,
+  FEED_WHO_ATTR,
+  feedHTML,
+  feedLineKey,
+  feedRows,
+  feedSignature,
+} from "./feed.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
@@ -80,7 +87,6 @@ import {
   milestonesHTML,
   milestonesSay,
 } from "./milestones.js";
-import { stepsIn } from "./pondclock.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
@@ -260,6 +266,7 @@ function boot() {
   wireCastList();
   wireRecordList();
   wireMilestoneList();
+  wireChronicleFeed();
   wireTour();
   buildScenarioChips();
   // Before the first frame, so the tab a visitor opened in the background is
@@ -933,38 +940,119 @@ function wireTour() {
 }
 
 // ---- Chronicle feed (natural-history timeline) ----
+//
+// `feed.js` owns every word of this panel and the rule about which lines are
+// controls; what is left here is the adapter, which is two lookups and an
+// innerHTML write. The lookups are why they are built here: whether a line can
+// be pressed is a question about *the pond right now*, not about the event, and
+// the answer changes on a frame where nothing was written — an animal dies and
+// a button three rows down has to stop being one.
+//
+// Both sets are built once per call rather than searched per row. There are a
+// mean of twenty lines in the feed and up to five hundred animals in the water;
+// asking `creatures.find` per row would be that product every frame, and a
+// `Set` makes it a walk of the pond plus twenty lookups.
 function updateChronicle(world) {
-  const ev = world.chronicle.events;
-  const newest = ev.length ? ev[ev.length - 1] : null;
-  const key = ev.length + "|" + (newest ? newest.tick + newest.msg + newest.who : "");
+  const alive = new Set();
+  const families = new Set();
+  for (const c of world.creatures) {
+    if (c.dead) continue;
+    alive.add(c.id);
+    families.add(c.speciesId);
+  }
+  const names = namesForTree(world.phylogeny);
+  const rows = feedRows(world.chronicle.events, {
+    alive: (id) => alive.has(id),
+    familyHere: (id) => families.has(id),
+    familyName: (id) => speciesPlural(names, id),
+  });
+  const key = feedSignature(rows);
   if (key === view.lastChronKey) return; // nothing changed since last render
   view.lastChronKey = key;
+  paintChronicle($("chronicle-feed"), rows);
+  view.chronLines = rows;
+}
 
-  const feed = $("chronicle-feed");
-  if (ev.length === 0) {
-    feed.innerHTML = '<li class="chronicle-empty">The pond is young. Its story will appear here…</li>';
+// Put the rows on screen without rebuilding the ones that did not move.
+//
+// **A panel that replaces itself is a panel that cannot be clicked**, and the
+// browser said so on the first run: a human press spans several frames, and if
+// the element the pointer went down on is detached before it comes up the
+// browser fires the click on an ancestor and the press is simply lost. This is
+// v1.121's finding on the inspector, met a second time on the one panel where
+// it is easy to miss — the inspector rebuilds when *the creature* changes, and
+// a feed looks append-only until you notice that a subject dying rewrites a row
+// three hundred lines of pond time after it was written.
+//
+// So: new lines go in at the top, lines that fell off the end come off the
+// bottom, and everything between is left where it is unless its own
+// pressability changed. At the speed the page opens on a line arrives about
+// every five seconds and a row changes state rather more often than that; both
+// used to redraw a hundred and forty elements.
+function paintChronicle(feed, rows) {
+  const prev = view.chronLines;
+  // A full rebuild whenever the reconciliation has nothing to stand on: no
+  // previous paint, an empty feed at either end, or a list whose length has
+  // stopped matching what was last painted. The last guard should never fire
+  // and is one comparison — the cost of being wrong about it is a panel whose
+  // rows are patched against the wrong lines, which is worse than a redraw.
+  if (!prev || prev.length === 0 || rows.length === 0 || feed.children.length !== prev.length) {
+    feed.innerHTML = feedHTML(rows);
     return;
   }
-  let html = "";
-  for (let i = ev.length - 1; i >= 0; i--) {
-    const e = ev[i];
-    // The step, in the page's one clock (v1.135). This column read `t244 · yr1`
-    // for a hundred and thirty-four releases: the engine's own variable with a
-    // letter in front of it, and beside it a year that 91.8% of the time is the
-    // same year as the line above. `pondclock.js` has the measurements.
-    const when = stepsIn(e.tick);
-    const fresh = i === ev.length - 1 ? " fresh" : "";
-    // A line about an animal stores a predicate and gets its subject here
-    // (v1.125) — the name is marked up rather than run into the sentence,
-    // because the whole point of putting one in the story is that a reader can
-    // find it again three lines down.
-    const who = eventWho(e);
-    const said = who ? `<b class="c-who">${who}</b> ${e.msg}` : e.msg;
-    html +=
-      `<li class="cat-${e.cat}${fresh}"><span class="c-icon">${e.icon}</span>` +
-      `<span class="c-when">${when}</span><span class="c-msg">${said}</span></li>`;
+  // How many lines arrived since the last paint. The feed is newest-first, so
+  // they are all at the head, and the line that used to be at the head is the
+  // marker to stop at. A feed that has been reset — a new pond, a load — has no
+  // such marker, and `head` runs off the end into a full rebuild.
+  const wasNewest = feedLineKey(prev[0]);
+  let head = 0;
+  while (head < rows.length && feedLineKey(rows[head]) !== wasNewest) head++;
+  if (head >= rows.length) {
+    feed.innerHTML = feedHTML(rows);
+    return;
   }
-  feed.innerHTML = html;
+  if (head > 0) feed.insertAdjacentHTML("afterbegin", feedHTML(rows.slice(0, head)));
+  while (feed.children.length > rows.length) feed.lastElementChild.remove();
+  // Everything from `head` down is a line that was already on screen. It needs
+  // redrawing only if it has changed state — which is a button becoming a span
+  // or the other way round, and cannot be patched with a `textContent`.
+  for (let i = head; i < rows.length; i++) {
+    const before = prev[i - head];
+    const li = feed.children[i];
+    if (!li || !before || before.live === rows[i].live) continue;
+    li.outerHTML = feedHTML([rows[i]]);
+  }
+  // The flash belongs to the newest line and to nothing else.
+  if (head > 0 && feed.children[head]) feed.children[head].classList.remove("fresh");
+}
+
+// A line that is about somebody leads to them, and a line that is about a
+// family lights that family up (v1.136). One listener on the list, like the
+// cast board's and the ladder's — and like them it resolves the id in the
+// living at the moment of the press rather than trusting the row, because a
+// row is a picture of the frame it was drawn in and its subject can be eaten
+// between the draw and the click.
+function wireChronicleFeed() {
+  $("chronicle-feed").addEventListener("click", (e) => {
+    const who = e.target.closest(`[${FEED_WHO_ATTR}]`);
+    if (who) {
+      watchNamed(Number(who.getAttribute(FEED_WHO_ATTR)));
+      return;
+    }
+    const sp = e.target.closest(`[${FEED_SP_ATTR}]`);
+    if (!sp) return;
+    const id = Number(sp.getAttribute(FEED_SP_ATTR));
+    // Highlighting is a toggle everywhere else on this page and stays one here,
+    // so a second press on the line that turned it on turns it off — otherwise
+    // the only way back is a control in a different panel.
+    toggleHighlight(id);
+    const label = speciesPlural(namesForTree(world.phylogeny), id);
+    flash(
+      renderer.highlightSpeciesId === id
+        ? `🌿 The ${label}, lit up in the water.`
+        : `The ${label} go back into the crowd.`
+    );
+  });
 }
 
 // ---- View badge (zoom / follow) ----

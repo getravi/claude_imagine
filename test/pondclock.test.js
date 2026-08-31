@@ -103,10 +103,22 @@ test("the year arithmetic is written once and read three times", () => {
 });
 
 test("the Chronicle's column is no longer the engine's own clock", () => {
+  // The feed's markup moved out of `main.js` and into `feed.js` in v1.136, so
+  // the file this asserts against moved with it. The claim is the one v1.135
+  // made and is unchanged: the panel a visitor is most likely to sit and read
+  // dates its lines from the page's one clock and not from `t244 · yr1`.
+  const feed = read("src/feed.js");
   const main = read("src/main.js");
-  assert.ok(main.includes("stepsIn(e.tick)"), "the feed does not date its lines from the one clock");
-  assert.ok(!main.includes('"t" + e.tick'), "the `t244` stamp is still being written");
-  assert.ok(!/`? · yr\$\{/.test(main), "the `yr1` stamp is still being written");
+  assert.ok(feed.includes("stepsIn(e.tick)"), "the feed does not date its lines from the one clock");
+  for (const [where, src] of [
+    ["feed.js", feed],
+    ["main.js", main],
+  ]) {
+    assert.ok(!src.includes('"t" + e.tick'), `${where}: the \`t244\` stamp is still being written`);
+    assert.ok(!/`? · yr\$\{/.test(src), `${where}: the \`yr1\` stamp is still being written`);
+  }
+  // And `main.js` no longer dates anything at all — it hands the events over.
+  assert.ok(!main.includes("stepsIn("), "main.js is still stamping the feed itself");
 });
 
 // ---- 3. what the change is worth, pinned as a measurement ----

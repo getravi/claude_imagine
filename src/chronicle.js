@@ -160,9 +160,18 @@ export class Chronicle {
    * @param {number} who the creature this line is about, or -1 for the pond
    *   itself. Never written into `msg`: a name is a function of an id, and an
    *   id is not comparable between two worlds in one process.
+   * @param {number} sp the lineage this line is about, or -1. Unlike `who` this
+   *   one *is* in the narration's hash, and the difference between them is one
+   *   `let`: a creature id comes from a counter at module scope, so two
+   *   identical ponds in one process deal the same animals different numbers,
+   *   while a species id comes from `Phylogeny.nextId`, which is a field on the
+   *   tree and starts at zero with every world. Two ponds that agree about
+   *   their families therefore agree about this number, so a line pointing at
+   *   the wrong family is a difference the channel should catch rather than one
+   *   it has to be told to ignore.
    */
-  _push(tick, icon, cat, msg, who = -1) {
-    this.events.push({ tick, year: yearOf(tick, this.config), icon, cat, msg, who });
+  _push(tick, icon, cat, msg, who = -1, sp = -1) {
+    this.events.push({ tick, year: yearOf(tick, this.config), icon, cat, msg, who, sp });
     if (this.events.length > this.max) this.events.shift();
   }
 
@@ -623,7 +632,14 @@ export class Chronicle {
       if (top && top.count >= 0.45 * pop && top.id !== this._dominant) {
         this._dominant = top.id;
         const pct = Math.round((top.count / pop) * 100);
-        this._push(tick, "👑", "lineage", `The ${they(top.id)} now hold the pond (${pct}%).`);
+        this._push(
+          tick,
+          "👑",
+          "lineage",
+          `The ${they(top.id)} now hold the pond (${pct}%).`,
+          -1,
+          top.id
+        );
       }
     }
     // A branch — the one event the Tree of Life is actually about, and the one
@@ -648,7 +664,9 @@ export class Chronicle {
         "🌿",
         "lineage",
         `The ${they(sp.id)} have split away from the ${they(sp.parentId)} — ` +
-          `a new lineage, evolved here.`
+          `a new lineage, evolved here.`,
+        -1,
+        sp.id
       );
     }
     // Notable extinctions: a species that once grew large has just died out.
@@ -660,7 +678,9 @@ export class Chronicle {
           tick,
           "⚰️",
           "lineage",
-          `The ${they(sp.id)}, once ${sp.peak} strong, are gone after ~${gens} generations.`
+          `The ${they(sp.id)}, once ${sp.peak} strong, are gone after ~${gens} generations.`,
+          -1,
+          sp.id
         );
       }
     }

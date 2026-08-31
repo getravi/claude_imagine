@@ -637,14 +637,24 @@ export const CHRONICLE_HASHED = [
 
 /**
  * Every field of one *event* that `chronicleFingerprint` hashes: when it was
- * said, what mark it wears, what class of thing it is, and the words.
+ * said, what mark it wears, what class of thing it is, the words, and which
+ * family it is about.
  *
  * An event is the only record in this project the generic mixer walks that
  * carries an identity, so it is the only one that needs a list of its own.
  * Without it `mixValue` would take `Object.keys` of each line and hash `who`
  * along with the rest.
+ *
+ * **It carries two identities and only one of them is excluded**, which is the
+ * distinction v1.136 had to make and is worth keeping in front of the lists.
+ * `who` is a creature id, from a counter at module scope that never resets;
+ * `sp` is a species id, from `Phylogeny.nextId`, a field on a tree that is born
+ * with the world. The second is therefore comparable between two ponds built in
+ * one process and the first is not — so a line pointing at the wrong *family*
+ * is a difference this channel is meant to catch, and a line naming the wrong
+ * *animal* is not something it could ever be asked to.
  */
-export const EVENT_HASHED = ["tick", "year", "icon", "cat", "msg"];
+export const EVENT_HASHED = ["tick", "year", "icon", "cat", "msg", "sp"];
 
 /** The one field of an event outside the channel, and why. */
 export const EVENT_UNHASHED = {

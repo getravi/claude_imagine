@@ -4,6 +4,142 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.136.0] — 2026-08-31
+
+The Chronicle you can press.
+
+Every other board on this page learned to point at the water. The cast list did
+it in v1.119, the record book in v1.124, the plates over the animals in v1.127,
+the ladder in v1.133. The one panel a visitor actually sits and **reads** stayed
+a wall of text.
+
+v1.125 even put a name in it — in bold, in an element of its own, which is
+exactly what a link looks like. For eleven releases nothing happened when you
+pressed it.
+
+Now:
+
+```
+👶  1,552 steps in   Onyx raises their 13th.                        👀 Show me
+🌿  5,472 steps in   The Shale Skimmers have split away…            👀 Show me
+🌊  1,195 steps in   The pond swells past 300 creatures.
+```
+
+Press the first and the camera goes and finds Onyx. Press the second and the
+Shale Skimmers light up in the water. The third is about a pond and stays a
+sentence, because a control that does nothing is worse than no control.
+
+**The finding: this panel has two kinds of subject and they decay at completely
+different rates.** Twelve seeds, six thousand steps, sampled every fifty:
+
+- **53.6%** of the lines on screen are about somebody or some family at all.
+- Of the lines about an **animal**, **36.6%** name one still alive.
+- Of the lines about a **family**, **94.3%** name one that still has members.
+- Together: **51.0%** of the lines with a subject can be pressed, **27.4%** of
+  every line, a mean of **3.63** live controls on screen (max 14), and at least
+  one on **79.2%** of sampled instants.
+
+An animal is one body with a death in its future; a lineage is a population that
+has to lose every member at once. Obvious once written down, and not obvious
+before — the animals alone would have left this panel dead four instants in
+five, and the families are what make it a feature.
+
+**And it reverses the default pond.** With only the animals, seed 314 — the
+world every screenshot and the landing page use, and the one I look at every
+cycle — was the **worst** of twelve at 20.0% of instants with anything to press.
+With the families it is the **best, at 93.3%**. This project's own note says the
+world I look at every cycle is a sample of one and not a random one; here it was
+a sample of one that would have talked me out of the whole idea.
+
+**Pressability decays down the column, and that is the right way round.** A
+line's subject survives as a function of the line's age — **97.9%** pressable
+under 200 steps, **93.4%** at 200–600, **71.6%** at 600–1,500, **32.1%** beyond
+— and the feed is newest-first. So the top of the panel is people and families
+you can go and see and the bottom is history, which is what a reader would guess
+a story feed meant anyway, arrived at by measurement rather than by taste.
+
+**The browser found the bug the tests could not, again.** The first build passed
+twelve green tests and then failed on the first real press: *Element is not
+attached to the DOM*. A human click spans several frames, and this panel rebuilt
+itself from `innerHTML` whenever anything about it moved — so the button the
+pointer went down on was gone before the pointer came up and the browser fired
+the click on an ancestor. That is v1.121's inspector finding met a second time,
+in the place it is easiest to miss: the inspector rebuilds when *the creature*
+changes, and a feed looks append-only right up until you notice that a subject
+dying rewrites a row three hundred steps of pond time after it was written. The
+panel is now patched rather than replaced — new lines go in at the top, lines
+that fall off the end come off the bottom, and a row in between is redrawn only
+when its own pressability changed. Twelve presses at the speed the page opens on
+land twelve times on every run tried; twelve at 20× land ten to twelve, and the
+misses that remain are a different complaint (*timeout*, not *not attached*) —
+at that speed a line arrives every few hundred milliseconds and the rows below
+it slide down, which is what a live feed does rather than something this panel
+can fix.
+
+**One promise, two mechanisms.** Both kinds of pressable line wear the ladder's
+`👀 Show me`, and it is on screen before the pointer is: a hover-only affordance
+is a feature a phone never learns about, and the whole point of this panel is
+that a reader who is not looking for a control finds one.
+
+**A button's accessible name replaces its contents rather than preceding them**,
+so the label is the whole line and then the verb — *"1,552 steps in. Onyx raises
+their 13th. Watch Onyx."* The ladder can afford `Watch Onyx` on its own because
+its rows are captions; a label like that here would hand a listener the control
+and take the story away.
+
+**Two identities, and only one of them can be hashed.** A line now carries `sp`,
+the family it is about, beside `who`, the animal — and `sp` goes *into* the
+narration's channel where `who` stays out of it. The difference is one `let`: a
+creature id comes from a counter at module scope, so two identical ponds built
+in one process deal the same animals different numbers, while a species id comes
+from `Phylogeny.nextId`, a field born with the world. Two ponds that agree about
+their families therefore agree about the number, so a line pointing at the wrong
+lineage is a difference the channel should catch rather than one it has to be
+told to ignore.
+
+### Added
+
+- **`src/feed.js`** — the Chronicle's rows, its markup, its render key and the
+  rule about which lines are controls. The markup lived in `main.js` for a
+  hundred and thirty-five releases, where no test in this project could read it,
+  which is a fair part of why this was the last panel on the page that could not
+  be pressed.
+- **`test/feed.test.js`** — twelve tests: that a row is a control exactly when
+  its subject is still in the pond and never otherwise; that nothing is a
+  control when the caller hands over no pond; the family-outlives-animal gap and
+  the age decay, both as sampled inequalities rather than snapshots, because a
+  rule that is only sometimes true needs a walk; that the signature notices a
+  subject dying and nothing else; that both kinds of row keep one shape; that
+  the button's name carries the sentence; that the channel can see `sp` and that
+  two identical ponds point at the same families; and a structural guard that
+  `main.js` never writes this panel's markup again.
+
+### Changed
+
+- **`src/chronicle.js`** — `_push` takes a family as well as an animal, and the
+  three lineage lines (a family taking the pond, a family splitting away, a
+  family dying out) say which family they are about. The extinct one carries it
+  too: what a line is *about* is the narrator's business, and whether that makes
+  it pressable is the panel's.
+- **`src/fingerprint.js`** — `sp` joins `EVENT_HASHED`, with the argument above
+  written where the two lists meet.
+- **`src/main.js`** — the feed's adapter: two set lookups, one delegated click
+  listener, and `paintChronicle`, which reconciles the list instead of replacing
+  it. The old markup builder is gone.
+- **`src/viewstate.js`** — `chronLines`, the rows as last painted, world-scoped
+  beside the key it belongs to.
+- **`style.css`** — the row's layout moved off the `li` and onto a `.c-row` that
+  is a `button` or a `span`, so a subject dying swaps one element for the other
+  and moves no text; a 24 px floor on the button per v1.115, a hover and
+  focus-visible ground, and on a phone the offer joins the date on the top line
+  rather than taking a third one of its own.
+- **`src/legibility.js`** — one row: the offer's ink on the feed's striped
+  ground, `#5adc96` on `#111821`, 10.30:1 against a 4.5 bar. Same ink and size
+  as the ladder's, on purpose — a dimmer variant would have been a new pair to
+  price for no reader's benefit.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each, and a note on
+  `chronicle.js` about its two ids.
+
 ## [1.135.0] — 2026-08-31
 
 One clock.

@@ -77,8 +77,13 @@ const FRESH = Object.freeze({
   pendingAct: null,
   pondLabel: "",
   describeIn: 0,
-  // The chronicle feed.
+  // The chronicle feed. `chronLines` is the rows as they were last painted —
+  // world-scoped like the key beside it, because the panel is now patched
+  // against its own last state rather than rewritten, and a new pond inheriting
+  // the old one's rows would try to reconcile a story against a different
+  // story's lines.
   lastChronKey: "",
+  chronLines: null,
   // The headline above the water (v1.117). World-scoped for the plainest of the
   // reasons on this list: it carries the tick it was chosen on, and a new pond
   // starts its clock at zero — an inherited `since` would hold the old world's
