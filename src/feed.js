@@ -44,19 +44,30 @@
 // and families you can go and see, and the bottom is history — which is what a
 // reader would guess a story feed meant anyway, arrived at by measurement.
 //
+// **v1.137 closed the other half.** The animals above were counted alive or
+// dead because a dead one had nowhere to lead; `memorial.js` keeps the life
+// `obituary.js` writes at the moment of death, so a buried name opens their
+// story instead of nothing. That takes the feed's animal lines from 36.6%
+// pressable to **100.0%** — 8,402 of 8,402 over the same twelve seeds — and the
+// panel as a whole from 26.2% of its lines to **52.9%**. Every name the
+// Chronicle prints is now a door: the living ones lead to the water, and the
+// rest tell you what happened.
+//
 // Three rules, all of them borrowed from panels that got here first:
 //
 //  1. **A row is a control exactly when pressing it would do something**
-//     (v1.51, restated by v1.133). A line about a pond, an animal already
-//     buried or a lineage already extinct keeps the shape it had, in a `span`,
-//     so the two kinds of row sit on the same grid and nothing moves when a
-//     subject dies. A control that does nothing is worse than no control.
-//  2. **One promise, two mechanisms.** Both kinds of pressable line wear the
-//     ladder's `👀 Show me`, because both do the same thing to a reader — they
-//     put the thing the sentence is about on the screen. That one of them
-//     selects an animal and the other highlights a lineage is an implementation
-//     detail, and a panel that grew a second verb would be asking a visitor to
-//     learn a vocabulary to read a story.
+//     (v1.51, restated by v1.133). A line about a pond, a lineage already
+//     extinct or an animal this pond has no life written for keeps the shape it
+//     had, in a `span`, so every row sits on the same grid and nothing moves
+//     when a subject dies. A control that does nothing is worse than no
+//     control.
+//  2. **One promise per mechanism, and no more.** The two presses that put
+//     something in the *water* share the ladder's `👀 Show me`, because they do
+//     the same thing to a reader; that one selects an animal and the other
+//     lights up a lineage is an implementation detail. The press that opens a
+//     card is a different promise and wears `📖 Their story`, because a control
+//     that says *Show me* and then shows no pond is a control that lied — which
+//     is the same defect as one that does nothing.
 //  3. **A row holds numbers, not references** (v1.119's rule, `whoswho.js`).
 //     Nothing here keeps a creature or a species object alive; the caller looks
 //     the id up in the living at the moment of the press and shrugs if it is
@@ -67,6 +78,7 @@
 // touches no world and takes no random number.
 
 import { WATCH_LABEL } from "./milestones.js";
+import { STORY_LABEL } from "./memorial.js";
 import { stepsIn } from "./pondclock.js";
 import { eventWho } from "./chronicle.js";
 
@@ -74,6 +86,8 @@ import { eventWho } from "./chronicle.js";
 export const FEED_WHO_ATTR = "data-feed-who";
 /** Marks the button that lights up a lineage; carries the species id. */
 export const FEED_SP_ATTR = "data-feed-sp";
+/** Marks the button that reads out a life; carries the creature id (v1.137). */
+export const FEED_STORY_ATTR = "data-feed-story";
 
 /** What the panel says before the pond has done anything worth saying. */
 export const FEED_EMPTY = "The pond is young. Its story will appear here…";
@@ -84,15 +98,17 @@ export const FEED_EMPTY = "The pond is young. Its story will appear here…";
  * @param {Array<{tick:number, icon:string, cat:string, msg:string, who:number,
  *   sp:number}>} events oldest first, as the chronicle keeps them
  * @param {{alive?:(id:number)=>boolean, familyHere?:(id:number)=>boolean,
- *   familyName?:(id:number)=>string}} lookups the pond as it stands now
+ *   familyName?:(id:number)=>string, remembered?:(id:number)=>boolean}} lookups
+ *   the pond as it stands now, and the book of the dead beside it
  * @returns {Array<{tick:number, when:string, icon:string, cat:string,
- *   who:number, sp:number, name:string, msg:string, live:boolean,
- *   line:string, action:string, fresh:boolean}>}
+ *   who:number, sp:number, told:number, name:string, msg:string, kind:string,
+ *   live:boolean, line:string, action:string, label:string, fresh:boolean}>}
  */
 export function feedRows(events, lookups = {}) {
   const alive = lookups.alive || (() => false);
   const familyHere = lookups.familyHere || (() => false);
   const familyName = lookups.familyName || (() => "");
+  const remembered = lookups.remembered || (() => false);
   const rows = [];
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
@@ -100,10 +116,20 @@ export function feedRows(events, lookups = {}) {
     // The page's one clock (v1.135). This column read `t244 · yr1` for a
     // hundred and thirty-four releases; `pondclock.js` has the argument.
     const when = stepsIn(e.tick);
-    // Which subject a line has decides which of the two presses it offers, and
-    // an event never has both: `_push` takes one or the other.
+    // Which subject a line has decides which of the three presses it offers,
+    // and an event never has both kinds of subject: `_push` takes one or the
+    // other. The order matters: an animal still in the water is somebody you
+    // can go and *see*, and a life to read is what is left when they are not.
     const watchable = e.who >= 0 && alive(e.who);
+    const tellable = e.who >= 0 && !watchable && remembered(e.who);
     const highlightable = e.sp >= 0 && familyHere(e.sp);
+    // Which control this row is, as one word — not merely *whether* it is one.
+    // The distinction is the whole of v1.137's plumbing: an animal dying used
+    // to turn a button into a span, which a boolean caught, and now turns a
+    // *Show me* into a *Their story*, which it does not. A panel that patches
+    // itself has to be told the difference or it leaves the offer to walk over
+    // to a body that is no longer there.
+    const kind = watchable ? "watch" : tellable ? "story" : highlightable ? "family" : "";
     rows.push({
       tick: e.tick,
       when,
@@ -111,18 +137,26 @@ export function feedRows(events, lookups = {}) {
       cat: e.cat,
       who: watchable ? e.who : -1,
       sp: highlightable ? e.sp : -1,
+      told: tellable ? e.who : -1,
       name,
       msg: e.msg,
-      live: watchable || highlightable,
+      kind,
+      live: kind !== "",
       // The line as one spoken sentence, for the accessible name of the button
       // — which replaces its contents rather than adding to them, so a label of
       // "Watch Cove" would hand a listener the verb and take the story away.
       line: `${when}. ${name ? `${name} ` : ""}${e.msg}`,
       action: watchable
         ? `Watch ${name}`
-        : highlightable
-          ? `Show the ${familyName(e.sp)} in the pond`
-          : "",
+        : tellable
+          ? `What became of ${name}`
+          : highlightable
+            ? `Show the ${familyName(e.sp)} in the pond`
+            : "",
+      // The words on the offer itself. Two of the three presses put the thing
+      // the sentence is about into the water and share the ladder's promise;
+      // the third opens a card, and says so — see `STORY_LABEL`.
+      label: kind === "" ? "" : tellable ? STORY_LABEL : WATCH_LABEL,
       // The newest line, which the panel flashes in. Not the newest *event* —
       // the pond does two things on one step often enough to matter (v1.135
       // measured 7.4% of adjacent lines sharing a step) and the animation is
@@ -150,10 +184,17 @@ export function feedLineKey(row) {
 /**
  * What the feed depends on, as a string.
  *
- * The length and the newest line, as before — and now, per row, *whether it is
- * a control*. That is the one piece of state on this panel that changes without
- * a line being written: an animal dies and a button three rows down has to stop
- * being a button. Not who it points at, which never moves once written.
+ * The length and the newest line, as before — and now, per row, *which kind of
+ * control it is*. That is the one piece of state on this panel that changes
+ * without a line being written: an animal dies and a button three rows down has
+ * to stop offering to walk over to them. Not who it points at, which never
+ * moves once written.
+ *
+ * It was a boolean until v1.137 gave the panel a third kind of press, at which
+ * point *is this a control* stopped being enough — a death now turns a
+ * `👀 Show me` into a `📖 Their story` rather than into a plain sentence, and a
+ * signature that only counted controls would have held both frames identical
+ * and left the offer pointing at an empty pond.
  *
  * The cost is measured, because this project has a habit of guessing at "would
  * this be too much?" and being wrong. Over twelve seeds sampled every fifty
@@ -167,7 +208,7 @@ export function feedSignature(rows) {
   let sig = rows.length + "|";
   const newest = rows[0];
   if (newest) sig += newest.tick + newest.msg + newest.who + newest.sp + "|";
-  for (const r of rows) sig += r.live ? "1" : r.who >= 0 || r.sp >= 0 ? "0" : "-";
+  for (const r of rows) sig += r.kind === "" ? "-" : r.kind[0];
   return sig;
 }
 
@@ -198,11 +239,16 @@ export function feedHTML(rows) {
         `<span class="c-when">${r.when}</span><span class="c-msg">${said}</span>`;
       const cls = `cat-${r.cat}${r.fresh ? " fresh" : ""}`;
       if (r.live) {
-        const attr = r.who >= 0 ? `${FEED_WHO_ATTR}="${r.who}"` : `${FEED_SP_ATTR}="${r.sp}"`;
+        const attr =
+          r.who >= 0
+            ? `${FEED_WHO_ATTR}="${r.who}"`
+            : r.told >= 0
+              ? `${FEED_STORY_ATTR}="${r.told}"`
+              : `${FEED_SP_ATTR}="${r.sp}"`;
         return (
           `<li class="${cls}"><button type="button" class="c-row" ${attr} ` +
           `aria-label="${r.line} ${r.action}.">${inner}` +
-          `<span class="c-go" aria-hidden="true">${WATCH_LABEL}</span></button></li>`
+          `<span class="c-go" aria-hidden="true">${r.label}</span></button></li>`
         );
       }
       return `<li class="${cls}"><span class="c-row">${inner}</span></li>`;

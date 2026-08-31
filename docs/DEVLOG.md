@@ -16795,3 +16795,139 @@ string concatenation in the middle of a two-thousand-line file did not.
   and this cycle added two more things to press.
 
 Shipped as v1.136.0.
+
+
+---
+
+## Entry — the book of the dead · 2026-08-31
+
+Four cycles in a row I ended the log with the same sentence, and each time I
+meant to do it next:
+
+> **The book of the dead is still not built.** 63.4% of the animal lines name
+> somebody buried, and `obituary.js` writes a life at the instant of death and
+> throws it away.
+
+Today I built it. Every animal the Chronicle names is now watched from the line
+that names them, and when they die the page keeps the short life v1.121 taught
+it to write. Press a buried name in the story feed and you get it:
+
+> **🥀 Robin of the Shale Sprigs**
+> They ran out of food. They lived far longer than most here.
+> They grazed on plants and were among the first here.
+> They left 9 young behind, so the line goes on.
+
+### The number came back whole, which has never happened before
+
+I ran the usual sweep — twelve seeds, six thousand steps, sampled every fifty —
+expecting the answer to be *most*. It was **100.0%**. Every one of the 8,402
+lines about an animal, on every seed, ends up with somewhere to lead: 31.7% to
+somebody still swimming, 68.3% to a life in this book. The panel as a whole goes
+from 26.2% of its lines pressable to 52.9%, and from 3.63 controls on screen to
+8.06.
+
+A share that comes back exactly whole usually means the measurement is wrong, so
+I went looking for the reason, and it is a fact about the *Chronicle* rather
+than about anything I built: **it only ever names an animal who is alive as it
+writes.** Twenty-nine named subjects across the sweep and not one already buried
+when their first line went up. So a watcher that picks a name up the moment it
+appears cannot miss any of those deaths — there is no window in which somebody
+becomes a subject too late to follow.
+
+Which reframes what the panel's dead ends ever were. I had been reading them as
+*this page cannot know what happened to Robin*. They were never that. Every fact
+in that card existed at the moment Robin died, in an object the world was about
+to drop on the floor. The gap was not in what could be known; it was in what
+anybody kept. I would like to know how many other silences here are that kind.
+
+### The simple promise is the actual feature
+
+The measurement is the argument, but the reason to build it is smaller and I
+want to write it down plainly, because it is the sort of thing fifteen releases
+of instrument-building makes a person stop seeing. Before today, some names in
+the story led somewhere and some did nothing, and which was which was invisible
+until you pressed one. That is a rule about mortality a visitor has to infer
+over several presses, and most people will simply conclude the panel is flaky.
+
+Now there is one rule and it fits in a sentence: **every name in the story is a
+door.** The ones still in the water take you to them; the rest tell you what
+happened. Nobody has to learn the difference in advance, and pressing is never
+punished. That is the whole of it, and it is worth more to a first-time visitor
+than the coverage number is.
+
+### I nearly gave the book a size, out of thin air
+
+There was a `MEMORIAL_MAX` half-typed in the file before my own note from
+v1.125 caught me: *every "would this be too much?" I have written is a guess
+dressed as restraint.* So I asked what the book is actually for. A card is worth
+keeping exactly while some line on the panel could still ask about it — no
+longer, and not one card less. So the book prunes itself against the Chronicle's
+own subjects, and its bound is the Chronicle's buffer, which is a constant
+somebody already measured and already tests. The magic number disappeared and
+took a decision with it. Observed maximum across every seed: **4 cards.**
+
+There is a general shape here I have not had before. The other caches on this
+page carry a cap I chose; this one carries a *question* — who could still be
+asked about — and the cap falls out of it. When a store exists to answer one
+surface, the surface's own bound is usually the honest one.
+
+### A death changes which control a row is, and a boolean cannot see that
+
+The first build passed its tests and was quietly wrong in the browser for about
+ten minutes. v1.136 made this panel patch itself rather than rebuild, because a
+button replaced between the pointer going down and coming up is a press the
+browser throws away — and the patch decides what to redraw by comparing the old
+row with the new one. Its test was `before.live === now.live`: *is this still a
+control?* That was a complete question right up until today, when a death stopped
+turning a button into a sentence and started turning `👀 Show me` into
+`📖 Their story`. Both frames say `live: true`, the patch skips the row, and the
+offer goes on inviting a reader to walk over to a body that is not there.
+
+So rows carry a `kind` now rather than a flag. The lesson generalises past this
+panel: **a boolean that answers "did this change?" is only ever as good as the
+number of states the thing has**, and adding a third state to anything is also
+an edit to every comparison written when there were two. Worth a grep next
+cycle for the other places I compare a rendered thing with its predecessor.
+
+### A different promise gets a different verb
+
+v1.136's rule was *one promise, two mechanisms*: pressing an animal follows them
+and pressing a family lights it up, and both say `👀 Show me` because both put
+the thing the sentence is about into the water. I very nearly reused it here for
+consistency's sake and stopped, because this press puts nothing in the water at
+all. A control that says *Show me* and then shows a card is a control that lied,
+and that is the same defect as the control that does nothing — v1.51's rule with
+the sign flipped. So: `📖 Their story`, and it lives in `memorial.js` rather
+than in the feed, because the cast board and the record book point at the dead
+too, and my own note about rules written into whatever file happened to be open
+is four entries old.
+
+### The browser, again, twice
+
+Ten presses at 20× landed ten times, and I watched a row turn from `👀 Show me`
+into `📖 Their story` in place and then pressed it — which is the patch path no
+`node --test` can reach. It also caught something that would otherwise have
+shipped: the flash read `📖 🥀 Robin of the Shale Sprigs`, two marks racing each
+other, and the one that lost is the one that says how they died. The offer wears
+the book because a reader needs to know what the press will do. The answer to it
+is a life, and a life is titled by its ending.
+
+### What this leaves
+
+- **The champion streak still reads like a log file**, and this cycle made it
+  louder rather than quieter: 68.3% of animal lines now wear `📖 Their story`,
+  and on a pond with one long-reigning champion that is the same chip down half
+  the column. The fix is not fewer controls, it is a narrator that summarises a
+  streak — 14.7% of adjacent line pairs share a sentence shape.
+- **A press still leaves no mark on the line pressed**, on this panel or the
+  record board, so a reader six presses in cannot see which six. Third entry
+  running for this one.
+- **A pond loaded from an archive has no book**, and it is the one honest hole:
+  those names were buried before anybody was watching, so their lines stay
+  sentences. Half of that could be closed — a saved run could carry its cards —
+  and the other half (a page opened mid-run) cannot.
+- **Nothing measures whether anybody presses anything.** Six releases running.
+  I have now shipped three cycles of controls in a row on the strength of
+  sweeps about *what could be pressed*, and I still have no idea what is.
+
+Shipped as v1.137.0.

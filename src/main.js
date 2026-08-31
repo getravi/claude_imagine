@@ -64,12 +64,14 @@ import {
 } from "./describe.js";
 import {
   FEED_SP_ATTR,
+  FEED_STORY_ATTR,
   FEED_WHO_ATTR,
   feedHTML,
   feedLineKey,
   feedRows,
   feedSignature,
 } from "./feed.js";
+import { Memorial } from "./memorial.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
 import { ViewState } from "./viewstate.js";
@@ -217,6 +219,12 @@ const trail = new Trail();
 // disagreed with each other; one object keyed on the world's identity now,
 // adopted at the top of the frame.
 const view = new ViewState();
+// The book of the dead (v1.137). Every animal the Chronicle names is watched
+// from the line that names them, and the life `obituary.js` writes at the
+// instant of death is kept instead of being dropped on the floor — so a reader
+// who presses a buried name is told what became of them. A pure observer, like
+// the trail above: written from this loop, never read by the simulation.
+const memorial = new Memorial();
 
 // Track FPS for the HUD.
 let lastFrame = performance.now();
@@ -243,6 +251,22 @@ function adoptWorld() {
   // running — `📂 Load` pours a saved run into a fresh `World` — has no
   // beginning here to record, gets `null`, and the board says so.
   view.founding = foundingSnapshot(world);
+  // A new pond, and creature ids come from a counter at module scope — so a
+  // life left in the book would sooner or later answer for somebody else.
+  memorial.forget();
+}
+
+// One look at the pond for the book of the dead, per *step* rather than per
+// frame — `trail.record`'s reason and the same arithmetic: at 20× a frame is
+// twenty ticks, and an animal named and then eaten inside one of them would be
+// a life this page never wrote. Everything expensive in here is behind a guard
+// that only opens when the Chronicle moves; what runs every step is a walk of
+// the handful of named animals still in the water, asking each whether it is
+// still alive.
+function witnessDeaths() {
+  for (const body of memorial.witness(world)) {
+    memorial.remember(obituaryFor(body, namesForTree(world.phylogeny), world.stats.recentDeaths));
+  }
 }
 
 function boot() {
@@ -377,13 +401,17 @@ function loop(now) {
     for (let i = 0; i < speed; i++) {
       world.step();
       // Inside the step loop, not once a frame: at 20× a frame is twenty ticks
-      // and a path sampled per frame would be a fifth of the corners.
+      // and a path sampled per frame would be a fifth of the corners. The book
+      // of the dead is here for the same arithmetic — see `witnessDeaths`.
       trail.record(renderer.selected, world.tick);
+      witnessDeaths();
     }
   } else {
     // Paused, so the tick guard makes this a no-op — except on the frame after
-    // a fresh selection, where it gives the path its first point.
+    // a fresh selection, where it gives the path its first point. The book
+    // still looks: a pond opened paused has a Chronicle to read subjects from.
     trail.record(renderer.selected, world.tick);
+    witnessDeaths();
   }
 
   // The camera catches up to whatever it is following before anything is drawn,
@@ -585,6 +613,37 @@ function watchCreature(c, flashText, sayText) {
   renderer.camera.setTarget(c);
   flash(flashText, MEET_FLASH_MS);
   announce(sayText);
+}
+
+// The other half of meeting somebody: reading what became of them (v1.137).
+//
+// The same four things `watchCreature` does, aimed at a body rather than at a
+// pond — the card goes into the panel that would be showing the animal if they
+// were alive, which is where a reader is already looking for *who is this*, and
+// is the panel v1.121 built the card for in the first place. Clearing the
+// selection is what makes it appear: `updateInspector` shows the obituary
+// whenever there is nobody selected and a card to show.
+//
+// The book is re-asked at the press rather than trusted from the row, for the
+// cast board's reason — a row is a picture of the frame it was drawn in, and
+// a card can fall out of the book between the draw and the click if the line
+// that was asking about it drops off the end of the feed.
+function tellStory(id) {
+  const card = memorial.get(id);
+  if (!card) {
+    flash("That life has scrolled out of this pond's memory.");
+    return;
+  }
+  renderer.selected = null;
+  view.obitCard = card;
+  const { title, sentences } = obituaryLines(card, config);
+  // No book mark in front of the title. The first browser press read
+  // "📖 🥀 Robin of the Shale Sprigs" — two marks racing each other, and the
+  // one that lost is the one that says *how they died*. The offer wears the
+  // book because a reader has to know what the press will do; the answer to it
+  // is a life, and a life is titled by its ending.
+  flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
+  announce(`${title}. ${sentences.join(" ")}`);
 }
 
 // ---- How they have changed (v1.128) ----
@@ -965,6 +1024,9 @@ function updateChronicle(world) {
     alive: (id) => alive.has(id),
     familyHere: (id) => families.has(id),
     familyName: (id) => speciesPlural(names, id),
+    // The third lookup, and the one that is not about the pond at all: whether
+    // this page kept a life for somebody it has buried (v1.137).
+    remembered: (id) => memorial.has(id),
   });
   const key = feedSignature(rows);
   if (key === view.lastChronKey) return; // nothing changed since last render
@@ -1014,12 +1076,16 @@ function paintChronicle(feed, rows) {
   if (head > 0) feed.insertAdjacentHTML("afterbegin", feedHTML(rows.slice(0, head)));
   while (feed.children.length > rows.length) feed.lastElementChild.remove();
   // Everything from `head` down is a line that was already on screen. It needs
-  // redrawing only if it has changed state — which is a button becoming a span
-  // or the other way round, and cannot be patched with a `textContent`.
+  // redrawing only if it has changed state — which is a button becoming a span,
+  // or the other way round, or (since v1.137) one offer becoming a different
+  // one, and none of the three can be patched with a `textContent`. The test is
+  // the row's *kind* rather than whether it is a control at all: an animal
+  // dying turns `👀 Show me` into `📖 Their story`, and a boolean holds both
+  // frames identical while the offer goes on pointing at an empty pond.
   for (let i = head; i < rows.length; i++) {
     const before = prev[i - head];
     const li = feed.children[i];
-    if (!li || !before || before.live === rows[i].live) continue;
+    if (!li || !before || before.kind === rows[i].kind) continue;
     li.outerHTML = feedHTML([rows[i]]);
   }
   // The flash belongs to the newest line and to nothing else.
@@ -1037,6 +1103,11 @@ function wireChronicleFeed() {
     const who = e.target.closest(`[${FEED_WHO_ATTR}]`);
     if (who) {
       watchNamed(Number(who.getAttribute(FEED_WHO_ATTR)));
+      return;
+    }
+    const story = e.target.closest(`[${FEED_STORY_ATTR}]`);
+    if (story) {
+      tellStory(Number(story.getAttribute(FEED_STORY_ATTR)));
       return;
     }
     const sp = e.target.closest(`[${FEED_SP_ATTR}]`);

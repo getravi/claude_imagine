@@ -4,6 +4,124 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.137.0] — 2026-08-31
+
+The book of the dead.
+
+Four releases running, this project's own notes ended with the same unbuilt
+thing: **63.4% of the Chronicle's lines about an animal name somebody buried**,
+`obituary.js` writes a life at the instant of death and throws it away, and it
+is the half that would make the *bottom* of the column worth pressing.
+
+v1.136 made the living names into doors. This makes the rest of them doors too:
+
+```
+👶  1,552 steps in   Onyx raises their 13th.                    👀 Show me
+👶    789 steps in   Robin raises their 9th.                 📖 Their story
+🌊  1,195 steps in   The pond swells past 300 creatures.
+```
+
+Press the second one:
+
+> **🥀 Robin of the Shale Sprigs**
+> They ran out of food. They lived far longer than most here.
+> They grazed on plants and were among the first here.
+> They left 9 young behind, so the line goes on.
+
+**The measurement is the cleanest one I have got out of one of these sweeps.**
+Twelve seeds, six thousand steps, sampled every fifty:
+
+- **100.0%** of the feed's lines about an animal become pressable — 8,402 of
+  8,402. Not 90-something. All of them, on every seed.
+- **31.7%** of those lines name somebody still in the water; **68.3%** name
+  somebody in this book.
+- The panel as a whole goes from **26.2%** of its lines pressable to **52.9%**,
+  and from a mean of 3.63 controls on screen to **8.06**.
+
+**Why it is exactly whole rather than nearly: the Chronicle only ever names an
+animal who is alive as it writes.** Over the whole sweep, 29 named subjects and
+not one of them already buried when their first line went up. So a watcher that
+picks a name up the moment it appears sees every one of those deaths happen.
+This panel's dead ends were never a gap in what could be *known* — they were a
+gap in what anybody had bothered to keep, and the fix is a `Map`.
+
+**The simple promise is the point.** Before, some names in the story led
+somewhere and some did nothing, and which was which was invisible until you
+pressed. Now every name the Chronicle prints is a door: the ones still in the
+water take you to them, and the rest tell you what happened. That is one rule a
+visitor can learn in one press, instead of a rule about mortality they have to
+infer over several.
+
+**The book has no size of its own, and I nearly gave it one.** I had a
+`MEMORIAL_MAX` half-typed before this project's own note stopped me — every
+"would this be too much?" written here has been a guess dressed as restraint. A
+card is worth keeping exactly while some line on the panel could ask about it,
+so the book is pruned against the Chronicle's own subjects and is bounded by the
+Chronicle's buffer, which is a constant somebody already measured and tested.
+The observed maximum, across every seed tried: **4 cards**.
+
+**A death used to change *whether* a row was a control and now changes *which*
+control it is**, and a boolean cannot see the difference. The feed's rows carry
+a `kind` — `watch`, `story`, `family` or nothing — because a panel that patches
+itself instead of rebuilding (v1.136's fix for a press that could not land)
+compares the old row with the new one to decide what to redraw, and against a
+boolean both frames look identical while the offer goes on inviting a reader to
+walk over to a body that is not there.
+
+**A different promise gets a different verb.** v1.136's rule was *one promise,
+two mechanisms*: both presses put the thing the sentence is about into the
+water, and which mechanism did it is an implementation detail. This press puts
+nothing in the water, so it may not borrow the words — a control that says
+*Show me* and then shows a card is a control that lied, which is the same defect
+as one that does nothing. Hence `📖 Their story`, and it lives in `memorial.js`
+rather than in the panel, because the cast board and the record book point at
+the dead too and this project has a habit of writing a rule into whatever file
+happened to be open.
+
+**Per step, not per frame.** A death is noticed inside the step loop beside
+`trail.record`, for the same arithmetic: at 20× a frame is twenty ticks, and an
+animal named and then eaten inside one of them would be a life this page never
+wrote — which is v1.133's finding exactly, where the first press in a real
+browser said hello to an animal and read its obituary a third of a second later.
+
+**The browser earned its place again, twice.** Ten presses at 20× landed ten
+times, and the row was watched turning from `👀 Show me` into `📖 Their story`
+in place, which is the patch path no `node --test` can reach. What it also found
+is smaller and would have shipped otherwise: the flash read
+`📖 🥀 Robin of the Shale Sprigs` — two marks racing each other, and the one
+that lost is the one that says *how they died*. The offer wears the book because
+a reader has to know what the press will do; the answer to it is a life, and a
+life is titled by its ending.
+
+### Added
+
+- **`src/memorial.js`** — the book of the dead: the watch that follows every
+  animal the Chronicle names, the prune that keeps the book the size of the
+  question the panel can ask, and `STORY_LABEL`.
+- **`test/memorial.test.js`** — seven tests: that the Chronicle only ever names
+  the living (the fact the whole feature rests on); that every animal line ends
+  up with somewhere to lead; that the book declares no size constant and stays
+  inside the panel's subjects; that it keeps cards and never bodies; that a life
+  leaves when the last line about it does; that a watched pond is bit-for-bit
+  the pond nobody watched; and that the buried line's verb is not the living
+  line's verb.
+
+### Changed
+
+- **`src/feed.js`** — a third kind of press. Rows carry `told`, `kind` and
+  `label`; the signature encodes the kind rather than a boolean; the markup
+  picks its attribute and its words from the row.
+- **`src/main.js`** — `witnessDeaths` in the step loop, `tellStory` on the
+  press, the `remembered` lookup on the feed's adapter, and `paintChronicle`
+  reconciling on `kind`. The book is forgotten when the pond is replaced: ids
+  come from a counter at module scope, so a card left behind would sooner or
+  later answer for somebody else.
+- **`test/feed.test.js`** — two tests: that a subject dying changes the offer
+  and moves the signature, and that a buried animal this pond wrote no life for
+  stays a sentence.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each, and the feed's entry
+  rewritten around the third press.
+
 ## [1.136.0] — 2026-08-31
 
 The Chronicle you can press.

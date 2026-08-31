@@ -38,11 +38,13 @@ import { chronicleFingerprint, EVENT_HASHED, EVENT_UNHASHED } from "../src/finge
 import {
   FEED_EMPTY,
   FEED_SP_ATTR,
+  FEED_STORY_ATTR,
   FEED_WHO_ATTR,
   feedHTML,
   feedRows,
   feedSignature,
 } from "../src/feed.js";
+import { STORY_LABEL } from "../src/memorial.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -76,7 +78,8 @@ test("a row is a control exactly when its subject is still in the pond", () => {
   const look = lookups(world);
   let controls = 0;
   for (const r of rows) {
-    const hasSubject = r.who >= 0 || r.sp >= 0;
+    // Three kinds of id since v1.137, and a row keeps at most one of them.
+    const hasSubject = r.who >= 0 || r.sp >= 0 || r.told >= 0;
     assert.equal(r.live, hasSubject, "a row is live if and only if it kept an id");
     if (r.live) controls++;
     if (r.who >= 0) assert.ok(look.alive(r.who), "a row points at an animal still alive");
@@ -207,9 +210,57 @@ test("the two kinds of row are the same shape, and only one is a button", () => 
   assert.equal((html.match(/class="c-row"/g) || []).length, rows.length, "every row is a c-row");
   assert.equal((html.match(/<li /g) || []).length, rows.length, "one li per line");
   assert.ok(html.includes(FEED_WHO_ATTR) || html.includes(FEED_SP_ATTR), "no press anywhere");
-  // The offer is the ladder's, letter for letter: one promise, one face.
+  // The offer is the ladder's, letter for letter, on both presses that put
+  // something in the water: one promise, one face.
   assert.equal((html.match(new RegExp(WATCH_LABEL, "g")) || []).length, live);
   assert.ok(!html.includes("undefined"), "a field the markup expected was not there");
+});
+
+test("a subject dying changes the offer, not merely whether there is one", () => {
+  // The bug v1.137's `kind` exists to stop. Until the book of the dead, a death
+  // turned a button into a sentence and a boolean caught it; now it turns
+  // `👀 Show me` into `📖 Their story`, and a panel that patches itself against
+  // a boolean would hold both frames identical and go on offering to walk a
+  // reader over to a body that is not there.
+  const world = pond(123);
+  const events = world.chronicle.events;
+  const look = lookups(world);
+  const before = feedRows(events, look);
+  const watched = before.find((r) => r.kind === "watch");
+  assert.ok(watched, "no line about a living animal, so this proves nothing");
+  const buried = {
+    ...look,
+    alive: (id) => id !== watched.who && look.alive(id),
+    remembered: (id) => id === watched.who,
+  };
+  const after = feedRows(events, buried);
+  const row = after.find((r) => r.tick === watched.tick && r.msg === watched.msg);
+  assert.equal(row.kind, "story", "a buried animal with a life written leads to it");
+  assert.equal(row.live, true, "a life to read is still a press");
+  assert.equal(row.told, watched.who);
+  assert.equal(row.who, -1, "a story row must not also offer to walk to the body");
+  assert.notEqual(
+    feedSignature(after),
+    feedSignature(before),
+    "the panel would leave a Show me pointing at an empty pond"
+  );
+  const html = feedHTML([row]);
+  assert.ok(html.includes(`${FEED_STORY_ATTR}="${watched.who}"`), "the press carries no id");
+  assert.ok(html.includes(STORY_LABEL), "the offer does not say what it opens");
+  assert.ok(!html.includes(WATCH_LABEL), "a card is not a thing you can be shown in the water");
+  assert.match(row.action, /^What became of /, `"${row.action}" is not a question about a life`);
+});
+
+test("a buried animal this pond wrote no life for stays a sentence", () => {
+  // v1.51's rule, which the third press does not get to bend: a control that
+  // does nothing is worse than no control. A pond opened from an archive has a
+  // Chronicle full of names whose deaths nobody was here to see.
+  const world = pond(123);
+  const rows = feedRows(world.chronicle.events, { ...lookups(world), alive: () => false });
+  for (const r of rows) {
+    assert.equal(r.told, -1, "a row led to a life this pond never wrote");
+    assert.notEqual(r.kind, "story");
+  }
 });
 
 test("the button's name is the story and then the verb", () => {

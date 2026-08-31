@@ -73,6 +73,45 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The book of the dead — shipped in v1.137 (`src/memorial.js`), and what it
+  leaves.** Four cycles running this list ended with the same unbuilt thing:
+  63.4% of the Chronicle's animal lines name somebody buried, and
+  `obituary.js` wrote a life at the instant of death and threw it away. Every
+  animal the feed names is now watched from the line that names them, and a
+  buried name opens `📖 Their story`. Four findings. (i) **The share came back
+  whole, which has never happened here: 100.0%** of the feed's animal lines
+  become pressable, 8,402 of 8,402 across twelve seeds — because **the
+  Chronicle only ever names an animal who is alive as it writes** (29 subjects,
+  none already buried), so a watcher that picks a name up on sight cannot miss
+  a death. The reframe worth carrying: this panel's dead ends were never a gap
+  in what could be *known* — every fact in that card existed at the moment of
+  death, in an object about to be dropped — but a gap in what anybody **kept**.
+  Ask of every silence on this page whether the fact was unavailable or merely
+  unsaved. (ii) **A store that exists to answer one surface should carry that
+  surface's bound, not a number I picked.** I had a `MEMORIAL_MAX` half-typed;
+  a card is worth keeping exactly while a line could ask about it, so the book
+  prunes against the Chronicle's subjects and the magic number disappeared. The
+  observed maximum is 4 cards. Every other cache here carries a cap I chose;
+  this one carries a question. (iii) **A boolean that answers "did this
+  change?" is only as good as the number of states the thing has.** The feed
+  patches itself by comparing a row with its predecessor on `live`, which was
+  complete while a death turned a button into a sentence and became blind the
+  moment a death turned one *offer* into another. Adding a third state to
+  anything is also an edit to every comparison written when there were two —
+  worth a grep for the other places a rendered thing is diffed against its
+  predecessor. (iv) **A different promise gets a different verb.** v1.136's
+  *one promise, two mechanisms* covers the presses that put something in the
+  water; this one opens a card, and a control that says *Show me* and then
+  shows no pond is v1.51's rule with the sign flipped. What it leaves: (a) the
+  **champion streak still reads like a log file**, and this made it louder —
+  68.3% of animal lines now wear the same chip, and the fix is a narrator that
+  summarises a streak, not fewer controls; (b) **a press still leaves no mark
+  on the line pressed**, third cycle running; (c) **a pond loaded from an
+  archive has no book**, and half of that could be closed by saving the cards
+  with the run; (d) **nothing measures whether anybody presses anything**, six
+  releases running, and three cycles of controls have now shipped on sweeps
+  about what *could* be pressed.
+
 - **The Chronicle you can press — shipped in v1.136 (`src/feed.js`), and what
   it leaves.** The last inert panel on the page, and the one a visitor actually
   sits and reads. Every other board learned to point at the water between v1.119
@@ -1547,6 +1586,39 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A store that exists to answer one surface should be bounded by that
+  surface's question, not by a number I chose.** I had a `MEMORIAL_MAX`
+  half-typed into v1.137's book of the dead before my own v1.125 note caught me
+  — every "would this be too much?" written here is a guess dressed as
+  restraint. So I asked what the book is *for*: a card is worth keeping exactly
+  while some line on the panel could still ask about it, no longer and not one
+  card less. Pruning it against the Chronicle's own subjects made its bound the
+  Chronicle's buffer, which is a constant somebody already measured and already
+  tests, and the decision disappeared along with the constant. Observed maximum
+  across twelve seeds: 4 cards, where I would have typed 100. The chore: for
+  every cache and ring here that carries a cap I picked — `Stats.deathWindow`,
+  the trail's length, the archive's resolutions — write down which surface
+  consumes it and whether that surface already has a bound. And the companion
+  finding, which is the more useful half: the panel's dead ends were never a gap
+  in what could be **known** (every fact in that card existed at the instant of
+  death, in an object the world was about to drop) but a gap in what anybody
+  **kept**. For every silence on this page, ask which of the two it is before
+  concluding it cannot be filled.
+
+- **A boolean that answers "did this change?" is only as good as the number of
+  states the thing has, and adding a third state is an edit to every comparison
+  written when there were two.** The Chronicle patches itself rather than
+  rebuilding — v1.136's fix for a press that could not land — and decides what
+  to redraw by asking `before.live === now.live`. That was a complete question
+  while a death turned a button into a sentence. The moment v1.137 gave a death
+  a second thing to do (turn `👀 Show me` into `📖 Their story`) both frames read
+  `live: true`, the row was skipped, and the panel went on offering to walk a
+  reader over to a body that was not there. Twelve green tests did not see it;
+  the fix is that a row carries its *kind*. The chore, one grep: every place
+  here that compares a rendered thing with its predecessor to decide whether to
+  repaint — the signatures, the inspector's key, the ladder's rows — and for
+  each, whether the comparison still enumerates every state its subject has.
 
 - **When a surface points at things, price each *kind* of thing separately —
   a mean over two populations with a threefold gap is a number about neither.**
