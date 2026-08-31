@@ -39,8 +39,8 @@ import {
   recordRows,
   recordSignature,
   recordsHTML,
-  yearOf,
 } from "../src/records.js";
+import { stepsIn } from "../src/pondclock.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(join(root, p), "utf8");
@@ -202,19 +202,21 @@ test("the marks and titles are one per record, all different", () => {
   assert.equal(new Set(marks).size, marks.length, "two records wear the same mark");
 });
 
-test("the crowd record carries the year it was set, and drops it in a pond with no years", () => {
-  const { world, config, names: nm } = stepped(314, 3000);
-  const crowd = rowOf(recordRows(world, config, nm), "crowd");
-  if (crowd && !crowd.why.includes("right now")) {
-    const year = yearOf(world.stats.maxPopTick, config);
-    assert.ok(crowd.why.includes(`back in year ${year}`), "the crowd record has no date on it");
+// v1.135: the date is the step, in the page's one clock, and it is the same
+// clause in every pond. It used to be `back in year N`, which needed a second
+// sentence for a pond with no seasons — the case this test still covers,
+// because the point of the change is that there is no longer a case.
+test("the crowd record carries the step it was set on, in every pond", () => {
+  for (const overrides of [{}, { seasons: false }]) {
+    const { world, config, names: nm } = stepped(314, 3000, overrides);
+    const crowd = rowOf(recordRows(world, config, nm), "crowd");
+    if (!crowd || crowd.why.includes("right now")) continue;
+    assert.ok(
+      crowd.why.includes(stepsIn(world.stats.maxPopTick)),
+      `the crowd record has no date on it: "${crowd.why}"`,
+    );
+    assert.doesNotMatch(crowd.why, /year/, "a record is dated in years again");
   }
-  const flat = stepped(314, 1500, { seasons: false });
-  const noYear = rowOf(recordRows(flat.world, flat.config, flat.names), "crowd");
-  if (noYear && !noYear.why.includes("right now")) {
-    assert.doesNotMatch(noYear.why, /year/, "a pond with no seasons was given a year to be in");
-  }
-  assert.equal(yearOf(0, flat.config), 0, "a pond with no seasons has a year anyway");
 });
 
 // ---- 3. a row that is not a record is not drawn ----

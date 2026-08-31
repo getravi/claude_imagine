@@ -806,12 +806,18 @@ body {
   font-size: 15px;
   flex: 0 0 auto;
 }
+/* The date column. Wider since v1.135, because `t244 · yr1` became `244 steps
+   in` — the page's one clock, in words a visitor has. Right-aligned rather than
+   left: every label ends in the same two words, so aligning the right edge puts
+   the units digits of the numbers under each other and turns the column into a
+   ruler you can read down. Still mono, which is what makes that line up. */
 .chronicle-feed .c-when {
   flex: 0 0 auto;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-faint);
-  min-width: 62px;
+  min-width: 92px;
+  text-align: right;
 }
 .chronicle-feed .c-msg {
   flex: 1;
@@ -2235,5 +2241,28 @@ button.tour-open:hover {
   }
   .panel {
     order: 2;
+  }
+}
+
+/* The Chronicle on a phone (v1.135). The date column grew from `t244` to
+   `244 steps in` — the right words, and about ninety pixels of a three-hundred
+   and ninety pixel screen, which pushed every sentence into four wrapped lines
+   beside a mostly-empty gutter. So below this width the line stops being a row
+   and becomes a stack: the mark and the date on top, the sentence underneath
+   with the whole panel to itself. That is what every feed a person already
+   reads does at this size, and it is the same words either way — a layout that
+   changes with the screen, not a second clock that changes with it. */
+@media (max-width: 560px) {
+  .chronicle-feed li {
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 1px;
+  }
+  .chronicle-feed .c-when {
+    min-width: 0;
+    text-align: left;
+  }
+  .chronicle-feed .c-msg {
+    flex: 1 0 100%;
   }
 }

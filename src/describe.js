@@ -47,6 +47,7 @@ import { readable } from "./seasonlag.js";
 import { sizeAxis, SIZE_BINS } from "./sizeplot.js";
 import { speciesLabel } from "./speciesnames.js";
 import { eventLine } from "./chronicle.js";
+import { yearOf } from "./pondclock.js";
 
 /** How many Chronicle lines a single utterance may carry — see `pendingSpeech`. */
 export const MAX_SPOKEN = 3;
@@ -69,8 +70,10 @@ export function seasonLabel(tick, config) {
   else if (s < -0.5) [icon, name] = ["❄️", "Winter"];
   else if (rising) [icon, name] = ["🌱", "Spring"];
   else [icon, name] = ["🍂", "Autumn"];
-  const year = Math.floor(tick / config.seasonLength) + 1;
-  return { icon, name, year };
+  // The badge is the one surface that still counts years, and it is entitled
+  // to: it says what season it is *now*, which is a thing a year is the right
+  // unit for. What it no longer does is spell the arithmetic out (v1.135).
+  return { icon, name, year: yearOf(tick, config) };
 }
 
 /**

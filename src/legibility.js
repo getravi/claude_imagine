@@ -217,7 +217,7 @@ export const TEXT_PAIRS = Object.freeze([
 
   // ---- the app (app/index.html, style.css) ----
   { page: "app", ink: "--ink-faint", ground: "#0d1826", px: 12.5, weight: 400, seen: 13, sample: "p.phylo-sub 'Each band is a species…'" },
-  { page: "app", ink: "--ink-faint", ground: "#111821", px: 11, weight: 400, seen: 2, sample: "span.c-when 't244 · yr1'" },
+  { page: "app", ink: "--ink-faint", ground: "#111821", px: 11, weight: 400, seen: 2, sample: "span.c-when '244 steps in'" },
   { page: "app", ink: "--ink-faint", ground: "#0c131c", px: 12.5, weight: 400, seen: 60, sample: "span.chronicle-sub 'the natural history of this pond'" },
   { page: "app", ink: "--ink-faint", ground: "#070c13", px: 11, weight: 400, seen: 1, sample: "span.yr '· year 1'" },
   { page: "app", ink: "--ink-dim", ground: "#111a26", px: 11, weight: 400, seen: 17, sample: "kbd 'Space'" },

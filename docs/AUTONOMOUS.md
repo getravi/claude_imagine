@@ -73,6 +73,39 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **One clock — shipped in v1.135 (`src/pondclock.js`), and what it leaves.**
+  Three panels here date an event and each said it differently: the ladder
+  *1,724 steps in*, the record book *back in year 1*, the Chronicle `t244 · yr1`
+  — the engine's own variable with a letter on the front, on the panel a visitor
+  is most likely to sit and read. All three say the step now. Four findings.
+  (i) **A fix that lives in a private function is a fix for one caller.** v1.131
+  found this exact bug, wrote the reasoning into a comment, and put the function
+  in `milestones.js` as `whenReached`, where the next surface could not import
+  it; the reason then sat in that comment naming the two panels still doing it
+  wrong for four releases. Every rule I have found about how this page should
+  talk has been written into whatever module I was holding at the time, and that
+  is where it stays. (ii) **Nine to one, which I would not have guessed.** Over
+  twelve seeds at six thousand steps, 91.8% of adjacent Chronicle lines carry
+  the same year as the line above (224 of 244 pairs) against 7.4% repeating the
+  step; 56.3% of all lines say `yr1`; a pond's whole feed sits inside one year
+  until step 2,601. (iii) **The 7.4% is honest and I nearly "fixed" it.** Those
+  repeats are the pond doing two things on one step — three lines reading
+  *244 steps in* are three things that happened together — and I had drafted a
+  grouping rule to hide them before noticing that a repeat which is a *fact* is
+  not the same defect as a repeat which is a unit being too coarse.
+  (iv) **When a unit forces a special case, the special case may be the unit
+  telling you it is wrong.** The record book needed a second sentence for a pond
+  with seasons off, because a pond can fail to have years; it cannot fail to
+  have steps, and the branch is gone. What it leaves: (a) **the Chronicle still
+  points at nobody**, and the sweep says it is worth building — 43.4% of the
+  who-lines on screen name somebody alive, 58.8% of instants have at least one;
+  (b) **the other half of that wants a book of the dead**, since `obituary.js`
+  writes a life at the instant of death and throws it away; (c) **`describe.js`
+  still spells out other people's arithmetic** — the season phase, the day phase
+  and the lag live in more than one place between it, `environment.js` and
+  `seasonlag.js`, and I have not swept them; (d) **nothing measures whether
+  anybody presses anything**, four releases running.
+
 - **The pond's name — shipped in v1.134 (`src/pondname.js`), and what it
   leaves.** For a hundred and thirty-three releases the world a visitor watches
   was an integer, and eighteen of those releases went into teaching this page to
@@ -1471,6 +1504,30 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A sweep that samples one instant of a run has measured that instant, and
+  the end of a run is the most biased instant there is.** I asked how many of
+  the Chronicle's named animals are still alive, sampled at tick 6,000 over
+  twelve seeds, and got **0 of 86** — which killed a feature for about twenty
+  minutes. Sampled every fifty steps, where a reader actually stands, the answer
+  is **43.4%**. The end of a run is the one moment when every record-holder has
+  had the whole run to die in. The chore, and it is five minutes: for every
+  "how often is X true" number in this project, check *which instants it was
+  asked at*. A share over the lifetime of a run and a share at the end of one
+  are different quantities, and only the first is about what a visitor sees.
+
+- **A rule about how this page should talk, written into the module I happened
+  to be holding, is a rule that module owns and nobody else can find.** v1.131
+  worked out that a year is the wrong unit for dating anything here, wrote the
+  argument into a comment, named the two panels still getting it wrong — and put
+  the function in `milestones.js` as a private `whenReached`. Four releases
+  later both named panels were still wrong, because a fix in a private function
+  is a fix for one caller. The chore: when a cycle produces a *rule* rather than
+  a feature (no jargon, no units, a control that does nothing is worse than no
+  control, an elapsed time is not a coordinate), ask before shipping whether it
+  belongs in a module of its own that the other surfaces can import. If the
+  comment explaining the fix has to name other files, that is the tell.
+
 
 - **A rule that picks an extreme should be asked what else that quantity
   predicts, and none of mine ever had been.** v1.133's family rung offered the

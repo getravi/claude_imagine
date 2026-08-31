@@ -4,6 +4,102 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.135.0] — 2026-08-31
+
+One clock.
+
+Three panels on this page tell you when something happened, and until today each
+of them said it in a different language:
+
+```
+the ladder        1,724 steps in
+the record book   312 animals at once, back in year 1
+the Chronicle     t244 · yr1
+```
+
+The third one is the engine's own variable with a letter stuck on the front,
+printed on the panel a visitor is most likely to actually sit and read. Both
+`records.js` and `milestones.js` have banned the word *tick* from a visitor's
+sentence for eleven releases. The Chronicle has been showing them the number
+itself since v1.3.
+
+All three now say **`1,664 steps in`**.
+
+**The year was barely a date, and there are numbers.** A year here is
+`seasonLength` — 2,600 steps, about forty-five seconds at the speed the page
+opens on. Over twelve seeds run six thousand steps:
+
+- **91.8%** of adjacent Chronicle lines carry the same year stamp as the line
+  above them — 224 of 244 pairs. A column that repeats itself nine times in ten
+  is not dating anything; it is decoration shaped like data.
+- **7.4%** of those pairs repeat the *step*, and every one of them is true: the
+  pond really does do two things at once, and three lines reading `244 steps in`
+  are three things that happened together. Ten to one is the margin.
+- **56.3%** of every line ever written says `yr1`.
+- A pond's entire feed sits inside a single year until step **2,601** (median of
+  twelve, range 2,501–3,401) — longer than most visits last.
+- The record book's crowd row read *back in year 1* on **31.8%** of sampled
+  instants.
+
+This is v1.131's finding arriving on the two panels it named. The ladder found
+it against a browser at the time — *thirty seconds of a default pond drew
+"reached in year 1" five times down a column* — wrote the reason into a comment,
+and left the fix in a private function in one module, where the next surface
+could not reach it. Fifteen green tests said nothing then and a hundred and
+thirty-four releases said nothing since.
+
+**Losing a branch is how you know the unit was wrong.** The record book needed a
+second sentence for a pond with seasons switched off, because a pond can fail to
+have years: *"312 animals at once, and the pond has not been so full since"*. It
+cannot fail to have steps. The special case is gone and every pond gets the same
+clause.
+
+**And the year arithmetic was written out by hand three times** — in
+`chronicle.js` since v1.3, `describe.js` since v1.17 and `records.js` since
+v1.124, the last of them under a comment observing that "two surfaces saying
+'year 2' about different years is the shape this project keeps finding on the
+wrong side of a bug." Which was exactly right, and was an argument for importing
+rather than for copying carefully. There is one copy now, and a test that fails
+if anybody spells it out again.
+
+The year does not go away. It is simply no longer how anything is *dated*: it
+survives on the season badge over the water (*Winter · year 1*), which is a
+statement about **now**, and a year is the right unit for one.
+
+### Added
+
+- **`src/pondclock.js`** — `stepsIn` (the ladder's phrasing, now everyone's) and
+  `yearOf` (the one copy of the year). It imports nothing, draws nothing and
+  reads no world: two pure functions of a number. There is a test that asserts
+  the import list is empty, for `pondname.js`'s reason — a clock with a
+  dependency is a clock that can disagree.
+- **`test/pondclock.test.js`** — nine tests: the phrasing and its plural; the
+  no-jargon bar the rest of this page's prose is held to; that the column stays
+  monotone through the grouping separators; the year's turnover and its absence
+  in a pond without seasons; that the ladder, the record book and the Chronicle
+  all match one pattern; a **structural** guard that no module spells the year
+  expression out again; and the 91.8%-against-7.4% measurement above, pinned so
+  that a world which makes the year informative again would fail it and make me
+  take the decision a second time.
+
+### Changed
+
+- **`src/main.js`** — the Chronicle's date column. `t244 · yr1` → `244 steps in`.
+- **`src/records.js`** — the crowd record is dated in steps, in every pond;
+  `whenClause` and the local `yearOf` are gone.
+- **`src/milestones.js`**, **`src/chronicle.js`**, **`src/describe.js`** — the
+  same two functions, imported instead of written out.
+- **`style.css`** — the date column is wider (92 px) and **right-aligned**, so
+  the units digits stack under each other and the column reads down like a
+  ruler; mono, which is what makes that work. And, below 560 px, the line stops
+  being a row and becomes a stack — mark and date on top, sentence underneath
+  with the whole panel to itself. The longer words cost a phone about forty
+  pixels of sentence and wrapped every line into four; a layout that changes
+  with the screen is not a second clock that changes with it.
+- **`src/legibility.js`** — the `span.c-when` row's sample text. Same ink, same
+  ground, same size: no new pair to price.
+- **`README.md`**, **`docs/ARCHITECTURE.md`** — a row each.
+
 ## [1.134.0] — 2026-08-30
 
 Every pond gets a name.

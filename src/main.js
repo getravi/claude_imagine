@@ -80,6 +80,7 @@ import {
   milestonesHTML,
   milestonesSay,
 } from "./milestones.js";
+import { stepsIn } from "./pondclock.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
@@ -947,7 +948,11 @@ function updateChronicle(world) {
   let html = "";
   for (let i = ev.length - 1; i >= 0; i--) {
     const e = ev[i];
-    const when = "t" + e.tick.toLocaleString() + (e.year ? ` · yr${e.year}` : "");
+    // The step, in the page's one clock (v1.135). This column read `t244 · yr1`
+    // for a hundred and thirty-four releases: the engine's own variable with a
+    // letter in front of it, and beside it a year that 91.8% of the time is the
+    // same year as the line above. `pondclock.js` has the measurements.
+    const when = stepsIn(e.tick);
     const fresh = i === ev.length - 1 ? " fresh" : "";
     // A line about an animal stores a predicate and gets its subject here
     // (v1.125) — the name is marked up rather than run into the sentence,

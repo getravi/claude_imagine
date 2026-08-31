@@ -35,6 +35,10 @@ import { nameSpecies, speciesPlural } from "./speciesnames.js";
 // the whole palette in behind it, and the narrator has no use for a colour.
 // One definition either way — the number lives in `cast.js` and nowhere else.
 import { PARENT_MIN_CHILDREN, givenName, ordinal } from "./cast.js";
+// The year arithmetic, which this module wrote out by hand from v1.3 until
+// v1.135 and two others copied from it. Nothing about the number changes; it is
+// the same expression in one place instead of three.
+import { yearOf } from "./pondclock.js";
 
 /**
  * Consecutive observations the population must spend on smoother-than-average
@@ -158,8 +162,7 @@ export class Chronicle {
    *   id is not comparable between two worlds in one process.
    */
   _push(tick, icon, cat, msg, who = -1) {
-    const year = this.config.seasons ? Math.floor(tick / this.config.seasonLength) + 1 : 0;
-    this.events.push({ tick, year, icon, cat, msg, who });
+    this.events.push({ tick, year: yearOf(tick, this.config), icon, cat, msg, who });
     if (this.events.length > this.max) this.events.shift();
   }
 

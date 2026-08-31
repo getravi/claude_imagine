@@ -63,10 +63,11 @@
 // **A fourth finding, and it came from the screenshot rather than the sweep.**
 // The dates were written in *years*, because that is the clock every other
 // backward-looking surface here uses, and thirty seconds of a default pond drew
-// **reached in year 1** five times down one column. See `whenReached`: the whole
-// ladder is climbed inside a single one of this world's years, so the habit was
-// a unit one tick wide for the only panel that needed a finer one. Fifteen green
-// tests said nothing about it.
+// **reached in year 1** five times down one column. See `pondclock.js`: the
+// whole ladder is climbed inside a single one of this world's years, so the
+// habit was a unit one tick wide for the only panel that needed a finer one.
+// Fifteen green tests said nothing about it. v1.135 took the same argument to
+// the record board and the Chronicle.
 //
 // **v1.133: a rung leads to somebody.** The ladder said *a dynasty — one animal
 // has raised five young* and gave a reader no way to find out which one, which
@@ -106,6 +107,7 @@
 // six integers.
 
 import { MULLER_MIN_PEAK } from "./phylogeny.js";
+import { stepsIn } from "./pondclock.js";
 
 /**
  * Members at once before a bloodline counts as a family. The Muller plot's own
@@ -399,28 +401,22 @@ export class Milestones {
   }
 }
 
-/**
- * When a rung was reached, in the one unit that can tell these six apart.
- *
- * **This started as the year, and the first browser run deleted it.** Every
- * other backward-looking surface here dates itself in years — `records.js` has
- * said *back in year 3* since v1.124 and the Chronicle stamps every line `yr1`
- * — so the ladder was written to match, and then a default pond left thirty
- * seconds drew *reached in year 1* five times in a column. A year here is 2,600
- * steps and the whole ladder is climbed in about 3,000, so **the ladder lives
- * inside the pond's first year** and the clock this project reaches for by habit
- * is one tick wide for the only panel that needed it to be finer.
- *
- * So: the step, which is the number that actually varies — 9 to 5,093 across
- * the sweep. Not the word `tick`, which is what the engine calls it and what
- * `test/records.test.js` has kept out of a visitor's sentence since v1.124;
- * `step` is the page's own word for the same number, on the keyboard hint under
- * the buttons. Phrased *1,724 steps in* rather than *at step 1,724* because the
- * first is how a person says an elapsed time and the second is a coordinate.
- */
-function whenReached(tick) {
-  return `${tick.toLocaleString()} ${tick === 1 ? "step" : "steps"} in`;
-}
+// When a rung was reached: `pondclock.js`, which is where this function now
+// lives.
+//
+// **It started as the year, and the first browser run deleted it.** Every other
+// backward-looking surface here dated itself in years — `records.js` said *back
+// in year 3* and the Chronicle stamped every line `yr1` — so the ladder was
+// written to match, and then a default pond left thirty seconds drew *reached
+// in year 1* five times in a column. A year here is 2,600 steps and the whole
+// ladder is climbed in about 3,000, so the ladder lives inside the pond's first
+// year, and the clock this project reached for by habit was one tick wide for
+// the only panel that needed it to be finer.
+//
+// The step is the number that actually varies — 9 to 5,093 across the sweep.
+// v1.135 took that argument to the two panels this comment used to complain
+// about and moved the function out to where all three could reach it; the
+// reasoning is now in `pondclock.js`, with the measurements that settled it.
 
 /** `n` of something, with the plural the count actually needs. */
 function count(n, noun) {
@@ -460,7 +456,7 @@ export function milestoneRows(world, config) {
         done: true,
         blocked: false,
         why: m.done(world),
-        when: whenReached(tick),
+        when: stepsIn(tick),
         who: subject ? subject.id : -1,
         whoIs: subject ? m.whoIs : "",
       };

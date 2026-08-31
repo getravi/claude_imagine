@@ -52,9 +52,10 @@
 //     three young or a family of two is not a record; both floors are imported
 //     from the modules that already own that judgement rather than typed again
 //     here.
-//  2. **No units and no jargon.** Counts of animals and years of pond time,
-//     which are the two quantities a visitor already has. There is no tick, no
-//     pixel and no lineage in any sentence this module produces, and
+//  2. **No units and no jargon.** Counts of animals and steps of pond time,
+//     which are the two quantities a visitor already has — the second of them a
+//     year until v1.135, for the reason written above `recordRows`. There is no
+//     tick, no pixel and no lineage in any sentence this module produces, and
 //     `test/records.test.js` checks it the way `cast.js`, `obituary.js` and
 //     `key.js` are checked.
 //  3. **A swatch means *go and find them*.** The colour patch that the cast
@@ -74,6 +75,7 @@ import { PARENT_MIN_CHILDREN, givenName } from "./cast.js";
 import { MULLER_MIN_PEAK } from "./phylogeny.js";
 import { speciesPlural } from "./speciesnames.js";
 import { inspectorSwatch } from "./palette.js";
+import { stepsIn } from "./pondclock.js";
 
 /**
  * Young enough to be a record. The cast board's floor for calling somebody a
@@ -121,24 +123,19 @@ export const RECORDS_EMPTY =
   "No records yet — this pond is too young to have a best of anything. " +
   "Give it a minute.";
 
-/**
- * The year a tick falls in, or 0 in a pond with no seasons.
- *
- * The Chronicle has counted years off `seasonLength` since v1.3 and this is the
- * same arithmetic, deliberately: two surfaces saying "year 2" about different
- * years is the shape this project keeps finding on the wrong side of a bug. A
- * pond with seasons switched off has no year to be in, and the sentences here
- * drop the clause instead of inventing one.
- */
-export function yearOf(tick, config) {
-  return config.seasons ? Math.floor(tick / config.seasonLength) + 1 : 0;
-}
-
-/** "in year 3", or nothing at all in a pond with no years. */
-function whenClause(tick, config) {
-  const year = yearOf(tick, config);
-  return year ? `back in year ${year}` : "and the pond has not been so full since";
-}
+// When a record was set: `pondclock.js`, and the change is v1.135's.
+//
+// This board said **back in year 3** from v1.124, on the argument that a year
+// is a unit a visitor already has and a tick is not. Half of that was right.
+// The half that was wrong is that a year here is 2,600 steps — about
+// forty-five seconds — so on **31.8% of sampled instants** across twelve seeds
+// the crowd row read *back in year 1*, which dates a record to "some time in
+// the pond's entire life so far".
+//
+// It also needed a second sentence for a pond with no seasons ("and the pond
+// has not been so full since"), because a pond can fail to have years. It
+// cannot fail to have steps, so the special case is gone and every pond gets
+// the same clause. Losing a branch is usually the sign that a unit was wrong.
 
 /**
  * The board's rows: plain data, best-known-first, every one of them true.
@@ -196,7 +193,7 @@ export function recordRows(world, config, names = null) {
       why:
         now >= peak
           ? `${peak} animals at once — and that is right now`
-          : `${peak} animals at once, ${whenClause(stats.maxPopTick || 0, config)}`,
+          : `${peak} animals at once, ${stepsIn(stats.maxPopTick || 0)}`,
       id: -1,
       hue: null,
     });

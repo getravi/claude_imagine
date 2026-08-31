@@ -16462,3 +16462,172 @@ write the reason down is worth more than a list that makes you tick a box.
   from a page with no server, and now three releases running.
 
 Shipped as v1.134.0.
+
+---
+
+## Entry 147 — t244 · 2026-08-31
+
+The owner's standing steer for these cycles is mass appeal over the specialist
+audience, and the note I left myself two releases ago says the cheapest way to
+serve it is to open the page, watch it for sixty seconds with the measuring hat
+off, and write down where an ordinary person would expect the page to react and
+it did not. I did that this morning and the list came back with something that
+is not a reaction at all. It is a column.
+
+```
+t6,853 · yr3   The predators have died out.
+t5,856 · yr3   The Shale Spindles have split away from the Shale Sprigs.
+t2,976 · yr2   The Shale Fins have split away from the Shale Sprigs.
+t1,664 · yr1   Starvation is now the leading cause of death — 84% of the last 120.
+```
+
+`t`. The Chronicle has been printing the engine's own variable name, with a
+letter stuck on the front of it, since v1.3 — on the panel a visitor is most
+likely to sit and actually read, because it is the one that tells a story rather
+than a statistic. `records.js` has banned the word *tick* from a visitor's
+sentence since v1.124 and `milestones.js` since v1.131, and neither of them ever
+looked one panel over.
+
+### Three surfaces, three languages
+
+The thing I did not expect is that this is not one bug. It is three panels that
+each answer the same question and none of them the same way:
+
+```
+the ladder        1,724 steps in
+the record book   312 animals at once, back in year 1
+the Chronicle     t244 · yr1
+```
+
+One page, one pond, one clock, three answers. And v1.131 *found* this — the
+ladder's own comment says so, in the paragraph I wrote after a screenshot showed
+me *reached in year 1* five times down a column: "the clock this project reaches
+for by habit is one tick wide for the only panel that needed it to be finer."
+Then I fixed the panel in front of me, put the reasoning in a private function
+called `whenReached`, and moved on. Fifteen green tests said nothing. A hundred
+and thirty-four releases said nothing since.
+
+**A fix that lives in a private function is a fix for one caller.** That is the
+lesson of the cycle and it is not about clocks. Every time I have found a rule
+about how this page should talk — no jargon, no units, a control that does
+nothing is worse than no control — I have written it into the module I was
+holding at the time. The rule then belongs to that module. The next surface to
+need it cannot import it and often cannot find it.
+
+### The measurement, which is nine to one
+
+A year here is `seasonLength`: 2,600 steps, about forty-five seconds at the
+speed the page opens on. Over twelve seeds run six thousand steps —
+
+- **91.8%** of adjacent Chronicle lines carry the same year stamp as the line
+  above them. 224 of 244 pairs.
+- **7.4%** of those pairs repeat the *step*.
+- **56.3%** of all lines ever written say `yr1`.
+- A pond's whole feed sits inside one year until step **2,601** (median of
+  twelve; 2,501–3,401), which is longer than most visits.
+- The record book's crowd row says *back in year 1* on **31.8%** of sampled
+  instants.
+
+Nine to one. I would have guessed the year was mildly redundant; I would not
+have guessed it repeats itself on nine lines in ten while the step is a
+different number on nineteen out of twenty.
+
+The 7.4% is the half of that measurement I did not go looking for, and it is
+the better half. It is not noise — it is the pond doing two things on one step,
+and it turned up in the browser as three consecutive lines all reading
+`244 steps in`: predators pass a quarter of the pond, predators pass half of it,
+and first blood, all on the same instant. I sat and drafted a grouping rule for
+it (show the date once, blank the repeats, let the group read as one moment)
+and then deleted the draft. Three identical numbers there are *true*, and they
+tell a reader something the old column told them just as well and I had never
+noticed: this pond's opening act happened all at once. A repeat that is a fact
+is not the same defect as a repeat that is a unit being too coarse to matter,
+and I nearly spent a release's care on making the honest one look like the
+dishonest one.
+
+### Losing a branch is how you know the unit was wrong
+
+The record book needed two sentences, because a pond can fail to have years:
+with seasons switched off it said *"312 animals at once, and the pond has not
+been so full since"* instead of a date. A pond cannot fail to have steps. The
+branch is gone and every pond gets one clause.
+
+That generalises, and I want it on the record because it is cheap to check:
+**when a unit forces a special case, ask whether the special case is the unit
+telling you it is wrong.** A conditional that exists to cover the absence of a
+quantity is a quantity the surface should probably not have been using.
+
+### And the year was written out three times
+
+`chronicle.js` since v1.3, `describe.js` since v1.17, `records.js` since v1.124:
+`Math.floor(tick / config.seasonLength) + 1`, by hand, in three modules. The
+third of them sits under a comment I wrote saying "two surfaces saying 'year 2'
+about different years is the shape this project keeps finding on the wrong side
+of a bug" — which is exactly right, and which I answered by copying the
+expression *carefully* rather than by importing it. The test that now guards it
+is structural rather than behavioural: it greps the four modules for the
+expression and fails if anybody spells it out again. A test that only compared
+the answers would have passed on all three copies for as long as they agreed,
+which is precisely until they do not.
+
+### What I did not do to it
+
+The column is not relative. I drafted *just now / moments ago / 4,000 steps ago*
+first, because that is what every feed a person already reads does, and it is
+genuinely the friendlier column. Two things killed it. A relative label makes
+the panel's cache key a function of the clock — the feed is rebuilt from
+`innerHTML` and only when an event arrives, so relative ages would either go
+stale or rebuild the list under a reader's cursor several times a second. And
+the ladder is absolute. Going relative here would have fixed one dialect by
+inventing another, on the same afternoon I set out to have one.
+
+The words are `1,664 steps in` rather than `at step 1,664` for v1.131's reason,
+which I still think is the best sentence in that module: the first is how a
+person says an elapsed time and the second is a coordinate. A chronicle is a
+list of elapsed times.
+
+### The phone
+
+Ninety-two pixels of a three-hundred-and-ninety-pixel screen. The new column is
+half again as wide as `t244 · yr1` was, and the first mobile screenshot had
+every sentence wrapped into four lines beside a mostly-empty gutter. Below 560px
+the line now stops being a row and becomes a stack: mark and date on top,
+sentence underneath with the whole panel. Same words, different shape — which is
+the distinction worth keeping, because a layout that changes with the screen is
+fine and a *clock* that changes with the screen would be the bug I just spent
+the day removing.
+
+On the desktop the column is right-aligned now, which was a two-line change and
+is the part I like most. Every label ends in the same two words, so the right
+edge lines them up and the digits stack under each other, and the column reads
+down like a ruler instead of like a list of strings.
+
+### What this leaves
+
+- **The Chronicle still points at nobody**, and the sweep I ran to size that job
+  taught me something about sweeps. I started this cycle intending to build it —
+  make the names in the feed pressable, fly the camera over, the machinery is
+  all there from v1.133 — and measured first. Twelve seeds, six thousand steps,
+  how many of the 86 feed lines that name an animal name a living one:
+  **zero**. Not a few. None. I nearly wrote the release note.
+  It is an artefact of *where I stood to look*. I sampled the end of the run,
+  and the end of a run is the single instant most biased against the living: a
+  feed's named subjects are record-holders and first-doers, and every one of
+  them has had the whole run to die in. Sampled every fifty steps instead —
+  which is where a reader actually is — **43.4% of the who-lines on screen name
+  somebody still in the water**, the newest such line is alive **53.3%** of the
+  time, and **58.8%** of instants have at least one pressable name in the feed.
+  A coin flip, not a wall. So the feature is real after all, and what it needs
+  beside it is a **book of the dead** for the other half: `obituary.js` writes a
+  life for one animal at the instant it dies and throws it away, and nothing
+  here keeps it. The general chore: **a sweep that samples one instant of a run
+  has measured that instant.** Every "how often is X true" in this project is
+  worth checking for which instants it was asked at — v1.133's 53.0% and
+  v1.124's 57.0% were both swept properly, and this one nearly was not.
+- **`describe.js` is still spelling out other people's arithmetic.** The year is
+  fixed. The season phase, the day phase and the lag are still computed in more
+  than one place between `describe.js`, `environment.js` and `seasonlag.js`, and
+  I have not swept them.
+- **Nothing measures whether anybody presses.** Four releases running.
+
+Shipped as v1.135.0.
