@@ -4,6 +4,103 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.139.0] — 2026-09-01
+
+You are here.
+
+Every press on this page went one way. You read a line in the Chronicle, you
+pressed `👀 Show me`, the camera flew to Cove, the badge over the water said
+`🎯 Cove` — and the line that sent you there looked exactly as it had before,
+still offering to show you what you were already looking at. Four releases
+running, this project's own notes ended with the same sentence:
+
+> **a press still leaves no mark on the line pressed** — a reader six presses in
+> cannot see which six.
+
+Now it does:
+
+```
+👶    884 steps in   Cove raises their 11th.                📍 You are here
+🌊    872 steps in   The pond swells past 200 creatures.
+👶    847 steps in   Cove takes the pond's record for       📍 You are here
+                     young raised, with 10.
+👶    789 steps in   Robin raises their 9th.                    👀 Show me
+```
+
+**Two lines, one press, and that is the whole design.** The obvious instrument
+here is a mark that remembers the press, and it would have been the wrong one
+twice over. There are five doors into watching an animal on this page — a name
+plate over the water, `👋 Meet somebody`, an arrow key on the pond, a row on the
+cast board, a line in the Chronicle — and a panel that lit up only for its own
+presses would sit dark in four of them while the page around it was plainly
+showing that animal. So the question `here.js` asks is not *did you press
+this?* but **is this row about what the page is showing right now?** It is a
+comparison of two integers, it is true however the visitor arrived, and it
+cannot go stale, because it is not a memory of anything: stop watching and the
+marks go by themselves.
+
+**The measurement, twelve seeds and six thousand steps, sampled every fifty.**
+
+- A press about an **animal** lights a mean of **2.39** lines, and **more than
+  one of them 80.7% of the time** — 2,328 presses, up to five lines at once.
+- A press about a **family** lights **exactly one, 2,130 times out of 2,130.**
+  Never two.
+
+So pressing a line about somebody does not merely acknowledge the press. It
+hands you the rest of their story, in the panel you were already reading — the
+record they broke four hundred steps ago, the first young they ever raised —
+which is a thing this page has never done for anybody.
+
+**That gap is v1.136's finding from the other side.** That release worked out
+that a family is a durable subject and an animal a fragile one: 94.3% of the
+lines about a lineage name one that still has members, against 36.6% of the
+lines about an animal. The same fact decides how *often* the story comes back to
+each of them. A family enters the Chronicle once and then simply lives in the
+water. An animal gets in by doing something, and whoever does something once
+tends to do it again — so the panel keeps coming back to them, and there is a
+history to light up. The half of this feature that pays is the half about
+animals, for the same reason the other half of v1.136 paid.
+
+**One word, not three.** An animal in the inspector, a lineage lit in the water
+and a life open in the card are three mechanisms and one fact to a reader:
+*this is the one you are on*. v1.136's rule is one promise per mechanism; being
+on them is not a promise, so it gets one word. The verb goes with it — a button
+whose accessible name still says *Watch Cove* while the page is watching Cove is
+the audible half of the same defect — and `aria-current` says it in the
+listener's own idiom rather than in mine.
+
+**Where the page's loudest door lands.** `👋 Meet somebody` picks by role
+rather than by what the pond has said about anybody, so the animal it hands you
+is one the Chronicle has already named on **29.3%** of instants — 15.7% to
+49.6% across seeds, with the default pond near the bottom at 19.8%. The rest of
+the time it introduces a stranger, which is what that button is for.
+
+### Added
+
+- `src/here.js` — the comparison and the word, in a module of its own because
+  the cast board and the record book point at animals too and will want to say
+  the same thing on the day their render stops being a rewrite. This project's
+  note is that a rule written into the module it was discovered in is a rule
+  nobody else can find; v1.131 put a clock in `milestones.js` and two panels
+  went on getting the date wrong for four releases.
+- `test/here.test.js` — seven claims. Four are about the comparison, including
+  the one way it could be catastrophically wrong (`NOBODY === NOBODY` would
+  light every sentence in the panel at once); three are about a real pond,
+  sampled rather than stopped, because the end of a run is the most biased
+  instant there is and two of them failed a first draft by standing on it.
+
+### Changed
+
+- `feed.js` rows carry `here`, and a marked row's offer, accessible name and
+  painted signature all move with it. The signature had to learn it too: this
+  is the first input to the panel that a **visitor** changes rather than the
+  pond — meeting somebody writes no line and buries nobody — and without it the
+  panel would have returned on its first comparison and gone on offering.
+- The stylesheet marks the line with the ring the hover already uses, one step
+  up in weight, and no colour of its own: hovering says *you could take this*
+  and the ring says *you did*, and a second hue would be a distinction a reader
+  has to learn.
+
 ## [1.138.0] — 2026-08-31
 
 The narrator that summarises a streak.

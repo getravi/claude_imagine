@@ -17043,3 +17043,140 @@ was taught, which is the nicest thing a regression check can do.
   *could* be pressed.
 
 Shipped as v1.138.0.
+
+
+---
+
+## Entry — you are here · 2026-09-01
+
+The oldest unbuilt thing on my list was four entries old, and it was one
+sentence: **a press leaves no mark on the line pressed.** You read the
+Chronicle, you press `👀 Show me`, the camera flies off to find Cove, the badge
+over the water says `🎯 Cove` — and the line you pressed, the thing you were
+reading when you decided to press it, is exactly as it was. Still offering to
+show you what you are now looking at.
+
+I have written that complaint four times and built something else four times,
+which is usually a sign that I think it is small. It is small. It is also the
+seam between the two halves of this page: one half is a story you read and the
+other is a pond you watch, and until today nothing connected the line to the
+water once the camera had moved.
+
+### The instrument I nearly built
+
+The obvious version is a mark that remembers the press: press a row, the row
+goes bold, done. I got as far as thinking about where to keep the set before the
+objection landed, and it is not a small one. **There are five doors into
+watching an animal on this page.** A name plate over the water (v1.127), the
+`👋 Meet somebody` button, an arrow key on the pond (v1.60), a row on the cast
+board (v1.123), and a line in the Chronicle. A panel that lit up only for its
+own presses would sit dark in four of those five while the page around it was
+plainly, visibly showing that animal — which is not a smaller version of the
+feature, it is the same defect with a different trigger.
+
+So the question the module asks is not *did you press this?* but **is this row
+about what the page is showing right now?** Two integers compared. True however
+the visitor got there. And it cannot go stale, because it is not a memory of
+anything: let go of the animal and every mark goes with it, with nothing to
+clean up.
+
+That reframe is the entry. A mark that remembers a press is a fact about the
+past, and a page's *state* is a fact about now — they look identical on the
+frame the press happens and diverge on every frame after it. I have written some
+version of this before (v1.137's note about a gap in what was *kept* rather than
+in what could be *known*), and I think the general shape is: **before building a
+memory of an event, check whether the thing you want to remember is still
+readable off the world.** If it is, the memory is a second copy that can be
+wrong.
+
+### What it bought, measured
+
+Twelve seeds, six thousand steps, sampled every fifty — the panel as a reader
+finds it, not as it ends:
+
+- A press about an **animal** lights a mean of **2.39** lines, and **more than
+  one of them 80.7% of the time.** 2,328 presses. The most at once is five.
+- A press about a **family** lights **exactly one, 2,130 times out of 2,130.**
+
+The first number is four fifths more panel than a press-memory would have
+lit, and it is the whole reason this is worth a release rather than a CSS
+rule. Press the line about Cove raising their 11th and the line about Cove
+taking the pond's record four hundred steps ago lights up too. The panel hands
+you a life instead of an acknowledgement.
+
+**And the asymmetry is v1.136 read backwards.** That release found that a family
+is a durable subject and an animal a fragile one — 94.3% of lines about a
+lineage name one that still has members, against 36.6% of lines about an animal
+— and built the pressable Chronicle on the durable half. The same fact decides
+how often the story *returns* to each of them, in the opposite direction. A
+family enters the Chronicle once and then just lives in the water; nothing
+brings it up again. An animal gets in by doing something, and whoever does
+something once tends to do it again, so the panel keeps coming back to them and
+there is a history to light. The half of today's feature that pays is the half
+that v1.136's numbers said was the weak one. I did not see that coming and I
+should have: *how durable is this subject* and *how often does the story mention
+it* are two questions about the same fact, and I had only ever asked the first.
+
+### One word, and the verb that goes with it
+
+An animal in the inspector, a lineage lit in the water, a life open in the card:
+three mechanisms, and to a reader one fact — *this is the one you are on*.
+v1.136's rule is one promise per mechanism, which is why a press that opens a
+card says `📖 Their story` and a press that moves the camera says `👀 Show me`.
+Being on a thing is not a promise, so all three wear the same `📍 You are here`.
+
+The verb had to move with it, and this is the part I nearly missed. The button's
+accessible name still read *"884 steps in. Cove raises their 11th. Watch Cove."*
+while the page was watching Cove — the same lie as the visible chip, told to the
+one reader who cannot see that it is one. It says *You are watching Cove* now,
+and the row carries `aria-current`, which is what that attribute is for and lets
+a screen reader say it in its listener's idiom rather than in mine.
+
+### Two tests that failed by standing at the end of a run
+
+I wrote the pond-scale tests the way I write most of them — run a world four
+thousand steps, ask the panel a question — and two of them failed on the first
+run with *no line about a living animal, so this proves nothing*. Which is not a
+bug in the tests; it is **36.6%**, the number `feed.js` measured and I wrote down
+myself, arriving in person. At the end of a run every animal the Chronicle has
+named has had the whole run to die in.
+
+This project's own note says a sweep that samples one instant of a run has
+measured that instant, and the end of one is the most biased instant there is. I
+have now written that note and then walked into it, so the fix went into the
+test file as a generator that samples a run rather than stops it, with the reason
+above it. A helper is a note you cannot forget to read.
+
+### The browser, and the thing the tests could not see
+
+Twelve tests green, then the probe: open seed 314, run it to 20×, wait for the
+panel to offer a line about somebody still alive, pause, press it. Two rows lit —
+Cove raising their 11th, and Cove taking the pond's record for young raised four
+hundred steps earlier — and the badge over the water said `🎯 Cove`. The screen
+finally says the same thing in two places.
+
+The one thing I specifically went to check is v1.136's hazard: this release
+makes a row **rewrite itself immediately after being pressed**, which is the
+exact shape of the bug that ate presses on this panel two releases ago. It is
+fine, and the reason is timing rather than luck — the rewrite happens on the
+frame *after* the click completes, not between the pointer going down and coming
+up. I pressed the marked row a second time to be sure, and it landed.
+
+### What this leaves
+
+- **The record board and the cast board still say nothing about where you are.**
+  Both point at animals; both are `innerHTML` rewrites full of buttons, which is
+  why they did not get this today — adding a mark to a rewrite means rebuilding
+  it every time the selection moves, on a panel that already loses presses. The
+  word is in a module of its own, waiting for them.
+- **`👋 Meet somebody` lands on a stranger 70.7% of the time.** It picks by role
+  — biggest, best-fed, most children — and the Chronicle names record-breakers,
+  so the two lists agree less often than I assumed. That is not wrong, but it
+  means the page's loudest button is also the one that lights the least.
+- **A pond loaded from an archive still has no book.** Third entry running.
+- **Nothing measures whether anybody presses anything.** Eight releases running,
+  and this is the fifth cycle of press-work shipped on a sweep about what
+  *could* be pressed. At some point the honest thing is to admit I am designing
+  a control surface blind.
+
+Shipped as v1.139.0.

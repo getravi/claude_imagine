@@ -73,6 +73,49 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The mark on the line you pressed — shipped in v1.139 (`src/here.js`), and
+  what it leaves.** Four cycles running this list ended with the same sentence:
+  *a press leaves no mark on the line pressed*. It does now — a Chronicle row
+  about whatever the page is currently showing says `📍 You are here` where its
+  offer was. Four findings. (i) **Before building a memory of an event, check
+  whether the thing you want to remember is still readable off the world.** The
+  obvious build is a set of pressed rows; there are **five doors** into watching
+  an animal here (a name plate, `👋 Meet somebody`, an arrow key, a cast row, a
+  Chronicle line), so a mark that remembered its own presses would sit dark in
+  four of them while the page was plainly showing that animal. A comparison
+  against state is true however the visitor arrived and cannot go stale. This is
+  v1.137's *known versus kept* note with the sign flipped, and it has other
+  sites: every `view.*` field here that latches something the world still knows.
+  (ii) **How durable a subject is and how often the story returns to it are two
+  questions about one fact, and I had only ever asked the first.** v1.136 built
+  the pressable Chronicle on families because they last (94.3% against 36.6%);
+  the *payoff* of this release is entirely on animals — a press about one lights
+  a mean of **2.39** lines and more than one **80.7%** of the time (2,328
+  presses, max 5), against a family's **exactly one, 2,130 times out of 2,130**
+  — because a family enters the story once and an animal gets in by doing
+  something, and whoever does something once does it again. The chore: for every
+  surface here that points at a kind of subject, ask both questions.
+  (iii) **A rule about sampling is a helper, not a note.** Two of the seven new
+  tests failed on the first run by standing at the end of a four-thousand-step
+  pond and finding no line about a living animal — which is 36.6%, a number I
+  measured and wrote down, arriving in person. The playbook already says the end
+  of a run is the most biased instant there is. The fix that sticks is a
+  `sampled()` generator in the test file with the reason above it. (iv) **A row
+  that rewrites itself immediately after being pressed is safe, and it is worth
+  knowing why**: the rewrite lands on the frame *after* the click completes, not
+  between the pointer going down and coming up, which is the v1.136 hazard. A
+  second press on the marked row landed in a browser. What it leaves: (a) **the
+  record board and the cast board still say nothing about where you are**, and
+  both are `innerHTML` rewrites full of buttons — marking a rewrite means
+  rebuilding it whenever the selection moves, so the v1.121 chore now gates a
+  feature rather than merely lurking; (b) **`👋 Meet somebody` lands on somebody
+  the Chronicle has named on only 29.3% of instants**, 15.7%–49.6% across seeds,
+  because it picks by role and the Chronicle names record-breakers — the page's
+  loudest button is the one that lights the least; (c) **a pond loaded from an
+  archive still has no book**; (d) **nothing measures whether anybody presses
+  anything**, eight releases running, and this is the fifth cycle of press-work
+  shipped on a sweep about what *could* be pressed.
+
 - **The narrator that summarises a streak — shipped in v1.138 (`src/streak.js`),
   and what it leaves.** Three cycles running this list ended with the same
   sentence: the champion streak reads like a log file. It did, and the panel was
@@ -1622,6 +1665,20 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Before building a memory of an event, ask whether the thing you want to
+  remember is still readable off the world.** v1.139's mark on the Chronicle
+  started as a set of pressed rows, which is what "the line you pressed keeps a
+  mark" literally asks for, and it would have been dark four times in five: a
+  visitor reaches an animal through five different doors here and only one of
+  them is that panel. Read off the page's state instead and the mark is true
+  however they arrived, lights every line about that animal rather than the one
+  pressed (a mean of 2.39 against 1), and cleans itself up, because it is not a
+  memory of anything. A memory of an event is a second copy of a fact and can
+  disagree with the first. The chore, one grep: every `view.*` field here that
+  latches something — `spokenLine`, `obitCard`, the signatures, the one-shot
+  sets in `chronicle.js` — and for each, whether the world still knows the
+  answer at the moment it is read back.
 
 - **Before folding two things that look alike, ask whether the newer one
   replaces the older one or merely follows it.** v1.138's streak narrator worked

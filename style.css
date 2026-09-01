@@ -835,6 +835,24 @@ button.c-row:focus-visible {
   color: var(--accent-2);
   white-space: nowrap;
 }
+/* The line you are on (v1.139). The offer at the end of it has already become
+   `📍 You are here`, so this is not what carries the fact — it is what lets a
+   reader find the line without reading every one of them, which on a panel of
+   twenty sentences is the whole job.
+
+   The same green as the hover above, one step up in weight: hovering says *you
+   could take this* and the ring says *you did*, and giving the second one a
+   hue of its own would be a distinction the reader has to learn. No `color`
+   declaration, deliberately — the ink on this row is the ink on every other
+   one, so `legibility.js` has no new pair to price and the sentence does not
+   change brightness when the camera moves. */
+.chronicle-feed li.here {
+  background: rgba(90, 220, 150, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(90, 220, 150, 0.34);
+}
+.chronicle-feed li.here .c-go {
+  font-weight: 600;
+}
 .chronicle-feed li.fresh {
   animation: chron-in 0.5s ease;
 }

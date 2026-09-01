@@ -71,6 +71,7 @@ import {
   feedRows,
   feedSignature,
 } from "./feed.js";
+import { NOBODY } from "./here.js";
 import { Memorial } from "./memorial.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
@@ -1027,6 +1028,16 @@ function updateChronicle(world) {
     // The third lookup, and the one that is not about the pond at all: whether
     // this page kept a life for somebody it has buried (v1.137).
     remembered: (id) => memorial.has(id),
+    // The fourth, and the only one about the *visitor* (v1.139): what the rest
+    // of this page is showing right now, so a row that points at it says so
+    // instead of offering it again. Read off the page's own state rather than
+    // remembered from a press, because there are five ways to arrive at an
+    // animal here and only one of them is this panel — see `here.js`.
+    showing: {
+      who: renderer.selected && !renderer.selected.dead ? renderer.selected.id : NOBODY,
+      sp: renderer.highlightSpeciesId == null ? NOBODY : renderer.highlightSpeciesId,
+      told: view.obitCard ? view.obitCard.id : NOBODY,
+    },
   });
   const key = feedSignature(rows);
   if (key === view.lastChronKey) return; // nothing changed since last render

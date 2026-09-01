@@ -63,6 +63,37 @@
 // and it keeps the newest line's subject, so the press that was on the top of
 // the run is the press that is on the summary.
 //
+// **v1.139 made the panel answer back.** Every press here went one way: the
+// camera moved, the card opened, the water lit up — and the line that sent you
+// there looked exactly as it had before, still offering. Now a row about
+// whatever the page is showing says `📍 You are here` where its offer was. The
+// mark is a comparison against the page's state rather than a memory of the
+// press (`here.js` has the argument), and the sweep is what makes that worth
+// doing. Over the same twelve seeds, sampled every fifty steps:
+//
+//   - A press about an **animal** lights a mean of **2.39** lines and **more
+//     than one of them 80.7%** of the time — 2,328 presses, up to five lines at
+//     once. Pressing a line about somebody does not merely acknowledge the
+//     press; it hands you the rest of their story, in the panel you were
+//     already reading.
+//   - A press about a **family** lights **exactly one, 2,130 times out of
+//     2,130.** Never two.
+//
+// That gap is v1.136's asymmetry seen from the other side. A family is a
+// durable subject this panel names *once* — it enters the story and stays in
+// the water — and an animal is a fragile one it names again and again, because
+// what gets an animal into the Chronicle is doing something, and whoever does
+// something once tends to do it again. The half of this feature that pays is
+// the half about animals, and the reason is the same fact that made the family
+// half of v1.136 work.
+//
+// **83.1%** of sampled instants offer at least one press for the mark to land
+// on. The page's loudest door lands on it less often than that: `👋 Meet
+// somebody` picks by role rather than by what the pond has said about anybody,
+// so the animal it hands you is one the Chronicle has already named on **29.3%**
+// of instants — 15.7% to 49.6% across seeds, with the default pond near the
+// bottom at 19.8%.
+//
 // Three rules, all of them borrowed from panels that got here first:
 //
 //  1. **A row is a control exactly when pressing it would do something**
@@ -92,6 +123,7 @@ import { STORY_LABEL } from "./memorial.js";
 import { stepsIn } from "./pondclock.js";
 import { eventWho } from "./chronicle.js";
 import { streakMsg, streakRuns } from "./streak.js";
+import { HERE_LABEL, isHere } from "./here.js";
 
 /** Marks the button that leads to an animal; carries the creature id. */
 export const FEED_WHO_ATTR = "data-feed-who";
@@ -115,18 +147,22 @@ export const FEED_EMPTY = "The pond is young. Its story will appear here…";
  * @param {Array<{tick:number, icon:string, cat:string, msg:string, who:number,
  *   sp:number}>} events oldest first, as the chronicle keeps them
  * @param {{alive?:(id:number)=>boolean, familyHere?:(id:number)=>boolean,
- *   familyName?:(id:number)=>string, remembered?:(id:number)=>boolean}} lookups
- *   the pond as it stands now, and the book of the dead beside it
+ *   familyName?:(id:number)=>string, remembered?:(id:number)=>boolean,
+ *   showing?:{who?:number, sp?:number, told?:number}}} lookups the pond as it
+ *   stands now, the book of the dead beside it, and — since v1.139 — what the
+ *   rest of the page is currently showing, so a row can stop offering what the
+ *   visitor already took. Omitted, nothing is marked and every row is an offer.
  * @returns {Array<{tick:number, when:string, icon:string, cat:string,
  *   who:number, sp:number, told:number, name:string, msg:string, kind:string,
- *   live:boolean, count:number, key:string, paint:string, line:string,
- *   action:string, label:string, fresh:boolean}>}
+ *   live:boolean, here:boolean, count:number, key:string, paint:string,
+ *   line:string, action:string, label:string, fresh:boolean}>}
  */
 export function feedRows(events, lookups = {}) {
   const alive = lookups.alive || (() => false);
   const familyHere = lookups.familyHere || (() => false);
   const familyName = lookups.familyName || (() => "");
   const remembered = lookups.remembered || (() => false);
+  const showing = lookups.showing || {};
   const rows = [];
   for (const run of streakRuns(events)) {
     const e = run.event;
@@ -155,19 +191,29 @@ export function feedRows(events, lookups = {}) {
     // which replaces its contents rather than adding to them, so a label of
     // "Watch Cove" would hand a listener the verb and take the story away.
     const line = `${when}. ${name ? `${name} ` : ""}${msg}`;
-    const label = kind === "" ? "" : tellable ? STORY_LABEL : WATCH_LABEL;
+    const who = watchable ? e.who : -1;
+    const sp = highlightable ? e.sp : -1;
+    const told = tellable ? e.who : -1;
+    // Whether this row is the one the page is already on (v1.139). Asked only
+    // of a control, because a sentence has no offer to withdraw — `here.js`
+    // holds the comparison and the word, so the boards that point at animals
+    // too can say it in the same voice when their turn comes.
+    const here = kind !== "" && isHere({ who, sp, told }, showing);
+    const label = kind === "" ? "" : here ? HERE_LABEL : tellable ? STORY_LABEL : WATCH_LABEL;
     rows.push({
       tick: e.tick,
       when,
       icon: e.icon,
       cat: e.cat,
-      who: watchable ? e.who : -1,
-      sp: highlightable ? e.sp : -1,
-      told: tellable ? e.who : -1,
+      who,
+      sp,
+      told,
       name,
       msg,
       kind,
       live: kind !== "",
+      /** Whether the thing this row points at is the thing already on screen. */
+      here,
       /** How many of the chronicle's lines this row stands for. */
       count: run.count,
       // Which line this *is*, taken from the **oldest** member of the run — the
@@ -183,15 +229,28 @@ export function feedRows(events, lookups = {}) {
       // and the sentence too, so what the caller compares is now the whole
       // painted row rather than a field of it: v1.137's note said a boolean is
       // only as good as the number of states its subject has, and the answer to
-      // that is to stop counting states.
-      paint: `${kind}|${line}|${label}`,
+      // that is to stop counting states. `here` earns its place beside them
+      // because it is the one field that moves without the *pond* moving at
+      // all: nothing is born, nothing dies, the visitor presses a name plate,
+      // and a row eight lines down has to change what it says.
+      paint: `${kind}|${here ? "@" : "-"}|${line}|${label}`,
       line,
+      // What the press would do, or — when the visitor is already there — what
+      // they are looking at. A button whose accessible name still says *Watch
+      // Cove* while the page is watching Cove is the audible half of the defect
+      // this release is about.
       action: watchable
-        ? `Watch ${name}`
+        ? here
+          ? `You are watching ${name}`
+          : `Watch ${name}`
         : tellable
-          ? `What became of ${name}`
+          ? here
+            ? `You are reading what became of ${name}`
+            : `What became of ${name}`
           : highlightable
-            ? `Show the ${familyName(e.sp)} in the pond`
+            ? here
+              ? `The ${familyName(e.sp)} are lit up in the pond`
+              : `Show the ${familyName(e.sp)} in the pond`
             : "",
       // The words on the offer itself. Two of the three presses put the thing
       // the sentence is about into the water and share the ladder's promise;
@@ -258,7 +317,13 @@ export function feedSignature(rows) {
   // number of rows or the head of the list. It takes a feed of 140 lines to see
   // that and a mean pond writes 14, so this is a character against a rare day
   // rather than a cost anybody pays.
-  for (const r of rows) sig += (r.kind === "" ? "-" : r.kind[0]) + (r.count > 1 ? `+${r.count}` : "");
+  // And since v1.139, whether the row is the one the page is on. This is the
+  // only input to the panel that a *visitor* moves rather than the pond: meeting
+  // somebody writes no line and changes no subject, and without this character
+  // the panel would return on its first comparison and go on offering to show
+  // you what you are already looking at.
+  for (const r of rows)
+    sig += (r.kind === "" ? "-" : r.kind[0]) + (r.here ? "@" : "") + (r.count > 1 ? `+${r.count}` : "");
   return sig;
 }
 
@@ -287,7 +352,7 @@ export function feedHTML(rows) {
       const inner =
         `<span class="c-icon" aria-hidden="true">${r.icon}</span>` +
         `<span class="c-when">${r.when}</span><span class="c-msg">${said}</span>`;
-      const cls = `cat-${r.cat}${r.fresh ? " fresh" : ""}`;
+      const cls = `cat-${r.cat}${r.fresh ? " fresh" : ""}${r.here ? " here" : ""}`;
       if (r.live) {
         const attr =
           r.who >= 0
@@ -295,8 +360,14 @@ export function feedHTML(rows) {
             : r.told >= 0
               ? `${FEED_STORY_ATTR}="${r.told}"`
               : `${FEED_SP_ATTR}="${r.sp}"`;
+        // `aria-current` rather than a word smuggled into the label: this is
+        // exactly what the attribute is for — the one item in a set that the
+        // view is on — and a screen reader says it in the listener's own idiom
+        // instead of in mine. The label still changes, because the *verb* was
+        // wrong too; the attribute says which, the sentence says what.
         return (
           `<li class="${cls}"><button type="button" class="c-row" ${attr} ` +
+          (r.here ? `aria-current="true" ` : "") +
           `aria-label="${r.line} ${r.action}.">${inner}` +
           `<span class="c-go" aria-hidden="true">${r.label}</span></button></li>`
         );
