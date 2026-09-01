@@ -1666,6 +1666,42 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **A backgrounded `sleep` I never wait for is not time passing, and this one
+  woke a human for nothing.** v1.139's deploy looked stuck in the `Run tests`
+  step for what my own sequence of polls said was fifty minutes — every symptom
+  in the five frozen-record paragraphs below, against a 304 s baseline — so I
+  sent a push notification saying the release had not deployed. Then `date -u`:
+  **four minutes had elapsed.** The mechanism is specific and it is mine, not
+  the API's. This harness blocks a foreground `sleep`, so I had been launching
+  each wait with `run_in_background` and then reading its output file on the
+  very next call — which is empty precisely *because the sleep is still
+  running*. Ten of those in a row is not fifty minutes of waiting; it is ten
+  launches and no wait at all. The run was healthy throughout and went green at
+  8m00s.
+  Three amendments, in the order they would have saved me:
+  **(a) To wait, block on the wait.** `target=$(( $(date -u +%s) + N )); until
+  [ "$(date -u +%s)" -ge "$target" ]; do sleep 20; done` in the *foreground*
+  passes the harness's guard (it objects to a bare `sleep`, not to an
+  until-loop) and actually returns N seconds later. A background task is
+  finished when its completion notification arrives and not before.
+  **(b) Put `date -u` in the same call as the poll**, always. v1.124 already
+  says to read a clock before calling a readout stale, and I read that note,
+  agreed with it, and then measured time by counting my own tool calls anyway —
+  because elapsed time *feels* like something I know. It is not. Every poll of
+  a run should carry the wall clock beside it so the comparison is free.
+  **(c) The bar for waking somebody is a fact, not a suspicion.** The five
+  paragraphs below are all about not trusting a frozen record; the cost they
+  name is exactly this one, and I paid it. `get_workflow_run_usage` returning a
+  `run_duration_ms` is the one-call proof a run has finished (v1.131) and
+  `date -u` against `created_at` is the one-call proof that it is early. Both
+  are cheaper than the notification, and both go before it.
+  One environment fact confirmed again: **`getravi.github.io` is not reachable
+  from this container** — the egress proxy answers `connect_rejected`, so a
+  `curl | grep -c` for new markup returns `0` whether the deploy is missing or
+  the request never left. v1.131 wrote that down and I used the grep count as
+  corroborating evidence anyway. The deployed page is not an instrument I have
+  here; the Actions record is the only one.
+
 - **Before building a memory of an event, ask whether the thing you want to
   remember is still readable off the world.** v1.139's mark on the Chronicle
   started as a set of pressed rows, which is what "the line you pressed keeps a
