@@ -1893,6 +1893,94 @@ button.tour-open:hover {
   }
 }
 
+/* ---- The postcard (v1.140) ----
+   The tour's overlay without the ring: this card points at nothing on the page,
+   so it is simply centred and the scrim is uniform. No colour of its own — the
+   title, the story and the receipt wear inks the panel beside it already uses,
+   because a card whose whole job is to be read once and pasted has no state to
+   distinguish and a new hue would be a distinction with nothing on the other
+   side of it.
+
+   Two inks and not three. The obvious hierarchy is full/dim/faint, and
+   `--ink-faint` does not survive this card: the dialog's ground is `#111a26`,
+   lighter than any of the four panels the walk met that ink on, and the pair
+   scores **4.45** against a 4.5 bar. So the subtitle and the address take
+   `--ink-dim` and the story itself takes `--ink`, which is the right way round
+   regardless — the story is what this card is for. The general note: **an ink
+   is only quiet enough on the grounds it was measured on, and a new surface is
+   a new ground.** */
+.postcard {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.postcard-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 7, 11, 0.74);
+  cursor: pointer;
+}
+.postcard-card {
+  position: relative;
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--bg-panel-2);
+  border: 1px solid #2a4258;
+  border-radius: var(--radius);
+  padding: 16px 18px 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.postcard-title {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.postcard-sub {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+.postcard-lines {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.postcard-lines li {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+/* The address, shown rather than merely copied: a visitor about to send this to
+   somebody is entitled to see what is in it. `anywhere` and not `break-all`, so
+   a long permalink wraps at its own slashes instead of mid-token. */
+.postcard-link {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+.postcard-note {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--accent-2);
+  min-height: 16px;
+}
+.postcard-btns {
+  display: flex;
+  gap: 8px;
+}
+
 /* ---- Phylogeny / Tree of Life ---- */
 .phylo {
   max-width: 1320px;

@@ -856,6 +856,44 @@
       </div>
     </div>
 
+    <!-- The postcard (v1.140). `🔗 Share` copied a bare URL for ninety-six
+         releases: a request for forty seconds of a stranger's attention, on
+         trust, with every fact that would have earned them left behind on the
+         page. Now the press writes the pond's story onto the clipboard and puts
+         the same words on screen, so a visitor can see what they are about to
+         send. `src/postcard.js` composes it; main.js copies it.
+
+         Beside the tour's overlay for the tour's reason — fixed to the window
+         rather than placed in a column — but with no ring and no target: this
+         card points at nothing on the page, it *is* the thing being read.
+         Nothing inside it is a control except the two buttons, which is the
+         module's fourth rule made visible: the text is going somewhere with no
+         JavaScript in it. -->
+    <div
+      id="postcard"
+      class="postcard hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="postcard-title"
+      aria-describedby="postcard-sub"
+    >
+      <div id="postcard-scrim" class="postcard-scrim"></div>
+      <div id="postcard-card" class="postcard-card" tabindex="-1">
+        <h2 class="postcard-title" id="postcard-title">📮 Western Mere</h2>
+        <p class="postcard-sub" id="postcard-sub"></p>
+        <ul class="postcard-lines" id="postcard-lines"></ul>
+        <p class="postcard-link" id="postcard-link"></p>
+        <!-- A live region, because the one thing a reader needs to know here is
+             whether the copy worked, and that answer arrives a frame or two
+             after the press from a promise that can be refused. -->
+        <p class="postcard-note" id="postcard-note" role="status"></p>
+        <div class="postcard-btns">
+          <button id="postcard-copy" class="primary">📋 Copy again</button>
+          <button id="postcard-close">Close</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="appfoot">
       <a class="home-link" href="../">← Vivarium — the experiment</a>
       <span class="appfoot-links">

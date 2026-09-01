@@ -234,6 +234,10 @@ export const PAGE_SCOPED = Object.freeze({
     "rebuilding where you already are, and a pond adopted afresh would say hello to itself",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
+  postcardReturn: "the same, for the postcard — where focus was when `🔗 Share` opened the card",
+  postcardOnCard:
+    "the text currently printed on the postcard, so `📋 Copy again` copies what a visitor " +
+    "can see rather than recomposing a card off a pond that has moved on since they read it",
 });
 
 /**

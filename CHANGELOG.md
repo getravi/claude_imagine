@@ -4,6 +4,149 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.140.0] — 2026-09-01
+
+The postcard.
+
+`🔗 Share` has copied a bare URL since v1.44. It works, and it asks the wrong
+thing of whoever you send it to: a link with nothing attached is a request for
+forty seconds of a stranger's attention, on trust. Every fact that would have
+earned those seconds was already on the page — a pond with a name, an age, a
+champion, a record crowd, a plain sentence about what is happening in it right
+now — and none of it travelled.
+
+Now the story travels and the link rides inside it. Same one press, same
+clipboard, and this is what lands in the chat window:
+
+```
+📮 Western Mere
+A pond in Vivarium, grown from seed 314.
+
+4,459 steps in, 194 creatures are alive here — 12 generations on from the 40
+this pond began with.
+666 have been born here and 512 have died, 29 of them eaten.
+👶 Most young: Cove raised 12 young — gone now, and unbeaten since.
+🌊 Biggest crowd: 312 animals at once, 1,270 steps in.
+Food is short — 98% of the recent dead starved.
+
+Watch it grow: https://getravi.github.io/claude_imagine/app/#seed=314
+```
+
+The same words go on screen, because **this is the only control on the page
+whose effect lands somewhere the visitor cannot see.** Every other press here
+moves the camera, opens a card or lights something up in the water, and you find
+out whether it did what you wanted by looking. A press that writes to the
+clipboard is a press you have to take on faith, and the difference between
+sending something and sending something you have read is the whole reason the
+card exists.
+
+**The measurement, twelve seeds and six thousand steps, sampled every fifty.**
+
+- A card is a mean of **4.91 lines and 469 characters** — five lines is the
+  ceiling and **1,307 of 1,416** sampled cards are at it.
+- **86.5%** of them name a person. That is the line that makes a stranger
+  click: nobody has ever wondered about a lineage that peaked at 88, and
+  everybody wonders who Cove is.
+- A pond is telling a five-line story by a median of **471 steps** (171–1,311),
+  which is under a minute at the speed the page opens on.
+
+**A hook, not a report.** This page has six boards and a chronicle, and the
+temptation is to put a line from each of them on the card. Two records at most,
+out of the three the board keeps, and the ranking is the board's own — the
+animal first, then the crowd — because the rest is what the link is *for*. A
+postcard that told you everything would have nothing to send you anywhere for.
+
+**A sentence written for the person at the controls is not a sentence for the
+person you send it to.** The headline over the water closes the card, since it
+is already the pond in one plain line for somebody who has just arrived — with
+one exception, and finding it is the reason this module does not simply post the
+headline and stop. An empty pond is told *Everything here has died. Press ↻
+Reset to start the pond over*, which is advice for somebody holding the
+keyboard, and the keyboard is exactly what the recipient of a postcard does not
+have. It says `It is over now: everything here has died.` instead. **Every
+sentence this page writes is worth the same question before it is posted
+anywhere.**
+
+**A line with nothing in it does not appear.** A pond thirty steps old has no
+records, no deaths and no generations, and gets two lines rather than a column
+of zeroes: a card that padded itself out would be describing a pond that had
+done nothing by enumerating the things it had not done.
+
+### The link was three hundred characters and nobody had noticed
+
+The hash has carried all twenty-nine of its fields since v1.44, whether or not a
+visitor touched any of them:
+
+```
+#seed=314&food=1.80&metab=0.051&mut=0.09&pred=1&sex=0&sea=1&bio=1&pla=0&neat=0
+&drift=0&scav=0&lic=0&kin=0&night=0&dis=0&regrow=0&sig=0&ter=0&det=0&eye=0
+&feel=0&rock=0&dark=0&whisk=0&fin=0&ord=0&body=0&mass=0
+```
+
+Twenty-eight of those say *the default*. It has been like that for ninety-six
+releases and it never mattered, because a share was a link and nothing else: a
+URL is a thing you paste rather than a thing you read, and its length is a
+property of somebody else's address bar. Put it at the bottom of a paragraph a
+person actually reads and it is a licence plate stapled to a postcard.
+
+**The defect did not change. What changed is that there is now a surface it is
+visible on** — which is the general note worth more than the fix: *a value
+nobody looks at has no quality, and the day something starts looking at it is
+the day its quality becomes a fact.*
+
+- The default pond's permalink: **252 characters → 54.**
+- The thirteen scenarios: a mean of **251 → 64**, longest 73 (*The Whole
+  World*, which turns four things on and says so).
+
+The shortening is **exact, not lossy**, and that is the only reason it is a
+tidy-up rather than a feature with a compatibility question attached.
+`parseHash` applies a field only when the hash carries it and `makeConfig` fills
+the rest from the defaults, so an omitted default and a written default build
+the identical config and therefore the identical world. `test/permalink.test.js`
+walks the whole field table and then asserts it again through a world's state
+hash after 400 steps, rather than trusting that sentence. Comparison is on the
+**written** form and not the value: `food` is serialised with `toFixed(2)`, so
+the question a field has to answer is not *is this different?* but **would
+writing this down change the pond the link opens?**
+
+### Added
+
+- `src/postcard.js` — the card, as a pure function of a world and a config. The
+  fourth of its rules is the one that makes it unlike every other narrator in
+  this project: **nothing on it is a control.** v1.133, v1.136, v1.137 and
+  v1.139 all composed something you can press; this composes something you can
+  paste, so the names are baked into the sentences rather than resolved at a
+  press, and the module draws no random number and touches no DOM.
+- `src/permalink.js` — the field table and the comparison, out of `main.js` and
+  into a module a test can reach. The two lists that decide whether a link
+  works — the one that writes it and the one that reads it back — have been
+  written out separately since v1.44, and `test/permalink.test.js` now walks
+  the writer's table looking for a name nothing reads.
+- `test/postcard.test.js` (eight claims) and `test/permalink.test.js` (five).
+- A dialog on `app/index.html`, the tour's overlay without the ring, and a
+  `test/prosecounts.test.js` claim on the size of the field table — declared in
+  the cycle that creates it, which is the habit that file keeps asking for.
+
+### Changed
+
+- `shareLine` said *Link copied* and now says **Postcard copied**. A receipt
+  that undersells what is on the clipboard is a visitor pasting into a chat
+  window expecting one line and getting six, which is a surprise in the one
+  place this page cannot take it back.
+- `syncHash` writes the seed and whatever anybody moved, so the address bar is
+  short too.
+
+### Fixed
+
+- The card's own inks. The obvious hierarchy is full/dim/faint and
+  **`--ink-faint` does not survive this surface**: the dialog's ground is
+  `#111a26`, lighter than any of the four panels the v1.61 walk met that ink on,
+  and the pair scores **4.45** against a 4.5 bar. The subtitle and the address
+  take `--ink-dim` and the story itself takes `--ink` — which is the right way
+  round regardless, since the story is what the card is for. **An ink is only
+  quiet enough on the grounds it was measured on, and a new surface is a new
+  ground.**
+
 ## [1.139.0] — 2026-09-01
 
 You are here.

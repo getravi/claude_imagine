@@ -58,6 +58,7 @@ import { FIELD_REPORTS, FIELD_SILENT } from "../src/inspect.js";
 import { GIVEN } from "../src/cast.js";
 import { SWITCHES, worldSwitches } from "../src/switches.js";
 import { MILESTONES } from "../src/milestones.js";
+import { HASH_FIELDS } from "../src/permalink.js";
 import { numberWord, NUMBER_WORDS } from "./support/numberword.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -269,6 +270,16 @@ const CLAIMS = [
     size: () => MILESTONES.length,
     phrase: "{n} milestones",
     sites: ["src/milestones.js", "test/milestones.test.js"],
+  },
+  {
+    // v1.140's, declared in its own cycle for the reason above. This one is
+    // more exposed than most: the field table is what a *link* carries, so a
+    // stale count in the comment above it is a sentence about a collection that
+    // decides whether somebody else's pond opens correctly.
+    what: "the fields the permalink can carry",
+    size: () => HASH_FIELDS.length,
+    phrase: "{n} permalink fields",
+    sites: ["README.md", "docs/AUTONOMOUS.md", "src/permalink.js"],
   },
 ];
 

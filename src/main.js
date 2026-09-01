@@ -104,6 +104,8 @@ import {
   stopCounter,
 } from "./tour.js";
 import { pondName, pondTitle, shareLine, welcomeTo } from "./pondname.js";
+import { postcard, postcardText } from "./postcard.js";
+import { hashFor } from "./permalink.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -157,38 +159,14 @@ function parseHash() {
 // The biome-drift speed used when the "Drifting biomes" toggle is on.
 const DRIFT_SPEED = 0.1;
 
+// The seed, plus whatever anybody actually moved. `src/permalink.js` owns the
+// field table and the comparison, and says why the link stopped being allowed to
+// be three hundred characters long the day v1.140 put it at the bottom of
+// something a person reads. Exact, not lossy: `parseHash` above applies a field
+// only when the hash carries it, so an omitted default and a written default
+// build the same config and therefore the same world.
 function syncHash() {
-  const p = new URLSearchParams();
-  p.set("seed", config.seed);
-  p.set("food", config.foodSpawnRate.toFixed(2));
-  p.set("metab", config.metabolicBase);
-  p.set("mut", config.mutationRate);
-  p.set("pred", config.predation ? "1" : "0");
-  p.set("sex", config.sexualReproduction ? "1" : "0");
-  p.set("sea", config.seasons ? "1" : "0");
-  p.set("bio", config.foodPatches ? "1" : "0");
-  p.set("pla", config.plasticity ? "1" : "0");
-  p.set("neat", config.evolvableTopology ? "1" : "0");
-  p.set("drift", config.biomeDrift > 0 ? "1" : "0");
-  p.set("scav", config.scavenging ? "1" : "0");
-  p.set("lic", config.licensedDietCost ? "1" : "0");
-  p.set("kin", config.kinRecognition ? "1" : "0");
-  p.set("night", config.dayNightCycle ? "1" : "0");
-  p.set("dis", config.disease ? "1" : "0");
-  p.set("regrow", config.foodRegrowth ? "1" : "0");
-  p.set("sig", config.signalling ? "1" : "0");
-  p.set("ter", config.terrain ? "1" : "0");
-  p.set("det", config.detritus ? "1" : "0");
-  p.set("eye", config.exactVision ? "1" : "0");
-  p.set("feel", config.groundSense ? "1" : "0");
-  p.set("rock", config.barriers ? "1" : "0");
-  p.set("dark", config.barrierOcclusion ? "1" : "0");
-  p.set("whisk", config.wallSense ? "1" : "0");
-  p.set("fin", config.deathIsFinal ? "1" : "0");
-  p.set("ord", config.shuffleTurnOrder ? "1" : "0");
-  p.set("body", config.bodyCollision ? "1" : "0");
-  p.set("mass", config.massWeightedShove ? "1" : "0");
-  history.replaceState(null, "", "#" + p.toString());
+  history.replaceState(null, "", "#" + hashFor(config));
 }
 
 // The season and time-of-day badges' text now lives in `describe.js`, so that
@@ -293,6 +271,7 @@ function boot() {
   wireMilestoneList();
   wireChronicleFeed();
   wireTour();
+  wirePostcard();
   buildScenarioChips();
   // Before the first frame, so the tab a visitor opened in the background is
   // already a place by the time they look at it. The return is dropped: the
@@ -2082,7 +2061,9 @@ function wireKeyboard() {
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
     // The guide is a dialog, and a dialog owns the keyboard while it is up. Its
     // own handler has already taken the keys it uses; everything else waits.
-    if (tourIsOpen()) return;
+    // The postcard is the second of them (v1.140), and the reason is the same:
+    // a card being read is not a pond being driven.
+    if (tourIsOpen() || postcardIsOpen()) return;
 
     switch (e.key) {
       case "?":
@@ -2515,16 +2496,95 @@ function resetWorld(seed) {
   syncHash();
 }
 
-// Copy the current permalink to the clipboard (falls back gracefully).
+// ---- The postcard (v1.140) ----
+//
+// `🔗 Share` put the permalink on the clipboard and said so, from v1.44 to
+// v1.139. What arrived at the other end was a URL and nothing else — a request
+// for forty seconds of a stranger's attention on trust — while every fact that
+// would have earned those seconds sat on this page and stayed here.
+//
+// So the press now copies the pond's *story* with the link at the bottom of it,
+// and shows the same words on screen. Showing them is not decoration: this is
+// the only control on the page whose effect lands somewhere the visitor cannot
+// see, and a card they can read is the difference between sending something and
+// sending something they have seen. `src/postcard.js` composes every word; this
+// is the adapter onto the DOM and the clipboard.
+//
+// Built out of elements rather than from `innerHTML`, which is this page's rule
+// for its one toast and is a sharper rule here: a lineage name is a string the
+// simulation composed and a permalink is a string the *address bar* handed us,
+// and neither has any business being parsed as markup on the way to a card.
+let postcardReturn = null;
+/** The text currently on the card, so `📋 Copy again` copies what is on screen. */
+let postcardOnCard = "";
+
+const postcardIsOpen = () => !$("postcard").classList.contains("hidden");
+
 function shareLink() {
   syncHash();
-  const url = location.href;
-  const done = () => flash(shareLine(config.seed));
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(done, () => flash(url));
-  } else {
-    flash(url);
+  openPostcard(location.href);
+}
+
+function openPostcard(url) {
+  const card = postcard(world, config, namesForTree(world.phylogeny));
+  postcardOnCard = postcardText(card, url);
+  $("postcard-title").textContent = card.title;
+  $("postcard-sub").textContent = card.sub;
+  const list = $("postcard-lines");
+  list.textContent = "";
+  for (const line of card.lines) {
+    const li = document.createElement("li");
+    li.textContent = line;
+    list.append(li);
   }
+  $("postcard-link").textContent = url;
+  postcardReturn = document.activeElement;
+  $("postcard").classList.remove("hidden");
+  copyPostcard();
+  $("postcard-card").focus();
+}
+
+function closePostcard() {
+  if (!postcardIsOpen()) return;
+  $("postcard").classList.add("hidden");
+  // Back where they were, unless where they were has gone — the tour's rule and
+  // v1.51's before it.
+  if (postcardReturn && postcardReturn.isConnected) postcardReturn.focus();
+  else $("btn-share").focus();
+  postcardReturn = null;
+}
+
+// The clipboard, and the honest sentence when there isn't one. A refusal here is
+// ordinary rather than exceptional — a browser can withhold the clipboard from a
+// page it does not consider to have been asked — so the fallback tells a visitor
+// what to do with their own hands instead of reporting a failure they cannot act
+// on. The words are on the card either way, which is what makes that possible.
+function copyPostcard() {
+  const note = $("postcard-note");
+  const byHand = "Select the card and copy it — this browser kept the clipboard to itself.";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(postcardOnCard).then(
+      () => (note.textContent = shareLine(config.seed)),
+      () => (note.textContent = byHand)
+    );
+  } else {
+    note.textContent = byHand;
+  }
+}
+
+function wirePostcard() {
+  $("postcard-copy").addEventListener("click", copyPostcard);
+  $("postcard-close").addEventListener("click", closePostcard);
+  $("postcard-scrim").addEventListener("click", closePostcard);
+  // A dialog owns the keyboard while it is up (the tour's rule): Space would
+  // otherwise pause the pond from inside a card that says nothing about ponds.
+  $("postcard").addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== "Escape") return;
+    closePostcard();
+    e.preventDefault();
+    e.stopPropagation();
+  });
 }
 
 // ---- Canvas interaction: select, pan, zoom, follow ----

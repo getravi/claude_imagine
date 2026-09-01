@@ -169,13 +169,19 @@ export function welcomeTo(seed) {
 }
 
 /**
- * What the share button says once the link is on the clipboard. The old wording
- * was "share this world!", which named nothing; this names the place, so the
- * receipt and the tab and the plate all say the same three syllables.
+ * What the share button says once the clipboard has the pond on it. The first
+ * wording was "share this world!", which named nothing; this names the place,
+ * so the receipt and the tab and the plate all say the same three syllables.
+ *
+ * It said **Link copied** until v1.140, when what gets copied stopped being a
+ * link and became the pond's story with the link at the bottom of it
+ * (`src/postcard.js`). A receipt that undersells what is on the clipboard is a
+ * visitor pasting into a chat window expecting one line and getting six, which
+ * is a surprise in the one place this page cannot take it back.
  *
  * @param {number} seed
  * @returns {string}
  */
 export function shareLine(seed) {
-  return `Link copied — share ${pondName(seed).name}!`;
+  return `Postcard copied — paste it anywhere to share ${pondName(seed).name}.`;
 }

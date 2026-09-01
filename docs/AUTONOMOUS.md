@@ -73,6 +73,48 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The postcard — shipped in v1.140 (`src/postcard.js`, `src/permalink.js`),
+  and what it leaves.** Eighteen cycles went into explaining this page to the
+  person looking at it and none into the person they tell about it: `🔗 Share`
+  copied a URL, which is a request for forty seconds of a stranger's attention
+  on trust. It copies the pond's story now — name, age, population, generations,
+  what it has been through, two records and one plain sentence about now — and
+  shows the same words on screen. Four findings. (i) **This is the only control
+  on the page whose effect lands somewhere the visitor cannot see.** Every other
+  press moves the camera or opens a card and you find out by looking; a press
+  that writes to a clipboard is taken on faith, and that alone justifies the
+  card. Worth asking of any future control: *where does the result of this
+  appear?* (ii) **A sentence written for the person at the controls is not a
+  sentence for the person you send it to.** The headline closes the card, and
+  the one state where it could not is the empty pond — *Everything here has
+  died. Press ↻ Reset to start the pond over* — which is advice for somebody
+  holding a keyboard. I found it by killing a pond in a test, not by reading.
+  This page is full of sentences that have never been asked which of the two
+  audiences they are for. (iii) **A value nobody looks at has no quality, and
+  the day something starts looking at it is the day its quality becomes a
+  fact.** The permalink has written all twenty-nine permalink fields since v1.44 —
+  252 characters for the default pond, twenty-eight of them saying *the
+  default* — and it never mattered while a share was a link, because a URL is
+  pasted rather than read. Under a paragraph a person reads it is a licence
+  plate stapled to a postcard. 252 → 54; the scenario chips a mean of 251 → 64.
+  The shortening is exact (`parseHash` applies a field only when the hash
+  carries it), and the comparison is on the **written** form rather than the
+  value, because the question is not *is this different?* but *would writing
+  this down change the pond the link opens?* (iv) **An ink is only quiet enough
+  on the grounds it was measured on.** `--ink-faint` scores 4.45 against a 4.5
+  bar on the dialog's `#111a26`, lighter than all four panels the v1.61 walk met
+  that ink on. The sweep is an inventory of *pairs*; a new surface is a new
+  ground and inherits nothing. What it leaves: (a) **the card is text, and the
+  thing people actually share is a picture** — this page has never been able to
+  hand anybody a screenshot of its own pond, and `rendershot.js` exists;
+  (b) **the card names a person off the record board, `👋 Meet somebody` picks
+  off the cast list**, and 86.5% against 29.3% says those two lists disagree
+  about who is interesting more than any cycle has admitted — one sweep would
+  settle it; (c) **a pond loaded from an archive still has no book**, fourth
+  cycle running; (d) **nothing measures whether anybody presses anything**, nine
+  releases running, and today's press is the first whose entire value happens
+  somewhere unobservable.
+
 - **The mark on the line you pressed — shipped in v1.139 (`src/here.js`), and
   what it leaves.** Four cycles running this list ended with the same sentence:
   *a press leaves no mark on the line pressed*. It does now — a Chronicle row
