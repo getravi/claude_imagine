@@ -602,6 +602,49 @@ export function nameTagTones() {
 }
 
 /**
+ * The bands above and below the pond in a saved picture (v1.141).
+ *
+ * It borrows the name tag's two tones rather than inventing a pair, and the
+ * reason is the same one that made the tag opaque: **a picture leaves this
+ * page.** Everything else in this file is measured against a background this
+ * project controls, and the moment a PNG lands in somebody's chat window it is
+ * sitting on a ground chosen by an app I have never seen, at whatever size that
+ * app decided. An opaque plate is the only way the contrast on it stays a fact
+ * about two colours — 16.6:1 for the ink, the tag's own figure, because it is
+ * the tag's own pair.
+ *
+ * `dim` is the third tone, for the numbers under the name and the address under
+ * the sentence, and it is measured here rather than borrowed: **8.05:1** on the
+ * plate. v1.140 learned this the expensive way on the postcard dialog, where
+ * `--ink-faint` came out at 4.45 against a 4.5 bar because it had only ever
+ * been measured on darker panels — *an ink is only quiet enough on the grounds
+ * it was measured on*. This is a new ground, so it inherits nothing, and it is
+ * deliberately well clear of the bar rather than just over it: a picture gets
+ * resized by whoever reposts it, and a ratio with no headroom is one that
+ * survives only at full size.
+ */
+export function pictureCard() {
+  const tag = nameTag();
+  return {
+    plate: tag.plate,
+    ink: tag.ink,
+    dim: "hsl(210, 16%, 66%)",
+    /** The hairline between a band and the water — the picture's only edge. */
+    rule: "hsla(210, 24%, 93%, 0.16)",
+    fontFamily: tag.fontFamily,
+  };
+}
+
+/** The picture's three tones as RGB, for the audit and the contrast test. */
+export function pictureCardTones() {
+  return {
+    ink: hslToRgb(210, 24, 93),
+    dim: hslToRgb(210, 16, 66),
+    plate: hslToRgb(232, 55, 7),
+  };
+}
+
+/**
  * The same mark at minimap scale, where a creature is a single square of a few
  * pixels and there is no room for a rim drawn as a stroke.
  *

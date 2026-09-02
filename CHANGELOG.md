@@ -4,6 +4,88 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.141.0] — 2026-09-02
+
+The picture.
+
+Every export this page has ever offered was for somebody who already cared.
+`📈 Export CSV` hands you a spreadsheet. `🔗 Share` hands you five sentences and
+a link. Both are good, and neither is the thing a person actually drops into a
+group chat, which is a **picture of the pond**. This page has never been able to
+hand anybody one.
+
+`📸 Take a picture` does. One press saves a PNG:
+
+- the water **exactly as it is on screen** — same camera, same zoom, same
+  instant, running or paused;
+- the **name plates** over the animals, because the pond is drawn on two
+  canvases and a picture of the water alone would drop the one mark that turns
+  a dot into somebody;
+- the pond's **name** over it, in the largest letters on the picture, with its
+  seed, its age, how many are alive and how many generations deep it is;
+- underneath, the sentence the page is telling about it right now, and
+  `Vivarium · getravi.github.io/claude_imagine/app/#seed=314`.
+
+**The measurement, twelve seeds through six thousand steps, sampled every fifty
+— captions measured on a real canvas rather than estimated.**
+
+- The picture is **900 × 791** on a plain display and 1800 × 1581 on a retina
+  one. The bands are **21.6%** of it, so more than three-quarters of what you
+  post is pond.
+- The sentence fits on **one line in 1,344 of 1,416 samples** and on two in the
+  other 72. It never reached three, and **not one caption in the sweep was
+  cut** — the cap and its ellipsis are insurance, and the sweep is what says so.
+- The widest name a pond has is **263 px** and the widest row of numbers
+  **364 px**, against 860 px of measure. The header cannot wrap and the two
+  lines cannot collide.
+
+**A picture is looked at, not read.** The postcard gets five sentences because a
+chat window renders them; this gets a name, a row of numbers, one sentence and
+an address, and the name is more than twice the size of anything else on it
+because a picture is met from across a scrolling feed, where a caption is either
+one word loud enough to see or a paragraph nobody saw.
+
+**The name of the project goes in front of the address**, and finding that was
+the small surprise of the cycle: the pond has a name in forty-point letters and
+the *project* had none anywhere on the picture — `getravi.github.io/…` does not
+say *Vivarium* — on the one surface this page has that ever leaves it.
+
+**It saves at the water's own resolution**, not at the size a window happens to
+be showing it. A picture taken on a phone is the same 900-pixel picture as one
+taken on a desktop, which is the opposite of a screenshot and the reason this is
+a feature rather than a shortcut around one.
+
+**A sentence written for the person at the controls is still not a sentence for
+the person you send it to.** v1.140's finding holds on a second medium and in
+the same words: an empty pond is told *Everything here has died. Press ↻ Reset
+to start the pond over*, and the picture says `It is over now: everything here
+has died.` instead — `postcard.js`'s own line, imported rather than retyped, so
+the two exports cannot drift apart.
+
+### Added
+
+- `src/picture.js` — the caption, the wrapping, the layout and the painting, as
+  pure functions. It is handed a context and creates no canvas, which is what
+  lets `test/picture.test.js` assert the whole composite in Node through
+  `rendershot.js`'s recording context: the water and the names go down once each
+  at the pond's own origin, and every word lands in a band and never over the
+  water, at both device pixel ratios.
+- `palette.js#pictureCard` — the bands' three tones. It borrows the name tag's
+  ink and plate for the reason the tag is opaque in the first place, and more
+  so: **a picture leaves this page**, so it will be looked at on a ground chosen
+  by an app nobody here has seen. `dim` is measured on that plate at **8.05:1**
+  rather than borrowed from a stylesheet, which is v1.140's lesson one release
+  old — *an ink is only quiet enough on the grounds it was measured on.*
+- `📸 Take a picture` in the panel, under `🧭 Show me around`. Full width, and
+  the third of the three controls on this page aimed at a person rather than at
+  a file. Walked at both viewports and added to `targetsize.js`: 35 px tall,
+  which is the axis a thumb misses in.
+
+### Changed
+
+- `wrapText` marks a cut with an ellipsis. The first build returned the lines it
+  had and dropped the rest, which does not shorten a sentence — it breaks one.
+
 ## [1.140.0] — 2026-09-01
 
 The postcard.

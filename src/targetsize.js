@@ -150,6 +150,15 @@ export function verdicts(controls, min = TARGET_MIN) {
  * of the panel's 390 px column is 301-or-316 depending on the browser. No
  * verdict anywhere moves on it: width is the axis a thumb does not miss in, and
  * every one of these passes on its height.
+ *
+ * **v1.141's walk settles which of those two readings this build gives.** The
+ * `#btn-picture` rows come from a fresh CDP probe of the same shape, and at
+ * 390 px every full-width control in the panel came back at **316** — the v1.115
+ * figure, not v1.119's 301. So the disagreement is a property of the browser
+ * rather than of a release, exactly as that note guessed, and the honest reading
+ * of this column stays *301-or-316*. Nothing here turns on it: the new button is
+ * the panel's third full-width control and passes on its 35 px height, which is
+ * the axis a thumb misses in.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -171,6 +180,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "button.primary, #btn-reset", n: 2, w: 154, h: 36, own: "154x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 301, h: 35, own: "301x35", via: "self", nearestCentre: 90.4, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "390x844", sel: "#btn-picture", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
@@ -186,6 +196,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "1280x900", sel: "#btn-picture", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
@@ -205,7 +216,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 73 });
+export const WALKED = Object.freeze({ "front door": 19, app: 74 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

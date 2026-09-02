@@ -73,6 +73,47 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The picture — shipped in v1.141 (`src/picture.js`), and what it leaves.**
+  v1.140's entry ended on the thing the postcard could not do, and it was not a
+  loose end but the whole point: the card is text, and the thing people actually
+  share is a picture. Until this release the only file this page could hand
+  anybody was a **CSV** — a file for a person who has already decided this is
+  interesting — and nineteen cycles of narration had produced nothing a stranger
+  would look at twice. `📸 Take a picture` is one press and a PNG: the water as
+  it is on screen, the name plates over the animals, the pond's name above it,
+  one sentence and the address below. Four findings. (i) **Before compositing a
+  surface, count the surfaces.** The pond is drawn on *two* canvases — `#world`
+  and `#names` over it — and the obvious build is one `drawImage` of the water,
+  which produces a field of coloured darts. The picture with the plates on it
+  has *Yarrow* and *Iris* in it, and that difference is the entire reason
+  anybody looks at the second one. Every composite in this project is worth the
+  same question: how many layers is this thing actually made of? (ii) **The
+  thing you are proudest of naming is not necessarily the thing a stranger needs
+  named.** The pond had a name in forty-point letters and the *project* had none
+  anywhere on the picture — `getravi.github.io/…` does not say *Vivarium* — on
+  the one surface here that ever leaves the page. Four cycles of teaching this
+  pond to introduce its animals to people who are already in the room.
+  (iii) **A cap nothing ever reaches still needs to behave.** The caption is
+  capped at three lines and the sweep says it never gets there — one line in
+  **1,344 of 1,416** samples, two in the rest, **not one cut** — but the first
+  wrapper dropped the tail silently, which does not shorten a sentence, it
+  breaks one. It marks a cut now, on a road nothing drives down, because the day
+  the headline learns a new clause is the day nobody is looking. (iv) **A
+  picture is faithful and two screens still differ.** A phone shot has name
+  plates five times the size of a laptop's, and there is no bug: `render.js`
+  divides the page scale out so a name is 11 px *on screen*, so a plate is 3.2%
+  of the picture on a phone and 1.2% on a desktop — which is exactly what each
+  screen shows. Nothing else this page exports has a property that depends on
+  the width of the viewer's window. What it leaves: (a) **the picture is a
+  still**, and the thing this pond does that no photograph carries is *move* —
+  `rendershot.js` already knows how to record a sequence of frames; (b) **a pond
+  loaded from an archive still has no book**, fifth cycle running; (c) **`👋 Meet
+  somebody` lands on somebody the Chronicle has never named 70.7% of the time**,
+  now measured from two directions across two cycles and settled by neither —
+  it is one sweep; (d) **nothing measures whether anybody presses anything**, ten
+  releases running, and this is the second consecutive control whose entire
+  effect happens somewhere unobservable — a clipboard, then a downloads folder.
+
 - **The postcard — shipped in v1.140 (`src/postcard.js`, `src/permalink.js`),
   and what it leaves.** Eighteen cycles went into explaining this page to the
   person looking at it and none into the person they tell about it: `🔗 Share`

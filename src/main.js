@@ -106,6 +106,14 @@ import {
 import { pondName, pondTitle, shareLine, welcomeTo } from "./pondname.js";
 import { postcard, postcardText } from "./postcard.js";
 import { hashFor } from "./permalink.js";
+import {
+  PICTURE_MARK,
+  paintPicture,
+  pictureAddress,
+  pictureCaption,
+  pictureFilename,
+  pictureLayout,
+} from "./picture.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -2439,6 +2447,7 @@ function wireControls() {
   $("btn-load").addEventListener("click", loadWorld);
   $("btn-share").addEventListener("click", shareLink);
   $("btn-export-csv").addEventListener("click", exportCSV);
+  $("btn-picture").addEventListener("click", takePicture);
 
   // Chart scope. This button lives in the static legend, not inside a panel
   // that gets rebuilt from innerHTML every frame, so a click that spans several
@@ -2796,6 +2805,57 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(url);
   flash(chartScope === "whole" ? "Whole-run data exported." : "Recent chart data exported.");
+}
+
+// ---- The picture (v1.141) ----
+//
+// Until today the only file this page could hand anybody was a CSV, which is a
+// file for a person who already cares. `src/picture.js` says the rest; this is
+// the adapter, and it is short because the module is handed a context and paints
+// on it rather than knowing anything about canvases or downloads.
+//
+// **The pond is two canvases and the picture is both of them.** `#world` is the
+// water and `#names` is the layer of name plates over it (see
+// `Renderer#attachNameLayer`), and a picture of the water alone would drop the
+// one mark on this page that turns a dot into somebody. They share a backing
+// store size, so they composite at the same origin with no arithmetic.
+//
+// Nothing here re-renders. What gets saved is the frame already on screen —
+// same camera, same zoom, same instant, paused or running — because a share
+// that quietly reframed to a tidy wide shot would be handing a visitor a
+// photograph of somewhere they have not been.
+function takePicture() {
+  const pond = $("world");
+  // The address on the picture is the address of *this* pond, so the hash has
+  // to be current before it is read — the same first line `shareLink` has.
+  syncHash();
+  const caption = pictureCaption(world, config, namesForTree(world.phylogeny));
+  const address = pictureAddress(location.href);
+  const out = document.createElement("canvas");
+  const layout = pictureLayout(out.getContext("2d"), pond, caption, address, renderer.dpr || 1);
+  out.width = layout.width;
+  out.height = layout.height;
+  // Sizing a canvas resets its context — font, fill, the lot — so the paint has
+  // to come after, and `paintPicture` sets every style it uses rather than
+  // inheriting one. That is not a courtesy: the measuring pass above set a font
+  // on this same context and it is gone by the time anything is drawn.
+  paintPicture(out.getContext("2d"), { pond, names: $("names") }, caption, address, layout);
+  out.toBlob((blob) => {
+    if (!blob) {
+      flash("This browser would not make the picture.");
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pictureFilename(config, world);
+    a.click();
+    URL.revokeObjectURL(url);
+    // The receipt names the pond rather than the file, for the postcard's
+    // reason: this is a press whose whole effect lands somewhere the visitor
+    // cannot see, and *saved* on its own is a claim they have to take on faith.
+    flash(`${PICTURE_MARK} Saved a picture of ${pondName(config.seed).name}.`);
+  }, "image/png");
 }
 
 let flashTimer = null;

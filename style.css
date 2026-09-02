@@ -1811,14 +1811,24 @@ details .field {
    is why the ring cannot take a click (`pointer-events: none`) and the scrim
    under it can. The scrim is the click-anywhere-to-leave target, and the only
    element here that is a plain rectangle. */
-button.tour-open {
+/* v1.141's picture button shares this block rather than bringing a palette of
+   its own. Two reasons, and the second is the one worth writing down. The
+   panel's three full-width buttons are a small hierarchy — `meet` is the green
+   one a first-time visitor should press, and these two are the page's own
+   affordances beside it — so a third colour would have said there were three
+   ranks when there are two. And a new ground is a new pair for
+   `legibility.js` to measure: reusing one already in the inventory is the
+   cheapest possible honesty about a colour, which is not to add one. */
+button.tour-open,
+button.picture-btn {
   display: block;
   width: 100%;
   margin-top: 8px;
   border-color: #35485e;
   background: #131d2a;
 }
-button.tour-open:hover {
+button.tour-open:hover,
+button.picture-btn:hover {
   background: #1a2737;
   border-color: #47617f;
 }
