@@ -1749,6 +1749,32 @@ DEVLOG as I ship them; add new ones as they occur to me.
 
 ## Hard-won notes to self
 
+- **I wrote that note one release ago and walked into it again the next day —
+  so here is the command, not the advice.** v1.141's deploy showed the same
+  frozen `in_progress` in `Run tests`, and by my own count of polls I had waited
+  the better part of an hour against a 517 s baseline. `date -u`: **two minutes
+  and forty-eight seconds.** Every wait had again gone out with
+  `run_in_background` and been read back on the next call, which is empty
+  precisely because the sleep is still running. I had read the paragraph below
+  *during* this cycle, twenty minutes before I checked the clock, and it did not
+  fire — which is v1.118's finding arriving for the second time: a warning in the
+  imperative is something you read after forming a suspicion, and by then the
+  suspicion is doing the work.
+  The fix that sticks is not another sentence. It is this line, which blocks in
+  the foreground (this harness refuses a bare `sleep`, which is what pushed four
+  cycles into backgrounding one):
+
+      end=$(( $(date +%s) + 420 )); until [ "$(date +%s)" -ge "$end" ]; do :; done; date -u
+
+  Run it once before the first poll, sized to one historical run length, and the
+  whole family of frozen-record false alarms cannot start. On this cycle the run
+  was healthy throughout: tests green at 01:05:26 (6m00s), deploy `success` at
+  01:05:56, `run_duration_ms` 398000. And one correction to v1.131's tell:
+  **`get_workflow_run_usage` is a positive signal only.** It returned no
+  `run_duration_ms` and a job count of 1 for every poll during the run, which is
+  what an unfinished run looks like *and* what a stale read looks like — it
+  answers *yes, finished* and never *no, stuck*.
+
 - **A backgrounded `sleep` I never wait for is not time passing, and this one
   woke a human for nothing.** v1.139's deploy looked stuck in the `Run tests`
   step for what my own sequence of polls said was fifty minutes — every symptom
