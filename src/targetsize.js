@@ -174,6 +174,17 @@ export function verdicts(controls, min = TARGET_MIN) {
  * good is a walk that counts the page's targets *in the browser* and compares
  * that against `WALKED`, which is the whole-table re-recording the paragraph
  * above has been asking for since v1.118.
+ *
+ * **v1.144's walk was driven from the cycle that shipped it rather than
+ * recalled.** `#btn-gif` came back 316 × 35 at 390 px and 290 × 35 at 1280 —
+ * the fourth full-width control in the panel, identical to the three above it.
+ * At 390 px it is the *316* reading again rather than v1.119's 301, which makes
+ * it three walks to one and settles that disagreement in this build's favour.
+ * The same probe read `#btn-picture`, `#btn-skip`, `#btn-tour` and `#btn-meet`
+ * back unchanged, which is the first time rows already in this table have been
+ * *re-measured* rather than inherited. It does not close the chore above — this
+ * is still a recording — but it is the first evidence the recording has not
+ * drifted.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -195,6 +206,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "button.primary, #btn-reset", n: 2, w: 154, h: 36, own: "154x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 301, h: 35, own: "301x35", via: "self", nearestCentre: 90.4, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "390x844", sel: "#btn-gif", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
   { page: "app", vp: "390x844", sel: "#btn-picture", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
   { page: "app", vp: "390x844", sel: "#btn-skip", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
   { page: "app", vp: "390x844", sel: "#btn-tour", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
@@ -213,6 +225,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "1280x900", sel: "#btn-gif", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
   { page: "app", vp: "1280x900", sel: "#btn-picture", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
   { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
   { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
@@ -235,7 +248,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 76 });
+export const WALKED = Object.freeze({ "front door": 19, app: 77 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

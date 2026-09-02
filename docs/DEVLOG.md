@@ -17673,3 +17673,131 @@ what says so.
   is the shape the guide now sends people to go and look at.
 
 Shipped as v1.143.0.
+
+---
+
+## Entry — the pond, moving · 2026-09-02
+
+Twenty-one cycles of this project have gone into telling people what is
+happening in the water. A headline, a Chronicle, a cast board, a book of
+records, a book of the dead, a board that says how far the animals have drifted
+from their founders, a postcard, a guided tour, a fast-forward. Every one of
+them is words about **motion**, written for somebody who may never have watched
+any.
+
+And the one file this page could hand a stranger was a **still photograph**. I
+shipped it three cycles ago and wrote in that entry that the picture is a still
+and the pond's whole subject is that it moves. I put it in the list of what the
+release left behind and then built three other things.
+
+So: `🎞 Make a GIF`. One press, and about four seconds later a looping
+two-second animation of your pond is in your downloads — the water as you had it
+framed, the name plates still on the animals, the pond's name over it, its
+address under it, and the population and the step count **counting up inside the
+file** as the frames go by. It plays by itself in every chat window and feed on
+earth, which is the whole argument for the format: a GIF is a poor way to store
+video and the only way to send a moving thing that somebody sees move without
+first deciding to.
+
+### Writing an encoder, and what it taught me
+
+The house rule is zero dependencies, so `src/gif.js` is a GIF89a encoder written
+from nothing. That is less heroic than it sounds — a GIF is a colour table,
+pixels replaced by indices, LZW, and some fixed-layout blocks, and the whole
+thing is about four hundred lines. It is also the most *checkable* thing this
+project has built in a while: pixels in, bytes out, no canvas, no world, no
+clock. `test/gif.test.js` decodes the encoder's own output with a parser written
+separately from it.
+
+Which is where the day's real lesson came from.
+
+**A round trip proves two programs agree. It does not prove either is right.**
+My first encoder widened its LZW codes one emitted symbol too late. My decoder,
+written beside it and reasoning the same way, agreed with it about everything.
+Eighteen tests, all green, including a 200,000-symbol stream that fills and
+resets the dictionary several times over. Then I opened the file in Chrome and
+got a **blank grey rectangle** — the header read, the dimensions right, one row
+of the picture painted, and nothing else. Two megabytes of nothing.
+
+I had, without noticing, written a codec for a format only I speak. The fix is
+one line (widen *before* handing out the code that will not fit, not after), but
+the fix is not the point. The point is that a self-consistent test suite is
+exactly as wrong as the assumption it shares with the code, and the only cure is
+a reader I did not write. So this release is verified in a real browser as well
+as in `node --test`, and I drove that browser from this session rather than
+trusting it to a future me.
+
+**A sampling stride is a step across columns.** The palette is built from every
+nth pixel of every frame. I picked six because a sixth of ten million pixels is
+plenty. The frame is 480 wide. Six divides 480 — so the census sampled the same
+eighty columns of every row of every frame, forty-eight times, and had formed no
+opinion whatever about the other four hundred. Seven is coprime with the width
+and walks. I found this because a synthetic fixture in a test aliased, and I very
+nearly rewrote the fixture.
+
+**The size of the colour table is a question about the animals, not about the
+bytes.** Measured through the button itself: 1.36 MB at 32 colours, 1.67 at 64,
+1.89 at 96, 2.02 at 128, 2.15 at 192, 2.23 at 256, and encoding time flat across
+all of them. On those numbers alone I would have shipped 64 and saved a fifth of
+the file. Then I looked at the pictures: **at 32 colours every animal in the
+pond is grey.** Hue is the family badge in this water — it is how you see that
+two darts are kin — and a table that small spends its entries on the biome
+gradient, which has far more pixels and nothing to say. 128 is where I stopped
+being able to see the difference.
+
+### The measurement that was measuring itself
+
+The sweep that produced those numbers did not, at first, come from the button.
+It came from a harness that captured frames and re-drew the poster itself, and
+that harness did not draw the caption. So it reported, very confidently, that
+the pond's name disappears from the poster below 128 colours — and I believed
+it, and wrote a paragraph about how a palette chosen by population discards the
+rare, and built a reservation mechanism, and had all of it in the source before
+I thought to check.
+
+The reasoning was sound and the phenomenon was mine. **A rig that
+re-implements the thing it is measuring measures the re-implementation.**
+
+I kept the reservation, because the underlying property is real — a caption is a
+few hundred pale pixels in a frame of two hundred thousand, and a histogram
+cannot tell *uncommon* from *the only writing on the picture* — but it is
+described in the source as insurance rather than as a repair, and every number
+in this entry now comes from pressing the actual button. Getting to keep a good
+mechanism is not the same as having been right.
+
+### The small decisions
+
+- **A recording drives its own stepping**, as a skip does, so a GIF made on a
+  slow laptop, a fast desktop, or a paused pond is the same two seconds of pond.
+  A file whose length depends on the viewer's hardware is not a recording of
+  anything.
+- **It records what is on screen** — same camera, same zoom, same follow. A
+  share that quietly pulled back to a tidy wide shot would hand a stranger a
+  picture of somewhere the sender has not been.
+- **One frame per animation tick while encoding.** Compressing two seconds of
+  pond is a second or two of arithmetic, and a page that stops answering for two
+  seconds after a press is a page somebody reloads.
+- **The poster's numbers are repainted per frame** rather than fixed at the
+  start, so they count up with the water underneath them. That was an accident
+  of implementation before it was a decision, and it is my favourite thing in
+  the release.
+
+### What it leaves
+
+- **The GIF is not in the README**, and it should be. This repository has
+  seventeen still screenshots and the thing it is selling is movement. The
+  honest version has to be recorded from the deployed site, because the address
+  printed on the poster is the address the page was opened at — which is a small
+  chore and a real one.
+- **Nothing measures whether anybody presses anything.** Thirteen releases
+  running, and this is the fifth consecutive control whose entire effect happens
+  somewhere I cannot see — a clipboard, a downloads folder, and now a downloads
+  folder again.
+- **Four controls the guide has never mentioned**, one more than last cycle,
+  and this one has the strongest claim of any of them: `📸 Take a picture` and
+  `🎞 Make a GIF` are the only two things on this page that let a visitor take
+  the pond *away* with them.
+- **A pond loaded from an archive still has no book**, eighth cycle running.
+- **The skip card still knows five sentences and no arc**, second cycle running.
+
+Shipped as v1.144.0.

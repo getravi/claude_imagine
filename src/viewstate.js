@@ -253,6 +253,13 @@ export const PAGE_SCOPED = Object.freeze({
   skipReturn:
     "the same again, for the fast-forward's card — where focus was when `⏩ Skip ahead` was " +
     "pressed, so closing the card hands the keyboard back to the button that opened it",
+  movie:
+    "a recording in flight (v1.144) — the frames captured so far, the colour table built " +
+    "from them and the bytes they have become. Deliberately not on the roster and " +
+    "deliberately not reset with it: it is a machine rather than a cache, `adoptWorld` " +
+    "abandons it outright because a file half made of one pond and half of another is not " +
+    "a recording of anywhere, and forty megabytes of pixels should be dropped by the code " +
+    "that knows they are there rather than nulled by a loop over field names",
 });
 
 /**

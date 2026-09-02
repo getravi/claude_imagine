@@ -113,8 +113,36 @@ import {
   pictureAddress,
   pictureCaption,
   pictureFilename,
+  pictureCredit,
   pictureLayout,
 } from "./picture.js";
+import {
+  MOVIE_COLORS,
+  MOVIE_DELAY_CS,
+  MOVIE_FRAMES,
+  MOVIE_LABEL,
+  MOVIE_SAMPLE_STRIDE,
+  MOVIE_STEPS_PER_FRAME,
+  movieFilename,
+  movieInks,
+  movieLayout,
+  movieProgress,
+  movieReceipt,
+  movieSaving,
+  paintMovieFrame,
+} from "./movie.js";
+import {
+  GIF_TRAILER,
+  buildPalette,
+  censusAdd,
+  gifFrameBlocks,
+  gifMinCodeSize,
+  gifPrologue,
+  indexFrame,
+  joinBytes,
+  newCensus,
+  paletteCache,
+} from "./gif.js";
 import {
   SKIP_FRAME_MS,
   SKIP_LABEL,
@@ -248,6 +276,11 @@ function adoptWorld() {
   // any more. Reset, load, a new seed and a scenario chip all land here, so
   // there is one place to say it rather than four (v1.142).
   restoreSkipButton();
+  // And a recording is the same promise with pictures in it (v1.144): the frames
+  // already captured are of a pond that has been replaced, so a file made of
+  // them would be a cut between two different worlds. Dropped rather than
+  // finished, and the button goes back to rest with it.
+  if (movie) restMovieButton();
   // The pond's opening line, taken here and nowhere else (v1.128). This runs at
   // the top of the frame, *before* anything is stepped, so a world built since
   // the last frame is still standing exactly as it was dealt — which is what
@@ -404,7 +437,17 @@ function loop(now) {
   // the three buttons did it.
   adoptWorld();
 
-  if (view.skipLeft > 0) {
+  if (movie && movie.phase === "record") {
+    // A recording in flight takes the frame's stepping to itself (v1.144), for
+    // the skip's reason one branch down and one of its own: a GIF is a fixed
+    // number of frames a fixed distance apart, so a recording made on a slow
+    // machine, a fast one, or a paused pond is the same two seconds of pond.
+    for (let i = 0; i < MOVIE_STEPS_PER_FRAME; i++) {
+      world.step();
+      trail.record(renderer.selected, world.tick);
+      witnessDeaths();
+    }
+  } else if (view.skipLeft > 0) {
     // A skip in flight takes the frame's stepping to itself (v1.142). The speed
     // slider waits, and a pond that was paused when the button was pressed is
     // still paused when the card arrives — the skip is a fixed distance, not a
@@ -436,6 +479,10 @@ function loop(now) {
   // moment is a label that has started lying.
   renderer.nameTags = nameTags(world, config, namesForTree(world.phylogeny), renderer.selected);
   renderer.draw(world);
+  // Immediately after the draw and before any board: a recording copies the
+  // frame that was just put on the water, which is the whole promise — what
+  // leaves the page is what was on it.
+  pumpMovie();
   updateViewBadge();
   updateMinimap();
   updateScaleBar();
@@ -2186,6 +2233,10 @@ function wireKeyboard() {
       case "S":
         startSkip();
         break;
+      case "g":
+      case "G":
+        startMovie();
+        break;
       case "n":
       case "N": {
         const seed = Math.floor(Math.random() * 1e9);
@@ -2535,6 +2586,7 @@ function wireControls() {
   $("btn-share").addEventListener("click", shareLink);
   $("btn-export-csv").addEventListener("click", exportCSV);
   $("btn-picture").addEventListener("click", takePicture);
+  $("btn-gif").addEventListener("click", startMovie);
 
   // Chart scope. This button lives in the static legend, not inside a panel
   // that gets rebuilt from innerHTML every frame, so a click that spans several
@@ -2710,7 +2762,10 @@ function startSkip() {
   // One skip at a time, and none while its own card is still being read. The
   // button stays focusable and simply refuses — see the `aria-disabled` note in
   // the stylesheet.
-  if (view.skipLeft > 0 || skipIsOpen()) return;
+  // …and none while a recording is running (v1.144): both of them take the
+  // frame's stepping, and a pond stepped by two things at once is a pond
+  // neither of them is describing.
+  if (view.skipLeft > 0 || skipIsOpen() || movieIsRunning()) return;
   view.skipTotal = skipLength(config);
   view.skipLeft = view.skipTotal;
   view.skipFrom = skipSnapshot(world);
@@ -3062,6 +3117,143 @@ function takePicture() {
     // cannot see, and *saved* on its own is a claim they have to take on faith.
     flash(`${PICTURE_MARK} Saved a picture of ${pondName(config.seed).name}.`);
   }, "image/png");
+}
+
+// ---- The moving picture (v1.144) ----
+//
+// `src/movie.js` owns the poster and the words, `src/gif.js` owns the bytes,
+// and this is the machine that runs between them. It has three phases and it
+// advances exactly one step per animation frame, which is the point: encoding
+// two seconds of pond is a second or two of arithmetic, and a page that stops
+// answering for two seconds after a press is a page a visitor reloads.
+//
+//   **record** — step the pond, copy the frame that was just drawn, and add its
+//   colours to a running census. The poster's numbers are recomputed *per
+//   frame*, so the population and the step count on the finished file count up
+//   with the water underneath them.
+//
+//   **encode** — one frame per tick: map it onto the shared palette and
+//   compress it. Each frame's pixels are released as it goes, so the peak is
+//   the recording rather than the recording plus its output.
+//
+//   **done** — join the pieces, hand over the file.
+//
+// One recording at a time, and none while a skip is in flight: both of them
+// take the frame's stepping, and two things stepping one pond would produce a
+// file of a pond nobody watched.
+let movie = null;
+
+/** Whether a recording is running, for the controls that must wait for it. */
+const movieIsRunning = () => movie !== null;
+
+function startMovie() {
+  if (movie || view.skipLeft > 0 || skipIsOpen()) return;
+  // The address on the poster is the address of *this* pond, so the hash has to
+  // be current before it is read — `takePicture`'s first line, for its reason.
+  syncHash();
+  const layout = movieLayout($("world"));
+  const canvas = document.createElement("canvas");
+  canvas.width = layout.width;
+  canvas.height = layout.height;
+  movie = {
+    phase: "record",
+    layout,
+    canvas,
+    // `willReadFrequently` because this context is read back once a frame, and
+    // it is the one hint that keeps the copy off the GPU round trip.
+    ctx: canvas.getContext("2d", { willReadFrequently: true }),
+    credit: pictureCredit(pictureAddress(location.href)),
+    census: newCensus(),
+    pixels: [],
+    parts: [],
+    palette: null,
+    cache: null,
+    minCodeSize: 0,
+    cursor: 0,
+    bytes: 0,
+  };
+  const btn = $("btn-gif");
+  btn.disabled = true;
+  btn.textContent = movieProgress(0, MOVIE_FRAMES);
+}
+
+/** One animation frame's worth of the machine. */
+function pumpMovie() {
+  if (!movie) return;
+  const btn = $("btn-gif");
+  if (movie.phase === "record") {
+    const caption = pictureCaption(world, config, namesForTree(world.phylogeny));
+    paintMovieFrame(
+      movie.ctx,
+      { pond: $("world"), names: $("names") },
+      caption,
+      movie.credit,
+      movie.layout
+    );
+    const frame = movie.ctx.getImageData(0, 0, movie.layout.width, movie.layout.height).data;
+    movie.pixels.push(frame);
+    censusAdd(movie.census, frame, MOVIE_SAMPLE_STRIDE);
+    btn.textContent = movieProgress(movie.pixels.length, MOVIE_FRAMES);
+    if (movie.pixels.length >= MOVIE_FRAMES) {
+      // The palette is built once, from every frame, and shared by all of them.
+      movie.palette = buildPalette(movie.census, MOVIE_COLORS, movieInks());
+      movie.census = null;
+      movie.cache = paletteCache();
+      movie.minCodeSize = gifMinCodeSize(movie.palette);
+      movie.parts.push(
+        gifPrologue({
+          width: movie.layout.width,
+          height: movie.layout.height,
+          palette: movie.palette,
+          animated: MOVIE_FRAMES > 1,
+        })
+      );
+      movie.phase = "encode";
+      btn.textContent = movieSaving(0, MOVIE_FRAMES);
+    }
+    return;
+  }
+
+  if (movie.phase === "encode") {
+    const px = movie.pixels[movie.cursor];
+    movie.parts.push(
+      gifFrameBlocks(indexFrame(px, movie.palette, movie.cache), {
+        width: movie.layout.width,
+        height: movie.layout.height,
+        minCodeSize: movie.minCodeSize,
+        delay: MOVIE_DELAY_CS,
+      })
+    );
+    movie.pixels[movie.cursor] = null; // the frame is bytes now; let it go
+    movie.cursor++;
+    btn.textContent = movieSaving(movie.cursor, MOVIE_FRAMES);
+    if (movie.cursor >= MOVIE_FRAMES) finishMovie();
+  }
+}
+
+function finishMovie() {
+  movie.parts.push(Uint8Array.of(GIF_TRAILER));
+  const bytes = joinBytes(movie.parts);
+  const seed = config.seed;
+  const url = URL.createObjectURL(new Blob([bytes], { type: "image/gif" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = movieFilename(config, world);
+  a.click();
+  URL.revokeObjectURL(url);
+  restMovieButton();
+  // The receipt carries the file's size as well as the pond's name, because
+  // this is the largest thing this page has ever handed anybody and somebody
+  // about to send it to a friend has a right to know that first.
+  flash(movieReceipt(seed, bytes.length), MEET_FLASH_MS);
+}
+
+/** The control back to rest, and any recording in flight abandoned with it. */
+function restMovieButton() {
+  movie = null;
+  const btn = $("btn-gif");
+  btn.disabled = false;
+  btn.textContent = MOVIE_LABEL;
 }
 
 let flashTimer = null;

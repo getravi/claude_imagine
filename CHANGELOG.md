@@ -4,6 +4,78 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.144.0] — 2026-09-02
+
+The pond, moving.
+
+v1.141 taught this page to hand a stranger a picture, and its own entry ended on
+what that picture cannot do: **a still of this page is a still of some dots.**
+Everything Vivarium is about happens over *time* — a dart turning toward food, a
+hunter cutting a line through a shoal, the crowd thinning as winter arrives — and
+neither a photograph nor a paragraph carries any of it. Twenty-one cycles of
+narration have been describing motion to people who have never seen it.
+
+`🎞 Make a GIF` is one press and about four seconds:
+
+- the pond runs **48 frames, two steps apart**, drawn all the way, while the
+  button counts up;
+- then the frames become a looping **animated GIF** of just under two seconds —
+  the water exactly as it was framed, name plates and all, under the pond's name
+  and over its address, with the population and the step count **counting up
+  inside the file**;
+- and it lands in the downloads folder at about **2 MB**, which plays by itself
+  in every chat window, feed and phone gallery on earth.
+
+That last clause is the whole argument for the format. A GIF is not a good way
+to store video and it is the only way to send a moving thing that a stranger
+sees move without deciding to.
+
+### The encoder
+
+There is no dependency here and there was not going to be one, so `src/gif.js`
+is a GIF89a encoder written from nothing: a **median-cut colour table**, a
+**nearest-colour cache** keyed on 15-bit buckets, **LZW**, and the fixed-layout
+blocks around them. It knows nothing about ponds — pixels in, bytes out — which
+is what lets `test/gif.test.js` prove it correct without a browser by decoding
+its own output with an independently written parser.
+
+Four things it cost, each of them a note for the next person who writes one.
+
+- **A round trip proves two programs agree. It cannot prove either is right.**
+  The first encoder widened its LZW codes one emitted symbol too late; the
+  decoder written beside it agreed perfectly, every test passed, and Chrome read
+  the header, painted **one row** of the picture and gave up. A 2 MB file that
+  opens as a blank grey rectangle. The rule is: widen **before** handing out the
+  code that would not fit — and the release is now checked in a real browser as
+  well as in the suite, because that is the only place the question is settled.
+- **A sampling stride is a step across *columns*.** The palette is built from
+  every nth pixel, the stride was six, and the frame is 480 wide: six divides
+  480, so the census saw the same 80 columns on every row of every frame and had
+  no opinion at all about the other four hundred. Seven is coprime with the
+  width and walks across the picture. `test/gif.test.js` holds the failure
+  still and `test/movie.test.js` asserts the two numbers stay coprime.
+- **The colour table is chosen for the *animals*.** Measured through the button
+  itself: 1.36 MB at 32 colours, 1.67 at 64, 1.89 at 96, 2.02 at 128, 2.15 at
+  192, 2.23 at 256, at a flat encoding cost throughout. The curve alone would
+  argue for 64. The pictures argue otherwise — **at 32 every animal in the pond
+  is grey**, because hue is the family badge in this water and a small table
+  spends its entries on the biome. 128 is where the difference stopped being
+  visible.
+- **A palette chosen by population discards whatever is rare, and the rarest
+  thing in a frame is the writing.** `buildPalette` takes reserved colours now,
+  and the poster's two inks and its plate are in the table before the census
+  gets a vote.
+
+### And one about measuring
+
+The colour sweep that produced those numbers was first run through a harness
+that re-drew the poster itself — and it did not draw the caption. So the sweep
+reported the words vanishing below 128 colours, which was a fact about the
+harness and about nothing else. **A rig that re-implements the thing it is
+measuring measures the re-implementation.** Every number above comes from
+pressing the actual button; the reservation that scare produced is kept as
+insurance rather than as a repair, and is described as such in the source.
+
 ## [1.143.0] — 2026-09-02
 
 The guide learns to press the button.
