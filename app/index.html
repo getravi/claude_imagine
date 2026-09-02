@@ -293,6 +293,17 @@
                because a third button squeezed beside Feed would take all three
                under the 24 px bar v1.115 measured. `src/cast.js` picks who. -->
           <button id="btn-meet" class="meet">👋 Meet somebody</button>
+          <!-- The fast-forward (v1.142). Directly under `👋 Meet somebody`
+               because the two of them are the page's answers to the only two
+               questions a visitor has in their first minute: *what am I
+               looking at* and *why should I keep looking*. Evolution here moves
+               at about a generation every four hundred steps, and everything
+               this project has built to narrate that has still needed the
+               visitor to supply the waiting. This press supplies it — 2,600
+               steps, and then a card saying what changed. `src/skip.js` owns
+               the length, the words and the arithmetic; main.js runs the steps
+               across frames so the page keeps drawing while it happens. -->
+          <button id="btn-skip" class="skip-btn">⏩ Skip ahead</button>
           <!-- The guide (v1.129). Six stops around the page for somebody who has
                just arrived; `src/tour.js` holds the words and the arithmetic and
                main.js draws the ring. It opens itself once on a first visit and
@@ -302,14 +313,16 @@
           <!-- The picture (v1.141). Full width and here rather than in the file
                row below, for two reasons. The row is four buttons wide and
                already two lines tall on a phone, so a fifth would put "Export
-               CSV" on three; and these three are the page's controls for a
-               *person* rather than for a file — find somebody, show me the
-               place, take it home with you. `src/picture.js` composes it. -->
+               CSV" on three; and the full-width controls above it are the
+               page's controls for a *person* rather than for a file — find
+               somebody, skip ahead, show me the place, take it home with you.
+               `src/picture.js` composes it. -->
           <button id="btn-picture" class="picture-btn">📸 Take a picture</button>
           <p class="kbd-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
             <kbd>F</kbd> feed · <kbd>M</kbd> meet somebody ·
-            <kbd>?</kbd> show me around · <kbd>N</kbd> new seed ·
+            <kbd>S</kbd> skip ahead · <kbd>?</kbd> show me around ·
+            <kbd>N</kbd> new seed ·
             <kbd>V</kbd> vision · <kbd>+</kbd>/<kbd>−</kbd> zoom ·
             <kbd>0</kbd> whole pond · <kbd>H</kbd> chart history
           </p>
@@ -897,6 +910,44 @@
         <div class="postcard-btns">
           <button id="postcard-copy" class="primary">📋 Copy again</button>
           <button id="postcard-close">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- What the fast-forward brings back (v1.142). A skip that only moved the
+         pond forward would be the speed slider with fewer steps in it; the
+         point of the press is the note it leaves. Five sentences at most, then
+         up to three of the Chronicle's own lines from the stretch that was
+         skipped, then a count of the ones that did not fit and where to find
+         them. `src/skip.js` composes every word.
+
+         The postcard's chrome, because it is the postcard's shape — a card in
+         the middle of the window with a title, some sentences and two buttons
+         — and two dialogs that look alike should be one set of rules rather
+         than two that drift. What is different is what is in it: this one has
+         no address and nothing to copy, and its primary button goes round
+         again, because the visitor who reads this card wants the next one. -->
+    <div
+      id="skipcard"
+      class="skipcard hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="skipcard-title"
+      aria-describedby="skipcard-sub"
+    >
+      <div id="skipcard-scrim" class="skipcard-scrim"></div>
+      <div id="skipcard-card" class="skipcard-card" tabindex="-1">
+        <h2 class="skipcard-title" id="skipcard-title">⏩ 2,600 steps later</h2>
+        <p class="skipcard-sub" id="skipcard-sub"></p>
+        <ul class="skipcard-lines" id="skipcard-lines"></ul>
+        <!-- Hidden along with its list when the stretch was quiet: a heading
+             over nothing tells a reader something is missing. -->
+        <h3 class="skiphi-head" id="skipcard-hi-head">While you were away</h3>
+        <ul class="skiphis" id="skipcard-highlights"></ul>
+        <p class="skipcard-more" id="skipcard-more"></p>
+        <div class="skipcard-btns">
+          <button id="skipcard-again" class="primary">⏩ Skip again</button>
+          <button id="skipcard-close">Close</button>
         </div>
       </div>
     </div>

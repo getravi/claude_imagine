@@ -1819,8 +1819,15 @@ details .field {
    ranks when there are two. And a new ground is a new pair for
    `legibility.js` to measure: reusing one already in the inventory is the
    cheapest possible honesty about a colour, which is not to add one. */
+/* The three full-width controls that address a person rather than a file. They
+   share one plate on purpose: `👋 Meet somebody` above them is green because it
+   is the one press this page recommends to a stranger, and a second recommended
+   colour would recommend nothing. v1.142's `⏩ Skip ahead` joins the group
+   rather than inventing a fourth — same ink on the same ground, so it adds no
+   pair to `legibility.js`'s inventory. */
 button.tour-open,
-button.picture-btn {
+button.picture-btn,
+button.skip-btn {
   display: block;
   width: 100%;
   margin-top: 8px;
@@ -1828,9 +1835,19 @@ button.picture-btn {
   background: #131d2a;
 }
 button.tour-open:hover,
-button.picture-btn:hover {
+button.picture-btn:hover,
+button.skip-btn:hover {
   background: #1a2737;
   border-color: #47617f;
+}
+/* A skip in flight. `aria-disabled` rather than `disabled`, and the difference
+   matters here: this control is the thing that was just pressed, so disabling
+   it outright would drop the keyboard's focus to the document for the two
+   seconds the skip takes and hand it back somewhere else. The press is refused
+   in `main.js` instead, which is what `aria-disabled` promises. */
+button.skip-btn[aria-disabled="true"] {
+  opacity: 0.62;
+  cursor: default;
 }
 .tour {
   position: fixed;
@@ -1919,7 +1936,8 @@ button.picture-btn:hover {
    regardless — the story is what this card is for. The general note: **an ink
    is only quiet enough on the grounds it was measured on, and a new surface is
    a new ground.** */
-.postcard {
+.postcard,
+.skipcard {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -1928,13 +1946,15 @@ button.picture-btn:hover {
   justify-content: center;
   padding: 16px;
 }
-.postcard-scrim {
+.postcard-scrim,
+.skipcard-scrim {
   position: absolute;
   inset: 0;
   background: rgba(4, 7, 11, 0.74);
   cursor: pointer;
 }
-.postcard-card {
+.postcard-card,
+.skipcard-card {
   position: relative;
   width: min(460px, 100%);
   max-height: calc(100vh - 32px);
@@ -1945,18 +1965,21 @@ button.picture-btn:hover {
   padding: 16px 18px 14px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
 }
-.postcard-title {
+.postcard-title,
+.skipcard-title {
   margin: 0 0 4px;
   font-size: 19px;
   font-weight: 600;
   color: var(--ink);
 }
-.postcard-sub {
+.postcard-sub,
+.skipcard-sub {
   margin: 0 0 12px;
   font-size: 12.5px;
   color: var(--ink-dim);
 }
-.postcard-lines {
+.postcard-lines,
+.skipcard-lines {
   list-style: none;
   margin: 0 0 12px;
   padding: 0;
@@ -1964,7 +1987,8 @@ button.picture-btn:hover {
   flex-direction: column;
   gap: 8px;
 }
-.postcard-lines li {
+.postcard-lines li,
+.skipcard-lines li {
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
@@ -1986,9 +2010,60 @@ button.picture-btn:hover {
   color: var(--accent-2);
   min-height: 16px;
 }
-.postcard-btns {
+.postcard-btns,
+.skipcard-btns {
   display: flex;
   gap: 8px;
+}
+
+/* ---- The fast-forward's card (v1.142) ----
+
+   Everything above this comment is shared with the postcard, because the two
+   are the same object: a card in the middle of the window, a title, a few
+   sentences, two buttons. What follows is only what this one has and that one
+   does not — the Chronicle's own lines from the stretch that was skipped.
+
+   No new pair for `legibility.js` to price. The card's ground is
+   `--bg-panel-2`, and `--ink` and `--ink-dim` on `#111a26` are both already in
+   that module's measured inventory (`button '↻ Reset'` and `kbd 'Space'`), so
+   the v1.140 note that closed the postcard — *an ink is only quiet enough on
+   the grounds it was measured on* — is satisfied by reusing the ground rather
+   than by a fresh measurement. `--ink-faint` stays off this card for the same
+   reason it stayed off that one: it does not clear 4.5 here. */
+.skiphi-head {
+  margin: 14px 0 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+.skiphis {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+/* The mark in a column of its own, so a run of lines reads as a list rather
+   than as a paragraph with emoji in it — the Chronicle's own arrangement, one
+   surface over. */
+.skiphi {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 8px;
+  align-items: start;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.skiphi-mark {
+  text-align: center;
+}
+.skipcard-more {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-dim);
 }
 
 /* ---- Phylogeny / Tree of Life ---- */

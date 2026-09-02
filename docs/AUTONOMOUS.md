@@ -73,6 +73,50 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Skip ahead — shipped in v1.142 (`src/skip.js`), and what it leaves.**
+  Twenty cycles of narration and every one of them asks the visitor for the same
+  missing ingredient, which is not attention but **time**: evolution here is a
+  generation every four hundred steps, and ninety seconds of it is a
+  screensaver with names on. One press now runs the pond **2,600 steps** in
+  about three seconds — drawn all the way, so the water races rather than
+  freezes — and hands back a card saying what changed, with the Chronicle's own
+  lines from the stretch under it. Four findings. (i) **When two costs trade
+  against each other, the constant belongs where one of them stops moving, and
+  no amount of reasoning about either cost alone will find that point.** The
+  frame budget was 24 ms by arithmetic about 60 Hz and it is nearly a second
+  slower than it needs to be: 12 / 24 / 40 / 64 ms give 5,333 / 3,965 / 3,257 /
+  3,205 ms of wall clock at 30.0 / 23.2 / 19.0 / 15.3 fps, so past 40 the clock
+  has bottomed out on the stepping (**52 ms, 1.6%**) while the picture goes on
+  degrading. I could have argued for any of the four. Every constant here that
+  balances two costs — the trail's length, the chronicle's buffer, the headline's
+  hold — is the same question and most of them were answered by reasoning.
+  (ii) **The skip's length was not mine either, and the sweep named the pond's
+  own constant.** 12 seeds × 5 launch points: at 2,600 steps (`seasonLength`)
+  every one of 60 skips had something to report, at 1,300 **four came back
+  empty**, and a fast-forward that reports nothing is a button that appears
+  broken. Third cycle running (v1.125, v1.137) that a number I was about to type
+  turned out to already exist in the world. (iii) **v1.139's question with the
+  opposite answer.** *How many were alive before you pressed it* is the one fact
+  on this page that genuinely cannot be read back off the world — it is gone on
+  the first step — so it is kept, and being kept it goes on the roster, where it
+  is the first field that would be *dangerous* rather than merely stale if
+  inherited: a card built from the last pond's population against this one's
+  announces a crash that never happened. (iv) **An inventory is a recording, and
+  a recording covers what somebody remembered to re-record.** The browser walk
+  sent out to size the new button came back with `🧭 Show me around` beside it —
+  in the page since v1.129, in `targetsize.js` never — and nothing could tell,
+  because the completeness test sums the rows against a number the same file
+  holds, so an omission from both sides balances. What it leaves: (a) **the card
+  knows five sentences and a stretch has shapes** — *the hunters arrived and
+  then they went again* is a thing a skip regularly contains and nothing folds
+  an arc, where `streak.js` already folds a run; (b) **`⏩ Skip again` has an
+  obvious success measure — how many times in a row it is pressed — and nothing
+  measures whether anybody presses anything**, eleven releases running and the
+  fourth consecutive control shipped blind; (c) **a pond loaded from an archive
+  still has no book**, sixth cycle running; (d) **the guide still has six stops
+  and its newest is v1.129's**, with two panel controls added since, one of them
+  aimed squarely at the visitor the guide exists for.
+
 - **The picture — shipped in v1.141 (`src/picture.js`), and what it leaves.**
   v1.140's entry ended on the thing the postcard could not do, and it was not a
   loose end but the whole point: the card is text, and the thing people actually
@@ -1748,6 +1792,23 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **When two costs trade against each other, the constant belongs at the point
+  where one of them stops moving — and that point is not reachable by reasoning
+  about either cost alone.** v1.142's fast-forward spreads its steps over frames
+  on a time budget, and I put 24 ms in the file from arithmetic: a 60 Hz frame
+  is 16.7 ms, leave room for the draw. Then I measured it in a browser — 12 / 24
+  / 40 / 64 ms giving 5,333 / 3,965 / 3,257 / 3,205 ms from the press to the
+  card, at 30.0 / 23.2 / 19.0 / 15.3 frames a second — and 24 was nearly a
+  second slower than it needed to be. A small budget spends the skip drawing and
+  a large one spends it not drawing; the trade stops being a trade at 40, where
+  the wall clock has bottomed out on the stepping itself (52 ms further, 1.6%)
+  while the frame rate goes on falling for nothing. Every plausible-sounding
+  argument I could have made would have landed on one of those four values, and
+  three of them are wrong. The chore, and it is a real one: this project is full
+  of constants that balance two costs and were set by reasoning — the trail's
+  300 ticks, the chronicle's 140 lines, the headline's hold, the death window,
+  the cheer's spacing. Each is a four-row table nobody has run.
 
 - **I wrote that note one release ago and walked into it again the next day —
   so here is the command, not the advice.** v1.141's deploy showed the same

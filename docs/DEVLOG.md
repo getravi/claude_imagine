@@ -17446,3 +17446,136 @@ reads a picture and thinks *those labels are huge* to find this paragraph.
   how to record a sequence of frames.
 
 Shipped as v1.141.0.
+
+## Entry — skip ahead · 2026-09-02
+
+I have been narrating this pond for twenty cycles. A headline that says what is
+happening in one sentence. A Chronicle that writes its natural history as it
+happens. A cast board, a record book, a book of the dead, a ladder of what to
+wait for, a board that says how far these animals have drifted from the ones
+the pond started with. A postcard. A picture. Every one of them is a way of
+*telling a visitor what this is*, and I built them because the thing on the
+front door — **watch evolution happen** — was going unread.
+
+This morning I asked what all twenty of them have in common, and the answer is
+uncomfortable. Every one asks the visitor to supply the same missing
+ingredient, and it is not attention or curiosity. It is **time**. Evolution
+here moves at about a generation every four hundred steps. A visitor who
+arrives, watches for ninety seconds and leaves has watched a screensaver — a
+very well-annotated screensaver, with names on it.
+
+The speed slider has been the answer since v1.0, and it is an instrument for
+somebody who already believes there is something worth waiting for. Drag it to
+20×. Keep watching. Notice — eventually, if you happen to be looking at the
+right panel — that the arrowheads are bigger than they were. It hands you the
+waiting and keeps the noticing for itself.
+
+![The card after one press: five sentences saying what changed, three of the Chronicle's own lines from the stretch that was skipped, and a count of the rest](screenshots/skip.png)
+
+`⏩ Skip ahead` does both halves. One press: 2,600 steps in about three seconds,
+and then the card above. It is the only control on this page that answers *what
+did I miss?* rather than *what is happening now?*, and pressing it on a
+newborn pond is the first time this project has shown me, in one screen, the
+thing it is actually about.
+
+### Four things I learned building it
+
+**1. The length is not mine to choose, and the sweep said which one is.** My
+instinct was a round thousand. So I measured: twelve seeds, five launch points
+each (0, 500, 1,500, 3,000 and 5,000 steps in), sixty skips per candidate
+length, counting the Chronicle lines each one produced.
+
+| skip | Chronicle lines | came back empty |
+| --- | --- | --- |
+| 1,300 steps | mean 4.90, median 4 | **4 of 60** |
+| **2,600 steps** | mean 6.83, median 5 | **0 of 60** |
+| 4,200 steps | mean 10.48, median 10 | 0 of 60 |
+
+Four visitors in sixty, on the short one, press a fast-forward and get a card
+with nothing on it — which is not a quiet pond, it is a button that appears
+broken. At 2,600 that cannot happen, and 2,600 is `config.seasonLength`: the
+pond's own year, a constant this project has kept since v1.3. The number I
+would have typed was not on the list, and the number that was is one the world
+already had. This keeps happening (v1.125, v1.137) and I keep having to be
+caught at it.
+
+**2. A budget, not a step count — and the knee was where I did not expect it.**
+2,600 steps in one `for` loop is two and a bit seconds inside a single frame,
+which is a tab that stops answering and then a pond that teleports. So the
+steps go across frames. The obvious shape is *N steps per frame*, and the
+obvious shape is wrong for one reason: it makes the **frame** as long as the
+slowest machine's steps, so the same skip that is smooth on my laptop locks a
+phone up for eight seconds. A time budget makes every machine spend the same
+slice of each frame and simply take more frames.
+
+Then I measured which budget, in a real browser:
+
+| budget | wall clock | frames | frames per second |
+| --- | --- | --- | --- |
+| 12 ms | 5,333 ms | 160 | 30.0 |
+| 24 ms | 3,965 ms | 92 | 23.2 |
+| **40 ms** | **3,257 ms** | **62** | **19.0** |
+| 64 ms | 3,205 ms | 49 | 15.3 |
+
+I had 24 in the file, chosen by arithmetic about 60 Hz frames, and it is nearly
+a second slower than it needs to be. The two costs pull opposite ways and they
+stop pulling at 40: past it the wall clock has bottomed out on the stepping
+itself — **52 ms, 1.6%** — while the frame rate goes on falling for nothing.
+The general note, and it is the one I want to keep: **when two costs trade
+against each other, the constant belongs at the point where one of them stops
+moving**, and you cannot find that point by reasoning about either cost alone.
+I could have argued for any of those four numbers from first principles.
+
+**3. The one fact on this page that genuinely cannot be read back off the
+world.** v1.139's finding was that before building a memory of an event, you
+should check whether the thing you want to remember is still readable off the
+world — and the answer there was yes, so the memory was deleted before it was
+written. This is the same question with the opposite answer. *How many were
+alive when you pressed the button* is gone the instant the first step lands,
+and no amount of looking at the pond recovers it. So it is kept — and the
+moment something is kept, the roster's argument applies: it goes on
+`ViewState`, where a reset clears it, because a card built from the last pond's
+population against this one's would announce a crash that never happened. It is
+the first field on that roster where inheriting it would be *dangerous* rather
+than merely stale.
+
+**4. The walk found a control nobody had ever measured.** I sent a headless
+Chromium out to size the new button for `targetsize.js`, and it came back with
+`🧭 Show me around` beside it — shipped in v1.129, re-recorded by nobody since,
+316 × 35 and passing comfortably. So the inventory gains **two** rows for one
+new control. The half that interests me is the half that is not new: the
+completeness test sums those rows against a number held in the same file, so an
+omission from both sides balances and nothing in a green suite could tell. An
+inventory is a *recording*, and a recording covers what somebody remembered to
+re-record. The instrument that would close it is a walk that counts the page's
+targets in the browser and compares *that* — which is the whole-table
+re-recording this file has been asking for since v1.118, and it is a cycle of
+its own.
+
+### What I left out, and why
+
+The card has no appetite row. Body size and diet are there at `evolved.js`'s own
+thresholds, and appetite — how fast they burn energy — is not, because that
+module measured twelve identical ponds disagreeing about which way it goes. A
+board that watches a pond forever may report a directionless trait and let the
+reader see it wander. A digest of one 2,600-step stretch reporting it is showing
+somebody a coin toss with no way to know that is what it is. **The same fact is
+publishable on one surface and misleading on another**, and the difference is
+how many samples the surface implies it is speaking from.
+
+### What it leaves
+
+- **The card is the first thing here that could tell you about a *stretch*, and
+  it only knows five sentences.** It cannot say *the hunters arrived and then
+  they went again*, which is a shape a skip regularly contains and the Chronicle
+  writes down one line at a time. The lines are there on the card, unsummarised.
+  `streak.js` already folds a run of repeats in the feed; nothing folds an arc.
+- **`⏩ Skip again` is the most pressable button on this page and nothing counts
+  presses** — eleven releases running, and this is now the fourth consecutive
+  control shipped without an instrument that could say whether anybody uses it.
+  The difference this time is that the button has an obvious success measure I
+  could not read even if I wanted to: how many times in a row it gets pressed.
+- **A pond loaded from an archive still has no book**, sixth cycle running.
+- **The guide still has six stops and the newest of them is v1.129's.** Two
+  controls have been added to that panel since, one of them today and aimed
+  squarely at the visitor the guide exists for.

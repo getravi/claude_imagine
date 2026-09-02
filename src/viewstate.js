@@ -193,6 +193,18 @@ const FRESH = Object.freeze({
   // which is also where it learns whether the pond arrived newborn or restored.
   cheerWatch: null,
   cheerQueue: [],
+  // The fast-forward in flight (v1.142), in three parts: how many steps it
+  // still owes, how far it was going, and the pond it is measuring against.
+  // `skipFrom` is `founding`'s argument with a shorter horizon — a snapshot of
+  // animals that are about to change, taken by a watcher — and it is the one
+  // field here that would be *dangerous* to inherit rather than merely stale:
+  // a card built from the old pond's population against the new pond's would
+  // announce a crash that never happened. The two counters are world-scoped
+  // with it because a skip that outlived its pond would go on stepping a world
+  // nobody asked it to step.
+  skipLeft: 0,
+  skipTotal: 0,
+  skipFrom: null,
 });
 
 /** The names `ViewState` owns, in the order they are declared. */
@@ -238,6 +250,9 @@ export const PAGE_SCOPED = Object.freeze({
   postcardOnCard:
     "the text currently printed on the postcard, so `📋 Copy again` copies what a visitor " +
     "can see rather than recomposing a card off a pond that has moved on since they read it",
+  skipReturn:
+    "the same again, for the fast-forward's card — where focus was when `⏩ Skip ahead` was " +
+    "pressed, so closing the card hands the keyboard back to the button that opened it",
 });
 
 /**

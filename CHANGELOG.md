@@ -4,6 +4,115 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.142.0] — 2026-09-02
+
+Skip ahead.
+
+The promise on the front door is **watch evolution happen**. The small print is
+that evolution here happens at about a generation every four hundred steps, and
+a visitor who arrives, watches for ninety seconds and leaves has seen a
+screensaver. Twenty cycles have gone into *narrating* that — a headline, a
+Chronicle, a cast board, a book of records, a book of the dead, a board that
+says how far the animals have drifted from their founders — and every one of
+them still asks the visitor for the one ingredient nobody browsing at eleven at
+night has any of, which is **time**.
+
+`⏩ Skip ahead` supplies it. One press, and:
+
+- the pond runs **2,600 steps** — its own year, `config.seasonLength` — in about
+  three and a quarter seconds, **drawn all the way**, so the water is visibly
+  racing rather than frozen;
+- then a card says what changed while you were gone. *42 creatures were alive
+  when you pressed it, and 169 are now. 434 were born and 307 died while you
+  were away, 27 of them eaten. 9 more generations have been born — this pond is
+  10 deep now. The animals here are 23% bigger than the ones you left behind.
+  Meat has fallen from 54% of what they eat to 18%.*
+- Under that, up to three of the **Chronicle's own lines** from the stretch that
+  was skipped, and a count of the ones that did not fit and where to find them.
+- `⏩ Skip again` goes round for another, which is what the card is really for.
+
+This is the first control here that both **moves the pond** and **reports on
+it**, and the two halves are held to different bars.
+
+**A skip is waiting, done faster — and nothing else.** It is `World.step` in a
+loop, the same call the running pond makes every frame, the same number of times
+whatever machine you are on. A pond that has been skipped is bit-for-bit a pond
+that was left running, and `test/skip.test.js` asserts it against a pond stepped
+in chunks of 1, 7, 60, 200, 3, 41 and 500 to stand in for the frames of a slow
+machine and a fast one.
+
+**How far a skip goes is not a number this release picked.** Twelve seeds × five
+launch points, sixty skips per length:
+
+| skip | Chronicle lines | came back empty |
+| --- | --- | --- |
+| 1,300 steps | mean 4.90, median 4 | **4 of 60** |
+| **2,600 steps** | mean 6.83, median 5 | **0 of 60** |
+| 4,200 steps | mean 10.48, median 10 | 0 of 60 |
+
+So the shortest length that *always* has something to report, and it is a
+constant the pond already keeps rather than one this module invented. Half of it
+sends four visitors in sixty away from a fast-forward that reported nothing,
+which is a button that appears broken; twice it says the same kinds of thing for
+twice the wait.
+
+**The steps are spread across frames on a time budget, and forty milliseconds is
+a knee rather than a preference.** The default pond, skipped from a standing
+start in a headless Chromium at 1280 × 900, timed from the press to the card:
+
+| budget | wall clock | frames | frames per second |
+| --- | --- | --- | --- |
+| 12 ms | 5,333 ms | 160 | 30.0 |
+| 24 ms | 3,965 ms | 92 | 23.2 |
+| **40 ms** | **3,257 ms** | **62** | **19.0** |
+| 64 ms | 3,205 ms | 49 | 15.3 |
+
+A small budget spends the skip drawing and a large one spends it not drawing,
+and past 40 the trade stops being a trade: the wall clock has bottomed out on
+the stepping itself — 52 ms saved, 1.6% — while the frame rate goes on falling.
+A budget rather than a fixed number of steps per frame because the difference is
+a phone: a fixed count makes the *frame* as long as the slowest machine's steps,
+where a budget makes every machine spend the same slice of each frame. What
+neither can change is what happens in the pond, because the total is fixed.
+
+**A row that is not true is not drawn.** Five sentences are possible and one is
+unconditional. A stretch that bred nothing gets no turnover row; animals that
+are the same size get no body row; and the two trait rows use `evolved.js`'s own
+thresholds, which over those sixty skips clear the bar on 30% and 25% of them.
+**Appetite is deliberately absent**, on that module's own finding that twelve
+identical ponds disagree about which way it goes: a board that watches forever
+may report a directionless trait, and a digest of one stretch reporting it would
+be showing somebody a coin toss with no way to know that is what it is.
+
+### Added
+
+- `src/skip.js` — how far a skip goes, every word of the card, and the frame
+  budget, as pure functions of a snapshot and a world. It writes nothing to any
+  world and draws no random number.
+- `⏩ Skip ahead` in the panel, directly under `👋 Meet somebody`, because the
+  two of them are this page's answers to the only two questions a visitor has in
+  their first minute: *what am I looking at* and *why should I keep looking*.
+  <kbd>S</kbd> presses it.
+- The card, in the postcard's chrome — same dialog, same scrim, same two inks on
+  the same ground, so two dialogs that look alike are one set of rules rather
+  than two that drift. Both inks are already priced on this ground in
+  `legibility.js`'s inventory, so the card adds no pair to measure.
+- `view.skipLeft`, `view.skipTotal` and `view.skipFrom` on the observer's
+  roster. The snapshot is the one field on it that would be *dangerous* rather
+  than merely stale if it were inherited across a reset: a card built from the
+  last pond's population against this one's would announce a crash that never
+  happened.
+
+### Changed
+
+- `src/targetsize.js` — the walk that measured the new button came back with a
+  control that had **never been in the inventory at all**: `🧭 Show me around`,
+  shipped in v1.129 and re-recorded by nobody since. Both are there now, both
+  passing at 316 × 35 and 290 × 35, and `WALKED.app` moves 74 → **76** for one
+  new control. The interesting half is the half that is not new: the
+  completeness test sums these rows against a number the same file holds, so an
+  omission from both sides balances and nothing could tell.
+
 ## [1.141.0] — 2026-09-02
 
 The picture.

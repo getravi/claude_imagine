@@ -159,6 +159,21 @@ export function verdicts(controls, min = TARGET_MIN) {
  * of this column stays *301-or-316*. Nothing here turns on it: the new button is
  * the panel's third full-width control and passes on its 35 px height, which is
  * the axis a thumb misses in.
+ *
+ * **v1.142's walk found a control that had never been in this table at all.**
+ * The probe went out to measure `#btn-skip` and came back with `#btn-tour`
+ * beside it — `🧭 Show me around`, shipped in v1.129 and walked by nobody since,
+ * 316 × 35 at 390 px and 290 × 35 at 1280, identical to its neighbours and
+ * passing comfortably. So `WALKED.app` moves by **two** for one new control, and
+ * the interesting half of that is the half that is not new: this inventory is a
+ * *recording*, and a recording covers what somebody remembered to re-record.
+ * `#btn-meet` (v1.123) and `#btn-picture` (v1.141) each arrived with their rows;
+ * the tour did not, and nothing in the suite could tell, because the
+ * completeness test below sums these rows against a number this same file holds
+ * — so an omission from both sides balances. The chore that would close it for
+ * good is a walk that counts the page's targets *in the browser* and compares
+ * that against `WALKED`, which is the whole-table re-recording the paragraph
+ * above has been asking for since v1.118.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -181,6 +196,8 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 301, h: 35, own: "301x35", via: "self", nearestCentre: 90.4, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "390x844", sel: "#btn-picture", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
+  { page: "app", vp: "390x844", sel: "#btn-skip", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
+  { page: "app", vp: "390x844", sel: "#btn-tour", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
@@ -197,6 +214,8 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "1280x900", sel: "#btn-picture", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
+  { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
+  { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
@@ -216,7 +235,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 74 });
+export const WALKED = Object.freeze({ "front door": 19, app: 76 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

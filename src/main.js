@@ -114,6 +114,16 @@ import {
   pictureFilename,
   pictureLayout,
 } from "./picture.js";
+import {
+  SKIP_FRAME_MS,
+  SKIP_LABEL,
+  highlightHTML,
+  skipCard,
+  skipHTML,
+  skipLength,
+  skipProgress,
+  skipSnapshot,
+} from "./skip.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -230,6 +240,13 @@ const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 function adoptWorld() {
   if (!view.adopt(world, renderer)) return;
   $("btn-clear-highlight").classList.add("hidden");
+  // A skip is a promise about *this* pond — "here is what changed while you
+  // were away" — and the pond it was measuring no longer exists. The roster has
+  // already cleared the skip's three fields by the time this line runs; what is
+  // left is the button, which is showing a percentage of a journey nobody is on
+  // any more. Reset, load, a new seed and a scenario chip all land here, so
+  // there is one place to say it rather than four (v1.142).
+  restoreSkipButton();
   // The pond's opening line, taken here and nowhere else (v1.128). This runs at
   // the top of the frame, *before* anything is stepped, so a world built since
   // the last frame is still standing exactly as it was dealt — which is what
@@ -280,6 +297,7 @@ function boot() {
   wireChronicleFeed();
   wireTour();
   wirePostcard();
+  wireSkip();
   buildScenarioChips();
   // Before the first frame, so the tab a visitor opened in the background is
   // already a place by the time they look at it. The return is dropped: the
@@ -385,7 +403,13 @@ function loop(now) {
   // the three buttons did it.
   adoptWorld();
 
-  if (running) {
+  if (view.skipLeft > 0) {
+    // A skip in flight takes the frame's stepping to itself (v1.142). The speed
+    // slider waits, and a pond that was paused when the button was pressed is
+    // still paused when the card arrives — the skip is a fixed distance, not a
+    // speed, so every press goes exactly as far as every other one.
+    pumpSkip();
+  } else if (running) {
     for (let i = 0; i < speed; i++) {
       world.step();
       // Inside the step loop, not once a frame: at 20× a frame is twenty ticks
@@ -2070,8 +2094,9 @@ function wireKeyboard() {
     // The guide is a dialog, and a dialog owns the keyboard while it is up. Its
     // own handler has already taken the keys it uses; everything else waits.
     // The postcard is the second of them (v1.140), and the reason is the same:
-    // a card being read is not a pond being driven.
-    if (tourIsOpen() || postcardIsOpen()) return;
+    // a card being read is not a pond being driven. The fast-forward's card is
+    // the third (v1.142).
+    if (tourIsOpen() || postcardIsOpen() || skipIsOpen()) return;
 
     switch (e.key) {
       case "?":
@@ -2098,6 +2123,10 @@ function wireKeyboard() {
       case "m":
       case "M":
         meetSomebody();
+        break;
+      case "s":
+      case "S":
+        startSkip();
         break;
       case "n":
       case "N": {
@@ -2591,6 +2620,125 @@ function wirePostcard() {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key !== "Escape") return;
     closePostcard();
+    e.preventDefault();
+    e.stopPropagation();
+  });
+}
+
+// ---- The fast-forward (v1.142) ----
+//
+// `src/skip.js` owns how far a skip goes and every word of the card it brings
+// back. What lives here is the only part that cannot be a pure function: the
+// stepping, spread across frames so the page keeps drawing while it happens.
+//
+// **Why it is not a `for` loop.** 2,600 steps of a busy pond is about two
+// seconds of work, and two seconds inside one frame is a tab that stops
+// answering — no scrolling, no cancel, nothing drawn, and then the pond
+// teleports. Spread over frames it is instead the thing it is meant to look
+// like: the water running fast. The budget is time rather than a step count so
+// a phone spends the same slice of each frame as a laptop, and the *total* is
+// fixed, so both arrive at the same pond.
+//
+// Determinism: this is `World.step` in a loop, exactly as the main loop calls
+// it, exactly as many times whatever the machine. A pond that has been skipped
+// is bit-for-bit the pond that was left running for the same number of steps.
+
+/** Where the keyboard was, so closing the card gives it back. */
+let skipReturn = null;
+
+const skipIsOpen = () => !$("skipcard").classList.contains("hidden");
+
+function startSkip() {
+  // One skip at a time, and none while its own card is still being read. The
+  // button stays focusable and simply refuses — see the `aria-disabled` note in
+  // the stylesheet.
+  if (view.skipLeft > 0 || skipIsOpen()) return;
+  view.skipTotal = skipLength(config);
+  view.skipLeft = view.skipTotal;
+  view.skipFrom = skipSnapshot(world);
+  skipReturn = document.activeElement;
+  const btn = $("btn-skip");
+  btn.setAttribute("aria-disabled", "true");
+  btn.textContent = skipProgress(0, view.skipTotal);
+}
+
+/** One frame's worth of a skip: as many steps as the budget buys, at least one. */
+function pumpSkip() {
+  const until = performance.now() + SKIP_FRAME_MS;
+  do {
+    world.step();
+    // The same two per-step observers the running branch keeps, for the same
+    // reason: a skip is thousands of steps, and a trail or a life sampled once
+    // a frame through it would be a trail with three corners and a book with
+    // nobody in it.
+    trail.record(renderer.selected, world.tick);
+    witnessDeaths();
+    view.skipLeft--;
+  } while (view.skipLeft > 0 && performance.now() < until);
+  $("btn-skip").textContent = skipProgress(view.skipTotal - view.skipLeft, view.skipTotal);
+  if (view.skipLeft === 0) finishSkip();
+}
+
+function finishSkip() {
+  const before = view.skipFrom;
+  restoreSkipButton();
+  if (before) openSkipCard(skipCard(before, world, config));
+}
+
+/**
+ * The control back to rest, and the skip in flight abandoned with it.
+ *
+ * Idempotent, and called unconditionally when a pond is adopted — where the
+ * roster has already cleared the three fields, and what is left to put back is
+ * the label a visitor is looking at.
+ */
+function restoreSkipButton() {
+  view.skipLeft = 0;
+  view.skipFrom = null;
+  const btn = $("btn-skip");
+  btn.removeAttribute("aria-disabled");
+  btn.textContent = SKIP_LABEL;
+}
+
+function openSkipCard(card) {
+  $("skipcard-title").textContent = card.title;
+  $("skipcard-sub").textContent = card.sub;
+  $("skipcard-lines").innerHTML = skipHTML(card.rows);
+  // The heading goes with its list. A quiet stretch is a real answer — the
+  // sentences above still say what the numbers did — but "While you were away"
+  // over nothing reads as a panel that failed to load.
+  const quiet = card.highlights.length === 0;
+  $("skipcard-hi-head").classList.toggle("hidden", quiet);
+  $("skipcard-highlights").classList.toggle("hidden", quiet);
+  $("skipcard-highlights").innerHTML = highlightHTML(card.highlights);
+  $("skipcard-more").textContent = card.moreLine;
+  $("skipcard").classList.remove("hidden");
+  $("skipcard-card").focus();
+}
+
+function closeSkipCard() {
+  if (!skipIsOpen()) return;
+  $("skipcard").classList.add("hidden");
+  if (skipReturn && skipReturn.isConnected) skipReturn.focus();
+  skipReturn = null;
+}
+
+function wireSkip() {
+  $("btn-skip").addEventListener("click", startSkip);
+  $("skipcard-close").addEventListener("click", closeSkipCard);
+  $("skipcard-scrim").addEventListener("click", closeSkipCard);
+  // The card's primary button, and the reason it is the primary one: a visitor
+  // who has just read what one press did is being asked whether they want the
+  // next 2,600 steps, and the answer is usually yes. The card closes first so
+  // the skip starts against a pond nobody is reading a card about.
+  $("skipcard-again").addEventListener("click", () => {
+    closeSkipCard();
+    startSkip();
+  });
+  $("skipcard").addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== "Escape") return;
+    closeSkipCard();
     e.preventDefault();
     e.stopPropagation();
   });
