@@ -24,6 +24,9 @@
 //      thumb misses in (v1.115).
 //   4. **It moves the pond.** It must not, and the module makes that easy to
 //      check by having no way to: no import of the world, no random number.
+//   5. **It offers a button that does nothing** (v1.143). The last stop carries
+//      an act *name*; `main.js` carries the handler. Two halves in two files is
+//      one more way for a guide to lie, so both directions are checked below.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -33,6 +36,7 @@ import { dirname, join } from "node:path";
 
 import {
   STOPS,
+  TOUR_ACTS,
   TOUR_LENGTH,
   TOUR_SEEN_KEY,
   cardPlacement,
@@ -40,6 +44,7 @@ import {
   markTourSeen,
   nextLabel,
   stepIndex,
+  stopAction,
   stopAt,
   stopCounter,
 } from "../src/tour.js";
@@ -72,11 +77,11 @@ test("the stops are six distinct things in a fixed order", () => {
   const targets = new Set(STOPS.map((s) => s.target));
   assert.equal(targets.size, STOPS.length, "two stops ring the same element");
   // The story: the pond, then what is happening in it, then how to read it, then
-  // one animal, then the evidence, then the invitation. The last stop is the
-  // call to action and is the reason anybody stays.
+  // one animal, then other worlds, then a year going past in three seconds. The
+  // last stop is the call to action and is the reason anybody stays.
   assert.deepEqual(
     STOPS.map((s) => s.id),
-    ["pond", "now", "read", "meet", "changed", "worlds"],
+    ["pond", "now", "read", "meet", "worlds", "skip"],
   );
 });
 
@@ -94,6 +99,67 @@ test("every stop is a title, a sentence, a mark and a side", () => {
     );
     assert.ok(Object.isFrozen(stop), "a stop is content and should not be editable at runtime");
   }
+});
+
+test("only the last stop offers a button, and it wears its target's own mark", () => {
+  // Running an act closes the guide, which is the right end to a story and a
+  // stop cut short anywhere else — so the invariant is not "at most one action"
+  // but "the action is last". Everything before it must be a stop a visitor can
+  // walk past.
+  for (let i = 0; i < TOUR_LENGTH - 1; i++) {
+    assert.equal(stopAction(i), null, `stop "${stopAt(i).id}" offers a button before the end`);
+  }
+  const last = stopAction(TOUR_LENGTH - 1);
+  assert.ok(last, "the last stop is the call to action and has nothing to press");
+  assert.ok(TOUR_ACTS.includes(last.act), `"${last.act}" is not an act this guide knows`);
+  assert.ok(last.label.length > 2 && last.label.length <= 24, "a button label is not a sentence");
+  assert.ok(Object.isFrozen(last), "an action is content and should not be editable at runtime");
+  // The card's button and the page's button are the same press, so they carry
+  // the same mark. A visitor reading "⏩ Try it" inside a ring drawn around
+  // "⏩ Skip ahead" is being told those two things are one thing.
+  const target = page.match(new RegExp(`id="${stopAt(TOUR_LENGTH - 1).target}"[^>]*>([^<]*)<`));
+  assert.ok(target, "the last stop's target has no label on the page to agree with");
+  assert.ok(
+    target[1].includes([...last.label][0]),
+    `the card says "${last.label}" over a control the page calls "${target[1].trim()}"`,
+  );
+  // An unknown act, or half an action, is no action rather than a broken one.
+  assert.equal(stopAction(-4), null);
+  assert.equal(stopAction(999), stopAction(TOUR_LENGTH - 1), "clamped, like every other reader");
+});
+
+test("every act the guide names is an act the adapter can run", () => {
+  // The two halves of the button, in two files. This is failure 5, and it is the
+  // one that a browser finds by doing nothing when somebody presses.
+  const block = main.match(/const TOUR_ACTIONS = \{[\s\S]*?\n\};/);
+  assert.ok(block, "main.js has no table of acts");
+  const handled = [...block[0].matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
+  assert.deepEqual(
+    [...handled].sort(),
+    [...TOUR_ACTS].sort(),
+    "the guide and the adapter disagree about what a stop's button can do",
+  );
+  assert.equal(
+    (block[0].match(/closeTour\(\)/g) || []).length,
+    TOUR_ACTS.length,
+    "an act must close the guide before it runs — the card is over the thing it moves",
+  );
+  assert.match(main, /"tour-do"\)\.addEventListener\("click", runTourAction\)/, "the button is not wired");
+  assert.match(main, /function runTourAction\(\)/, "main.js has no way to run an act");
+});
+
+test("a focused button in the guide is pressed rather than swallowed", () => {
+  // The overlay takes Enter and Space so the page's own shortcuts cannot fire
+  // from inside a dialog. It took them from buttons too, which made "← Back" go
+  // forward and would have made "Try it" the one control on this page a keyboard
+  // could focus and not press.
+  const handler = main.match(/\$\("tour"\)\.addEventListener\("keydown"[\s\S]*?\n  \}\);/);
+  assert.ok(handler, "the guide has no keyboard");
+  assert.match(
+    handler[0],
+    /HTMLButtonElement[\s\S]*?return;/,
+    "Enter and Space on a focused button must belong to the button",
+  );
 });
 
 test("the guide does not speak the language of somebody already here", () => {
@@ -273,6 +339,7 @@ test("the page and the adapter are wired to the same things", () => {
     "tour-skip",
     "tour-back",
     "tour-next",
+    "tour-do",
     "btn-tour",
   ]) {
     assert.ok(pageIds.has(id), `app/index.html is missing #${id}`);

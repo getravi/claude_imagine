@@ -1902,6 +1902,19 @@ button.skip-btn[aria-disabled="true"] {
   line-height: 1.55;
   color: var(--ink-dim);
 }
+/* The last stop's "Try it" (v1.143). Full width and on its own line, the layout
+   saying the same thing `button.meet` says one panel over: this is the press.
+   It borrows `button.primary`'s two colours rather than inventing a hue, and
+   `main.js` takes that class off "Done" while this is up — two accent buttons on
+   one small card is a card with no primary at all. */
+.tour-do {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.tour-do.hidden {
+  display: none;
+}
 .tour-btns {
   display: flex;
   gap: 8px;

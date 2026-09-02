@@ -868,6 +868,11 @@
           <span id="tour-title-text">This is the pond</span>
         </h2>
         <p class="tour-line" id="tour-line"></p>
+        <!-- The last stop's button (v1.143). Hidden on every stop that does not
+             offer one; `src/tour.js` names what it does and main.js knows how.
+             Above the row rather than in it because it is not a way through the
+             guide, it is the thing the guide has spent six stops getting to. -->
+        <button id="tour-do" class="tour-do primary hidden">⏩ Try it</button>
         <div class="tour-btns">
           <button id="tour-skip" class="tour-skip">Skip</button>
           <button id="tour-back">← Back</button>

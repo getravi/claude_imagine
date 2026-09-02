@@ -36,10 +36,17 @@
 //      the densest possible way to say nothing.
 //   3. **It is six stops and it ends.** The stops are ordered as a story rather
 //      than as a reading order — *here is the thing, here is what is happening
-//      in it, here is how to read it, here is one animal to care about, here is
-//      the proof it is evolving, now go change the world.* The last stop is a
+//      in it, here is how to read it, here is one animal to care about, here
+//      are other worlds to try, now watch a year go by.* The last stop is a
 //      call to action, because the visitor most likely to stay is the one who
 //      pressed something.
+//   4. **The last stop can be pressed** (v1.143). A call to action that is only
+//      a sentence asks a visitor who has been reading for thirty seconds to now
+//      go and find the thing being described, and the ring is around it but the
+//      card is over it. So a stop may carry an `action`, and the guide draws a
+//      button that does it. Only the last stop may: running one ends the tour,
+//      which is right at the end of a story and is a stop cut short anywhere
+//      else. `test/tour.test.js` holds that.
 //
 // Determinism: this module holds text, an ordering and two integers of
 // arithmetic. It never touches the world, never reads the config, and draws no
@@ -59,12 +66,24 @@
 export const TOUR_SEEN_KEY = "vivarium.tour.seen";
 
 /**
+ * The things a stop's button is allowed to do.
+ *
+ * A name rather than a function, because this module is not allowed to know
+ * what a button does — it holds words. `main.js` keeps the other half of this
+ * list, one handler per name, and `test/tour.test.js` fails if the two halves
+ * ever disagree: a guide that offers a visitor a button which does nothing is
+ * worse than a guide that offers no button, in exactly the way rule 1 is about.
+ */
+export const TOUR_ACTS = Object.freeze(["skip"]);
+
+/**
  * The stops, in the order they are shown.
  *
  * `target` is the `id` of the element the ring is drawn around; it is checked
  * against the shipped page by the tests. `prefer` is where the card would like
  * to sit relative to that ring — the adapter in `main.js` overrides it when
- * there is no room, so this is a preference and not a promise.
+ * there is no room, so this is a preference and not a promise. `action`, on the
+ * last stop only, is the button that does the thing the card is describing.
  */
 export const STOPS = Object.freeze(
   [
@@ -117,25 +136,33 @@ export const STOPS = Object.freeze(
       prefer: "below",
     },
     {
-      id: "changed",
-      target: "evolved-list",
-      icon: "🧬",
-      title: "Proof that it is evolving",
-      line:
-        "Not one of the animals this pond started with is still alive; everything you can see is " +
-        "a descendant. This board says in plain numbers how far their bodies, their appetites and " +
-        "their diet have drifted from the ones at the beginning.",
-      prefer: "above",
-    },
-    {
       id: "worlds",
       target: "scenario-chips",
       icon: "🌍",
-      title: "Now go change the world",
+      title: "Other worlds to try",
       line:
         "An island. A drought. A pond with hunters in it. Every world here runs on the same handful " +
-        "of rules — change one, press play, and see what the animals turn into. That is the whole game.",
+        "of rules — change one, press play, and see what the animals turn into.",
       prefer: "below",
+    },
+    {
+      // The finale, and until v1.143 it was a board of drift figures under the
+      // heading *proof that it is evolving*. The board is honest and it is the
+      // wrong last word: it asks a visitor who has been here forty seconds to
+      // read percentages, when the card this button brings back says the same
+      // things in sentences — how much bigger they got, what they eat now — and
+      // says them about a stretch the visitor watched go past. A guide should
+      // end by handing somebody the thing, not the readout of the thing.
+      id: "skip",
+      target: "btn-skip",
+      icon: "⏩",
+      title: "Watch a year go by",
+      line:
+        "Nobody has three hours to spare, and this is a slow business — so press this and the pond " +
+        "runs a whole year in about three seconds. Hundreds born, hundreds gone, ten new " +
+        "generations, and then a card telling you exactly what changed while you were away.",
+      prefer: "below",
+      action: Object.freeze({ act: "skip", label: "⏩ Try it" }),
     },
   ].map(Object.freeze),
 );
@@ -161,6 +188,19 @@ export function stepIndex(index, delta, length = TOUR_LENGTH) {
 /** The stop at `index`, clamped — never `undefined`, whatever the caller did. */
 export function stopAt(index) {
   return STOPS[stepIndex(index, 0)];
+}
+
+/**
+ * The button this stop offers, or `null` if it offers none.
+ *
+ * `null` rather than `undefined` so the adapter's `if` reads as a question
+ * about the stop rather than about the shape of the object, and so a stop that
+ * was written without an `action` and one that was written with an empty one
+ * are the same thing to everybody downstream.
+ */
+export function stopAction(index) {
+  const action = stopAt(index).action;
+  return action && action.act && action.label ? action : null;
 }
 
 /** "3 of 6" — the one thing on the card that says how long this is going to take. */

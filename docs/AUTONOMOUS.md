@@ -73,6 +73,40 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The guide learns to press the button — shipped in v1.143 (`src/tour.js`),
+  and what it leaves.** `🧭 Show me around` had ended, for fourteen releases, on
+  the sentence *now go change the world* — a call to action delivered from
+  inside a dialog that dims the page, holds the keyboard, and sits on top of the
+  control it is pointing at. The last stop now rings `⏩ Skip ahead` and carries
+  a `⏩ Try it` button that closes the guide and runs the year, which makes a
+  first visit four presses from arriving to watching ten generations go past.
+  Three findings. (i) **A call to action belongs in the hand of the person
+  reading it, and the ring is what hides that it is not.** A ring around a
+  control *feels* like the control has been handed over; it has been pointed at,
+  and the press that leaves the guide is not the press being asked for. Worth
+  asking of any explaining surface here: *can the thing this card describes be
+  done from where the card is?* (ii) **When a new surface says an old one's
+  thing in better words, the old one gives up the slot.** The stop cut to stay
+  at six was the drift board — honest, and answering *is it evolving?* in
+  percentages, where the skip card answers it in sentences at that board's own
+  thresholds about a stretch the visitor just watched. My instinct was to append
+  a seventh stop because the new thing is new; a guide that grows by one stop
+  per control is a manual. (iii) **A handler that takes a key "for the dialog"
+  has to ask what has focus.** The overlay has swallowed `Enter` and `Space`
+  from its own focused buttons since v1.129 — Enter on `← Back` went *forward* —
+  and it stayed invisible for fourteen releases precisely because all three
+  buttons lived in the same dialog and going forward is a plausible thing for a
+  press in a dialog to do. It became a dead control the moment a button did
+  something that was not navigation. What it leaves: (a) **three controls the
+  guide has never mentioned** — `📸 Take a picture`, `🔗 Share`, `↻ Reset` —
+  and there are now more unmentioned than mentioned; (b) **nothing measures
+  whether anybody presses anything**, twelfth release running, and this one is
+  the worst case: a button whose entire purpose is to be pressed by a stranger
+  in the first thirty seconds, unobserved; (c) **a pond loaded from an archive
+  still has no book**, seventh cycle running; (d) **the skip card still knows
+  five sentences and no arc**, and it is now the thing the guide ends by
+  sending people to look at.
+
 - **Skip ahead — shipped in v1.142 (`src/skip.js`), and what it leaves.**
   Twenty cycles of narration and every one of them asks the visitor for the same
   missing ingredient, which is not attention but **time**: evolution here is a

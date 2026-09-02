@@ -100,6 +100,7 @@ import {
   markTourSeen,
   nextLabel,
   stepIndex,
+  stopAction,
   stopAt,
   stopCounter,
 } from "./tour.js";
@@ -861,9 +862,31 @@ function wireRecordList() {
 // people who least need one. Every route out — Skip, Done, Escape, the scrim —
 // marks it seen, so a visitor who dismisses it in half a second is never shown
 // it again.
+//
+// Since v1.143 the last stop is also the only one that *does* anything: it rings
+// `⏩ Skip ahead` and carries a button that presses it, because a guide whose
+// final card says "now go and try this" is asking a stranger to find a control
+// the card itself is sitting on top of.
 let tourAt = 0;
 /** Where focus was when the tour opened, so leaving puts it back (v1.51's rule). */
 let tourReturn = null;
+
+/**
+ * The other half of `TOUR_ACTS`: what the last stop's button actually does.
+ *
+ * One entry per act name, and `test/tour.test.js` fails if the guide ever names
+ * one that is not here. Each of them ends the tour first, which is not a detail:
+ * the card sits over the thing it is describing, so a press that left the guide
+ * up would fast-forward a pond nobody can see, behind a dimmed screen, with the
+ * ring still pointing helpfully at the button that did it. It is the same order
+ * the skip card's own "Skip again" uses — close, then go.
+ */
+const TOUR_ACTIONS = {
+  skip: () => {
+    closeTour();
+    startSkip();
+  },
+};
 
 /** `localStorage`, or nothing — reading it throws outright where site data is blocked. */
 function tourStore() {
@@ -896,6 +919,29 @@ function closeTour() {
   tourReturn = null;
 }
 
+/**
+ * Do what the current stop's button offers, if it offers one and if this build
+ * knows how.
+ *
+ * Both guards are the same guard: a name the guide holds and this file does not
+ * is a button that quietly does nothing, and a visitor who presses it learns
+ * that the guide is decoration. The test would have caught it long before a
+ * browser did — this is the behaviour if it somehow did not.
+ */
+function runTourAction() {
+  const action = stopAction(tourAt);
+  const run = action && TOUR_ACTIONS[action.act];
+  if (!run) return;
+  // Where the keyboard lands when the guide closes. The control this stop is
+  // ringing is the one the visitor has just pressed by proxy, so that is where
+  // they are — not back at the top of the page, which is what `tourReturn` holds
+  // on a first visit, where nothing had focus because nobody had pressed
+  // anything yet.
+  const ringed = document.getElementById(stopAt(tourAt).target);
+  if (ringed) tourReturn = ringed;
+  run();
+}
+
 function moveTour(delta) {
   const next = stepIndex(tourAt, delta);
   if (next === tourAt && delta > 0) return closeTour(); // "Done" on the last stop
@@ -920,6 +966,11 @@ function drawTourStop() {
   $("tour-line").textContent = stop.line;
   $("tour-back").disabled = tourAt === 0;
   $("tour-next").textContent = nextLabel(tourAt);
+  // The stop's own button, and the rank the rest of the row gives up to it.
+  const action = stopAction(tourAt);
+  $("tour-do").classList.toggle("hidden", !action);
+  $("tour-do").textContent = action ? action.label : "";
+  $("tour-next").classList.toggle("primary", !action);
   const target = document.getElementById(stop.target);
   if (target) target.scrollIntoView({ block: "center", inline: "nearest" });
   placeTourStop();
@@ -975,12 +1026,19 @@ function wireTour() {
   $("tour-back").addEventListener("click", () => moveTour(-1));
   $("tour-skip").addEventListener("click", closeTour);
   $("tour-scrim").addEventListener("click", closeTour);
+  $("tour-do").addEventListener("click", runTourAction);
 
   // The tour's own keys, taken on the overlay before the page's shortcuts see
   // them — Space would otherwise pause the pond from inside a dialog, which is
   // a control doing something the thing under the pointer does not say.
   $("tour").addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // Unless the keyboard is *on* a button, where Enter and Space are that
+    // button and nothing else. Taking them here has been wrong since v1.129 —
+    // Enter on "← Back" went forward — and it only became visible now: the
+    // guide's own "Try it" would have been the one control on this page a
+    // keyboard could reach, focus, press, and not fire.
+    if (e.target instanceof HTMLButtonElement && (e.key === "Enter" || e.key === " ")) return;
     switch (e.key) {
       case "Escape":
         closeTour();

@@ -4,6 +4,50 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.143.0] — 2026-09-02
+
+The guide learns to press the button.
+
+`🧭 Show me around` has introduced this page in six stops since v1.129, and it
+has ended, all fourteen releases of it, on a sentence: *now go change the
+world.* A call to action that is only words asks somebody who has been reading
+for forty seconds to go and find a control — and on the last stop the card is
+sitting on top of the very thing it is pointing at. So the last card now has a
+button in it.
+
+- **The last stop is `⏩ Skip ahead`, and the card presses it.** *Nobody has
+  three hours to spare, and this is a slow business — so press this and the pond
+  runs a whole year in about three seconds.* Under that, `⏩ Try it`: the guide
+  closes and the year runs. It is the shortest path this page has ever had from
+  a stranger arriving to a stranger watching ten generations go by, and on a
+  first visit — where the guide opens itself — it is now four presses long.
+- **The stop it replaces was the drift board.** `🧬 How they have changed` was
+  stop five under the heading *proof that it is evolving*, and it is an honest
+  board that answers the question in percentages. The card `⏩ Skip ahead` brings
+  back answers it in sentences — *the animals here are 23% bigger than the ones
+  you left behind* — about a stretch the visitor has just watched go past, at
+  that board's own thresholds. **A guide should end by handing somebody the
+  thing rather than the readout of the thing**, so the guide is still six stops
+  and the sixth is now a press.
+- **Only the last stop may carry a button, and that is an invariant rather than
+  a coincidence.** Running one closes the guide, which is the right end to a
+  story and a stop cut short anywhere else. `src/tour.js` holds an act *name*
+  and `src/main.js` holds the handler for it; `test/tour.test.js` compares the
+  two lists in both directions, because a button that quietly does nothing
+  teaches a visitor that the guide is decoration — the same failure the ring has
+  been tested against since v1.129 — and asserts the card's mark matches the
+  label of the control it is ringing.
+
+### Fixed
+
+- **Enter on `← Back` went forward.** The guide's overlay takes `Enter` and
+  `Space` so the page's own shortcuts cannot fire from inside a dialog, and it
+  took them from its own focused buttons too — a keyboard visitor on *Back* got
+  *Next*, and on *Skip* got *Next*. They belong to the button under the focus
+  ring now. Latent since v1.129; it surfaced because `⏩ Try it` would have been
+  the first control on this page that a keyboard could reach, focus, press, and
+  not fire.
+
 ## [1.142.0] — 2026-09-02
 
 Skip ahead.

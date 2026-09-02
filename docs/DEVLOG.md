@@ -17579,3 +17579,97 @@ how many samples the surface implies it is speaking from.
 - **The guide still has six stops and the newest of them is v1.129's.** Two
   controls have been added to that panel since, one of them today and aimed
   squarely at the visitor the guide exists for.
+
+Shipped as v1.142.0.
+
+## Entry — the guide learns to press the button · 2026-09-02
+
+I ended yesterday's entry with a complaint about myself: *the guide still has
+six stops and the newest of them is v1.129's.* Two controls had been added to
+that panel since, and one of them — `⏩ Skip ahead`, which runs a year of this
+pond in three seconds — is aimed squarely at the person the guide exists for.
+
+So I opened the guide and read it as a stranger, and the thing that actually
+stopped me was not the missing stop. It was the last card. Six stops of *here
+is the pond, here is what is happening in it, here is how to read it, here is
+somebody to follow, here is the evidence*, and then: **now go change the
+world.** The guide dims the page, holds the keyboard, and hands the visitor a
+sentence telling them to go and press something. Then it gets out of the way and
+leaves them looking at a screen with forty controls on it.
+
+That is the shape of nearly every product tour I have ever been shown, and it is
+where all of them lose me.
+
+The last card has a button in it now. The sixth stop rings `⏩ Skip ahead`, the
+card says what one press does, and under it is `⏩ Try it` — which closes the
+guide and runs the year. On a first visit, where the guide opens itself, the
+distance from *a stranger arrives* to *a stranger is watching ten generations go
+past* is now four presses, and three of them are Next.
+
+### Three things I learned
+
+**1. A call to action belongs in the hand of the person reading it.** I had
+this the wrong way round for fourteen releases and the ring is what hid it: a
+ring drawn around a control *feels* like the control has been handed over. It
+has not. It has been pointed at, from behind a scrim, by a card sitting on top
+of it, in a dialog that will take one more press to leave — and the press that
+leaves it is not the press being asked for. The general note I want to keep:
+**the last card of a guide should be pressable**, and if the thing it describes
+cannot be done from inside the guide, that is a fact about the guide worth
+knowing before the copy gets written.
+
+**2. When a new surface says an old one's thing in better words, the old one
+gives up the slot.** The stop I cut to stay at six was `🧬 How they have
+changed`, the drift board, under the heading *proof that it is evolving*. That
+board is honest and I like it. But the card `⏩ Skip ahead` brings back says the
+same things — *the animals here are 23% bigger than the ones you left behind*,
+*meat has fallen from 54% of what they eat to 18%* — at that board's own
+thresholds, in sentences, about a stretch the visitor has just watched go by.
+My instinct was to append a seventh stop, because the new thing is new and
+therefore needs a slot. The right question was which of the two now says it
+better, and a guide that grows by one stop per control ends up a manual.
+
+**3. The bug that only a new button could show me.** The guide's overlay takes
+`Enter` and `Space` before the page sees them, which is correct — `Space` from
+inside a dialog would otherwise pause the pond. It took them from its own
+focused buttons too. So since v1.129, a keyboard visitor who tabbed to `← Back`
+and pressed Enter went **forward**; on `Skip`, forward. Three buttons, all of
+them wrong, for fourteen releases, and nothing noticed because all three live in
+the same dialog and *going forward* is a plausible enough thing for a press in a
+dialog to do. The moment a button did something that was not navigation, it
+stopped being a quirk and became a control that cannot be pressed at all. The
+note: **a handler that takes a key "for the dialog" has to ask what has focus**,
+because the failure is silent exactly while every control in the dialog happens
+to do the same kind of thing.
+
+### The half of the button that is in the other file
+
+`src/tour.js` is a pure observer and stays one: it holds the act's *name*
+(`"skip"`) and its label, and `src/main.js` holds the function. That split is
+right — the guide is not allowed to know how to move a pond — and it is also a
+new way for this feature to lie. A name with no handler is a button that does
+nothing when pressed, which is invisible in a green suite and silent in a
+browser, and it is the same failure the ring has been tested against since
+v1.129: *the guide points at something that is not there.* So the test compares
+the two lists in **both** directions, and while it was in there it checked one
+more thing I would not have thought to assert — that the card's `⏩` is the mark
+on the control it is ringing. A card reading "Try it" inside a ring drawn around
+"⏩ Skip ahead" is asking the visitor to believe those are one thing; the mark is
+what says so.
+
+### What it leaves
+
+- **Three controls the guide has never mentioned.** `📸 Take a picture`,
+  `🔗 Share` and `↻ Reset`. I do not think sharing deserves a stop — you share
+  after you care, not before — but that is a judgement I made in my head and
+  there are now more unmentioned controls than mentioned ones.
+- **Nothing measures whether anybody presses anything.** Twelve releases
+  running, and today's press is the worst case yet: I have just built a button
+  whose entire purpose is to be pressed by a first-time visitor in the first
+  thirty seconds, and I cannot tell whether one ever is.
+- **A pond loaded from an archive still has no book**, seventh cycle running.
+- **The skip card still knows five sentences and no arc.** *The hunters arrived
+  and then they went again* is a shape a skipped stretch regularly has, and it
+  is the shape the guide now sends people to go and look at.
+
+Shipped as v1.143.0.
