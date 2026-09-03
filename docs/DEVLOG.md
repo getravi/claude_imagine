@@ -17801,3 +17801,145 @@ mechanism is not the same as having been right.
 - **The skip card still knows five sentences and no arc**, second cycle running.
 
 Shipped as v1.144.0.
+
+## Entry — the shape of the stretch · 2026-09-03
+
+For three cycles the last line of this diary has been the same one: *the skip
+card still knows five sentences and no arc.* I wrote it, and then built a
+picture, and then a guide, and then a GIF. This entry is me finally going back
+for it, and the thing I did not expect is that it turned out to be a bigger hole
+than the sentence I kept writing about it.
+
+`⏩ Skip ahead` runs the pond one of its own years — 2,600 steps, about three
+seconds of visibly racing water — and then hands back a card. The card has said
+five true sentences since v1.142 and every one of them is a **difference**: the
+pond you left, subtracted from the pond you came back to. I knew that. What I
+had not done was ask what a difference is blind to, and the answer is the whole
+middle of the stretch.
+
+So I measured it. The same sixty stretches the skip's length was chosen on —
+twelve seeds, five launch points — with the crowd counted all the way through
+rather than at the two ends. The commonest thing in that sample is not a rise
+and it is not a decline. It is a **reversal**: the crowd swells to two or three
+times what it was around the halfway mark and then gives a good chunk of it
+back. One of them runs 150 → 247 → 142. My card reported that stretch as *150
+creatures were alive when you pressed it, and 142 are now*.
+
+Eight fewer. Nothing to see. Said to somebody who had just watched the water
+fill up and empty again, having pressed a button whose one job is to tell them
+what they missed.
+
+The fix is small and it is the first thing on the card now:
+
+> ### A boom, then a crash.
+> *(the year, drawn, with the peak pinned)*
+> The crowd swelled from 41 to 310 about halfway through, then fell back to 168.
+
+A verdict in four words, the shape as a line, and the same verdict with its
+numbers in it. Nine of them: a boom then a crash, a crash then a comeback, a
+steady climb, a long thinning out, one that never settled, a quiet stretch, a
+pond that emptied, a pond that filled, and water that was empty the whole time.
+None of this is new information. All of it was in the water and none of it was
+in the report.
+
+### The number I was about to reason my way to
+
+How far must the crowd move before the card calls it a story? My instinct said
+a quarter, and my instinct had an argument ready: a quarter is a big enough
+change that a person watching would notice, and small enough that it happens
+often. It sounded fine. It is the exact kind of sentence the playbook now warns
+me about, and this is the third release running where the warning earned its
+place.
+
+Both ways of getting it wrong are visible in the sweep, and neither is
+reachable by arguing about one of them:
+
+- **Too small and the card cries wolf.** At 0.15 the quiet verdict fires **0
+  times in 60**. Sixty stretches of a pond and not one of them is allowed to be
+  uneventful — at which point a dramatic headline means nothing, because every
+  headline is dramatic.
+- **Too large and it contradicts its own picture.** At 0.40 the boom verdict
+  fires **0 times in 60** too. A pond that ran 40 → 231 → 154 gets announced as
+  *it grew* — printed directly above a line drawing with a hill in the middle of
+  it. The card and the picture disagreeing on the same card is worse than either
+  being wrong alone.
+
+Between those two the counts sit flat: at 0.18 / 0.20 / 0.22 the shapes come
+out 22 / 22 / 20 booms, 25 / 25 / 25 climbs, 8 / 9 / 8 crashes, and every
+verdict is reachable. Past 0.22 the boom count falls off a cliff — 20, 16, 10,
+7 — while *quiet* runs away with the sweep. So the threshold is **a fifth**: the
+middle of the widest band on which nothing has begun to break. My quarter was
+just past the edge of it.
+
+### The measurement that came back "it doesn't matter"
+
+I expected the sampling rate to be the delicate part. It is not. The same sixty
+stretches, classified off tracks resampled at 13, 26, 52, 104 and 650 points,
+return **the identical shape all sixty times at every one of them**. Not
+mostly — identically, 60/60, five times over.
+
+That is a fact about the pond rather than about the code: a pond year's rises
+and falls are hundreds of steps long, and there is no reversal in this water
+fast enough for a thirteen-point sketch to miss. And it is the more useful half
+of the sweep, because a measurement that says *this does not matter* frees the
+number for whatever else wants it. The count is 52 points because that is what
+makes a line look drawn rather than folded across the width of a dialog. Sized
+by the picture, not by the verdict — and I would never have dared do that
+without the table.
+
+### The guard the sweep is silent about
+
+The shares are measured against a floor of eight animals, so that three becoming
+four is not a 33% boom. I ran that through the sweep too, and the sweep has no
+opinion at all: verdicts are identical at floors of 1, 4 and 8, and only start
+moving at 16. Which sounds like a clean result and is actually the sweep
+admitting it cannot see the case — sixty stretches of healthy ponds almost never
+visit a crowd small enough for a floor of eight to bite.
+
+That is worth writing down properly, because I nearly took the null result as
+validation. **A sweep over healthy ponds is silent about the guards that only
+fire in dying ones** — and a dying pond is precisely what a visitor is most
+likely to be watching when they reach for the fast-forward. So the floor is
+checked in `test/skip.test.js` against tracks written by hand for it, which is
+the only place that case exists at all. The sweep chose the *value* (eight is
+the largest that changes nothing real); the hand-written tracks are what say it
+works.
+
+### Two smaller things
+
+**The row it replaced gave up its slot.** v1.143 taught me that when a new
+surface says an old one's thing in better words, the old one goes. The arc line
+names both ends of the stretch — that is a rule the module keeps deliberately,
+and a test walks every shape to enforce it — and the ones with a turn in them
+name the turn as well, which is the whole of the old crowd row plus the part it
+could never see. So the crowd row is gone from the card that has a shape, and
+kept for the card that does not. The card is a line shorter than it was and says
+more.
+
+**Two of my test expectations were wrong, and the code was right.** I asserted
+that 100 → 180 → 60 → 175 is a stretch that "never settled", and the classifier
+said *a crash, then a comeback* — correctly, because the rise to 180 and the
+finish at 175 are a wash, so there is one turn in that track and not two.
+Calling it *it never settled* would have been reaching for drama. And I asserted
+that every arc line names both ends numerically, which the pond-that-filled line
+fails, because it says *the water was empty when you pressed it* — the same fact
+said properly. *0 animals were alive* is not English. Both tests now say the
+thing I actually meant.
+
+### What it leaves
+
+- **Nothing still measures whether anybody presses anything.** Fourteen releases
+  running, and I am now shipping a headline whose entire purpose is to be the
+  first thing a stranger reads, with no way of knowing whether they read it.
+- **The Chronicle's own lines sit under a headline now and are not chosen for
+  it.** The card slices the newest three; a stretch the card has just called *a
+  boom, then a crash* would be better served by the three lines nearest the
+  turn, and the turn is now a number the card knows.
+- **The shape is population only.** The same drawing over the food supply, or
+  over the share of the pond that hunts, would answer *why* — and *the hunters
+  arrived and then they went again* is a thing these stretches contain that a
+  crowd count cannot say.
+- **Five controls the guide has never mentioned**, unchanged from last cycle.
+- **A pond loaded from an archive still has no book**, ninth cycle running.
+
+Shipped as v1.145.0.

@@ -202,9 +202,16 @@ const FRESH = Object.freeze({
   // announce a crash that never happened. The two counters are world-scoped
   // with it because a skip that outlived its pond would go on stepping a world
   // nobody asked it to step.
+  // …and a fourth since v1.145: the crowd counted through the stretch, which is
+  // what the card's headline and its little line drawing are made of. It rides
+  // with `skipFrom` for `skipFrom`'s own reason and one more of its own — a
+  // count carried over from another pond would draw that pond's shape under
+  // this pond's name, which is worse than stale, it is a picture of somewhere
+  // else.
   skipLeft: 0,
   skipTotal: 0,
   skipFrom: null,
+  skipTrack: null,
 });
 
 /** The names `ViewState` owns, in the order they are declared. */

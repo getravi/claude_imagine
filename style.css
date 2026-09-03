@@ -2043,6 +2043,69 @@ button.skip-btn[aria-disabled="true"] {
    the grounds it was measured on* — is satisfied by reusing the ground rather
    than by a fresh measurement. `--ink-faint` stays off this card for the same
    reason it stayed off that one: it does not clear 4.5 here. */
+/* The shape of the stretch (v1.145). A verdict in four words, the crowd drawn
+   underneath it, and the same verdict with its numbers in it — in that order,
+   because the four words are the part that can be read at a glance and the
+   drawing is what makes somebody look twice.
+
+   Set apart from the sentences below by a ground rather than a rule: it is not
+   another item in the list, it is the answer the list is the detail of. The
+   ground is `--bg-panel`, one step darker than the card, which keeps every ink
+   on it inside the pair `legibility.js` has already measured for the panels. */
+.skiparc {
+  margin: 0 0 14px;
+  padding: 12px 14px 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.skiparc-head {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+/* The drawing sizes itself to the card. `preserveAspectRatio="none"` on the
+   `viewBox` means the shape stretches horizontally with the dialog and keeps
+   its height — which is what you want of a line whose x-axis is "the stretch"
+   and whose y-axis is a count, and which is why the stroke is drawn with
+   `vector-effect` so it does not stretch with it. */
+.skiparc-spark {
+  margin: 8px 0 2px;
+}
+.spark {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+.spark-fill {
+  fill: var(--accent);
+  opacity: 0.16;
+}
+.spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+/* The turn the sentence is about, pinned. Painted in the card's own ink rather
+   than the line's, so it reads as a mark *on* the line instead of a thicker
+   piece of it. */
+.spark-turn {
+  fill: var(--ink);
+  stroke: var(--bg-panel);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.skiparc-line {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
 .skiphi-head {
   margin: 14px 0 8px;
   font-size: 12.5px;

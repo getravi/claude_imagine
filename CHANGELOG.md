@@ -4,6 +4,83 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.145.0] — 2026-09-03
+
+The shape of the stretch.
+
+`⏩ Skip ahead` runs the pond a year and hands back a card. Since v1.142 that
+card has said five true sentences, and every one of them is a **difference** —
+the pond you left against the pond you came back to. A difference cannot see a
+middle, and the middle is where the story is.
+
+Here is what that costs, measured. Over the same 60 stretches the skip's length
+was chosen on (12 seeds × 5 launch points), **the most common thing a skip
+actually contains is a reversal**: a crowd that swells to two or three times
+what it was by the halfway mark and then gives a chunk of it back. The card
+reported one of those as *150 creatures were alive when you pressed it, and 142
+are now* — eight fewer, nothing to see — after three seconds in which the water
+filled up and emptied again in front of somebody who had pressed a button to
+find out what they were missing.
+
+So the skip now counts the crowd as it goes, and the card opens on the shape:
+
+> ### A boom, then a crash.
+> *(the year drawn as a line, with the peak pinned)*
+> The crowd swelled from 41 to 310 about halfway through, then fell back to 168.
+
+Nine shapes — a boom then a crash, a crash then a comeback, a steady climb, a
+long thinning out, a stretch that never settled, a quiet one, a pond that
+emptied, a pond that filled, and water that was empty throughout — each with a
+headline short enough to read at a glance and a sentence with the numbers in
+it. Nothing about this is new information; all of it was in the water and none
+of it was in the report.
+
+### Three things it cost
+
+- **The threshold is the middle of a plateau, and both ways of getting it wrong
+  are visible in the sweep.** How far must the crowd move before the card calls
+  it a story? Too small and it cries wolf: at **0.15** the quiet verdict fires
+  **0 times in 60** — sixty stretches, not one of them allowed to be
+  uneventful. Too large and it contradicts its own picture: at **0.40** the
+  boom verdict fires **0 times in 60**, so a pond that went 40 → 231 → 154 is
+  announced as *it grew* directly above a drawing with a hill in it. Between
+  them the counts sit flat across 0.18 / 0.20 / 0.22 (boom 22 / 22 / 20, climb
+  25 / 25 / 25) and then collapse — 20, 16, 10, 7. **A fifth**, which is the
+  middle of the widest band on which nothing has begun to break.
+
+- **The resolution turned out not to matter, which freed it for the picture.**
+  The same sixty stretches, classified off tracks resampled at 13, 26, 52, 104
+  and 650 points, return **the identical shape all sixty times at every one of
+  them**. A pond year is a coarse thing; its rises and falls are hundreds of
+  steps long and there is no reversal in this water fast enough for a
+  thirteen-point sketch to miss. So the count is 52 points because that is what
+  makes a line look drawn rather than folded — sized by the drawing, not by the
+  verdict.
+
+- **The row it replaced gave up its slot.** v1.143's finding, one surface over:
+  when a new thing says an old thing's sentence in better words, the old one
+  goes. Every arc line names both ends of the stretch — that is a rule the
+  module keeps on purpose and a test enforces — and the ones with a turn in
+  them name the turn as well, which is the whole of the old crowd row plus the
+  part it could never see. The card is one line shorter than it was.
+
+### And one the sweep could not check
+
+The shares are measured against a floor of eight animals, so that three
+becoming four is not a 33% boom. That guard is **invisible on real data** — the
+sweep's verdicts are identical at 1, 4 and 8 — because the sweep almost never
+visits a pond small enough for it to bite, and it starts overriding real moves
+at 16. Which means the sixty stretches cannot validate it at all: it is checked
+against tracks written by hand, in `test/skip.test.js`, because that is the only
+place the case exists. **A sweep over healthy ponds is silent about the guards
+that only fire in dying ones**, and the dying pond is the one the visitor is
+most likely to be watching when they press the button.
+
+Determinism untouched: the count is a pure observer taken between steps, sampled
+on the **step number** rather than once a frame — so the shape a phone draws is
+the shape a laptop draws — and no part of it reaches into the world's generator.
+Default ponds remain bit-for-bit identical.
+
 ## [1.144.0] — 2026-09-02
 
 The pond, moving.

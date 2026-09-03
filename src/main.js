@@ -146,12 +146,14 @@ import {
 import {
   SKIP_FRAME_MS,
   SKIP_LABEL,
+  crowdOf,
   highlightHTML,
   skipCard,
   skipHTML,
   skipLength,
   skipProgress,
   skipSnapshot,
+  trackEvery,
 } from "./skip.js";
 
 const $ = (id) => document.getElementById(id);
@@ -2769,6 +2771,10 @@ function startSkip() {
   view.skipTotal = skipLength(config);
   view.skipLeft = view.skipTotal;
   view.skipFrom = skipSnapshot(world);
+  // The running count opens on the pond as it stands, before a step lands on
+  // it, so the first point of the drawing is the water the visitor is looking
+  // at while they press the button.
+  view.skipTrack = [crowdOf(world)];
   skipReturn = document.activeElement;
   const btn = $("btn-skip");
   btn.setAttribute("aria-disabled", "true");
@@ -2778,6 +2784,7 @@ function startSkip() {
 /** One frame's worth of a skip: as many steps as the budget buys, at least one. */
 function pumpSkip() {
   const until = performance.now() + SKIP_FRAME_MS;
+  const every = trackEvery(view.skipTotal);
   do {
     world.step();
     // The same two per-step observers the running branch keeps, for the same
@@ -2787,6 +2794,14 @@ function pumpSkip() {
     trail.record(renderer.selected, world.tick);
     witnessDeaths();
     view.skipLeft--;
+    // …and a third since v1.145. Counted on the *step*, never on the frame:
+    // how many steps a frame buys depends on the machine, and a shape sampled
+    // per frame would be a different shape on a phone. This one is the same
+    // fifty-two points everywhere, of the same fifty-two ponds.
+    const done = view.skipTotal - view.skipLeft;
+    if (view.skipTrack && (done % every === 0 || view.skipLeft === 0)) {
+      view.skipTrack.push(crowdOf(world));
+    }
   } while (view.skipLeft > 0 && performance.now() < until);
   $("btn-skip").textContent = skipProgress(view.skipTotal - view.skipLeft, view.skipTotal);
   if (view.skipLeft === 0) finishSkip();
@@ -2794,8 +2809,9 @@ function pumpSkip() {
 
 function finishSkip() {
   const before = view.skipFrom;
+  const track = view.skipTrack;
   restoreSkipButton();
-  if (before) openSkipCard(skipCard(before, world, config));
+  if (before) openSkipCard(skipCard(before, world, config, track));
 }
 
 /**
@@ -2808,6 +2824,7 @@ function finishSkip() {
 function restoreSkipButton() {
   view.skipLeft = 0;
   view.skipFrom = null;
+  view.skipTrack = null;
   const btn = $("btn-skip");
   btn.removeAttribute("aria-disabled");
   btn.textContent = SKIP_LABEL;
@@ -2816,6 +2833,15 @@ function restoreSkipButton() {
 function openSkipCard(card) {
   $("skipcard-title").textContent = card.title;
   $("skipcard-sub").textContent = card.sub;
+  // The shape goes above everything, headline first — it is the answer to the
+  // question the button asked, and the sentences below it are the detail. A
+  // card with no shape (an interrupted skip) hides the whole block rather than
+  // showing an empty heading over a blank strip.
+  const arc = card.arc;
+  $("skipcard-arc").classList.toggle("hidden", !arc);
+  $("skipcard-arc-head").textContent = arc ? arc.headline : "";
+  $("skipcard-arc-line").textContent = arc ? arc.line : "";
+  $("skipcard-spark").innerHTML = card.spark;
   $("skipcard-lines").innerHTML = skipHTML(card.rows);
   // The heading goes with its list. A quiet stretch is a real answer — the
   // sentences above still say what the numbers did — but "While you were away"

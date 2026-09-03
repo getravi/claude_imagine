@@ -22,6 +22,11 @@
 //  5. **The prose clears the vocabulary bar** the other narrators clear.
 //  6. **The page, the roster and the module agree** about the control that
 //     drives all of this.
+//  7. **The shape of the stretch** (v1.145) — the half of the report a
+//     comparison of two instants could never make. A verdict about a series of
+//     numbers, checked against series whose right answer is known because they
+//     were written by hand; a drawing, checked against its own box; and the two
+//     rules that let the shape take the crowd row's slot.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -34,11 +39,17 @@ import { World } from "../src/world.js";
 import { stateFingerprint, drawStream } from "../src/fingerprint.js";
 import { WORLD_SCOPED, PAGE_SCOPED } from "../src/viewstate.js";
 import {
+  ARC_FLOOR,
+  ARC_MOVE,
   SKIP_FRAME_MS,
   SKIP_HIGHLIGHTS,
   SKIP_LABEL,
   SKIP_MARK,
+  SKIP_TRACK_POINTS,
+  SPARK,
+  crowdOf,
   highlightHTML,
+  skipArc,
   skipCard,
   skipHTML,
   skipHighlights,
@@ -46,6 +57,9 @@ import {
   skipProgress,
   skipRows,
   skipSnapshot,
+  sparkHTML,
+  sparkPoints,
+  trackEvery,
 } from "../src/skip.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -359,4 +373,325 @@ test("the card wears the postcard's chrome rather than a second set of rules", (
   const block = styles.slice(styles.indexOf("---- The fast-forward's card"));
   const inks = new Set(block.slice(0, block.indexOf("---- Phylogeny")).match(/var\(--ink[\w-]*\)/g) || []);
   assert.deepEqual([...inks].sort(), ["var(--ink)", "var(--ink-dim)"]);
+});
+
+// ---- 7. the shape of the stretch (v1.145) ----
+//
+// The five sentences above compare two instants, and a middle is invisible to
+// them: a pond that tripled by the halfway mark and gave a third of it back
+// reads, to a difference, as *84 were alive when you pressed it, and 154 are
+// now*. So the skip counts the crowd as it goes and the card leads with the
+// shape of it.
+//
+// The tests below split the same way the module does. A **verdict** is a
+// judgement about a series of numbers and is checked against series written by
+// hand, because a shape written by hand is the only one whose right answer is
+// known in advance. A **drawing** is arithmetic and is checked against its own
+// box. And the two rules that hold the card together — every arc line names
+// both ends, and the row it replaced does not also appear — are checked as
+// invariants over every shape rather than one at a time.
+
+/** A track that rises to `peak` at `at` of its length and falls to `end`. */
+function hill(first, peak, end, k = 21, at = 0.5) {
+  const top = Math.round((k - 1) * at);
+  return Array.from({ length: k }, (_, i) =>
+    i <= top
+      ? Math.round(first + ((peak - first) * i) / top)
+      : Math.round(peak + ((end - peak) * (i - top)) / (k - 1 - top))
+  );
+}
+
+/** A track that runs straight from `first` to `last`. */
+function ramp(first, last, k = 21) {
+  return Array.from({ length: k }, (_, i) => Math.round(first + ((last - first) * i) / (k - 1)));
+}
+
+test("a stretch with a turn in it is reported as a turn, not as its endpoints", () => {
+  // The finding this whole section exists for. 150 → 247 → 142 ends four below
+  // where it started; a difference calls that "quiet" and a visitor who watched
+  // the water fill up and empty again is told nothing happened.
+  const boom = skipArc(hill(150, 247, 142));
+  assert.equal(boom.key, "boom");
+  assert.equal(boom.peak, 247);
+  assert.match(boom.headline, /boom/i);
+  assert.match(boom.line, /247/);
+
+  // …and the same shape upside down: down to a trough, back up again, ending
+  // seven below where it started. A difference calls that "quiet" too.
+  const dip = skipArc(hill(227, 154, 220));
+  assert.equal(dip.key, "crash");
+  assert.equal(dip.trough, 154);
+  assert.match(dip.headline, /comeback/i);
+  assert.match(dip.line, /154/);
+});
+
+test("each shape gets its own verdict, and a straight line gets a straight one", () => {
+  assert.equal(skipArc(ramp(40, 196)).key, "climb");
+  assert.equal(skipArc(ramp(251, 117)).key, "fall");
+  assert.equal(skipArc(ramp(228, 238)).key, "quiet");
+  assert.equal(skipArc(hill(150, 247, 142)).key, "boom");
+  assert.equal(skipArc(hill(227, 154, 220)).key, "crash");
+  // Up, down and up again, with both turns real: neither a boom nor a crash on
+  // its own, and the card says so rather than picking the half it likes.
+  assert.equal(skipArc([100, 300, 70, 150]).key, "swings");
+  // Note what is *not* "swings", and it is the case that taught this test: a
+  // rise so shallow the fall does not undo it — 100 → 180 → 60 → 175 — is one
+  // turn, not two, because the peak and the end are a wash. It is a crash and
+  // a comeback, and calling it "it never settled" would be reaching for drama.
+  assert.equal(skipArc([100, 180, 60, 100, 175]).key, "crash");
+});
+
+test("a turn only counts when it is interior and both of its legs are real", () => {
+  // A peak at the last sample is not a boom followed by a crash — there is no
+  // crash — and this is the difference between a shape and a rise.
+  assert.equal(skipArc(ramp(40, 300)).key, "climb");
+  // A hill whose downhill leg is under the threshold is still a climb: the
+  // crowd went up and stayed up.
+  const shallow = hill(100, 300, 280);
+  assert.ok((300 - 280) / 300 < ARC_MOVE);
+  assert.equal(skipArc(shallow).key, "climb");
+  // And one whose downhill leg clears it is not.
+  const steep = hill(100, 300, 200);
+  assert.ok((300 - 200) / 300 >= ARC_MOVE);
+  assert.equal(skipArc(steep).key, "boom");
+});
+
+test("the floor keeps a nearly empty pond from making the loudest headlines", () => {
+  // The case the sixty-stretch sweep cannot see, because the sweep almost never
+  // visits a pond this small — so it is written down here, which is the only
+  // place it exists. Three animals becoming four is a 33% rise and it is not a
+  // boom; the same proportions a hundred times over are.
+  assert.equal(skipArc([3, 3, 4, 3, 4, 4]).key, "quiet");
+  assert.equal(skipArc(ramp(300, 400)).key, "climb");
+  // And the floor is a floor rather than a cutoff: a small pond that really
+  // does move is still reported.
+  assert.equal(skipArc(ramp(4, 60)).key, "climb");
+  assert.ok(ARC_FLOOR >= 1);
+});
+
+test("an empty pond, and a pond that empties, are told apart", () => {
+  const gone = skipArc([120, 90, 40, 8, 0, 0]);
+  assert.equal(gone.key, "gone");
+  assert.match(gone.line, /120/);
+  assert.match(gone.line, /the water is empty/);
+  // Empty when it started and empty now: a real answer, and not a death.
+  assert.equal(skipArc([0, 0, 0, 0]).key, "empty");
+  // Empty when it started and not now: also not a death.
+  const born = skipArc([0, 0, 12, 30, 44]);
+  assert.equal(born.key, "arrival");
+  assert.match(born.line, /44/);
+});
+
+test("every arc line names both ends of the stretch", () => {
+  // The rule the card is built on: because an arc line always says where the
+  // stretch began and where it finished, the crowd row can give up its slot to
+  // it. If a shape is ever added that names only one end, this fails and the
+  // row has to come back.
+  const tracks = [
+    ramp(40, 196),
+    ramp(251, 117),
+    ramp(228, 238),
+    hill(150, 247, 142),
+    hill(227, 154, 220),
+    [100, 300, 70, 150],
+    [120, 90, 40, 8, 0, 0],
+    [0, 0, 12, 30, 44],
+    [0, 0, 0, 0],
+  ];
+  for (const track of tracks) {
+    const arc = skipArc(track);
+    for (const v of [arc.first, arc.last]) {
+      // An end of zero is named in words rather than in figures, because
+      // "0 animals were alive" is not English and "the water was empty" is the
+      // same fact said properly. Both count as naming the end; a silent one
+      // does not.
+      if (v === 0) {
+        assert.match(arc.line, /empty/, `${arc.key}: "${arc.line}" never says the water was empty`);
+        continue;
+      }
+      assert.match(
+        arc.line,
+        new RegExp(`\\b${v.toLocaleString("en-US")}\\b`),
+        `${arc.key}: "${arc.line}" never says ${v}`
+      );
+    }
+    // And a headline is a headline: short enough to be read at a glance.
+    assert.ok(arc.headline.split(/\s+/).length <= 6, `${arc.key}: headline is a paragraph`);
+    assert.match(arc.headline, /[.!]$/, `${arc.key}: headline is not a sentence`);
+  }
+});
+
+test("a track too short to have a shape gets no shape rather than a guess", () => {
+  for (const bad of [null, undefined, [], [12], [12, 20]]) {
+    assert.equal(skipArc(bad), null);
+  }
+});
+
+// ---- the drawing ----
+
+test("the drawing is scaled from zero, not from its own smallest point", () => {
+  // A line drawn between its own extremes turns any wobble into a mountain
+  // range — the truncated axis every misleading news graphic is made of — and
+  // this one sits directly under a sentence saying how far the crowd moved.
+  const flat = sparkPoints([200, 202, 201, 203]);
+  const spread = Math.max(...flat.map((p) => p.y)) - Math.min(...flat.map((p) => p.y));
+  assert.ok(spread < SPARK.h * 0.05, `a 1% wobble drew ${spread} units of hill`);
+  // A doubling, on the other hand, covers half the box.
+  const doubled = sparkPoints([100, 200]);
+  assert.ok(doubled[0].y - doubled[1].y > (SPARK.h - SPARK.pad * 2) * 0.45);
+});
+
+test("the drawing fills its box and stays inside it", () => {
+  const pts = sparkPoints([10, 300, 4, 120]);
+  assert.equal(pts.length, 4);
+  assert.equal(pts[0].x, SPARK.pad);
+  assert.equal(pts[pts.length - 1].x, SPARK.w - SPARK.pad);
+  for (const p of pts) {
+    assert.ok(p.y >= SPARK.pad - 0.01 && p.y <= SPARK.h - SPARK.pad + 0.01, `y ${p.y} is outside`);
+  }
+  // The tallest point sits on the ceiling and the shortest is above the floor.
+  assert.ok(Math.abs(pts[1].y - SPARK.pad) < 0.01);
+});
+
+test("the drawing marks the turn its sentence is about, and nothing else", () => {
+  const boomTrack = hill(150, 247, 142);
+  const boom = sparkHTML(boomTrack, skipArc(boomTrack));
+  assert.match(boom, /<polyline class="spark-line"/);
+  assert.match(boom, /<polygon class="spark-fill"/);
+  assert.match(boom, /<circle class="spark-turn"/);
+  // A climb has no turn to point at, so there is no pin on it.
+  const climbTrack = ramp(40, 196);
+  const climb = sparkHTML(climbTrack, skipArc(climbTrack));
+  assert.ok(!climb.includes("spark-turn"), "a straight climb was given a turning point");
+  // And the pin is where the peak is: past the middle of the box for a late
+  // peak, before it for an early one.
+  const late = sparkHTML(hill(100, 300, 120, 21, 0.8), skipArc(hill(100, 300, 120, 21, 0.8)));
+  const cx = Number(late.match(/spark-turn" cx="([\d.]+)"/)[1]);
+  assert.ok(cx > SPARK.w / 2, `a peak at four fifths was drawn at ${cx}`);
+});
+
+test("the drawing's label is what the shape was, not what the picture is", () => {
+  // A reader who cannot see it is owed the finding, not the format. "A line
+  // chart of population over time" is what every alt text on the web says and
+  // it tells nobody anything.
+  const track = hill(150, 247, 142);
+  const arc = skipArc(track);
+  const svg = sparkHTML(track, arc);
+  assert.ok(svg.includes(`aria-label="${arc.line}"`), svg.slice(0, 200));
+  assert.match(svg, /role="img"/);
+  // Nothing to draw draws nothing, rather than an empty box.
+  assert.equal(sparkHTML([7], null), "");
+});
+
+// ---- the card, and the row the shape replaced ----
+
+test("the shape takes the crowd row's slot rather than repeating it", () => {
+  // v1.143's finding, one surface over: when a new thing says an old thing's
+  // sentence in better words, the old one goes. Every arc line names both ends
+  // — the test above is that rule — so the crowd row would be the same fact
+  // twice, once with a turn in it and once without.
+  const { world, before, config } = skipped(314);
+  const track = ramp(before.pop, world.creatures.length);
+  const withShape = skipCard(before, world, config, track);
+  assert.ok(withShape.arc, "a card built with a count has no shape");
+  assert.ok(!withShape.rows.some((r) => r.key === "crowd"), "the crowd row was drawn twice");
+  assert.ok(withShape.spark.startsWith("<svg"));
+  // And a skip with no count — one interrupted, or a caller from before
+  // v1.145 — degrades to the card this was rather than to a blank.
+  const without = skipCard(before, world, config);
+  assert.equal(without.arc, null);
+  assert.equal(without.spark, "");
+  assert.ok(without.rows.some((r) => r.key === "crowd"), "the card lost its crowd row");
+});
+
+test("the shape is composed without touching the pond or its generator", () => {
+  // Directive 2, on the new half. Everything here is a pure reading: the count
+  // is taken by an observer between steps, and turning it into a headline and a
+  // drawing must not reach into the world at all.
+  const { world, before, config } = skipped(42);
+  const track = Array.from({ length: SKIP_TRACK_POINTS }, (_, i) => 40 + i * 3);
+  const draws = drawStream(world.rng);
+  const hash = stateFingerprint(world);
+  for (let i = 0; i < 20; i++) skipCard(before, world, config, track);
+  assert.equal(draws.count, 0);
+  assert.equal(stateFingerprint(world), hash);
+});
+
+// ---- the running count ----
+
+test("the count is taken on the step, so every machine draws the same shape", () => {
+  // A count sampled once a frame would be a different shape on a phone, because
+  // how many steps a frame buys is a property of the machine. This is the
+  // arithmetic `main.js` uses, and it depends only on the step number.
+  const total = skipLength(makeConfig({ seed: 1 }));
+  const every = trackEvery(total);
+  assert.equal(every, Math.round(total / SKIP_TRACK_POINTS));
+  // Walked the way the pump walks it, in chunks of every size a frame could buy.
+  const sampledAt = [];
+  let left = total;
+  for (const size of [1, 7, 60, 200, 3, 41, 500, 900, 5000]) {
+    for (let i = 0; i < size && left > 0; i++) {
+      left--;
+      const done = total - left;
+      if (done % every === 0 || left === 0) sampledAt.push(done);
+    }
+  }
+  // One opening point plus these, and the last of them is the end of the skip.
+  assert.equal(sampledAt[sampledAt.length - 1], total);
+  assert.equal(sampledAt.length + 1, SKIP_TRACK_POINTS + 1);
+  // No step is sampled twice, whatever the chunking.
+  assert.equal(new Set(sampledAt).size, sampledAt.length);
+  // A skip shorter than the point count still samples every step rather than
+  // dividing by zero.
+  assert.equal(trackEvery(9), 1);
+  assert.equal(trackEvery(0), 1);
+});
+
+test("the count counts the living, the same way the card's own numbers do", () => {
+  // Two counts of the same thing, written twice, is how the shape and the
+  // sentences come to disagree. They are the same count.
+  const world = pond(7, 400);
+  assert.equal(crowdOf(world), skipSnapshot(world).pop);
+  // And a corpse still in the array — which is what the inside of a step looks
+  // like — is not a crowd member to either of them.
+  world.creatures[0].dead = true;
+  assert.equal(crowdOf(world), skipSnapshot(world).pop);
+});
+
+test("a real skip produces a shape that agrees with the pond it describes", () => {
+  // The hand-written tracks above prove the classifier; this proves the wiring
+  // reaches a real pond. Sampled exactly as `main.js` samples it.
+  const world = pond(7, 0);
+  const before = skipSnapshot(world);
+  const total = skipLength(world.config);
+  const every = trackEvery(total);
+  const track = [crowdOf(world)];
+  for (let i = 1; i <= total; i++) {
+    world.step();
+    if (i % every === 0 || i === total) track.push(crowdOf(world));
+  }
+  assert.equal(track.length, SKIP_TRACK_POINTS + 1);
+  const card = skipCard(before, world, world.config, track);
+  // Seed 7 from a standing start is the sweep's clearest hill: forty animals,
+  // up past two hundred, and a good chunk of it given back.
+  assert.equal(card.arc.key, "boom");
+  assert.equal(card.arc.first, before.pop);
+  assert.equal(card.arc.last, skipSnapshot(world).pop);
+  assert.ok(card.arc.peak > card.arc.first && card.arc.peak > card.arc.last);
+  assert.match(card.spark, /<svg class="spark"/);
+});
+
+test("the page, the roster and the module agree about the shape", () => {
+  for (const id of ["skipcard-arc", "skipcard-arc-head", "skipcard-arc-line", "skipcard-spark"]) {
+    assert.ok(page.includes(`id="${id}"`), `the card has no #${id}`);
+    assert.ok(main.includes(`"${id}"`), `main.js never touches #${id}`);
+  }
+  // The count is a fact about *this* pond: carried over, it would draw one
+  // pond's shape under another pond's name.
+  assert.ok(WORLD_SCOPED.includes("skipTrack"), "skipTrack is not on the roster");
+  assert.ok(!main.includes("let skipTrack"), "main.js keeps a private skipTrack");
+  // Every class the drawing wears has a rule.
+  for (const cls of ["skiparc", "skiparc-head", "skiparc-spark", "skiparc-line", "spark", "spark-fill", "spark-line", "spark-turn"]) {
+    assert.ok(styles.includes(`.${cls} {`), `.${cls} has no rule in the stylesheet`);
+  }
 });
