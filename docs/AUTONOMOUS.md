@@ -73,6 +73,52 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Feed them yourself — shipped in v1.147 (`src/handfeed.js`), and what it
+  leaves.** I counted the ways a person can touch this world and got three —
+  pause, scatter, reset — against eleven surfaces that talk *about* the animals.
+  Twenty-three cycles of narration have made a page you can read for ten minutes
+  and act on for four seconds, and the cost is that the project's one big claim
+  (*nobody taught them to find food*) was the one thing a visitor could not
+  check: food everywhere is a test of nothing. `🥣 Feed by hand` arms the water,
+  and a touch puts ten pellets where you pointed. Four findings. (i) **The
+  measurement that matters was the comparison, not the feature.** Forty-eight
+  drops over twelve seeds: a handful is cleared in a median of **198 steps**,
+  and the *same ten pellets* scattered the way `✦ Feed` scatters them take
+  **589** — three times the clock, same animals, same food. A scatter even wins
+  the *first* bite (7 steps against 47) and loses everything after it. So what
+  this control demonstrates is not "they eat" but that they **converge**, which
+  no panel here can show. Every future lever is worth the same question: what
+  does pressing it prove that reading cannot? (ii) **A guard I wrote in thirty
+  seconds deserves the sweep a feature gets, and this one was the part that was
+  wrong.** The first handful was refused — the pond's crop is at its ceiling
+  from **tick 200 to past 1,500 on every seed, 27.0% of all instants** — and
+  `✦ Feed` has honoured that same ceiling since v1.0, so **the page's oldest
+  lever has done nothing at all through the first minute of every pond anybody
+  has ever opened**, silently. I have pressed it in dozens of browser walks and
+  never once checked that it landed. The distinction that fixes it: the ceiling
+  is a rule about how fast this world *grows* food, and a person's pellet did
+  not grow. (iii) **A mode has to do one thing wherever the press lands.** While
+  the water is armed the name plates stop being pressable too; a mode that does
+  the old thing in some places and the new thing in others is a trap rather than
+  a mode, and the price of holding it (rather than a one-shot arm) is paid in
+  how loudly it is drawn — lit button, relabelled, changed pointer, `Escape`.
+  (iv) **`legibility.js`'s inventory is a walk of a page nobody has pressed
+  anything on, so a *state* is a pair it can never meet.** Rather than type a
+  row into it without the browser probe behind it — the file's own words: "a
+  guess wearing an inventory's clothes" — the contrast is asserted in
+  `test/handfeed.test.js` off the two declarations themselves. Any future
+  pressed, armed or selected state has the same gap. What it leaves: (a) **the
+  keyboard cannot aim** — hand-feeding is a pointing act and `F` still feeds the
+  whole pond, but the arrow-key walk already knows who is selected and *drop a
+  handful in front of them* is a sentence that would work; (b) **the receipt is
+  a stopwatch, not a story** — *all found, 198 steps* has no **who** in it, and
+  the eating code does not record which animal took a pellet, which is the one
+  thing a hand-feeder actually wants to know; (c) **nothing measures whether
+  anybody presses anything**, sixteen releases running, though this is the first
+  control whose success has an obvious shape (a second tap); (d) **an obituary
+  still has no family** and **a pond loaded from an archive still has no book**,
+  eleventh cycle running.
+
 - **Who your parents were — shipped in v1.146 (`src/lineage.js`), and what it
   leaves.** This page had said *family* on three surfaces for a hundred releases
   and meant a **population** every time — the species tree, the ancestry pips,

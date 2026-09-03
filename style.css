@@ -1886,7 +1886,8 @@ details .field {
    pair to `legibility.js`'s inventory. */
 button.tour-open,
 button.picture-btn,
-button.skip-btn {
+button.skip-btn,
+button.hand-btn {
   display: block;
   width: 100%;
   margin-top: 8px;
@@ -1895,9 +1896,34 @@ button.skip-btn {
 }
 button.tour-open:hover,
 button.picture-btn:hover,
-button.skip-btn:hover {
+button.skip-btn:hover,
+button.hand-btn:hover {
   background: #1a2737;
   border-color: #47617f;
+}
+/* Armed (v1.147). The only control on this page that changes what a press
+   *elsewhere* does, so it is the only one that has to look held down: a mode
+   whose button looks like every other button is a mode a visitor forgets they
+   are in, and then the next tap on the water is a surprise. It goes the colour
+   of what the next touch will make — a pellet — rather than inventing a signal.
+
+   The ink stays `--ink`, and that is on purpose: this is a *state* rather than
+   a surface, so `legibility.js`'s walk (one pond, one viewport, nothing
+   pressed) can never meet it, and a row added to that inventory by hand would
+   be a guess wearing an inventory's clothes. The pair is measured in
+   `test/handfeed.test.js` instead, off these two declarations, so it fails on
+   the run after either of them drifts. */
+button.hand-btn[aria-pressed="true"] {
+  border-color: #6f8f4e;
+  background: #202c18;
+}
+button.hand-btn[aria-pressed="true"]:hover {
+  background: #28371e;
+  border-color: #86a862;
+}
+/* While the water is armed, the pointer says what a press will do there. */
+#world.handfeeding {
+  cursor: copy;
 }
 /* A skip in flight. `aria-disabled` rather than `disabled`, and the difference
    matters here: this control is the thing that was just pressed, so disabling

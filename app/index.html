@@ -287,6 +287,16 @@
             <button id="btn-feed">✦ Feed</button>
             <button id="btn-seedlife">✚ Seed life</button>
           </div>
+          <!-- Feeding by hand (v1.147). `✦ Feed` above puts sixty pellets
+               across the whole pond, and food that is everywhere is not a test
+               of anything. This arms the water: touch it and ten pellets go
+               exactly where you pointed, which turns the project's one big
+               claim — nobody taught them to find food — into something a
+               stranger can check in three seconds. It sits under Feed because
+               it is the same action aimed, and it wears Feed's own mark for the
+               same reason. `src/handfeed.js` owns the spiral, the words and the
+               arithmetic; main.js is the adapter onto the pointer. -->
+          <button id="btn-hand" class="hand-btn" aria-pressed="false">🥣 Feed by hand</button>
           <!-- The only control here that answers "which of these should I
                watch?". Full width and on its own row because it is the one
                button on this page a first-time visitor should press, and

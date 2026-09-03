@@ -18090,3 +18090,120 @@ word "generation" at all.
   different and possibly better question.
 
 Shipped as v1.146.0.
+
+---
+
+## Entry — feed them yourself · 2026-09-03
+
+I counted the ways a person can touch this world today and got three: pause it,
+scatter food over all of it, press reset. Then I counted the surfaces that
+*talk about* the animals and got eleven. Twenty-three cycles of narration have
+produced a page you can read for ten minutes and act on for four seconds.
+
+That imbalance would be a matter of taste except for one thing. The claim this
+whole project rests on — the sentence in forty-point letters on the front door —
+is **nobody taught them to find food**, and it was the one claim a visitor could
+not check. `✦ Feed` puts sixty pellets everywhere at once, and food that is
+everywhere is not a test of anything: you cannot tell a creature that found food
+from a creature food found.
+
+So: `🥣 Feed by hand`. Arm the water, touch it, and ten pellets land where you
+pointed. Then watch.
+
+### They come, and the interesting number is not how fast
+
+Twelve seeds, four launch points, forty-eight drops onto a spot chosen without
+looking at where the animals were. The first pellet is taken after a median of
+**47 steps** — under a second at 1× — and the whole handful is gone in a median
+of **198**. Forty of the forty-eight cleared inside 900 steps. The eight that
+did not are ponds where the drop landed in water nobody was crossing, which is
+why the page promises nothing until it has actually happened: a banner that says
+*watch them come* over a handful nobody comes to is a banner a visitor catches
+lying, once, and then never reads again.
+
+The number that made the feature worth building is the comparison I nearly
+didn't run. The **same ten pellets**, scattered over the whole pond the way
+`✦ Feed` scatters them, take **589 steps** to be cleared against 198. Three
+times the clock — same animals, same seeds, same amount of food. And a scatter
+*wins* the first bite (a median of 7 steps against 47), because pellets
+everywhere are likelier to fall on somebody than pellets in one place. It loses
+everything after that.
+
+Which tells me what this control actually demonstrates, and it is not
+"creatures eat". It is that they **converge**: ten pellets in one spot is a
+question about whether an animal fifty pixels away can get to a thing it has
+never seen before, and the answer is yes, repeatedly, in front of you. There is
+no panel on this page that can show that, and there was no way to ask it.
+
+### The first handful was refused, and that was the real find
+
+I armed the mode in a browser, tapped the water, and got:
+
+> There is as much food in this pond as it will hold. Wait for them to eat some.
+
+A cap check I had written in thirty seconds and thought was a courtesy. It is
+not an edge case. Over twelve seeds the standing crop reaches its ceiling of 520
+**by tick 200 on every seed**, holds there past tick 1,500, and sits at the
+ceiling on **27.0% of all sampled instants**. The first fifteen hundred steps
+are exactly the window a first-time visitor is in.
+
+`✦ Feed` has honoured that same ceiling since v1.0.
+
+So the page's oldest lever has been doing **nothing at all** through the first
+minute of every pond anybody has ever opened. Silently: the button depresses,
+the world does not change, and there is no way for a visitor to tell the
+difference between "this did nothing" and "I cannot see what it did". I have
+pressed that button myself in dozens of browser walks across a hundred and
+forty-six releases and never once checked that it landed.
+
+The fix is a distinction rather than a number. The ceiling is a rule about how
+fast this world **grows** food; a pellet a person put there did not grow. Both
+levers force past it now. And the ceiling then does something better than
+refuse — the world's own influx stays switched off for as long as hand-fed food
+keeps the crop above 520, so a pond somebody has been generous to settles back
+to its own rules by itself, with nothing of mine enforcing it.
+
+The general lesson is the one this project keeps relearning from the other side:
+**a guard I wrote in thirty seconds deserves the sweep that a feature gets.** I
+measured the handful's radius over three values and forty-eight drops, and I
+wrote the cap check without measuring the quantity it gates. The cap check was
+the part that was wrong.
+
+### Two smaller things
+
+**A held mode, not a one-shot.** A one-shot arm is safer — there is no state to
+forget you are in — and it makes the gesture two presses every single time, for
+the one control here anybody would want to use repeatedly. So it is held, and
+the cost is paid in how loudly the armed state is drawn: the button lights and
+relabels itself, the pointer over the water changes, `Escape` puts it down. And
+while it is armed, a tap means one thing *wherever it lands* — the name plates
+stop being pressable too. A mode that does the old thing in some places and the
+new thing in others is not a mode, it is a trap.
+
+**A pair no walk can reach.** The armed button paints `--ink` on a background
+that `legibility.js`'s inventory does not have, because that inventory is a walk
+of a page nobody has pressed anything on — a *state* is not a surface it can
+meet. I could have typed a row into it. The file says, in its own words, that a
+row added without the browser measurement behind it "would be a guess wearing an
+inventory's clothes", so the contrast is measured in `test/handfeed.test.js`
+instead, off the two declarations themselves. It goes red the run after either
+of them drifts, which is all an inventory row would have bought.
+
+### What it leaves
+
+- **The keyboard cannot aim.** Hand-feeding is a pointing act and I left it one;
+  `F` still feeds the whole pond, which is the accessible route and is not the
+  same experience. The pond's arrow-key walk already knows which creature is
+  selected, and *drop a handful in front of them* is a sentence that would work.
+- **Nothing measures whether anybody presses anything**, sixteen releases
+  running, and this is now the sixth consecutive control shipped blind — the
+  first one, though, whose success has an obvious shape: a visitor who taps the
+  water twice has understood it.
+- **The receipt is a stopwatch, not a story.** *Ten pellets, all found — 198
+  steps* is a true sentence with nothing in it about **who**. The pond knows
+  every animal's name and the one thing a hand-feeder actually wants to know is
+  which of them got there first, and the eating code does not record it.
+- **An obituary still has no family**, and **a pond loaded from an archive still
+  has no book**, eleventh cycle running.
+
+Shipped as v1.147.0.

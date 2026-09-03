@@ -94,6 +94,15 @@ import {
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { nameTags } from "./nametag.js";
+import {
+  HAND_HINT,
+  HAND_LABEL,
+  clearedLine,
+  dropHandful,
+  dropLine,
+  handfulProgress,
+  watchersNear,
+} from "./handfeed.js";
 import { CheerWatch } from "./cheer.js";
 import {
   cardPlacement,
@@ -525,6 +534,10 @@ function loop(now) {
   updateRecords(world);
   updateChronicle(world);
   updateNarration(world);
+  // The receipt for the last handful anybody dropped (v1.147). After the panels
+  // because it is not one: it is a banner, and the pass above is what has just
+  // finished telling the visitor everything else about this frame.
+  pumpHandful();
   // Last, and on the browser's clock: the panel pass above is what notices a
   // rung being climbed, and this is what puts the banner up and takes it down.
   pumpCheers(now);
@@ -2298,6 +2311,13 @@ function wireKeyboard() {
       case "H":
         toggleChartScope();
         break;
+      // The way out of the one mode this page has (v1.147). Only when it is on:
+      // Escape is a key with a meaning everywhere else in a browser, and taking
+      // it from a visitor who is not in a mode would be taking it for nothing.
+      case "Escape":
+        if (!handFeeding) return;
+        setHandFeeding(false);
+        break;
       default:
         return; // let every other key pass through untouched
     }
@@ -2325,6 +2345,7 @@ function wireControls() {
 
   $("btn-feed").addEventListener("click", () => world.addFood(60));
   $("btn-seedlife").addEventListener("click", () => world.addRandomCreatures(12));
+  $("btn-hand").addEventListener("click", () => setHandFeeding(!handFeeding));
   $("btn-meet").addEventListener("click", meetSomebody);
 
   // Speed control.
@@ -2912,6 +2933,57 @@ function wireSkip() {
   });
 }
 
+// ---- Feeding by hand (v1.147) ----
+// The pond's only aimed control. Everything else that changes this world does
+// it to the whole of it — sixty pellets everywhere, twelve strangers anywhere,
+// a slider — and this puts ten pellets on the one square inch a person picked.
+// `src/handfeed.js` owns the spiral, the counting and every word; what is here
+// is the mode, which is the part that could not live anywhere else: it changes
+// what a press on the *water* means, and the water is main.js's.
+//
+// It is a held mode rather than a one-shot arm, and that is the second design.
+// A one-shot is safer — no state to forget you are in — and it makes the
+// gesture two presses instead of one every single time, which is exactly wrong
+// for the only control here anybody would want to use repeatedly. The cost is
+// paid in how loudly the armed state is drawn: the button is lit and relabelled,
+// the pointer over the water changes, and `Escape` puts it down.
+let handFeeding = false;
+let handHinted = false;
+
+function setHandFeeding(on) {
+  handFeeding = on;
+  const btn = $("btn-hand");
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+  btn.textContent = on ? HAND_LABEL.on : HAND_LABEL.off;
+  $("world").classList.toggle("handfeeding", on);
+  // Once, on the first arming of the session. A mode this visible does not need
+  // explaining twice, and a banner that reappears on every press is a banner
+  // people learn to look past.
+  if (on && !handHinted) {
+    handHinted = true;
+    flash(HAND_HINT);
+  }
+}
+
+/** One touch on the water: a handful goes in where the finger was. */
+function feedByHand(wx, wy) {
+  const drop = dropHandful(world, wx, wy);
+  const progress = handfulProgress(drop, world);
+  // Only a handful that actually went in is worth watching for. A refused one
+  // (the pond already at its food ceiling) has said so in the banner already.
+  view.handful = drop.pellets.length > 0 ? drop : null;
+  flash(dropLine(progress, watchersNear(world, wx, wy)));
+}
+
+/** Per frame: has the last handful gone? Say so once, then stop watching. */
+function pumpHandful() {
+  if (!view.handful) return;
+  const p = handfulProgress(view.handful, world);
+  if (!p.cleared) return;
+  view.handful = null;
+  flash(clearedLine(p));
+}
+
 // ---- Canvas interaction: select, pan, zoom, follow ----
 // All of it goes through `Gestures`, which is where the tap-versus-drag and
 // pinch arithmetic lives and where the suite can reach it. What is left here is
@@ -2967,6 +3039,17 @@ function wireCanvas(canvas) {
   const lift = (e, cancelled) => {
     const g = cancelled ? gestures.cancel(e.pointerId) : gestures.up(e.pointerId, e.timeStamp);
     if (!g) return;
+    // Armed, and everything below is off (v1.147). Before the name plates as
+    // well as before the water, and deliberately: while this mode is on, a tap
+    // means one thing wherever it lands, because a mode that does the old thing
+    // in some places and the new thing in others is not a mode, it is a trap.
+    // A drag still pans and a pinch still zooms — those are not taps, and the
+    // camera has to keep working or a visitor cannot aim.
+    if (handFeeding) {
+      const w = cam().screenToWorld(g.x, g.y);
+      feedByHand(w.x, w.y);
+      return;
+    }
     // A press on a name is a press on the animal wearing it (v1.127), and it is
     // tested before the water for two reasons. A plate is sixteen pixels tall
     // where the dart under it is four, so it is by some distance the easiest

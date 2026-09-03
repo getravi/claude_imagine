@@ -81,8 +81,25 @@ export class FoodField {
     for (let i = 0; i < config.foodStart; i++) this.spawnAnywhere();
   }
 
-  spawnOne() {
-    if (this.items.length >= this.config.foodMax) return;
+  /**
+   * One pellet of the pond's own influx.
+   *
+   * `force` (v1.147) is the difference between the world growing food and a
+   * person putting some in. The ceiling below is a rule about **growth**: it is
+   * what stops a crop nothing is eating from running away, and it has governed
+   * every pellet since v1.0 — including the sixty that `✦ Feed` puts in, which
+   * is how that button came to do nothing at all for the first quarter of every
+   * pond's life. Measured over twelve seeds: the standing crop reaches 520 by
+   * **tick 200 on every seed**, holds there past tick 1,500, and is at the
+   * ceiling on **27.0%** of all sampled instants. Those first fifteen hundred
+   * steps are precisely the window a first-time visitor is in.
+   *
+   * So a lever forces and the world does not. Nothing else changes: a pond
+   * nobody presses anything on is bit-for-bit the pond it always was, because
+   * `step()` calls this with no argument.
+   */
+  spawnOne(force = false) {
+    if (!force && this.items.length >= this.config.foodMax) return;
     this.spawned++;
     // Regrowth: most new pellets are the offspring of one already standing. The
     // whole branch is skipped when the feature is off (and when nothing is left
@@ -119,7 +136,7 @@ export class FoodField {
       // Ground too thin to feed a seed: fall through and appear from nowhere,
       // exactly as this pellet always would have. Influx is preserved.
     }
-    this.spawnAnywhere();
+    this.spawnAnywhere(force);
   }
 
   /**
@@ -144,9 +161,13 @@ export class FoodField {
     return this.rng.float() >= this.terrain.at(x, y) * this.config.terrainBarrenness;
   }
 
-  /** A pellet appearing from nowhere: uniform, or biased toward the biomes. */
-  spawnAnywhere() {
-    if (this.items.length >= this.config.foodMax) return;
+  /**
+   * A pellet appearing from nowhere: uniform, or biased toward the biomes.
+   * `force` carries `spawnOne`'s distinction between growth and a lever down
+   * the one path that can reach this gate a second time.
+   */
+  spawnAnywhere(force = false) {
+    if (!force && this.items.length >= this.config.foodMax) return;
     const cfg = this.config;
     let x, y;
     // Up to a few attempts to find ground that will have it, then the pellet is
@@ -170,6 +191,48 @@ export class FoodField {
     // influx contract holds exactly as it does for terrain.
     if (this.barriers) ({ x, y } = this.barriers.eject(x, y));
     this.items.push(new Food(x, y));
+  }
+
+  /**
+   * A pellet put exactly where it is asked for (v1.147, `src/handfeed.js`).
+   *
+   * The one placement here that answers to somebody outside the world, so it is
+   * the one that consults neither the biomes, the ground, nor the crop — a
+   * visitor who touches a ridge means *that* spot, and a pellet that quietly
+   * appeared somewhere else would make the whole gesture a lie. Terrain is
+   * therefore skipped rather than ignored: barren ground governs where a crop
+   * *grows*, and nothing grew here.
+   *
+   * Rock is the exception, and it is the same exception `spawnAnywhere` makes
+   * for the same reason: a pellet inside a wall can never be reached, so it
+   * would sit in `foodMax` for ever and shrink the standing crop by the share of
+   * the pond that is walled. Barriers eject; they do not refuse.
+   *
+   * The ceiling is not consulted at all, for `spawnOne`'s `force` reason: it
+   * governs how fast this world *grows* food, and a person's handful did not
+   * grow. What the ceiling does instead is settle the pond back afterwards —
+   * the world's own influx stays switched off for as long as hand-fed pellets
+   * keep the crop above 520, so a pond somebody has been generous to returns to
+   * its own rules by itself, with nothing here to enforce it.
+   *
+   * **Draws no random number**, by construction — there is no attempt to
+   * retry, nothing to sample, and no chance to roll. That is what lets a lever
+   * on the outside of this world leave its draw stream exactly where it found
+   * it.
+   *
+   * It is also deliberately absent from `spawned` and `sprouted`. Those two
+   * count the pond's own influx so that "how much of this crop grew out of the
+   * dead?" has an answer; a pellet a person put there did not grow out of
+   * anything, and counting it would quietly dilute the share.
+   *
+   * @returns {Food} the pellet
+   */
+  placeAt(x, y) {
+    let p = { x, y };
+    if (this.barriers) p = this.barriers.eject(p.x, p.y);
+    const f = new Food(p.x, p.y);
+    this.items.push(f);
+    return f;
   }
 
   /**

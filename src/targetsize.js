@@ -264,6 +264,8 @@ export const UNMET = Object.freeze({
     "`gestures.js` targets are the whole canvas, which is measured here as one target rather than as the several actions it carries",
   "`.learn-*`":
     "fourteen rules of CSS no page in this repository uses — the same orphan `legibility.js` found from the ink side",
+  "#btn-hand":
+    "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-skip`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
 });
 
 /**

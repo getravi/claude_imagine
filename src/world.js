@@ -943,9 +943,19 @@ export class World {
     }
   }
 
-  /** Scatter n food pellets (used by the "feed" button). */
+  /**
+   * Scatter n food pellets (used by the `✦ Feed` button).
+   *
+   * Forced past the standing-crop ceiling since v1.147, which is a fix rather
+   * than a licence: the ceiling is a rule about how fast this world grows food,
+   * and until now it also governed the button, so `✦ Feed` silently did nothing
+   * whenever the pond was already full — which is every pond between about tick
+   * 200 and tick 1,500, and 27% of all sampled instants over twelve seeds. A
+   * lever that does nothing during a visitor's first minute is the worst place
+   * on this page for a lever to do nothing.
+   */
   addFood(n) {
-    for (let i = 0; i < n; i++) this.food.spawnOne();
+    for (let i = 0; i < n; i++) this.food.spawnOne(true);
   }
 
   /** Serialize the whole world for save/load. */

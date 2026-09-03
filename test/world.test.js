@@ -88,7 +88,11 @@ test("feeding and seeding add to the world", () => {
   const world = new World(makeConfig({ seed: 5 }));
   const food0 = world.food.items.length;
   world.addFood(20);
-  assert.ok(world.food.items.length >= food0); // capped, but never fewer
+  // Every pellet asked for, since v1.147. The standing-crop ceiling is a rule
+  // about how fast this world *grows* food; it used to govern the button too,
+  // and a full pond — which every pond is between about tick 200 and tick
+  // 1,500 — quietly swallowed the press.
+  assert.equal(world.food.items.length, food0 + 20);
   const pop0 = world.creatures.length;
   world.addRandomCreatures(10);
   assert.equal(world.creatures.length, pop0 + 10);

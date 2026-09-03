@@ -212,6 +212,14 @@ const FRESH = Object.freeze({
   skipTotal: 0,
   skipFrom: null,
   skipTrack: null,
+  // The handful of food somebody dropped in the water (v1.147), held until the
+  // last of it is eaten and the page says so. World-scoped because it is a list
+  // of *pellet objects*, and a pellet belongs to one pond: after a reset those
+  // ten are in no world, so nothing can ever eat them and the receipt would
+  // never come — the page would sit watching a handful that no longer exists
+  // for as long as the tab was open. It also carries the tick it went in on,
+  // and a new pond's clock starts again at zero.
+  handful: null,
 });
 
 /** The names `ViewState` owns, in the order they are declared. */
@@ -251,6 +259,13 @@ export const PAGE_SCOPED = Object.freeze({
     "what the nameplate currently reads — a fact about the page, and deliberately not " +
     "reset with the world: it is how `syncPondName` tells arriving somewhere new from " +
     "rebuilding where you already are, and a pond adopted afresh would say hello to itself",
+  handFeeding:
+    "whether the water is armed to be fed by hand (v1.147) — a visitor's choice of what a " +
+    "press on the pond means, and a new pond does not overrule it any more than it " +
+    "overrules pause or speed",
+  handHinted:
+    "whether the one-line explanation of that mode has been shown yet — once per visit " +
+    "rather than once per pond, because it explains the button and not the water",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
   postcardReturn: "the same, for the postcard — where focus was when `🔗 Share` opened the card",

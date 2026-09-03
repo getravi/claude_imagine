@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.147.0] — 2026-09-03
+
+Feed them yourself.
+
+Twenty-three releases have gone into explaining this pond to the person in front
+of it. A headline, a ladder, a cast list, a record book, a Chronicle you can
+press, a guide, a fast-forward, a postcard, a photograph, a film, a family tree.
+By now there are more surfaces here that *talk about* the animals than there are
+ways of touching them: you can read eleven panels and still only ever have done
+three things to this world — paused it, scattered food across all of it, and
+pressed reset.
+
+And the claim the whole project rests on is the one thing a visitor could not
+check. **Nobody taught them to find food** is on the front door in forty-point
+letters, and the only way to add food was `✦ Feed`, which puts sixty pellets
+everywhere at once. Food that is everywhere is not a test of anything.
+
+`🥣 Feed by hand` arms the water. Touch it and ten pellets land where you
+pointed:
+
+> **Ten pellets, right there. Six animals are close enough to see them.**
+>
+> …
+>
+> **Ten pellets, all found — 198 steps.**
+
+### They come, and here is how fast
+
+Twelve seeds, four launch points, forty-eight drops onto a spot chosen without
+looking at where the animals were. The first pellet of a handful is taken after
+a median of **47 steps** — under a second — and the whole handful is gone in a
+median of **198**. Forty of forty-eight handfuls were cleared inside 900 steps;
+the eight that were not are the ponds where the drop landed in water nobody was
+crossing, which is the honest other half and the reason nothing is promised on
+screen until it has happened. Dropped into a shoal instead, the first goes in
+**1 step** and the handful in **69**.
+
+The number that made this worth building is the comparison. The *same ten
+pellets*, scattered over the whole pond the way `✦ Feed` scatters them, take
+**589 steps** to be cleared — three times the clock, from the same animals, on
+the same seeds, with the same amount of food. A scatter even wins the *first*
+bite (7 steps against 47), because sixty pellets everywhere is likelier to land
+on somebody than ten pellets in one place. It loses everything after that. What
+a handful shows, and a scatter never can, is that these creatures **converge**.
+
+### The measurement that found a lever doing nothing
+
+The first build refused the first handful: *"There is as much food in this pond
+as it will hold."* That was not an edge case. Over twelve seeds the standing
+crop reaches its ceiling of 520 by **tick 200 on every seed**, holds there past
+tick 1,500, and sits at the ceiling on **27.0% of all sampled instants** — and
+those first fifteen hundred steps are exactly the window a first-time visitor is
+in.
+
+`✦ Feed` had honoured that ceiling since v1.0. **So the page's oldest lever has
+been doing nothing at all through the first minute of every pond anybody has
+ever opened**, silently, with no way for the visitor to tell.
+
+The ceiling is a rule about how fast this world *grows* food, and a pellet a
+person puts in did not grow. Both levers force past it now, and the ceiling does
+something better than refuse: the world's own influx stays switched off while
+hand-fed food keeps the crop above 520, so a pond somebody has been generous to
+settles back to its own rules by itself.
+
+### Not one random number
+
+A handful is a golden-angle spiral around the point you touched — arithmetic,
+with nothing sampled and no chance rolled — and the pellets are placed exactly
+where they are told. So this is a stronger form of the determinism rule than the
+opt-in features keep: they draw nothing while they are **off**, and this draws
+nothing while it is **on**. A pond nobody has fed by hand is bit-for-bit the pond
+it always was, and two ponds fed identically stay identical, which is what keeps
+a hand-fed pond something you can still share.
+
 ## [1.146.0] — 2026-09-03
 
 Who your parents were.
