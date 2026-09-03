@@ -151,6 +151,33 @@
           <p id="pond-say" class="sr-only" role="status"></p>
         </section>
 
+        <!-- What they are doing (v1.148). The headline above the water is the
+             pond in a sentence; this is the *animal you picked* in a sentence,
+             and it is the first thing on this page that says what a creature is
+             doing rather than what it is made of. Everything else about one
+             animal — the inspector's grid, the spoken description, the cast
+             row — is an attribute: generation 14, 61% fed, size 4.2. This is a
+             verb. `src/doing.js` reads it off the animal's own senses (the
+             input vector its brain was run on this tick) and holds each line
+             1.5 seconds so it can be read; the file carries the measurement
+             that says why a hold is needed here and was not needed for the
+             name plates.
+
+             Not a live region, for the headline's reason: a sentence that
+             rewrites itself every second and a half would talk over the
+             Chronicle, which is this page's announced channel. A listener who
+             wants this creature described has the spoken description on the
+             selection itself.
+
+             Outside `.stage`, like the headline and the key: the stage is the
+             pond, and this is a caption on the page. -->
+        <section id="doing" class="doing waiting" aria-label="What the animal you have picked is doing">
+          <span class="d-icon" id="doing-icon" aria-hidden="true">👆</span>
+          <p class="d-text" id="doing-text">
+            Pick an animal — click one, or press M — and this line will follow it.
+          </p>
+        </section>
+
         <!-- The key to the water (v1.122). Everything in the pond means
              something — the arrowhead, its colour, its lightness, the length of
              its nose — and until this release nothing on the page said what.

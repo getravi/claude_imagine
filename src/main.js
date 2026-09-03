@@ -47,6 +47,7 @@ import { nameSpecies, speciesLabel, speciesPlural } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
 import { OBITUARY_MEET_ID, obituaryFor, obituaryHTML, obituaryLines } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
+import { DoingWatch, DOING_INVITE, INVITE_ICON, doingHTML, doingIcon } from "./doing.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -526,6 +527,10 @@ function loop(now) {
   updateSeasonBadge(world);
   updateInspector();
   updateHeadline(world);
+  // Straight after the pond's own sentence, because the two are read as a pair:
+  // one says what the water is doing and the other what the animal you picked
+  // is doing in it.
+  updateDoing();
   updateKey();
   updateCast(world);
   updateEvolved(world);
@@ -630,6 +635,42 @@ function updateHeadline(world) {
   view.headlineShown = next;
   $("headline-icon").textContent = next.icon;
   $("headline-text").textContent = next.text;
+}
+
+// ---- What they are doing (v1.148) ----
+//
+// The line under the water about the animal you picked. `src/doing.js` owns the
+// verbs, the priority between them and the hold that keeps a line up long enough
+// to read; this is the adapter onto the DOM.
+//
+// The watch is per-page and not per-pond, and it does not need clearing on a
+// reset: `look()` resets itself the moment the id it is holding is not the id it
+// is handed, and a reset either clears the selection or replaces it with an
+// animal from a new world. That is the same rule the roster learned in v1.142 —
+// a field carried from one subject to the next is worse than a field that is
+// merely stale — enforced here by construction rather than by remembering.
+//
+// Content-keyed on the key, not on the sentence: the name is a pure function of
+// the id and the id is in the key, so two frames with the same key are two
+// frames with the same line.
+const doingWatch = new DoingWatch();
+
+function updateDoing() {
+  const c = renderer.selected;
+  const key = doingWatch.look(c, config, performance.now());
+  const sig = key ? `${c.id}:${key}` : "";
+  if (sig === view.doingSig) return;
+  view.doingSig = sig;
+  const el = $("doing");
+  if (!key) {
+    el.classList.add("waiting");
+    $("doing-icon").textContent = INVITE_ICON;
+    $("doing-text").textContent = DOING_INVITE;
+    return;
+  }
+  el.classList.remove("waiting");
+  $("doing-icon").textContent = doingIcon(key);
+  $("doing-text").innerHTML = doingHTML(givenName(c.id), key);
 }
 
 // ---- The key to the water (v1.122) ----

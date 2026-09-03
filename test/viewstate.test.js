@@ -146,11 +146,27 @@ test("adopt survives a renderer with no trail", () => {
 
 test("every top-level binding in main.js is classified, both ways", () => {
   // The domain, named because a sweep that does not say what it excludes
-  // annexes it (v1.51): bindings at column zero in `src/main.js`. A `const` at
-  // that indentation is either an import, a frozen constant or the view state
-  // itself — none of which can go stale — so what has to be accounted for is
-  // every `let`, which is the file's mutable module state.
-  const declared = [...MAIN.matchAll(/^let (\w+)/gm)].map((m) => m[1]);
+  // annexes it (v1.51): bindings at column zero in `src/main.js`.
+  //
+  // It used to be `let` alone, excused on the grounds that "a `const` at that
+  // indentation is either an import, a frozen constant or the view state
+  // itself — none of which can go stale". That premise was false and v1.148
+  // caught it by adding the sixth counter-example: `const x = new C()` is a
+  // constant *binding* to a mutable object, and `main.js` had five of them —
+  // `uiRng`, `trail`, `view`, `memorial`, `lineage` — every one holding state a
+  // new pond either does or does not invalidate, and not one of them ever seen
+  // by the list that claims to account for every top-level binding. The hole was
+  // in the sweep and not in the ponds: all five are in fact handled correctly,
+  // three of them by `adopt` and `adoptWorld`. An exclusion resting on how a
+  // thing is *spelled* rather than on what it *is* will keep finding this.
+  //
+  // So: every `let`, plus every `const` bound to a freshly constructed object.
+  // A `const` bound to anything else is an import, a literal or a frozen table,
+  // and those cannot go stale for the reason the old comment gave.
+  const declared = [
+    ...[...MAIN.matchAll(/^let (\w+)/gm)].map((m) => m[1]),
+    ...[...MAIN.matchAll(/^const (\w+) = new /gm)].map((m) => m[1]),
+  ];
   assert.ok(declared.length > 5, "the scan found main.js");
   const page = Object.keys(PAGE_SCOPED);
   for (const name of declared) {

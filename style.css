@@ -228,6 +228,51 @@ body {
   align-items: center;
 }
 
+/* ---- What they are doing (v1.148) ---- */
+
+/* The headline's sibling, one notch quieter: the same card, the same gutter
+   stripe, but in `--accent` rather than `--accent-2` because it is about the
+   animal *you* picked rather than about the pond, which is the same distinction
+   the selection halo and the zoom badge already draw in the same blue. It sits
+   under the water rather than over it, where the eye goes after it has looked
+   at the thing the line is about. */
+.doing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 15px;
+}
+.doing .d-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex: none;
+}
+.doing .d-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  /* Two lines' worth, so the card does not resize the column every time the
+     sentence changes — the headline's rule, and this line changes far more
+     often than the headline's does. */
+  min-height: 2.8em;
+  display: flex;
+  align-items: center;
+}
+/* The invitation, while nobody has been picked: quieter than a fact, because it
+   is the only sentence on this page that is about the reader instead of the
+   pond. */
+.doing.waiting .d-text {
+  color: var(--ink-dim);
+}
+.doing .d-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .stage {
   position: relative;
   /* The stage is the containing block for five marks that all mean "in the

@@ -18207,3 +18207,187 @@ of them drifts, which is all an inventory row would have bought.
   has no book**, eleventh cycle running.
 
 Shipped as v1.147.0.
+
+---
+
+## Entry — a verb · 2026-09-03
+
+I read the sentence this page says about a selected creature out loud today:
+
+> *Creature 812, generation 14, a grazer, 61% fed, on ground 12% rough, calling
+> 0.31, hearing nothing, in the north-west of the pond.*
+
+Every clause of that is true, several of them took a release each to get right,
+and none of them is what a person watching an animal wants to know. Twenty-four
+cycles of naming, ranking, charting and narrating, and the page has never once
+used a **verb** about a creature. It describes them the way a parts catalogue
+describes a component. A visitor picks one animal out of three hundred darts and
+gets handed a specification.
+
+So this cycle is one line under the water, in the present tense, with the
+animal's name at the front of it. *Nim is heading for food.* It changes as the
+animal's situation does, and before anybody has picked one it says how to.
+
+### Built out of what the animal can see
+
+The nice part is that the work was already done and nobody had ever read it.
+`Creature#sense` writes an input vector every tick — how near the closest pellet
+is and whether it is ahead, the same for prey and for a threat, and how fast the
+animal is going — and hands it to the brain. That vector is the animal's point of
+view. Building the verb out of it means *heading for food* is food **this
+creature can see**, not food I found with a query it has no access to, and it
+costs nothing because the numbers exist whether anybody looks at them or not.
+
+The meal detector is the same trick one level up. There are exactly three lines
+in `world.js` that add to `creature.energy`, and all three are somebody eating; a
+child, a bite taken out of you, and every tick of metabolism all subtract. So an
+observer that remembers what an animal's energy was a frame ago can say *has just
+eaten* without a field being added to a creature, without touching the code that
+feeds them, and without appearing anywhere in the state hash.
+
+### Two of the ten states I wrote do not exist
+
+I wrote ten states and swept them: twelve seeds, four subjects each, three
+thousand ticks after a four-hundred-tick warm-up, 52,841 sampled
+animal-instants.
+
+- **`feeding`** — "right on top of a pellet" — fired on **0.0%** of them.
+- **`ready to breed`** — "energy past the split threshold" — fired on **0.0%**.
+
+I expected both to be rare. They are not rare, they are **unobservable**, and for
+one reason: each is defined by a threshold the world **acts on in the same tick
+it becomes true**. A creature inside eating distance of a pellet is a creature
+that ate it on that tick. Crossing the reproduction threshold *is* the split. The
+state is entered and left inside one step and no sampler will ever catch it.
+
+That is a shape worth carrying forward, because it is not about these two states
+and it is not about this file. A condition the simulation resolves the instant it
+holds cannot be put on a screen a human reads at 60 Hz. Any future panel here
+that wants to show *the moment X happens* has to show the **wake** of it instead,
+which is what `🍽 has just eaten` is: not the instant, but the second and a half
+after it, when there is something to look at.
+
+### The hold, and the one constant here that belongs on a reader's clock
+
+v1.126 put name plates over the water and deliberately built no hold, because it
+measured the cast and found it stable — a change every 146 ticks — and reasoned
+that every cast role is an extremum over a slow quantity. I expected to reuse
+that finding. Every input *here* is a live proximity, and the measurement comes
+out the other way round: the raw state changes **every 14.5 ticks**, the median
+run is **10 ticks**, and 91.9% of runs are under 30. At 1× that is a sentence
+rewriting itself four times a second, which is not a sentence, it is a flicker
+with words in it.
+
+| hold (ticks) |   0  |  15  |  30  |  60  |  90  | 120  | 180  |
+| ------------ | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| captions/1k  | 78.6 | 42.4 | 24.6 | 14.2 |  9.9 |  7.7 |  5.5 |
+| stale        |   0% |  24% |  36% |  41% |  44% |  47% |  49% |
+
+The trade turns over at 90. 30→60 buys 10.4 fewer captions for 5.2 points of
+staleness; 60→90 buys 4.3 for 2.8; 90→120 buys 2.2 for 3.2. Past there I would be
+paying more in lying than I get back in legibility.
+
+Then the part I nearly got wrong. Every constant in this project that could be in
+ticks or in seconds is in ticks, and there is a good reason for that rule — the
+pond's clock is a fact about the animals and a second is a fact about the speed
+slider, so a number stated in seconds is a number that means something different
+at 20×. I wrote this one in ticks out of habit and then noticed that at 20× a
+90-tick hold is 75 milliseconds and the flicker is straight back. **This constant
+is the exception, and it is the exception for exactly the reason the rule
+exists.** What the hold protects is not a property of the pond, it is a property
+of a *reader's eye*, and a reader's eye does not speed up when the slider does.
+So: 1,500 ms, which is 90 ticks at 1× on a 60 Hz frame, stated in the unit the
+constraint actually lives in.
+
+### Letting the good bits jump the queue makes it worse on both axes
+
+The obvious next move is to let `fleeing`, `hunting` and `ate` preempt a line
+that has not served its time — they are the moments somebody is watching for, and
+holding a sentence about drifting over a chase seems plainly wrong. I built it
+and measured it and it is worse **twice**: 13.8 captions per 1,000 against 9.9,
+and 53.3% stale against 44.2%. More churn *and* more lying, from a rule whose
+entire purpose was to be more truthful.
+
+The reason is the thing I had not thought through: the dramatic states are the
+**briefest** ones. Preempting gets the chase on screen a second earlier and then
+parks it there after the chase has ended, so the page is now flickering *and*
+describing something that finished. There is no preemption. One rule, no
+exceptions.
+
+And the hold turns out to do the amplifying by itself, which is the finding I
+liked most. `ate` is 0.6% of the truth and **5.6% of what is shown** — once a
+meal latches it holds the line for its full second and a half, so the rarest and
+best moment in the pond gets nine times its share of the page for nothing.
+Every other state is displayed within about three points of its true frequency,
+so the hold is steadying the picture without distorting it.
+
+### An animal's senses do not know a mechanic is switched off
+
+I shipped the three predation states with a config gate on them, and I want to
+record that the first draft had no gate and a comment explaining why one was not
+needed. The reasoning was: without predation nothing gets eaten, so nothing is
+anybody's prey and nothing is anybody's threat, and the states cannot fire.
+
+They fire on every tick of such a pond. `World#step` fills the prey and threat
+slots from `Creature#canEat`, which asks about diet and body size and **never
+asks whether predation is on** — only the bite, sixty lines further down,
+consults the flag. That is deliberate and load-bearing: an input vector that
+changed shape with the flag would put two otherwise identical worlds on different
+draw streams, which is the determinism this project protects above everything.
+The consequence is that **an animal's senses do not know the mechanic is off**. A
+brain never needs to know. An observer writing English about what an animal can
+see does, and I had written down the opposite in a comment. The test I wrote
+because I believed the comment is the thing that caught it.
+
+### The ledger that had never seen five of its own entries
+
+Adding a `const doingWatch = new DoingWatch()` to `main.js` failed a test that
+sorts every top-level binding in that file into "belongs to a pond" or "belongs to
+the page". Its domain was `let` alone, excused in a comment: *a `const` at that
+indentation is either an import, a frozen constant or the view state itself —
+none of which can go stale.*
+
+That is true of the **binding** and false of the **object**. `main.js` has five
+`const x = new C()` at column zero — `uiRng`, `trail`, `view`, `memorial`,
+`lineage` — every one holding mutable state a new pond either does or does not
+invalidate, and not one of them had ever been seen by the list that claims to
+account for all of them. The handling was correct in all five cases, three of
+them by `adopt` and `adoptWorld`; what was missing was anybody having written
+down that it was, which is the whole job of that list. The hole was in the
+instrument. An exclusion that rests on how a thing is **spelled** rather than on
+what it **is** will keep producing this, and I have widened the sweep and given
+the five their reasons.
+
+### And a sentence the test suite passed came out wrong in a browser
+
+`doingHTML` returned `<b class="d-name">Nim</b> is heading for food.` The test
+asserted that string and passed. The page rendered **Nimis heading for food.**
+
+The card centres its line vertically, which makes the paragraph a flex container,
+and a flex container turns each run of bare text between its element children
+into an anonymous item **with the whitespace at its ends stripped**. Nothing
+about the sentence was wrong; the layout ate it. Found on the first browser walk,
+at phone width, in a string `node --test` had already blessed — a reminder that a
+test on a string is a test on a string, and that these walks keep paying for
+themselves.
+
+### What it leaves
+
+- **The line follows one animal and the water can name four.** The plates over
+  the pond carry a name and a cast mark; they could carry this mark too, and then
+  the water itself would say who is running and who is eating without anybody
+  picking anybody.
+- **A listener gets nothing new.** Deliberate — a sentence that rewrites itself
+  every second and a half would talk over the Chronicle, which is this page's
+  announced channel — but "deliberate" is not the same as "solved", and the
+  spoken description of a selection is still a list of attributes.
+- **The receipt for a handful is still a stopwatch.** v1.147 left *who came to
+  eat* as the open thread and this cycle built the machinery that would answer
+  it: a meal is now detectable from outside the simulation. Pointing it at the
+  ten pellets rather than at one animal is a small step from here.
+- **Nothing measures whether anybody presses anything**, seventeen releases
+  running.
+- **An obituary still has no family**, and **a pond loaded from an archive still
+  has no book**, twelfth cycle running.
+
+Shipped as v1.148.0.

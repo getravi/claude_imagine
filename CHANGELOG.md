@@ -4,6 +4,131 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.148.0] — 2026-09-03
+
+What they are doing.
+
+Everything this page has ever said about one creature is an **attribute**. The
+inspector: *generation 14, 61% fed, size 4.2, metabolism 1.03×*. The spoken
+description: *Creature 812, generation 14, a grazer, 61% fed, on ground 12%
+rough, calling 0.31, hearing nothing.* Twenty-four releases of naming, ranking,
+charting and narrating, and not one of them has ever used a **verb**. A visitor
+picks an animal out of three hundred darts and the page hands them a
+specification.
+
+There is now a line under the water, and it says what the animal you picked is
+doing:
+
+> 🌿 **Nim** is heading for food.
+>
+> 💨 **Marlow** is running from something bigger.
+>
+> 🍽 **Iris** has just eaten.
+
+Before anybody has picked one it says so, which makes it the one surface here
+whose content is the thing you have not done yet: *Pick an animal — click one, or
+press M — and this line will follow it.*
+
+### Read off the animal's own senses
+
+`Creature#sense` already writes, every tick, the input vector its brain is about
+to be run on: how near the nearest pellet is and whether it lies ahead, the same
+for the nearest thing it could eat and the nearest thing that could eat it, and
+how fast it is going. That vector is the animal's **point of view**, it is
+computed whether anybody reads it or not, and it is the honest thing to build a
+verb out of — *heading for food* ought to mean food this creature can see, not
+food a god's-eye query found.
+
+A meal is detected without the simulation recording anything: there are exactly
+three lines in `world.js` that add to `creature.energy` and all three are
+somebody eating. Everything else subtracts. So an observer that remembers what
+an animal's energy was a frame ago can say *has just eaten* with no field added
+to a creature and no code near the part that feeds them.
+
+### Two of the ten states I wrote do not exist
+
+Twelve seeds, four subjects each, three thousand ticks after a warm-up — 52,841
+sampled animal-instants. `feeding` ("right on top of a pellet") fired on **0.0%**
+of them. `ready to breed` ("energy past the split threshold") fired on **0.0%**.
+
+Both are states defined by a threshold the world **acts on in the same tick it
+becomes true**: a creature within eating distance of a pellet is a creature that
+ate it, and crossing the reproduction threshold *is* the split. A state like that
+is not rare, it is unobservable, and no amount of watching will show it. `🍽 has
+just eaten` is the repair and the opposite construction — not the instant, but
+the wake of the instant.
+
+### The hold, and why the name plates did not need one
+
+v1.126 measured the cast and found it stable — a change every 146 ticks — and
+built no hold. Every input here is a live proximity instead of an extremum over a
+slow quantity, and the measurement comes out the other way round: the raw state
+changes **every 14.5 ticks**, the median run is **10**, and 91.9% of runs are
+shorter than 30. At 1× that is a caption rewriting itself four times a second.
+
+| hold (ticks) |   0  |  15  |  30  |  60  |  90  | 120  | 180  |
+| ------------ | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| captions/1k  | 78.6 | 42.4 | 24.6 | 14.2 |  9.9 |  7.7 |  5.5 |
+| stale        |   0% |  24% |  36% |  41% |  44% |  47% |  49% |
+
+The trade turns over at 90: 60→90 buys 4.3 fewer captions for 2.8 points of
+staleness and 90→120 buys 2.2 for 3.2, so past there you pay more in lying than
+you get back in legibility.
+
+**The constant is in milliseconds, and that is the point.** Every other number in
+this project that could be either is in ticks, because the pond's clock is a fact
+about the animals and a second is a fact about the speed slider. This one is the
+exception for the reason that makes it one: what the hold protects is a
+**reader's eye**, which runs at the same speed whether the slider says 1× or 20×.
+Ninety ticks at 1× on a 60 Hz frame is 1,500 ms.
+
+**Letting the exciting states jump the hold makes both numbers worse.** Allowing
+`fleeing`, `hunting` and `ate` to preempt a line that has not served its time
+gives 13.8 captions per 1,000 instead of 9.9 **and** 53.3% stale instead of
+44.2% — worse on both axes at once, because the dramatic states are the
+*briefest*, so preempting parks a stale chase on the page after the chase has
+ended. There is no preemption.
+
+And the hold does the amplifying by itself: `ate` is 0.6% of the truth and
+**5.6% of what is shown**, so the rarest and best moment gets nine times its
+share of the page for free. Every other state is shown within about three points
+of its true frequency.
+
+### An animal's senses do not know a mechanic is switched off
+
+The three predation states shipped gated on `config.predation`, and the first
+draft was ungated with a comment explaining why no gate was needed: without
+predation nothing gets eaten, so nothing is anybody's prey or threat. They fire
+on every tick of such a pond. `World#step` fills those slots from
+`Creature#canEat`, which asks about diet and body size and never asks whether
+predation is on; only the *bite*, sixty lines further down, consults the flag.
+That is deliberate — an input vector that changed shape with the flag would put
+two otherwise identical worlds on different draw streams — and its consequence is
+that a brain never needs to know the mechanic is off and an observer writing
+English about what it can see does.
+
+### Added
+
+- `src/doing.js` — nine states, their priority, the words for each, and the hold.
+  A pure observer: it reads a creature's fields and the buffer the brain was
+  already given, adds no field to anything, and draws no random number.
+- The line itself, under the water, beside `🔍 What you are looking at`.
+- `test/doing.test.js` — 25 claims, including that the six input slots this
+  module names by hand are the six `sense()` writes, and that a pond without
+  predators never says any of the three predation states.
+
+### Fixed
+
+- **The ledger that accounts for every top-level binding in `main.js` had never
+  seen five of them.** Its domain was `let` alone, excused on the grounds that a
+  `const` at column zero "cannot go stale" — true of the binding and false of the
+  object it is bound to. `uiRng`, `trail`, `view`, `memorial` and `lineage` are
+  all `const x = new C()`, all hold state a new pond either does or does not
+  invalidate, and none had ever been classified. The handling was right in every
+  case; what was missing was anybody having written down that it was. The sweep
+  now takes `let` plus every `const` bound to a fresh object, and the five have
+  reasons.
+
 ## [1.147.0] — 2026-09-03
 
 Feed them yourself.

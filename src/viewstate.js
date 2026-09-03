@@ -146,6 +146,13 @@ const FRESH = Object.freeze({
   // *reload* restarts the counter, and a signature naming id 41 in two ponds is
   // exactly the collision that keeps a dead animal's row on screen.
   castSig: "",
+  // What the line under the water is saying about the animal you picked
+  // (v1.148). Keyed on an id and a state, so it is here for `castSig`'s reason:
+  // a signature naming id 41 belongs to the pond id 41 was in. The steadying
+  // itself lives in the `DoingWatch` on the page side, which resets whenever the
+  // id it is holding is not the id it is handed — so this is the cache and that
+  // is the machine, filed on the two sides of the line each one earns.
+  doingSig: "",
   // The book of records (v1.124). Keyed on the board's own sentences, which is
   // the strongest key any surface here uses and the only one that has to be:
   // a record's line changes when its holder dies while the record itself holds
@@ -237,6 +244,32 @@ export const WORLD_SCOPED = Object.freeze(Object.keys(FRESH));
  * does not, and saying which is the whole of the work.
  */
 export const PAGE_SCOPED = Object.freeze({
+  // The five the sweep could not see until v1.148. Every one is a `const` bound
+  // to a mutable object, which the domain used to excuse on the grounds that a
+  // `const` cannot go stale — true of the binding and false of the thing bound.
+  // Their handling was right all along; what was missing was anybody having
+  // written down that it was.
+  view:
+    "the roster itself — the object every world-scoped name lives on. Not page-scoped so " +
+    "much as unscoped: it is the thing that does the scoping, and `adopt` is what makes a " +
+    "single page-lifetime object safe to point at one pond after another",
+  uiRng:
+    "the page's own random numbers, for sampling and shuffling on this side of the glass. " +
+    "Seeded once at boot from a constant and deliberately never reset: it is not a view of " +
+    "a pond at all, and it draws from a stream the simulation cannot reach",
+  trail:
+    "the path drawn behind the selected animal — a machine rather than a cache, cleared by " +
+    "`adopt` itself along with the selection it belongs to, because it is the renderer that " +
+    "owns it and the renderer is handed over there",
+  memorial:
+    "the book of the dead (v1.137). Emptied by `adoptWorld` rather than by the roster, and " +
+    "for a reason that is about ids and not about caches: creature numbers come from a " +
+    "counter at module scope, so a life left in the book would sooner or later answer for " +
+    "somebody else",
+  lineage:
+    "who each living animal's parents were (v1.146). Emptied alongside the book and for its " +
+    "reason, plus one of its own: a family line whose living end is in a pond that no longer " +
+    "exists is a line nothing will ever ask about again",
   config: "the subject, not a view of it — replaced alongside the world",
   world: "the subject itself; `adopt` is keyed on this object's identity",
   renderer: "one canvas, built once at boot and re-pointed at each new config",
@@ -266,6 +299,13 @@ export const PAGE_SCOPED = Object.freeze({
   handHinted:
     "whether the one-line explanation of that mode has been shown yet — once per visit " +
     "rather than once per pond, because it explains the button and not the water",
+  doingWatch:
+    "the hold under the line about the animal you picked (v1.148) — a machine rather than " +
+    "a cache, and one whose whole state is about *a reader's clock*: how long the current " +
+    "sentence has been on screen, in wall-clock milliseconds. It needs no reset because it " +
+    "cannot be wrong: `look()` drops everything the moment the id it is holding is not the " +
+    "id it is handed, and `adoptWorld` releases the selection anyway, so the first frame of " +
+    "a new pond hands it nobody",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
   postcardReturn: "the same, for the postcard — where focus was when `🔗 Share` opened the card",

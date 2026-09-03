@@ -73,6 +73,50 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **A verb — shipped in v1.148 (`src/doing.js`), and what it leaves.** Every
+  sentence this page has ever said about one creature is an *attribute*:
+  *generation 14, 61% fed, on ground 12% rough, calling 0.31*. Twenty-four
+  cycles and never a verb. There is now a line under the water — *Nim is heading
+  for food*, *Marlow is running from something bigger*, *Iris has just eaten* —
+  read off the animal's **own senses**, which is the input vector its brain is
+  run on and therefore free. Five findings. (i) **Two of the ten states I wrote
+  do not exist**: `feeding` and `ready to breed` each fired on **0.0%** of
+  52,841 sampled animal-instants, because each is defined by a threshold the
+  world *acts on in the same tick it becomes true* — a creature within eating
+  distance of a pellet is a creature that ate it. Such a state is not rare, it is
+  unobservable, and every future panel that wants to show *the moment X happens*
+  has to show the **wake** of it instead. (ii) **v1.126's stability finding does
+  not transfer, and the constant that replaces it belongs on a reader's clock.**
+  The name plates need no hold because a cast role is an extremum over a slow
+  quantity; every input here is a live proximity, so the raw state changes every
+  **14.5 ticks** (median run 10, 91.9% of runs under 30) and the caption needs a
+  hold. It is stated in **milliseconds**, the one number in this project that is
+  — because what it protects is a reader's eye rather than the pond, and an eye
+  does not speed up when the slider does. (iii) **Letting the dramatic states
+  preempt the hold is worse on both axes** — 13.8 captions per 1,000 against 9.9
+  *and* 53.3% stale against 44.2% — because the dramatic states are the
+  **briefest**, so a preemption parks a finished chase on the page. The hold does
+  the amplifying by itself anyway: `ate` is 0.6% of the truth and 5.6% of what is
+  shown. (iv) **An animal's senses do not know a mechanic is switched off.**
+  `canEat` fills the prey and threat slots without ever consulting
+  `config.predation` — only the bite does, deliberately, so both worlds share a
+  draw stream — so an observer reading senses needs a config gate where a brain
+  never does. I had written a comment saying the opposite. (v) **The ledger of
+  top-level bindings in `main.js` had never seen five of its own subjects**: its
+  domain was `let` alone, excused because "a `const` cannot go stale" — true of
+  the binding, false of the object, and `uiRng`, `trail`, `view`, `memorial` and
+  `lineage` are all `const x = new C()`. An exclusion resting on how a thing is
+  *spelled* rather than what it *is* will keep doing this. What it leaves: (a)
+  **the plates over the water could carry the same mark**, and then the pond
+  would say who is running and who is eating without anybody picking anybody; (b)
+  **a listener gets nothing new** — deliberate, since a line that rewrites every
+  1.5 s would talk over the Chronicle, but the spoken description of a selection
+  is still a list of attributes; (c) **the handful's receipt is still a
+  stopwatch**, and the meal detector built here is most of what *who came to eat*
+  needs; (d) **nothing measures whether anybody presses anything**, seventeen
+  releases running; (e) **an obituary still has no family** and **a pond loaded
+  from an archive still has no book**, twelfth cycle running.
+
 - **Feed them yourself — shipped in v1.147 (`src/handfeed.js`), and what it
   leaves.** I counted the ways a person can touch this world and got three —
   pause, scatter, reset — against eleven surfaces that talk *about* the animals.
