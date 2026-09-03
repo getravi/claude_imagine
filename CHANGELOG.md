@@ -4,6 +4,101 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.146.0] — 2026-09-03
+
+Who your parents were.
+
+This page has said *family* three ways for a hundred releases and meant a
+**population** every time. The Tree of Life groups creatures into species by
+genetic similarity. The ancestry pips in the inspector are that tree's chain of
+clusters. The two-word lineage names are a colour and a shape. Not one of them
+answers the first question a person asks about an animal they have just been
+introduced to, which is not *which cluster is it in* but **whose child is it**.
+
+The pond has always half-known. `Generation 12` has sat in the inspector since
+v1.0 — twelve animals that lived, had young and died — and the page could not
+name one of them, because no record here has ever linked two *individuals*. Now
+one does, and the panel opens on it:
+
+> Robin › …13 more… › Olive › Merle › **Nova**
+>
+> Their family began with Robin, one of the 40 animals this pond started with.
+>
+> **Nova is built like Robin and no longer thinks like them — their brains are
+> further apart than this pond's own line between one kind of animal and
+> another.**
+
+Everything else this page says about evolution is a population statistic: a
+share, a mean, a band on a plot, a drift number. That last sentence is the same
+claim about two animals you can name.
+
+### The measurement that rewrote the feature
+
+I wrote that sentence about **bodies** — a family that grew, a family that took
+to hunting — and then measured 3,511 families over twelve seeds and four
+thousand steps. The bodies are nailed down. Ninety per cent of animals are
+within **three per cent** of their founder's size; the diet gene moves by less
+than a tenth for ninety-nine per cent of them; and my "nothing much changed"
+ending fired on **98.4%** of families. Which was true, and was also this page
+telling a visitor that seventeen generations of evolution had produced nothing.
+
+They had not produced nothing. They had produced a completely different animal
+from the neck up. Measured against `speciationDistance` — the pond's own line
+between one kind of animal and another — the gap between a creature's brain and
+its founder's grows **almost exactly one tenth of a species-gap per
+generation**, near enough dead straight: median 0.11 at one link, 0.53 at five,
+1.00 at ten. So the last branch is not a shrug any more, it is the finding, and
+the seven endings now split 38.5 / 25.4 / 21.4 / 8.2 / 4.9 / 1.3 / 0.3 per cent
+instead of one of them taking 98.
+
+**Selection in this world barely touches the body. It rebuilds the brain.** That
+is the most interesting thing I have measured here and the page had no way of
+saying it.
+
+### Three things it cost
+
+- **A store bounded by the language rather than by a rule I wrote.** v1.137's
+  rule is that a store should be bounded by the question its surface asks, and
+  the question here is asked about a *living* animal — the panel clears the
+  moment its subject dies. So the map holds one node per living creature and is
+  pruned to the living every step, and what keeps a *dead* ancestor from
+  vanishing is that its child's node holds a reference to it. A line is exactly
+  as long as somebody alive needs it to be, and when the last of a family dies
+  the whole history becomes garbage at once, with no sweep of mine deciding it.
+  Observed: the store's size equals the population on every step of every seed.
+
+- **I assumed a deep family would be mostly ghosts, and it is not.** 22.8% of
+  the links are animals no longer in the water and **63.0%** of families contain
+  even one — an ancestor here does not have to die for its descendants to breed.
+  So the reference that holds the dead up is load-bearing for two families in
+  three rather than for nearly all of them, and a naive walk of the living would
+  have truncated exactly that majority while looking correct on the rest.
+
+- **The instrument was walking a list of founders.** `registers.js` sweeps a
+  creature's fields against the two things this page says about one animal, and
+  its subjects come off the front of `world.creatures` — which keeps survivors
+  in place and appends the newborns, so a slice off the front is a slice of the
+  *oldest* animals. Every field that differs between a founder and its
+  descendants is therefore constant across that subject list. `parentId` is the
+  first such field this project has had and it arrived reading `null` on all
+  four subjects, which from the outside is indistinguishable from a field no
+  perturbation can express. The sweep now carries one animal that was born here.
+
+### And one line that gave up its slot
+
+v1.143's rule, met on the surface directly above: the intro sentence already
+ends *"…and are the 17th generation of their family"*, so the family line
+opening with the rank again would have said the panel's own last clause back to
+it, one line lower, in the same words. It says whose family instead, which is
+the half that sentence cannot reach. A test walks every family on five ponds and
+fails if the block says "generation" at all.
+
+Determinism untouched: `Creature.parentId` is a number copied from a parent to
+its child, drawing no randomness and read by no rule of the simulation; the
+records are taken between steps and written nowhere. A watched run and an
+unwatched one are the same pond, bit for bit, down to the stream of random
+draws.
+
 ## [1.145.0] — 2026-09-03
 
 The shape of the stretch.

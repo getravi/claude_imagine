@@ -164,6 +164,26 @@ export const DIET_CLAUSE = Object.freeze({
   plants: "graze on plants",
 });
 
+/**
+ * The same three clauses with a *name* in front of them rather than "they".
+ *
+ * Every sentence this project has written about a creature until now has had
+ * `They` as its subject — see `dietClause`'s note — so the whole vocabulary is
+ * plural, and the family line (v1.146) is the first surface here that puts two
+ * animals in one sentence and therefore cannot use a pronoun for either of
+ * them. *Clover live on meat* is not a smaller problem than a wrong number.
+ *
+ * Third of three tables over one set of bands, and the split is the same one
+ * v1.121 made for the past tense: `dietBand` is the fact and each of these is a
+ * way of saying it. `test/lineage.test.js` walks the three together, so a band
+ * added to one has to arrive in all of them.
+ */
+export const DIET_CLAUSE_ONE = Object.freeze({
+  meat: "lives on meat",
+  mixed: "eats a bit of everything",
+  plants: "grazes on plants",
+});
+
 export function dietClause(c, config = DEFAULT_CONFIG) {
   return DIET_CLAUSE[dietBand(c, config)];
 }

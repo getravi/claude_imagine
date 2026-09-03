@@ -1540,6 +1540,65 @@ details .field {
   color: var(--ink-faint);
   font-size: 11px;
 }
+/* The family line (v1.146): who this animal's parents were, by name, back to a
+   founder. It sits directly under the intro sentence and above the fact grid,
+   because it is the same *kind* of thing the intro is — a sentence about this
+   animal in words a visitor already has — and everything below it is numbers.
+   Set off by a rule down its left edge rather than by a heading: a heading here
+   would be the fourth line of chrome above the first fact. */
+.insp-family {
+  margin: 0 0 12px;
+  padding: 0 0 0 10px;
+  border-left: 2px solid var(--line);
+}
+.fam-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 5px;
+}
+.fam-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 20px;
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+}
+/* The two ends of the line, marked differently because they are different
+   claims: the founder is where the family starts, the current one is who the
+   panel is about. */
+.fam-name.founder {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+.fam-name.current {
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.fam-arrow,
+.fam-more {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.fam-line {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+/* The payoff sentence — what changed between the founder and the animal on
+   screen — carries the panel's ink, because it is the one line here that makes
+   evolution a thing that happened to somebody with a name. */
+.fam-change {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
 /* A caption, not a `label` — it names a figure, and the figure carries its own
    accessible name (v1.51). */
 .brainwrap .fig-label {

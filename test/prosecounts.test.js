@@ -213,7 +213,11 @@ const CLAIMS = [
     what: "the given names",
     size: () => GIVEN.length,
     phrase: "{n} given names",
-    sites: ["docs/AUTONOMOUS.md", "src/cast.js", "test/cast.test.js"],
+    // A fourth site since v1.146: the family line is the first surface here
+    // that draws *four names at once*, so how many names there are is the
+    // number its odds of a repeat are computed from — which makes it a claim
+    // about this collection rather than a mention of it.
+    sites: ["docs/AUTONOMOUS.md", "src/cast.js", "src/lineage.js", "test/cast.test.js"],
   },
   {
     // v1.120's collection, declared in the cycle that creates it. The count was

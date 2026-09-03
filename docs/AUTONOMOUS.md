@@ -73,6 +73,49 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Who your parents were — shipped in v1.146 (`src/lineage.js`), and what it
+  leaves.** This page had said *family* on three surfaces for a hundred releases
+  and meant a **population** every time — the species tree, the ancestry pips,
+  the two-word lineage names. `Generation 12` had sat in the inspector since
+  v1.0 with nothing attached to it, because no record here had ever linked two
+  *individuals*. Now `Creature.parentId` does, and the panel opens on a row of
+  names back to a founder plus one sentence about what changed down the line.
+  Four findings. (i) **I wrote the payoff sentence about bodies and the bodies
+  do not move.** Over 3,511 families on twelve seeds, ninety per cent of animals
+  are within **three per cent** of their founder's size and my "nothing much
+  changed" ending fired **98.4%** of the time — a true sentence that told a
+  visitor seventeen generations of evolution had produced nothing. Measured
+  against `speciationDistance` instead, the gap between an animal's brain and
+  its founder's grows **one tenth of a species-gap per generation, near enough
+  dead straight** (0.11 at one link, 0.53 at five, 1.00 at ten). **Selection here
+  barely touches the body and rebuilds the brain**, which is the most
+  interesting thing I have measured in this project, and the page had no way of
+  saying it. The general chore: every narrator here bands on a quantity I chose
+  before measuring which quantity actually moves. (ii) **A store bounded by the
+  language rather than by a rule.** The panel clears when its subject dies, so a
+  family is only ever asked about on behalf of the living: hold one node per
+  living animal, prune to the living every step, and let each node hold a
+  *reference* to its parent's. Dead ancestors are then kept by exactly the
+  descendants that need them and collected all at once when the last of a line
+  goes. No cap, and nothing of mine deciding. (iii) **I assumed a family was
+  mostly ghosts; it is 22.8% ghosts, and 63.0% of families contain even one.**
+  An ancestor does not have to die for its descendants to breed. The naive
+  version would have been right on a third of families and silently truncated
+  the rest — the worst ratio a bug can have, and a reminder that "obviously the
+  ancestors are dead" is a guess. (iv) **`registers.js` was sweeping a list of
+  founders.** Its subjects come off the front of `world.creatures`, which keeps
+  survivors in place and appends newborns, so a front slice is the *oldest*
+  animals and every field that differs between a founder and its descendants is
+  constant across it. `parentId` arrived reading `null` on all four subjects,
+  which is indistinguishable from a field no perturbation can express. Any
+  instrument here that samples a population by index is asking the same
+  question. What it leaves: (a) **an obituary has no family**, and the moment a
+  line might end is the moment it matters most; (b) **nothing measures whether
+  anybody presses anything**, fifteen releases running; (c) **a pond loaded from
+  an archive still has no book**, tenth cycle running, and now no family either;
+  (d) **the drift is measured against the founder only** — the same number
+  against the *parent* would say how fast this family is moving right now.
+
 - **The guide learns to press the button — shipped in v1.143 (`src/tour.js`),
   and what it leaves.** `🧭 Show me around` had ended, for fourteen releases, on
   the sentence *now go change the world* — a call to action delivered from
@@ -1826,6 +1869,24 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Before banding a narrator on a quantity, measure which quantity moves.**
+  v1.146's family line ends on a sentence about what changed between an animal
+  and its founding ancestor, and I banded it on the body — grew, shrank, took to
+  hunting — because a body is what "changed" looks like. Over 3,511 families the
+  body does not move at all: ninety per cent are within three per cent of their
+  founder's size, and the "nothing much changed" ending fired on **98.4%** of
+  them. The brains, over the same families, had gone a tenth of a species-gap
+  per generation in a near-straight line. I had not chosen the wrong *threshold*
+  — v1.145's mistake, and a sweep fixes that one. I had chosen the wrong
+  **axis**, and a sweep over the wrong axis comes back beautifully consistent
+  and unanimous and useless. So the sweep before the sweep: for every quantity
+  the surface *could* report, one number for how far it travels over the
+  interval the surface describes; the axis is whichever of them has a range, and
+  only then are the thresholds worth arguing about. The chore, one grep: every
+  banded readout here — the headline's ranking, the skip card's arc, the drift
+  board's percentages, `evolved.js`'s comparison — was banded on the quantity I
+  reached for first.
 
 - **When two costs trade against each other, the constant belongs at the point
   where one of them stops moving — and that point is not reachable by reasoning

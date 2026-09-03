@@ -72,6 +72,7 @@ import {
   feedSignature,
 } from "./feed.js";
 import { NOBODY } from "./here.js";
+import { Lineage } from "./lineage.js";
 import { Memorial } from "./memorial.js";
 import { DIRECTION_KEYS, entrySelection, stepSelection } from "./pondnav.js";
 import { scaleSpan, rulerWidth, showsRuler } from "./scalebar.js";
@@ -254,6 +255,13 @@ const view = new ViewState();
 // the trail above: written from this loop, never read by the simulation.
 const memorial = new Memorial();
 
+// The pond's family records (v1.146): one node per living animal, each pointing
+// at its parent's. Another pure observer written from the step loop, and the
+// one whose bound is the language rather than a rule — a line of dead ancestors
+// is held up by the living descendant that needs it and by nothing else. See
+// `lineage.js`.
+const lineage = new Lineage();
+
 // Track FPS for the HUD.
 let lastFrame = performance.now();
 let fpsSmooth = 60;
@@ -292,21 +300,30 @@ function adoptWorld() {
   // beginning here to record, gets `null`, and the board says so.
   view.founding = foundingSnapshot(world);
   // A new pond, and creature ids come from a counter at module scope — so a
-  // life left in the book would sooner or later answer for somebody else.
+  // life left in the book would sooner or later answer for somebody else. The
+  // family records are cleared for the same reason and one more: a line whose
+  // living end is in a pond that no longer exists is a line nothing will ever
+  // ask about again.
   memorial.forget();
+  lineage.forget();
 }
 
-// One look at the pond for the book of the dead, per *step* rather than per
-// frame — `trail.record`'s reason and the same arithmetic: at 20× a frame is
-// twenty ticks, and an animal named and then eaten inside one of them would be
-// a life this page never wrote. Everything expensive in here is behind a guard
-// that only opens when the Chronicle moves; what runs every step is a walk of
-// the handful of named animals still in the water, asking each whether it is
-// still alive.
-function witnessDeaths() {
+// One look at the pond for the two records that are kept about individuals, per
+// *step* rather than per frame — `trail.record`'s reason and the same
+// arithmetic: at 20× a frame is twenty ticks, and an animal named and then
+// eaten inside one of them would be a life this page never wrote.
+//
+// The book of the dead is mostly behind a guard that only opens when the
+// Chronicle moves; what runs every step is a walk of the handful of named
+// animals still in the water, asking each whether it is still alive. The family
+// records (v1.146) are a walk of the living, which is the other one: a birth
+// missed is a parent link that can never be recovered, because by the next
+// frame the child is simply an animal that has always been there.
+function witnessStep() {
   for (const body of memorial.witness(world)) {
     memorial.remember(obituaryFor(body, namesForTree(world.phylogeny), world.stats.recentDeaths));
   }
+  lineage.observe(world);
 }
 
 function boot() {
@@ -447,7 +464,7 @@ function loop(now) {
     for (let i = 0; i < MOVIE_STEPS_PER_FRAME; i++) {
       world.step();
       trail.record(renderer.selected, world.tick);
-      witnessDeaths();
+      witnessStep();
     }
   } else if (view.skipLeft > 0) {
     // A skip in flight takes the frame's stepping to itself (v1.142). The speed
@@ -460,16 +477,16 @@ function loop(now) {
       world.step();
       // Inside the step loop, not once a frame: at 20× a frame is twenty ticks
       // and a path sampled per frame would be a fifth of the corners. The book
-      // of the dead is here for the same arithmetic — see `witnessDeaths`.
+      // of the dead is here for the same arithmetic — see `witnessStep`.
       trail.record(renderer.selected, world.tick);
-      witnessDeaths();
+      witnessStep();
     }
   } else {
     // Paused, so the tick guard makes this a no-op — except on the frame after
     // a fresh selection, where it gives the path its first point. The book
     // still looks: a pond opened paused has a Chronicle to read subjects from.
     trail.record(renderer.selected, world.tick);
-    witnessDeaths();
+    witnessStep();
   }
 
   // The camera catches up to whatever it is following before anything is drawn,
@@ -2102,15 +2119,27 @@ function updateInspector() {
   view.obitCard = null;
 
   const chain = world.phylogeny.ancestry(c.speciesId);
+  // Two ancestries, and they are not two views of one thing: `chain` is the
+  // tree of *clusters* this creature's species descends from, and `family` is
+  // the animals it descends from, by name. The panel has drawn the first since
+  // v1.20 and could not draw the second until there was a parent link to walk.
+  const family = lineage.chainFor(c);
   const facts = creatureFacts(c, config);
   // The key decides when the panel's *structure* is rebuilt, so anything that
   // adds or removes a row belongs in it — otherwise flipping the toggle leaves
   // a panel with no Underfoot row to patch, or one nothing updates.
-  const key = inspectorKey(c, chain, facts);
+  const key = inspectorKey(c, chain, facts, family);
   if (key !== view.inspKey) {
     view.inspKey = key;
     panel.classList.remove("empty");
-    panel.innerHTML = inspectorHTML(c, chain, facts, namesForTree(world.phylogeny), config);
+    panel.innerHTML = inspectorHTML(
+      c,
+      chain,
+      facts,
+      namesForTree(world.phylogeny),
+      config,
+      family
+    );
     const link = document.getElementById("insp-species");
     if (link) {
       link.addEventListener("click", (e) => {
@@ -2792,7 +2821,7 @@ function pumpSkip() {
     // a frame through it would be a trail with three corners and a book with
     // nobody in it.
     trail.record(renderer.selected, world.tick);
-    witnessDeaths();
+    witnessStep();
     view.skipLeft--;
     // …and a third since v1.145. Counted on the *step*, never on the frame:
     // how many steps a frame buys depends on the machine, and a shape sampled

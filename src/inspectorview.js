@@ -67,6 +67,7 @@ import {
 } from "./palette.js";
 import { speciesLabel } from "./speciesnames.js";
 import { creatureIntro, creatureLabel } from "./cast.js";
+import { familyStory } from "./lineage.js";
 
 /**
  * The four blocks of a classic-topology brain's weight vector, in the order
@@ -120,8 +121,58 @@ export const EMPTY_HINT =
  * @param {Array<{id: number}>} chain its ancestry, founder first
  * @param {Array<{key: string}>} facts the rows `inspect.js` would show
  */
-export function inspectorKey(c, chain, facts) {
-  return c.id + "|" + chain.map((s) => s.id).join(",") + "|" + facts.map((f) => f.key).join(",");
+export function inspectorKey(c, chain, facts, family = null) {
+  // The family's depth and not its contents: a line only ever grows at the end
+  // the panel is standing on, and every name in it is a pure function of an id
+  // that cannot change. What *can* change between two frames is a chain that
+  // was empty because `lineage.js` had not yet seen this animal — the one frame
+  // after a reset — and a depth catches that.
+  const depth = family ? family.length : 0;
+  return (
+    c.id +
+    "|" +
+    chain.map((s) => s.id).join(",") +
+    "|" +
+    depth +
+    "|" +
+    facts.map((f) => f.key).join(",")
+  );
+}
+
+/**
+ * The family line: the animal's own parents, by name, back to a founder.
+ *
+ * Two sentences and a row of names. The row is `aria-hidden` and carries no
+ * fact the sentences below it do not — it names the founder and the animal, and
+ * both of those are said in words underneath — so a listener gets the story and
+ * not a list of arrows. That is the same division `phylo-ticks` and the size
+ * chart's legend already make on this page.
+ *
+ * Empty markup for a creature with no record, which is a creature nothing has
+ * observed yet rather than a creature with no family. `lineage.js` decides
+ * which of those it is; this function only draws what it is handed.
+ *
+ * @param {Array<object>|null} family the chain, youngest first
+ * @param {object} [config]
+ */
+export function familyRow(family, config = undefined) {
+  const story = familyStory(family, config);
+  if (!story) return "";
+  const crumbs = story.crumbs
+    .map((b) =>
+      b.elided
+        ? `<span class="fam-more" title="${b.elided} more between">…${b.elided} more…</span>`
+        : `<span class="fam-name${b.self ? " current" : ""}${
+            b.founder ? " founder" : ""
+          }">${b.name}</span>`
+    )
+    .join('<span class="fam-arrow">›</span>');
+  return `
+    <div class="insp-family">
+      ${crumbs ? `<p class="fam-chain" aria-hidden="true">${crumbs}</p>` : ""}
+      <p class="fam-line">${story.line}</p>
+      ${story.change ? `<p class="fam-change">${story.change}</p>` : ""}
+    </div>`;
 }
 
 /**
@@ -143,7 +194,7 @@ export function inspectorKey(c, chain, facts) {
  * (a birth, a mutation crossing the licence to hunt), and `main.js` patches it
  * the same way it patches a live row.
  */
-export function inspectorHTML(c, chain, facts, names = null, config = undefined) {
+export function inspectorHTML(c, chain, facts, names = null, config = undefined, family = null) {
   const rows = facts
     .map(
       (f) =>
@@ -163,6 +214,7 @@ export function inspectorHTML(c, chain, facts, names = null, config = undefined)
     <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
       <strong title="creature ${c.id}">${creatureLabel(c, names)}</strong></div>
     <p class="insp-intro" id="insp-intro">${creatureIntro(c, config)}</p>
+    ${familyRow(family, config)}
     <dl class="insp-grid">
       ${rows}
       <div class="insp-wide"><dt>Species</dt>

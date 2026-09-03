@@ -221,6 +221,13 @@ export class Creature {
     this.energy = config.energyStart;
     this.age = 0;
     this.generation = generation;
+    // Who this creature's parent was, or null for a founder and for anything
+    // restored from a save. Written by `reproduce()` and read by `lineage.js`
+    // and by nothing else — no rule in this world consults it, it costs no
+    // random draw, and a save deliberately does not carry it (ids come from the
+    // counter above, which renumbers on load, so a stored parent id would point
+    // at a stranger).
+    this.parentId = null;
     this.children = 0;
     this.dead = false;
     // What killed it, once something has: "starvation", "age" or "predation".
@@ -606,6 +613,12 @@ export class Creature {
 
     const child = new Creature(childGenome, cfg, cx, cy, rng, this.generation + 1);
     child.energy = childEnergy;
+    // The only link between two individuals this world has ever recorded. With
+    // sexual reproduction on it is the *initiating* parent — the one that paid
+    // for the child, exactly as the generation count already is; the mate
+    // donated genes and no energy, and calling that parenthood would make the
+    // count and the line disagree about the same animal.
+    child.parentId = this.id;
     return child;
   }
 

@@ -163,12 +163,16 @@ export const CREATURE_HASHED = [
 ];
 
 /**
- * The two fields a same-process comparison must *not* hash, and why. Both are
- * real state; neither is the pond's.
+ * The three fields a same-process comparison must *not* hash, and why. All are
+ * real state; none is the pond's.
  */
 export const CREATURE_UNHASHED = {
   id: "a module-level counter, so the second world built in a process never " +
     "agrees with the first however identical the pond is",
+  parentId: "a copy of another creature's `id` (v1.146), so it inherits every " +
+    "word of the reason above — and like `speciesId` it is read only by an " +
+    "observer (`lineage.js`, the family line under the inspector's heading) " +
+    "and by no rule of the simulation",
   speciesId: "written by the observer (`phylogeny.assign`), not by the " +
     "simulation — it lives in `observationFingerprint`, and hashing it here " +
     "would make 'observation never feeds back' fail for something that is not " +

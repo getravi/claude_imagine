@@ -9,7 +9,7 @@
 // inspector as the last unwalked surface since v1.74.
 //
 // The inspector is the one view whose subject is a single object, so the walk
-// is exact rather than an inventory of nouns: there are thirty-five fields of a
+// is exact rather than an inventory of nouns: there are thirty-six fields of a
 // creature today, and the panel reported 13 of the 33 there were when v1.77
 // walked it. Two of the silences were mechanics with an
 // off switch, a chronicle line, a tile and a mark on the canvas — contagion
@@ -340,6 +340,7 @@ export const FIELD_REPORTS = {
   rockAhead: "the Whisker row (wallSense) — the distance, or the word for a miss",
   walled: "the Whisker row (wallSense) — rock refused its last move",
   speciesId: "the Species link and the ancestry pips",
+  parentId: "the family line under the heading (v1.146) — the chain of names back to a founder, and the sentence about what changed down it",
   genome: "the inherited-brain figure — the strip, or the evolved network diagram",
   brain:
     "the learned-brain figure (plasticity) — and the Steers-by, Underfoot and " +
@@ -410,5 +411,6 @@ export const FIELD_OFF_GRID = {
   id: "the panel heading, which inspectorview.js builds — a name, not a row",
   hue: "the swatch beside the heading — a colour",
   speciesId: "the Species link and the ancestry pips",
+  parentId: "the family line under the heading — names and two sentences, built by inspectorview.js from lineage.js's records, never a row",
   genome: "the inherited-brain figure — a strip or a diagram, never a row",
 };

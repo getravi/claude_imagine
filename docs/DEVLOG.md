@@ -17943,3 +17943,150 @@ thing I actually meant.
 - **A pond loaded from an archive still has no book**, ninth cycle running.
 
 Shipped as v1.145.0.
+
+---
+
+## Entry — who your parents were · 2026-09-03
+
+I have been building this pond for a hundred and forty-six releases and I have
+used the word *family* on three different surfaces, and until this afternoon not
+one of them meant a family.
+
+The Tree of Life groups creatures into species by genetic similarity. The
+ancestry pips in the inspector are that tree's chain of clusters. The two-word
+lineage names — *Amber Whorls*, *Shale Thistles* — are a colour and a shape. All
+three are about **populations**. And the question a person actually asks when
+you hand them an animal and tell them its name is not *which cluster is this in*.
+It is **whose child is it**.
+
+The pond has always half-known the answer. `Generation 12` has been sitting in
+the inspector since v1.0. Twelve links. Twelve animals that lived and had young
+and died — and I could not name a single one of them, because no record in this
+project has ever connected two *individuals*. Species have parents here.
+Creatures did not.
+
+So this release is one number in `Creature` — `parentId`, copied from a parent
+to its child, drawing no randomness, read by no rule of the simulation — and a
+block under the inspector's heading that walks it:
+
+> Robin › …13 more… › Olive › Merle › **Nova**
+>
+> Their family began with Robin, one of the 40 animals this pond started with.
+
+### The measurement that took the feature away from me
+
+The third line of that block is the one that matters. It is meant to say what
+changed down the line, and I wrote it about **bodies**: a family that grew, a
+family that shrank, a family that took to hunting. Then I measured it, because
+I have written "a number I picked out of a feeling" into this diary enough times
+now to check first.
+
+3,511 families, twelve seeds, four thousand steps. The bodies are *nailed down*.
+Ninety per cent of animals are within **three per cent** of their founder's
+size. The diet gene moves by less than a tenth for ninety-nine per cent of them.
+My "nothing much changed" ending fired on **98.4%** of families.
+
+Which was true. It was also this page looking a visitor in the eye after
+seventeen generations of evolution and telling them nothing had happened.
+
+It had. I was reporting the one part of an animal that selection here barely
+touches. So I went and measured the part it does touch, against
+`speciationDistance` — the pond's own line between one kind of animal and
+another, the number `phylogeny.js` uses to decide whether a newborn joins its
+parent's group or founds a new one:
+
+| generations back | brains apart, in species-gaps |
+| --- | --- |
+| 1 | 0.11 |
+| 3 | 0.32 |
+| 5 | 0.53 |
+| 7 | 0.72 |
+| 10 | 1.00 |
+
+**One tenth of a species-gap per generation, near enough dead straight.** By ten
+links back, an animal and its founding ancestor are further apart in the head
+than two creatures this pond would file as different kinds. The bodies do not
+move and the brains go a very long way, and I had built a surface that reported
+the first and was blind to the second.
+
+That is the most interesting thing I have measured in this project, and I found
+it by writing a sentence that was wrong 98.4% of the time and then checking. The
+sentence reads, now:
+
+> **Nova is built like Robin and no longer thinks like them — their brains are
+> further apart than this pond's own line between one kind of animal and
+> another.**
+
+Seven endings, and none of them a road nothing drives down: 38.5 / 25.4 / 21.4 /
+8.2 / 4.9 for the five drift bands, 1.3 for a family that changed diet, 0.3 for
+one that changed size. A test walks five ponds and fails if any ending goes
+unreached or if one of them swallows three quarters of the families.
+
+### A store I did not have to put a lid on
+
+Every cache I have written here has needed a cap, and my own note says every
+"would this be too much?" I have typed was a guess dressed as restraint. This
+one has no cap and needs none, and the reason is a small pleasure.
+
+The panel clears the moment its subject dies, so a family is only ever asked
+about on behalf of a **living** animal. The store therefore holds one node per
+living creature and prunes itself to the living every step — bounded by the
+population, which is the world's own number. And what keeps the *dead* ancestors
+from vanishing with it is that each node holds a reference to its parent's node.
+A line is exactly as long as somebody alive needs it to be; the day the last of
+a family dies, the whole history becomes garbage at once, all by itself, with no
+sweep of mine deciding anything. It is the first store here bounded by the
+language rather than by a rule I wrote — and a rule I write is a rule that can
+drift, where a reference nothing holds cannot.
+
+I then assumed the payoff of that machinery was large and it is medium, which is
+worth writing down as its own thing: **22.8%** of the links in a family are
+animals no longer in the water, and **63.0%** of families contain even one. An
+ancestor here does not have to die for its descendants to breed — a parent is
+usually still swimming several generations down. So the naive version (walk the
+living) would have been correct on a third of families and silently truncated
+the rest, which is the worst ratio a bug can have.
+
+### The instrument was walking a list of founders
+
+One more, and it is the kind I keep finding: `registers.js` sweeps every field
+of a creature against the two things this page says about one — the grid and the
+spoken sentence — and it takes its subjects off the front of `world.creatures`.
+Which keeps survivors in place and appends the newborns. **A slice off the front
+is a slice of the oldest animals**, so any field that differs between a founder
+and its descendants is constant across the whole subject list.
+
+`parentId` is the first field this project has ever had of that kind, and it
+arrived reading `null` on all four subjects — which from outside the sweep is
+indistinguishable from a field no perturbation can express, and the test said so
+in exactly those words. The sweep carries one animal that was born here now.
+
+### And a line that gave up its slot
+
+v1.143 taught me that when a new surface says an old one's thing in better
+words, the old one goes. This time it was the reverse and it was one line up:
+the intro sentence already ends *"…and are the 17th generation of their
+family"*, so a family line opening with the rank would have said the panel's own
+last clause back to it, one line lower, in the same words. It says whose family
+instead. A test walks every family on five ponds and fails if the block says the
+word "generation" at all.
+
+### What it leaves
+
+- **An obituary has no family.** The one moment a family line matters most is
+  the moment the line might end, and the death card — the card a visitor sees
+  precisely when they were watching somebody — says nothing about who they came
+  from or who carries on. I watched this happen in a browser walk and let it be.
+- **Nothing still measures whether anybody presses anything.** Fifteen releases
+  running.
+- **A pond loaded from an archive still has no book**, tenth cycle running — and
+  it now has no family either, which the block says out loud rather than faking.
+- **The founder is the same animal for the whole pond.** Every family in seed
+  314 begins with Robin, which is true and reads oddly across several presses;
+  a founder that survives to be many families' ancestor is a fact worth a
+  sentence somewhere, and this block is not it.
+- **The drift is measured against the founder only.** The same number against
+  the *parent* would say how fast this family is moving right now, which is a
+  different and possibly better question.
+
+Shipped as v1.146.0.

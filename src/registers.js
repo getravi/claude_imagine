@@ -205,8 +205,17 @@ export function registerSubjects(living) {
   const clone = (c, fields) =>
     Object.assign(Object.create(Object.getPrototypeOf(c), Object.getOwnPropertyDescriptors(c)), fields);
   const base = living[0];
+  // The one subject that is not a founder (v1.146). `world.step` keeps
+  // survivors in place and appends the newborns, so a slice off the front of
+  // `world.creatures` is a slice of the *oldest* animals — and every field that
+  // differs between a founder and its descendants is therefore constant across
+  // a subject list built that way. `parentId` is the first such field this
+  // project has had, and it arrived reading `null` on all four subjects, which
+  // is what a field no perturbation can express looks like from the outside.
+  const born = living.find((c) => c.generation > 0);
   return [
     base,
+    ...(born ? [born] : []),
     clone(base, { infected: true, immune: false, infectedAtAge: Math.max(0, base.age - 10) }),
     clone(base, { infected: false, immune: true, infectedAtAge: 5 }),
     // A whisker that found nothing: the row and the clause both say a word

@@ -2,7 +2,7 @@
 //
 // Three claims, in order of how badly they fail.
 //
-//   1. **Completeness.** There are thirty-five fields of a creature. The panel
+//   1. **Completeness.** There are thirty-six fields of a creature. The panel
 //      is the only surface in this project whose subject is a single object, so "what
 //      has this view never heard of?" has an exact answer here rather than an
 //      inventory — and the answer is checked against a live creature, not
@@ -83,9 +83,9 @@ test("every field a creature carries is either reported or named as silent", () 
   // functions of them, and `wallFeel` was filed as reported by a row that never
   // mentions it. Membership was all this test could check — `test/registers.test.js`
   // is the one that derives the verdict rather than reading the list.
-  assert.equal(Object.keys(FIELD_REPORTS).length, 22);
+  assert.equal(Object.keys(FIELD_REPORTS).length, 23);
   assert.equal(Object.keys(FIELD_SILENT).length, 13);
-  assert.equal(Object.getOwnPropertyNames(c).length, 35);
+  assert.equal(Object.getOwnPropertyNames(c).length, 36);
 });
 
 test("a mechanic that is off gets no row at all", () => {

@@ -593,6 +593,7 @@ export const FIELD_UNSPOKEN = {
   dead: "the selection clears the moment its subject dies, and a cleared selection says so",
   deathCause: "null while alive, and only the living are ever described (see dead)",
   speciesId: "the Species link and the ancestry pips; describePond() counts the lineages",
+  parentId: "the family line under the inspector's heading (v1.146). A chain of four names is a figure rather than a clause, and the sentence beside it is already read aloud by the panel it sits in",
   ground: "the terrain cost multiplier; groundFeel is its normalised form and is what the ground clause speaks",
   wallFeel: "rockAhead normalised — the whisker clause states the distance itself",
   metabolismScale: "the Metabolism row — a constant of the body, said once by a panel rather than on every keypress",
