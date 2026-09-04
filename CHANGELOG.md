@@ -4,6 +4,90 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.151.0] — 2026-09-04
+
+They leave a family behind — and you can see it now.
+
+When the animal you were watching dies, this page writes them a life: what
+killed them, whether that was soon, what they ate, what they left. It has done
+that since v1.121, and it ended on a number — *they left 3 young behind* — and
+then offered you **a stranger**.
+
+Now it ends on people.
+
+> 🕯️ **Arlo of the Dusk Spindles**
+> They died of old age. They lived far longer than most here.
+> They ate a bit of everything and were the 4th generation of their family.
+> They left 7 young behind, so the line goes on.
+> ───
+> Their parent was Poppy. Seven of their young are still swimming: Quill,
+> Arlo, Linden and 4 more.
+>
+> [👋 Meet Quill] [👋 Meet somebody else]
+
+Press it and the pond hands you their child, camera and all. Watch that one
+until it dies, and its card says *Their parent was Arlo* — the animal you were
+just reading about. A death used to be where this page's one thread stopped. It
+is now where the next one starts.
+
+### The card was invisible, and only a browser could say so
+
+The life has lived inside the fact grid since it was built, on good reasoning:
+that panel is where a reader is already looking for *who is this*. Then v1.149
+put the apparatus behind a switch and started every visit on the quiet side of
+it — and the fact grid is one of the instruments that switch hides.
+
+So for two releases, the visitor v1.149 was built for met somebody, watched them
+die, and got nothing. The most affecting thing this page has to say was being
+written into a hidden element. **`node --test` cannot see that** — the markup
+was right, the words were right, the button was bound. A headless Chromium
+pressing the button said: *element is not visible*.
+
+The card is now a plate of its own under the water, directly below the line that
+narrates the animal while they are alive, and unmarked — because a death is not
+an instrument. v1.149 closed by warning that any feature which hides part of
+this page owes a check to every surface pointing at another one. The debt ran
+the other way: an old surface was pointing into the dark.
+
+### What the sweep said, and what it nearly killed
+
+Over twelve seeds and six thousand ticks, **31.7% of deaths leave a living
+child** — thin enough to have abandoned this. But the card is only ever read
+about an animal the page has *pointed at*: somebody met, starred, plated,
+pressed. Those die at a median age of **3,885 steps against 1,177** for everyone
+else, and **59.1% of them leave a living child**, against 30.0% for the rest of
+the pond. The obituaries anybody actually reads are the ones with a family in
+them.
+
+### Three smaller things the same walk found
+
+- **The card contradicted itself.** *They left one young behind, so the line
+  goes on* sat directly above *None of their young are still swimming*. The
+  clause was written in v1.121, when this page had no way to check it; 29.2% of
+  the deaths that had any young at all had already outlived every one of them.
+  It is now dropped exactly when the pond says otherwise.
+- **Two of the young were called Quill.** Sixty-four given names, drawn with
+  replacement, and a litter of six: *"Quill, Arlo, Quill and 3 more"* reads as a
+  stutter rather than as two animals. A name already printed is skipped and the
+  next one shown; the count comes from the family, never from the list.
+- **The offer does not insist on its own name.** At 20× the eldest was eaten two
+  seconds after the card was drawn, while six siblings swam on — and the press
+  reported that the pond had moved on. It now takes the first of the young still
+  swimming, oldest first, and gives up only when the whole litter has gone.
+
+### Also
+
+- A listener gets the family too, at the death and out of the book of the dead:
+  the half of the card that says where to go next is not decoration.
+- Resetting the pond clears the card. A life belongs to the world it was lived
+  in, and one under the water for an animal in a world that no longer exists
+  would be this page's one outright false statement.
+- Whether the eldest or the youngest of the young is the safer offer: measured,
+  because v1.133 was burned by picking a representative on an axis that kills
+  it. Over 659 litters the eldest is still there sixty steps later 93.0% of the
+  time and the youngest 92.3%. Nothing in it — siblings are all young — so the
+  card offers the eldest, which is what a person means by *their eldest*.
+
 ## [1.150.0] — 2026-09-04
 
 The pond says what everybody is doing.

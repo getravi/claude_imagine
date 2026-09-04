@@ -197,6 +197,28 @@
           </p>
         </section>
 
+        <!-- The life of the animal you were watching (v1.121, moved here in
+             v1.151). The card `src/obituary.js` writes has lived inside the
+             fact grid since it was built, on the reasoning that the panel
+             showing *who is this* is where a reader is already looking for what
+             became of them. That was true until v1.149 put the apparatus behind
+             a switch and started every visit on the quiet side of it: the fact
+             grid is one of the instruments that switch hides, so for the
+             visitor that release was built for, the most affecting thing this
+             page has to say happened inside a hidden element. A browser walk
+             found it, by pressing a button that reported itself present and
+             not visible.
+
+             So it is a card of its own, under the water, directly below the
+             line that has been narrating this animal while they were alive —
+             and unmarked, because a death is not an instrument. -->
+        <section
+          id="obituary"
+          class="lifecard"
+          aria-label="The life of the animal you were watching"
+          hidden
+        ></section>
+
         <!-- The key to the water (v1.122). Everything in the pond means
              something — the arrowhead, its colour, its lightness, the length of
              its nose — and until this release nothing on the page said what.

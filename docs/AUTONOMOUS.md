@@ -74,6 +74,46 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Who is left of them — shipped in v1.151 (`src/obituary.js`), and what it
+  leaves.** Fourteen cycles of closing an entry with *an obituary still has no
+  family*, because a name on top of a number looked like a garnish. It is a
+  **door**: the card now ends on the parent and the surviving young, the button
+  hands you one of them, and a minute later that animal's own card says *Their
+  parent was Arlo* — the animal you were just reading about. Five findings.
+  (i) **The blended number was about a population this card is never shown
+  for.** 31.7% of all deaths leave a living child, which nearly killed this;
+  but an obituary is only ever read about an animal the page **pointed at**,
+  those die at a median 3,885 steps against 1,177, and **59.1%** of them leave
+  one. Second time v1.135's split has reversed a decision, and both times the
+  blend came to hand first. (ii) **v1.149's rule needs its other half.** It
+  said any feature that hides part of this page owes a check to every surface
+  that *points at* another one; I checked the guide and shipped. The card had
+  lived in the fact grid since v1.121, the fact grid is hidden on the side
+  every visit starts on, and for two releases the most affecting thing this
+  page says went into an invisible element. **When you hide something, also ask
+  what was already writing into it.** A browser said `element is not visible`;
+  `node --test` cannot. The test that survives me asserts *nothing above the
+  aside carries the switch's attribute*, so the next hideable thing put in the
+  main column fails it. (iii) **A clause written when the page could not check
+  it stayed false for thirty releases**: *so the line goes on* sat above *none
+  of their young are still swimming*, and 29.2% of deaths with any young had
+  outlived all of them. (iv) **Does an old finding apply here is a measurement,
+  not a recollection.** v1.133 says never pick a representative on the axis
+  that kills it; over 659 litters the eldest young survives sixty steps 93.0%
+  of the time against the youngest's 92.3%, because siblings have no spread of
+  ages for that finding to bite on. (v) **The same collision can deserve
+  opposite calls**: a repeated name down v1.146's ancestor chain is a
+  grandmother's name coming round, a repeat inside one comma list of siblings
+  is a typo. What it leaves: (a) **the offer wears one name and may hand over
+  another** when the eldest is eaten between the draw and the press — the fix
+  that cannot be wrong repaints the card, and a card that repaints can lose a
+  press (v1.136); (b) **grandchildren are not looked for**, so *none of their
+  young are still swimming* may undersell a line that goes on; (c) **a pond
+  loaded from an archive still has no family**, since the parent link does not
+  survive a save, deliberately; (d) **nothing measures whether anybody presses
+  anything**, twenty releases running; (e) **a pond loaded from an archive
+  still has no book**, fifteenth cycle running.
+
 - **The instruments, put away — shipped in v1.149 (`src/simpleview.js`), and
   what it leaves.** `tour.js`'s own opening paragraph says this page arrives all
   at once and unranked; v1.129 answered it with a guide, and **a guide ranks a
@@ -1995,6 +2035,28 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **When a release hides part of this page, the check runs in both directions —
+  and the direction I keep forgetting is the one nobody can see.** v1.149 put
+  the apparatus behind a switch and wrote its own warning: *any future feature
+  that hides part of this page owes the same check to every surface that points
+  at another one.* I checked the guide's six stops, found them all pointing at
+  surfaces that stay, and shipped. Two releases later a headless Chromium
+  pressed a button and said **`element is not visible`**: the obituary card had
+  been written into the fact grid since v1.121, the fact grid is one of the
+  things the switch hides, and every visit starts hidden. For two releases the
+  most affecting thing this page has to say was going nowhere, for exactly the
+  visitor the switch was built for. The asymmetry is the lesson. A surface that
+  *points at* another one is a list I can grep — the tour's stops, the
+  Chronicle's rows — so I check it. A surface that is *written into* by
+  something else has no list: the writers are scattered across `main.js`, and
+  hiding their target breaks them silently, with no error, no test failure and
+  nothing on screen. So the chore, one grep per hiding release: for every
+  element the change hides, `grep` its id across `src/` and read every write.
+  And the fix that outlives the cycle is a test of the *page* rather than of the
+  feature — `test/obituary.test.js` now asserts that nothing above the aside
+  carries the switch's attribute, so the next hideable instrument put in the
+  main column fails on the way in.
 
 - **Before banding a narrator on a quantity, measure which quantity moves.**
   v1.146's family line ends on a sentence about what changed between an animal

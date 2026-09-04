@@ -45,7 +45,15 @@ import {
 } from "./inspectorview.js";
 import { nameSpecies, speciesLabel, speciesPlural } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
-import { OBITUARY_MEET_ID, obituaryFor, obituaryHTML, obituaryLines } from "./obituary.js";
+import {
+  OBITUARY_CHILD_ID,
+  OBITUARY_MEET_ID,
+  familyLines,
+  familyOf,
+  obituaryFor,
+  obituaryHTML,
+  obituaryLines,
+} from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
 import { DoingCrowd, DOING_INVITE, INVITE_ICON, doingHTML, doingIcon } from "./doing.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
@@ -767,6 +775,24 @@ function watchNamed(id) {
   watchCreature(c, title, `${title}. ${creatureIntro(c, config)}`);
 }
 
+// The door out of a death (v1.151): one of the young the card just named.
+//
+// The button wears the eldest one's name, and the press does not insist on it.
+// A name on a card is a picture of the frame it was drawn in — `watchNamed`'s
+// rule — and this card is read at whatever speed the visitor left the slider
+// on: the first browser walk of it lost the eldest inside two seconds at 20×
+// while six of their siblings were still in the water, and reported that the
+// pond had moved on. So the press takes the first of them who is still
+// swimming, oldest first, and only gives up when the whole litter has gone.
+function meetTheirYoung(family) {
+  const next = family.young.find((id) => world.creatures.some((x) => x.id === id && !x.dead));
+  if (next === undefined) {
+    flash("Their young are gone too — this line ends here.");
+    return;
+  }
+  watchNamed(next);
+}
+
 // Hand a creature over: select it, follow it, and say who it is. The tail of
 // "Meet somebody", shared with the cast list so a row and the button do exactly
 // the same four things and cannot drift apart. The camera rides along for
@@ -800,14 +826,15 @@ function tellStory(id) {
   }
   renderer.selected = null;
   view.obitCard = card;
-  const { title, sentences } = obituaryLines(card, config);
+  const family = familyOf(card, world.creatures);
+  const { title, sentences } = obituaryLines(card, config, family);
   // No book mark in front of the title. The first browser press read
   // "📖 🥀 Robin of the Shale Sprigs" — two marks racing each other, and the
   // one that lost is the one that says *how they died*. The offer wears the
   // book because a reader has to know what the press will do; the answer to it
   // is a life, and a life is titled by its ending.
   flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
-  announce(`${title}. ${sentences.join(" ")}`);
+  announce(`${title}. ${[...sentences, ...familyLines(card, family)].join(" ")}`);
 }
 
 // ---- How they have changed (v1.128) ----
@@ -2235,25 +2262,57 @@ function updateInspector() {
     if (c && c.dead) {
       view.obitCard = obituaryFor(c, namesForTree(world.phylogeny), world.stats.recentDeaths);
       renderer.selected = null;
-      const { title, sentences } = obituaryLines(view.obitCard, config);
+      // The family first: the life's own last sentence asks it whether the line
+      // really does go on (see `obituaryLines`). A listener gets both halves —
+      // a spoken card that stops before the family has hidden the one part of
+      // it that says where to go next.
+      const family = familyOf(view.obitCard, world.creatures);
+      const { title, sentences } = obituaryLines(view.obitCard, config, family);
+      const kin = familyLines(view.obitCard, family);
       flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
-      announce(`${title}. ${sentences.join(" ")}`);
+      announce(`${title}. ${[...sentences, ...kin].join(" ")}`);
     }
     // The card is structure with a button in it, so it obeys the same rule the
     // living panel does: rebuilt on a key, never on a frame.
+    //
+    // It is written into `#obituary` rather than into this panel (v1.151). The
+    // fact grid is an instrument and carries `data-expert`, so from v1.149 it
+    // is hidden on the side of the switch every visit starts on — and the life
+    // of the animal a visitor was watching was going into a hidden element for
+    // everybody who had not gone looking for the apparatus. The panel itself
+    // goes back to its hint, because with nobody selected it has nothing to
+    // say; the life is somebody else's job now.
+    panel.classList.add("empty");
     const key = view.obitCard ? `obit${view.obitCard.id}` : "-";
     if (view.inspKey !== key) {
       view.inspKey = key;
-      panel.classList.toggle("empty", !view.obitCard);
-      panel.innerHTML = view.obitCard ? obituaryHTML(view.obitCard, config) : EMPTY_HINT;
+      panel.innerHTML = EMPTY_HINT;
+      // Who is left is asked here rather than remembered, so a life re-read out
+      // of the book minutes later names the young who are alive *then* — see
+      // `obituary.js#familyOf`. The card is rebuilt on the id alone, so this is
+      // the picture of one instant either way; what it must not be is the
+      // picture of an instant that has passed.
+      const family = view.obitCard ? familyOf(view.obitCard, world.creatures) : null;
+      const life = $("obituary");
+      life.hidden = !view.obitCard;
+      life.innerHTML = view.obitCard ? obituaryHTML(view.obitCard, config, family) : "";
       const again = document.getElementById(OBITUARY_MEET_ID);
       if (again) again.addEventListener("click", meetSomebody);
+      const heir = document.getElementById(OBITUARY_CHILD_ID);
+      if (heir) heir.addEventListener("click", () => meetTheirYoung(family));
     }
     return;
   }
   // A living subject clears the last card, so meeting somebody new never leaves
-  // the panel able to flip back to an obituary the visitor has moved on from.
+  // the panel able to flip back to an obituary the visitor has moved on from —
+  // and takes the card off the page with it, since it is about the animal this
+  // page *was* following and there is a living one under it now.
   view.obitCard = null;
+  const lifeCard = $("obituary");
+  if (!lifeCard.hidden) {
+    lifeCard.hidden = true;
+    lifeCard.innerHTML = "";
+  }
 
   const chain = world.phylogeny.ancestry(c.speciesId);
   // Two ancestries, and they are not two views of one thing: `chain` is the
@@ -2816,6 +2875,11 @@ function resetWorld(seed) {
   config = makeConfig({ ...config, seed });
   world = new World(config);
   renderer.setConfig(config);
+  // A life belongs to the pond it was lived in. The card used to sit inside the
+  // fact grid, where a stale one was a curiosity nobody could see; it is under
+  // the water now, and an obituary for an animal in a world that no longer
+  // exists would be the page's one outright false statement.
+  view.obitCard = null;
   if (syncPondName()) flash(welcomeTo(config.seed));
   syncHash();
 }

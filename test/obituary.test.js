@@ -23,7 +23,13 @@
 //     `cast.js` hold themselves to. This is the last thing a visitor reads about
 //     the one animal they were given a reason to care about; *carnivore*,
 //     *lineage*, *px* and *tick* are words for somebody already here.
-//  5. **It is a pure observer, and the page actually wires it.** Writing an
+//  5. **The family is read off the living, not remembered.** Who is still
+//     swimming is a question about the pond *now*, so `familyOf` takes the
+//     creatures and never a copy: the young are the living children in the
+//     order they were born, a dead one is not among them, and a life re-read
+//     out of the book minutes later names whoever is alive then. The offer of
+//     one of the young exists exactly when there is somebody to offer.
+//  6. **It is a pure observer, and the page actually wires it.** Writing an
 //     obituary must not move the world's state hash, must not touch the RNG, and
 //     the button the card draws must be one `main.js` binds — a card with a dead
 //     button is worse than no card.
@@ -39,16 +45,21 @@ import { World } from "../src/world.js";
 import { DEATH_CAUSES } from "../src/stats.js";
 import { nameSpecies } from "../src/speciesnames.js";
 import { stateFingerprint } from "../src/fingerprint.js";
-import { OMNIVORE_FROM, dietBand } from "../src/cast.js";
+import { OMNIVORE_FROM, dietBand, givenName } from "../src/cast.js";
 import {
   CAUSES,
   DIET_PAST,
+  FAMILY_NAMES_SHOWN,
   FIRST_DEATH,
   LONGEVITY,
+  OBITUARY_CHILD_ID,
   OBITUARY_MEET_ID,
   UNKNOWN_CAUSE,
   causeOf,
+  familyLines,
+  familyOf,
   longevityLine,
+  nameList,
   obituaryFor,
   obituaryHTML,
   obituaryLines,
@@ -202,7 +213,197 @@ test("the two family lines say what the numbers say", () => {
   assert.match(founder.sentences[1], /among the first here/);
 });
 
-// ---- 5. a pure observer the page actually wires ----
+// ---- 5. the family, read off the living (v1.151) ----
+
+/** A living animal, as `familyOf` reads one. */
+function alive(id, parentId = null) {
+  return { id, parentId, dead: false };
+}
+
+test("the family is who is alive now, eldest first, and never the dead", () => {
+  const rec = obituaryFor(corpse({ id: 3, children: 4 }), null, []);
+  rec.parentId = 1;
+  const fam = familyOf(rec, [
+    alive(1), // the parent, still here
+    alive(9, 3),
+    alive(5, 3),
+    { id: 7, parentId: 3, dead: true }, // a child that has died
+    alive(8, 4), // somebody else's child
+  ]);
+  assert.deepEqual(fam.young, [5, 9], "the young are the living children, eldest first");
+  assert.deepEqual(fam.youngNames, [givenName(5), givenName(9)]);
+  assert.equal(fam.parentAlive, true);
+  assert.equal(fam.parentName, givenName(1));
+  // …and the same record against an empty pond keeps the parent's name, which
+  // is a fact about the id and not about who is swimming.
+  const gone = familyOf(rec, []);
+  assert.deepEqual(gone.young, []);
+  assert.equal(gone.parentAlive, false);
+  assert.equal(gone.parentName, givenName(1));
+});
+
+test("a founder, and a pond restored from a save, have no parent to name", () => {
+  const founder = obituaryFor(corpse({ generation: 0 }), null, []);
+  assert.equal(founder.parentId, null);
+  assert.equal(familyOf(founder, []).parentName, null);
+  // No sentence about a parent nobody can name — the silence is the design.
+  assert.equal(
+    familyLines(founder, familyOf(founder, [])).some((s) => /parent/.test(s)),
+    false
+  );
+});
+
+test("the family sentences say what the living say, and name the young", () => {
+  const rec = obituaryFor(corpse({ id: 3, children: 3 }), null, []);
+  rec.parentId = 1;
+
+  const two = familyLines(rec, familyOf(rec, [alive(5, 3), alive(9, 3)]));
+  assert.match(two[0], /Their parent was/, "a parent who is not in the water is past tense");
+  assert.match(two[1], /^Two of their young are still swimming: /);
+  assert.ok(two[1].includes(givenName(5)) && two[1].includes(givenName(9)));
+
+  const one = familyLines(rec, familyOf(rec, [alive(1), alive(5, 3)]));
+  assert.match(one[0], /is still swimming here/, "a parent in the water is present tense");
+  assert.match(one[1], /^One of their young is still swimming: /);
+
+  // Young who are all dead is a fact worth saying, and only when there were any.
+  const none = familyLines(rec, familyOf(rec, []));
+  assert.match(none[1], /None of their young/);
+  const childless = obituaryFor(corpse({ children: 0, generation: 0 }), null, []);
+  assert.deepEqual(familyLines(childless, familyOf(childless, [])), []);
+});
+
+test("the line only goes on while somebody is still swimming", () => {
+  // The contradiction a browser walk found and twenty green tests did not: the
+  // card said "they left one young behind, so the line goes on" directly above
+  // "none of their young are still swimming".
+  const rec = obituaryFor(corpse({ id: 3, children: 2 }), null, []);
+  assert.match(
+    obituaryLines(rec, config).sentences[2],
+    /line goes on/,
+    "with nobody asked about, the sentence is the one v1.121 wrote"
+  );
+  assert.match(obituaryLines(rec, config, familyOf(rec, [alive(5, 3)])).sentences[2], /line goes on/);
+  const orphaned = obituaryLines(rec, config, familyOf(rec, [])).sentences[2];
+  assert.doesNotMatch(orphaned, /line goes on/);
+  assert.match(orphaned, /They left 2 young behind\.$/);
+  const html = obituaryHTML(rec, config, familyOf(rec, []));
+  assert.equal(/line goes on/.test(html), false, "the card contradicted itself");
+  assert.match(html, /None of their young/);
+});
+
+test("a long family is named up to a point and then counted", () => {
+  assert.equal(nameList(["Vale"]), "Vale");
+  assert.equal(nameList(["Vale", "Wren"]), "Vale and Wren");
+  assert.equal(nameList(["Vale", "Wren", "Fen"]), "Vale, Wren and Fen");
+  assert.equal(nameList(["Vale", "Wren", "Fen", "Ash", "Pip"]), "Vale, Wren, Fen and 2 more");
+  // The cap is the constant, not a number typed into the sentence.
+  const many = Array.from({ length: FAMILY_NAMES_SHOWN + 1 }, (_, i) => `N${i}`);
+  assert.match(nameList(many), /and 1 more$/);
+  // A word is never printed twice — two animals called Quill read as a stutter,
+  // which is what the first browser walk of this card actually said. The count
+  // is the family's, not the list's.
+  assert.equal(nameList(["Quill", "Arlo", "Quill", "Fen", "Ash", "Bay"]), "Quill, Arlo, Fen and 3 more");
+  assert.equal(nameList(["Quill", "Quill"]), "Quill and 1 more");
+  assert.equal(nameList(["Quill", "Quill", "Quill"]), "Quill and 2 more");
+});
+
+test("the card offers one of the young, and only when there is one to offer", () => {
+  const rec = obituaryFor(corpse({ id: 3, children: 2 }), null, []);
+  const withHeir = obituaryHTML(rec, config, familyOf(rec, [alive(9, 3), alive(5, 3)]));
+  assert.ok(withHeir.includes(`id="${OBITUARY_CHILD_ID}"`));
+  assert.ok(withHeir.includes(`👋 Meet ${givenName(5)}`), "the offer is the eldest of the young");
+  assert.ok(withHeir.includes(`data-id="5"`));
+  // No young, no button — a card that leads nowhere keeps the door it had.
+  const alone = obituaryHTML(rec, config, familyOf(rec, []));
+  assert.equal(alone.includes(`id="${OBITUARY_CHILD_ID}"`), false);
+  assert.ok(alone.includes(`id="${OBITUARY_MEET_ID}"`), "and the old door is still there");
+  // A card written before anybody asked about the family is the card it was.
+  assert.equal(obituaryHTML(rec, config).includes(`id="${OBITUARY_CHILD_ID}"`), false);
+});
+
+test("nothing the family says is a word only somebody already here knows", () => {
+  const JARGON = /\b(carnivor\w*|herbivor\w*|lineage|genome|offspring|tick|ticks|px|pixels?)\b/i;
+  const rec = obituaryFor(corpse({ id: 3, children: 9 }), null, []);
+  rec.parentId = 1;
+  const ponds = [
+    [],
+    [alive(1)],
+    [alive(5, 3)],
+    [alive(1), alive(5, 3), alive(9, 3)],
+    [alive(1), ...Array.from({ length: 9 }, (_, i) => alive(20 + i, 3))],
+    // Past the end of the word list, where a lazier sentence would open with a
+    // numeral. Beyond anything a pond has been seen to do, and still English.
+    [alive(1), ...Array.from({ length: 30 }, (_, i) => alive(20 + i, 3))],
+  ];
+  for (const pond of ponds) {
+    for (const s of familyLines(rec, familyOf(rec, pond))) {
+      assert.doesNotMatch(s, JARGON, `"${s}" uses a word only somebody already here knows`);
+      assert.match(s, /^[A-Z]/, `"${s}" does not start a sentence`);
+      assert.match(s, /\.$/, `"${s}" does not end one`);
+    }
+  }
+});
+
+test("a life is not an instrument, so the switch cannot hide it (v1.151)", () => {
+  // v1.149 put the apparatus behind a switch and left this note: *any future
+  // feature that hides part of this page owes the same check to every surface
+  // that points at another one*. The debt ran the other way. The card had lived
+  // inside `#inspector` since v1.121, `#inspector` is `data-expert`, and every
+  // visit starts on the side of the switch where that is hidden — so the life
+  // of the animal a visitor had been watching was written into an element they
+  // could not see. A browser walk found it: the button reported itself present
+  // and not visible.
+  const html = readFileSync(join(root, "app/index.html"), "utf8");
+  const at = html.indexOf('id="obituary"');
+  assert.ok(at > 0, "the page has no card to write a life into");
+  const aside = html.indexOf("<aside");
+  assert.ok(at < aside, "the life belongs under the water, not in the column of instruments");
+  // Every instrument the switch hides is in the aside or in the tree below it,
+  // so *nothing* above the aside carries the attribute — which is the whole
+  // assertion: the life is on the side of the page that always shows.
+  assert.equal(
+    html.slice(0, aside).includes("data-expert"),
+    false,
+    "something above the water is now hideable, so this test has stopped meaning what it says"
+  );
+  const src = readFileSync(join(root, "src/main.js"), "utf8");
+  assert.match(src, /life\.innerHTML = view\.obitCard \? obituaryHTML/);
+  assert.match(src, /panel\.innerHTML = EMPTY_HINT/, "the fact grid goes back to its hint");
+});
+
+test("a real pond's family is the pond's own, and the page wires the offer", () => {
+  const w = new World(makeConfig({ seed: 31 }));
+  for (let i = 0; i < 1500; i++) w.step();
+  // Somebody with living young: the pond has thousands of parent links by now.
+  const parent = w.creatures.find((c) => w.creatures.some((x) => !x.dead && x.parentId === c.id));
+  assert.ok(parent, "no animal in this pond has a living child, so this test measured nothing");
+  const rec = obituaryFor(parent, nameSpecies(w.phylogeny.species), w.stats.recentDeaths);
+  const fam = familyOf(rec, w.creatures);
+  assert.ok(fam.young.length > 0);
+  for (const id of fam.young) {
+    const kid = w.creatures.find((c) => c.id === id);
+    assert.equal(kid.parentId, rec.id);
+    assert.equal(kid.dead, false);
+  }
+  const html = obituaryHTML(rec, w.config, fam);
+  for (const s of familyLines(rec, fam)) assert.ok(html.includes(s), `the card left out "${s}"`);
+
+  const src = readFileSync(join(root, "src/main.js"), "utf8");
+  assert.match(src, /familyOf\(view\.obitCard, world\.creatures\)/);
+  assert.match(src, /getElementById\(OBITUARY_CHILD_ID\)/);
+  // The press re-asks the living rather than trusting the draw, and takes the
+  // first of the young still swimming rather than insisting on the one the
+  // button is named after — a browser walk lost the eldest inside two seconds
+  // at 20× while six siblings were still in the water.
+  assert.match(src, /heir\.addEventListener\("click", \(\) => meetTheirYoung\(family\)\)/);
+  assert.match(src, /family\.young\.find\(\(id\) => world\.creatures\.some/);
+  // And a listener is told the same thing a reader is shown, in both places a
+  // life is spoken: at the death, and out of the book of the dead.
+  assert.equal(src.match(/familyLines\(/g).length, 2);
+});
+
+// ---- 6. a pure observer the page actually wires ----
 
 test("writing an obituary moves nothing in the pond", () => {
   const w = new World(makeConfig({ seed: 31 }));

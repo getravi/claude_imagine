@@ -217,7 +217,17 @@ const CLAIMS = [
     // that draws *four names at once*, so how many names there are is the
     // number its odds of a repeat are computed from — which makes it a claim
     // about this collection rather than a mention of it.
-    sites: ["docs/AUTONOMOUS.md", "src/cast.js", "src/lineage.js", "test/cast.test.js"],
+    // And a fifth since v1.151: the obituary's family list draws up to three
+    // *siblings* at once, where a repeat is a stutter rather than a
+    // grandmother's name coming round again, so the size of the collection is
+    // the number that decides whether skipping one is worth the code.
+    sites: [
+      "docs/AUTONOMOUS.md",
+      "src/cast.js",
+      "src/lineage.js",
+      "src/obituary.js",
+      "test/cast.test.js",
+    ],
   },
   {
     // v1.120's collection, declared in the cycle that creates it. The count was

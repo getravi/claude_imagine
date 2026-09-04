@@ -319,6 +319,31 @@ body.simple [data-expert] {
   font-weight: 600;
 }
 
+/* The life of the animal you were watching (v1.151). The card `obituary.js`
+   writes, in a place a reader can see it: `.obit`'s own paragraphs and swatch,
+   unchanged, in a plate under the water instead of a block inside the fact grid
+   — which carries `data-expert` and is therefore hidden on the side of v1.149's
+   switch every visit starts on.
+   The one rule that had to change with the move is the buttons. `.obit button`
+   is `width: 100%`, which is right in a 260 px column and absurd in a 900 px
+   one, and v1.149 measured what that costs: a `<button>` stretches to its
+   container unless told not to. Here they sit side by side at the width of
+   their own words, the offer of one of the young first. */
+.lifecard {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 15px;
+}
+.lifecard[hidden] {
+  display: none;
+}
+.lifecard .obit button {
+  width: fit-content;
+  margin: 4px 8px 0 0;
+}
+
 .stage {
   position: relative;
   /* The stage is the containing block for five marks that all mean "in the
@@ -1540,6 +1565,14 @@ details .field {
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink-dim);
+}
+/* Who is left of them (v1.151). Set off from the life above it by a hairline
+   rather than by a colour: the family is the half of this card that leads
+   somewhere, so it wants a line of its own, and borrowing the panel's own rule
+   keeps it out of `test/legibility.test.js`'s ink/ground walk entirely. */
+.obit-kin {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
 }
 .obit button {
   width: 100%;

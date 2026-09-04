@@ -55,6 +55,26 @@
 //     of the creature at the moment of death. The creature object is off the
 //     world's list by then and about to be collected; a panel holding the body
 //     itself would be the one place on this page keeping a dead thing alive.
+//  5. **The family is not in the snapshot** (v1.151). The card had said *they
+//     left three young behind* since v1.121 and never said **who**, so the one
+//     door out of a death was `👋 Meet somebody else` — a stranger. It now
+//     names the parent and the young who are still swimming, and offers one of
+//     them. That is deliberately *not* copied in at the moment of death, for
+//     v1.139's reason: who is alive is still readable off the pond at the
+//     instant a reader looks, a remembered list is a second copy of a fact that
+//     can disagree with the first, and this card is re-shown out of the book of
+//     the dead minutes later, when a snapshot would be quietly false. See
+//     `familyOf`, which takes the living and is called at every rebuild.
+//
+// ### What it is worth, measured
+//
+// Over twelve seeds and six thousand ticks, **31.7% of all deaths leave a
+// living child** — which very nearly killed this, until the population was
+// split the way v1.135 says to split one. The card is only ever read about an
+// animal this page has **pointed at** (met, starred, plated, pressed), and
+// those die at a median age of 3,885 against 1,177 for everybody else: **59.1%
+// of them leave a living child**, against 30.0% for the rest of the pond. The
+// obituaries a visitor actually reads are the ones with a family in them.
 //
 // Determinism: nothing here reads or writes the simulation, and nothing draws a
 // random number. It is a rendering of a creature that has already died, exactly
@@ -63,7 +83,7 @@
 // on the panel.
 
 import { DEFAULT_CONFIG } from "./config.js";
-import { creatureLabel, dietBand, ordinal } from "./cast.js";
+import { creatureLabel, dietBand, givenName, ordinal } from "./cast.js";
 import { inspectorSwatch } from "./palette.js";
 
 /**
@@ -143,6 +163,12 @@ export function obituaryFor(creature, names = null, deaths = []) {
     age: creature.age,
     generation: creature.generation,
     children: creature.children,
+    // The one link out of this record, and a number rather than a body for the
+    // same reason everything else here is: `familyOf` turns it into a name.
+    // Null for a founder, and null for every animal in a pond restored from a
+    // save — `Creature.toJSON` deliberately drops the link, because ids
+    // renumber on load and a kept one would point at a stranger.
+    parentId: creature.parentId ?? null,
     carnivory: creature.carnivory,
     peers: ages.length,
     // The middle of the pond's dead, not their mean — rule 3 in the header.
@@ -175,19 +201,28 @@ export function longevityLine(record) {
  * The order is the order a person asks: how did it end, was that soon, what
  * kind of animal was this, and what is left of them.
  */
-export function obituaryLines(record, config = DEFAULT_CONFIG) {
+export function obituaryLines(record, config = DEFAULT_CONFIG, family = null) {
   const cause = causeOf(record);
   const diet = DIET_PAST[dietBand(record, config)];
   const born =
     record.generation === 0
       ? "were among the first here"
       : `were the ${ordinal(record.generation + 1)} generation of their family`;
+  // *So the line goes on* was written in v1.121, when this page could not check
+  // it, and the first browser walk of the family put it directly above **None
+  // of their young are still swimming** — one card, two opposite claims. It was
+  // never a fact about the young this animal had; it is a fact about who is in
+  // the water, and 29.2% of the deaths that had any young at all had already
+  // outlived every one of them. So the clause is dropped exactly when the pond
+  // says otherwise, and kept whenever nobody has asked (`family` null).
+  const kept = family ? family.young.length : null;
+  const goesOn = kept === 0 ? "" : ", so the line goes on";
   const left =
     record.children === 0
       ? "They left no young, so their line ends here."
       : record.children === 1
-        ? "They left one young behind, so the line goes on."
-        : `They left ${record.children} young behind, so the line goes on.`;
+        ? `They left one young behind${goesOn}.`
+        : `They left ${record.children} young behind${goesOn}.`;
 
   return {
     title: `${cause.icon} ${record.label}`,
@@ -195,11 +230,157 @@ export function obituaryLines(record, config = DEFAULT_CONFIG) {
   };
 }
 
-/** The card, as the panel's markup. The button is wired by `main.js`. */
-export const OBITUARY_MEET_ID = "obit-meet";
+/**
+ * How many, in words — the card counts young the way a person says it, and no
+ * sentence on this page begins with a numeral.
+ *
+ * The list runs to twelve because the count it has to cover is *living young at
+ * the instant a parent dies*, and over 5,290 deaths across twelve seeds the
+ * largest was **ten** (1,679 deaths left any at all, a mean of 1.68). Past the
+ * end of the list the sentence still carries the number, in `nameList`'s "and N
+ * more" — `Many` is the only word here that gives one up, and it is a word for
+ * a pond nobody has seen.
+ */
+const COUNTS = Object.freeze([
+  "No",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+]);
+function countWord(n) {
+  return COUNTS[n] ?? "Many";
+}
 
-export function obituaryHTML(record, config = DEFAULT_CONFIG) {
-  const { title, sentences } = obituaryLines(record, config);
+/** At most this many of the young are named; the rest are "and N more". */
+export const FAMILY_NAMES_SHOWN = 3;
+
+/**
+ * Who is left of this animal's family, read off the pond **now**.
+ *
+ * Takes the living creatures rather than a remembered list (rule 5 in the
+ * header). The young are ordered eldest first, which is just id order: ids come
+ * from a counter, so an animal born earlier is numbered lower.
+ *
+ * On which young to offer, since a card can only lead somewhere once: v1.133
+ * found that picking the *oldest living member of a bloodline* sorts on exactly
+ * the axis that kills it (88.8% of those picks survive sixty steps, against
+ * 97.9% for the newest). That does not transfer to siblings, and it was worth
+ * checking rather than assuming — over 659 deaths that left two or more young,
+ * the eldest is still there sixty steps later **93.0%** of the time and the
+ * youngest **92.3%**. Nothing to choose between them, so the card offers the
+ * eldest, which is the one a person means by *their eldest*.
+ *
+ * @param {object} record a life, as `obituaryFor` wrote it
+ * @param {Array<object>} creatures the world's living creatures
+ */
+export function familyOf(record, creatures = []) {
+  const young = [];
+  let parentAlive = false;
+  const parentId = record.parentId ?? null;
+  for (const c of creatures) {
+    if (c.dead) continue;
+    if (c.parentId === record.id) young.push(c.id);
+    if (parentId !== null && c.id === parentId) parentAlive = true;
+  }
+  young.sort((a, b) => a - b);
+  return {
+    parentId,
+    parentName: parentId === null ? null : givenName(parentId),
+    parentAlive,
+    young,
+    youngNames: young.map(givenName),
+  };
+}
+
+/**
+ * A list of names as a person reads one: `Vale`, `Vale and Wren`, `Vale, Wren
+ * and 2 more`.
+ *
+ * Names are *not* unique in this pond and a family is where that shows. There
+ * are sixty-four given names and `givenName` is a scramble of the id, so a
+ * litter of six draws six of them with replacement: the first browser walk of
+ * this card read **"Quill, Arlo, Quill and 3 more"** — two different animals,
+ * one word, and a reader with no way to tell that apart from a stutter. So a
+ * name already printed is skipped and the next one is shown in its place. The
+ * count is never touched by that, because it comes from the length of the list
+ * and not from the names: six young are six young whatever they are called.
+ *
+ * v1.146 met the same collision in the family *chain* and deliberately let it
+ * stand — "real families do that too" — and both calls are right, because the
+ * two lists are read differently. A repeated name down a chain of ancestors is
+ * a grandmother's name coming round again, which is a thing families do. A
+ * repeated name inside one comma list is a typo.
+ */
+export function nameList(names, shown = FAMILY_NAMES_SHOWN) {
+  const seen = new Set();
+  const distinct = [];
+  for (const n of names) {
+    if (seen.has(n)) continue;
+    seen.add(n);
+    distinct.push(n);
+    if (distinct.length === shown) break;
+  }
+  const extra = names.length - distinct.length;
+  if (extra > 0) return `${distinct.join(", ")} and ${extra} more`;
+  if (distinct.length <= 1) return distinct.join("");
+  return `${distinct.slice(0, -1).join(", ")} and ${distinct[distinct.length - 1]}`;
+}
+
+/**
+ * The family, as the sentences a person reads. Never a number without a name
+ * attached to it — the count on its own is what the card already said.
+ *
+ * Silent about a parent it cannot name (a founder, or a restored pond), and
+ * silent about the young when there never were any, because the third sentence
+ * of the life has already said the line ends here.
+ */
+export function familyLines(record, family) {
+  const lines = [];
+  if (family && family.parentName) {
+    lines.push(
+      family.parentAlive
+        ? `Their parent, ${family.parentName}, is still swimming here.`
+        : `Their parent was ${family.parentName}.`
+    );
+  }
+  const kept = family ? family.young.length : 0;
+  if (kept > 0) {
+    const names = nameList(family.youngNames);
+    lines.push(
+      kept === 1
+        ? `One of their young is still swimming: ${names}.`
+        : `${countWord(kept)} of their young are still swimming: ${names}.`
+    );
+  } else if (record.children > 0) {
+    lines.push("None of their young are still swimming.");
+  }
+  return lines;
+}
+
+/** The card, as the panel's markup. Both buttons are wired by `main.js`. */
+export const OBITUARY_MEET_ID = "obit-meet";
+/** The offer of one of their young. Absent when none of them are left. */
+export const OBITUARY_CHILD_ID = "obit-child";
+
+export function obituaryHTML(record, config = DEFAULT_CONFIG, family = null) {
+  const { title, sentences } = obituaryLines(record, config, family);
+  const kin = familyLines(record, family);
+  // The offer only exists when there is somebody to offer. A card that leads
+  // nowhere keeps the one door it has always had; a button naming an animal
+  // that is not there would be worse than no button (v1.129's rule).
+  const heir = family && family.young.length > 0 ? family.youngNames[0] : null;
+  const meetHeir = heir
+    ? `<button id="${OBITUARY_CHILD_ID}" type="button" data-id="${family.young[0]}">👋 Meet ${heir}</button>`
+    : "";
   // The swatch is the same mark the inspector puts beside a living creature's
   // name, carrying its own colour for the same reason (see `inspectorview.js`):
   // it is how a reader knows this card is about the animal they were watching
@@ -210,6 +391,8 @@ export function obituaryHTML(record, config = DEFAULT_CONFIG) {
       <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
         <strong title="creature ${record.id}">${title}</strong></div>
       ${sentences.map((s) => `<p>${s}</p>`).join("\n      ")}
+      ${kin.length ? `<p class="obit-kin">${kin.join(" ")}</p>` : ""}
+      ${meetHeir}
       <button id="${OBITUARY_MEET_ID}" type="button">👋 Meet somebody else</button>
     </div>`;
 }
