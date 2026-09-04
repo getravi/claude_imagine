@@ -4,6 +4,78 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.150.0] — 2026-09-04
+
+The pond says what everybody is doing.
+
+v1.148 gave this page its first **verb**. Twenty-four releases had described
+one creature to you — *generation 14, 61% fed, on ground 12% rough, calling
+0.31* — and never once said what it was **up to**; that release put one line
+under the water: *Nim is heading for food.*
+
+It needs you to have picked somebody. And for the first minute of every visit,
+nobody has picked anybody. A stranger arrives, three hundred darts move, the
+strip says `👆 Pick an animal — click one, or press M`, and the page waits to be
+asked a question the visitor does not yet know it can answer.
+
+The plates were already there. Since v1.126 three or four animals wear a small
+floating name — the one you picked, and the stand-outs the `🏅 Worth watching`
+board points at — chosen by the page, with nobody having to press anything. They
+just had nothing to say.
+
+> ▌🏆 **Marlow** · fleeing
+> ▌🐣 **Nim** · after food
+> ▌⚠ **Echo** · starving
+
+Now they say it. Same nine states, same list, same 1.5-second hold, in a short
+form (*fleeing*, *hunting*, *after food*, *in danger*, *just ate*) set after the
+name in a quieter ink. **Open the page, watch nothing in particular, and the
+water tells you a story.**
+
+### One watch, because two would have lied
+
+The strip and the plates are the same sentence about the same animal, so they
+read one object: `DoingCrowd`, a map of the hold `doing.js` already had. That is
+not tidiness. Two watches with independent 1.5-second holds fall out of phase
+within a few seconds of a pond starting, and this page would have been caught
+saying **hunting** over a dart and **fleeing** under it, in one frame, about one
+animal. There is a test that runs two of them side by side and fails if they
+*never* diverge, so the assertion cannot quietly stop meaning anything.
+
+A watch belongs to a creature **object** rather than to an id, and that is the
+one bug a crowd can have that a single watch cannot: ids come back. Reset the
+pond and there is a new creature 3, which would inherit the old creature 3's
+energy and be credited with a meal it did not eat, on the first frame of a world
+it had just been born into.
+
+### The cost, measured — and the fix it forced
+
+A plate that carries a verb is **two and a half times wider**: a mean of 318
+canvas pixels against 131 on a 346 px phone, 125 against 53 on a desktop. Twelve
+seeds, sixty samples each, and two plates came down on **one patch of water on
+21.0% of frames** on a phone, against 8.6% before. `MAX_TAGS` has said since
+v1.126 that a screen of overlapping labels is a worse picture than a screen with
+no labels at all, and the verb would have tripled the rate of exactly that.
+
+So a plate that lands on one already drawn moves **up a row** — its own spot
+first, then up, then down, never more than two rows from the animal it names,
+and an honest overlap if nothing clears. That takes the phone from 21.0% to
+**0.3%** and the desktop from 3.8% to **0.0%** — and it fixes the 8.6% the
+plates had been carrying since v1.126, before anything was written on them. The
+arithmetic lives in `nametag.js` where `node --test` can reach it; the boxes it
+is handed are the plates as the renderer actually laid them down, so a plate
+that stacks stays pressable exactly where it moved to.
+
+Third release running that a browser walk caught something the suite had
+blessed. The suite could see that the words were right. It could not see that
+two of them were sitting on top of each other.
+
+### Also
+
+- The key under the water now says a plate carries what its animal is doing.
+- `nameTag()` gained a second ink, at 9.7:1 on the plate against the name's
+  16.6 — quieter, not smaller and not harder to read.
+
 ## [1.149.0] — 2026-09-04
 
 The page, with the instruments put away.

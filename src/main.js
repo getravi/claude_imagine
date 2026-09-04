@@ -47,7 +47,7 @@ import { nameSpecies, speciesLabel, speciesPlural } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
 import { OBITUARY_MEET_ID, obituaryFor, obituaryHTML, obituaryLines } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
-import { DoingWatch, DOING_INVITE, INVITE_ICON, doingHTML, doingIcon } from "./doing.js";
+import { DoingCrowd, DOING_INVITE, INVITE_ICON, doingHTML, doingIcon } from "./doing.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -519,7 +519,18 @@ function loop(now) {
   // per frame rather than held: `nametag.js` carries the measurement that says
   // the cast is stable enough not to need a hold, and a name held past its
   // moment is a label that has started lying.
-  renderer.nameTags = nameTags(world, config, namesForTree(world.phylogeny), renderer.selected);
+  // The verbs the plates wear come with them (v1.150), and this is the one
+  // place they are looked up: `updateDoing` below reads its line back out of
+  // the same crowd rather than taking a second look, so the plate over a dart
+  // and the strip under the pond are one sentence and cannot drift apart.
+  renderer.nameTags = nameTags(
+    world,
+    config,
+    namesForTree(world.phylogeny),
+    renderer.selected,
+    doingCrowd,
+    performance.now(),
+  );
   renderer.draw(world);
   // Immediately after the draw and before any board: a recording copies the
   // frame that was just put on the water, which is the whole promise — what
@@ -657,20 +668,27 @@ function updateHeadline(world) {
 // to read; this is the adapter onto the DOM.
 //
 // The watch is per-page and not per-pond, and it does not need clearing on a
-// reset: `look()` resets itself the moment the id it is holding is not the id it
-// is handed, and a reset either clears the selection or replaces it with an
-// animal from a new world. That is the same rule the roster learned in v1.142 —
-// a field carried from one subject to the next is worse than a field that is
-// merely stale — enforced here by construction rather than by remembering.
+// reset: an entry belongs to a creature *object*, so a new world's animals get
+// new entries however their ids fall. That is the same rule the roster learned
+// in v1.142 — a field carried from one subject to the next is worse than a field
+// that is merely stale — enforced by construction rather than by remembering.
+//
+// **v1.150 made it a crowd, and this strip a reader of it rather than its
+// owner.** The plates over the water need the same verbs, and two watches with
+// independent holds would have this page saying *hunting* over a dart and
+// *fleeing* under it, about one animal, in one frame. So the frame loop looks
+// once, through `nameTags`, and this asks what that look decided. The selected
+// animal is always the first plate — `nameTags` adds it before anybody else and
+// never caps it — so there is always an answer here when there is a selection.
 //
 // Content-keyed on the key, not on the sentence: the name is a pure function of
 // the id and the id is in the key, so two frames with the same key are two
 // frames with the same line.
-const doingWatch = new DoingWatch();
+const doingCrowd = new DoingCrowd();
 
 function updateDoing() {
   const c = renderer.selected;
-  const key = doingWatch.look(c, config, performance.now());
+  const key = c && !c.dead ? doingCrowd.keyOf(c.id) : null;
   const sig = key ? `${c.id}:${key}` : "";
   if (sig === view.doingSig) return;
   view.doingSig = sig;

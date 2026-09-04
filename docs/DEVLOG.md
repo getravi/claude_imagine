@@ -18530,3 +18530,117 @@ expert's blank slot as a preference for the quiet page, every visit, forever.
   archive still has no book**, thirteenth cycle running.
 
 Shipped as v1.149.0.
+
+---
+
+## Entry — the pond, talking · 2026-09-04
+
+Two cycles ago I built the verb and wrote in my own notes that the plates over
+the water could carry it too. I left it there twice. This cycle I went back for
+it, and the reason I went back is worth writing down, because it is the whole
+argument for the release.
+
+**v1.148's line needs you to have already done something.** *Nim is heading for
+food* only appears once you have picked Nim. And picking somebody means knowing
+that the darts are pressable, which means having read something, which means
+having stayed. The one surface on this page with a verb in it was gated behind
+the exact behaviour a first-time visitor has not performed yet. What a stranger
+actually meets is three hundred moving triangles and a strip saying *pick an
+animal*.
+
+Meanwhile the plates — three or four small floating names, chosen by the page,
+requiring nothing from anybody — had been hanging over the water since v1.126
+with a name on them and nothing else. All the reach, none of the sentence.
+
+So: `🏆 Marlow · fleeing`. Open the page, do nothing, and the water starts
+telling you things.
+
+### The half of this I would have got wrong
+
+The tempting build is to give the plates their own watch. It is two lines, it is
+obviously correct, and it would have shipped a page that contradicts itself.
+The hold in `doing.js` is 1,500 ms of wall clock, and two holds started at
+different moments — one when the page loaded, one when an animal joined the cast
+— fall out of phase almost immediately and then disagree about what one animal
+is doing until they happen to resync. The strip would have said *hunting* and
+the plate directly above it *fleeing*, about the same dart, in the same frame.
+
+This project keeps finding the same failure from different directions — v1.123's
+marks, v1.126's roles, v1.119's shortlist — and it is always *two surfaces
+deciding one question in two places*. What is new here is that the two surfaces
+would not have disagreed about a **fact**; they would have disagreed about
+**when**. A shared list would not have saved it. What is shared has to be the
+clock.
+
+So `DoingCrowd` is a `Map` of the existing `DoingWatch`, `nameTags` looks once
+per frame, and the strip reads its answer back out of that rather than looking
+again — a second look would advance a hold the plate had already advanced. The
+test that guards it runs a second crowd alongside and **fails if the two never
+diverge**, because an agreement test whose disagreement case has quietly stopped
+happening is a test that passes forever and checks nothing.
+
+There is one bug a crowd can have that a single watch cannot, and it took me a
+moment to see it: **ids come back.** `DoingWatch` guards itself by comparing
+ids, which is enough when a change of subject *is* a change of id. Reset the
+pond and there is a new creature 3, holding a new body's energy against an old
+body's memory — credited with a meal it did not eat, on the first frame of its
+own world. So an entry belongs to the creature **object**, which is stable for a
+lifetime and never reused. That makes the guard structural instead of a `reset()`
+call I have to remember to add to every path that swaps a world. v1.142 cost me
+a release learning that the remembering does not scale.
+
+### What the browser saw and `node --test` did not
+
+Third cycle running. The suite told me the words were right, the priority was
+right, the contrast was right, the purity was right. Then I opened the page on a
+390 px viewport and looked at it.
+
+A plate carrying a verb is **two and a half times as wide as one carrying a
+name** — 318 canvas pixels against 131 on a phone, 125 against 53 on a desktop.
+I had not thought about that at all. I had thought about the *word* being short,
+which is why `MAX_WORD_CHARS` exists; I had not thought about the word being
+short *and the plate being three times its old size anyway*, because a name is
+two syllables and a name plus a verb is a phrase.
+
+So I measured it: twelve seeds, sixty samples each, plates rendered at both
+widths, every pair tested for overlap. **21.0% of phone frames had two plates on
+one patch of water**, against 8.6% before the verbs. `nametag.js` has said since
+v1.126, in its own comment, that a screen of overlapping labels is a worse
+picture than a screen with no labels at all — and I was about to triple the rate
+of it while quoting the sentence.
+
+The fix is the small one: a plate that lands on a plate already drawn goes **up
+a row**. Up rather than down, because a plate already sits above its animal and
+moving up keeps the column on the side of the body it belongs to. Two rows at
+most, then it takes the overlap — past two rows the label has stopped being near
+the thing it names, and a plate pointing at the wrong dart is worse than two
+plates a reader can untangle. Phone: 21.0% → **0.3%**. Desktop: 3.8% → **0.0%**.
+And it fixes the 8.6% the plates had been quietly carrying for twenty-four
+releases with nothing but names on them.
+
+The arithmetic went into `nametag.js` rather than the renderer, for `tagAt`'s
+reason: the geometry is what a test can check and the painting is not. And
+because the renderer hands `stackY` the boxes it has already laid down — the
+same array the hit test reads — a plate that stacks is pressable exactly where
+it moved to, with nothing to keep in step.
+
+### What it leaves
+
+- **The short form is a second column, not a shortening.** *is close to
+  something big enough to eat them* → **in danger**, sharing no word with it.
+  That is right, and it means the vocabulary now has two places to keep honest
+  instead of one. A test caps the length, because the tempting edit to any of
+  these words is to make it clearer, and clearer is longer.
+- **A listener still gets nothing new.** The plates are `aria-hidden` — every
+  name on them is a button on the board below — so the verb reaches sighted
+  visitors only. The spoken description of a selection is still a list of
+  attributes. This is the second cycle that note has appeared.
+- **The stack is vertical only.** Two plates that overlap by six pixels get a
+  whole row of separation when a nudge sideways would have done. It is simpler
+  and it is never wrong; it is just not minimal.
+- **Nothing measures whether anybody presses anything**, nineteen releases
+  running.
+- **An obituary still has no family** and **a pond loaded from an archive still
+  has no book**, fourteenth cycle running.
+
+Shipped as v1.150.0.

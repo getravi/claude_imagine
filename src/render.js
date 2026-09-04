@@ -32,7 +32,7 @@ import {
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
-import { tagText, tagAt, TAG_TOUCH_PAD } from "./nametag.js";
+import { tagText, tagDoing, tagAt, stackY, STACK_GAP, TAG_TOUCH_PAD } from "./nametag.js";
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -446,8 +446,15 @@ export class Renderer {
       // clears it: a label sitting inside the halo reads as part of the animal
       // rather than as a thing said about it.
       const lift = tag.radius * 3 * this.camera.zoom + t.lift * k;
+      // Two halves in two tones (v1.150): the name, then the verb it is doing.
+      // Measured separately because the second is drawn where the first ends,
+      // and one `measureText` of the whole string would give a width but not
+      // that offset.
       const text = tagText(tag);
-      const w = ctx.measureText(text).width + padX * 2 + barW;
+      const said = tagDoing(tag);
+      const textW = ctx.measureText(text).width;
+      const saidW = said ? ctx.measureText(said).width : 0;
+      const w = textW + saidW + padX * 2 + barW;
       // Held inside the view, once the anchor is known to be in it. The first
       // browser run of this feature drew half a name off each edge of the
       // canvas, because an animal at the edge of the water is an ordinary thing
@@ -455,7 +462,19 @@ export class Renderer {
       // it costs at most half a plate of offset and keeps the name beside its
       // animal; letting the edge cut it costs the word.
       const x = Math.max(0, Math.min(cfg.width - w, p.x - w / 2));
-      const y = Math.max(0, p.y - lift - height);
+      // Up a row if somebody is already there (v1.150). The plates got two and
+      // a half times wider when they learned a verb, and two labels on one
+      // patch of water is the picture `MAX_TAGS` exists to prevent — see
+      // `stackY`, which holds the measurement and the arithmetic.
+      const y = stackY(
+        this.nameTagBoxes,
+        x,
+        Math.max(0, p.y - lift - height),
+        w,
+        height,
+        STACK_GAP * k,
+        cfg.height,
+      );
       ctx.fillStyle = t.plate;
       ctx.fillRect(x, y, w, height);
       // The family stripe: the animal's own lineage colour down the leading
@@ -466,6 +485,13 @@ export class Renderer {
       ctx.fillRect(x, y, barW, height);
       ctx.fillStyle = t.ink;
       ctx.fillText(text, x + barW + padX, y + height / 2);
+      // The verb, quieter and after the name. Skipped entirely rather than
+      // drawn empty when there is none, so a pond nobody has handed a watch to
+      // paints exactly the frame v1.149 painted.
+      if (said) {
+        ctx.fillStyle = t.dim;
+        ctx.fillText(said, x + barW + padX + textW, y + height / 2);
+      }
       // The plate as it was actually laid down — after the lift, after the
       // nudge away from the edge — so that pressing the word presses this
       // animal. Recorded here rather than computed anywhere else: the layout

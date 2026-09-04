@@ -13,6 +13,15 @@
 // name at the front of it — *Iris is heading for food.* — under the water, live,
 // changing as the animal's situation does.
 //
+// **And since v1.150, on the water as well as under it.** The sentence needs a
+// visitor to have picked somebody, and for the first minute of every visit
+// nobody has picked anybody: three hundred darts, all silent, and a strip
+// asking to be pointed at. The name plates were already floating over three or
+// four animals the page had a reason to name without being asked — so they now
+// carry the short form of the same verb (`word`, below), held by the same clock,
+// read out of one `DoingCrowd` so that the plate over a dart and the strip under
+// the pond can never say two different things about it.
+//
 // **It is read off the animal's own senses, not off the pond.** `Creature#sense`
 // already writes, every tick, the input vector the brain is about to be run on:
 // how near the closest pellet is and whether it lies ahead, the same for the
@@ -192,15 +201,15 @@ export const MIN_SHOW_MS = 1500;
  * happened to a body rather than a thing that has been perceived.
  */
 export const DOINGS = Object.freeze({
-  ate: { icon: "🍽", phrase: "has just eaten." },
-  fleeing: { icon: "💨", phrase: "is running from something bigger." },
-  hunting: { icon: "🎯", phrase: "is chasing something smaller." },
-  stalked: { icon: "⚠️", phrase: "is close to something big enough to eat them." },
-  foraging: { icon: "🌿", phrase: "is heading for food." },
-  starving: { icon: "🪫", phrase: "is running out of energy." },
-  sick: { icon: "🤒", phrase: "is sick." },
-  resting: { icon: "💤", phrase: "is drifting, going nowhere in particular." },
-  searching: { icon: "👀", phrase: "is looking for food, with none in sight." },
+  ate: { icon: "🍽", phrase: "has just eaten.", word: "just ate" },
+  fleeing: { icon: "💨", phrase: "is running from something bigger.", word: "fleeing" },
+  hunting: { icon: "🎯", phrase: "is chasing something smaller.", word: "hunting" },
+  stalked: { icon: "⚠️", phrase: "is close to something big enough to eat them.", word: "in danger" },
+  foraging: { icon: "🌿", phrase: "is heading for food.", word: "after food" },
+  starving: { icon: "🪫", phrase: "is running out of energy.", word: "starving" },
+  sick: { icon: "🤒", phrase: "is sick.", word: "sick" },
+  resting: { icon: "💤", phrase: "is drifting, going nowhere in particular.", word: "drifting" },
+  searching: { icon: "👀", phrase: "is looking for food, with none in sight.", word: "searching" },
 });
 
 /** The states in test order — the object's own key order, named so a test can hold it. */
@@ -264,6 +273,38 @@ export function doingLine(name, key) {
 /** The mark for a state, or an empty string for one this file does not know. */
 export function doingIcon(key) {
   return DOINGS[key]?.icon ?? "";
+}
+
+/**
+ * The longest a plate word may be, in characters.
+ *
+ * The words exist because v1.150 put this vocabulary on the *water*, and a
+ * floating plate is not a strip: it is drawn beside a swimming animal, four at
+ * a time, on a pond that is 346 px wide on a phone. A sentence there is a
+ * banner across somebody else's water. So each state gets a second, shorter
+ * form — the verb with the explanation taken out — and the cap is checked by a
+ * test rather than trusted, because the tempting edit to any of these words is
+ * to make it *clearer*, and clearer is longer.
+ *
+ * Ten is not a taste: at the tag's 11 px type it is about 62 px of word beside
+ * a name that runs 30–60, which keeps the widest plate inside a seventh of the
+ * pond.
+ */
+export const MAX_WORD_CHARS = 10;
+
+/**
+ * The short form for a state — the word a name plate wears — or an empty string.
+ *
+ * Deliberately not derivable from `phrase`. *"is close to something big enough
+ * to eat them"* shortens to **in danger**, which shares no word with it, and
+ * *"is drifting, going nowhere in particular"* to **drifting**, which shares
+ * one. A sentence and a label are two pieces of writing about one fact, and the
+ * project has learned the other way round often enough (v1.123's marks, v1.126's
+ * roles): when two surfaces have to agree, they agree by reading one list, not
+ * by one of them deriving itself from the other's prose.
+ */
+export function doingWord(key) {
+  return DOINGS[key]?.word ?? "";
 }
 
 /**
@@ -378,5 +419,99 @@ export class DoingWatch {
       }
     }
     return this.key;
+  }
+}
+
+/**
+ * The same steady line, for everybody wearing a name at once (v1.150).
+ *
+ * v1.148 built the verb for **the animal you picked**, and a visitor who picks
+ * nobody — which is most of them, for the first minute of every visit — got a
+ * pond of silent darts and an instruction. The plates over the water were
+ * already there and already naming three or four animals nobody had to choose;
+ * they just had nothing to say. Now they say this.
+ *
+ * It is a `Map` of `DoingWatch`, not a reimplementation of one. The hold, the
+ * meal detector, the rule that a first look never reports `ate` — all of it is
+ * measured in the class above and stays there; this only decides **whose** watch
+ * is whose, and when a watch is somebody else's. That is the point: after this
+ * release the strip under the pond and the plate over the animal are the same
+ * sentence about the same animal, read out of one object, so the two surfaces
+ * cannot disagree about what a creature is doing. They could have, easily — two
+ * watches with independent 1,500 ms holds land on different states most of the
+ * time, and the page would have been caught saying *hunting* in one place and
+ * *fleeing* in the other, about one dart, in the same frame.
+ *
+ * **A watch belongs to a creature, not to an id, and the difference is a
+ * reset.** `DoingWatch` guards itself by comparing ids, which is enough when
+ * there is one subject and a change of subject is a change of id. Here the ids
+ * come back: reset the pond and there is a new creature 3, and it would inherit
+ * the old creature 3's energy and be credited with a meal it did not eat on the
+ * first frame of a world it had just been born into. So the entry holds the
+ * creature *object* — stable for a lifetime, never reused, distinct across
+ * worlds — and a mismatch throws the watch away. The guard is by construction
+ * rather than by anybody remembering to call `reset` on every path that swaps a
+ * world (v1.142's roster lesson, which cost a release to learn once already).
+ *
+ * Determinism: PURE OBSERVER, like everything else in this file.
+ */
+export class DoingCrowd {
+  /** @param {number} [minShowMs] how long each animal's line is held */
+  constructor(minShowMs = MIN_SHOW_MS) {
+    this.minShowMs = minShowMs;
+    /** @type {Map<number, {c: object, watch: DoingWatch}>} */
+    this.watches = new Map();
+  }
+
+  /**
+   * Look at one animal and return the key that should be on its plate.
+   *
+   * @param {object|null} c a creature, or null
+   * @param {object} config
+   * @param {number} now a monotonically rising clock, in milliseconds
+   * @returns {string|null} a key of `DOINGS`, or null for nobody and for the dead
+   */
+  look(c, config, now) {
+    if (!c || c.dead) return null;
+    let held = this.watches.get(c.id);
+    if (!held || held.c !== c) {
+      held = { c, watch: new DoingWatch(this.minShowMs) };
+      this.watches.set(c.id, held);
+    }
+    return held.watch.look(c, config, now);
+  }
+
+  /**
+   * What this crowd is currently saying about an id, without looking again.
+   *
+   * The strip under the pond reads its line through here rather than by taking
+   * a second look, because a second look is a second opinion: it would advance
+   * a hold that the plate had already advanced this frame.
+   */
+  keyOf(id) {
+    return this.watches.get(id)?.watch.key ?? null;
+  }
+
+  /**
+   * Forget everybody not in `ids` — called once a frame with whoever is wearing
+   * a plate, so the map is the size of the cast (three or four) rather than of
+   * every animal that has ever worn one.
+   *
+   * @param {Set<number>|Map<number, unknown>} ids
+   */
+  keep(ids) {
+    for (const id of this.watches.keys()) {
+      if (!ids.has(id)) this.watches.delete(id);
+    }
+  }
+
+  /** Forget everything. */
+  reset() {
+    this.watches.clear();
+  }
+
+  /** How many animals are being watched. */
+  get size() {
+    return this.watches.size;
   }
 }

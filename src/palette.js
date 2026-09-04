@@ -563,6 +563,15 @@ export function nameTag() {
   return {
     plate: "hsl(232, 55%, 7%)",
     ink: "hsl(210, 24%, 93%)",
+    // The verb's ink (v1.150), a step down from the name's. A plate now carries
+    // two things and they are not equals: the name is what ties the plate to a
+    // dart, to a row on the board and to a sentence in the Chronicle, and the
+    // verb is what changes underneath it. One tone for both would make the plate
+    // a phrase to read; two makes it a label with a note on it, which is what it
+    // is. Still a long way clear of the bar — 9.7:1 on the plate against the
+    // name's 16.6 — because "quieter" may not mean "smaller" or "harder to
+    // read"; it means less bright than the word beside it.
+    dim: "hsl(210, 16%, 72%)",
     // The tag's own geometry, in screen pixels — it is drawn after the camera
     // has been taken back off, so a label is the same size at every zoom. A
     // name that grew with the magnification would be a mark about the lens
@@ -596,9 +605,9 @@ export function nameTagFont(px = nameTag().fontPx) {
   return `${t.fontWeight} ${px}px ${t.fontFamily}`;
 }
 
-/** The name tag's two tones as RGB, for the audit and the contrast test. */
+/** The name tag's three tones as RGB, for the audit and the contrast test. */
 export function nameTagTones() {
-  return { ink: hslToRgb(210, 24, 93), plate: hslToRgb(232, 55, 7) };
+  return { ink: hslToRgb(210, 24, 93), dim: hslToRgb(210, 16, 72), plate: hslToRgb(232, 55, 7) };
 }
 
 /**

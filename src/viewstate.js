@@ -299,13 +299,15 @@ export const PAGE_SCOPED = Object.freeze({
   handHinted:
     "whether the one-line explanation of that mode has been shown yet — once per visit " +
     "rather than once per pond, because it explains the button and not the water",
-  doingWatch:
-    "the hold under the line about the animal you picked (v1.148) — a machine rather than " +
-    "a cache, and one whose whole state is about *a reader's clock*: how long the current " +
-    "sentence has been on screen, in wall-clock milliseconds. It needs no reset because it " +
-    "cannot be wrong: `look()` drops everything the moment the id it is holding is not the " +
-    "id it is handed, and `adoptWorld` releases the selection anyway, so the first frame of " +
-    "a new pond hands it nobody",
+  doingCrowd:
+    "the holds under the verbs — the line about the animal you picked (v1.148) and the same " +
+    "words on the plates over the water (v1.150), which are one object precisely so that the " +
+    "two surfaces cannot say different things about one animal. A machine rather than a " +
+    "cache, and one whose whole state is about *a reader's clock*: how long each sentence " +
+    "has been on screen, in wall-clock milliseconds. It needs no reset because it cannot be " +
+    "wrong: an entry belongs to a creature *object* rather than to an id, so a new pond's " +
+    "animals get new entries however their ids fall, and `nameTags` drops everybody who is " +
+    "not wearing a plate this frame",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
   postcardReturn: "the same, for the postcard — where focus was when `🔗 Share` opened the card",

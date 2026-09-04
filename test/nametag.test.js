@@ -30,6 +30,12 @@
 //     plate that was not drawn cannot be pressed, an emptied list leaves nothing
 //     pressable behind it, and the plate and the board hand a visitor to the
 //     same animal by the same function.
+//  7. **A plate says what its animal is doing (v1.150).** The claims are about
+//     *one list and one clock*: the words come from `doing.js`, the plate over a
+//     dart and the strip under the pond read one `DoingCrowd` so they cannot say
+//     two things about one animal in one frame, nobody is watched after they
+//     stop wearing a plate, and a pond handed no watch paints exactly the frame
+//     it painted in v1.149.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -43,7 +49,21 @@ import { nameSpecies } from "../src/speciesnames.js";
 import { stateFingerprint, trajectoryFingerprint, observationFingerprint } from "../src/fingerprint.js";
 import { castRoles, givenName } from "../src/cast.js";
 import { ROLE_MARK, castRows } from "../src/whoswho.js";
-import { MAX_TAGS, TAG_TOUCH_PAD, nameTags, tagAt, tagSignature, tagText } from "../src/nametag.js";
+import {
+  MAX_TAGS,
+  STACK_GAP,
+  STACK_STEPS,
+  TAG_SEP,
+  TAG_TOUCH_PAD,
+  nameTags,
+  stackY,
+  tagAt,
+  tagDoing,
+  tagFullText,
+  tagSignature,
+  tagText,
+} from "../src/nametag.js";
+import { DOINGS, DoingCrowd, doingWord } from "../src/doing.js";
 import { contrastRatio, nameTag, nameTagFont, nameTagTones, WCAG_AA_TEXT } from "../src/palette.js";
 import { MARKS } from "../src/key.js";
 import { renderOps } from "../src/rendershot.js";
@@ -485,4 +505,244 @@ test("the placard says the names can be pressed", () => {
   const row = MARKS.find((m) => m.id === "named");
   assert.ok(row, "the placard no longer has a row for a name");
   assert.match(row.line, /[Pp]ress/, "the key describes the plate and not the button");
+});
+
+// ---- 7. what the animal is doing, on the plate (v1.150) ----
+
+test("a pond handed no watch wears the plate it wore in v1.149", () => {
+  const { world, config, names } = stepped(314, 1200);
+  const tags = nameTags(world, config, names, world.creatures[0]);
+  assert.ok(tags.length > 0, "nothing to draw");
+  for (const tag of tags) {
+    assert.equal(tag.doing, null, "a verb arrived without a watch to hold it");
+    assert.equal(tagDoing(tag), "", "a plate grew a tail nobody asked for");
+    assert.equal(tagFullText(tag), tagText(tag));
+  }
+  const ops = renderOps(world, null, (r) => {
+    r.nameTags = tags;
+  });
+  const drawn = ops.filter((o) => o[1] === "fillText").map((o) => o[2]);
+  assert.deepEqual(drawn, tags.map(tagText), "the water said something the names alone do not");
+  assert.ok(
+    !ops.filter((o) => o[1] === "set:fillStyle").map((o) => o[2]).includes(nameTag().dim),
+    "the quiet ink reached a canvas with nothing to say in it",
+  );
+});
+
+test("a plate wears the verb its animal is doing, out of doing.js's own list", () => {
+  const { world, config, names } = stepped(314, 1200);
+  const crowd = new DoingCrowd();
+  const tags = nameTags(world, config, names, world.creatures[0], crowd, 0);
+  assert.ok(tags.length > 0, "nothing to draw");
+  for (const tag of tags) {
+    assert.ok(tag.doing in DOINGS, `a plate is holding "${tag.doing}", which is not a state`);
+    assert.equal(tagDoing(tag), `${TAG_SEP}${doingWord(tag.doing)}`, "the plate wrote its own word");
+    assert.equal(tagFullText(tag), `${tagText(tag)}${TAG_SEP}${doingWord(tag.doing)}`);
+  }
+  // Two plates on the same animal in the same frame say the same thing, and the
+  // signature can tell one verb from another — a memo that could not would hold
+  // the wrong picture.
+  const other = new DoingCrowd();
+  const same = nameTags(world, config, names, world.creatures[0], other, 0);
+  assert.equal(tagSignature(same), tagSignature(tags));
+  assert.notEqual(tagSignature(tags), tagSignature(tags.map((t) => ({ ...t, doing: "sick" }))));
+});
+
+test("the plate and the strip read one watch, so they cannot disagree", () => {
+  // The failure this design exists to avoid, and the one it would have shipped:
+  // two watches with independent holds land on different states most of the
+  // time, and the page would say one thing over a dart and another under it.
+  const { world, config, names } = stepped(42, 1500);
+  const crowd = new DoingCrowd();
+  // Re-picked every frame from the living, because the point is the agreement
+  // and not the subject: a pond run for two hundred frames buries whoever was
+  // first when it started, and an assertion that quietly stopped having a
+  // subject would pass forever.
+  const second = new DoingCrowd();
+  let disagreed = 0;
+  let frames = 0;
+  for (let frame = 0; frame < 200; frame++) {
+    const chosen = world.creatures.find((c) => !c.dead);
+    if (!chosen) break;
+    const tags = nameTags(world, config, names, chosen, crowd, frame * 16);
+    assert.equal(tags[0].id, chosen.id, "the one you picked is not the first plate");
+    // What `main.js#updateDoing` reads: the answer the plate pass already made.
+    assert.equal(crowd.keyOf(chosen.id), tags[0].doing, "the strip and the plate parted company");
+    // What a second watch would have said instead. It is started late rather
+    // than merely offset, because a constant offset is not a second opinion: a
+    // hold measures elapsed time, so two watches begun together stay together
+    // however their clocks are labelled. Two watches begun at *different
+    // moments* fall out of phase, which is the real case — the strip's watch
+    // would have been made when the page loaded and a plate's when its animal
+    // joined the cast.
+    if (frame >= 37 && second.look(chosen, config, frame * 16) !== tags[0].doing) disagreed++;
+    frames++;
+    world.step();
+  }
+  assert.ok(frames > 150, `only ${frames} frames had anybody in them`);
+  assert.ok(disagreed > 0, "two independent holds agreed on every frame, so this test proves nothing");
+});
+
+test("nobody is watched after they stop wearing a plate", () => {
+  const { world, config, names } = stepped(7, 900);
+  const crowd = new DoingCrowd();
+  for (let frame = 0; frame < 60; frame++) {
+    const tags = nameTags(world, config, names, world.creatures[frame % world.creatures.length], crowd, frame * 16);
+    assert.equal(crowd.size, tags.length, "the crowd is holding somebody who is not on the water");
+    world.step();
+  }
+  assert.ok(crowd.size <= MAX_TAGS, "the map grew past the number of plates that can exist");
+});
+
+test("the verb is drawn after the name, in the quieter of two inks", () => {
+  const { world, config, names } = stepped(42, 2000);
+  const crowd = new DoingCrowd();
+  const tags = nameTags(world, config, names, null, crowd, 0);
+  const ops = renderOps(world, null, (r) => {
+    r.nameTags = tags;
+  });
+  const words = ops.filter((o) => o[1] === "fillText");
+  assert.equal(words.length, tags.length * 2, "a plate did not draw both halves of itself");
+  assert.deepEqual(
+    words.map((o) => o[2]),
+    tags.flatMap((t) => [tagText(t), tagDoing(t)]),
+    "the water says something the list does not",
+  );
+  // The verb starts where the name ends, on the same baseline.
+  for (let i = 0; i < tags.length; i++) {
+    const [name, said] = [words[i * 2], words[i * 2 + 1]];
+    assert.ok(said[3] > name[3], "the verb was not laid down after the name");
+    assert.equal(said[4], name[4], "the two halves are not on one line");
+  }
+  const t = nameTag();
+  const fills = ops.filter((o) => o[1] === "set:fillStyle").map((o) => o[2]);
+  assert.ok(fills.includes(t.ink), "the name's ink never reached the canvas");
+  assert.ok(fills.includes(t.dim), "the verb's ink never reached the canvas");
+});
+
+test("a plate carrying a verb is wider than the same plate without one", () => {
+  const { world, config, names } = stepped(42, 2000);
+  const crowd = new DoingCrowd();
+  // The name layer only — the pond's own surface fills rectangles too.
+  const plateW = (tags) =>
+    renderOps(world, null, (r) => {
+      r.nameTags = tags;
+    })
+      .filter((o) => o[0] === "names" && o[1] === "fillRect")
+      .map((o) => o[4])[0];
+  const bare = plateW(nameTags(world, config, names, null));
+  const said = plateW(nameTags(world, config, names, null, crowd, 0));
+  assert.ok(said > bare, `a verb was drawn on a plate that did not grow for it (${said} vs ${bare})`);
+});
+
+test("the verb's ink clears the bar it is printed against, and is quieter than the name", () => {
+  const { ink, dim, plate } = nameTagTones();
+  const ratio = contrastRatio(dim, plate);
+  assert.ok(
+    ratio >= WCAG_AA_TEXT,
+    `a verb reads at ${ratio.toFixed(2)}:1 against its plate, under the ${WCAG_AA_TEXT} bar for text`,
+  );
+  assert.ok(
+    contrastRatio(ink, plate) > ratio,
+    "the verb is not quieter than the name, so the plate is a phrase rather than a label",
+  );
+  assert.doesNotMatch(nameTag().dim, /hsla|rgba/, "the verb's ink is translucent, so its contrast is not measurable");
+});
+
+test("naming the pond with verbs on it still changes nothing about it", () => {
+  const { world, config, names } = stepped(7, 900);
+  const crowd = new DoingCrowd();
+  const before = [stateFingerprint(world), trajectoryFingerprint(world), observationFingerprint(world)];
+  let draws = 0;
+  const real = world.rng.next;
+  world.rng.next = function counted() {
+    draws++;
+    return real.call(this);
+  };
+  nameTags(world, config, names, world.creatures[0], crowd, 0);
+  world.rng.next = real;
+  const after = [stateFingerprint(world), trajectoryFingerprint(world), observationFingerprint(world)];
+  assert.deepEqual(after, before, "holding a verb over the water moved the pond");
+  assert.equal(draws, 0, "a verb drew a random number");
+});
+
+test("two plates over one patch of water stack instead of piling up", () => {
+  // The arithmetic, on boxes chosen to make every branch fire.
+  const h = 16;
+  const gap = STACK_GAP;
+  const laid = [{ x: 100, y: 200, w: 80, h }];
+  assert.equal(stackY(laid, 300, 200, 80, h, gap, 620), 200, "a plate nobody is near was moved");
+  assert.equal(stackY(laid, 100, 200, 80, h, gap, 620), 200 - (h + gap), "a plate landed on another one");
+  // Two in the way: the first free row above them both.
+  const two = [...laid, { x: 100, y: 200 - (h + gap), w: 80, h }];
+  assert.equal(stackY(two, 100, 200, 80, h, gap, 620), 200 - 2 * (h + gap));
+  // No room above, so it goes below instead.
+  const top = [{ x: 0, y: 0, w: 80, h }];
+  assert.equal(stackY(top, 0, 0, 80, h, gap, 620), h + gap);
+  // Nowhere at all clears: the plate keeps its own spot rather than being
+  // flung somewhere it does not belong. An honest overlap beats a label over
+  // the wrong animal.
+  const walled = [];
+  for (const step of STACK_STEPS) walled.push({ x: 0, y: 100 + step * (h + gap), w: 80, h });
+  assert.equal(stackY(walled, 0, 100, 80, h, gap, 620), 100);
+});
+
+test("the plates a real pond draws do not land on each other", () => {
+  // The cost a browser walk found and `node --test` had blessed: a plate that
+  // carries a verb is two and a half times as wide, and on a phone two of them
+  // came down on one patch of water on 21.0% of frames before this stacked.
+  const config = makeConfig({ seed: 314 });
+  const world = new World(config);
+  for (let i = 0; i < 400; i++) world.step();
+  const crowd = new DoingCrowd();
+  let frames = 0;
+  let collisions = 0;
+  for (let s = 0; s < 40; s++) {
+    for (let i = 0; i < 25; i++) world.step();
+    const names = nameSpecies(world.phylogeny.species);
+    const tags = nameTags(world, config, names, world.creatures.find((c) => !c.dead), crowd, s * 400);
+    // The phone, which is where a plate is widest against its pond.
+    const boxes = renderOps(world, null, (r) => {
+      r.nameTags = tags;
+      r.canvas.clientWidth = 346;
+    })
+      .filter((o) => o[0] === "names" && o[1] === "fillRect")
+      .filter((_, i) => i % 2 === 0)
+      .map((o) => ({ x: o[2], y: o[3], w: o[4], h: o[5] }));
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const [a, b] = [boxes[i], boxes[j]];
+        if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) collisions++;
+      }
+    }
+    frames++;
+  }
+  assert.ok(frames === 40, "the sweep lost its pond");
+  assert.equal(collisions, 0, `${collisions} pairs of plates were drawn on top of each other`);
+});
+
+test("a stacked plate is pressable where it was stacked to", () => {
+  // The property the whole recorded-box design exists for: moving a plate
+  // moves its target with it, because there is one geometry and the renderer
+  // wrote it down.
+  const config = makeConfig({ seed: 314 });
+  const world = new World(config);
+  for (let i = 0; i < 900; i++) world.step();
+  const crowd = new DoingCrowd();
+  const names = nameSpecies(world.phylogeny.species);
+  const tags = nameTags(world, config, names, world.creatures.find((c) => !c.dead), crowd, 0);
+  // The renderer itself, kept from the tune callback, because the boxes it
+  // recorded are the thing under test rather than the ops it emitted.
+  let r = null;
+  renderOps(world, null, (rr) => {
+    r = rr;
+    rr.nameTags = tags;
+    rr.canvas.clientWidth = 346;
+  });
+  assert.ok(r.nameTagBoxes.length > 1, "one plate cannot stack");
+  for (const box of r.nameTagBoxes) {
+    const hit = r.tagAt(box.x + box.w / 2, box.y + box.h / 2);
+    assert.ok(hit, "a plate that was drawn could not be pressed");
+    assert.equal(hit.id, box.id, "a press landed on somebody else's plate");
+  }
 });

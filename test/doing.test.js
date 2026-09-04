@@ -35,8 +35,10 @@ import {
   DOINGS,
   DOING_INVITE,
   DOING_ORDER,
+  DoingCrowd,
   DoingWatch,
   LOW,
+  MAX_WORD_CHARS,
   MIN_SHOW_MS,
   NEAR,
   SENSE,
@@ -46,6 +48,7 @@ import {
   doingIcon,
   doingLine,
   doingOf,
+  doingWord,
 } from "../src/doing.js";
 
 const cfg = makeConfig({ seed: 1 });
@@ -449,4 +452,97 @@ test("a pond somebody is watching an animal in is bit for bit a pond nobody is",
     return stateFingerprint(world);
   };
   assert.equal(run(true), run(false));
+});
+
+// ---- The short form, and the crowd that wears it (v1.150) ----
+//
+// The words on the plates are a second surface reading one list, so what is
+// worth pinning is that the list *has* a short form for everything it can say,
+// that the short form stays short — the tempting edit to any of these words is
+// to make it clearer, and clearer is longer — and that a plate and the strip
+// under the pond are one sentence rather than two that agree today.
+
+test("every state this file can say has a short word, and none of them runs long", () => {
+  for (const key of DOING_ORDER) {
+    const word = doingWord(key);
+    assert.ok(word, `${key} has no short form, so a plate would show a bare name for it`);
+    assert.ok(
+      word.length <= MAX_WORD_CHARS,
+      `"${word}" is ${word.length} characters, past the ${MAX_WORD_CHARS} a plate has room for`,
+    );
+    assert.equal(word, word.trim(), `"${word}" carries whitespace into a measured layout`);
+  }
+  assert.equal(new Set(DOING_ORDER.map(doingWord)).size, DOING_ORDER.length, "two states share a word");
+  assert.equal(doingWord("no such state"), "", "an unknown state produced a word");
+});
+
+test("the short form is its own writing, not the sentence cut off", () => {
+  // The point of holding a second column rather than deriving one: the two
+  // shortest-tempered states share no wording at all with their sentences.
+  assert.equal(doingWord("stalked"), "in danger");
+  assert.ok(!DOINGS.stalked.phrase.includes("danger"), "the sentence already said it, so this proves nothing");
+});
+
+test("a crowd holds one line per animal, and they do not run together", () => {
+  const a = subject({ id: 1 });
+  const b = subject({ id: 2 });
+  moving(a, 0.5);
+  sees(a, "food", NEAR + 0.2);
+  b.vx = 0;
+  b.vy = 0;
+  const crowd = new DoingCrowd();
+  assert.equal(crowd.look(a, cfg, 0), "foraging");
+  assert.equal(crowd.look(b, cfg, 0), "resting");
+  assert.equal(crowd.size, 2);
+  // Read back without looking again — the strip's route. It must not advance
+  // anything: the same answers a moment later, off the same holds.
+  assert.equal(crowd.keyOf(1), "foraging");
+  assert.equal(crowd.keyOf(2), "resting");
+  assert.equal(crowd.keyOf(999), null, "an unwatched id answered");
+  // One animal's line changing does not disturb the other's.
+  a._in.fill(0);
+  a._in[0] = 1;
+  assert.equal(crowd.look(a, cfg, MIN_SHOW_MS + 1), "searching");
+  assert.equal(crowd.keyOf(2), "resting");
+});
+
+test("a crowd forgets whoever stops wearing a plate", () => {
+  const a = subject({ id: 1 });
+  const b = subject({ id: 2 });
+  const crowd = new DoingCrowd();
+  crowd.look(a, cfg, 0);
+  crowd.look(b, cfg, 0);
+  crowd.keep(new Set([1]));
+  assert.equal(crowd.size, 1, "the map keeps everybody who has ever been in it");
+  assert.equal(crowd.keyOf(2), null);
+  crowd.reset();
+  assert.equal(crowd.size, 0);
+  assert.equal(crowd.look(null, cfg, 0), null, "nobody was given a line");
+  assert.equal(crowd.look({ id: 3, dead: true }, cfg, 0), null, "the dead were given a line");
+});
+
+test("a new pond's creature is not the old one's, however its id falls", () => {
+  // The failure a crowd can have and a single watch cannot: ids come back. Two
+  // different animals, both id 1, the second with more energy than the first —
+  // credited with a meal it did not eat, on the first frame of its own world.
+  const crowd = new DoingCrowd();
+  const before = subject({ id: 1, energy: cfg.energyMax * 0.5 });
+  assert.equal(crowd.look(before, cfg, 0), "resting");
+  const after = subject({ id: 1, energy: cfg.energyMax * 0.9 });
+  assert.equal(
+    crowd.look(after, cfg, MIN_SHOW_MS + 1),
+    "resting",
+    "a new animal inherited the last one's energy and was credited with its dinner",
+  );
+  assert.equal(crowd.size, 1, "the replaced animal's watch was kept as well as the new one's");
+});
+
+test("a crowd's hold is a watch's hold, because it is one", () => {
+  const c = subject({ id: 7 });
+  const crowd = new DoingCrowd();
+  assert.equal(crowd.look(c, cfg, 0), "resting");
+  moving(c, 0.5);
+  sees(c, "food", NEAR + 0.2);
+  assert.equal(crowd.look(c, cfg, MIN_SHOW_MS - 1), "resting", "the line changed before its time was up");
+  assert.equal(crowd.look(c, cfg, MIN_SHOW_MS), "foraging", "the line never changed");
 });

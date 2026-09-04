@@ -53,6 +53,19 @@
 // most: the cast runs a mean of 2.95 rows, so the cap is a guard against a pond
 // I have not seen rather than a routine trim.
 //
+// **And a plate now says what its animal is doing (v1.150).** Twenty-four
+// releases of this page could tell you *who* something was and never once *what
+// it was up to*; v1.148 fixed that for the one animal a visitor had picked, and
+// left the other two hundred and ninety-nine mute — which is the whole pond, for
+// as long as it takes somebody to work out that the darts are clickable. These
+// plates were already hanging over three or four animals nobody had to choose.
+// So each one carries the short form of `doing.js`'s verb after its name —
+// *🏆 Marlow · fleeing* — in a quieter ink, because the name is still the half
+// that ties the plate to a row on the board and the verb is the half that
+// changes. The words, the priority between them and the hold that keeps one up
+// long enough to read are all `doing.js`'s, unchanged; a plate is a second
+// reader of that list, not a second opinion about it.
+//
 // **And a name is a button (v1.127).** The release that put these plates on the
 // water left them inert, which is the one thing a label with a name on it can
 // never be: everybody who has ever seen a map knows that the word is the place.
@@ -66,6 +79,7 @@
 
 import { castRoles, givenName } from "./cast.js";
 import { ROLE_MARK } from "./whoswho.js";
+import { doingWord } from "./doing.js";
 
 /**
  * The most plates that may be over the water at once.
@@ -92,10 +106,18 @@ export const MAX_TAGS = 4;
  * @param {Map<number, {name: string}>|null} [names] lineage names, for nothing
  *   here yet — passed through to `castRoles` so both readers see one list
  * @param {object|null} [selected] the creature the page is pointed at, if any
+ * @param {import('./doing.js').DoingCrowd|null} [watch] the held verbs (v1.150).
+ *   Passed in rather than made here because the hold has to survive between
+ *   frames and this function does not: it is called fresh every frame and
+ *   returns a snapshot. Absent, a plate is a name and nothing else, which is
+ *   what every caller before v1.150 gets and what the tests that predate it
+ *   still assert.
+ * @param {number} [now] the caller's clock, in milliseconds — only read when
+ *   `watch` is given
  * @returns {Array<{id: number, x: number, y: number, radius: number, hue: number,
- *   mark: string, name: string, chosen: boolean}>}
+ *   mark: string, name: string, chosen: boolean, doing: string|null}>}
  */
-export function nameTags(world, config, names = null, selected = null) {
+export function nameTags(world, config, names = null, selected = null, watch = null, now = 0) {
   const roles = castRoles(world, config, names);
   const markOf = new Map(roles.map((r) => [r.creature.id, ROLE_MARK[r.rank] ?? ""]));
   const out = [];
@@ -113,11 +135,23 @@ export function nameTags(world, config, names = null, selected = null) {
       mark,
       name: givenName(c.id),
       chosen,
+      // The verb is looked up *here*, inside the one loop that already holds
+      // the creature, rather than by a second pass that would have to find
+      // each animal again by id. It is also the only reason this snapshot is
+      // taken in a fixed order: the watch advances a hold when it is looked
+      // at, so looking twice in a frame would age a line twice.
+      doing: watch ? watch.look(c, config, now) : null,
     });
   };
 
   if (selected) add(selected, markOf.get(selected.id) ?? "", true);
   for (const role of roles) add(role.creature, ROLE_MARK[role.rank] ?? "", false);
+  // Whoever has stopped wearing a plate stops being watched. Without this the
+  // map would grow by one entry for every animal that has ever been the biggest
+  // or the oldest in the pond — small, but it is also the thing that keeps a
+  // dead animal's energy from being compared against a live one that inherits
+  // its id.
+  if (watch) watch.keep(seen);
   return out;
 }
 
@@ -134,6 +168,69 @@ export function nameTags(world, config, names = null, selected = null) {
  * never swallow a press aimed at the body underneath it.
  */
 export const TAG_TOUCH_PAD = 4;
+
+/**
+ * The gap left between two plates that have had to stack, in the same pixels
+ * the plate is drawn in. Small: they are meant to read as a column, not as two
+ * unrelated marks.
+ */
+export const STACK_GAP = 2;
+
+/**
+ * Where a stacked plate may go, in whole plate-heights from where it wanted to
+ * be: its own spot first, then up, then down. Up before down because a plate
+ * already sits *above* its animal, so moving up keeps the column on the same
+ * side of the body it belongs to; down would put one label between two animals
+ * with nothing to say which is which.
+ *
+ * Five candidates and no more. Beyond two rows the column has stopped being
+ * *near* the animal it names, and an honest overlap is better than a plate
+ * pointing at the wrong dart.
+ */
+export const STACK_STEPS = Object.freeze([0, -1, -2, 1, 2]);
+
+/**
+ * A vertical spot for a plate that clears every plate already laid down.
+ *
+ * **This is the fix for a cost `node --test` could not see and a browser walk
+ * could (v1.150).** A plate carrying a verb is two and a half times the width
+ * of a plate carrying a name — a mean of 318 canvas pixels against 131 on a
+ * 346 px phone — and over twelve seeds sampled sixty times each, two plates
+ * landed on top of each other on **21.0% of frames** with the verbs against
+ * 8.6% without. `MAX_TAGS` has said since v1.126 that a screen of overlapping
+ * labels is a worse picture than a screen with no labels at all, and the verb
+ * would have tripled the rate of exactly that. Moving the second plate up a row
+ * costs nothing and fixes the 8.6% the plates already had.
+ *
+ * Here rather than in the renderer for `tagAt`'s reason: the arithmetic is what
+ * a test can check and the painting is not. The boxes handed in are the plates
+ * as they were actually laid down, so the hit test and the picture keep sharing
+ * one geometry — the whole point of recording them.
+ *
+ * @param {Array<{x: number, y: number, w: number, h: number}>} laid plates already placed
+ * @param {number} x the plate's left edge, already decided
+ * @param {number} y where it would go with nothing in the way
+ * @param {number} w
+ * @param {number} h
+ * @param {number} gap see `STACK_GAP`, at the drawn scale
+ * @param {number} viewH the height a plate has to stay inside
+ * @returns {number} the y to draw at — `y` itself when nothing clears
+ */
+export function stackY(laid, x, y, w, h, gap, viewH) {
+  for (const step of STACK_STEPS) {
+    const ty = y + step * (h + gap);
+    if (ty < 0 || ty + h > viewH) continue;
+    let clear = true;
+    for (const b of laid) {
+      if (x < b.x + b.w && b.x < x + w && ty < b.y + b.h && b.y < ty + h) {
+        clear = false;
+        break;
+      }
+    }
+    if (clear) return ty;
+  }
+  return y;
+}
 
 /**
  * Which plate a press landed on, or `null`.
@@ -177,10 +274,46 @@ export function tagText(tag) {
 }
 
 /**
+ * What sits between the name and the verb on a plate.
+ *
+ * A spaced middle dot, which is this page's own separator wherever two facts
+ * share a line, and a character rather than a gap because a gap is what a plate
+ * looks like when a word failed to arrive.
+ */
+export const TAG_SEP = " · ";
+
+/**
+ * The trailing half of a plate — the separator and the verb — or an empty
+ * string for an animal nobody is holding a verb for.
+ *
+ * Returned as one string with the separator already on it, because the renderer
+ * draws this half in a second colour and therefore has to measure it: a
+ * separator drawn in the name's ink and a verb drawn in the dim would be two
+ * measurements to keep in step, and the dot belongs to the quiet half of the
+ * sentence anyway.
+ */
+export function tagDoing(tag) {
+  const word = tag && tag.doing ? doingWord(tag.doing) : "";
+  return word ? `${TAG_SEP}${word}` : "";
+}
+
+/**
+ * What a plate reads in full, name and verb — the string a test asserts against
+ * and the one a screen reader would be given if this layer ever gets one.
+ */
+export function tagFullText(tag) {
+  return `${tagText(tag)}${tagDoing(tag)}`;
+}
+
+/**
  * What the set of tags depends on, as a string — the same content-keyed memo
  * every panel on this page uses, here so a test can ask whether two frames drew
  * the same names without comparing two arrays of objects.
+ *
+ * The verb is part of the key from v1.150: two frames whose plates say
+ * *Nim — fleeing* and *Nim — hunting* are two different pictures, and a memo
+ * that could not tell them apart would be a memo that holds the wrong one.
  */
 export function tagSignature(tags) {
-  return tags.map((t) => `${t.id}:${t.mark}`).join(",");
+  return tags.map((t) => `${t.id}:${t.mark}:${t.doing ?? ""}`).join(",");
 }
