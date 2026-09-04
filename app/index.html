@@ -23,6 +23,25 @@
           <p class="tagline">a digital pond where little brains evolve to survive</p>
         </div>
       </div>
+      <!-- The switch (v1.149). Twenty-five releases have each added one more
+           true thing to this screen and a first-time visitor meets all of them
+           at once; `src/tour.js` ranks that page and this one uncrowds it. It
+           sits in the top bar rather than in the control panel because the
+           control panel is one of the things it puts away, and a switch that
+           can hide itself is a door that locks from the inside.
+
+           The counts under the word are read off the page at runtime, not
+           typed — see `src/simpleview.js`, which owns every letter here. -->
+      <!-- No `aria-pressed`. This is the toggle whose *label* changes, and ARIA's
+           own guidance is that the two patterns are alternatives: a button that
+           says `🔬 Everything` and also announces itself as pressed is telling a
+           listener two different things about the same control. The label
+           carries the promise; nothing carries the state, because the page
+           itself is the state. -->
+      <button id="btn-simple" class="viewswitch" type="button">
+        <span class="vs-label" id="simple-label">🔬 Everything</span>
+        <span class="vs-note" id="simple-note">34 dials · 5 figures</span>
+      </button>
       <nav class="links">
         <a href="https://github.com/getravi/claude_imagine" target="_blank" rel="noopener">Source</a>
         <a
@@ -370,7 +389,8 @@
             <kbd>S</kbd> skip ahead · <kbd>G</kbd> make a GIF ·
             <kbd>?</kbd> show me around · <kbd>N</kbd> new seed ·
             <kbd>V</kbd> vision · <kbd>+</kbd>/<kbd>−</kbd> zoom ·
-            <kbd>0</kbd> whole pond · <kbd>H</kbd> chart history
+            <kbd>0</kbd> whole pond<span data-expert="hint-charts"> ·
+            <kbd>H</kbd> chart history</span>
           </p>
           <p class="kbd-hint" aria-label="Choosing a creature with the keyboard">
             <kbd>Tab</kbd> to the pond, then <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd
@@ -405,7 +425,7 @@
                `src/targetsize.js` records a target per *selector*, and two
                `details summary` rows measured under one name is an inventory
                that cannot say which of them a verdict is about. -->
-          <details class="levers" open>
+          <details class="levers" data-expert="rules" open>
             <summary>Rules &amp; settings</summary>
             <label class="field">
               <span>Food rate <b id="food-rate-label"></b></span>
@@ -626,7 +646,7 @@
             </dl>
           </section>
 
-          <details class="more-stats">
+          <details class="more-stats" data-expert="numbers">
             <!-- The marker is a character in the summary rather than the
                  native `::marker`, which `display: flex` on a summary removes
                  in every engine — and a disclosure with no marker at all is a
@@ -720,7 +740,7 @@
              deliberately: pale, mid, dark, terminal outcome darkest. The colours
              are measured against that bar's in src/palette.js so the two can be
              read side by side without one being mistaken for the other. -->
-        <div class="mortality">
+        <div class="mortality" data-expert="energy">
           <div class="mort-head">⚡ Where the energy goes <span id="nrg-made">3,800 minted</span></div>
           <div class="mort-bar" id="nrg-bar" role="img" aria-label="Nothing has been eaten yet.">
             <i id="nrg-metabolism"></i>
@@ -730,7 +750,7 @@
           <div class="mort-legend" id="nrg-legend">Nothing has been eaten yet.</div>
         </div>
 
-        <div class="chartwrap">
+        <div class="chartwrap" data-expert="charts">
           <div class="chart-legend">
             <span class="dot pop"></span> population
             <span class="dot food"></span> food
@@ -819,7 +839,7 @@
              here had ever drawn (v1.104). The bars are cut by the diet gene
              because predation is a rule about the distance between two points
              on this axis — see src/sizeplot.js. -->
-        <div class="sizewrap">
+        <div class="sizewrap" data-expert="sizes">
           <div class="mort-head">📏 How big they are</div>
           <canvas
             id="sizes"
@@ -848,13 +868,13 @@
           <div class="chart-range" id="size-legend"></div>
         </div>
 
-        <div id="inspector" class="inspector empty">
+        <div id="inspector" class="inspector empty" data-expert="inspector">
           <div class="hint">Click a creature to inspect its brain and lineage.</div>
         </div>
       </aside>
     </main>
 
-    <section class="phylo">
+    <section class="phylo" data-expert="tree">
       <div class="phylo-head">
         <h2>🌳 Tree of Life</h2>
         <span class="phylo-info" id="phylo-info"></span>

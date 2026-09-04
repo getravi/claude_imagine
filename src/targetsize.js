@@ -264,6 +264,8 @@ export const UNMET = Object.freeze({
     "`gestures.js` targets are the whole canvas, which is measured here as one target rather than as the several actions it carries",
   "`.learn-*`":
     "fourteen rules of CSS no page in this repository uses — the same orphan `legibility.js` found from the ink side",
+  "#btn-simple":
+    "shipped in v1.149, after the last probe went out — and it is the one control here whose *own* row would not be the interesting number, because it changes how many of the other seventy-seven are on the page at all. The walk that measures it has to be run twice, once on each side of the switch, and the second pass is the first time this inventory would have a page with a different set of targets on it rather than the same set at a different width. It is given a `min-height` in `HIT_RULES` below so it clears the bar by size while it waits",
   "#btn-hand":
     "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-skip`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
 });
@@ -280,6 +282,11 @@ export const HIT_RULES = Object.freeze({
   // nothing sits within 38 px of it — a pass the panel's next layout change can
   // take away — so the new one asks for the bar in its own rule instead.
   ".more-stats > summary": TARGET_MIN,
+  // v1.149's switch, sized on arrival for the reason the disclosure above was:
+  // it is a two-line control in a flex row, so its height is whatever its text
+  // happens to wrap to, and a control in the top bar has nothing below it to
+  // borrow the spacing exemption from.
+  ".viewswitch": TARGET_MIN,
 });
 
 /**

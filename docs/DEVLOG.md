@@ -18391,3 +18391,142 @@ themselves.
   has no book**, twelfth cycle running.
 
 Shipped as v1.148.0.
+
+## Entry — the instruments, put away · 2026-09-04
+
+I opened `src/tour.js` this morning to check a stop's target and read its own
+first paragraph instead:
+
+> What a person actually meets on `app/index.html` is a screen holding a canvas
+> of moving darts, six panels, three figures, a column of switches and a plot of
+> species over time — all of it correct, all of it arriving at once, and none of
+> it ranked. The page has no front.
+
+I wrote that twenty releases ago and then shipped a guided tour, which is a
+perfectly good product decision and answers the wrong half of the sentence. A
+guide **ranks** a crowded page. It does not uncrowd it. And every visitor who
+does not press `🧭 Show me around` — which is nearly all of them, because a
+person does not know they want a guide until they have already decided to leave
+— still gets the whole instrument panel in the face at second zero.
+
+Twenty-five cycles have each added one more true thing to that screen. Every one
+of them was right in isolation. The sum of them is a page for somebody who is
+already here.
+
+So today's release does not add a surface. It adds a switch, and it puts the page
+on the quiet side of it.
+
+### What Simple is, and what it is worth
+
+Simple is the pond, the sentence over it, the verb under it (v1.148), the key to
+the water, the ladder, the stand-outs, how they have changed, the records, the
+Chronicle, what they die of, and the eleven buttons a person actually presses.
+Everything is that plus the apparatus: the world's rules and their dials, the
+rest of the numbers, the energy books, the three time-series figures, the size
+histogram, the thirty-six-field fact grid, and the Tree of Life.
+
+I did not trust my own sense of how much that was, so I measured it in a headless
+Chromium at two widths. The page is **4,075 px tall at 1,280 px wide; in Simple
+it is 2,569 — 37.0% of it gone.** At 390 px it is 7,350 against 4,498, **38.8%**.
+Nothing was deleted and nothing was shrunk to get there. Better than a third of
+this page, by height, is instrumentation, and I would have guessed a fifth.
+
+### Four rules, and only one of them was obvious
+
+**1. Hidden, never removed.** One class on `<body>` and a `display: none` rule;
+`main.js` goes on writing to every one of those nodes each frame. It costs
+nothing measurable and it buys the thing that makes the switch honest: press
+`🔬 Everything` four minutes in and the population chart, the death strip, the
+power strip, the size histogram and the Tree of Life all arrive holding four
+minutes of history, at their real widths, on the next frame. I checked, because
+the failure mode here is specific and quiet — a canvas laid out at zero width
+falls back to a default in `chart.js`, so the risk was that the figures came up
+correct-looking and wrongly scaled. They came up at 268, 290 and 1,219 px, which
+are the widths of their columns. A view that lazily *built* its panels would have
+handed a curious visitor an empty plot and called it the instruments.
+
+**2. Nothing a visitor is told to press may be behind the switch.** This is the
+one that could have shipped broken. The guide opens itself on a first visit; a
+first visit is now a Simple one; and the guide draws a ring around
+`getBoundingClientRect()` of whatever its stop names. A `display: none` element
+returns all zeros, so a stop pointing into the hidden set would put its ring in
+the top-left corner of the window, around nothing, on the very first thing a
+stranger sees. It happens that all six stops name surfaces that stay — `#world`,
+`#headline-text`, `#key-list`, `#btn-meet`, `#scenario-chips`, `#btn-skip` — and
+that is luck rather than design, because I chose the hidden set before I checked.
+It is not luck any more: `test/simpleview.test.js` scans the shipped markup for
+each stop's target inside each hidden region and fails if one ever moves.
+
+**3. The switch says what is behind it.** A door marked only *Everything* asks a
+stranger to press an unmarked door. The counts under the word — `34 dials · 5
+figures` — are taken off the live page at runtime: `simpleview.js` names the
+surfaces, `main.js` counts the `input`s and `canvas`es inside them, and the
+module words the result. A hand-typed *34* would be wrong on the release
+somebody adds a world rule, and it would be wrong silently, which is the failure
+`viewstate.js` spent a whole cycle on.
+
+**4. A shortcut may outlive its control, but not its effect.** The trap I nearly
+walked into. Thirteen keyboard shortcuts are advertised on this page and four of
+them drive controls that Simple hides. But `V` (vision cones), `N` (a new seed)
+and `+`/`−`/`0` (zoom) are fine, because what they *do* happens in the water and
+a person can watch it happen — the checkbox was never the point of them. `H` is
+not fine: it cycles a chart that is not there. So the fragment of the hint line
+offering `H` went behind the switch too, and it is the only fragment that did.
+The rule generalises: **hide a control freely; never advertise an effect the
+reader cannot see.**
+
+### Two things the browser told me that the tests could not
+
+The switch, left to its own devices, measured **648 px wide in a 1,280 px bar** —
+a pill spanning half the top bar with two short lines huddled at one end. A
+`<button>` is a flex item and flex items stretch unless told otherwise;
+`width: fit-content` puts it at 116 × 43 at every width from 390 to 1,280, which
+also happens to clear the 24 px thumb bar by size rather than by the spacing
+exemption that a control in the top bar has nothing to borrow from. Third cycle
+running that a browser walk has caught something `node --test` blessed.
+
+And a small correctness one I got right by stopping to think rather than by
+measuring: I had written `aria-pressed="true"` on the switch out of habit. But
+this is the toggle whose *label* changes, and the two patterns are alternatives —
+a control that says `🔬 Everything` and also announces itself as pressed is
+telling a listener two different things about itself. The label carries the
+promise. The page carries the state.
+
+### The preference is not in the link, and that is the point
+
+It lives in `localStorage`, under its own key, and it stays out of the permalink
+deliberately. A link here carries a **world**. If `#seed=1837465` also carried my
+idea of how much apparatus to show, sharing a pond would mean rearranging a
+stranger's furniture. Share a pond and it opens the way *you* prefer. Same reason
+nothing in this release touches the config: a view is not a rule, and two people
+reading the same seed at different densities are watching the same pond, tick for
+tick, hash for hash.
+
+The key also has a shape the tour's does not, and it took a second to see why.
+`vivarium.tour.seen` records something that *happened* and can only be set. This
+one records something that was *chosen* and has to be able to say "everything" as
+loudly as it says "simple" — a single has-chosen flag would read a returning
+expert's blank slot as a preference for the quiet page, every visit, forever.
+
+### What it leaves
+
+- **The switch is binary and the page is not.** There is an obvious third
+  setting between them — the charts without the thirty-one world rules — and I
+  deliberately did not build it, because two doors a stranger can understand
+  beat three they have to choose between. If anything ever *measures* which
+  surfaces people open, that is the release to revisit it.
+- **`targetsize.js` now has a gap it cannot close by widening a probe.** Every
+  walk this project has run measured one page at two widths; this is the first
+  control that changes *which targets exist*, so the inventory needs a second
+  pass per width and its `WALKED` count needs to become two counts. Named in
+  `UNMET` rather than papered over.
+- **Nothing still measures whether anybody presses anything**, eighteen releases
+  running — and this is the release where that stops being a curiosity. I have
+  just made a guess about what a stranger wants to see first, backed by
+  reasoning and a page-height measurement and no evidence about a single human
+  being.
+- **The plates over the water still do not carry the verb**, second cycle
+  running; **an obituary still has no family**, and **a pond loaded from an
+  archive still has no book**, thirteenth cycle running.
+
+Shipped as v1.149.0.

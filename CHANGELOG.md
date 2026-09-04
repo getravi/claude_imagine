@@ -4,6 +4,119 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.149.0] — 2026-09-04
+
+The page, with the instruments put away.
+
+`tour.js` opens with the best description anybody here has written of this
+place: *a screen holding a canvas of moving darts, six panels, three figures, a
+column of switches and a plot of species over time — all of it correct, all of
+it arriving at once, and none of it ranked.* Its answer, in v1.129, was to rank
+it: six stops, a ring around each.
+
+That is a good answer to the wrong half of the sentence. **A guide ranks a
+crowded page; it does not uncrowd it.** And the visitor who never presses
+`🧭 Show me around` — which is most of them, because nobody knows they need a
+guide until they have already decided to leave — still meets all of it at once.
+
+So there is now a switch in the top bar, and the page starts on the quiet side
+of it.
+
+> 🔬 **Everything**
+> 34 dials · 5 figures
+
+**Simple** is the pond, the sentence over it, the verb under it, the key to the
+water, the ladder, the stand-outs, how they have changed, the records, the
+Chronicle, what they die of, and the eleven buttons a person presses.
+**Everything** is that plus the apparatus: the world's rules and their dials,
+the rest of the numbers, the energy books, the population/deaths/power figures,
+the spread of body sizes, the fact grid of thirty-six fields, and the Tree of
+Life. One press either way, and the browser remembers which one you chose.
+
+### What it is worth, measured
+
+The front of this page is **4,075 px tall at 1,280 px wide. In Simple it is
+2,569 — 37.0% of the page gone.** On a 390 px phone it is 7,350 px against
+4,498, **38.8%**. Nothing was deleted to get there and nothing was made smaller:
+that is purely the share of this page that is instrumentation.
+
+### Four rules, and the last one is the one that took the thinking
+
+**Hidden, never removed.** `main.js` writes to those nodes every frame whether
+they are on screen or not, so the switch costs one class on `<body>` — and the
+chart a visitor asks for after four minutes already has four minutes of history
+in it. Driven in a headless Chromium: toggle at tick 824 and the population
+chart, the death strip, the power strip, the size histogram and the Tree of Life
+all come up holding the whole run, at their real widths, on the next frame. A
+view that built its panels on demand would hand a curious visitor an empty plot
+and call it the instruments.
+
+**Nothing a visitor is told to press may be behind the switch.** The guide opens
+itself on a first visit, and a first visit is a Simple one — so a tour stop
+ringing a `display: none` element would draw its ring at the top-left corner of
+the window, pointing at nothing. All six stops name surfaces that stay
+(`#world`, `#headline-text`, `#key-list`, `#btn-meet`, `#scenario-chips`,
+`#btn-skip`), and `test/simpleview.test.js` reads the shipped markup back and
+fails if that ever stops being true.
+
+**The switch says what is behind it.** A control labelled only *Everything* asks
+a stranger to press an unmarked door. The two counts under the word are read off
+the live page at runtime — the module names the surfaces, `main.js` counts what
+is inside them, and the module words the result — so the thirty-second world
+rule somebody adds next release changes the number on the door by itself instead
+of turning a hand-typed one into a lie.
+
+**A shortcut may outlive its control, but not its effect.** This is the trap a
+switch like this falls into: a key whose control it hides. `V` (vision cones),
+`N` (a new seed) and `+`/`−`/`0` (zoom) all keep working in Simple, because what
+they *do* happens in the water and a person can watch it happen. `H` cycles the
+chart between the recent window and the whole run, and in Simple there is no
+chart — so the fragment of the hint line offering `H` is itself behind the
+switch, and it is the only fragment that is.
+
+### Two smaller things the build turned up
+
+**A `<button>` is a flex item that stretches unless it is told not to.** Left to
+itself the switch measured **648 px wide in a 1,280 px bar** — a pill the width
+of half the page with two short lines at one end of it. `width: fit-content`;
+116 × 43 at every width from 390 to 1,280, which also clears the 24 px thumb bar
+by size rather than by the spacing exemption a control in the top bar has
+nothing to borrow from.
+
+**A toggle whose label changes must not also carry `aria-pressed`.** They are
+two ways of saying the same thing, and saying both announces `🔬 Everything,
+pressed` — which of the two readings is a listener supposed to take? The label
+carries the promise. The page carries the state.
+
+### The preference is not in the permalink
+
+Deliberately. A link carries a *world*, and `#seed=1837465` arriving with
+somebody else's idea of how much apparatus to show would be a stranger
+rearranging your furniture. Share a pond and it opens the way **you** prefer.
+That is the same reason nothing here touches the config: a view is not a rule,
+and two people reading the same seed at different densities are watching the
+same pond, tick for tick.
+
+### Added
+
+- `src/simpleview.js` — the key, the words, the list of what is behind the
+  switch, and the two storage calls, wrapped the way `tour.js` wraps its own.
+  Pure observer: no DOM, no world, no random number.
+- `test/simpleview.test.js` — seventeen claims, including the tour-stop
+  invariant above and both directions of the remembered preference.
+- `#btn-simple` in the top bar; `data-expert` on the eight surfaces behind it;
+  `body.simple [data-expert] { display: none }` in `style.css`.
+
+### Changed
+
+- `src/targetsize.js` — the switch named in `UNMET` (it is the first control
+  whose own row is not the interesting number, because it changes how many of
+  the other seventy-seven targets are on the page at all) and held to the bar in
+  `HIT_RULES`.
+
+Determinism untouched: no field added to anything, no random number drawn, the
+state hash unchanged. 1,628 tests pass.
+
 ## [1.148.0] — 2026-09-03
 
 What they are doing.

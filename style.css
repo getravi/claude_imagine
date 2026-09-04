@@ -74,6 +74,52 @@ body {
   display: flex;
   gap: 18px;
 }
+
+/* ---- The view switch (v1.149) ---- */
+/* Two lines: the promise, and what is behind the door. `min-height` rather than
+   padding alone because `src/targetsize.js#HIT_RULES` holds this selector to
+   the 24 px bar and reads the number out of this file on every test run. */
+.viewswitch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-height: 40px;
+  /* A `<button>` is a flex item that stretches unless it is told not to: left
+     to itself this one measured 648 px wide in a 1,280 px bar, a pill the width
+     of the page with two short lines at one end of it. */
+  flex: 0 0 auto;
+  width: fit-content;
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-panel-2);
+  color: var(--ink);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.viewswitch:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.vs-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.vs-note {
+  font-size: 11px;
+  color: var(--ink-faint);
+  line-height: 1.15;
+}
+/* The switch itself. Hidden rather than removed: `main.js` keeps writing to
+   these nodes every frame, so the chart a visitor asks for after four minutes
+   already holds four minutes. See src/simpleview.js, rule 1. */
+body.simple [data-expert] {
+  display: none;
+}
 .links a {
   color: var(--ink-dim);
   text-decoration: none;

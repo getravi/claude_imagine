@@ -115,6 +115,15 @@ import {
   stopAt,
   stopCounter,
 } from "./tour.js";
+import {
+  EXPERT_ATTR,
+  SIMPLE_CLASS,
+  prefersSimple,
+  rememberSimple,
+  switchLabel,
+  switchNote,
+  switchTitle,
+} from "./simpleview.js";
 import { pondName, pondTitle, shareLine, welcomeTo } from "./pondname.js";
 import { postcard, postcardText } from "./postcard.js";
 import { hashFor } from "./permalink.js";
@@ -350,6 +359,10 @@ function boot() {
     $("toggle-motion").checked = e.matches;
   });
 
+  // Before anything else that touches the page: the switch decides how much of
+  // it there is, and a first frame drawn on the crowded page and then folded is
+  // a flinch a visitor sees.
+  wireViewSwitch();
   wireControls();
   wireKeyboard();
   wireCanvas(canvas);
@@ -1138,6 +1151,58 @@ function placeTourStop() {
   const at = cardPlacement(ring, win, card, stop.prefer);
   cardEl.style.left = `${at.left}px`;
   cardEl.style.top = `${at.top}px`;
+}
+
+// ---- The view switch (v1.149) ----
+//
+// `simpleview.js` owns the key, the words and the rules; this is the adapter,
+// and it is three moves — a class on `<body>`, two strings on the control, and
+// the one count the control is allowed to make. The count is taken off the live
+// page rather than typed anywhere, so the thirty-second world rule somebody
+// adds next release changes the number on the door by itself.
+
+/** `localStorage`, or nothing — the same guard `tourStore` uses, for the same reason. */
+function viewStore() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** What is behind the switch: dials to turn, figures to read. */
+function instrumentTally() {
+  let controls = 0;
+  let figures = 0;
+  for (const box of document.querySelectorAll(`[${EXPERT_ATTR}]`)) {
+    controls += box.querySelectorAll("input, select").length;
+    figures += box.querySelectorAll("canvas").length;
+  }
+  return { controls, figures };
+}
+
+/**
+ * Put the page on one side of the switch.
+ *
+ * The tally is re-taken on every flip rather than cached at startup: the
+ * instruments are static markup today, and a count that is a memo is a count
+ * that goes stale on the release where one of them stops being.
+ */
+function applySimpleView(simple) {
+  document.body.classList.toggle(SIMPLE_CLASS, simple);
+  $("btn-simple").title = switchTitle(simple);
+  $("simple-label").textContent = switchLabel(simple);
+  $("simple-note").textContent = switchNote(simple, instrumentTally());
+}
+
+function wireViewSwitch() {
+  let simple = prefersSimple(viewStore());
+  applySimpleView(simple);
+  $("btn-simple").addEventListener("click", () => {
+    simple = !simple;
+    rememberSimple(viewStore(), simple);
+    applySimpleView(simple);
+  });
 }
 
 function wireTour() {
