@@ -102,6 +102,7 @@ import {
 } from "./milestones.js";
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
+import { AimWatch, aimHTML, aimSignature, aimVerdict } from "./aim.js";
 import { nameTags } from "./nametag.js";
 import {
   HAND_HINT,
@@ -289,6 +290,14 @@ const memorial = new Memorial();
 // `lineage.js`.
 const lineage = new Lineage();
 
+// Whether any of it amounts to skill (v1.152). A third pure observer written
+// from the step loop, and the only one whose subject is a *number* rather than
+// a set of animals: of the creatures that can see food, how many are pointed at
+// it — the founders, and everybody alive now. Sampled on the tick and never on
+// the frame, so two people reading the same seed read the same number. See
+// `aim.js`.
+const aim = new AimWatch();
+
 // Track FPS for the HUD.
 let lastFrame = performance.now();
 let fpsSmooth = 60;
@@ -333,6 +342,11 @@ function adoptWorld() {
   // ask about again.
   memorial.forget();
   lineage.forget();
+  // And the measurement starts again with the pond it is about (v1.152). Here
+  // rather than beside the two above because it wants what `foundingSnapshot`
+  // wants and for the same reason: the frame's top, before anything is stepped,
+  // is the one moment `tick === 0` means "these are the animals it was handed".
+  aim.begin(world);
 }
 
 // One look at the pond for the two records that are kept about individuals, per
@@ -351,6 +365,14 @@ function witnessStep() {
     memorial.remember(obituaryFor(body, namesForTree(world.phylogeny), world.stats.recentDeaths));
   }
   lineage.observe(world);
+  // The third (v1.152), and the one that is here for the *opposite* half of the
+  // reason: it does not need every step, it needs a schedule that is the same
+  // on every machine. A share sampled once a frame would be a different share
+  // on a phone and on a desktop, and this panel's whole promise is that two
+  // people reading the same seed read the same number — so the schedule is in
+  // `AimWatch#sample`, on the tick, and every step site that calls this hands
+  // it every tick to choose from.
+  aim.sample(world);
 }
 
 function boot() {
@@ -567,6 +589,9 @@ function loop(now) {
   updateCast(world);
   updateEvolved(world);
   updatePortrait(world);
+  // Straight after them, because the two boards are one thought: that one says
+  // what has changed and this one says whether any of it was an improvement.
+  updateAim();
   updateMilestones(world);
   updateRecords(world);
   updateChronicle(world);
@@ -878,6 +903,30 @@ function updatePortrait(world) {
   if (sig === view.portraitSig) return;
   view.portraitSig = sig;
   $("portrait").innerHTML = portraitHTML(pair);
+}
+
+// ---- Are they getting better? (v1.152) ----
+//
+// The adapter onto three elements, and the only panel here whose argument is
+// not read off the world this frame: `aim.js` holds the measurement, this pass
+// only asks it what it has. No click to wire, for `updateEvolved`'s reason —
+// every row is about a population rather than about an animal anybody could go
+// and press.
+//
+// Keyed on the printed numbers and the verdict rather than on the shares, which
+// is `evolvedSignature`'s reason at a coarser resolution: the trailing window
+// moves in the fourth decimal every ten ticks and this panel prints whole
+// animals out of a hundred, so a key made of the measurement would rebuild
+// three bars sixty times a second to draw exactly the same three bars.
+function updateAim() {
+  const reading = aim.reading();
+  const sig = aimSignature(reading);
+  if (sig === view.aimSig) return;
+  view.aimSig = sig;
+  const said = aimVerdict(reading);
+  $("aim-verdict").textContent = `${said.mark} ${said.verdict}`;
+  $("aim-list").innerHTML = aimHTML(reading);
+  $("aim-why").textContent = said.why;
 }
 
 // ---- How far this pond has got (v1.131) ----

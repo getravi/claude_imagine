@@ -18781,3 +18781,148 @@ because that is the phrase a person uses, and not because I was guessing.
   And after fourteen entries: *an obituary now has a family.*
 
 Shipped as v1.151.0.
+
+## Entry — are they any good at it? · 2026-09-04
+
+The front door has said the same nine words for thirty releases: *No one
+programmed them to survive. They figured it out.* I put the ordinary visitor's
+hat on this morning — the playbook's own instruction — and the minute turned up
+something better than a missing reaction. **Nothing on this page checks that
+sentence.**
+
+Everything I have built underneath it takes it on trust. The Chronicle says what
+happened. The record book says what was best. The ladder says what is coming.
+And `🧬 How they have changed`, the board I wrote in v1.128 specifically to
+answer *have these things changed since it started*, reports that the animals
+are 20% bigger and eat less meat than the ones this pond was handed.
+
+Which is a completely different claim, and I had not noticed. **Changed is not
+better.** A pond whose creatures all drifted 20% bigger and stayed exactly as
+hopeless at finding lunch would fill that board with five true rows, and a
+visitor would leave believing something the pond had not earned. Twenty-four
+releases of narration and not one of them asks whether the animals in the water
+are any **good** at the one thing nobody taught them.
+
+### Picking a question that a five-year-old can check
+
+My first three candidates were all population measures — mean lifespan, food
+eaten per hundred ticks, share of newborns that live to breed — and all three
+are confounded by exactly the same thing: **crowding**. Every one of them falls
+as the pond fills, so a pond getting better at surviving would post a graph of
+itself getting worse. I nearly built the lifespan one before spotting it, which
+is the failure this project keeps rediscovering: the instrument answers the
+question its formula asks and nothing else.
+
+What survived is per-animal and per-instant, so it has no denominator to be
+confounded through:
+
+> **Of the animals that can see food, how many are pointed at it?**
+
+`Creature#sense` already writes the bearing to the nearest pellet as a sine and
+a cosine relative to the animal's own heading, and hands it to the brain. So
+`foodCos > 0` is exactly *the food is in front of me rather than behind me* — a
+fact about one animal at one instant that a child could check by looking at the
+picture, and free to read, because the brain was given it anyway.
+
+And it has the property none of the other candidates had: **an arithmetic
+null**. A heading drawn uniformly on the circle puts an arbitrary bearing in
+front of it exactly half the time. 50 in 100 is the number to beat, and nobody
+had to go and measure it.
+
+### The founders are a coin toss, and I did not have to hope so
+
+Twelve seeds, six thousand steps, sampled every ten ticks. Over the animals each
+pond was *handed* — brains dealt at random, never selected — the reading is
+**47.9% to 58.7%, mean 52.0%**. Forty random brains are, measurably, random at
+the thing this world selects on, and they are random on every seed.
+
+That is the cleanest null I have got out of one of these sweeps, and it is what
+makes the panel an argument rather than a number: the control is not a
+convention I chose, it is what the arithmetic predicted and the ponds confirmed.
+
+Every pond then beats it. **Twelve of twelve**, ending at a mean of 75.2% — from
+56.7% on the flattest to 89.2% on the steepest — and the gap passes five points
+at a median of **1,190 steps**, which is twenty seconds at 1× or half of one
+press of `⏩ Skip ahead`. A visitor can watch it happen.
+
+### I nearly credited the wrong mechanism
+
+The obvious sentence to write under those bars was *mutation found it*. Before
+typing it I turned mutation off — `mutationRate` and `mutationScale` both at
+zero, no new variation, ever — and ran the twelve again.
+
+**The pond still climbs: 52.3% → 64.9%, up on nine seeds of twelve.**
+
+The founders are dealt a *spread*; the ones that happen to steer well have more
+young; and that alone buys over half the gain. Mutation roughly doubles it (23.2
+points against 12.6) and invents nothing by itself. So the sentence under the
+bars credits selection — which is true in both worlds — and not mutation, which
+is true in one. The landing page has said *selection is just physics* since
+v1.9; this is the first time anything here has demonstrated it, and I would have
+written the wrong caption over my own demonstration.
+
+The general shape is worth keeping: **the control that tests a mechanism is
+usually one config field away, and I reach for it about half the time.**
+
+### Two things the sweep found that I was not looking for
+
+**The gate I built to be careful filters almost nothing.** I only count animals
+that can see food, so as not to measure luck. Food is inside an animal's sight
+on **99.88%** of instants at the default spawn rate — and on **93.8%** with the
+tap turned fully off, because the standing crop long outlives the tap. So the
+gate is a guard rather than a filter, the number a visitor reads is very nearly
+*all of them*, and the panel may honestly say the only question left is where
+they are pointed. It stays for the starved pond, where it is the whole
+difference between aim and luck.
+
+**The control drifts upward as it runs.** By a mean of 1.6 points across the
+twelve (−1 to +5), because the founders still alive at tick 4,000 are the
+founders that were better at this. That is selection showing up *inside* my own
+control — and it is the harmless direction, since it makes the comparison read
+smaller than the truth. Worth stating out loud rather than leaving for somebody
+to find: a baseline gathered over a population's *lifetime* is a baseline with
+survivorship in it, and the only question is which way it leans.
+
+### And a third bar-drawing lesson from a browser
+
+`node --test` went green on all 1,678 and the panel was wrong. I laid the three
+rows out as three-column grids — label, bar, number — and a grid's first track
+is sized by **its own** contents, so `Turning at random` and `The animals it
+started with` bought their rows different bar tracks: **689, 645 and 682 px** at
+1,280 wide, and 139, 95 and 132 on a 390 px phone.
+
+Three bars at three scales, on a panel whose entire job is that they be
+compared. Fifty per cent of 689 px is a *longer* mark than fifty-two per cent of
+645. A reader would have seen the null beating the founders.
+
+Worse, the CSS comment beside it *asserted* that the three rows shared one grid.
+I had written down the intention and not the mechanism, and then never looked.
+**Fourth cycle running that a browser walk caught something `node --test`
+blessed** — and the first where what it caught was a sentence of mine claiming
+the opposite. Every bar now sits on a line of its own, which cannot have the bug
+at any width and gives a phone a bar two and a half times longer than it had.
+
+The half a test *can* hold is the shape: `test/aim.test.js` asserts the label
+and the number live inside a head of their own and the bar is that head's
+sibling, so the next person to put them back on one line fails here.
+
+### What it leaves
+
+- **Aim is one skill, and the pond selects on several.** Nothing measures
+  whether they have got better at *fleeing*, and the senses carry that bearing
+  too — the same three lines would answer it for a predation world.
+- **The panel does not say when.** It says 52 then and 87 now, and the shape of
+  the climb between them — which is the interesting part, and the one figure
+  this page could draw from a series it is already keeping.
+- **A pond loaded from an archive has no opening line**, as it has none for
+  `🧬 How they have changed`. It gets a real answer anyway, held against the
+  arithmetic 50, which is the first time a comparison panel here has had
+  anything to say to a restored world. The other boards could borrow the trick
+  where they have a null of their own; mostly they do not.
+- **Grandchildren are still not looked for**, and **the offer on an obituary
+  still wears one name and may hand over another.**
+- **Nothing measures whether anybody presses anything**, twenty-one releases
+  running.
+- **A pond loaded from an archive still has no book**, sixteenth cycle running.
+
+Shipped as v1.152.0.

@@ -180,6 +180,13 @@ const FRESH = Object.freeze({
   // over what is *drawn*, so a pond that inherited it would find it wrong on
   // the first frame and write.
   portraitSig: "",
+  // Are they getting better? (v1.152). World-scoped for `evolvedSig`'s reason
+  // with one extra edge of its own: the panel's measurement lives in an
+  // `AimWatch` that `adoptWorld` restarts, and the first frame of a new pond
+  // reads "counting" — so a signature inherited across a reset would leave the
+  // old pond's *verdict* on screen over a panel with nothing in it yet, which
+  // is the one moment this board could say something it cannot support.
+  aimSig: "",
   // The ladder (v1.131). World-scoped, and this one could not be anything else:
   // the panel's rows are latched *in the world*, so a reset hands the page a
   // pond whose six ticks are all −1 again. A signature inherited across that
@@ -270,6 +277,11 @@ export const PAGE_SCOPED = Object.freeze({
     "who each living animal's parents were (v1.146). Emptied alongside the book and for its " +
     "reason, plus one of its own: a family line whose living end is in a pond that no longer " +
     "exists is a line nothing will ever ask about again",
+  aim:
+    "whether the animals are pointed at their food (v1.152). Restarted by `adoptWorld` " +
+    "beside the two above, and the odd one of the three: what it must not inherit is not " +
+    "ids but a *control* — a founder baseline carried into a new pond would measure this " +
+    "pond's crowd against the last pond's opening line",
   config: "the subject, not a view of it — replaced alongside the world",
   world: "the subject itself; `adopt` is keyed on this object's identity",
   renderer: "one canvas, built once at boot and re-pointed at each new config",

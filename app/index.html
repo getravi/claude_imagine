@@ -313,6 +313,29 @@
           <ul class="evolist" id="evolved-list"></ul>
         </section>
 
+        <!-- Whether any of that amounts to skill (v1.152). The board above says
+             what has *changed*; this one says whether they are any *good*, which
+             is the claim the front door makes and the one nothing here had ever
+             checked. One question — of the animals that can see food, how many
+             are pointed at it? — against the only baseline on this page that
+             needed no measuring: a heading drawn at random puts the food in
+             front of you exactly half the time.
+
+             It is directly under `🧬 How they have changed` because the two are
+             one thought, and it is not behind the view switch because it is the
+             single most persuasive thing this page can say to somebody who has
+             never heard of neuroevolution. `src/aim.js` owns every word and
+             every number; main.js samples it from the per-step observer. -->
+        <section class="aim" aria-labelledby="aim-h">
+          <div class="aim-head">
+            <h2 id="aim-h">🎯 Are they getting better?</h2>
+            <span class="aim-sub">nobody taught them where food is</span>
+          </div>
+          <p class="aim-verdict" id="aim-verdict"></p>
+          <ul class="aimlist" id="aim-list"></ul>
+          <p class="aim-why" id="aim-why"></p>
+        </section>
+
         <!-- The book of records (v1.124). Everything else named on this page is
              about *now*; this is the only surface that remembers an animal after
              it sinks. Three all-time bests — the most young one animal has

@@ -4,6 +4,112 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.152.0] — 2026-09-04
+
+The page finally checks its own headline.
+
+The front door has said the same nine words for thirty releases: **"No one
+programmed them to survive. They figured it out."** Everything built underneath
+it takes that on trust. The Chronicle tells you what happened, the record book
+what was best, the ladder what comes next, and `🧬 How they have changed` tells
+you the animals are 20% bigger and eat less meat than the ones this pond started
+with.
+
+Changed is not *better*. A pond whose creatures all drifted 20% bigger and
+stayed exactly as hopeless at finding lunch would fill that board with five true
+rows, and the visitor would leave believing something the pond had not earned.
+Nothing here has ever asked whether the animals in the water are any **good** at
+the one thing nobody taught them.
+
+Now something does, in three bars a stranger can read in four seconds:
+
+> **🎯 Are they getting better?**
+> 📈 Yes — 87 in 100, up from 52
+>
+> Turning at random ▓▓▓▓▓▓▓▓░░░░░░░░ 50 in 100
+> The animals it started with ▓▓▓▓▓▓▓▓░░░░░░░ 52 in 100
+> Everyone alive now ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 87 in 100
+>
+> Nobody told them where food is. The first ones did no better than a coin toss,
+> and the ones that happened to head the right way had more young than the ones
+> that did not. That is the whole mechanism.
+
+The question is the simplest one this project can ask: **of the animals that can
+see food, how many are pointed at it?** A creature's brain is already handed the
+bearing to the nearest pellet every tick, so the answer costs nothing to read —
+and it is the only measure here with a baseline nobody had to go and get. A
+heading drawn at random puts the food in front of you exactly half the time.
+**50 is the number to beat, and it is arithmetic.**
+
+### The founders really are a coin toss, and every pond really does beat them
+
+Twelve seeds, six thousand steps, sampled every ten ticks:
+
+- Over the animals each pond was **handed** — random brains, never selected —
+  the reading is **47.9% to 58.7%, mean 52.0%**. Forty brains dealt at random
+  are, measurably, no better than random at the thing this world selects on.
+  That is the null this panel is built on, and it holds on every seed.
+- Every pond beats them. **Twelve of twelve**, ending at a mean of **75.2%** —
+  a gain of 23.2 points, from 56.7% on the flattest pond to 89.2% on the
+  steepest.
+- The gap opens early enough to watch: it passes five points at a median of
+  **1,190 steps**, which is about twenty seconds at 1× — or half of one press of
+  `⏩ Skip ahead`.
+
+### It is selection, and I nearly credited the wrong thing
+
+The obvious sentence to write under those bars was *mutation found it*. So I
+turned mutation off — `mutationRate` and `mutationScale` both at zero, no new
+variation ever — and ran the twelve again. **The pond still climbs: 52.3% →
+64.9%, up on nine seeds of twelve.** The founders are dealt a spread, the ones
+that happen to steer well have more young, and that alone buys over half the
+gain. Mutation roughly doubles it (23.2 points against 12.6) and invents
+nothing on its own.
+
+So the sentence under the bars credits **selection** — true in both worlds —
+rather than mutation, which is true in one.
+
+### Three smaller things the work turned up
+
+- **The gate built to be careful filters almost nothing, and that is a fact
+  about the pond.** Food is inside an animal's sight on **99.88%** of instants
+  at the default spawn rate — and on **93.8%** with the tap turned fully off,
+  because the standing crop outlives the tap. The number a visitor reads is
+  very nearly *all of them*, which is why the panel may honestly say the only
+  question is where they are pointed. The gate stays for the starved pond,
+  where it is the difference between measuring aim and measuring luck.
+- **The control drifts upward by 1.6 points over the founders' lives** (−1 to
+  +5 across the twelve), because the founders still alive at tick 4,000 are the
+  founders that were better at this. Selection showing up *inside* the control
+  — and in the harmless direction: it makes the comparison read smaller than
+  the truth, never larger.
+- **Three bars were drawn at three different scales, and only a browser could
+  say so.** The first build gave each row its own three-column grid, and a
+  grid's first track is sized by its own contents — so `Turning at random` and
+  `The animals it started with` bought their rows different bar tracks: 689,
+  645 and 682 px at 1,280 wide, and 139, 95 and 132 on a phone. Fifty per cent
+  of 689 px is a *longer* mark than fifty-two per cent of 645, on a panel whose
+  entire job is that the three be compared. Every bar now sits on a line of its
+  own, which cannot have the bug at any width — and gives a phone a bar two and
+  a half times longer than it had.
+
+### Also
+
+- The panel is **not** behind the `🔬 Everything` switch, and there is a test
+  saying so: this is the most persuasive thing this page can say to somebody
+  who has never heard of neuroevolution, and v1.149's finding was that a
+  surface put in the main column carrying that attribute is a surface a first
+  visit never sees.
+- It can say **worse** as fluently as it says better — measured at 0.83% of the
+  moments it can speak at all, and level on 21.3%. A board that can only report
+  the expected answer is a decoration.
+- A pond loaded from an archive gets an answer too, which is new for a
+  comparison panel here: there is no opening line to hold it against, but 50 is
+  arithmetic rather than a measurement, so the crowd is held against that and
+  the panel says which it is doing.
+- The reading is sampled on the **tick**, never on the frame, so two people
+  opening the same seed read the same number whatever their machine does.
+
 ## [1.151.0] — 2026-09-04
 
 They leave a family behind — and you can see it now.

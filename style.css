@@ -779,6 +779,106 @@ body.simple [data-expert] {
   white-space: nowrap;
 }
 
+/* ---- Are they getting better? (v1.152) ----
+   The `🧬 How they have changed` box, one section down, and no ink/ground pair
+   that `test/legibility.test.js` has not already walked. The only new shape is
+   the bar, and it is the ladder's bar (`.msbar`) turned on its side and given a
+   label — three of them, read down, are the argument.
+
+   Each row is a label line and a bar under it, and the bar is the row's own
+   full width — which is the *whole* of what keeps the three bars on one scale.
+   The first build laid each row out as a three-column grid with the bar in the
+   middle, and a grid's first track is sized by its own contents, so the three
+   labels bought their rows three different bar tracks (689 / 645 / 682 px at
+   1,280 wide, 139 / 95 / 132 on a 390 px phone). A browser found that;
+   `node --test` cannot see a layout. A bar on a line of its own cannot have the
+   bug at any width, and it is much the better bar on a phone. */
+.aim {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px 14px;
+}
+.aim-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.aim-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.aim-sub {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+/* The answer, above the evidence. A reader who takes one look at this panel
+   should have it before reading a bar — the portrait's job on the board above,
+   done here in a sentence because the thing being compared is a number and a
+   number has no picture of itself. */
+.aim-verdict {
+  margin: 0 0 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.aimlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.aimrow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+.aimhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.aimbar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-panel-2);
+  overflow: hidden;
+}
+.aimbar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ink-faint);
+  transition: width 0.4s ease;
+}
+.aimnum {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* The row the panel is about. Brighter ink and the ladder's green, so that the
+   crowd in the water reads as the answer and the two rows above it as the
+   things it is being held against. */
+.aimrow.lead {
+  color: var(--ink);
+}
+.aimrow.lead .aimbar span {
+  background: var(--accent-2);
+}
+.aim-why {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
 /* ---- Pond records (v1.124) ----
    The cast board's box, one section down, and its inks: no ink/ground pair here
    that `test/legibility.test.js` has not already walked. The one shape it does

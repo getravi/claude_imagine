@@ -74,6 +74,60 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Are they any good at it — shipped in v1.152 (`src/aim.js`), and what it
+  leaves.** The front door has said *no one programmed them to survive; they
+  figured it out* for thirty releases and **nothing on this page checked it**.
+  `evolved.js` comes closest and answers a different question: it reports what
+  has *changed* — 20% bigger, less meat — and **changed is not better**. A pond
+  whose animals all drifted bigger and stayed hopeless at finding lunch would
+  fill that board with five true rows. So: three bars, and the plainest question
+  this project can ask — *of the animals that can see food, how many are pointed
+  at it?* Five findings. (i) **The founders are a coin toss on every seed**:
+  47.9%–58.7%, mean **52.0%**, against an *arithmetic* null of 50 that nobody
+  had to measure, because a heading drawn uniformly on the circle puts an
+  arbitrary bearing in front of it exactly half the time. Every pond then beats
+  them — **12 of 12**, mean 75.2% — and the gap passes five points at a median
+  of 1,190 steps, which a visitor can sit through. (ii) **The control that tests
+  a mechanism is usually one config field away, and I reach for it about half
+  the time.** The obvious caption was *mutation found it*; with `mutationRate`
+  and `mutationScale` at zero the pond **still climbs**, 52.3% → 64.9%, up on
+  nine seeds of twelve. Selection on standing variation buys over half the gain
+  and mutation roughly doubles it. I would have written the wrong mechanism over
+  my own demonstration. (iii) **The three population measures I tried first —
+  lifespan, food per hundred ticks, share of newborns that breed — are all
+  confounded by crowding**, so a pond getting better would post a graph of
+  itself getting worse. What survived is per-animal and per-instant and has no
+  denominator. Reach for that shape whenever a panel wants to say *better*.
+  (iv) **A baseline gathered over a population's lifetime has survivorship in
+  it**: the founder control drifts up 1.6 points (−1 to +5) because the founders
+  still alive at tick 4,000 are the ones that were better. Harmless here — it
+  makes the comparison read smaller than the truth — and the question to ask of
+  any such control is which way it leans, not whether it has the bias.
+  (v) **Fourth cycle running that a browser caught what `node --test` blessed,
+  and the first where what it caught was a comment of mine claiming the
+  opposite.** Three bars laid out as three per-row grids get three different
+  tracks, because a grid's first track is sized by its *own* contents: 689 / 645
+  / 682 px at 1,280 wide, 139 / 95 / 132 on a phone — a comparison drawn at
+  three scales, on a panel whose whole job is the comparison. The CSS comment
+  beside it asserted the rows shared one grid. **I had written down the
+  intention and not the mechanism, and then never looked.** What it leaves:
+  (a) **aim is one skill and the pond selects on several** — the same three
+  lines would answer *have they got better at fleeing?* from a bearing the
+  senses already carry; (b) **the panel does not say *when***, and the shape of
+  the climb is the interesting part; (c) **a loaded pond gets a real answer for
+  once**, held against the arithmetic 50, and the other comparison boards could
+  borrow that wherever they have a null of their own — mostly they do not;
+  (d) **nothing measures whether anybody presses anything**, twenty-one releases
+  running; (e) **a pond loaded from an archive still has no book**, sixteenth
+  cycle running. And one found while looking for somewhere to file this module:
+  **`docs/ARCHITECTURE.md`'s per-module table has 76 rows against 90 modules**,
+  and the missing ones are the recent ones — `evolved.js`, `portrait.js`,
+  `doing.js`, `simpleview.js` and now `aim.js`. Nothing enforces it, which is
+  why it drifted; a table that claims to list the modules and does not is the
+  same defect as a hand-typed count, and the fix is the one this project always
+  reaches for — a test that reads `src/` and the table and fails on either
+  direction. A small, well-scoped cycle, and it comes with the rows to write.
+
 - **Who is left of them — shipped in v1.151 (`src/obituary.js`), and what it
   leaves.** Fourteen cycles of closing an entry with *an obituary still has no
   family*, because a name on top of a number looked like a garnish. It is a
