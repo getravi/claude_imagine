@@ -74,6 +74,29 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The page was telling a phone to press M — shipped in v1.155
+  (`src/hand.js`), and what it leaves.** The first walk this project has taken
+  with touch actually emulated, and the reason it found anything is the note
+  under **Hard-won notes to self** about what a viewport override does not do.
+  Four findings. (i) **A conditional written at one site is a decision, not a
+  policy** — the general form is in the notes, and it is the transferable half.
+  (ii) **The instrument that had never been pointed at itself**: tests assert
+  those sentences exist and `legibility.js` asks whether they can
+  be read, and no instrument here has ever asked *whether the reader can do what
+  a sentence tells them to do*. (iii) **The cheapest fix was to stop naming a
+  device at all** — one world's blurb said *click a creature* and now says
+  *pick*, needing no table; a register pair is only earned by a sentence that is
+  *teaching the gesture*. (iv) **Hiding costs have to be said out loud**: the
+  104 px of accelerators now hidden from a coarse pointer take a reminder away
+  from a tablet with a keyboard, and every key still fires. What it leaves:
+  (a) **every recorded walk in this repo describes a mouse** — `firstmoves.js`'s
+  WALK and all of `targetsize.js`'s rows want re-taking with touch on, and the
+  numbers a phone visitor actually gets are not yet written down anywhere;
+  (b) **nothing here has ever measured a press**, twenty-four cycles running;
+  (c) **the thirteen worlds still have no order and no shape**, v1.154's own
+  leaving, and nothing says which is the gentle one; (d) **a pond loaded from an
+  archive still has no book**, nineteenth cycle running.
+
 - **Thirteen worlds, and nobody said what they were — shipped in v1.154
   (`src/worlds.js`), and what it leaves.** The strip has offered curated worlds
   since v1.20, and a browser walk found what a visitor actually gets from it:
@@ -2169,6 +2192,47 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Every phone walk I have ever taken was taken with a mouse.** Every browser
+  walk in this repo's history at 390 x 844 — `firstmoves.js#WALK`, every row in
+  `targetsize.js`, every visitor's-hat minute — set
+  `Emulation.setDeviceMetricsOverride` and stopped there. That gives a 390 px
+  *window*. It does not give a phone: `matchMedia("(pointer: coarse)")` still
+  answers **false**, `navigator.maxTouchPoints` is **0**, and every
+  `@media (pointer: coarse)` rule in the stylesheet stays switched off. So the page those walks measured is the page a small laptop
+  sees, and the one thing on it that already knew about thumbs — the
+  `.coarse-only` pan-and-zoom hint — was invisible to every one of them. The two
+  lines, and they go in the probe next to the metrics override every time:
+
+      await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+      await send("Emulation.setEmitTouchEventsForMouse", { enabled: true, configuration: "mobile" });
+      await send("Page.reload", {});   // the media queries are evaluated at load
+
+  Confirm it took by reading `matchMedia("(pointer: coarse)").matches` back in
+  the probe rather than assuming — that read is the whole difference between the
+  two pages, and it is one property. The general rule: **a viewport is not a
+  device.** Anything I gate on a fact about the reader — pointer, hover, reduced
+  motion, colour scheme, language — needs that fact emulated before a walk can
+  say anything about it, and the walk will otherwise come back confidently
+  describing a machine nobody owns.
+
+- **A conditional written at one site is a decision, not a policy.** v1.155's
+  finding, and it is the same shape as v1.149's hiding-check debt one level up.
+  `gestures.js` gave the pond to a thumb, and the release that landed it wrote
+  `.fine-only` / `.coarse-only` copy for *the paragraph it was looking at* —
+  correctly, and once. Every other sentence on the page went on saying `click`
+  and `press M`, including the line under the water that is the first
+  instruction a stranger reads: on a phone it named two devices the reader has
+  not got and never named the one they have. Fifteen strings here name an input
+  device; one pair of them had ever asked which one you had. So the chore, one
+  grep, at the moment a release first makes some fact about the *reader* decide
+  a sentence: grep every other sentence that depends on the same fact, and put
+  the answer in one table with a test that walks it. `hand.js` is the shape —
+  and note the half a word-swapper could not have done: `press M` has no touch
+  equivalent, so the phrase has to be **deleted** and the sentence rebuilt
+  around the hole. A register is not a dialect of the same sentence, and the
+  touch copies come out shorter every time because the mouse copy was carrying
+  a route the phone does not have.
 
 - **Take the visitor's-hat minute on a phone, and measure the *order* of the
   page rather than the quality of anything on it.** The note below it says to
