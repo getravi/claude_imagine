@@ -4,6 +4,79 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.155.0] — 2026-09-05
+
+The page was telling a phone to press M.
+
+`gestures.js` gave this pond to a thumb a long time ago: tap to pick, drag to
+pan, pinch to zoom, double-tap to follow. All of it works. And a browser walk
+this cycle — at 390 × 844 with **touch actually emulated**, rather than just a
+narrow window, which is the difference between asking a phone and asking a small
+laptop — found the page still saying this:
+
+```
+#doing      Pick an animal — click one, or press M — and this line will follow it.
+#inspector  Click a creature to meet it — or press M and the pond will pick one.
+.kbd-hint   Space pause · . step · R reset · F feed · M meet somebody · …
+.kbd-hint   Tab to the pond, then ←↑↓→ to step between creatures · Enter follow
+```
+
+The first of those is the line under the water — the most-read instruction on
+this page, the one a stranger meets before they have done anything. On a phone
+it named **two devices the reader does not have and never once named the one
+they do**.
+
+### Fifteen sentences name a device; one pair had ever asked which
+
+The pan-and-zoom hint has had a `.fine-only` and a `.coarse-only` copy since the
+gestures landed. Nothing else did. The fix went where the defect was *noticed*
+and stopped there, which is the finding worth more than the strings: **a
+conditional written at one site is a decision, not a policy.** The moment this
+page learned that some of its readers have no wheel and no keys, every sentence
+that names one became wrong for them.
+
+`src/hand.js` now holds eight of them in two registers, and the touch copy is
+not a translation. Three name a key, and a key cannot be re-worded into a
+finger — *press M* has to be **deleted**, and what replaces it is a different
+sentence:
+
+> 👆 **Tap an animal — any of them — and this line will follow it.**
+
+The rest, in a browser at 390 × 844 with a coarse pointer: the placard says *Tap
+any creature to be told who they are*, the inspector sends a thumb to
+`👋 Meet somebody` rather than to a key that is a shortcut for it, the three
+"nobody is selected" notices drop the arrow-key alternative a phone has not got,
+and the minimap's `aria-label` — the copy a phone with a screen reader actually
+reads out — stops saying *click or use the arrow keys*.
+
+### 104 px of keys, on a device with none
+
+The two paragraphs of accelerators are `keys-only` and hidden by the same media
+query, which took the phone document from **4,810 px to 4,679**. The trade,
+stated: a tablet with a keyboard plugged into it loses a *reminder*, never a
+capability — every accelerator still fires. The screen-reader paragraph that
+explains the arrow-key walk stays at every pointer, because that is help for a
+keyboard rather than an advertisement of one.
+
+### Two things left in the mouse register on purpose
+
+The minimap's `title` — a tooltip needs a hover, and a hand that cannot hover is
+never shown it, so v1.154's finding turns out to be good news exactly once. And
+`The Augment`'s blurb went the other way entirely: it now says *pick* a creature
+rather than *click* one, which is true in every hand. **A pair belongs in the
+table only when the sentence is teaching the gesture**; everything else should
+stop naming a device at all.
+
+### The switch that cannot drift
+
+`hand.js` and `style.css` decide this from one string, `(pointer: coarse)`, and
+`test/hand.test.js` fails if the stylesheet stops gating anything on it — the
+bug that guards against is a page saying *tap a creature* above a row of
+keyboard shortcuts. Every surface quoting a phrase is content-keyed on the hand
+as well (`keySignature`, `doingSig`, the inspector's idle key), so a tablet that
+gains a mouse re-words itself on the next frame with nothing to invalidate by
+hand.
+
 ## [1.154.0] — 2026-09-05
 
 Thirteen worlds, and not one of them said what it was.

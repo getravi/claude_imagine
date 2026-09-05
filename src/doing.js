@@ -113,6 +113,8 @@
 // anything, and draws no random number. A pond somebody is watching an animal in
 // is bit for bit a pond nobody is. There is a test.
 
+import { POINTER, say } from "./hand.js";
+
 /**
  * Where the three bearings this file reads live in `Creature#_in`.
  *
@@ -340,11 +342,22 @@ export function doingHTML(name, key) {
  * What the strip says when nobody has been picked.
  *
  * The one place on this page that is allowed to be an instruction, because it is
- * the only surface whose entire content is *the thing you have not done yet*. It
- * names both ways in, since the keyboard route is otherwise written down only in
- * a screen-reader paragraph nobody sighted will ever read.
+ * the only surface whose entire content is *the thing you have not done yet*.
+ * The mouse copy names both ways in, since the keyboard route is otherwise
+ * written down only in a screen-reader paragraph nobody sighted will ever read.
+ *
+ * **Both ways in were the wrong two on a phone**, which is v1.155: for a thumb
+ * this sentence named a click and a key and never once named a tap, and it is
+ * the first instruction anybody here reads. `hand.js` owns the pair now; this
+ * constant is the pointer half of it, kept exported because it is what the page
+ * says on the hardware most of this project's own walks are taken on.
  */
-export const DOING_INVITE = "Pick an animal — click one, or press M — and this line will follow it.";
+export const DOING_INVITE = say("doingInvite", POINTER);
+
+/** The invitation in the register of the hand reading it (v1.155). */
+export function doingInvite(hand = POINTER) {
+  return say("doingInvite", hand);
+}
 
 /** The mark beside the invitation. A hand, because the invitation is to point. */
 export const INVITE_ICON = "👆";

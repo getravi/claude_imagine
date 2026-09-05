@@ -224,7 +224,7 @@ export const SCENARIOS = [
     name: "Augmented Minds",
     hook: "brains that grow their own wiring",
     blurb:
-      "Brains start with almost no structure and grow their own. Click a creature to see its evolved network.",
+      "Brains start with almost no structure and grow their own. Pick a creature to see its evolved network.",
     over: { seed: 777, evolvableTopology: true },
   },
   {

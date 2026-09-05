@@ -34,6 +34,7 @@ import { stateFingerprint } from "../src/fingerprint.js";
 import {
   DOINGS,
   DOING_INVITE,
+  doingInvite,
   DOING_ORDER,
   DoingCrowd,
   DoingWatch,
@@ -50,6 +51,7 @@ import {
   doingOf,
   doingWord,
 } from "../src/doing.js";
+import { POINTER, TOUCH } from "../src/hand.js";
 
 const cfg = makeConfig({ seed: 1 });
 
@@ -259,9 +261,15 @@ test("the line is a name and a predicate, and the markup says the same thing", (
   assert.equal(doingIcon("brooding"), "");
 });
 
-test("the invitation names both ways in", () => {
+test("the invitation names both ways in — on the hardware that has both (v1.155)", () => {
+  // This constant is the *pointer* copy now, and both of these claims are about
+  // a mouse and a keyboard: it offers the click and the key because that reader
+  // has them. The reader who has neither gets a different sentence, and
+  // `test/hand.test.js` is where that pair is held to each other.
   assert.match(DOING_INVITE, /click/i);
   assert.match(DOING_INVITE, /\bM\b/);
+  assert.equal(doingInvite(POINTER), DOING_INVITE);
+  assert.notEqual(doingInvite(TOUCH), DOING_INVITE);
 });
 
 // ---- The hold ----

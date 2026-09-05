@@ -34,6 +34,7 @@
 // `test/colourliterals.test.js` enforces and the reason the swatches match the
 // water rather than merely resembling it.
 
+import { POINTER, say } from "./hand.js";
 import {
   corpseMark,
   foodMote,
@@ -145,16 +146,23 @@ export const MARKS = Object.freeze([
     line: "Warm rings mean this one is making a noise, and the ones nearby can hear it.",
     needs: "signalling",
   },
+  // The two rows that tell a reader to *do* something, and so the two that have
+  // to know what they are being read with (v1.155). `phrase` names their entry
+  // in `hand.js`; `line` stays here as the pointer copy so a caller that never
+  // asks about hands — a test, a snapshot, the placard as it has always been —
+  // reads exactly what it used to, and cannot drift, because it is that entry.
   {
     id: "chosen",
     term: "The one you picked",
-    line: "A white ring. Click any creature to be told who they are and watch what becomes of them.",
+    phrase: "chosenRing",
+    line: say("chosenRing", POINTER),
     needs: null,
   },
   {
     id: "named",
     term: "A name",
-    line: "A few wear one — the one you picked, and the stand-outs below — with what they are doing. Press one to follow.",
+    phrase: "namedTag",
+    line: say("namedTag", POINTER),
     needs: null,
   },
 ]);
@@ -176,10 +184,17 @@ export function visibleMarks(config) {
  *
  * @param {Record<string, unknown>} config
  */
-export function keySignature(config) {
-  return visibleMarks(config)
-    .map((m) => m.id)
-    .join(",");
+export function keySignature(config, hand = POINTER) {
+  return (
+    visibleMarks(config)
+      .map((m) => m.id)
+      .join(",") +
+    // The hand is part of what the placard *says*, so it is part of what the
+    // placard is keyed on: a tablet that gains a mouse rebuilds the rows on the
+    // next frame rather than sitting there in the wrong register until a rule
+    // is switched. One character, and it removes a whole invalidation path.
+    `|${hand}`
+  );
 }
 
 // ---- the swatches ----
@@ -398,12 +413,12 @@ export function swatchSvg(id) {
  *
  * @param {Record<string, unknown>} config
  */
-export function keyHTML(config) {
+export function keyHTML(config, hand = POINTER) {
   return visibleMarks(config)
     .map(
       (m) =>
         `<li class="keyrow">${swatchSvg(m.id)}` +
-        `<span><b>${m.term}</b> ${m.line}</span></li>`,
+        `<span><b>${m.term}</b> ${m.phrase ? say(m.phrase, hand) : m.line}</span></li>`,
     )
     .join("");
 }

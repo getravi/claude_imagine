@@ -203,9 +203,9 @@ test("main.js rebuilds the key only when the set of marks changes", () => {
   const fn = main.match(/function updateKey\(\) \{[\s\S]*?\n\}/);
   assert.ok(fn, "main.js no longer has an adapter for the key");
   const body = fn[0];
-  assert.ok(body.includes("keySignature(config)"), "the key is not keyed on the pond's rules");
+  assert.ok(body.includes("keySignature(config, hand)"), "the key is not keyed on the pond's rules");
   assert.ok(body.includes("view.keySig"), "the memo is not the one `viewstate.js` owns");
-  assert.ok(body.includes("keyHTML(config)"), "the rows are written somewhere other than key.js");
+  assert.ok(body.includes("keyHTML(config, hand)"), "the rows are written somewhere other than key.js");
   assert.ok(/return;/.test(body), "the placard is rebuilt on every frame");
   assert.ok(/\n  updateKey\(\);/.test(main), "the frame loop never calls it");
 });

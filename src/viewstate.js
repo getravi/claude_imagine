@@ -304,6 +304,11 @@ export const PAGE_SCOPED = Object.freeze({
     "what the nameplate currently reads — a fact about the page, and deliberately not " +
     "reset with the world: it is how `syncPondName` tells arriving somewhere new from " +
     "rebuilding where you already are, and a pond adopted afresh would say hello to itself",
+  hand:
+    "which register this page is speaking in (v1.155) — pointer or touch, read off the one " +
+    "media query `hand.js` and `style.css` share. A fact about the hardware in front of the " +
+    "page and not about any pond, so a new world does not touch it; what keeps it honest is " +
+    "the other direction, that every surface quoting it is content-keyed on it as well",
   handFeeding:
     "whether the water is armed to be fed by hand (v1.147) — a visitor's choice of what a " +
     "press on the pond means, and a new pond does not overrule it any more than it " +

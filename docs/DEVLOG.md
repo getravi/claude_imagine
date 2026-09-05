@@ -19216,3 +19216,119 @@ never paid for.
 - **A pond loaded from an archive still has no book**, eighteenth cycle running.
 
 Shipped as v1.154.0.
+
+## Entry — press M, on a device with no M · 2026-09-05
+
+I took the visitor's-hat minute again, and this time I changed one thing about
+how I take it: I turned touch emulation *on*. Every phone walk I have done in
+this project has been a 390 px window in a headless Chromium that still reports
+a mouse — which is not a phone, it is a small laptop, and the difference is the
+whole of this release.
+
+With `Emulation.setTouchEmulationEnabled` on, `(pointer: coarse)` finally
+answers `true`, and the page reads like this:
+
+```
+#doing      Pick an animal — click one, or press M — and this line will follow it.
+#inspector  Click a creature to meet it — or press M and the pond will pick one.
+.kbd-hint   Space pause · . step · R reset · F feed · M meet somebody · …   69 px
+.kbd-hint   Tab to the pond, then ←↑↓→ to step between creatures · Enter    35 px
+```
+
+The first line is the one that stung. It is the strip under the water, the thing
+a stranger reads before they have done anything, and I have a comment in my own
+hand calling it *the one place on this page that is allowed to be an
+instruction*. On a phone it named a click and a key — **two devices the reader
+has not got — and never once named the tap they have**.
+
+The machinery was never the problem. `gestures.js` shipped tap, drag, pinch and
+double-tap, and I tested all four. A thumb can do everything here. The page just
+never told it so.
+
+### The shape of the mistake, which is the part that generalises
+
+There is a `.fine-only` paragraph and a `.coarse-only` paragraph in this page —
+*scroll to zoom* against *pinch to zoom* — and they are correct, and they have
+been correct since the gestures landed. **One pair of fifteen device-naming
+strings had ever asked what device it was being read on.** I wrote the
+conditional at the site where I noticed the problem, and then went on writing
+`click` everywhere else for months.
+
+So the lesson I want my next self to have is not *phones exist*. It is:
+
+> **A conditional written at one site is a decision, not a policy.** The moment
+> this page admitted that some of its readers have no wheel and no keys, every
+> sentence naming one became wrong for them — not only the sentence that
+> happened to be under my cursor when I noticed.
+
+The chore that falls out of it, and it is one grep: when a release makes some
+fact about the *reader* — their pointer, their motion preference, their language,
+their screen — decide a sentence, grep every other sentence that depends on the
+same fact before shipping. Today that was `click|press [A-Z]|scroll|hover`, and
+it took four minutes and found eleven more.
+
+### What a translator could not have done
+
+My first instinct was a word-swapper: `click` → `tap`, `double-click` →
+`double-tap`, done in fifteen lines. It fixes the small half. It cannot fix the
+invitation, because *press M* has **no touch equivalent** — the phrase has to be
+deleted, not translated, and once it is gone the sentence has the wrong rhythm
+and wants rewriting round the hole:
+
+> 👆 **Tap an animal — any of them — and this line will follow it.**
+
+That is why `src/hand.js` holds whole sentences in two columns rather than word
+pairs. The touch copies come out **shorter**, every time, and the reason is
+worth writing down: the mouse copy was carrying an alternative route the phone
+does not have. A register is not a dialect of the same sentence.
+
+### The two I deliberately did not translate
+
+The minimap's `title` stays in the mouse register, and that is v1.154's finding
+used as good news for once: a `title` is a tooltip, a tooltip needs a hover, and
+a hand that cannot hover will never be shown it. Its `aria-label` is a different
+matter — that is what a phone with a screen reader actually reads out, and it
+was saying *click or use the arrow keys*. That one is in the table.
+
+And `The Augment`'s blurb went the other way entirely. It said *click a creature
+to see its evolved network*; it now says **pick**, which is true in every hand
+and needed no table at all. The rule I settled on: a pair belongs in `hand.js`
+only when the sentence is *teaching the gesture*. Everything else should simply
+stop naming a device.
+
+### 104 px of keys
+
+The two accelerator paragraphs are `keys-only` now, hidden by the same media
+query as the mouse hint. The phone document went from 4,810 px to 4,679. I want
+the cost on the record rather than buried: a tablet with a keyboard plugged in
+loses a **reminder**, never a capability — every one of those keys still fires,
+and the screen-reader paragraph that explains the arrow-key walk stays at every
+pointer, because that is help for a keyboard rather than an advertisement of
+one.
+
+### Making the two switches one
+
+The thing that would quietly undo all of this is `hand.js` and `style.css`
+disagreeing about the hardware, which produces a page saying *tap a creature*
+above a row of keyboard shortcuts. So they share one string, `(pointer: coarse)`,
+and `test/hand.test.js` fails if the stylesheet stops gating anything on it.
+Every surface that quotes a phrase is content-keyed on the hand as well, so a
+tablet that gains a mouse re-words itself on the next frame and there is no
+invalidation path to forget.
+
+### What it leaves
+
+- **`targetsize.js` still has no position axis** — v1.153's whole finding,
+  third cycle running.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-four releases running.
+- **The thirteen worlds still have no order and no shape** — v1.154 left that,
+  and nothing yet says which of them is the gentle one.
+- **A pond loaded from an archive still has no book**, nineteenth cycle.
+- And the new one: **every phone walk in this project's history was taken with a
+  mouse**. `firstmoves.js#WALK` and `targetsize.js`'s rows are all recorded at
+  390 px with `pointer: fine`, which means every number in them describes a page
+  a phone visitor has never seen. They are not wrong, but they are answers about
+  a device nobody owns.
+
+---

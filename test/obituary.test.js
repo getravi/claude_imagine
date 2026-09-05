@@ -369,7 +369,7 @@ test("a life is not an instrument, so the switch cannot hide it (v1.151)", () =>
   );
   const src = readFileSync(join(root, "src/main.js"), "utf8");
   assert.match(src, /life\.innerHTML = view\.obitCard \? obituaryHTML/);
-  assert.match(src, /panel\.innerHTML = EMPTY_HINT/, "the fact grid goes back to its hint");
+  assert.match(src, /panel\.innerHTML = emptyHint\(hand\)/, "the fact grid goes back to its hint");
 });
 
 test("a real pond's family is the pond's own, and the page wires the offer", () => {

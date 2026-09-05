@@ -1315,6 +1315,16 @@ button.c-row:focus-visible {
   .coarse-only {
     display: block;
   }
+  /* And the accelerators with them (v1.155). The pair above has known which
+     hand it was in since the gestures landed; the two paragraphs of keys beside
+     it had not, so a phone was reading `Space pause · . step · R reset · F feed
+     · M meet somebody …` — 104 px of a device with no keys. Same query, because
+     `src/hand.js` decides the words under exactly this string and a page whose
+     stylesheet and script disagree about the hardware says *tap a creature*
+     over a row of keyboard shortcuts. */
+  .keys-only {
+    display: none;
+  }
 }
 .kbd-hint kbd,
 .hint kbd {

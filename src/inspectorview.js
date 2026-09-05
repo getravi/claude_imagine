@@ -56,6 +56,7 @@
 // rows and `describe.js`'s sentence, and like them it is a pure observer.
 
 import { BRAIN } from "./genome.js";
+import { POINTER, say } from "./hand.js";
 import { NEAT_IO } from "./neat.js";
 import {
   brainEdge,
@@ -105,9 +106,24 @@ export const BRAIN_BLOCK_STARTS = Object.freeze(
   )
 );
 
-/** The panel before anything is selected. */
-export const EMPTY_HINT =
-  '<div class="hint">Click a creature to meet it — or press <kbd>M</kbd> and the pond will pick one for you.</div>';
+/**
+ * The panel before anything is selected — the pointer copy, which is what this
+ * constant has always been and what every caller that does not ask gets.
+ */
+export const EMPTY_HINT = emptyHint(POINTER);
+
+/**
+ * The same, in the register of the hand reading it (v1.155).
+ *
+ * A thumb was being told to click and then offered a key as the alternative, so
+ * the touch copy sends it to the button instead — which is on this page, is
+ * 44 px tall, and is what `M` is a shortcut *for*.
+ *
+ * @param {"pointer"|"touch"} [hand]
+ */
+export function emptyHint(hand = POINTER) {
+  return `<div class="hint">${say("inspectorEmpty", hand)}</div>`;
+}
 
 /**
  * When the panel's *structure* has to be rebuilt rather than patched.

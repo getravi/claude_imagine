@@ -39,11 +39,12 @@ import {
   refugeRing,
 } from "./palette.js";
 import {
-  EMPTY_HINT,
+  emptyHint,
   inspectorHTML,
   inspectorKey,
   sparkFromWeights,
 } from "./inspectorview.js";
+import { MEDIA_QUERY, handFor, say } from "./hand.js";
 import { nameSpecies, speciesLabel, speciesPlural } from "./speciesnames.js";
 import { creatureIntro, creatureLabel, givenName, introduceStar, pickStar } from "./cast.js";
 import {
@@ -56,7 +57,7 @@ import {
   obituaryLines,
 } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
-import { DoingCrowd, DOING_INVITE, INVITE_ICON, doingHTML, doingIcon } from "./doing.js";
+import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -308,6 +309,23 @@ let fpsSmooth = 60;
 // calmer view can still flip it either way from the controls panel.
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+// ---- Which hand this page is in (v1.155) ----
+//
+// The one place this project asks the browser about a visitor's hardware, and
+// the answer decides which register eight sentences are written in. The query
+// string is `hand.js`'s, and it is the same one `style.css` hides the mouse hint
+// and the keyboard rows under, because two readers of one fact that ask it
+// differently eventually disagree — and that disagreement looks like a page
+// saying *tap a creature* above a row of keyboard shortcuts.
+//
+// Live rather than read once at boot: a tablet gains a mouse and a laptop loses
+// one, and the surfaces that carry these sentences are all content-keyed, so
+// re-reading `hand` is the whole of the update. The two that memoise take the
+// hand into their signature (`keySignature`, and `doingSig`'s idle key), which
+// is why nothing here has to remember to invalidate them.
+const handQuery = window.matchMedia(MEDIA_QUERY);
+let hand = handFor({ coarse: handQuery.matches });
+
 /**
  * Hand the current world to the view state, and do the one thing that reset
  * cannot: the DOM. `adopt` clears the species highlight, so the button that
@@ -395,6 +413,16 @@ function boot() {
     $("toggle-motion").checked = e.matches;
   });
 
+  // The register the page speaks in, and the one surface that has to be told
+  // when it changes. Everything else that carries a hand-dependent sentence is
+  // content-keyed on something that now includes the hand, so it follows on the
+  // next frame by itself; an attribute nobody re-renders does not.
+  syncHandWords();
+  handQuery.addEventListener("change", (e) => {
+    hand = handFor({ coarse: e.matches });
+    syncHandWords();
+  });
+
   // Before anything else that touches the page: the switch decides how much of
   // it there is, and a first frame drawn on the crowded page and then folded is
   // a flinch a visitor sees.
@@ -423,6 +451,19 @@ function boot() {
   // rather than around an empty canvas — and only for a visitor this browser
   // has never shown it to.
   if (!hasSeenTour(tourStore())) requestAnimationFrame(() => openTour(0));
+}
+
+/**
+ * The hand-dependent copy that nothing else rewrites (v1.155).
+ *
+ * One line, and it is the minimap's `aria-label` — the thing a phone with a
+ * screen reader actually hears, which until this release told it to click or to
+ * use the arrow keys. Its `title` is deliberately left in the mouse register and
+ * is not in `hand.js`'s table at all: a title is a tooltip, a tooltip needs a
+ * hover, and a hand that cannot hover is never shown it.
+ */
+function syncHandWords() {
+  $("minimap").setAttribute("aria-label", say("minimapHelp", hand));
 }
 
 // ---- Scenarios (curated one-click worlds) ----
@@ -777,14 +818,17 @@ const doingCrowd = new DoingCrowd();
 function updateDoing() {
   const c = renderer.selected;
   const key = c && !c.dead ? doingCrowd.keyOf(c.id) : null;
-  const sig = key ? `${c.id}:${key}` : "";
+  // The idle key carries the hand, so the invitation is rewritten if the pointer
+  // changes under it — the one state on this page whose entire content is an
+  // instruction is the one that can least afford to be in the wrong register.
+  const sig = key ? `${c.id}:${key}` : `invite:${hand}`;
   if (sig === view.doingSig) return;
   view.doingSig = sig;
   const el = $("doing");
   if (!key) {
     el.classList.add("waiting");
     $("doing-icon").textContent = INVITE_ICON;
-    $("doing-text").textContent = DOING_INVITE;
+    $("doing-text").innerHTML = doingInvite(hand);
     return;
   }
   el.classList.remove("waiting");
@@ -800,10 +844,10 @@ function updateDoing() {
 // explains a mark the water cannot draw is worse than no key. `src/key.js` owns
 // every word and every swatch; this is only the adapter onto the DOM.
 function updateKey() {
-  const sig = keySignature(config);
+  const sig = keySignature(config, hand);
   if (sig === view.keySig) return;
   view.keySig = sig;
-  $("key-list").innerHTML = keyHTML(config);
+  $("key-list").innerHTML = keyHTML(config, hand);
 }
 
 // ---- Worth watching (the cast list, v1.123) ----
@@ -2387,10 +2431,13 @@ function updateInspector() {
     // goes back to its hint, because with nobody selected it has nothing to
     // say; the life is somebody else's job now.
     panel.classList.add("empty");
-    const key = view.obitCard ? `obit${view.obitCard.id}` : "-";
+    // The idle key carries the hand for the same reason `doingSig` does: what
+    // this panel says with nobody in it is an instruction, and an instruction is
+    // the one kind of sentence that is wrong on the wrong hardware.
+    const key = view.obitCard ? `obit${view.obitCard.id}` : `hint:${hand}`;
     if (view.inspKey !== key) {
       view.inspKey = key;
-      panel.innerHTML = EMPTY_HINT;
+      panel.innerHTML = emptyHint(hand);
       // Who is left is asked here rather than remembered, so a life re-read out
       // of the book minutes later names the young who are alive *then* — see
       // `obituary.js#familyOf`. The card is rebuilt on the id alone, so this is
@@ -2668,7 +2715,7 @@ function wireControls() {
     // nothing selected draws nothing at all. Say so once — the same courtesy
     // the refuge line gets when predation is off.
     if (!c || c.dead) {
-      flash("Click a creature (or press an arrow key) to give the trail somebody to follow.");
+      flash(say("trailNeedsSomebody", hand));
       return;
     }
     // This is the one moment the spoken form of the path is worth saying: the
@@ -2685,7 +2732,7 @@ function wireControls() {
     // over an empty selection draws nothing, and saying so beats leaving the
     // watcher looking for a mark that was never coming.
     if (!c || c.dead) {
-      flash("Click a creature (or press an arrow key) to see how far its rules reach.");
+      flash(say("reachNeedsSomebody", hand));
       return;
     }
     // The rings carry no text — the pond canvas has none — so this is the only
@@ -2704,7 +2751,7 @@ function wireControls() {
     const c = renderer.selected;
     if (!c || c.dead) {
       e.target.checked = false;
-      flash("Click a creature first, then follow it.");
+      flash(say("followNeedsSomebody", hand));
       return;
     }
     renderer.camera.setTarget(c);

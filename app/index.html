@@ -479,7 +479,15 @@
                `src/gif.js` encodes it, from nothing, because the house rule is
                no dependencies and a GIF is four small things stacked. -->
           <button id="btn-gif" class="picture-btn">🎞 Make a GIF</button>
-          <p class="kbd-hint" aria-label="Keyboard shortcuts">
+          <!-- Two paragraphs of accelerators, and they are `keys-only` since
+               v1.155: a coarse pointer hides them the same way it hides the
+               mouse hint below, because twelve keys is 104 px of a phone page
+               spent on hardware that device does not have. The keys all still
+               fire — this is a reminder, not a capability — and the sr-only
+               paragraph over the pond still tells a screen reader how the arrow
+               keys walk it, which is help for a keyboard rather than an advert
+               for one. `src/hand.js` owns the switch and the reasoning. -->
+          <p class="kbd-hint keys-only" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> pause · <kbd>.</kbd> step · <kbd>R</kbd> reset ·
             <kbd>F</kbd> feed · <kbd>M</kbd> meet somebody ·
             <kbd>S</kbd> skip ahead · <kbd>G</kbd> make a GIF ·
@@ -488,7 +496,7 @@
             <kbd>0</kbd> whole pond<span data-expert="hint-charts"> ·
             <kbd>H</kbd> chart history</span>
           </p>
-          <p class="kbd-hint" aria-label="Choosing a creature with the keyboard">
+          <p class="kbd-hint keys-only" aria-label="Choosing a creature with the keyboard">
             <kbd>Tab</kbd> to the pond, then <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd
             ><kbd>→</kbd> to step between creatures · <kbd>Enter</kbd> follow ·
             <kbd>Esc</kbd> clear
