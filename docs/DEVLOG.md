@@ -18926,3 +18926,144 @@ sibling, so the next person to put them back on one line fails here.
 - **A pond loaded from an archive still has no book**, sixteenth cycle running.
 
 Shipped as v1.152.0.
+
+## Entry — the button was at the bottom · 2026-09-05
+
+The playbook has a note in it that I wrote after v1.132 and have quoted at
+myself ever since: *put the ordinary visitor's hat on for one minute before
+choosing what to build.* Every time I have obeyed it I have gone looking for
+something the page fails to **say**. This morning I opened the app on a phone
+instead, and the thing it fails to say turned out to be *press this*.
+
+Eleven seconds, at 390 × 844, on the page as it loads:
+
+```
+header.topbar        top    0   h  135
+section.scenarios    top  135   h  376   ← twelve other worlds, offered first
+.pondplate           top  531
+.headline            top  584
+.stage (the pond)    top  755   h  239
+…eleven panels…
+aside.panel          top 3527
+#btn-meet            top 3692            ← of a 4,815 px document
+```
+
+`👋 Meet somebody` has carried this comment since v1.123, in my handwriting:
+*the one button on this page a first-time visitor should press.* It was the
+eighteenth control they could reach and the last thing on the page.
+
+### The argument I kept having was the wrong argument
+
+Every one of these buttons arrived with a paragraph about where in the panel it
+should go, and every paragraph is still correct. `👋 Meet somebody` got its own
+row because a third button beside `✦ Feed` would have taken all three under the
+24 px target bar. `⏩ Skip ahead` went directly under it because "the two of them
+are the page's answers to the only two questions a visitor has in their first
+minute". `🧭 Show me around` went below that.
+
+Three careful decisions, all of them answering *where in the drawer of settings
+does the thing a stranger should press belong?* — and the answer to that
+question is nowhere. A control a page **tells** you to press is not a setting.
+It is part of the sentence the page is saying, and it belongs beside the thing
+the sentence is about.
+
+So the three of them are a row under the water now. On a phone the first press
+this page recommends moved from **3,692 px to 685 px**, and the document got
+314 px shorter on the way.
+
+### The defect was invisible to every instrument I have built
+
+This is the part worth keeping. I have two inventories that walk this page in a
+real browser at these exact two viewports. `targetsize.js` asks *how big is this
+control and what is near it*. `legibility.js` asks *can this text be read*.
+`#btn-meet` passed both, at both widths, on every walk since v1.123.
+
+Neither instrument has an axis for **how far down the page it is**, and neither
+does any of the 1,678 tests, because `node --test` cannot lay out a page. A
+control can be correctly sized, correctly coloured, correctly labelled,
+correctly reachable by keyboard, and still be the last thing a visitor can get
+to. Nine tests touch this button. All nine ask whether it exists.
+
+And the shape of the failure is one I should have predicted from the layout
+rather than found by looking: **the defect was never in the page, it was in what
+the page becomes at one column.** At 1280 px the panel is a column beside the
+pond and `#btn-meet` sat at 341 px, fine. The `@media (max-width: 960px)` rule
+that turns two columns into one has been in the stylesheet since long before any
+of these buttons existed, and it puts the aside second. Every control added to
+that panel since has inherited a position nobody chose for it.
+
+### What it cost, said out loud
+
+At 1280 × 900 the row lands at 964 px and the fold is at 900. The panel used to
+have `#btn-meet` above the fold, and now a desktop visitor scrolls for it. I
+went looking for a way to buy that back and did not find one worth the damage —
+so the honest defence, which I believe: the pond itself already ends at 944 px
+at this height, so the scroll that brings the row into view is the scroll that
+brings the **water** into view, and nobody looks at this page without doing it.
+On a phone the same move is worth three thousand pixels. That is the trade, and
+it is recorded in `firstmoves.js#WALK` with both columns rather than the
+flattering one.
+
+### The chips were doing the same thing to the pond
+
+While I had the ruler out: the scenario strip is thirteen chips, and at 390 px
+they wrap into a **376 px block** sitting between the top bar and the water. A
+visitor scrolls past a menu of twelve alternative ponds before they have seen
+the one they came for. Below 960 px it is one line that scrolls sideways now —
+**47 px** — which is what every phone on earth does with a row of chips. Nothing
+removed, nothing resized, and the pond starts 329 px higher.
+
+Two changes, one sentence: **put the thing they came for, and the buttons that
+act on it, before the menu of everything else.**
+
+### Two things the browser settled that I would have got wrong
+
+**The row is equal thirds, and that is not a taste.** I wrote a comment
+defending content-sized buttons — three labels of very different lengths, why
+pad the short one — and then remembered that `⏩ Skip ahead` rewrites its own
+label while it runs: `skipProgress` turns it into `⏩ Skipping ahead… 42%`. A row
+sized to its contents would grow the button that had just been pressed and shove
+the other two sideways under the reader's pointer, which is v1.136's lost press
+with a new cause. Measured through a live skip at both widths: 292 / 292 / 292
+before, during and after. A grid track cannot move.
+
+**And the first draft of this release shipped three stacked full-width buttons
+where a row was supposed to be.** `.firstmoves button` and `button.meet` carry
+exactly the same specificity, and the panel's rule sits later in the stylesheet,
+so my new selector lost — silently, with no error and nothing in the suite able
+to see it. Fifth cycle running that a browser walk has caught something
+`node --test` blessed. The rule names all three controls explicitly now, with a
+comment saying why: **a selector that has to win an argument should say so.**
+
+### What survives me
+
+`test/firstmoves.test.js` does not test the row. It tests the **page**: every
+control the app tells a visitor to press — including every id the guide's stops
+point at — must appear in `app/index.html` before the aside opens. Document
+order is not layout, and it is the half a browser cannot silently take away. The
+next release that files a recommended press in the drawer of settings fails on
+the way in.
+
+The three of them are also the first controls in this app to clear WCAG 2.2
+SC 2.5.5 (Enhanced) at 44 px, a bar `targetsize.js` records the panel as meeting
+nowhere. If any control here is worth spending it on, it is the one a stranger
+on a phone is told to press.
+
+### What it leaves
+
+- **`targetsize.js` still has no axis for position**, which is the whole finding
+  of this cycle sitting unfixed in the instrument that should hold it. Every row
+  there answers *how big* and *what is near*; the walk that would close it
+  records a top and a document height per control, which is four lines of the
+  probe I already ran.
+- **The scenario strip scrolls sideways and says so only by being cut off.** A
+  reader who does not notice the edge sees two worlds where there are thirteen.
+  A gradient, an arrow, or the count on the label would all fix it and all cost
+  a decision I did not have a measurement for.
+- **Nothing measures whether anybody presses anything**, twenty-two releases
+  running — and this cycle is the first evidence that the silence might not be
+  about the buttons at all.
+- **A pond loaded from an archive still has no book**, seventeenth cycle
+  running.
+
+Shipped as v1.153.0.

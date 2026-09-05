@@ -4,6 +4,76 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.153.0] — 2026-09-05
+
+The button this page recommends to a stranger was the last thing on it.
+
+Thirty releases of building instruments, and not one of them had been asked the
+plainest question a visitor's phone can answer: **where on this page is the
+thing I am supposed to press?** Eleven seconds in a real browser, at 390 × 844:
+
+```
+header.topbar        top    0   h  135
+section.scenarios    top  135   h  376   ← twelve other worlds, offered first
+.stage (the pond)    top  755   h  239
+…eleven panels…
+aside.panel          top 3527
+#btn-meet            top 3692            ← of a 4,815 px document
+```
+
+`👋 Meet somebody` has carried a comment since v1.123 calling it *the one button
+on this page a first-time visitor should press*. On a phone it was below every
+panel, every chart and every board — because a two-column desktop layout stacks
+into one column and the column holding the controls goes second. Nothing in the
+suite could see it. `node --test` cannot lay out a page, and all nine tests that
+touch that button ask whether it **exists**.
+
+### The first moves now sit under the water
+
+`👋 Meet somebody`, `⏩ Skip ahead` and `🧭 Show me around` have left the panel
+and become a row directly beneath the pond — three big buttons under the one
+thing on this page everybody looks at, in the order a first minute asks for
+them: *which of these should I watch* → *why should I keep looking* → *show me
+the rest.*
+
+On a phone the first press this page recommends moved from **3,692 px to
+685 px**, and the page it sits on got 314 px shorter.
+
+### The menu of other worlds stopped going first
+
+Thirteen scenario chips wrapped into a **376 px block** between the top bar and
+the water, so a visitor scrolled past a list of twelve alternative ponds before
+seeing the one they arrived for. Below 960 px it is now one line that scrolls
+sideways — **47 px** — which is what every phone does with a row of chips.
+Nothing removed, no chip resized, and the pond starts 329 px higher up.
+
+### Two things the browser settled that an argument would have got wrong
+
+- **The row is equal thirds, and that is not a taste.** `⏩ Skip ahead` rewrites
+  its own label while it runs (`⏩ Skipping ahead… 42%`), so a row sized to its
+  contents would grow the button that was just pressed and shove the other two
+  sideways under the reader's pointer. Measured through a live skip: 292 / 292 /
+  292 px before, during and after.
+- **The first draft shipped three stacked full-width buttons instead of a row.**
+  `.firstmoves button` and `button.meet` carry exactly the same CSS specificity,
+  and the panel's rule sits later in the stylesheet — so the new selector lost,
+  silently, and no test could have said so. The rule names all three controls
+  explicitly now.
+
+### Also
+
+- These three are the first controls in the app to clear **WCAG 2.2 SC 2.5.5
+  (Target Size, Enhanced)** at 44 px, a bar `targetsize.js` records the panel as
+  meeting nowhere. All six of their rows in that inventory were re-walked.
+- New `src/firstmoves.js` holds the walk, the rule and the cost — including the
+  honest one: on a 1280 × 900 desktop the row landed 64 px below the fold, where
+  the panel had it above. The pond itself already ends 44 px below that fold, so
+  the scroll that reveals the row is the scroll that reveals the water.
+- New `test/firstmoves.test.js` asserts that every control the page *tells* a
+  visitor to press — the guide's stops included — appears in the markup before
+  the aside opens. The next release to file one of them in the drawer of
+  settings fails on the way in.
+
 ## [1.152.0] — 2026-09-04
 
 The page finally checks its own headline.

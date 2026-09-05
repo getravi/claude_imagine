@@ -185,6 +185,25 @@ export function verdicts(controls, min = TARGET_MIN) {
  * *re-measured* rather than inherited. It does not close the chore above — this
  * is still a recording — but it is the first evidence the recording has not
  * drifted.
+ *
+ * **v1.153 re-measured three rows and found the axis this table does not have.**
+ * `#btn-meet`, `#btn-skip` and `#btn-tour` left the panel for a row under the
+ * pond, so all six of their rows are fresh: 346 × 44 at 390 px (stacked, the
+ * full width of the column) and 292 × 44 at 1280 (three across), against 301–316
+ * × 35 and 290 × 35 before. They are the first controls in this inventory to
+ * clear **SC 2.5.5 (Enhanced)** at 44 px, which the notes above say the panel
+ * meets nowhere — `src/firstmoves.js` argues why these three and not the rest.
+ * `WALKED` does not move: nothing was added or removed, only carried.
+ *
+ * The finding is what moved them, and it is a hole in this instrument rather
+ * than in the page. Every row here answers *how big is it* and *what is near
+ * it*; not one answers **how far down the page is it**, and at 390 px the
+ * answer for `#btn-meet` was 3,692 px of a 4,815 px document — below every
+ * panel, because one column puts the aside last. A control can pass every
+ * assertion in this file, at both viewports, and still be the last thing a
+ * visitor could reach. The `nearestCentre` warning above says a target's
+ * verdict depends on its neighbourhood; this says its *worth* depends on its
+ * queue position, and `firstmoves.js#WALK` is where that number now lives.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -205,11 +224,11 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
   { page: "app", vp: "390x844", sel: "button.primary, #btn-reset", n: 2, w: 154, h: 36, own: "154x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
-  { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 301, h: 35, own: "301x35", via: "self", nearestCentre: 90.4, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "390x844", sel: "#btn-gif", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
   { page: "app", vp: "390x844", sel: "#btn-picture", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
-  { page: "app", vp: "390x844", sel: "#btn-skip", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
-  { page: "app", vp: "390x844", sel: "#btn-tour", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
+  { page: "app", vp: "390x844", sel: "#btn-skip", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "⏩ Skip ahead" },
+  { page: "app", vp: "390x844", sel: "#btn-tour", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "🧭 Show me around" },
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
@@ -224,11 +243,11 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
   { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
-  { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 302, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "1280x900", sel: "#btn-gif", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
   { page: "app", vp: "1280x900", sel: "#btn-picture", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
-  { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "⏩ Skip ahead" },
-  { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🧭 Show me around" },
+  { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 302, inline: false, short: 0, sample: "⏩ Skip ahead" },
+  { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 284, inline: false, short: 0, sample: "🧭 Show me around" },
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
@@ -267,7 +286,7 @@ export const UNMET = Object.freeze({
   "#btn-simple":
     "shipped in v1.149, after the last probe went out — and it is the one control here whose *own* row would not be the interesting number, because it changes how many of the other seventy-seven are on the page at all. The walk that measures it has to be run twice, once on each side of the switch, and the second pass is the first time this inventory would have a page with a different set of targets on it rather than the same set at a different width. It is given a `min-height` in `HIT_RULES` below so it clears the bar by size while it waits",
   "#btn-hand":
-    "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-skip`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
+    "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-gif`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. (It was `#btn-skip` named here until v1.153 took that button out of the stack, which is the hazard of describing one control by its neighbours.) v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
 });
 
 /**

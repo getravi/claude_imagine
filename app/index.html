@@ -170,6 +170,50 @@
           <p id="pond-say" class="sr-only" role="status"></p>
         </section>
 
+        <!-- The first moves (v1.153). These three buttons lived in the panel on
+             the right, and on a phone that panel is *below the whole page*: the
+             walk in `src/firstmoves.js` measured `👋 Meet somebody` at 3,692 px
+             down a 4,815 px document at 390 × 844 — past eleven panels, below
+             every other thing on the page. Every comment that put them there
+             argued about their order *within* the panel, which was the wrong
+             argument:
+             a control a stranger is told to press is not a setting, and it does
+             not belong in the drawer of settings. So they sit under the water,
+             which is the one thing on this page everybody looks at.
+
+             The row is deliberately not labelled. It is three verbs beside the
+             thing they act on, and a caption over them would be the page
+             explaining its own buttons — the failure `simpleview.js` was built
+             to undo. The `aria-label` is for a listener, who has no "beside the
+             pond" to read it from.
+
+             Order is the order of a visitor's first minute, and it is the order
+             `tour.js` already walks its stops in: who is that, then why should I
+             keep watching, then show me the rest. -->
+        <section class="firstmoves" aria-label="What to try first">
+          <!-- The only control here that answers "which of these should I
+               watch?" — the one button on this page a first-time visitor should
+               press. `src/cast.js` picks who. -->
+          <button id="btn-meet" class="meet">👋 Meet somebody</button>
+          <!-- The fast-forward (v1.142). Beside `👋 Meet somebody` because the
+               two of them are the page's answers to the only two questions a
+               visitor has in their first minute: *what am I looking at* and
+               *why should I keep looking*. Evolution here moves at about a
+               generation every four hundred steps, and everything this project
+               has built to narrate that has still needed the visitor to supply
+               the waiting. This press supplies it — 2,600 steps, and then a card
+               saying what changed. `src/skip.js` owns the length, the words and
+               the arithmetic; main.js runs the steps across frames so the page
+               keeps drawing while it happens. -->
+          <button id="btn-skip" class="skip-btn">⏩ Skip ahead</button>
+          <!-- The guide (v1.129). Six stops around the page for somebody who has
+               just arrived; `src/tour.js` holds the words and the arithmetic and
+               main.js draws the ring. It opens itself once on a first visit and
+               lives here afterwards, because the visitor who wants it a second
+               time is the one who came back with a friend. -->
+          <button id="btn-tour" class="tour-open">🧭 Show me around</button>
+        </section>
+
         <!-- What they are doing (v1.148). The headline above the water is the
              pond in a sentence; this is the *animal you picked* in a sentence,
              and it is the first thing on this page that says what a creature is
@@ -388,29 +432,12 @@
                same reason. `src/handfeed.js` owns the spiral, the words and the
                arithmetic; main.js is the adapter onto the pointer. -->
           <button id="btn-hand" class="hand-btn" aria-pressed="false">🥣 Feed by hand</button>
-          <!-- The only control here that answers "which of these should I
-               watch?". Full width and on its own row because it is the one
-               button on this page a first-time visitor should press, and
-               because a third button squeezed beside Feed would take all three
-               under the 24 px bar v1.115 measured. `src/cast.js` picks who. -->
-          <button id="btn-meet" class="meet">👋 Meet somebody</button>
-          <!-- The fast-forward (v1.142). Directly under `👋 Meet somebody`
-               because the two of them are the page's answers to the only two
-               questions a visitor has in their first minute: *what am I
-               looking at* and *why should I keep looking*. Evolution here moves
-               at about a generation every four hundred steps, and everything
-               this project has built to narrate that has still needed the
-               visitor to supply the waiting. This press supplies it — 2,600
-               steps, and then a card saying what changed. `src/skip.js` owns
-               the length, the words and the arithmetic; main.js runs the steps
-               across frames so the page keeps drawing while it happens. -->
-          <button id="btn-skip" class="skip-btn">⏩ Skip ahead</button>
-          <!-- The guide (v1.129). Six stops around the page for somebody who has
-               just arrived; `src/tour.js` holds the words and the arithmetic and
-               main.js draws the ring. It opens itself once on a first visit and
-               lives here afterwards, because the visitor who wants it a second
-               time is the one who came back with a friend. -->
-          <button id="btn-tour" class="tour-open">🧭 Show me around</button>
+          <!-- `👋 Meet somebody`, `⏩ Skip ahead` and `🧭 Show me around` stood
+               here until v1.153, and the measurement that moved them is in
+               `src/firstmoves.js`: on a 390 px phone this panel begins 3,527 px
+               down the page, so the one button this page recommends to a
+               stranger was the eighteenth thing they could reach. They are now
+               a row under the water, where the pond is. -->
           <!-- The picture (v1.141). Full width and here rather than in the file
                row below, for two reasons. The row is four buttons wide and
                already two lines tall on a phone, so a fifth would put "Export

@@ -274,6 +274,57 @@ body.simple [data-expert] {
   align-items: center;
 }
 
+/* ---- The first moves (v1.153) ---- */
+
+/* Three buttons in a row directly under the pond. They keep the colours they
+   wore in the panel — `.meet` green, the other two on the shared blue plate —
+   because the rank they were given there is still the right rank: one press
+   this page recommends, two the page offers beside it. What changes is where
+   they are and how big they are.
+
+   Equal tracks rather than buttons sized to their labels, and that is not a
+   taste: `⏩ Skip ahead` rewrites its own label while it runs — `skipProgress`
+   turns it into `⏩ Skipping ahead… 42%` — so a row sized to its contents would
+   grow the button that was just pressed and shove the other two sideways under
+   the reader's pointer. v1.136 lost presses to a control that would not hold
+   still. A grid track cannot move.
+
+   `auto-fit` with a 190 px floor is what makes one rule serve both shapes: one
+   row of three where there is room for it, and three full-width buttons stacked
+   under the pond on a phone, which is the largest target a 346 px column can
+   give the press this page recommends.
+
+   The `min-height` is the point of the rule and not a detail of it. Every
+   other control on this page clears WCAG 2.2's 24 px minimum and none of them
+   reaches the 44 px of SC 2.5.5 (Enhanced) — `targetsize.js` says so in as
+   many words. These three are the ones a stranger on a phone is told to press,
+   so they are the first here to meet the enhanced bar. */
+.firstmoves {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+/* Named one by one rather than as `.firstmoves button`, and the reason is worth
+   a line: the panel's own rules are `button.meet` and `button.skip-btn`, which
+   carry exactly the same specificity as `.firstmoves button` and sit later in
+   this file — so the short selector loses, silently, and the first browser walk
+   of this release found three full-width buttons stacked where a row was
+   supposed to be. A selector that has to win an argument should say so. */
+.firstmoves button.meet,
+.firstmoves button.skip-btn,
+.firstmoves button.tour-open {
+  /* Undoing `display: block; width: 100%; margin-top: 8px` from the panel stack
+     these three used to stand in — those declarations are still right for
+     `🥣 Feed by hand` and the two file buttons that are still up there. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin-top: 0;
+  min-height: 44px;
+  font-size: 14px;
+}
+
 /* ---- What they are doing (v1.148) ---- */
 
 /* The headline's sibling, one notch quieter: the same card, the same gutter
@@ -2858,6 +2909,25 @@ button.skip-btn[aria-disabled="true"] {
   }
   .panel {
     order: 2;
+  }
+  /* The menu of other worlds, on a screen that has to scroll (v1.153). Thirteen
+     chips wrapped into a block **376 px tall** at 390 × 844 — measured, not
+     guessed — sitting between the top bar and the pond, so a visitor scrolled
+     past a list of twelve alternatives before seeing the one they came for.
+     Below this width the strip becomes what every phone does with a row of
+     chips: one line that scrolls sideways, cut off at the edge so it is visibly
+     a row rather than a wall. Nothing is removed and no chip changes size — the
+     29 px height that carries them past the 24 px target bar is untouched.
+
+     `min-width: 0` is what makes it work at all: a flex item will not shrink
+     below its content unless told it may, and without it the chips would push
+     the strip wider than the screen instead of scrolling inside it. */
+  .scenario-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

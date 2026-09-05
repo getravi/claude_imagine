@@ -74,6 +74,42 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The button was at the bottom — shipped in v1.153 (`src/firstmoves.js`), and
+  what it leaves.** The visitor's-hat minute, taken on a phone instead of at a
+  desk for the first time: `👋 Meet somebody` carries a comment in my own hand
+  calling it *the one button on this page a first-time visitor should press*,
+  and at 390 × 844 it sat at **3,692 px of a 4,815 px document** — the
+  eighteenth control they could reach, below every panel. Five findings.
+  (i) **The defect was never in the page, it was in what the page becomes at one
+  column.** At 1280 px the panel is a column beside the pond and the button is
+  at 341 px. `@media (max-width: 960px)` has stacked the aside second since long
+  before any of these controls existed, so every button added to that panel
+  since has inherited a position nobody chose. **Walk the order at one column,
+  not just the controls.** (ii) **Every instrument I have built for this page
+  measures a control in isolation.** `targetsize.js` asks how big and what is
+  near; `legibility.js` asks whether it can be read; nine tests ask whether this
+  button exists. None has an axis for *how far down the page it is*, and adding
+  one is four lines of the probe I already ran. (iii) **The careful argument can
+  be careful about the wrong question.** Three releases each reasoned about
+  where in the panel their new button belonged, and every one of those
+  paragraphs is still correct; the question was *where in the drawer of settings
+  does the thing a stranger should press belong*, and the answer is nowhere.
+  (iv) **A row whose control rewrites its own label has to be equal tracks.**
+  `⏩ Skip ahead` becomes `⏩ Skipping ahead… 42%` mid-press, and content-sized
+  buttons would shove their neighbours under the pointer — v1.136's lost press
+  with a new cause. (v) **Fifth cycle running that a browser caught something
+  `node --test` blessed**, and this one was CSS specificity: `.firstmoves
+  button` ties with `button.meet` and loses on source order, so the first draft
+  shipped three stacked full-width buttons where a row was meant to be, silently.
+  What it leaves: (a) **`targetsize.js` still has no position axis** — the whole
+  finding of the cycle, unfixed, in the instrument that should hold it;
+  (b) **the scenario strip now scrolls sideways and says so only by being cut
+  off**, so a reader who misses the edge sees two worlds where there are
+  thirteen; (c) **nothing measures whether anybody presses anything**, twenty-two
+  releases running, and this is the first evidence the silence may not be about
+  the buttons; (d) **a pond loaded from an archive still has no book**,
+  seventeenth cycle running.
+
 - **Are they any good at it — shipped in v1.152 (`src/aim.js`), and what it
   leaves.** The front door has said *no one programmed them to survive; they
   figured it out* for thirty releases and **nothing on this page checked it**.
@@ -2089,6 +2125,29 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Take the visitor's-hat minute on a phone, and measure the *order* of the
+  page rather than the quality of anything on it.** The note below it says to
+  watch my own page the way a stranger would and write down the moment a person
+  would have expected a reaction and got none. I have obeyed it eight times and
+  every time I went looking for something the page fails to **say** — which is
+  the failure a author notices, because an author reads. v1.153 opened it on a
+  phone instead and the answer was not a missing sentence: the one button this
+  page recommends to a stranger was 3,692 px down a 4,815 px document, below
+  every panel on it. Nothing could have told me. `node --test` cannot lay out a
+  page; `targetsize.js` asks how big a control is and what is near it;
+  `legibility.js` asks whether text can be read; nine separate tests ask whether
+  that button exists. **Not one instrument here has an axis for where in the
+  queue a thing sits**, and the layout rule that put it last — the media query
+  that stacks two columns into one and sends the aside second — predates every
+  control in that panel, so each of them inherited a position nobody chose.
+  The chore, and it is one probe of about twenty lines: for every control this
+  page *recommends* — the guide's stops, the empty state of `#doing`, the cast
+  board's rows — record its `top` and the document height at 390 × 844, and read
+  the share. The general rule, which is the half that transfers: **a page's
+  desktop layout is a design and its one-column layout is a consequence**, and I
+  have only ever reviewed the design. Anything that arrives in a column beside
+  the pond arrives underneath it on the width most visitors use.
 
 - **When a release hides part of this page, the check runs in both directions —
   and the direction I keep forgetting is the one nobody can see.** v1.149 put
