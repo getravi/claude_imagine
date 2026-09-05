@@ -140,6 +140,12 @@ body.simple [data-expert] {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* The caption (v1.154) takes a line of its own under the chips by asking for
+     the whole width; the label and the chips keep the row they have always had.
+     Wrapping here rather than nesting a second element keeps `.scenario-chips`
+     a direct flex child, which is what the phone rule below needs to hand it
+     `min-width: 0`. */
+  flex-wrap: wrap;
 }
 .scenarios-label {
   color: var(--ink-dim);
@@ -150,6 +156,15 @@ body.simple [data-expert] {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  /* Since v1.154 the strip wraps (to give the caption its own line), and a flex
+     item sized by its content in a wrapping container takes a line of its own
+     the moment the content is wider than the space left — which for thirteen
+     chips is always. A browser walk caught it: the label sat alone on row one
+     and the chips began 27 px below it, a row of nothing across the top of the
+     page. Basis zero puts them back beside the label and lets the wrapping
+     happen *inside* this box, where it always did. */
+  flex: 1 1 0;
+  min-width: 0;
 }
 .scenario-chips button {
   flex: 0 0 auto;
@@ -175,6 +190,53 @@ body.simple [data-expert] {
 .scenario-chips button.active {
   border-color: var(--accent);
   background: #12293a;
+}
+
+/* The caption under the chips (v1.154) — the one place on this page that says
+   what a world *is* before you press it, and which world you are in afterwards.
+
+   `flex: 1 0 100%` puts it on its own line under the label and the chips.
+   `min-height: 1lh` reserves exactly one line box whether or not there are
+   words in it, so the pond does not step up the page on first paint and does
+   not step down when the pointer crosses a chip. That is the whole reason
+   `HOOK_MAX` exists: the reservation is only true while every hook fits one
+   line, and `src/worlds.js` carries the measurement that says forty-two
+   characters do at 390 px. `1lh` is the honest unit here — it is this element's
+   own line box, so a reader who has scaled their text keeps the reservation. */
+.scenarios-caption {
+  flex: 1 0 100%;
+  margin: 2px 0 0;
+  /* The px is the fallback for a browser without `lh` (it landed in 2023); the
+     line below wins wherever the unit is understood. Either way the space is
+     reserved — an unreserved caption is a pond that jumps. */
+  min-height: 18px;
+  min-height: 1lh;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  /* One line, always. A hook longer than the budget would still not move the
+     pond — it would be cut, which is a visible bug in the words rather than an
+     invisible one in the layout, and `test/worlds.test.js` fails first. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scenarios-caption .sc-icon {
+  flex: 0 0 auto;
+}
+.scenarios-caption .sc-hook {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The preview is a different voice from the statement: pointing at a world you
+   have not chosen reads in the page's own ink, resting reads quieter. Without
+   it the caption changes its words under the pointer with nothing to say
+   whether it is describing where you are or where you could go. */
+.scenarios-caption.previewing {
+  color: var(--ink);
 }
 
 /* ---- Layout ---- */
@@ -2922,12 +2984,37 @@ button.skip-btn[aria-disabled="true"] {
      `min-width: 0` is what makes it work at all: a flex item will not shrink
      below its content unless told it may, and without it the chips would push
      the strip wider than the screen instead of scrolling inside it. */
+  /* The label takes the whole line here and reads as a heading over the row
+     (v1.154). It costs one line of height and buys the chips the 104 px the
+     label was standing in: 242 px of row becomes **346 px**, 43% more, and the
+     third world goes from a 1 px sliver to 79% on screen. That is short of a
+     third whole chip — the first three are 98, 127 and 133 px wide — and the
+     point is not the count anyway. It is that the row now visibly *has* a next
+     thing in it, which two chips ending in a clean edge did not. */
+  .scenarios-label {
+    flex: 1 0 100%;
+  }
   .scenario-chips {
     flex-wrap: nowrap;
     overflow-x: auto;
     min-width: 0;
     padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
+    /* And it says so (v1.154). A row cut off at the edge is *evidence* that it
+       continues; a row that fades out is a statement that it does. The walk
+       that measured this found 2 of 13 chips on screen at 390 px — 267 px of a
+       1,856 px row, 14.4% — so eleven worlds were behind an edge with nothing
+       marking it. The fade is drawn rather than added: a mask over the last
+       28 px, no element, no pointer target, and nothing in the keyboard walk.
+       Unconditional at this width because the overflow is too: thirteen chips
+       are 1,856 px and this rule only applies below 960. It therefore stays lit
+       at the far end of the row, where there is nothing more to reach — the
+       honest reading of it is *this is a row you scroll*, which is true at both
+       ends, rather than *there is more that way*, and buying the second one
+       costs a scroll listener and a class for a fact the visitor already has in
+       their thumb. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
 }
 

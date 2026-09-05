@@ -4,6 +4,77 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.154.0] — 2026-09-05
+
+Thirteen worlds, and not one of them said what it was.
+
+The strip at the top of the app has offered curated worlds since v1.20 —
+`Genesis`, `The Savanna`, `Nomad's Land`, `Earshot`, `The Lay of the Land`. Every
+one of them has a vivid, hand-written sentence behind it in `src/scenarios.js`.
+Every one of those sentences was in a `title` attribute, which is a tooltip:
+**it does not exist on a phone at all, and on a desktop it costs a one-second
+hover on a control the visitor has already decided to ignore.** A browser walk
+this cycle found no blurb anywhere in the rendered text of the page.
+
+So the most immediately interesting thing this project owns — thirteen different
+worlds, one press apart — was shipped as thirteen bare nouns.
+
+### The strip says what the worlds are
+
+Each world now carries a **hook**: a short promise, written for a line rather
+than a paragraph. *they eat the pond bare, then wait.* *walls split them into
+separate worlds.* *hunters let their relatives go.* *for once, the others can
+hear them.*
+
+A caption under the chips is always saying one of them. Point at a world and it
+is that world's promise, in the page's own ink; point at nothing and it names
+the world you are **in**, quieter. The long blurb is not replaced — it moves to
+where there is room for it, which is the banner you get after pressing. The hook
+is the invitation and the blurb is the receipt.
+
+### The strip says how many there are
+
+`Try a world:` became **`13 worlds to try:`**, counted off the array at runtime
+rather than typed into the document — the exact drift v1.37 found sitting in
+this project's prose for sixteen releases. On a desktop that is a small boast.
+On a phone, where the walk found **2 of 13** chips on screen (267 px of a
+1,856 px row), it is the only thing on the page that says there are eleven more
+sideways. The cut edge of the row now fades, so that it is visibly a row rather
+than a wall that happens to end.
+
+Its longer words then paid for themselves: below 960 px the label takes its own
+line and hands the row back the 104 px it was standing in — **242 px of row
+becomes 346 px**, and the third world goes from a 1 px sliver to 79% on screen.
+
+### The lit chip stopped lying
+
+Which world is highlighted is now read off the **config**, not off the last
+press. Nothing had ever put the lamp out, so a visitor who launched The Plague
+and then typed a new seed sat in a world of their own under a glowing 🦠.
+`↻ Reset` keeps it lit (same world); a new seed, a flipped switch or a loaded
+archive puts it out. And the place that leaves has words of its own now: a
+config that is neither a scenario nor the default is a world the visitor
+**built**, and the caption says so — *a world of your own making*.
+
+### Two things the browser settled
+
+- **The caption is one line by construction, and that is a layout rule rather
+  than a style.** It sits above the pond, so a caption that grew when the pointer
+  moved would push the water down the page under a moving hand. `HOOK_MAX`
+  reserves exactly one line box (`min-height: 1lh`); measured across all
+  thirteen hooks at 390, 768 and 1280 px, the caption is **18 px at every width
+  for every world** and the pond does not move by a pixel.
+- **Wrapping the strip put the label on a line of its own.** A flex item sized by
+  its content takes its own line the moment the content is wider than the space
+  left, which for thirteen chips is always — so the first draft shipped a row of
+  nothing across the top of the page, and `node --test` blessed it. Sixth cycle
+  running that a browser caught what the suite could not.
+
+`src/worlds.js` (new) holds the words and the arithmetic; `test/worlds.test.js`
+holds the budget, the uniqueness of the hooks, the runtime count, and the rule
+that the lamp follows the config. All 1,696 tests pass; the default pond is
+bit-for-bit unchanged.
+
 ## [1.153.0] — 2026-09-05
 
 The button this page recommends to a stranger was the last thing on it.

@@ -13,6 +13,7 @@ import { drawMuller, mullerShares, mullerAxis, textureCss, otherTextureCss } fro
 import { buildBrainFor } from "./creature.js";
 import { creatureFacts } from "./inspect.js";
 import { SCENARIOS } from "./scenarios.js";
+import { worldsLabel, worldCaption, previewCaption, captionText } from "./worlds.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
@@ -347,6 +348,11 @@ function adoptWorld() {
   // wants and for the same reason: the frame's top, before anything is stepped,
   // is the one moment `tick === 0` means "these are the animals it was handed".
   aim.begin(world);
+  // And the strip says where this is (v1.154). Here, in the one funnel every
+  // world change passes through, rather than in `launchScenario` — which is what
+  // used to light the chip and had no idea when to put it out. A press is a
+  // claim about what you did; the config is a fact about where you are.
+  syncWorldCaption();
 }
 
 // One look at the pond for the two records that are kept about individuals, per
@@ -423,12 +429,60 @@ function boot() {
 function buildScenarioChips() {
   const box = $("scenario-chips");
   box.innerHTML = "";
+  // The count, read off the array rather than typed into the document. Thirteen
+  // names is a wall; "13 worlds to try" is an offer, and on a phone — where the
+  // walk found 2 of them on screen — it is the only thing that says how much of
+  // the row is off the edge. `src/worlds.js` words it.
+  $("scenarios-label").textContent = worldsLabel(SCENARIOS.length);
   for (const scn of SCENARIOS) {
     const b = document.createElement("button");
     b.innerHTML = `<span>${scn.icon}</span> ${scn.name}`;
+    // The blurb stays in the tooltip for the visitor who rests on a chip long
+    // enough to get one, and it is no longer the *only* place it lives: the hook
+    // under the strip is the same offer without the hover, the wait, or the
+    // requirement to own a mouse.
     b.title = scn.blurb;
     b.addEventListener("click", () => launchScenario(scn));
+    // Preview on the way past. `pointerenter` rather than `mouseenter` so a
+    // stylus counts, and `focus` so the keyboard walk gets the same sentence a
+    // hand does — a caption only a pointer can read is a tooltip with extra
+    // steps, which is the thing this release exists to undo.
+    b.addEventListener("pointerenter", () => showCaption(previewCaption(scn), true));
+    b.addEventListener("focus", () => showCaption(previewCaption(scn), true));
+    b.addEventListener("pointerleave", syncWorldCaption);
+    b.addEventListener("blur", syncWorldCaption);
     box.appendChild(b);
+  }
+  syncWorldCaption();
+}
+
+/**
+ * Put a caption in the strip. `preview` is what separates *where you could go*
+ * from *where you are*, and it is a class rather than different words because
+ * the words are the world's and belong to it either way.
+ */
+function showCaption(cap, preview = false) {
+  $("scenarios-caption-icon").textContent = cap.icon;
+  $("scenarios-caption-hook").textContent = captionText(cap);
+  $("scenarios-caption").classList.toggle("previewing", preview);
+}
+
+/**
+ * The caption and the lit chip, both derived from the config rather than from
+ * the last thing pressed. `↻ Reset` rebuilds the same world and keeps the lamp
+ * on; a new seed, a flipped switch or a loaded archive puts it out, because each
+ * of those genuinely is somewhere else — and the somewhere else has words of its
+ * own now (`a world of your own making`).
+ */
+function syncWorldCaption() {
+  const cap = worldCaption(config);
+  showCaption(cap, false);
+  for (const [i, b] of [...$("scenario-chips").children].entries()) {
+    const mine = SCENARIOS[i].id === cap.id;
+    b.classList.toggle("active", mine);
+    // A lit chip is a state, and a state a sighted visitor can see is one a
+    // listener is owed too (v1.51's sweep, in its usual shape).
+    b.setAttribute("aria-pressed", mine ? "true" : "false");
   }
 }
 
@@ -446,10 +500,11 @@ function launchScenario(scn) {
   // banner of its own that says more than a place name does, and two toasts
   // racing for one element means the second one wins by accident.
   syncPondName();
-  // Mark the active chip.
-  [...$("scenario-chips").children].forEach((b, i) => {
-    b.classList.toggle("active", SCENARIOS[i].id === scn.id);
-  });
+  // The lit chip and the caption follow from the config, and `adoptWorld` reads
+  // it at the top of the next frame (v1.154) — so this function no longer has an
+  // opinion about which chip is on. What it used to have was an opinion it could
+  // never revise: nothing put the lamp out, and a visitor who launched The Plague
+  // and then typed a seed sat in a world of their own under a glowing 🦠.
   syncHash();
   flash(`${scn.icon} ${scn.name} — ${scn.blurb}`);
 }

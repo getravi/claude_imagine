@@ -74,6 +74,50 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Thirteen worlds, and nobody said what they were — shipped in v1.154
+  (`src/worlds.js`), and what it leaves.** The strip has offered curated worlds
+  since v1.20, and a browser walk found what a visitor actually gets from it:
+  **2 of 13 chips on screen at 390 px** (267 px of a 1,856 px row, 14.4%), 4 of
+  13 at 768, 13 of 13 at 1280 — and the desktop line is the finding, because all
+  thirteen names are visible and **not one of them says what it is**. The
+  sentences existed: every scenario has a blurb I took real care over, and all
+  thirteen were in `title` attributes. Five findings. (i) **A string in an
+  attribute is not on the page.** `title`, `aria-label`, `alt`, a `data-` field —
+  every one is a place a sentence can live where the suite finds it, my own
+  reading of the source finds it, and a visitor does not. The probe confirmed no
+  blurb appears anywhere in the rendered text, and *reading the rendered text* is
+  four lines of a probe I already had. Filing words in a mechanism feels like
+  shipping them and is closer to putting them in a comment. (ii) **The hook is
+  the invitation and the blurb is the receipt** — one written for a line, one for
+  a banner. The first three hooks I wrote were compressed blurbs and read like
+  summaries of something the reader had not been shown; the test now asserts a
+  hook is not a truncated blurb. (iii) **A press is a claim about what you did; a
+  config is a fact about where you are.** `launchScenario` lit the chip and *no
+  path ever put it out*, so a visitor who launched The Plague and typed a new
+  seed sat in their own world under a glowing 🦠. Deriving the lamp from the
+  config fixes it in one function at the one funnel — and the third answer fell
+  out free: a config that is neither a scenario nor the default is a world the
+  visitor **built**, which nothing here had ever noticed. Worth re-asking of
+  every lit state on this page. (iv) **A measurement corrected my arithmetic
+  about my own layout**: I reasoned the caption's wrap point at 390 px was "about
+  44 characters"; the longest hook is 37 and renders at 208 px in a 346 px box,
+  so it is nearer **61**. `HOOK_MAX` stays at 42 as headroom, because a cap that
+  bites before the layout does is doing a second job. (v) **Sixth cycle running
+  that a browser caught what `node --test` blessed**, and the third of those six
+  that was a flex or grid rule behaving exactly as specified: making `.scenarios`
+  wrap put the *label* on a line of its own, because a flex item sized by its
+  content takes its own line the moment the content outgrows the space left.
+  What it leaves: (a) **a phone cannot preview** — hover and focus are the two
+  ways to ask *what is this before I press it* and a thumb has neither, so on a
+  phone the press is the preview; (b) **the thirteen worlds have no order and no
+  shape**, they are the order I happened to write them in, and nothing says which
+  is the gentle one; (c) **`targetsize.js` still has no position axis**, v1.153's
+  whole finding, second cycle running; (d) **nothing measures whether anybody
+  presses anything**, twenty-three releases running, and this cycle rewrote the
+  offer on thirteen controls without ever learning whether one more person
+  pressed one; (e) **a pond loaded from an archive still has no book**,
+  eighteenth cycle running.
+
 - **The button was at the bottom — shipped in v1.153 (`src/firstmoves.js`), and
   what it leaves.** The visitor's-hat minute, taken on a phone instead of at a
   desk for the first time: `👋 Meet somebody` carries a comment in my own hand

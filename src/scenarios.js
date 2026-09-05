@@ -17,6 +17,7 @@ export const SCENARIOS = [
     id: "genesis",
     icon: "🌱",
     name: "Genesis",
+    hook: "a quiet pond, and nothing hunts",
     blurb:
       "A calm herbivore pond — no hunters, no seasons. Just watch foraging evolve from random founders.",
     over: { seed: 1, predation: false, seasons: false },
@@ -25,6 +26,7 @@ export const SCENARIOS = [
     id: "savanna",
     icon: "🦁",
     name: "The Savanna",
+    hook: "hunters, grazers, and the fallen",
     blurb:
       "A full food web: hunters, grazers, and scavengers feeding on the fallen, all riding the seasons.",
     over: { seed: 2024, predation: true, scavenging: true, seasons: true },
@@ -33,6 +35,7 @@ export const SCENARIOS = [
     id: "nomad",
     icon: "🧭",
     name: "Nomad's Land",
+    hook: "the good land moves; they follow",
     blurb:
       "The fertile lands drift, and life must keep migrating to follow the food. Nothing ever settles.",
     over: { seed: 88, biomeDrift: 0.1, seasons: true },
@@ -41,6 +44,7 @@ export const SCENARIOS = [
     id: "longnight",
     icon: "🌙",
     name: "The Long Night",
+    hook: "they hunt in the dark, half-blind",
     blurb:
       "No seasons here, only sun and moon: sight collapses to a quarter at midnight, and hunters must work the dark.",
     over: {
@@ -56,6 +60,7 @@ export const SCENARIOS = [
     id: "plague",
     icon: "🦠",
     name: "The Plague",
+    hook: "a sickness moves through in waves",
     blurb:
       "A pathogen sweeps the pond in waves: the sick burn energy fast, survivors are immune for life, and every newborn is susceptible again.",
     // Seed 101 was earned by a 14-seed sweep scored on recurring epidemic waves
@@ -70,6 +75,7 @@ export const SCENARIOS = [
     id: "commons",
     icon: "🌾",
     name: "The Commons",
+    hook: "they eat the pond bare, then wait",
     blurb:
       "Plants breed from plants, so a herd can eat the pond bare — and then has to wait for it to grow back. Crop and grazers rise and fall against each other.",
     // Seed 137 was earned by a 20-seed sweep scored on complete overgrazing
@@ -86,6 +92,7 @@ export const SCENARIOS = [
     id: "lay",
     icon: "🏔️",
     name: "The Lay of the Land",
+    hook: "ridges cost, hollows feed",
     blurb:
       "Ridges cost more to cross and grow almost nothing; the dead enrich the hollows they fall in. Nothing can see the landscape — the pond collects in the basins because that is where the crop is.",
     // Seed 13 was earned by a 48-seed sweep scored on the two things this world
@@ -111,6 +118,7 @@ export const SCENARIOS = [
     id: "rooms",
     icon: "🧱",
     name: "The Four Rooms",
+    hook: "walls split them into separate worlds",
     blurb:
       "Four walls of rock, opaque to every sense, cut the pond into rooms joined by narrow gates. Crossings all but stop, and the lineages either side of a wall drift apart.",
     // Seed 51 was earned by a 64-seed sweep scored on the claim this world makes
@@ -143,6 +151,7 @@ export const SCENARIOS = [
     id: "earshot",
     icon: "📣",
     name: "Earshot",
+    hook: "for once, the others can hear them",
     blurb:
       "Every creature has always flashed a signal; here, for the first time, the others can hear it. Whether the pond ever makes anything of that is an open question — watch and see.",
     // Seed 23 was earned by a 28-seed sweep scored on what actually makes this
@@ -157,6 +166,7 @@ export const SCENARIOS = [
     id: "kin",
     icon: "👪",
     name: "One Big Family",
+    hook: "hunters let their relatives go",
     blurb:
       "Hunters here recognise their own relatives and let them go. In most ponds that rule never speaks once; in this one it turns down thousands of meals — in bursts, with long silences between them.",
     // Seed 512 was earned by a 64-seed sweep of the only door this project has
@@ -203,6 +213,7 @@ export const SCENARIOS = [
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",
+    hook: "brains that learn inside one life",
     blurb:
       "Brains can learn within a lifetime — watch the capacity to learn evolve from nothing (the Baldwin effect).",
     over: { seed: 314, plasticity: true },
@@ -211,6 +222,7 @@ export const SCENARIOS = [
     id: "augment",
     icon: "🧬",
     name: "Augmented Minds",
+    hook: "brains that grow their own wiring",
     blurb:
       "Brains start with almost no structure and grow their own. Click a creature to see its evolved network.",
     over: { seed: 777, evolvableTopology: true },
@@ -219,6 +231,7 @@ export const SCENARIOS = [
     id: "whole",
     icon: "🌍",
     name: "The Whole World",
+    hook: "every rule at once",
     blurb:
       "Everything at once: predation, scavenging, seasons, drifting lands, and brains that learn.",
     over: {

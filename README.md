@@ -35,7 +35,9 @@ New here? The **Scenarios** strip at the top offers thirteen one-click worlds �
 a calm herbivore *Genesis* to a full-blown *Savanna* food web to *The Plague*, where
 a pathogen sweeps the pond in waves, to *The Commons*, where a herd can eat the pond
 bare, to *The Lay of the Land*, where the ground itself decides where life can be —
-each a hand-picked doorway into what the simulation can do.
+each a hand-picked doorway into what the simulation can do. Each chip carries a
+one-line promise under the strip (*they eat the pond bare, then wait*), so you can
+read what a world is before you press it and see which one you are in afterwards.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
 

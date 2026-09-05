@@ -59,9 +59,33 @@
       </nav>
     </header>
 
+    <!-- The worlds strip (v1.20, given words in v1.154). Thirteen curated
+         worlds, one press apart, and until this release every one of them was a
+         bare noun: `Nomad's Land`, `The Commons`, `Earshot`. The sentences that
+         make them worth pressing were all written and all shipped — in `title`
+         attributes, which is a tooltip, which does not exist on a phone and
+         costs a one-second hover on a desktop. A browser walk found no blurb
+         anywhere in the rendered text of this page, and found 2 of 13 chips on
+         screen at 390 px.
+
+         So: the label counts the collection (written at runtime from
+         `SCENARIOS.length` — a hand-typed count in this document is the exact
+         lie v1.37 found sitting here for sixteen releases), and the caption
+         underneath is always saying something. Point at a chip and it is that
+         world's promise; point at nothing and it is the world you are in.
+         `src/worlds.js` holds the words and the arithmetic.
+
+         The caption is one line at every width by construction, and that is a
+         layout rule rather than a style: it sits above the pond, so a caption
+         that grew when the pointer moved would push the water down the page
+         under a moving hand. `HOOK_MAX` is what keeps it honest. -->
     <section class="scenarios">
-      <span class="scenarios-label">Try a world:</span>
+      <span class="scenarios-label" id="scenarios-label">Try a world:</span>
       <div id="scenario-chips" class="scenario-chips"></div>
+      <p class="scenarios-caption" id="scenarios-caption">
+        <span class="sc-icon" id="scenarios-caption-icon" aria-hidden="true"></span>
+        <span class="sc-hook" id="scenarios-caption-hook"></span>
+      </p>
     </section>
 
     <main class="layout">
