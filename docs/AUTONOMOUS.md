@@ -74,6 +74,52 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The board that said "pick one" and gave you a dot — shipped in v1.158
+  (`src/lineup.js`), and what it leaves.** Second cycle wearing a stranger's
+  hat, and it went straight at the question v1.157 opened and did not answer:
+  *would any of the other prose panels be better as a picture?* `🏅 Worth
+  watching` was the indefensible one, because its whole job is to be pointed at
+  — *pick one to follow*, every row a button — and it drew **the biggest hunter
+  in the water** as a 14 px square the same size as the last survivor of a dying
+  family. Five findings. (i) **Measure whether a shared scale has anything to
+  compare before you build one.** Three near-identical animals at one scale is
+  three identical pictures under three different sentences, which is worse than
+  a square because it looks like information. Twelve seeds, 720 pond-instants:
+  boards run 1–4 rows (mean 2.51), the largest body is a median **1.171×** the
+  smallest and differs by 5% or more on **89.1%** of multi-row instants — and
+  **76.3%** hold a hunter and a grazer together, which makes the *nose*, not the
+  size, the loudest thing the figure says. (ii) **The swatch was not wrong, it
+  was one channel of four.** Colour was doing real work on a board carrying a
+  median of three families. Size, shape and colour are all inherited and all
+  visible in the water, and only one was on the board — the failure to look for
+  is a surface using *some* of the vocabulary its own page already teaches.
+  (iii) **A figure of an average and a figure of an individual get opposite
+  rules about the same channels.** `portrait.js` had to strip colour and
+  brightness because an average belongs to no family and has no appetite; this
+  board must keep them because they are how a reader finds Nim in the water. The
+  rule that sorts them is about the subject, not the channel: **a portrait may
+  wear a channel exactly as far as its subject really owns it** — an average
+  owns none, a named animal owns everything dealt to it at birth and none of
+  what is happening to it now. (iv) **A content-keyed memo tells you what a
+  picture is allowed to draw.** `castSignature` is `rank:id`, so the figure was
+  free only because `radius`, `carnivory` and `hue` are each written once in
+  `creature.js`'s constructor and never again — worth asking of any drawing
+  added to a memoised panel *before* building it, since the alternative is a
+  second memo or a silently stale picture. (v) **It cost no height**: the
+  drawings sit inside the 32 px row the swatch had, and the only new pixels are
+  the legend. What it leaves: (a) **five prose panels to go** — the key, the
+  ladder, the records, the Chronicle, the verb — and none of them is *about a
+  specific animal*, which is what made this one easy; (b) **`nametag.js` draws
+  the same stand-outs over the water as text**, so the board now teaches a
+  silhouette the plate beside the animal does not repeat; (c) **the obituary and
+  the inspector still use the flat swatch**, and the obituary's case is the
+  interesting one because every channel a portrait wears is a birth constant, so
+  a portrait of a dead animal is still true; (d) **nothing has ever measured
+  whether anybody presses anything**, twenty-seven releases, and this cycle
+  rewrote a board whose every row is a button; (e) **`targetsize.js` still has
+  no position axis**, sixth cycle; (f) **a pond loaded from an archive still has
+  no book**, twenty-second cycle.
+
 - **The quiet page had no pictures — shipped in v1.157 (`src/lifeline.js`),
   and what it leaves.** The cycle I took wearing a stranger's hat rather than a
   scientist's, and the finding was a count nobody had run: **v1.149's Simple
@@ -2256,6 +2302,43 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A portrait may wear a channel exactly as far as its subject really owns
+  it.** Two figures here now draw the pond's own arrowhead and they take
+  *opposite* decisions about the same three channels, which looked like an
+  inconsistency until I found the rule underneath. `portrait.js` draws two
+  averages and strips colour and brightness, because an average belongs to no
+  family and has no appetite — wearing them would be inventing a fact.
+  `lineup.js` draws named animals and keeps colour and size, because those are
+  precisely what lets a reader take a name off the board and find its owner in
+  the water — stripping them would be throwing a fact away. The sorting question
+  is never *is this channel decorative*; it is **does this subject own this
+  value**. An average owns none of them. A named animal owns everything dealt to
+  it at birth — `radius`, `carnivory`, `hue`, all written once in `creature.js`'s
+  constructor and never again — and **none of what is happening to it right
+  now**, which is why brightness stays off a board that is only redrawn when the
+  cast changes. The chore this suggests: every surface here that stands for one
+  animal (the inspector's swatch, the obituary's, the plates over the water)
+  should be asked which of the four channels it uses, and why not the others.
+
+- **Before adding a drawing to a memoised panel, check the memo is complete for
+  it.** The board is keyed on `castSignature` — `rank:id` — and the pictures
+  were free only because everything they draw is a birth constant. Had I drawn
+  one live quantity, the honest options were a second and faster memo or a
+  quietly stale picture, and the stale picture is the one that ships, because it
+  looks right in every screenshot. The general question, asked *before* the
+  build rather than after: **what does this panel's key promise not to change,
+  and is my picture inside that promise?** It is the same discipline as v1.157's
+  caption rule (a held sentence may not carry a live number) applied one level
+  down, to ink rather than to words.
+
+- **A surface that uses some of the vocabulary its own page teaches is the
+  failure to look for.** The cast board taught nothing and used one channel of
+  four — colour — while the placard three panels up was busy teaching a reader
+  that shape means diet and size is inherited. Not a bug, and no test could see
+  it: every row was correct. The chore is cheap and I have never run it: for
+  each surface that stands for something the water draws, list the channels the
+  water uses for it and tick off the ones the surface carries.
 
 - **Count what is on each side of a switch before praising it, and count the
   *kinds* rather than the items.** v1.157's whole finding, and it was available

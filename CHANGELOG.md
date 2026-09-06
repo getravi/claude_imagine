@@ -4,6 +4,122 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.158.0] — 2026-09-06
+
+Three names, and now three faces.
+
+v1.157 counted what the Simple switch puts away and found the thing nobody had
+decided — **seven panels of prose stay and all five figures go** — and it left
+the obvious next question open in its own leaving: *would any of the other prose
+panels be better as a picture?*
+
+`🏅 Worth watching` is the one that most plainly would. Its whole job is to be
+pointed at: the subheading says *pick one to follow*, every row is a button that
+sends the camera after an animal, and the animal itself was represented by a
+14 px rounded square. The board named **the biggest hunter in the water** and
+drew it exactly the size of the last survivor of a dying family. A reader was
+asked to take a name off a list and find its owner among three hundred moving
+darts, holding nothing but a colour.
+
+So each row now carries the animal, drawn the way the pond draws it — the same
+arrowhead, the same inherited colour, the hunter's long nose — and every row on
+the board at **one shared scale**, so the biggest stand-out is the biggest
+picture.
+
+```
+   ➤     👶  Juno of the Shale Sprigs    parent to more of this pond than anyone else
+  ➤➤     🔺  Nim of the Saffron Quills   the biggest hunter in the water
+   ➤     ⏳  Tamsin of the Silt Whorls   the oldest animal in the pond
+
+  Drawn at one scale, so the sizes here are the sizes in the water.
+  A long nose is a hunter; the colour is the family.
+```
+
+### The sweep that says the figure has something to show
+
+Twelve seeds, six thousand ticks, sampled every hundred — 720 pond-instants, and
+the board is non-empty on every one of them.
+
+| | |
+| --- | --- |
+| Rows on a board | 1–4, **mean 2.51**; three is commonest (310 of 720) |
+| Boards with nothing to compare | **22.2%** — one row, so the picture is a portrait rather than a lineup |
+| Largest body ÷ smallest, on the rest | median **1.171×**, p10 1.048, p90 1.926, largest seen **2.211×** |
+| A size difference you can see | 5% or more on **89.1%**, 15% or more on **53.2%** |
+| Both silhouettes on one board | **76.3%** — a hunter and a grazer together |
+| Distinct colours already there | a median of **three** hue bands per board |
+
+The last row is why this is an addition rather than a correction: the swatch was
+not wrong, it was *one channel of four*. The nose is the loudest thing the
+picture can say and it says it three boards in four; the sizes differ visibly on
+half of them; and on the remaining tenth the drawing shows animals the same
+size, because they are.
+
+### It costs no height, and nothing per frame
+
+The drawings sit in the 32 px row the swatch already sat in, so the board is
+exactly as tall as it was — **the only new height on the page is the one-line
+legend**, seventeen pixels of it at 1280.
+
+And nothing is recomputed as the pond runs. `castSignature` keys the board on
+`rank:id` and the markup is rebuilt only when that string changes. Everything
+this figure draws — `radius`, `carnivory`, `hue` — is written once in
+`creature.js`'s constructor from a gene and never assigned again anywhere in
+this project, so a key that is complete for the sentence is complete for the
+picture too. That is a property rather than a coincidence, and the suite now
+reads the source back and fails if any of the three ever becomes a variable.
+`portrait.js` proved the first of the three for its own figure in v1.128; this
+needed all of them.
+
+### Two channels left out, both of them live
+
+- **Brightness.** In the water a body's lightness rises with what it has eaten,
+  so a faint animal is a hungry one. The board is redrawn when the *cast*
+  changes, which can be hundreds of ticks apart. A portrait showing an appetite
+  from four hundred steps ago would be a lie told in the pond's own vocabulary,
+  so every body here is drawn at one lightness and none makes a claim about it.
+- **Heading.** Every arrowhead in the water points where it is swimming. These
+  all point right. A portrait holds still — the water is where you watch it move
+  — and a row of animals facing different ways would read as four positions
+  rather than four sizes.
+
+The nose carries the hunter alone, without the warm outline `render.js` puts
+around a predator. That outline exists to hold contrast against a bright chevron
+drawn additively over black water; the board's ground is a flat panel, the shape
+has the whole difference in it already, and `portrait.js` reached the same answer
+for the same figure one release before the question was asked here.
+
+### Added
+
+- **`src/lineup.js`** — the layout, the one shared scale, the drawing and the
+  legend. Pure observer: no DOM, no world state, **no random numbers**, and no
+  colour of its own (the body is `palette.js#lineageFill`'s dot and the shape is
+  `key.js#chevron`, so the animal on this board is the animal in the placard is
+  the animal in the water).
+- **`test/lineup.test.js`** — 14 tests, including one that reads `creature.js`
+  back and requires all three drawn channels to be written exactly once, one
+  that requires the scale to be the largest that fits so nothing is drawn
+  smaller than it needs to be, one that walks a real run and requires the
+  biggest stand-out to be the biggest drawing, and one that reads `render.js`'s
+  own two lines so the nose here cannot drift from the nose in the water.
+- A `.castnote` legend under the board, written from the module that owns the
+  words and hidden with the pictures it explains.
+- A row for the module in `docs/ARCHITECTURE.md`.
+
+### Changed
+
+- `castRows` carries `radius` and `hunter` beside the `hue` it already carried.
+  A row still holds no reference to a creature — copies of three birth
+  constants, so a row that outlives its animal by a frame is still a true
+  picture of the animal it was.
+
+### Determinism
+
+Unchanged. `lineup.js` reads four numbers off a row and returns a string; the
+suite holds a pond identical — hash, tick and the state of the generator itself
+— across five builds of the board, and counts the random numbers taken out of
+its stream at zero. The v1.36 fingerprints stand.
+
 ## [1.157.0] — 2026-09-06
 
 The quiet page gets its first picture.

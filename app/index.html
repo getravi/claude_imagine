@@ -377,6 +377,14 @@
             <span class="whoswho-sub">the stand-outs in the water right now — pick one to follow</span>
           </div>
           <ul class="castlist" id="cast-list"></ul>
+          <!-- The legend for the drawings on those rows (v1.158). Empty here
+               and written once by `main.js` from `lineup.js#LINEUP_NOTE`, the
+               way every other sentence on this page reaches it: a line typed
+               into the markup is a copy of a constant, and a copy is a stale
+               sentence waiting to happen. Hidden while the board is empty,
+               because a legend under "nobody stands out just now" is a caption
+               for a picture that is not there. -->
+          <p class="castnote" id="cast-note" hidden></p>
         </section>
 
         <!-- How they have changed (v1.128). The page's tagline is *watch

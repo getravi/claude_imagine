@@ -677,6 +677,20 @@ body.simple [data-expert] {
   background: var(--bg-panel-2);
   border-color: var(--line);
 }
+/* The animal itself, where a 14 px swatch used to sit (v1.158). Fixed tracks,
+   not content-sized: every row draws into a box of the same size and the
+   *body* inside it is what differs, which is the entire claim the shared scale
+   makes. A box that shrank to its drawing would give the smallest stand-out the
+   shortest indent and turn a size comparison into a ragged left edge. The
+   negative margin claws back the padding `svg` gets as an inline element, so
+   the mark beside it sits where it always did. */
+.castrow .lineup {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 26px;
+  margin: -4px 0;
+  overflow: visible;
+}
 .castrow .castmark {
   flex: 0 0 auto;
   font-size: 15px;
@@ -703,6 +717,15 @@ body.simple [data-expert] {
   font-style: italic;
   line-height: 1.5;
   padding: 4px 2px;
+}
+/* The legend under the board (v1.158) — `.portrait-note`'s twin, at its ink and
+   its size, because the two figures draw the same arrowhead and a reader who
+   meets both should not have to notice they are different surfaces. */
+.castnote {
+  margin: 7px 2px 0;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 /* ---- How they have changed (v1.128) ----

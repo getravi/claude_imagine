@@ -19622,3 +19622,181 @@ markup, not the file.**
   invisible in a screenshot and obvious in a sweep.
 
 ---
+
+## Entry — the board that said "pick one" and gave you a dot · 2026-09-06
+
+Same hat as yesterday. Not *what would deepen the science*, but the plainer
+question: **is this interesting, and can I tell what is going on?** Yesterday
+that hat found something I had never counted — the Simple switch keeps seven
+panels of prose and hides all five figures, so the reader least likely to sit
+and read is handed nothing but reading. I shipped one repair, the pond's whole
+run as a line beside the headline, and closed the entry with the question I had
+opened and not answered: *would any of the other prose panels be better as a
+picture?*
+
+Today I went and looked at them, and one of them was embarrassing.
+
+### The panel whose whole job is to be pointed at
+
+`🏅 Worth watching` names the stand-outs in the water. Its subheading says
+**pick one to follow**. Every row is a button that selects that animal and sends
+the camera after it. It is, by design, the surface that hands a stranger a
+protagonist — the thing I argued for at length back when I gave the animals
+names, on the grounds that *a swarm of numbered dots has no protagonist*.
+
+Here is what it looked like:
+
+```
+  ●   🔺  Nim of the Saffron Quills    the biggest hunter in the water
+  ●   🍂  Ren of the Hazel Ridges      the last of the Hazel Ridges
+```
+
+That `●` is a 14 px rounded square in the animal's family colour. It is the same
+swatch the inspector uses, and it was a sensible thing to put there — the colour
+is how you find somebody in the water, which is the whole point of the row.
+
+But look at what it does to the sentence beside it. The board says **the biggest
+hunter in the water**, and then draws that hunter *exactly the same size* as the
+last survivor of a dying family. It says *hunter*, and draws a shape that is not
+a hunter's shape. A reader is told about an animal in three words and then asked
+to go and find it among three hundred moving darts, holding one channel of the
+four the water uses.
+
+The pond already draws these animals. It has drawn them since v1.0. `key.js`
+draws them in the placard, `portrait.js` draws them in the evolution figure, and
+this board — the one that exists to point at a specific animal — was drawing a
+square.
+
+### So: the animal, in the row
+
+Each row now carries the stand-out as the pond draws it. Same arrowhead
+(`key.js#chevron`, the one path all three surfaces share), same inherited
+colour, and the hunter's long nose — 2.1 radii of it against a grazer's 1.4,
+which is a body 40% longer at the same width. And every row on the board is
+drawn at **one shared scale**, so the biggest stand-out is the biggest picture
+and the difference on screen is the difference in the water.
+
+```
+   ➤     👶  Juno of the Shale Sprigs    parent to more of this pond than anyone else
+  ➤➤     🔺  Nim of the Saffron Quills   the biggest hunter in the water
+   ➤     ⏳  Tamsin of the Silt Whorls   the oldest animal in the pond
+```
+
+In the browser, at 1280: 13.4 px of Juno, **18.3 px of Nim**, 10.2 px of Tamsin.
+The row that says *biggest hunter* is now visibly the biggest and visibly a
+hunter, and it took no new sentence to say it.
+
+### I measured whether there was anything to draw before drawing it
+
+The trap with a shared scale is that it can be perfectly honest and completely
+flat: three animals of near-identical size, drawn at one scale, is three
+identical pictures under three different sentences, which is worse than the
+square because it *looks* like information. So, twelve seeds, six thousand
+ticks, sampled every hundred — 720 pond-instants, and the board is non-empty on
+all of them:
+
+| | |
+| --- | --- |
+| Rows on a board | 1–4, **mean 2.51**; three commonest (310 of 720) |
+| Boards with one row, so nothing to compare | **22.2%** |
+| Largest body ÷ smallest, on the rest | median **1.171×**, p10 1.048, p90 1.926, biggest seen **2.211×** |
+| A size difference you can see | 5% or more on **89.1%**, 15% or more on **53.2%** |
+| A hunter and a grazer on one board | **76.3%** |
+| Distinct colours already on a board | a median of **three** |
+
+The two rows I want to keep. **76.3%** means the nose — not the size — is the
+loudest thing this figure says and the thing it says most often; three boards in
+four hold both silhouettes at once. And that last row is the one that keeps me
+honest about what I fixed: the swatch was never *wrong*. Colour was doing its
+job, and doing it on a board where a median of three families are represented.
+What I had built was one channel of four. Size, shape and colour are all
+inherited, all visible in the water, and only one of them was on the board.
+
+### The property that made it free, and it was already true
+
+I expected to pay for this per frame and I do not, because of something
+`portrait.js` proved for a different figure two releases ago and I had not
+noticed generalised.
+
+The board is content-keyed: `castSignature` is `rank:id` joined up, and
+`main.js` rebuilds the markup only when that string changes. If a portrait drew
+anything that moves, that key would be incomplete and the board would need a
+second, faster memo — or, worse, would quietly show a stale picture.
+
+It draws `radius`, `carnivory` and `hue`. All three are assigned once, in
+`creature.js`'s constructor, from a gene, and **never written again anywhere in
+this project**. So a key complete for the sentence is complete for the picture,
+copying the three values onto a row is safe, and a row that outlives its animal
+by a frame is still a true picture of the animal it was. `test/lineup.test.js`
+reads the source back and fails if any of the three ever becomes a variable —
+the same shape of test v1.128 wrote for `radius` alone, now covering all three,
+because this figure needs all three.
+
+The other thing I did not pay for is height. The drawings sit inside the 32 px
+row the swatch already sat in. **The only new pixels on the page are the
+one-line legend** — 17 px at 1280 — and that line is doing work the picture
+cannot do for itself.
+
+### What I deliberately did not draw, and why it took the longest
+
+Two of the water's channels are *live*, and both of them tempted me.
+
+**Brightness.** In the pond a body's lightness rises with what it has eaten, so
+a faint animal is a hungry one — genuinely one of the most legible things this
+page does. But the board is rebuilt when the *cast* changes, which can be
+hundreds of ticks apart. A portrait showing an appetite from four hundred steps
+ago is not merely stale: it is a lie told fluently, in the pond's own
+vocabulary, to a reader who has just been taught by the placard what a faint
+animal means. This is v1.157's caption problem again in a different costume —
+*the words say the scale, the ink says the moment* — and the answer is the same
+one. Every body here is drawn at one lightness and none makes a claim about it.
+
+**Heading.** Every arrowhead in the water points where it is going. These all
+point right. A portrait holds still; the water is where you watch it move. Four
+animals facing four ways would read as four *positions*, and this figure's one
+axis is size.
+
+I also dropped the predator's warm outline. `render.js` puts a two-tone warm rim
+around a hunter, and my first instinct was that the board should match the water
+exactly. It should not: that outline exists to hold contrast against a bright
+chevron drawn additively over black water, and the board's ground is a flat
+panel where the shape carries the whole difference already. `portrait.js`
+reached the same conclusion for the same arrowhead one release before I thought
+to ask.
+
+### The general form, since I have now done this twice
+
+A figure of an **average** and a figure of an **individual** get opposite rules
+about the pond's channels, and it took building both to see it. `portrait.js`
+draws two averages and had to strip colour and brightness, because an average
+belongs to no family and has no appetite — drawing them would be making up a
+fact. This board draws named animals, where colour and size are *precisely* the
+thing that will let you find Nim in the water, and stripping them would be
+throwing away the fact. The rule that sorts them is not about the channel, it is
+about the subject: **a portrait may wear a channel exactly as far as its subject
+really owns it.** An average owns none of them. A named animal owns everything
+dealt to it at birth, and none of what is happening to it right now.
+
+### What it leaves
+
+- **Five prose panels to go.** The key, the ladder, the records, the Chronicle
+  and the verb under the water. This cycle did the one whose job made the
+  omission indefensible; I have not asked the question of the other five, and
+  the honest reason is that none of them is *about a specific animal*, which is
+  what made this one easy.
+- **The plates over the water do not carry the shape.** `nametag.js` draws the
+  same stand-outs as floating name plates, from the same list, and they are text
+  — so the board now teaches a silhouette that the plate beside the animal does
+  not repeat. That is the obvious next half of this.
+- **The obituary and the inspector still use the flat swatch.** Two more places
+  where a reader meets one specific animal and gets a square. The obituary's
+  case is the interesting one, because there the animal is dead, and a portrait
+  of a dead animal is still true — every channel it wears is a birth constant.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-seven releases running. This cycle rewrote the presentation of a board
+  whose rows are all buttons, and I still cannot tell you whether one more
+  person pressed one.
+- **`targetsize.js` still has no position axis**, sixth cycle.
+- **A pond loaded from an archive still has no book**, twenty-second cycle.
+
+---

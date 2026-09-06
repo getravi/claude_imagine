@@ -48,12 +48,20 @@
 //     and `key.js` hold themselves to, checked here the same way. A visitor
 //     reads *the oldest animal in the pond*, never *age 3,140*.
 //
+// And since v1.158, **a row is a picture as well as a sentence.** Every
+// stand-out is drawn where its colour swatch used to be — the pond's own
+// arrowhead, its own inherited colour, the hunter's long nose, and every row on
+// the board at one shared scale, so the biggest of them is the biggest drawing.
+// This board's whole job is to be pointed at, and it was asking a reader to
+// find one animal among three hundred moving darts holding nothing but a hue.
+// `lineup.js` owns the drawing and the sweep behind it.
+//
 // Determinism: PURE OBSERVER. It reads creatures, writes nothing, and draws no
 // random number — a pond with this board on screen is bit-for-bit a pond
 // nobody is watching. There is a test.
 
 import { castRoles, creatureLabel, STAR } from "./cast.js";
-import { inspectorSwatch } from "./palette.js";
+import { lineupSvg } from "./lineup.js";
 
 /**
  * The mark each role wears, keyed by `cast.js`'s rank.
@@ -96,15 +104,22 @@ export const CAST_ID_ATTR = "data-cast-id";
 /**
  * The board's rows: plain data, one per animal, best story first.
  *
- * Nothing here refers back to a creature — a row holds a number, a name and two
+ * Nothing here refers back to a creature — a row holds numbers, a name and two
  * strings — so a row that outlives its animal by a frame names a body the world
  * has already buried rather than holding it alive. `main.js` looks the number
  * up in the living when a row is pressed, and shrugs if it is gone.
  *
+ * `radius`, `hunter` and `hue` are what `lineup.js` draws the animal from, and
+ * copying them onto the row rather than keeping the creature is what makes that
+ * safe: all three are written once at birth and never again (see
+ * `test/lineup.test.js`), so a copy cannot go stale, and a portrait of a
+ * mourned animal is still a true picture of the animal it was.
+ *
  * @param {{creatures:Array}} world
  * @param {object} config
  * @param {Map<number, {plural:string}>|null} [names] the tree's family names
- * @returns {Array<{id:number, rank:number, icon:string, label:string, why:string, hue:number}>}
+ * @returns {Array<{id:number, rank:number, icon:string, label:string, why:string,
+ *                  hue:number, radius:number, hunter:boolean}>}
  */
 export function castRows(world, config, names = null) {
   const seen = new Set();
@@ -120,6 +135,8 @@ export function castRows(world, config, names = null) {
       label: creatureLabel(c, names),
       why: role.why,
       hue: c.hue,
+      radius: c.radius,
+      hunter: c.carnivory >= config.carnivoreThreshold,
     });
   }
   return rows;
@@ -152,21 +169,23 @@ export function castSignature(rows) {
  * reading the row aloud in source order gives, and *Watch Pip of the Amber
  * Whorls — the last of the Amber Whorls* is what a listener needs.
  *
- * @param {Array<{id:number, icon:string, label:string, why:string, hue:number}>} rows
+ * @param {Array<{id:number, icon:string, label:string, why:string, hue:number,
+ *                radius:number, hunter:boolean}>} rows
  */
 export function castHTML(rows) {
   if (rows.length === 0) return `<li class="castempty">${CAST_EMPTY}</li>`;
+  // The animal itself, where a 14 px rounded square used to be (v1.158). Every
+  // row on the board shares one scale, so the drawings have to be laid out
+  // together rather than one at a time — which is why this is a list of markup
+  // and not a call per row. `lineup.js` carries the sweep that says the sizes
+  // and the two silhouettes have something to show.
+  const art = lineupSvg(rows);
   return rows
-    .map((r) => {
-      // The same swatch the inspector puts beside a living creature's name and
-      // the obituary keeps beside a dead one's, carrying its own colour: it is
-      // how a reader takes a name off this board and finds the animal in the
-      // water, which is the whole point of the row.
-      const sw = inspectorSwatch(r.hue);
+    .map((r, i) => {
       return (
         `<li class="castrow"><button type="button" ${CAST_ID_ATTR}="${r.id}" ` +
         `aria-label="Watch ${r.label} — ${r.why}" title="creature ${r.id}">` +
-        `<span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>` +
+        art[i] +
         `<span class="castmark" aria-hidden="true">${r.icon}</span>` +
         `<span class="castname">${r.label}</span>` +
         `<span class="castwhy">${r.why}</span>` +

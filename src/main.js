@@ -92,6 +92,7 @@ import { ViewState } from "./viewstate.js";
 import { quietSwitches } from "./switches.js";
 import { keyHTML, keySignature } from "./key.js";
 import { CAST_ID_ATTR, castHTML, castRows, castSignature } from "./whoswho.js";
+import { LINEUP_NOTE } from "./lineup.js";
 import { RECORD_ID_ATTR, recordRows, recordSignature, recordsHTML } from "./records.js";
 import {
   MILESTONE_WHO_ATTR,
@@ -939,6 +940,12 @@ function updateCast(world) {
   if (sig === view.castSig) return;
   view.castSig = sig;
   $("cast-list").innerHTML = castHTML(rows);
+  // The legend under the board, written from the module that owns the words and
+  // put away with the pictures it explains. Inside the memo, so it costs one
+  // assignment per change of cast rather than one per frame.
+  const note = $("cast-note");
+  note.textContent = LINEUP_NOTE;
+  note.hidden = rows.length === 0;
 }
 
 function wireCastList() {
