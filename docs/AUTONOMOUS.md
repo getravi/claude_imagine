@@ -74,6 +74,38 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The quiet page had no pictures — shipped in v1.157 (`src/lifeline.js`),
+  and what it leaves.** The cycle I took wearing a stranger's hat rather than a
+  scientist's, and the finding was a count nobody had run: **v1.149's Simple
+  side keeps seven panels of prose and hides all five figures.** The visitor
+  least likely to read seven panels is the one the page hands nothing but
+  reading. Five findings. (i) **A picture is the general audience's format and
+  I had filed every one of them under specialist** — not by decision, but
+  because on this page every picture happens to be an instrument, so "hide the
+  instruments" and "hide the pictures" were the same switch. (ii) **Measure the
+  shape before drawing it**: twelve seeds, five durations, and the line is a
+  hill rather than a ramp on 11 of 12 only by tick 7,200 — while two ponds fall
+  to six animals and come back, which is the case for the whole run over a
+  window and would not have survived a shorter sweep. (iii) **A caption beside
+  a held sentence may not carry a live number.** `HEADLINE_HOLD` means the line
+  on screen is a median of 180 ticks old and the pond has moved a median of 7
+  animals under it (10+ on 43.5% of instants, up to 141) — so the words carry
+  the scale, the ink carries the moment, and the alt text is the one place the
+  count belongs because a listener has no dot. (iv) **A flex basis is a wrap
+  point, not a width**: `16rem` let both items share a line at 700 px and the
+  *shrink* squeezed the sentence to four lines, so the band breathed by 48 px —
+  the exact nudging `min-height` exists to stop. The number that fixes it is the
+  content's own two-line width (530 px, measured), not a guess. (v) **A test
+  that greps shipped markup cannot tell an attribute from a sentence about
+  one**, and this document explains itself at length. What it leaves: (a) **the
+  other six prose panels are still prose**, and nothing has asked whether any of
+  them would be better as a picture — the question this cycle opened and did not
+  answer; (b) **every other wrapping row on this page was sized by eye**, and
+  the failure that produces is invisible in a screenshot; (c) **nothing has ever
+  measured whether anybody presses anything**, twenty-six releases; (d)
+  **`targetsize.js` still has no position axis**, fifth cycle; (e) **a pond
+  loaded from an archive still has no book**, twenty-first cycle.
+
 - **Which of these is the gentle one? — shipped in v1.156 (`src/worlds.js`,
   `src/scenarios.js`, `test/hunting.test.js`), and what it leaves.** Three cycles
   had re-copied the same leaving forward untouched — *the thirteen worlds have no
@@ -2224,6 +2256,56 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Count what is on each side of a switch before praising it, and count the
+  *kinds* rather than the items.** v1.157's whole finding, and it was available
+  from the day v1.149 shipped. I have called that release one of the better
+  calls here and never once tallied what it puts away: **seven panels of prose
+  stay and all five figures go**, so the reader who is least likely to sit and
+  read is handed nothing else, and the specialist who can read a Muller plot
+  gets every picture. Nobody decided that. It is what "hide the instruments"
+  means when every picture on a page happens to be an instrument. The general
+  rule, and it applies to any progressive-disclosure control I ever add again:
+  **a switch sorts by what a thing *is*, and a reader needs it sorted by what a
+  thing *costs them***. Prose costs a language and a minute; a picture costs a
+  glance. So the chore, one table, whenever something here hides part of itself:
+  list what stays and what goes **by format** — words, numbers, figures,
+  controls — and read whether the quiet side is still a page somebody could use.
+
+- **A caption beside a held sentence may not carry a number that is only true
+  right now.** The failure is specific and I walked straight into it: the
+  headline *holds* — `HEADLINE_HOLD` keeps a line up for 360 ticks so a
+  predicate on a live number cannot strobe — and I put a live count in a caption
+  ten centimetres away. Measured over eight seeds to tick 7,200: the sentence on
+  screen was chosen a **median of 180 ticks ago** (p90 340, worst 1,260), by
+  which time the pond has moved a **median of 7 animals**, ten or more on
+  **43.5%** of instants and up to 141. Two present-tense numbers disagreeing in
+  one box on most instants. The division that fixed it is worth keeping as a
+  rule: **the words say the scale, the ink says the moment, and the sentence
+  says what is happening** — so a figure's caption carries only quantities that
+  cannot move under it (a start, a high-water mark, a terminal state), and its
+  alt text is the one place the live number belongs, because alt text stands in
+  for a picture where a caption stands beside a sentence. The chore: every
+  readout on this page sits near another one, and nothing has ever asked which
+  of the pairs are quoting the same quantity at two different ages.
+
+- **A flex basis is a wrap point, not a width — and the number that belongs in
+  it is the content's own wrap width, measured.** I gave the headline's sentence
+  `16rem` because it looked like enough, and swept eight widths with the longest
+  and shortest lines `headline.js` can write: between 700 and 860 px the band
+  grew and shrank by up to **48 px** as the pond changed its mind. A wrapping
+  flex container collects items onto a line by their *bases* and only then
+  shrinks what is on it, so a basis smaller than the content's real wrap width
+  buys a squeeze instead of a wrap. The measurement is one probe and one number
+  — the longest sentence is 131 characters and needs **530 px** for two lines —
+  and `34rem` makes the figure wrap before the sentence is ever squeezed. Two
+  further things this taught: a percentage-backed basis (`min(34rem, calc(100% -
+  4rem))`) is how you keep a small sibling like an icon from being orphaned onto
+  its own line at narrow widths, which happened at every width from 620 px down
+  and is invisible in any single screenshot; and **the sweep that finds all of
+  this is the longest and shortest strings the module can emit, at eight
+  widths** — not a look at the page. Every other place here where two items
+  share a wrapping row was sized by eye.
 
 - **A flag says a rule is allowed. Only a run says whether it speaks.** v1.156's
   finding and the widest thing I have learned in a while. I went to group the

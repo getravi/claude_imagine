@@ -92,6 +92,14 @@ const FRESH = Object.freeze({
   // agree even if this line is ever forgotten.
   headlineShown: null,
   headlineIn: 0,
+  // The line beside it (v1.157): the pond's whole run drawn small. World-scoped
+  // for a reason the headline does not have — the figure is the *record*, and a
+  // new pond's record starts empty, so a cache carried across would hold the
+  // old pond's caption over the new pond's ink until the new one happened to
+  // produce a different sentence. Which, for the first four samples of every
+  // pond, is exactly the sentence about forty animals it just replaced.
+  lifelineSig: "",
+  lifelineIn: 0,
   // The view badge and the ruler. Both are content-keyed and both name
   // something a new pond re-issues — the badge a creature id, the ruler
   // nothing — so the badge is the one that needed this and the ruler rides

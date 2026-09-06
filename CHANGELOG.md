@@ -4,6 +4,129 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.157.0] — 2026-09-06
+
+The quiet page gets its first picture.
+
+v1.149 put the instruments behind a switch and started every visit on the quiet
+side of it. This release counted what is actually on each side, which nobody had
+done:
+
+| | what it holds |
+| --- | --- |
+| **Simple** | the headline, the verb under the water, the key, the ladder, the stand-outs, how they have changed, are-they-getting-better, the records, the Chronicle — **seven panels of prose**, and one bar |
+| **Everything** | that, plus the dials and **all five figures** |
+
+The visitor least likely to read seven panels is the one handed nothing but
+reading, and the visitor who already knows what a Muller plot is gets every
+picture on the site. A picture is the one thing here that does not have to be
+read in a language.
+
+So: **the pond's whole run, as one small line beside the sentence that describes
+it.** No axis, no legend, no key — a hill you can read at a glance, in the empty
+half of the headline band, where it costs a wide desktop no height at all.
+
+```
+🥣  The pond is crashing — 186 left,            ▁▁▁▂▄▆███▇▆▅▅▅▆
+    down from 310 a little while ago.        40 at the start · 310 at its highest
+```
+
+### The whole run, because the comebacks are the best thing in it
+
+Twelve seeds, five durations, asking whether the line has a shape worth drawing:
+
+| after | the peak is a hill, not a ramp | now ÷ peak, median | range |
+| --- | --- | --- | --- |
+| 900 ticks | 6 of 12 | 1.00 | 0.76–1.00 |
+| 1,800 | 6 of 12 | 1.00 | 0.17–1.00 |
+| 3,600 | 7 of 12 | 0.97 | 0.15–1.00 |
+| 7,200 | **11 of 12** | 0.72 | 0.58–1.00 |
+| 12,000 | 9 of 12 | 0.90 | 0.78–1.00 |
+
+Every default pond is handed forty animals and multiplies — a peak of 121 to 336
+by tick 7,200 — and eleven of twelve are then standing below their own
+high-water mark. The two that decided the design are seeds **23** and
+**1837465**: both fall to *six or seven animals*, and both are back at 234 and
+349 by tick 12,000. A recent window draws that comeback as a climb from nothing,
+which is also what a brand-new pond looks like. Only the whole line says *this
+pond nearly died and came back*, and no sentence on this page can say it either
+— the headline speaks about now.
+
+### The caption may not carry a number that is only true right now
+
+The first draft's caption ended `… · 186 now`, and a browser found it saying
+*186 now* in the same bordered box as a headline saying *186 left*, nine apart.
+The headline **holds**, on purpose, because a predicate on a live number
+strobes. Measured over eight seeds to tick 7,200: the line on screen was chosen
+a **median of 180 ticks ago** (p90 340, worst 1,260), by which time the pond has
+moved a **median of 7 animals** — ten or more on **43.5%** of instants, up to
+141.
+
+So the caption names the two numbers that do not move — what the pond started
+with, and the most it has ever held — and where it stands between them is the
+picture's job. The live count is still the line's final *point*, so the ink is
+current even though the words are a scale. The words say the scale; the ink says
+the moment; the sentence beside them says what is happening. Nothing says the
+same thing twice. The spoken description is the exception, and the principled
+one: a listener has no dot to read, so alt text carries the count.
+
+### The peak is read off the envelope, not off the samples
+
+The record behind the whole run is an `Archive`, and an archive thins. What
+survives thinning exactly is the min/max envelope `stats.js` paid for. A peak
+read off the sampled `pop` would quietly shave the tallest thing in the picture
+the older the run got — so the hill's skyline is `max`, and the number in the
+caption is the highest ink on the figure at any age.
+
+### A flex basis is a wrap point, not a width
+
+The layout is swept across eight widths with the longest and shortest sentences
+`headline.js` can write. Two failures, both invisible in a screenshot:
+
+- At a `16rem` basis the two items still fit on one line at 700 px, and the
+  *shrink* then squeezed the sentence to four lines: the band grew and shrank by
+  up to **48 px** as the pond changed its mind — the exact nudging that
+  `.h-text`'s `min-height` was added to prevent, reintroduced at widths where it
+  had never happened. The longest headline is 131 characters and needs **530 px**
+  to fit in two lines, so the basis is **34rem** and the figure wraps before the
+  sentence is ever squeezed. The band is stable at exactly the widths it was
+  stable at before this release.
+- A bare `34rem` is wider than the whole band on a phone, and a wrapping
+  container that cannot fit the icon *and* that basis on one line puts **the
+  icon on a line of its own** — measured at every width from 620 px down.
+  Backing the basis off the container's own width by the icon and its gaps keeps
+  them together, and changes nothing above 620 px.
+
+### Added
+
+- **`src/lifeline.js`** — the run's shape, its two fixed numbers, the spoken
+  form and the drawing. Pure observer: no DOM, no world state, **no random
+  numbers**, and no colour of its own (the line is the chart's population blue,
+  the hill that blue at half strength through `globalAlpha`, so the audit that
+  already covers `chartLines()` covers this too).
+- **`test/lifeline.test.js`** — 27 tests, including one that moves the live
+  count over a wide range and requires the caption not to notice, one that
+  requires the hill to stand on the floor of the box at both ends, and the
+  no-glossary sweep `headline.js` carries, pointed at the surface most likely to
+  grow an axis label.
+- A row for the module in `docs/ARCHITECTURE.md`.
+
+### Fixed
+
+- `test/obituary.test.js` asserts that nothing above the water carries
+  `data-expert`, by grepping the top of the page for that string — so a release
+  that adds a surface above the water and says in a comment *this one is
+  deliberately not behind the switch* failed a test whose subject is elements.
+  It now strips the comments first. A test that reads shipped markup as text
+  should read the markup, not the file.
+
+### Determinism
+
+Unchanged. `lifeline.js` reads a history record and draws; it touches no world
+and draws no random number, and the suite holds two ponds identical — hash,
+tick and the state of the generator itself — while one of them has its whole run
+read and drawn every few ticks. The v1.36 fingerprints stand.
+
 ## [1.156.0] — 2026-09-06
 
 Thirteen worlds, now sorted into three you can choose between.

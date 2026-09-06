@@ -68,6 +68,9 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const config = makeConfig({ seed: 7 });
 
+/** The page with its comments removed — the elements, without the prose about them. */
+const markupOnly = (html) => html.replace(/<!--[\s\S]*?-->/g, "");
+
 /** A body that has just died — the record only ever reads these fields. */
 function corpse(over = {}) {
   return {
@@ -362,8 +365,15 @@ test("a life is not an instrument, so the switch cannot hide it (v1.151)", () =>
   // Every instrument the switch hides is in the aside or in the tree below it,
   // so *nothing* above the aside carries the attribute — which is the whole
   // assertion: the life is on the side of the page that always shows.
+  //
+  // Read off the markup with the comments taken out, which v1.157 is the reason
+  // for: this document explains itself at length, and a release that adds a
+  // surface above the water and says in a comment *this one is deliberately not
+  // behind the switch* failed a test whose subject is elements. A grep over a
+  // file cannot tell an attribute from a sentence about one — so take the
+  // sentences out first, and the check goes back to meaning what it says.
   assert.equal(
-    html.slice(0, aside).includes("data-expert"),
+    markupOnly(html.slice(0, aside)).includes("data-expert"),
     false,
     "something above the water is now hideable, so this test has stopped meaning what it says"
   );

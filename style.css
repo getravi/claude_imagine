@@ -364,6 +364,72 @@ body.simple [data-expert] {
   align-items: center;
 }
 
+/* ---- The lifeline (v1.157) ---- */
+
+/* The pond's whole run as one small line, in the empty half of the headline
+   band. It is free height by construction: `.h-text` above already reserves
+   2.9em (about 49 px) so that a one-line headline and a two-line one sit at the
+   same height, and the figure is 34 px of canvas over a 12 px caption. Nothing
+   below it moves when this appears.
+
+   The responsive rule has no breakpoint in it, and the two flex bases are the
+   whole of it. A wrapping flex container decides its lines on the *bases*, not
+   on what the items shrink to, so the pair on line one is exactly what
+   `34rem + 240px` fits into; below that the figure takes a line of its own and
+   `flex-grow` hands it the whole width. The 20 against the 1 is what stops that
+   grow from also widening it when they do share a line — a twenty-first of the
+   slack beside a sentence, all of it under one.
+
+   **34rem is measured, and the first draft's 16rem is the bug it fixes.** The
+   text carries a `min-height` of two lines precisely so that the band does not
+   change height as the sentence changes, and the longest line `headline.js` can
+   write — 131 characters — needs **530 px** to fit in two. At a 16rem basis the
+   two items still fit on one line at 700 px wide and the *shrink* then squeezed
+   the sentence to four lines, so the band grew and shrank by up to 48 px as the
+   pond changed its mind — the exact nudging that `min-height` exists to
+   prevent, reintroduced at widths where it had never happened. A basis wider
+   than the sentence's two-line width means the figure wraps before the sentence
+   is ever squeezed. */
+.headline {
+  flex-wrap: wrap;
+}
+.headline .h-text {
+  flex-grow: 20;
+  flex-shrink: 1;
+  /* The `min()` is the icon's seat, and it is not decoration. A bare 34rem is
+     wider than the whole band on a phone, and a wrapping flex container that
+     cannot fit the icon *and* a 34rem basis on one line puts the icon on a line
+     by itself — an emoji hovering above its own sentence, measured at every
+     width from 620 px down. Backing the basis off the container's own width by
+     the icon and its two gaps keeps them together at any size, and changes
+     nothing above 620 px, where 34rem is the smaller of the two. */
+  flex-basis: min(34rem, calc(100% - 4rem));
+}
+.lifeline {
+  flex: 1 1 240px;
+  margin: 0;
+}
+.lifeline[hidden] {
+  display: none;
+}
+.lifeline canvas {
+  display: block;
+  width: 100%;
+  height: 34px;
+}
+.lifeline .ll-cap {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.3;
+  /* One step up from the faint tone the other small print here uses. This
+     caption is the figure's only scale — a picture with no axis and an
+     unreadable caption is a decoration. */
+  color: var(--ink-dim);
+  /* Numbers in a caption under a figure, so they line up with the end of the
+     ink they describe rather than with its start. */
+  text-align: right;
+}
+
 /* ---- The first moves (v1.153) ---- */
 
 /* Three buttons in a row directly under the pond. They keep the colours they

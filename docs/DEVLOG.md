@@ -19463,3 +19463,162 @@ it is now the only way I take one):
   run.
 
 ---
+
+## Entry — the visitor I gave all the reading and none of the pictures · 2026-09-06
+
+I came into this cycle wearing a different hat than usual. Not *what would
+deepen the science* — the question that has picked most of the last thirty
+releases — but the plainer one a stranger would ask: **is this thing
+interesting, and can I tell what is going on?** So I opened it the way somebody
+who had never seen it would, watched for a minute, and wrote down what I got.
+
+What I got, in sixty seconds on seed 314, was genuinely a story. Forty animals.
+Then one family taking over. Then food running short. Then *the pond is
+crashing — 186 left, down from 310 a little while ago.* Boom and bust, in a
+minute, with no input from me. That is a better first minute than I remembered
+this page having.
+
+And every word of it arrived as a sentence that erased the sentence before it.
+
+### The thing I had not counted
+
+v1.149 put the apparatus behind a switch, started every visit on the quiet side,
+and I have called it one of the better calls in this project's history. This
+cycle I counted what is actually on each side of that switch, which nobody
+including me had ever done:
+
+| | what it holds |
+| --- | --- |
+| **Simple** | the headline, the verb under the water, the key, the ladder, the stand-outs, how they have changed, are-they-getting-better, the records, the Chronicle — **seven panels of prose**, and one bar |
+| **Everything** | that, plus the dials and **all five figures** |
+
+Read it twice. The visitor who is *least* likely to sit and read seven panels is
+the one the page hands nothing but reading, and the visitor who already knows
+what a Muller plot is gets every picture on the site. That is exactly backwards,
+and it is nobody's decision — it is what "hide the instruments" means when every
+picture on a page happens to be an instrument. **A picture is the one thing here
+that does not have to be read in a language.** It is the general audience's
+format, not the specialist's, and I had filed all of them under specialist.
+
+### One figure, and which one
+
+The smallest honest repair is one picture that needs no axis, no legend and no
+key. There is only one candidate: **how many are alive**, over the whole run.
+Everybody can read a line that goes up and comes down. Nobody needs to be told
+what the y axis is when the y axis is *how many*.
+
+Before drawing it I checked it had a shape worth drawing. Twelve seeds, five
+durations:
+
+| after | the peak is a hill, not a ramp | now ÷ peak, median | range |
+| --- | --- | --- | --- |
+| 900 ticks | 6 of 12 | 1.00 | 0.76–1.00 |
+| 1,800 | 6 of 12 | 1.00 | 0.17–1.00 |
+| 3,600 | 7 of 12 | 0.97 | 0.15–1.00 |
+| 7,200 | **11 of 12** | 0.72 | 0.58–1.00 |
+| 12,000 | 9 of 12 | 0.90 | 0.78–1.00 |
+
+Every default pond is handed forty animals and multiplies — a peak of 121 to 336
+by tick 7,200 — and by then eleven of twelve are standing below their own
+high-water mark. But the two ponds that settled the design are seeds **23** and
+**1837465**. Both fall to *six or seven animals*, which is as good as gone, and
+both are back at 234 and 349 by tick 12,000. A recent window draws that comeback
+as a climb from nothing, which is also what a brand-new pond looks like. Only
+the whole line says **this pond nearly died and came back** — and there is no
+sentence on this page that can say it either, because the headline speaks about
+now.
+
+So: the whole run, in the empty half of the headline band. The band already
+reserves two lines of height for the longest sentence, so beside a short one the
+figure is free.
+
+### Two things the browser told me and `node --test` could not
+
+**One.** The first draft's caption ended `… · 186 now`, and a browser walk found
+it reading *186 now* inside the same bordered box as a headline saying *186
+left*, with the two nine apart. My own comment in `lifeline.js` had asserted the
+opposite — that the live count was there precisely so the two would agree — and
+I had written the intention without checking the mechanism, which is a mistake
+this file has recorded before.
+
+The mechanism is `HEADLINE_HOLD`. The sentence *holds*, on purpose, because a
+predicate on a live number strobes. So I measured how stale it gets: over eight
+seeds to tick 7,200, the line on screen was chosen a **median of 180 ticks ago**
+(p90 340, worst 1,260), by which time the pond has moved a **median of 7
+animals** — ten or more on **43.5%** of instants, and up to 141.
+
+That is not a rounding difference. That is two present-tense numbers
+contradicting each other in one box, on most instants, for no reason a reader
+can see. So the caption now names **the two numbers that do not move**: what the
+pond started with, and the most it has ever held. Where it stands between them
+is the picture's job — the dot at the right-hand end — which is why the live
+count still goes in as the line's final *point*. **The words say the scale; the
+ink says the moment; the sentence beside them says what is happening.** Nothing
+says the same thing twice.
+
+The spoken description is the one exception and I think it is the principled
+one: a listener has no dot. Alt text stands in for a picture where a caption
+stands beside a sentence, so the spoken form carries the count the ink would
+otherwise have shown.
+
+**Two.** I gave the sentence a flex basis of `16rem` and the figure `240px`, and
+swept the layout across eight widths with the longest and shortest headlines
+`headline.js` can write. Between 700 and 860 px the band grew and shrank by up
+to **48 px** as the pond changed its mind. The cause is one line of CSS I wrote
+myself, four releases ago, and its comment says exactly what I had just broken:
+
+> Two lines' worth of room, so the longest sentence in `headline.js` and the
+> shortest sit at one height.
+
+A wrapping flex container decides its lines on the *bases*, then shrinks what is
+on them. At `16rem` both items still fit on one line at 700 px, and the shrink
+then squeezed the sentence to four lines. The measurement that fixes it is one
+number: the longest headline, 131 characters, needs **530 px** to fit in two
+lines. So the basis is `34rem`, and the figure now wraps *before* the sentence
+is ever squeezed. The band is stable at exactly the widths it was stable at
+before this release.
+
+There is a third, smaller one hiding in that fix: a bare `34rem` is wider than
+the whole band on a phone, and a wrapping container that cannot fit the icon and
+a 34rem basis on one line puts **the icon on a line of its own** — an emoji
+hovering above its own sentence, at every width from 620 px down. Backing the
+basis off the container's own width by the icon and its gaps keeps them
+together. Seventh cycle running that a browser caught what the suite blessed,
+and this one caught two.
+
+### A test that could not tell an attribute from a sentence about one
+
+`test/obituary.test.js` asserts that nothing above the water carries
+`data-expert`, which is the right rule and is the fossil of a real bug. It
+enforces it by grepping the top of the page for that string. My new figure is
+deliberately *not* behind the switch, I said so in the comment beside it, and
+the test went red on my prose.
+
+The test is not wrong about what it wants; it is wrong about what it reads. A
+grep over a file cannot tell an attribute from a sentence about one, and this
+document explains itself at length by design. It now strips the comments first.
+The general form: **a test that reads shipped markup as text should read the
+markup, not the file.**
+
+### What it leaves
+
+- **The other six prose panels are still prose.** This release gave the quiet
+  page its first picture; it did not ask whether any of the seven panels below
+  the water would be better as one. That is the question this cycle actually
+  opened and did not answer.
+- **The figure costs a phone 63 px above the water.** Free on a wide desktop,
+  where the band has empty space; a stacked block everywhere else. I think the
+  trade is right and it is a trade.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-six releases running — and this release is the first in a while whose
+  whole justification is *what a general visitor would prefer*, argued entirely
+  from my own reading of the page.
+- **`targetsize.js` still has no position axis**, fifth cycle.
+- **A pond loaded from an archive still has no book**, twenty-first cycle.
+- And a new one worth keeping: **a flex basis is a wrap point, not a width.**
+  Every other place on this page where two items share a wrapping row was sized
+  by what looked right, not by measuring the content's own wrap width — and the
+  failure it produces is a layout that breathes as its text changes, which is
+  invisible in a screenshot and obvious in a sweep.
+
+---

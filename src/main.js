@@ -57,6 +57,7 @@ import {
   obituaryLines,
 } from "./obituary.js";
 import { nextHeadline, pondHeadline } from "./headline.js";
+import { lifelineSeries, lifelineCaption, lifelineSay, drawLifeline } from "./lifeline.js";
 import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -697,6 +698,8 @@ function loop(now) {
   updateSeasonBadge(world);
   updateInspector();
   updateHeadline(world);
+  // The picture in the same band, straight after the sentence it belongs to.
+  updateLifeline(world);
   // Straight after the pond's own sentence, because the two are read as a pair:
   // one says what the water is doing and the other what the animal you picked
   // is doing in it.
@@ -808,6 +811,53 @@ function updateHeadline(world) {
   view.headlineShown = next;
   $("headline-icon").textContent = next.icon;
   $("headline-text").textContent = next.text;
+}
+
+// ---- The lifeline (v1.157) ----
+//
+// The picture beside that sentence: how many have been alive, all the way from
+// the first tick to this one. `lifeline.js` owns the reading, the words and the
+// drawing; this is the adapter onto the DOM, and it is the same shape as the
+// headline's for the same reason — walking the whole-run record is not a
+// per-frame job, and the caption changes about as often as the pond's own
+// count does.
+//
+// The live creature count goes in as the line's last point so the caption's
+// "now" is the number the headline is using, four ticks of sampling notwithstanding.
+const LIFELINE_EVERY = 20;
+
+function updateLifeline(world) {
+  if (view.lifelineIn-- > 0) return;
+  view.lifelineIn = LIFELINE_EVERY;
+  const fig = $("lifeline");
+  const series = lifelineSeries(world.stats.runHistory.series(), world.creatures.length);
+  if (!series) {
+    // A pond younger than the record's first few samples, or one just reset.
+    // Hidden rather than blank: an empty box beside a sentence is a thing a
+    // reader looks at twice.
+    if (!fig.hidden) fig.hidden = true;
+    view.lifelineSig = "";
+    return;
+  }
+  const cap = lifelineCaption(series);
+  const canvas = $("lifeline-canvas");
+  // The backing store follows the box, the way the chart's does: this canvas is
+  // about 240 px beside a sentence and the whole column under one. Unhide first
+  // — a hidden element measures zero, and a canvas sized from that is a canvas
+  // one pixel wide.
+  if (fig.hidden) fig.hidden = false;
+  const wide = Math.max(1, Math.round(canvas.clientWidth) || canvas.width);
+  // Keyed on the caption, the last tick *and* the width. The ink moves on every
+  // new sample while the words often do not; and the width is here because a
+  // paused pond takes no new samples, so without it a window resized while
+  // paused would leave the picture stretched until somebody pressed play.
+  const sig = `${cap}|${series.points[series.points.length - 1].tick}|${wide}`;
+  if (sig === view.lifelineSig) return;
+  view.lifelineSig = sig;
+  if (canvas.width !== wide) canvas.width = wide;
+  drawLifeline(canvas.getContext("2d"), canvas.width, canvas.height, series);
+  canvas.setAttribute("aria-label", lifelineSay(series));
+  $("lifeline-cap").textContent = cap;
 }
 
 // ---- What they are doing (v1.148) ----

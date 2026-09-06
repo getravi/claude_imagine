@@ -123,6 +123,35 @@
           <p class="h-text" id="headline-text">
             A brand-new pond, and not one of them knows anything yet.
           </p>
+          <!-- The pond's whole life, as one line (v1.157). The sentence to its
+               left says what is happening now; this says what has happened —
+               how many were alive all the way along, from the first tick to
+               this one. It is here rather than in a panel of its own for two
+               reasons. The band already reserves two lines of height for the
+               longest headline, so a 34 px figure in the space beside a short
+               one costs the column nothing; and the two belong together — the
+               words *the pond is crashing* and the picture of the crash are one
+               statement, and a reader should not have to hold one of them in
+               their head while they scroll to the other.
+
+               Not behind `data-expert`. That is the whole point of it: the five
+               figures on this page are all instruments, and the visitor who
+               starts on the quiet side of the switch was left with seven panels
+               of prose and no picture at all. `src/lifeline.js` has the sweep
+               that says the line has a shape worth drawing.
+
+               `hidden` until there is a shape: main.js unhides it once the
+               record holds enough samples, which is under a second. -->
+          <figure class="lifeline" id="lifeline" hidden>
+            <canvas
+              id="lifeline-canvas"
+              width="240"
+              height="34"
+              role="img"
+              aria-label="How many are alive: not enough of this run has happened yet to draw."
+            ></canvas>
+            <figcaption class="ll-cap" id="lifeline-cap"></figcaption>
+          </figure>
         </section>
 
         <section class="stage">
