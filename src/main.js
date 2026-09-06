@@ -13,7 +13,7 @@ import { drawMuller, mullerShares, mullerAxis, textureCss, otherTextureCss } fro
 import { buildBrainFor } from "./creature.js";
 import { creatureFacts } from "./inspect.js";
 import { SCENARIOS } from "./scenarios.js";
-import { worldsLabel, worldCaption, previewCaption, captionText } from "./worlds.js";
+import { worldsLabel, worldCaption, previewCaption, captionText, worldGroups } from "./worlds.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
@@ -475,24 +475,41 @@ function buildScenarioChips() {
   // walk found 2 of them on screen — it is the only thing that says how much of
   // the row is off the edge. `src/worlds.js` words it.
   $("scenarios-label").textContent = worldsLabel(SCENARIOS.length);
-  for (const scn of SCENARIOS) {
-    const b = document.createElement("button");
-    b.innerHTML = `<span>${scn.icon}</span> ${scn.name}`;
-    // The blurb stays in the tooltip for the visitor who rests on a chip long
-    // enough to get one, and it is no longer the *only* place it lives: the hook
-    // under the strip is the same offer without the hover, the wait, or the
-    // requirement to own a mouse.
-    b.title = scn.blurb;
-    b.addEventListener("click", () => launchScenario(scn));
-    // Preview on the way past. `pointerenter` rather than `mouseenter` so a
-    // stylus counts, and `focus` so the keyboard walk gets the same sentence a
-    // hand does — a caption only a pointer can read is a tooltip with extra
-    // steps, which is the thing this release exists to undo.
-    b.addEventListener("pointerenter", () => showCaption(previewCaption(scn), true));
-    b.addEventListener("focus", () => showCaption(previewCaption(scn), true));
-    b.addEventListener("pointerleave", syncWorldCaption);
-    b.addEventListener("blur", syncWorldCaption);
-    box.appendChild(b);
+  // Grouped, and the groups are headings a stranger can read (v1.156). Thirteen
+  // chips in a row is a list of nouns; three short headings over them is a menu,
+  // and a menu is the thing a person who has never been here can order from.
+  // The bands come from a run rather than from the flags — `src/worlds.js` and
+  // `src/scenarios.js` carry the measurement and the reason.
+  for (const group of worldGroups()) {
+    const head = document.createElement("span");
+    head.className = "chip-group";
+    head.textContent = group.label;
+    box.appendChild(head);
+    for (const scn of group.worlds) {
+      const b = document.createElement("button");
+      b.innerHTML = `<span>${scn.icon}</span> ${scn.name}`;
+      // Which world this chip is, written on the chip. The lamp used to be set
+      // by walking `children` and indexing `SCENARIOS` in step, which was true
+      // only while the row held nothing but chips in array order — and this
+      // release makes both halves of that false in one go. An id on the element
+      // is the fact itself, and it cannot fall out of step with anything.
+      b.dataset.world = scn.id;
+      // The blurb stays in the tooltip for the visitor who rests on a chip long
+      // enough to get one, and it is no longer the *only* place it lives: the
+      // hook under the strip is the same offer without the hover, the wait, or
+      // the requirement to own a mouse.
+      b.title = scn.blurb;
+      b.addEventListener("click", () => launchScenario(scn));
+      // Preview on the way past. `pointerenter` rather than `mouseenter` so a
+      // stylus counts, and `focus` so the keyboard walk gets the same sentence a
+      // hand does — a caption only a pointer can read is a tooltip with extra
+      // steps, which is the thing v1.154 existed to undo.
+      b.addEventListener("pointerenter", () => showCaption(previewCaption(scn), true));
+      b.addEventListener("focus", () => showCaption(previewCaption(scn), true));
+      b.addEventListener("pointerleave", syncWorldCaption);
+      b.addEventListener("blur", syncWorldCaption);
+      box.appendChild(b);
+    }
   }
   syncWorldCaption();
 }
@@ -518,8 +535,11 @@ function showCaption(cap, preview = false) {
 function syncWorldCaption() {
   const cap = worldCaption(config);
   showCaption(cap, false);
-  for (const [i, b] of [...$("scenario-chips").children].entries()) {
-    const mine = SCENARIOS[i].id === cap.id;
+  // Every chip, found by being a chip. The row holds headings as well as buttons
+  // since v1.156, and the old walk — `children` zipped against `SCENARIOS` by
+  // index — would have lit the wrong world the moment either order changed.
+  for (const b of $("scenario-chips").querySelectorAll("button")) {
+    const mine = b.dataset.world === cap.id;
     b.classList.toggle("active", mine);
     // A lit chip is a state, and a state a sighted visitor can see is one a
     // listener is owed too (v1.51's sweep, in its usual shape).

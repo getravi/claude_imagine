@@ -192,6 +192,34 @@ body.simple [data-expert] {
   background: #12293a;
 }
 
+/* The three headings that turn thirteen chips into a menu (v1.156).
+
+   Deliberately the same ink and the same size as `.scenarios-label` above: a
+   heading over a group of worlds is the same voice as the heading over all of
+   them, and reusing the pair keeps this inside `legibility.js`'s inventory
+   rather than adding a fourteenth ink nobody has measured. No border, no
+   background, no pointer target — a chip is a thing you press and one of these
+   must never look like one.
+
+   `align-self: center` because the row's items are chips with 6 px of padding
+   and a bare span would sit on their top edge instead of their middle. */
+.scenario-chips .chip-group {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--ink-dim);
+  font-size: 13px;
+  white-space: nowrap;
+}
+/* A rule between groups rather than after them, so the last group does not end
+   in a line pointing at nothing. It is drawn on the heading and not inserted as
+   an element for the same reason v1.154's scroll edge is a mask: nothing that
+   exists only to be seen should be reachable by a hand or a Tab key. */
+.scenario-chips .chip-group:not(:first-child) {
+  margin-left: 4px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
 /* The caption under the chips (v1.154) — the one place on this page that says
    what a world *is* before you press it, and which world you are in afterwards.
 

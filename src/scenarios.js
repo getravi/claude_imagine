@@ -11,12 +11,25 @@
 // Each `over` object is applied over the defaults (so anything it doesn't mention
 // returns to its default), which means launching a scenario always gives a clean,
 // reproducible world regardless of what you had switched on before.
+//
+// `hunting` (v1.156) is the one field here that is not a decision. It says what
+// this world's dying is mostly made of — `none`, `rare` or `constant` — and it
+// is read off a run rather than off the flags: the share of deaths that were
+// kills over 6,000 ticks, recorded on each scenario below. The strip groups the
+// worlds by it (`src/worlds.js`) so a stranger can pick by taste instead of by
+// guessing at thirteen nouns, and `test/hunting.test.js` re-runs every pond and
+// fails if a declaration has stopped being true.
+//
+// Why it cannot be computed from `over`: `predation` is true in eleven of these
+// thirteen, and in three of them the hunters barely eat. A flag says a rule is
+// allowed. Only a run says whether it ever gets to speak.
 
 export const SCENARIOS = [
   {
     id: "genesis",
     icon: "🌱",
     name: "Genesis",
+    hunting: "none", // 0.0% of deaths were kills at t6,000
     hook: "a quiet pond, and nothing hunts",
     blurb:
       "A calm herbivore pond — no hunters, no seasons. Just watch foraging evolve from random founders.",
@@ -26,6 +39,7 @@ export const SCENARIOS = [
     id: "savanna",
     icon: "🦁",
     name: "The Savanna",
+    hunting: "constant", // 63.4% of deaths were kills at t6,000
     hook: "hunters, grazers, and the fallen",
     blurb:
       "A full food web: hunters, grazers, and scavengers feeding on the fallen, all riding the seasons.",
@@ -35,6 +49,7 @@ export const SCENARIOS = [
     id: "nomad",
     icon: "🧭",
     name: "Nomad's Land",
+    hunting: "rare", // 4.8% of deaths were kills at t6,000
     hook: "the good land moves; they follow",
     blurb:
       "The fertile lands drift, and life must keep migrating to follow the food. Nothing ever settles.",
@@ -44,6 +59,7 @@ export const SCENARIOS = [
     id: "longnight",
     icon: "🌙",
     name: "The Long Night",
+    hunting: "constant", // 57.4% of deaths were kills at t6,000
     hook: "they hunt in the dark, half-blind",
     blurb:
       "No seasons here, only sun and moon: sight collapses to a quarter at midnight, and hunters must work the dark.",
@@ -60,6 +76,7 @@ export const SCENARIOS = [
     id: "plague",
     icon: "🦠",
     name: "The Plague",
+    hunting: "rare", // 2.0% of deaths were kills at t6,000
     hook: "a sickness moves through in waves",
     blurb:
       "A pathogen sweeps the pond in waves: the sick burn energy fast, survivors are immune for life, and every newborn is susceptible again.",
@@ -75,6 +92,7 @@ export const SCENARIOS = [
     id: "commons",
     icon: "🌾",
     name: "The Commons",
+    hunting: "none", // 0.0% of deaths were kills at t6,000
     hook: "they eat the pond bare, then wait",
     blurb:
       "Plants breed from plants, so a herd can eat the pond bare — and then has to wait for it to grow back. Crop and grazers rise and fall against each other.",
@@ -92,6 +110,7 @@ export const SCENARIOS = [
     id: "lay",
     icon: "🏔️",
     name: "The Lay of the Land",
+    hunting: "constant", // 43.0% of deaths were kills at t6,000
     hook: "ridges cost, hollows feed",
     blurb:
       "Ridges cost more to cross and grow almost nothing; the dead enrich the hollows they fall in. Nothing can see the landscape — the pond collects in the basins because that is where the crop is.",
@@ -118,6 +137,7 @@ export const SCENARIOS = [
     id: "rooms",
     icon: "🧱",
     name: "The Four Rooms",
+    hunting: "constant", // 64.0% of deaths were kills at t6,000
     hook: "walls split them into separate worlds",
     blurb:
       "Four walls of rock, opaque to every sense, cut the pond into rooms joined by narrow gates. Crossings all but stop, and the lineages either side of a wall drift apart.",
@@ -151,6 +171,7 @@ export const SCENARIOS = [
     id: "earshot",
     icon: "📣",
     name: "Earshot",
+    hunting: "constant", // 56.8% of deaths were kills at t6,000
     hook: "for once, the others can hear them",
     blurb:
       "Every creature has always flashed a signal; here, for the first time, the others can hear it. Whether the pond ever makes anything of that is an open question — watch and see.",
@@ -166,6 +187,7 @@ export const SCENARIOS = [
     id: "kin",
     icon: "👪",
     name: "One Big Family",
+    hunting: "constant", // 52.6% of deaths were kills at t6,000
     hook: "hunters let their relatives go",
     blurb:
       "Hunters here recognise their own relatives and let them go. In most ponds that rule never speaks once; in this one it turns down thousands of meals — in bursts, with long silences between them.",
@@ -213,6 +235,7 @@ export const SCENARIOS = [
     id: "thinking",
     icon: "🧠",
     name: "The Thinking Pond",
+    hunting: "rare", // 3.4% of deaths were kills at t6,000
     hook: "brains that learn inside one life",
     blurb:
       "Brains can learn within a lifetime — watch the capacity to learn evolve from nothing (the Baldwin effect).",
@@ -222,6 +245,7 @@ export const SCENARIOS = [
     id: "augment",
     icon: "🧬",
     name: "Augmented Minds",
+    hunting: "constant", // 58.8% of deaths were kills at t6,000
     hook: "brains that grow their own wiring",
     blurb:
       "Brains start with almost no structure and grow their own. Pick a creature to see its evolved network.",
@@ -231,6 +255,7 @@ export const SCENARIOS = [
     id: "whole",
     icon: "🌍",
     name: "The Whole World",
+    hunting: "constant", // 60.7% of deaths were kills at t6,000
     hook: "every rule at once",
     blurb:
       "Everything at once: predation, scavenging, seasons, drifting lands, and brains that learn.",

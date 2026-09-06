@@ -93,6 +93,95 @@ export function worldsLabel(count = SCENARIOS.length) {
   return `${count} worlds to try:`;
 }
 
+// ---- The shape of the collection (v1.156) ----
+//
+// v1.154 gave the thirteen worlds words and left, in its own leaving, the thing
+// it had not given them: *an order and a shape*. They were the order I happened
+// to write them in, and nothing on the page said which one was the gentle one.
+// Three cycles running that leaving has been re-copied forward untouched, which
+// is usually the sign that the missing piece is a measurement rather than a
+// decision.
+//
+// **Which quantity moves?** The hard-won note says to ask before banding
+// anything, and asking saved this release from shipping the obvious axis. The
+// obvious axis is *how many rules are switched on* — count the truthy flags in
+// `makeConfig(scn.over)` — and over the thirteen it reads
+// `0, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5`: seven of thirteen tie in one band,
+// so "simplest first" would have sorted more than half the collection by the
+// order I happened to write it in and called that a shape.
+//
+// The quantity that moves is what the dying is made of. Over 6,000 ticks, the
+// share of deaths that were kills:
+//
+//   Genesis 0.0   The Commons 0.0   | nothing hunts
+//   The Plague 2.0   The Thinking Pond 3.4   Nomad's Land 4.8   | hunting is rare
+//   The Lay of the Land 43.0 … The Four Rooms 64.0   | hunters and hunted
+//
+// Zero to sixty-four with a **thirty-eight point gap** in the middle of it, and
+// the gap holds at 2,000, 3,000, 6,000 and 12,000 ticks. That is not a scale to
+// rank on, it is three groups, and three groups is a thing a menu can say out
+// loud in three short words.
+//
+// And the finding that makes it worth the file: **you cannot read this off the
+// config.** `predation` is true in eleven of the thirteen worlds, including all
+// three of the rare band — The Plague's pathogen, Nomad's drifting land and the
+// Thinking Pond's brains all leave the hunters with almost nothing to show for
+// themselves. A flag says a rule is *allowed*; only a run says whether it ever
+// gets to speak. So the band is declared per scenario in `scenarios.js`, from a
+// run, and `test/hunting.test.js` re-runs the ponds and fails if a declaration
+// stops being true.
+//
+// PURE OBSERVER still: the bands are read off declarations, never simulated
+// here. Nothing below steps a world or draws a number.
+
+/**
+ * The three bands, in the order the strip shows them.
+ *
+ * The labels are the whole point of the release and they are written for a
+ * stranger, not for me: not `predation: false`, not `low kill share`, but the
+ * sentence a person would use to ask for one of these worlds out loud. Short
+ * because they stand in the chip row and every pixel they take is a pixel of
+ * chip — at 390 px the row already only shows two.
+ */
+export const HUNTING_BANDS = [
+  { key: "none", label: "Nobody hunts" },
+  { key: "rare", label: "Hunting is rare" },
+  { key: "constant", label: "Hunters and hunted" },
+];
+
+/** The band keys, for validation. */
+export const HUNTING_KEYS = HUNTING_BANDS.map((b) => b.key);
+
+/**
+ * The thirteen worlds grouped into their bands, in band order.
+ *
+ * Derived rather than hand-arranged, for `simpleview.js` rule 3's reason and
+ * v1.154's: a hand-sorted strip is a lie waiting for the fourteenth world, and
+ * this project has shipped that exact lie before. A world declares what its
+ * dying is made of and the collection sorts itself; within a band the author's
+ * order survives, because at that point there is nothing left to sort on and
+ * pretending otherwise would be inventing a ranking.
+ *
+ * Empty bands are dropped: a heading over nothing is a heading that lies.
+ */
+export function worldGroups(scenarios = SCENARIOS) {
+  return HUNTING_BANDS.map((band) => ({
+    ...band,
+    worlds: scenarios.filter((s) => s.hunting === band.key),
+  })).filter((g) => g.worlds.length > 0);
+}
+
+/**
+ * The same thirteen, flattened — the order a hand or a Tab key meets them in.
+ *
+ * A permutation of `SCENARIOS` and nothing else: every world appears exactly
+ * once, whatever it declares. A scenario with an unknown band would vanish from
+ * the strip silently, so `test/worlds.test.js` counts them on the way past.
+ */
+export function orderedWorlds(scenarios = SCENARIOS) {
+  return worldGroups(scenarios).flatMap((g) => g.worlds);
+}
+
 /**
  * The caption for a pond that is not one of the thirteen.
  *

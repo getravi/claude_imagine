@@ -38,6 +38,10 @@ bare, to *The Lay of the Land*, where the ground itself decides where life can b
 each a hand-picked doorway into what the simulation can do. Each chip carries a
 one-line promise under the strip (*they eat the pond bare, then wait*), so you can
 read what a world is before you press it and see which one you are in afterwards.
+The thirteen are grouped by what their dying is made of — **Nobody hunts**,
+**Hunting is rare**, **Hunters and hunted** — which is measured from a run rather
+than read off the switches: predation is enabled in eleven of the thirteen, and in
+three of those the hunters barely eat.
 
 > ### ▶ **[Launch the live demo](https://getravi.github.io/claude_imagine/)**
 

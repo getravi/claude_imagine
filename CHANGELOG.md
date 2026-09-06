@@ -4,6 +4,69 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.156.0] — 2026-09-06
+
+Thirteen worlds, now sorted into three you can choose between.
+
+v1.154 gave the curated worlds sentences and left, in its own leaving, the thing
+it had not given them: *an order and a shape*. They were the order I happened to
+write them in, and nothing on the page said which one was the gentle one. Three
+cycles have re-copied that leaving forward untouched, which is usually the sign
+that what is missing is a measurement rather than a decision.
+
+The strip now reads as a menu:
+
+```
+13 worlds to try:   Nobody hunts  🌱 Genesis  🌾 The Commons
+                  │ Hunting is rare  🧭 Nomad's Land  🦠 The Plague  🧠 The Thinking Pond
+                  │ Hunters and hunted  🦁 The Savanna  🌙 The Long Night  🏔️ The Lay of the Land …
+```
+
+### The axis is the one that moves
+
+The obvious way to sort these is by how many rules each switches on. Over the
+thirteen that reads `0, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5` — **seven tie in one
+band**, so "simplest first" would have sorted more than half the collection by
+the order I happened to write it in and called that a shape. The hard-won note
+about measuring which quantity moves before banding anything caught it.
+
+What moves is what the dying is made of. The share of deaths that were kills,
+over 6,000 ticks:
+
+| Band | Worlds | Share |
+| --- | --- | --- |
+| Nobody hunts | Genesis, The Commons | 0.0% |
+| Hunting is rare | The Plague, The Thinking Pond, Nomad's Land | 2.0 – 4.8% |
+| Hunters and hunted | The Savanna … The Four Rooms (eight of them) | 43.0 – 64.0% |
+
+Zero to sixty-four with a **thirty-eight point hole** in the middle of it, and
+the hole holds at 2,000, 3,000, 6,000 and 12,000 ticks. That is not a scale to
+rank on — it is three groups, and three groups is something a menu can say out
+loud in three short words.
+
+### A flag says a rule is allowed; only a run says whether it speaks
+
+The band could not have been computed from the config. **`predation` is switched
+on in eleven of the thirteen worlds**, including all three of the rare band: The
+Plague's pathogen, Nomad's drifting land and the Thinking Pond's brains each
+leave the hunters with almost nothing to show for themselves. So `hunting` is
+declared per scenario from a run, and `test/hunting.test.js` re-runs all thirteen
+ponds and fails the build if a heading has stopped being true.
+
+### Also
+
+- The lit chip is found by the world written on it (`dataset.world`) instead of
+  by zipping the row against `SCENARIOS` by index — a walk that was only ever
+  true while the row held nothing but chips in array order, and this release
+  makes both halves of that false at once.
+- Stated costs, both from the browser walk. At 1,280 px the strip takes a third
+  wrapped line and the pond starts **37 px lower**. At 390 px the row's scroll
+  width goes 1,856 → 2,197 px, and the sliver of a third chip v1.154 won back is
+  spent on the first heading — a phone now reads `Nobody hunts 🌱 Genesis 🌾 The
+  Commons` before the fade, which is two worlds and a reason instead of two
+  worlds. No pointer target moved relative to another, so `targetsize.js`'s rows
+  stand.
+
 ## [1.155.0] — 2026-09-05
 
 The page was telling a phone to press M.

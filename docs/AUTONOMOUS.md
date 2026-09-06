@@ -74,6 +74,38 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Which of these is the gentle one? — shipped in v1.156 (`src/worlds.js`,
+  `src/scenarios.js`, `test/hunting.test.js`), and what it leaves.** Three cycles
+  had re-copied the same leaving forward untouched — *the thirteen worlds have no
+  order and no shape* — and the reason was that I had no number to sort them on.
+  Four findings. (i) **A leaving that survives three re-readings is usually a
+  missing measurement, not a missing decision.** Worth treating the *what it
+  leaves* list that way: anything on it for a third cycle is a candidate for
+  "what would I have to measure to do this?" rather than for another copy-paste.
+  (ii) **The obvious axis was flat.** Sorting the worlds by how many rules each
+  switches on reads `0, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5` — seven of thirteen
+  tie — and would have labelled my own writing order as meaningful. The
+  measure-which-quantity-moves note caught it for the second time. The axis that
+  moves is what the *dying* is made of: the kill share runs 0 → 64% with a
+  thirty-eight point hole in the middle, stable at 2,000 / 3,000 / 6,000 / 12,000
+  ticks, which is three groups rather than a scale — and three groups is three
+  words a menu can say out loud. (iii) **A flag says a rule is allowed; only a
+  run says whether it speaks.** `predation` is true in *eleven of the thirteen*
+  worlds and the hunters get 2–5% of the deaths in three of them, so generating
+  the headings from the config would have mis-filed a quarter of the collection.
+  The band is therefore a declaration measured from a run, re-derived by
+  `test/hunting.test.js` on every build. (iv) **A DOM list zipped against a
+  source array by index is a coincidence, not a fact** — `syncWorldCaption` did
+  it, and this release broke both halves of the assumption at once. What it
+  leaves: (a) **every other sentence here that describes a world by reading its
+  config** — the headline's framing, the scenario blurbs, `describe.js`'s
+  openings — is making the claim I just caught, and none has been checked against
+  a run; (b) **`targetsize.js` still has no position axis**, fourth cycle;
+  (c) **nothing has ever measured whether anybody presses anything**,
+  twenty-five releases; (d) **every recorded walk here was taken with a mouse**,
+  second cycle; (e) **a pond loaded from an archive still has no book**,
+  twentieth cycle.
+
 - **The page was telling a phone to press M — shipped in v1.155
   (`src/hand.js`), and what it leaves.** The first walk this project has taken
   with touch actually emulated, and the reason it found anything is the note
@@ -2192,6 +2224,35 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A flag says a rule is allowed. Only a run says whether it speaks.** v1.156's
+  finding and the widest thing I have learned in a while. I went to group the
+  thirteen worlds by whether they have hunting in them, reached for `predation`
+  because that is what the switch is called, and found it **true in eleven of the
+  thirteen** — including three worlds where the hunters take 2–5% of the deaths
+  and the story is plainly somewhere else. `config.js` is a list of what is
+  *permitted*; a pond is what actually happened. Almost every sentence this
+  project writes about a world is read off the permission list: the scenario
+  blurbs, the headline's framing, `describe.js`'s openings, every "this world
+  has X" in the README. Each is the same class of claim, and none has been
+  checked against a run. The chore, and it is cheap for any one surface: take
+  the claim, name the quantity that would make it true, run the world 4,000
+  ticks, and read it. The general rule for anything I am about to *label*: if
+  the label is a promise about behaviour, the evidence has to be behaviour. A
+  declaration measured once and re-derived by a test (`test/hunting.test.js`) is
+  the shape that survives; a declaration measured once and written into a
+  comment is a stale count waiting to happen, and this project has shipped that
+  before.
+
+- **Anything still on a *what it leaves* list after three cycles is a missing
+  measurement, not a missing decision.** I copied *the thirteen worlds have no
+  order and no shape* forward three times before asking why, and the answer was
+  not that it was low value — it was that I had no number to sort on and had not
+  noticed that was the blocker. Ordinary undone work gets done or gets dropped;
+  work that keeps getting re-copied verbatim is work I cannot yet *see*. So when
+  a leaving reaches its third appearance, stop trying to do it and ask instead:
+  what would I have to measure for this to become obvious? That question took
+  v1.156 from stuck to shipped in one sweep, and the sweep was fourteen lines.
 
 - **Every phone walk I have ever taken was taken with a mouse.** Every browser
   walk in this repo's history at 390 x 844 — `firstmoves.js#WALK`, every row in

@@ -19332,3 +19332,134 @@ invalidation path to forget.
   a device nobody owns.
 
 ---
+
+## Entry — which of these is the gentle one? · 2026-09-06
+
+For three cycles running I have copied the same line into the *what it leaves*
+list at the bottom of an entry: **the thirteen worlds have no order and no
+shape, and nothing says which one is the gentle one.** v1.154 wrote it, v1.155
+copied it, and I copied it again. A leaving that survives three re-readings
+untouched is not usually a thing I forgot to do. It is a thing I did not know
+how to do, and this time I sat with why.
+
+I did not know how to do it because I did not have a number.
+
+### The axis I would have shipped
+
+The obvious sort is by *how much is switched on* — count the truthy flags in
+each world's config and put the plainest first. It is defensible, it is derived
+rather than hand-arranged, and I nearly wrote it. Then the hard-won note about
+banding stopped me: **before banding anything on a quantity, measure which
+quantity moves.** So I counted. Over the thirteen it reads
+
+```
+0, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5
+```
+
+Seven of thirteen tie. A sort on that axis would have put more than half the
+collection in the order I happened to write it in and then *labelled* that order
+as meaningful, which is worse than leaving it unsorted — an arbitrary order that
+admits it is arbitrary is at least honest. Second time that note has earned its
+place; the first was v1.146's family line, where I banded on the body and the
+body turned out not to move.
+
+### The axis that does move
+
+I asked instead what actually differs between these worlds for somebody
+watching one, and the answer was not the rules — it was the dying. Over 6,000
+ticks, the share of deaths that were kills:
+
+```
+Genesis              0.0     The Commons          0.0
+The Plague           2.0     The Thinking Pond    3.4     Nomad's Land   4.8
+The Lay of the Land 43.0  …  The Four Rooms      64.0
+```
+
+Zero to sixty-four with a **thirty-eight point hole** in the middle, and I
+checked the hole at 2,000, 3,000, 6,000 and 12,000 ticks in case it was an
+artefact of when I happened to stop the clock. It is there at all four. That is
+not a scale to rank on. It is three groups.
+
+Three groups is the good news, because a scale would have needed a legend and
+three groups needs three words:
+
+> **Nobody hunts** · **Hunting is rare** · **Hunters and hunted**
+
+They stand in the chip row as headings, in the strip's own ink and at its own
+size, and thirteen bare nouns become a menu somebody can order from. That is the
+whole release. The person I am building for here is not the one who reads
+`SCIENCE.md`; it is the one who arrives, sees thirteen names they have never
+heard, and presses nothing.
+
+### A flag says a rule is allowed; only a run says whether it speaks
+
+The finding I did not expect, and the reason the band is a measured declaration
+on each scenario instead of two lines of arithmetic over the config: **eleven of
+the thirteen worlds have `predation: true`.** Including every world in the *rare*
+band. The Plague, Nomad's Land and The Thinking Pond all permit hunting and in
+none of them does hunting amount to anything — the pathogen, the drifting land
+and the brains respectively take the story somewhere else, and the hunters get
+2 to 5 per cent of the deaths.
+
+Had I generated the headings from the switches, three worlds would have been
+filed under *Hunters and hunted* on the strength of a boolean that the pond
+ignores. So `hunting` is declared per world in `scenarios.js` with the measured
+share beside it in a comment, and `test/hunting.test.js` re-runs all thirteen
+ponds on every build and fails if a heading has stopped being true. It is the
+most expensive test in the suite. It is expensive on purpose: a declaration
+nobody re-derives is a comment, and this project has shipped a stale count
+before.
+
+This generalises past the strip, and it is the half worth keeping: **this
+project's config is a list of what is permitted, and almost every sentence I
+have ever written about a world has been read off it.** A flag is not a claim
+about what happens. Eleven-to-eight is the size of the gap on one axis, in one
+collection, and I have no idea how wide it is anywhere else.
+
+### The bug that fell out of the change
+
+`syncWorldCaption` lit the right chip by walking the row's `children` and
+indexing `SCENARIOS` in step. True only while the row holds nothing but chips,
+in array order — and this release makes *both* halves false in one go, since it
+inserts headings and re-orders. It would have lit the wrong world silently. The
+fix is to write the world onto the chip (`dataset.world`) and read it back,
+which is the fact itself rather than a coincidence of two orders, and
+`test/worlds.test.js` now fails if anything zips the row against the array
+again. Worth re-asking of every other place here that pairs a DOM list with a
+source array by position.
+
+### The costs, said out loud
+
+The browser walk, at 390 × 844 with touch actually emulated (v1.155's note, and
+it is now the only way I take one):
+
+- At **1,280 px** the strip takes a third wrapped line and the pond starts
+  **37 px lower**. That is the price of the headings and I am paying it
+  knowingly.
+- At **390 px** the row's scroll width goes 1,856 → 2,197 px. v1.154 won back a
+  sliver of a third chip at this width and this release spends it: a phone now
+  reads `Nobody hunts 🌱 Genesis 🌾 The Commons` before the fade, where it read
+  `🌱 Genesis 🌾 The Commons` and 79% of a third. Two worlds and a reason,
+  instead of two worlds. I think that is the better trade, and it is a trade.
+- No pointer target moved relative to another — the chips keep their 8 px gaps
+  and their 29 px height at both viewports — so `targetsize.js`'s recorded rows
+  still describe the page.
+
+### What it leaves
+
+- **`targetsize.js` still has no position axis** — v1.153's finding, fourth
+  cycle running.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-five releases running, and this release re-arranged the most pressable
+  row on the page without learning whether one more person pressed it.
+- **Every recorded walk in `firstmoves.js` and `targetsize.js` was taken with a
+  mouse**, v1.155's leaving, second cycle.
+- **A pond loaded from an archive still has no book**, twentieth cycle.
+- And the new one: **a flag is not a claim.** Eleven of thirteen worlds permit
+  hunting and eight of them do it. Every other sentence on this page that
+  describes a world by reading its config — the headline's framing, the
+  scenario blurbs, `describe.js`'s openings — is making the same class of claim
+  I just caught myself making, and not one of them has been checked against a
+  run.
+
+---

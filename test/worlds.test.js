@@ -17,6 +17,10 @@ import {
   HOOK_MAX,
   HOME_HOOK,
   CUSTOM_HOOK,
+  HUNTING_BANDS,
+  HUNTING_KEYS,
+  worldGroups,
+  orderedWorlds,
   worldsLabel,
   matchScenario,
   sameConfig,
@@ -108,6 +112,102 @@ test("the caption carries the hook alone", () => {
   // into separate worlds` is fifty-three characters and wraps at 390 px, which
   // is the shove the whole reservation exists to prevent.
   assert.ok(!captionText(cap).includes(scn.name), "the caption should not repeat the chip's name");
+});
+
+// ---- The shape of the collection (v1.156) ----
+
+test("grouping the worlds loses none of them and invents none", () => {
+  const shown = orderedWorlds();
+  assert.equal(
+    shown.length,
+    SCENARIOS.length,
+    "every world should reach the strip exactly once — a world with an unknown band would vanish from it in silence"
+  );
+  assert.deepEqual(
+    [...shown].map((s) => s.id).sort(),
+    [...SCENARIOS].map((s) => s.id).sort(),
+    "the strip should be a permutation of the collection"
+  );
+});
+
+test("the strip is grouped by band, and the author's order survives inside one", () => {
+  const groups = worldGroups();
+  assert.deepEqual(
+    groups.map((g) => g.key),
+    HUNTING_KEYS.filter((k) => SCENARIOS.some((s) => s.hunting === k)),
+    "the groups should come in the order the bands are declared in"
+  );
+  for (const g of groups) {
+    assert.ok(g.worlds.length > 0, `the "${g.key}" heading stands over nothing`);
+    for (const s of g.worlds) assert.equal(s.hunting, g.key);
+    // Within a band there is nothing left to sort on, so the order is the one
+    // the author wrote — ranking further would be inventing a difference.
+    const source = SCENARIOS.filter((s) => s.hunting === g.key);
+    assert.deepEqual(g.worlds, source, `the "${g.key}" band should keep the collection's own order`);
+  }
+});
+
+test("a group heading is a sentence a stranger can read", () => {
+  const seen = new Set();
+  for (const b of HUNTING_BANDS) {
+    assert.ok(!seen.has(b.label), `two bands share the heading "${b.label}"`);
+    seen.add(b.label);
+    // Short, because these stand *in* the chip row and every pixel they take is
+    // a pixel of chip — at 390 px the row shows two of thirteen as it is.
+    assert.ok(b.label.length <= 20, `"${b.label}" is too long to stand in the row`);
+    // Written for a visitor, not for the config. `predation: false` is a fact
+    // about a flag; "Nobody hunts" is a fact about the pond, and the second one
+    // is the only one a stranger can act on. (The flag is on in eleven of the
+    // thirteen worlds and says nothing about three of them — see
+    // `test/hunting.test.js`.)
+    assert.ok(
+      !/[:{}]|predation|kill|config|\d/i.test(b.label),
+      `"${b.label}" reads like a setting rather than a description of a pond`
+    );
+  }
+});
+
+test("the headings are written at runtime and the lamp is found by id", () => {
+  const main = read("src/main.js");
+  assert.ok(/worldGroups\(/.test(main), "the strip should be built from src/worlds.js's groups");
+  const page = read("app/index.html");
+  for (const b of HUNTING_BANDS) {
+    assert.ok(
+      !page.includes(b.label),
+      `"${b.label}" is typed into the page; it belongs in src/worlds.js, where the bands are`
+    );
+  }
+  // The row is no longer chips alone, so the lit chip cannot be found by walking
+  // `children` and indexing `SCENARIOS` in step — that walk was true only while
+  // both orders matched, and this release makes neither of them safe to assume.
+  assert.ok(
+    /dataset\.world\s*=/.test(main) && /dataset\.world\s*===/.test(main),
+    "a chip should carry which world it is, and the lamp should read it off the chip"
+  );
+  assert.ok(
+    !/SCENARIOS\[i\]/.test(main),
+    "nothing should zip the chip row against SCENARIOS by index any more"
+  );
+});
+
+test("a group heading is not a control", () => {
+  const css = read("style.css");
+  const block = css.slice(
+    css.indexOf(".scenario-chips .chip-group {"),
+    css.indexOf(".scenario-chips .chip-group:not(")
+  );
+  assert.ok(block.length > 0, "the heading should have a rule of its own");
+  // A chip is a thing you press. A heading must not borrow the parts that say
+  // so, or the row grows three targets that do nothing when a thumb finds them.
+  assert.ok(!/cursor:\s*pointer/.test(block), "a heading should not look pressable");
+  assert.ok(!/border-radius/.test(block), "a heading should not wear a chip's shape");
+  // Same ink and size as the strip's own label, which keeps it inside
+  // `legibility.js`'s inventory instead of adding an unmeasured fourteenth ink.
+  const label = css.slice(css.indexOf(".scenarios-label {"), css.indexOf(".scenario-chips {"));
+  const ink = (s) => (s.match(/color:\s*var\((--[a-z-]+)\)/) || [])[1];
+  const size = (s) => (s.match(/font-size:\s*(\d+px)/) || [])[1];
+  assert.equal(ink(block), ink(label), "the heading should read in the label's ink");
+  assert.equal(size(block), size(label), "and at the label's size");
 });
 
 test("the strip's count is written at runtime, never typed into the page", () => {
