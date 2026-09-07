@@ -18,6 +18,7 @@ import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
 import { drawMinimap, minimapLayout, minimapToWorld } from "./minimap.js";
+import { markProperties, minimapWidth } from "./instruments.js";
 import { drawChart, popAxis, axisLabels, chartAxis, seasonBands } from "./chart.js";
 import { drawSizes, sizeAxis, sizeProfile, sizeCaption, MEAN_DASH } from "./sizeplot.js";
 import {
@@ -685,6 +686,9 @@ function loop(now) {
   // leaves the page is what was on it.
   pumpMovie();
   updateViewBadge();
+  // Before the two marks it sizes, and after the draw so the canvas the
+  // measurement comes off has already been laid out this frame.
+  refitInstruments();
   updateMinimap();
   updateScaleBar();
   // The three figures that share one x-axis, and then the axis itself — drawn
@@ -1692,6 +1696,31 @@ function updateViewBadge() {
     (cam.target ? ` <span class="following">🎯 ${givenName(cam.target.id)}</span>` : "");
 }
 
+// ---- The marks on the water ----
+//
+// `src/instruments.js` holds the whole argument and every number; this is the
+// adapter, and it is deliberately three lines of work. It runs per frame for
+// the reason the ruler below does: the input is the width the stylesheet is
+// actually displaying the pond at, and that moves when the *window* does, when
+// a phone is turned, when the control panel is put away — none of which is an
+// event this file has a listener for. So the measurement is taken every frame
+// and the DOM is written only when the answer changes, which on a still window
+// is never.
+let markSig = "";
+function refitInstruments() {
+  const canvas = $("world");
+  const w = Math.round(canvas.clientWidth);
+  const h = Math.round(canvas.clientHeight);
+  if (!w || !h) return;
+  const sig = w + "x" + h;
+  if (sig === markSig) return;
+  markSig = sig;
+  const stage = canvas.parentElement;
+  for (const [prop, value] of Object.entries(markProperties(w, h))) {
+    stage.style.setProperty(prop, value);
+  }
+}
+
 // ---- Scale bar ----
 // The pond's ruler (v1.82). `scalebar.js` chooses the length and the words; all
 // that happens here is the DOM.
@@ -1732,23 +1761,38 @@ function updateScaleBar() {
 // zoom badge, because at zoom 1 the viewport is the whole world and a minimap
 // would just be a smaller copy of what you are already looking at.
 let miniCtx = null;
+let miniSig = "";
 function updateMinimap() {
   const cam = renderer.camera;
   const canvas = $("minimap");
   const show = !cam.isDefault();
   canvas.classList.toggle("hidden", !show);
   if (!show) return;
-  const layout = minimapLayout(config);
-  if (!miniCtx) {
-    miniCtx = canvas.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = layout.width * dpr;
-    canvas.height = layout.height * dpr;
+  // The map is the one mark whose size cannot be a custom property: a canvas
+  // carries its resolution as an attribute, and a scaled-down 180 px bitmap is
+  // exactly the smear a map of one-pixel dots cannot afford. So it is built at
+  // the width `instruments.js` allows, and rebuilt when that width moves —
+  // which, since the answer is floored and rounded to whole pixels, is a
+  // handful of times across a whole orientation change and never on a still
+  // window. `minimapLayout` has taken a width since it was written; this is the
+  // first caller to pass one.
+  const pond = $("world");
+  const layout = minimapLayout(
+    config,
+    minimapWidth(Math.round(pond.clientWidth) || config.width, Math.round(pond.clientHeight) || config.height),
+  );
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const sig = layout.width + "@" + dpr;
+  if (!miniCtx) miniCtx = canvas.getContext("2d");
+  if (sig !== miniSig) {
+    miniSig = sig;
+    canvas.width = Math.round(layout.width * dpr);
+    canvas.height = Math.round(layout.height * dpr);
     canvas.style.width = layout.width + "px";
     canvas.style.height = layout.height + "px";
     miniCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  drawMinimap(miniCtx, world, cam, { selected: renderer.selected });
+  drawMinimap(miniCtx, world, cam, { selected: renderer.selected, width: layout.width });
 }
 
 /** How far one arrow press slides the view, in pond pixels of screen. */

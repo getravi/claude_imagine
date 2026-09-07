@@ -19954,3 +19954,197 @@ question is what quantity the direction is a proxy for.
 - **A pond loaded from an archive still has no book**, twenty-third cycle.
 
 ---
+
+## Entry — the furniture was sized for a desktop · 2026-09-07
+
+Fourth cycle in the stranger's hat, and the second one where I opened the page
+instead of reasoning about it. Last time the stranger was on a desktop. Today I
+opened it on a phone — 390 × 844, fresh browser, no stored state — dismissed the
+guide, and did the one thing this page tells a first-time visitor to do.
+
+`👋 Meet somebody`. It is the first of the three buttons under the water, it is
+the first *control* the guide walks you to — three stops of orientation, then
+this — and v1.153 moved it out of a settings drawer and put it under the pond
+precisely because it is the press that answers *which of these am I watching*.
+
+I pressed it and the pond went away.
+
+Not all of it, and not in a way any single screenshot makes obvious, which is
+why I went and counted. Meeting somebody sends the camera to the animal at 3×,
+and a magnified view brings three instruments with it — the minimap, the zoom
+badge and the ruler — on top of the season badge and the toast that were already
+there. Five marks. On a desktop that is furniture around the edges of a picture.
+On a phone it is the picture.
+
+### The number
+
+Six viewports, headless, default pond, the marks' rectangles intersected with
+the water's and unioned so an overlap is never double-counted:
+
+| viewport | the water, as drawn | at rest | after `👋 Meet somebody` |
+| --- | --- | --- | --- |
+| 390 × 844 | 344 × 237 | 28.6% | **47.8%** |
+| 414 × 896 | 368 × 254 | 26.5% | 43.7% |
+| 768 × 1024 | 722 × 497 | 7.8% | 15.3% |
+| 1280 × 800 | 894 × 616 | 5.2% | 10.3% |
+| 1440 × 900 | 900 × 620 | 5.2% | 10.0% |
+| 1920 × 1080 | 900 × 620 | 5.2% | 10.0% |
+
+**Ten per cent on a desktop and forty-eight on a phone, for the same press.**
+Half the pond, at the exact moment a stranger has done what they were told, on
+the screen most strangers are holding.
+
+The worst single mark is the minimap. 180 × 124 is 22,320 px² of map. The
+desktop pond is 550,578 px² and the phone pond is 81,528, so the identical
+element is **4.0% of one and 27.4% of the other**. Nothing about it is wrong.
+Every one of those sizes is a sensible size, chosen by me, while looking at a
+900 px pond.
+
+### The rule was already in this repository, applied to one line
+
+I went looking for where the sizes came from, and found the lesson instead. This
+is `src/scalebar.js`, written for v1.82:
+
+> **It is measured in the picture, not in the page.** The canvas is
+> `max-width: 100%`, so on a phone the pond is drawn 900 px wide into a box
+> 346 px across and *every stated distance on this page is wrong there* —
+> including the one in `config.js`. A ruler is the one form of scale that
+> survives it, because it is scaled by the same factor as the thing it measures.
+
+That is exactly right and it has been sitting there, correct and unread, through
+seventy-eight releases. It was applied to the ruler's **bar**, which is the
+thirty-pixel line inside the chip. It was not applied to the chip. Or to the
+minimap directly beneath it, or to either badge, or to the toast.
+
+I have caught myself doing a version of this several times now — v1.106's
+`Math.min`, v1.157's *put away the instruments*, v1.159's *below unless there is
+no below* — but this is the sharpest instance, because the general rule was
+written down **in a comment, in a file, in this repo, by me**, and then scoped to
+the one element that provoked it. A lesson learned about a symptom stays about
+that symptom unless something forces it wider. Nothing here forces it wider: the
+page renders, the tests pass, and the only witness is a stranger holding a phone
+who does not file bugs.
+
+So the first question to ask of any rule I write in a comment from now on is
+*what else is this true of?* — and the second is *is that a sweep I can run
+today?* Both would have been cheap in v1.82.
+
+### The shape of the fix
+
+One clamped square root, in `src/instruments.js`:
+
+```js
+scale = clamp( sqrt(budget × waterArea / markArea), floor, 1 )
+```
+
+Three decisions in it, and the middle one I got wrong first.
+
+**A budget, not a breakpoint.** There is no width in the file and no media query
+in the stylesheet it feeds. This is v1.159's finding one surface over: a rule
+stated as a device is a rule about one page, and stated as a cost it is a rule
+about any page. The nicest evidence is the tablet — 722 × 497 comes out
+completely untouched, and not because I special-cased it. Its minimap already
+costs 6.2% against a 7% budget, so the arithmetic says *leave it*, which is what
+a breakpoint at "phones" would have got wrong in both directions.
+
+**The square root is the point, and my first draft did not have it.** I wrote
+`scale = waterWidth / 900` first, because it is obvious and it is what the ruler
+does. It hands a 344 px pond a minimap at 0.382 and a season badge set in 4.8 px
+type — it scales the *marks* by the pond's ratio, when what a reader loses is
+**area**, and area goes as the square. Ask the question the reader is actually
+asking — *how much of the pond is hidden?* — and the geometry answers it. The
+ruler gets away with a linear factor because a ruler is a length, and a length
+is the one quantity on the water that genuinely is linear.
+
+**The floors are the half worth reading.** A budget alone takes the minimap to
+0.506 on a phone and keeps going on anything smaller, and a map too small to
+read is not cheaper than no map — it is a mark that costs water and returns
+nothing. So each mark states the size below which it stops working, and they are
+different kinds of fact:
+
+- The minimap floors on **being a map**, at 96 px across. It is the whole pond
+  drawn 15× down; much below that and the viewport rectangle it exists to show
+  is a few pixels on a side.
+- The chips floor on **type**, at 11 px, the smallest this project sets
+  anywhere. They are supplementary by construction — a season, a magnification,
+  a length — so type is the only constraint they have.
+
+Which one binds is worth naming rather than leaving implied, so the test names
+it: the map's floor is legibility and *not* the touch target, and the shortest
+side that floor leaves is 66 px against a `TARGET_MIN` of 24. If a future budget
+ever tightened enough for the target
+to bind instead, that assertion is where it would say so.
+
+And one thing that does not scale at all. The toast can carry a button — *go and
+find whoever that was* — and it keeps a literal `min-height: 24px`. **A budget
+may shrink type. It may not shrink a target.**
+
+### After
+
+| viewport | at rest | after `👋 Meet somebody` |
+| --- | --- | --- |
+| 390 × 844 | 28.6% → **20.9%** | 47.8% → **28.7%** |
+| 414 × 896 | 26.5% → **19.2%** | 43.7% → **26.6%** |
+| 768 × 1024 | 7.8% → 7.8% | 15.3% → 15.3% |
+| 1280 × 800 | 5.2% → 5.2% | 10.3% → 10.3% |
+| 1440 × 900 | 5.2% → 5.2% | 10.0% → 10.0% |
+| 1920 × 1080 | 5.2% → 5.2% | 10.0% → 10.0% |
+
+The minimap goes 27.4% → 7.8%. Everything from a tablet up is unchanged to the
+pixel, which is the outcome I wanted most: `1` is a ceiling, and the pond that
+was already fine is not redesigned to fix the pond that was not.
+
+### The sweep that caught me on the way out
+
+Two memos went into `main.js` — the water's last measured size, and the width
+the little map's canvas was last built at — and the build went red. Not for a
+behaviour: `test/viewstate.test.js` reads every top-level binding in `main.js`
+and insists that some list, either the world-scoped one or the page-scoped one,
+says which kind it is and why. v1.148 built that after finding five bindings the
+old sweep could not see. It cost me two paragraphs of prose to get green again,
+and it was worth every word, because writing the reason for `markSig` sent me to
+look at the entry directly above it: `miniCtx` was excused as *"the little map's
+drawing context, sized once against the page's pixel ratio"* — and after today
+it is not sized once. A stale reason in the bucket labelled *does not need
+checking* is the most expensive kind of comment there is, and the only thing
+that ever finds one is being made to write the neighbouring entry.
+
+### What I did not fix, and said so
+
+The toast. It is now the biggest mark left on a phone at 16.5% of the water, and
+scaling its type is all this rule can do to it, because the rest is arithmetic:
+a toast is *N* characters, *N* characters need an area, and three sentences on
+an 81,528 px² pond are a fifth of it however they are set. The real answer is to
+stop putting them on the water — a layout change, not a size one, and a whole
+cycle rather than a corner of this one. It is measured, it is named in the
+module, and it is the obvious next thing.
+
+There is also a smaller thing I noticed and left: the CSS that makes the toast
+narrow. It is `left: 50%` with no width, and an absolutely-positioned box like
+that shrink-to-fits into whatever is left of its container — which is exactly
+half of it. Nobody chose 50%; it is what `left: 50%` does. On a 900 px pond that
+is a 450 px toast and looks deliberate. On a 344 px pond it is 172 px and four
+lines tall. Widening it turns out not to help the area much (the same text, in a
+wider box, is the same text) but it would change the *shape* of what is hidden
+from a block in the middle to a band at the edge, and shape may matter more than
+area here. That needs the measurement I have not taken.
+
+### What it leaves
+
+- **The toast is still on the water**, and it is now the largest thing on it.
+  16.5% at rest on a phone, measured.
+- **Nothing checks that a surface can be *seen*, only that it is on screen** —
+  v1.159's leave, and today is a second instance of it. This release counted
+  *area hidden*, which is the closest anything here has come to a test of it,
+  and it is still a sweep I ran by hand rather than something `node --test`
+  knows about. The page has no way to notice the third one.
+- **The tour's stops are a fixed list against a page that grows**, v1.129's own
+  leave, still open.
+- **The plates over the water still do not carry the shape**, third cycle.
+- **The obituary and the inspector still use the flat swatch**, third cycle.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-nine releases.
+- **`targetsize.js` still has no position axis**, eighth cycle.
+- **A pond loaded from an archive still has no book**, twenty-fourth cycle.
+
+---

@@ -297,7 +297,16 @@ export const PAGE_SCOPED = Object.freeze({
   speed: "a visitor's speed choice, likewise",
   lastFrame: "wall-clock, for the frame delta",
   fpsSmooth: "wall-clock, a rolling mean of the browser's frame rate",
-  miniCtx: "the little map's drawing context, sized once against the page's pixel ratio",
+  miniCtx: "the little map's drawing context, fetched once and re-sized whenever the page is",
+  miniSig:
+    "the width and pixel ratio the little map's canvas was last built at (v1.160). A memo " +
+    "of the *page*: since the map is sized from a share of the water, a window that moves " +
+    "moves it, and rebuilding a backing store every frame would be a waste this catches. " +
+    "A new pond is the same pond's width and needs no rebuild",
+  markSig:
+    "the water's laid-out size the last time the marks standing on it were re-sized " +
+    "(v1.160). Page-scoped for `miniSig`'s reason and more plainly: what it remembers is a " +
+    "number the stylesheet chose, and no world has ever had an opinion about it",
   mullerCtx: "the Tree of Life's drawing context, sized once against its column",
   chartCtx: "the population chart's drawing context, held so it is fetched once",
   deathsCtx: "the death strip's drawing context, which also caches the canvas's own size",

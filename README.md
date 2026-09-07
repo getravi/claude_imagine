@@ -522,6 +522,7 @@ src/
   world.js          the simulation: steps everything forward
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it
+  instruments.js    how big a mark on the water may be, as a share of the water
   render.js         canvas drawing
   rendershot.js     a canvas that records instead of painting, so drawing is testable
   mullerplot.js     the "Tree of Life" stacked-area chart

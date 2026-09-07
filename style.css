@@ -566,6 +566,16 @@ body.simple [data-expert] {
      which is the canvas's width in both regimes, so `right: 12px` now means
      what it says and the ruler no longer needs main.js to place it by hand. */
   width: fit-content;
+  /* The chips' scale (v1.160). `src/instruments.js` works out how much of the
+     water a mark may cost and `main.js` writes the answer here, on the one
+     element every mark on the pond descends from. The resting `1` is the whole
+     desktop story: on a pond at or near its 900 px width every mark is already
+     inside its budget, so a `1` is not a degraded mode — it is what the
+     arithmetic returns there, and it is what this page looked like before any
+     of this existed. If main.js never runs, the marks are the size they always
+     were. The minimap is not here: a canvas carries its size as an attribute,
+     so main.js sets that one directly. */
+  --mark-chip: 1;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -2149,37 +2159,43 @@ details .field {
 }
 
 /* ---- Season badge ---- */
+/* Everything inside the three chips on the water is stated in `em` (v1.160), so
+   the one declaration that carries `--mark-chip` — the font size — carries the
+   padding, the gaps, the radius and the icon with it. The alternative is a
+   `calc()` per property and five chances to forget one. The ratios are the old
+   pixel values over the old 12.5 px base, so a chip at scale 1 is the chip this
+   page has always drawn, to the pixel. */
 .season-badge {
   position: absolute;
   top: 12px;
   left: 12px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 0.56em;
   background: rgba(8, 14, 22, 0.72);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 5px 12px 5px 10px;
-  border-radius: 20px;
-  font-size: 12.5px;
+  padding: 0.4em 0.96em 0.4em 0.8em;
+  border-radius: 1.6em;
+  font-size: calc(12.5px * var(--mark-chip, 1));
   pointer-events: none;
   backdrop-filter: blur(3px);
 }
 .season-badge .icon {
-  font-size: 15px;
+  font-size: 1.2em;
 }
 .season-badge .tod {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding-left: 9px;
-  margin-left: 2px;
+  gap: 0.4em;
+  padding-left: 0.72em;
+  margin-left: 0.16em;
   border-left: 1px solid var(--line);
 }
 .season-badge .yr {
   color: var(--ink-faint);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 0.88em;
 }
 
 /* ---- Zoom / follow badge ----
@@ -2191,13 +2207,13 @@ details .field {
   right: 12px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 0.56em;
   background: rgba(8, 14, 22, 0.72);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 5px 12px 5px 10px;
-  border-radius: 20px;
-  font-size: 12.5px;
+  padding: 0.4em 0.96em 0.4em 0.8em;
+  border-radius: 1.6em;
+  font-size: calc(12.5px * var(--mark-chip, 1));
   font-family: var(--mono);
   pointer-events: none;
   backdrop-filter: blur(3px);
@@ -2206,7 +2222,7 @@ details .field {
   display: none;
 }
 .zoom-badge .following {
-  padding-left: 9px;
+  padding-left: 0.72em;
   border-left: 1px solid var(--line);
   color: var(--ink-faint);
 }
@@ -2247,13 +2263,13 @@ details .field {
   bottom: 12px;
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 0.667em;
   background: rgba(8, 14, 22, 0.72);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 6px 10px 5px;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 0.5em 0.833em 0.417em;
+  border-radius: 0.667em;
+  font-size: calc(12px * var(--mark-chip, 1));
   font-family: var(--mono);
   pointer-events: none;
   backdrop-filter: blur(3px);
@@ -2266,7 +2282,7 @@ details .field {
    as it is actually being displayed. */
 .scale-bar .rule {
   display: block;
-  height: 6px;
+  height: 0.5em;
   border: 1px solid var(--ink);
   border-top: none;
   border-radius: 0 0 1px 1px;
@@ -2285,9 +2301,15 @@ details .field {
   background: rgba(10, 20, 30, 0.9);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
+  padding: 0.615em 1.23em;
+  border-radius: 1.54em;
+  /* The one mark on the water whose *box* this cannot fix, only its type
+     (v1.160). A toast is N characters and N characters need an area: on a
+     344 × 237 pond three sentences are a fifth of the water however they are
+     set. The type scales with every other chip, which takes about a quarter of
+     the area off, and the rest is written down in `src/instruments.js` as the
+     thing this release measured and did not fix. */
+  font-size: calc(13px * var(--mark-chip, 1));
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s, transform 0.25s;
@@ -2311,13 +2333,25 @@ details .field {
    faded to nothing is still under a finger, and this one is removed from the
    markup when it goes, so the rule is a belt to that brace. */
 .flash .flash-go {
-  margin-left: 10px;
-  padding: 4px 10px;
+  /* Against this button's own 12.5 px, not the toast's 13: an `em` on a margin
+     or a padding resolves against the element's own font size, so these are
+     10 px and 4 px exactly, as they have been. */
+  margin-left: 0.8em;
+  padding: 0.32em 0.8em;
+  /* Not scaled, and that is the point: this is the one thing inside a mark on
+     the water a finger has to hit, and 24 px is `TARGET_MIN` — the floor
+     `targetsize.js` holds this whole page to. A budget may shrink type. It may
+     not shrink a target. */
   min-height: 24px;
   border-color: var(--accent-2);
   background: none;
   color: var(--accent-2);
-  font-size: 12.5px;
+  /* Its own declaration rather than an `em` of the toast around it: 12.5 px is
+     the size `legibility.js` has this button's contrast recorded at, and
+     0.96em of 13 px is 12.48 — a drift of a fiftieth of a pixel that nobody
+     would see and that would put the stylesheet and the inventory out of step
+     for no reason. */
+  font-size: calc(12.5px * var(--mark-chip, 1));
 }
 .flash.show .flash-go {
   pointer-events: auto;

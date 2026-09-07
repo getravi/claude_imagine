@@ -4,6 +4,129 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.160.0] — 2026-09-07
+
+Press the button the page tells you to press, on a phone, and half the pond
+disappears.
+
+Not behind a menu, not behind a modal — behind the pond's own instruments. The
+minimap, the season badge, the zoom badge and the ruler are all sized in page
+pixels, and the pond is the one thing on this page that shrinks.
+
+### What a browser says
+
+Headless Chromium, the default pond, six viewports. The tour is dismissed, then
+`👋 Meet somebody` is pressed — the first control this page's own guide points a
+first-time visitor at, and the one that switches on the minimap, the zoom badge
+and the ruler all at once. Share of the water covered, counted as a union so an
+overlap is never counted twice:
+
+| viewport | the water, as drawn | at rest | after `👋 Meet somebody` |
+| --- | --- | --- | --- |
+| 390 × 844 | 344 × 237 | 28.6% → **20.9%** | 47.8% → **28.7%** |
+| 414 × 896 | 368 × 254 | 26.5% → **19.2%** | 43.7% → **26.6%** |
+| 768 × 1024 | 722 × 497 | 7.8% → 7.8% | 15.3% → 15.3% |
+| 1280 × 800 | 894 × 616 | 5.2% → 5.2% | 10.3% → 10.3% |
+| 1440 × 900 | 900 × 620 | 5.2% → 5.2% | 10.0% → 10.0% |
+| 1920 × 1080 | 900 × 620 | 5.2% → 5.2% | 10.0% → 10.0% |
+
+**The same press cost 10% of the pond on a desktop and 48% on a phone.** The
+worst single mark was the minimap — 180 × 124 of fixed furniture on a 344 × 237
+pond, **27.4% of the water on its own**, against 4.0% of the identical map on a
+desktop. It is now 96 × 66 and **7.8%**.
+
+Every viewport from a tablet up is unchanged to the pixel, and that is not a
+coincidence — see the rule.
+
+### It was written down four years of releases ago
+
+v1.82 built the ruler and, in `src/scalebar.js`, stated the rule this release is
+about:
+
+> **It is measured in the picture, not in the page.** The canvas is
+> `max-width: 100%`, so on a phone the pond is drawn 900 px wide into a box
+> 346 px across, and *every stated distance on this page is wrong there*.
+
+It then applied it to one line: the ruler's bar, which is scaled by the same
+factor as the pond it measures. The ruler's own **chip** was not. Nor the
+minimap, nor either badge, nor the toast's type. A rule can be correct, written
+down, and quietly scoped to the one thing that provoked it.
+
+### The rule now
+
+**A mark on the water may cost a share of the water, and may never shrink below
+the size at which it stops doing its job.**
+
+```
+scale = clamp( sqrt(budget × waterArea / markArea), floor, 1 )
+```
+
+- **A budget, not a breakpoint.** There is no width in `src/instruments.js` and
+  no media query in the stylesheet it feeds. This is v1.159's lesson one surface
+  over: a rule stated as a device is a rule about one page; stated as a cost it
+  is a rule about any page. A tablet at 722 px is left alone not because it is a
+  tablet but because its minimap already costs 6.2% against a 7% budget.
+- **The square root is the point.** Area is what a reader loses, and area goes
+  as the square of a scale. Scaling by the pond's *width* — the obvious move,
+  and the first one I wrote — gives a 344 px pond a season badge set in 4.8 px
+  type.
+- **`1` is a ceiling, never a target.** A pond that grows does not grow its
+  furniture.
+- **The floors are the interesting half.** The minimap floors on *being a map*
+  at 96 px across, not on being pressable — its shortest side is then 66 px
+  against a 24 px `TARGET_MIN`,
+  which the tests assert rather than assume. The chips floor on type, at 11 px.
+  And the toast's button keeps an unscaled `min-height: 24px`: **a budget may
+  shrink type; it may not shrink a target.**
+
+### Measured, named, not fixed
+
+The toast is now the largest mark left on a phone — 16.5% of the water at rest.
+Its type scales with everything else, which took roughly a third of its height
+off, and the rest is arithmetic no scale beats: a toast is *N* characters, *N*
+characters need an area, and three sentences on an 81,528 px² pond are a fifth
+of it however they are set. The honest fix is to stop putting them on the water,
+which is a layout change rather than a size one.
+
+### Added
+
+- `src/instruments.js` — the budgets, the floors, the sweep above, and one
+  clamped square root. Pure arithmetic: no DOM, no world state, no random
+  numbers.
+- `test/instruments.test.js` — twelve tests, of which the four that matter are
+  about the ways a budget fails invisibly: by moving a desktop that was already
+  inside it, by shrinking a mark past legibility, by shrinking a *target*, and
+  by writing a custom property the stylesheet does not read. The last one reads
+  `style.css`, because in a project with no build step a renamed custom property
+  is not an error anywhere — the declaration simply falls back and the page
+  looks like the one before the release.
+
+### Changed
+
+- `style.css` — the three chips on the water and the toast state their padding,
+  gaps, radii and icons in `em`, so one `font-size` carries the scale and there
+  is no `calc()` per property to forget. The ratios are the old pixel values
+  over the old bases, so a chip at scale 1 is the chip this page has drawn since
+  always drawn, to the pixel.
+- `src/main.js` — `refitInstruments()` measures the water each frame and writes
+  the property only when the answer changes, for `updateScaleBar`'s reason: the
+  input moves when the *window* does, and there is no camera event to hang that
+  on. `updateMinimap` now builds its canvas at the allowed width and rebuilds it
+  when that width moves. `minimapLayout` has taken an optional width for as long
+  as it has existed, and this is the first caller ever to pass one — including
+  the terrain-rectangle cache inside `minimap.js`, which has been keyed on
+  `layout.width` all along against a day that had not arrived.
+- `src/viewstate.js` — the two memos this adds (`markSig`, `miniSig`) are
+  classified page-scoped, with reasons. Not a formality: v1.148's sweep over
+  every top-level binding in `main.js` failed the build until they were, which
+  is the sweep doing exactly the job it was built for. It also turned up a stale
+  reason next door — `miniCtx` was excused as "sized once against the page's
+  pixel ratio", and after this release it is not sized once.
+
+Determinism untouched: nothing here is reachable from the simulation. It is a
+decision about how big something is drawn on a page, and it cannot move a pond
+by a single bit — the fingerprints are the ones v1.3.0 recorded.
+
 ## [1.159.0] — 2026-09-07
 
 "This is the pond," said the card, standing on the pond.

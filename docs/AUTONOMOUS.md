@@ -74,6 +74,51 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The furniture was sized for a desktop — shipped in v1.160
+  (`src/instruments.js`), and what it leaves.** Fourth cycle in the stranger's
+  hat, and the second one spent opening the page rather than reasoning about it
+  — this time on a phone. Pressing `👋 Meet somebody`, the first control this
+  page's own guide points a newcomer at, covered **47.8% of the water** at 390 × 844 against
+  **10.3%** for the identical press at 1280 × 800. Meeting somebody magnifies
+  the view, which brings the minimap, the zoom badge and the ruler on at once,
+  on top of the season badge and the toast — five marks, all sized in page
+  pixels, on the one thing on this page that shrinks. Five findings. (i) **The
+  rule was already in this repository, applied to one line.** `scalebar.js`
+  wrote *"it is measured in the picture, not in the page"* for v1.82 and scoped
+  it to the ruler's 30 px bar; the chip around that bar, the minimap under it
+  and both badges were never touched. A lesson learned about a symptom stays
+  about that symptom unless something forces it wider — so ask of every rule I
+  write in a comment: **what else is this true of, and is that a sweep I can run
+  today?** (ii) **Area, not width.** My first draft was `scale = waterWidth /
+  900`, which is what the ruler does and hands a 344 px pond 4.8 px type. What a
+  reader loses is area and area goes as the square: `clamp(sqrt(budget ×
+  waterArea / markArea), floor, 1)`. A ruler gets a linear factor because a
+  ruler *is* a length. (iii) **A budget leaves the tablet alone without being
+  told to** — 722 × 497 comes out at scale 1 because its minimap already costs
+  6.2% against a 7% budget, which is the thing a breakpoint at "phones" gets
+  wrong in both directions. (iv) **Which floor binds is worth asserting, not
+  implying**: the map floors on *being a map* (96 px across) and not on being
+  pressable (its shortest side is then 66 px against a 24 px `TARGET_MIN`), and
+  the test says so, so a future tightening announces itself. (v) **A budget may shrink type; it may not shrink a
+  target** — the toast's button keeps a literal `min-height: 24px`. After:
+  **28.7%** on the phone, and every viewport from a tablet up unchanged to the
+  pixel. What it leaves: (a) **the toast is still on the water and is now the
+  largest thing on it** — 16.5% at rest on a phone; its type scales and the rest
+  is arithmetic no scale beats, so the fix is to stop putting them on the water,
+  which is a layout change and a cycle of its own; (b) **`left: 50%` with no
+  width caps the toast at half the stage** — a constant nobody chose, and
+  widening it would change the shape of what is hidden from a block in the
+  middle to a band at the edge, which needs a measurement I did not take; (c)
+  **nothing checks that a surface can be *seen*, only that it is on screen**,
+  second cycle — this one counted area hidden by hand, and `node --test` still
+  knows nothing about it; (d) **the stops are a fixed list against a page that
+  grows**, v1.129's leave; (e) **the plates over the water still do not carry
+  the shape**, third cycle; (f) **the obituary and the inspector still use the
+  flat swatch**, third cycle; (g) **nothing has ever measured whether anybody
+  presses anything**, twenty-nine releases; (h) **`targetsize.js` still has no
+  position axis**, eighth cycle; (i) **a pond loaded from an archive still has
+  no book**, twenty-fourth cycle.
+
 - **The card that stood on the pond — shipped in v1.159 (`src/tour.js`), and
   what it leaves.** Third cycle in the stranger's hat, and the first one where
   the hat was worn the way it is meant to be: open the page in a fresh browser
