@@ -47,6 +47,11 @@
 //      button that does it. Only the last stop may: running one ends the tour,
 //      which is right at the end of a story and is a stop cut short anywhere
 //      else. `test/tour.test.js` holds that.
+//   5. **It does not stand in front of what it is pointing at** (v1.159). The
+//      first stop rings the pond and says *every arrowhead is one animal*, and
+//      on every desktop window measured the card was sitting on the arrowheads.
+//      See `cardPlacement`: when a target is too tall to flank, the card is
+//      placed where it hides the least of it rather than under it by default.
 //
 // Determinism: this module holds text, an ordering and two integers of
 // arithmetic. It never touches the world, never reads the config, and draws no
@@ -246,8 +251,8 @@ export function markTourSeen(storage) {
  * therefore the one piece a test can hold.
  *
  * All four numbers are page pixels in the viewport's own frame (the overlay is
- * fixed, so there is no scroll offset to carry). Two rules, and the second is
- * the one that matters on a phone:
+ * fixed, so there is no scroll offset to carry). Three rules, and the third one
+ * was bought with a browser walk (v1.159):
  *
  *   **Below unless there is no below.** The card goes where the stop asked for
  *   it, and flips only when the side it asked for cannot hold it. A card that
@@ -257,21 +262,79 @@ export function markTourSeen(storage) {
  *   and then clamped to the margins, so a ring at the very edge of a narrow
  *   screen — the scenario chips, on a 320 px phone — still gets a fully visible
  *   card. v1.115's rule: the axis a thumb misses in is the one nobody measured.
+ *
+ *   **A card that cannot get out of the way covers as little as it can.** Some
+ *   targets are taller than the room around them, and the pond is the worst of
+ *   them: at 1280 × 900 the ring around the water is 627 px tall with 135 above
+ *   it and 138 below, and a 223 px card fits in neither. v1.129 shipped that
+ *   case as *sit under the ring anyway and let the clamp pull it back*, which
+ *   put the opening sentence of the guide — **"This is the pond. Every
+ *   arrowhead is one animal"** — squarely on top of the arrowheads, on **six of
+ *   six desktop windows measured** (1280 × 800 through 1920 × 1080). So when
+ *   neither side fits, this now costs out four clamped placements — right of
+ *   the ring, left of it, and the two vertical ones — and takes the one that
+ *   covers the least of it. The water is 906 px wide inside a 1280 px window,
+ *   which leaves 357 px of margin on the right: not enough for the 14 px gap,
+ *   and plenty for the card itself. A 7 px gap and no overlap beats a 14 px gap
+ *   and a third of the pond.
+ *
+ *   The rule is deliberately a *measurement* rather than a preference for
+ *   beside-ness. On a 390 px phone the third stop rings a placard 438 px tall
+ *   and 324 px wide, and there is no beside: a card pushed to either flank
+ *   would cover 70,691 px² of it, against 9,720 px² for the vertical placement
+ *   it already had. Costing them out picks the phone's answer and the desktop's
+ *   answer with the same three lines of arithmetic, which is why there is no
+ *   width in this function and no breakpoint anywhere near it.
  */
 export function cardPlacement(ring, view, card, prefer = "below", gap = 14, margin = 10) {
+  const clampLeft = (x) => Math.min(Math.max(margin, x), Math.max(margin, view.width - card.width - margin));
+  const clampTop = (y) => Math.min(Math.max(margin, y), Math.max(margin, view.height - card.height - margin));
+
   const below = ring.top + ring.height + gap;
   const above = ring.top - gap - card.height;
   const fitsBelow = below + card.height <= view.height - margin;
   const fitsAbove = above >= margin;
+  const centred = clampLeft(ring.left + ring.width / 2 - card.width / 2);
+
   let side = prefer === "above" ? "above" : "below";
   if (side === "below" && !fitsBelow && fitsAbove) side = "above";
   else if (side === "above" && !fitsAbove && fitsBelow) side = "below";
-  // Neither side fits: sit under the ring anyway and let the clamp below pull
-  // the card back into the window. Something readable and slightly overlapping
-  // beats something correct and off-screen.
-  const rawTop = side === "above" ? above : below;
-  const top = Math.min(Math.max(margin, rawTop), Math.max(margin, view.height - card.height - margin));
-  const centred = ring.left + ring.width / 2 - card.width / 2;
-  const left = Math.min(Math.max(margin, centred), Math.max(margin, view.width - card.width - margin));
-  return { left, top, side };
+  if (fitsBelow || fitsAbove) {
+    return { left: centred, top: clampTop(side === "above" ? above : below), side };
+  }
+
+  // Neither side fits. Every candidate here is clamped, so all four are fully
+  // inside the window and that question is settled — the only thing left to
+  // choose on is how much of the ring each one hides. The two flanks come first
+  // so a tie at zero goes to a card beside the thing rather than on it, and the
+  // stop's own preference orders the two vertical fallbacks behind them, so a
+  // tie there still lands where the stop asked.
+  const other = side === "above" ? "below" : "above";
+  const middle = clampTop(ring.top + ring.height / 2 - card.height / 2);
+  const candidates = [
+    { side: "right", left: clampLeft(ring.left + ring.width + gap), top: middle },
+    { side: "left", left: clampLeft(ring.left - gap - card.width), top: middle },
+    { side, left: centred, top: clampTop(side === "above" ? above : below) },
+    { side: other, left: centred, top: clampTop(other === "above" ? above : below) },
+  ];
+  let best = candidates[0];
+  let least = Infinity;
+  for (const at of candidates) {
+    const cost = overlapArea(ring, { ...at, width: card.width, height: card.height });
+    if (cost < least) {
+      least = cost;
+      best = at;
+    }
+  }
+  return best;
+}
+
+/**
+ * How many square pixels of `ring` the placed `card` hides. Zero when they miss
+ * each other on either axis, which is the answer `cardPlacement` is hunting for.
+ */
+function overlapArea(ring, card) {
+  const w = Math.min(ring.left + ring.width, card.left + card.width) - Math.max(ring.left, card.left);
+  const h = Math.min(ring.top + ring.height, card.top + card.height) - Math.max(ring.top, card.top);
+  return w > 0 && h > 0 ? w * h : 0;
 }

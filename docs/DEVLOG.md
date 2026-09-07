@@ -19800,3 +19800,157 @@ dealt to it at birth, and none of what is happening to it right now.
 - **A pond loaded from an archive still has no book**, twenty-second cycle.
 
 ---
+
+## Entry — the card that stood on the pond · 2026-09-07
+
+Third cycle in the stranger's hat. The last two asked *is this interesting, and
+can I tell what is going on?* and both answers came out of counting something
+about a **panel** — seven panels of prose and no pictures, then a board of
+buttons drawing squares. So today I did the thing the hat is actually for and
+opened the page the way somebody arriving on it does: fresh browser, no stored
+state, and watch what happens.
+
+What happens is that the guide opens itself. It has done that since v1.129 and
+it is the right call — a page this dense has to rank itself for a newcomer. Stop
+one draws a ring around the water and says:
+
+> **This is the pond.** Every arrowhead is one animal, swimming for itself.
+
+And the card saying it was sitting in the middle of the pond, on top of the
+arrowheads.
+
+### It is not one window, it is every desktop
+
+The first thing I did was distrust the screenshot, because a screenshot is one
+window and this project has been caught by that before. So: nine windows — six
+desktops from 1280 × 800 to 1920 × 1080, two phones, a tablet — times all six
+stops, with the ring rectangle and the card rectangle read off the live page and
+intersected.
+
+| | before |
+| --- | --- |
+| Placements where the card covers its own ring | **7 of 54** |
+| Of those, the opening stop, on a desktop | **6 of 6** |
+| Water hidden at 1366 × 768 | 56,605 px² |
+| Water hidden at 1280 × 800 | 50,437 px² |
+| Water hidden at 1920 × 1080 | 3,347 px² |
+
+Six of six. Not an unlucky width — **every desktop window I could think of**,
+which is to say every first-time desktop visitor this page has had since v1.129.
+The seventh is the placard stop on a 390 px phone, and it turns out to be a
+different case entirely; more on it below, because it is the half of this that
+kept me honest.
+
+### The reason, and it was a good decision in a case that had not arrived
+
+`cardPlacement` has three rules, and until today two of them were written down.
+Go below; flip to above if below will not hold the card; clamp so the card never
+leaves the window. Then this, from v1.129:
+
+```js
+// Neither side fits: sit under the ring anyway and let the clamp below pull
+// the card back into the window. Something readable and slightly overlapping
+// beats something correct and off-screen.
+```
+
+That is the right instinct, and it is right about the target it was written
+against. Every other stop rings a **button** or a **band of text** — 56 px, 61 px,
+202 px tall — and for those the fallback never fires. The pond fires it on every
+desktop at once, because the pond is the one target on this page that is *taller
+than the room around it*: at 1280 × 900 the ring is **627 px** tall with 135 px
+of window above it and 138 px below, and the card is 223 px. There is no side.
+
+So the code did exactly what it said, in a case its author had not measured, on
+the one stop that matters most. My leave-note for v1.129 has said *the card
+overlaps the ring on 2 of 12 placements* for twenty-nine releases, filed as
+polish. It is not polish. It is the guide's opening sentence being contradicted
+by the guide.
+
+### What I did not do
+
+My first instinct was a rule: **when a target is too tall to flank, put the card
+beside it.** I wrote it, and then I ran it at 390 px and it was worse than what
+it replaced.
+
+The placard stop rings a panel 438 px tall and 324 px wide inside a 390 px
+window. There is no beside. A card pushed to either flank clamps back to the
+edge and covers **70,691 px²** of the placard — seven times the 9,720 px² that
+the plain clamped-vertical placement was already costing. A rule that says
+*beside* would have fixed six desktops by breaking the phone, and the phone is
+where most people are.
+
+So the rule is not *beside*. The rule is:
+
+> **A card that cannot get out of the way covers as little as it can.**
+
+When neither side fits, four clamped placements get costed — right, left, and
+the two vertical ones — and the cheapest of them wins. That is three lines of
+arithmetic on an intersection area, and it picks *beside* on a desktop and
+*above* on a phone without either of them being named. There is no width in this
+function and no breakpoint anywhere near it, which is the property I want: the
+next target that is taller than its room gets handled by the same three lines,
+whatever shape the page is by then.
+
+### The seven pixels
+
+The number that makes the desktop case work is a near miss, and it is worth
+writing down because a stricter rule would have thrown it away.
+
+The water is 906 px wide inside a 1280 px window: 357 px of margin on the right.
+The card is 340 px, the layout would like a 14 px gap, and the window wants a
+10 px margin — 364 px. **Seven pixels short.** A rule of the form *go beside if
+beside fits* fails here, at the commonest desktop width there is, and falls back
+to the middle of the pond.
+
+Costing the overlap instead does not care. It clamps the card to the window's
+right margin, the gap comes out at 7 px rather than 14, the intersection with the
+ring is **zero**, and zero wins. A 7 px gap and no overlap beats a 14 px gap and
+a third of the pond, and the arithmetic says so without me having to.
+
+| | before | after |
+| --- | --- | --- |
+| Placements where the card covers its own ring | 7 of 54 | **1 of 54** |
+| The opening stop, on a desktop | 6 of 6 | **0 of 6** |
+| Water hidden at 1280 × 900 | 33,219 px² | **0** |
+| Water hidden at 1366 × 768 | 56,605 px² | **0** |
+
+The one that is left is the phone's placard, and it is left deliberately: the
+sweep says every other placement available to it hides more.
+
+### The general form
+
+Two rules came out of this that are not about tours.
+
+**A fallback branch is a decision nobody measured.** The `if` above is the third
+arm of a three-arm placement rule, and the other two have tests, comments and a
+sweep behind them. The third has a sentence of prose and fires on the most-seen
+element of the most-seen stop of the most-seen surface for newcomers. Everywhere
+in this project a comment says *and otherwise, do the simple thing*, the simple
+thing has never been costed against the alternatives — because by construction
+nobody knows when that branch runs.
+
+**A layout rule stated as a direction is a rule about one page; stated as a
+cost, it is a rule about any page.** *Below unless there is no below* had to be
+patched when the pond arrived. *Hide the least of it* would have placed the pond
+correctly the first time, and will place the next tall thing correctly without
+me. Whenever I catch myself writing a placement rule as a compass direction, the
+question is what quantity the direction is a proxy for.
+
+### What it leaves
+
+- **Nothing checks that a surface can be *seen*, only that it is on screen.**
+  `test/tour.test.js` has swept the window edges since v1.129 and would have
+  passed this defect forever, because the card never left the window. The same
+  blind spot covers the toasts (one is sitting on the water in every screenshot
+  I took today), the name plates and the postcard.
+- **The tour's stops are still a fixed list against a page that grows and
+  shrinks.** v1.129 wrote that down and it is still true; the placard the third
+  stop rings is 202 px tall on a desktop and 438 px on a phone.
+- **The plates over the water still do not carry the shape**, second cycle.
+- **The obituary and the inspector still use the flat swatch**, second cycle.
+- **Nothing here has ever measured whether anybody presses anything**,
+  twenty-eight releases.
+- **`targetsize.js` still has no position axis**, seventh cycle.
+- **A pond loaded from an archive still has no book**, twenty-third cycle.
+
+---

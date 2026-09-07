@@ -27,6 +27,11 @@
 //   5. **It offers a button that does nothing** (v1.143). The last stop carries
 //      an act *name*; `main.js` carries the handler. Two halves in two files is
 //      one more way for a guide to lie, so both directions are checked below.
+//   6. **It stands in front of what it is pointing at** (v1.159). Staying on
+//      screen is not enough: a card that is fully visible and sitting on the
+//      pond has hidden the one thing the stop exists to show. The sweep below
+//      is the same corners-and-windows sweep as (3), asking the other question —
+//      *is there a placement that hides less of this ring than the one chosen?*
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -262,6 +267,98 @@ test("the card flips to the side that has room, and only then", () => {
   // A ring against the top: above does not fit, below does.
   const high = cardPlacement({ left: 400, top: 10, width: 200, height: 60 }, win, card, "above");
   assert.equal(high.side, "below");
+});
+
+test("a target too tall to flank gets the card beside it, not on it", () => {
+  // The pond as a browser reports it at 1280 × 900: the ring is 627 px tall with
+  // 135 px of window above it and 138 px below, and the card is 223 px. Neither
+  // side fits, and until v1.159 that meant the opening stop of the guide sat on
+  // the water it was describing.
+  const win = { width: 1280, height: 900 };
+  const card = { width: 340, height: 223 };
+  const ring = { left: 17, top: 135, width: 906, height: 627 };
+  const at = cardPlacement(ring, win, card, "below");
+  assert.equal(at.side, "right");
+  assert.equal(hidden(ring, at, card), 0);
+  // Beside means beside: clear of the ring's right edge, inside the window.
+  assert.ok(at.left >= ring.left + ring.width, "the card starts left of the water");
+  assert.ok(at.left + card.width <= win.width - 10, "the card runs off the right edge");
+});
+
+test("beside is a measurement, not a preference — a phone keeps its vertical card", () => {
+  // The same branch, on the placard stop at 390 × 844: the ring is 438 px tall
+  // and 324 px wide, so a card on either flank would cover seven times more of
+  // it than the clamped vertical placement the stop already had.
+  const win = { width: 390, height: 844 };
+  const card = { width: 340, height: 223 };
+  const ring = { left: 33, top: 203, width: 324, height: 438 };
+  const at = cardPlacement(ring, win, card, "above");
+  assert.ok(at.side === "above" || at.side === "below", `expected a vertical card, got ${at.side}`);
+  const flank = { left: 40, top: 311 };
+  assert.ok(
+    hidden(ring, at, card) < hidden(ring, flank, card),
+    "a flanked card would have hidden less of the placard",
+  );
+});
+
+/** Square pixels of `ring` hidden by a card of `size` placed at `at`. */
+function hidden(ring, at, size) {
+  const w = Math.min(ring.left + ring.width, at.left + size.width) - Math.max(ring.left, at.left);
+  const h = Math.min(ring.top + ring.height, at.top + size.height) - Math.max(ring.top, at.top);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+test("no placement hides more of the ring than another one available to it", () => {
+  // The sweep of (6): every window, every corner, both preferences — and for each
+  // one, the four placements this function chooses between. The chosen one has to
+  // be the cheapest of them. A regression here is a card that has drifted back on
+  // top of its subject while every other test still passes.
+  const wins = [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 834, height: 1112 },
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+  ];
+  const gap = 14;
+  const margin = 10;
+  for (const win of wins) {
+    const card = { width: Math.min(340, win.width - 20), height: 210 };
+    const clampL = (x) => Math.min(Math.max(margin, x), Math.max(margin, win.width - card.width - margin));
+    const clampT = (y) => Math.min(Math.max(margin, y), Math.max(margin, win.height - card.height - margin));
+    // Rings from a button to a whole pond, so the sweep covers both branches.
+    for (const [width, height] of [
+      [120, 80],
+      [win.width - 40, win.height * 0.75],
+      [win.width * 0.7, win.height - 120],
+    ]) {
+      for (const left of [0, (win.width - width) / 2, win.width - width]) {
+        for (const top of [0, (win.height - height) / 2, win.height - height]) {
+          for (const prefer of ["above", "below"]) {
+            const ring = { left, top, width, height };
+            const at = cardPlacement(ring, win, card, prefer, gap, margin);
+            const cost = hidden(ring, at, card);
+            const others = [
+              { left: clampL(ring.left + ring.width + gap), top: clampT(ring.top + ring.height / 2 - card.height / 2) },
+              { left: clampL(ring.left - gap - card.width), top: clampT(ring.top + ring.height / 2 - card.height / 2) },
+              { left: clampL(ring.left + ring.width / 2 - card.width / 2), top: clampT(ring.top + ring.height + gap) },
+              {
+                left: clampL(ring.left + ring.width / 2 - card.width / 2),
+                top: clampT(ring.top - gap - card.height),
+              },
+            ];
+            for (const other of others) {
+              assert.ok(
+                cost <= hidden(ring, other, card) + 0.001,
+                `${win.width}×${win.height} ring ${width}×${height} @${left},${top} (${prefer}): ` +
+                  `chose ${at.side} hiding ${Math.round(cost)}, a placement hiding ${Math.round(hidden(ring, other, card))} was available`,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
 });
 
 test("the card never leaves the window, at any size or corner", () => {

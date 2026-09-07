@@ -4,6 +4,75 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.159.0] — 2026-09-07
+
+"This is the pond," said the card, standing on the pond.
+
+The guide opens itself the first time anybody arrives. Its first stop draws a
+ring around the water and says **"This is the pond. Every arrowhead is one
+animal, swimming for itself."** On every desktop window I measured, the card
+saying that sentence was sitting on the arrowheads.
+
+### What a browser says
+
+Nine windows — six desktops, two phones, a tablet — times the six stops. 54
+placements, and the ring and the card measured against each other on every one
+of them.
+
+| | before | after |
+| --- | --- | --- |
+| Placements where the card covers its own ring | **7 of 54** | **1 of 54** |
+| Of those, the opening stop on a desktop | **6 of 6** | **0 of 6** |
+| Water hidden at 1280 × 900 | 33,219 px² | **0** |
+| Water hidden at 1366 × 768 | 56,605 px² | **0** |
+
+The one placement left is the placard stop on a 390 px phone, and it stays
+because it is the cheapest thing available there — see below.
+
+### Why it happened, and it was not a bug
+
+`cardPlacement` has always tried below, flipped to above when below would not
+fit, and clamped the result into the window. The pond defeats both branches at
+once: at 1280 × 900 the ring around the water is **627 px tall**, leaving 135 px
+of window above it and 138 px below, and the card is 223 px. v1.129 shipped that
+case as *sit under the ring anyway and let the clamp pull it back*, on the
+reasoning that something readable and slightly overlapping beats something
+correct and off-screen. That is the right instinct for a button. For a target
+that fills the screen it puts the card in the middle of the subject, and it did
+it on the one stop every first-time visitor sees.
+
+### The rule now
+
+**A card that cannot get out of the way covers as little as it can.** When
+neither side fits, four clamped placements are costed — right of the ring, left
+of it, and the two vertical ones — and the cheapest wins. No breakpoint, no
+width, no preference for beside-ness: it is three lines of arithmetic on the
+overlapping area, and it picks the desktop's answer and the phone's answer with
+the same three lines.
+
+- The water is 906 px wide inside a 1280 px window, which leaves 357 px on the
+  right — not enough for the 14 px gap the layout would like, and plenty for the
+  340 px card. **A 7 px gap and no overlap beats a 14 px gap and a third of the
+  pond**, so the card steps out beside the water and the whole pond is visible
+  while the guide describes it.
+- On a 390 px phone the third stop rings a placard 438 px tall and 324 px wide,
+  and there is no beside: a card pushed to either flank would hide **70,691 px²**
+  of it against **9,720 px²** for the vertical placement it already had. The
+  arithmetic keeps the phone exactly where it was.
+
+### Changed
+
+- `src/tour.js` — `cardPlacement` costs four placements when a target is too
+  tall to flank and returns the one that hides the least of it; `side` may now
+  be `"left"` or `"right"`. Everything about a target that *does* fit above or
+  below is untouched, so five of the six stops place exactly as before.
+- `test/tour.test.js` — the pond at 1280 × 900 and the placard at 390 × 844 as
+  named cases, plus a sweep over five windows, three ring sizes and every corner
+  asserting that no cheaper placement was available than the one chosen.
+
+Determinism untouched: this module holds text, an ordering and some arithmetic,
+imports nothing from the world and draws no random number.
+
 ## [1.158.0] — 2026-09-06
 
 Three names, and now three faces.

@@ -74,6 +74,44 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The card that stood on the pond — shipped in v1.159 (`src/tour.js`), and
+  what it leaves.** Third cycle in the stranger's hat, and the first one where
+  the hat was worn the way it is meant to be: open the page in a fresh browser
+  and watch what a visitor gets. What they get is the guide opening itself, and
+  its first card — *"This is the pond. Every arrowhead is one animal"* — sitting
+  on the arrowheads. Nine windows × six stops = 54 placements measured: the card
+  covered its own ring on **7**, and **6 of those were the opening stop on 6 of 6
+  desktop windows** (1280 × 800 through 1920 × 1080). Four findings. (i) **A
+  fallback branch is a decision nobody measured.** `cardPlacement`'s third arm —
+  *neither side fits, sit under the ring anyway* — had a sentence of prose where
+  the other two had tests and a sweep, and it fires on the most-seen element of
+  the most-seen stop of the surface built for newcomers. Every *and otherwise, do
+  the simple thing* in this project is the same shape: by construction nobody
+  knows when it runs. (ii) **My first rule was right about six windows and wrong
+  about the phone.** *Too tall to flank → put it beside* covers **70,691 px²** of
+  the placard at 390 px against **9,720** for the vertical placement it replaced.
+  The shipped rule is a cost, not a direction: **a card that cannot get out of
+  the way covers as little as it can** — four clamped placements, cheapest wins,
+  no breakpoint and no width in the function. (iii) **The number that made it
+  work was a seven-pixel near miss**: 357 px of margin beside the water at 1280,
+  against 364 px for card + gap + margin. *Go beside if beside fits* fails at the
+  commonest desktop width there is; costing the overlap does not care, takes a
+  7 px gap, and gets zero. (iv) **A layout rule stated as a compass direction is
+  about one page; stated as a cost it is about any page.** After: **1 of 54**, and
+  the sweep says that one is the cheapest available. What it leaves: (a)
+  **nothing here checks that a surface can be *seen*, only that it is on
+  screen** — `test/tour.test.js` swept the window edges for twenty-nine releases
+  and would have passed this forever; the same blind spot covers the toasts (one
+  is on the water in every screenshot I took), the name plates and the postcard;
+  (b) **the stops are a fixed list against a page that grows** — v1.129's own
+  leave, still open, and the placard the third stop rings is 202 px on a desktop
+  and 438 px on a phone; (c) **the plates over the water still do not carry the
+  shape**, second cycle; (d) **the obituary and the inspector still use the flat
+  swatch**, second cycle; (e) **nothing has ever measured whether anybody presses
+  anything**, twenty-eight releases; (f) **`targetsize.js` still has no position
+  axis**, seventh cycle; (g) **a pond loaded from an archive still has no book**,
+  twenty-third cycle.
+
 - **The board that said "pick one" and gave you a dot — shipped in v1.158
   (`src/lineup.js`), and what it leaves.** Second cycle wearing a stranger's
   hat, and it went straight at the question v1.157 opened and did not answer:
@@ -2302,6 +2340,44 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A fallback branch is a decision nobody measured — go and find out when it
+  fires.** v1.159. `cardPlacement` had three arms: below, flipped-to-above, and
+  *neither fits, sit under the ring anyway and let the clamp pull it back*. The
+  first two had tests, comments and a sweep. The third had one sentence of prose
+  and it turned out to fire on **6 of 6 desktop windows**, on the opening stop of
+  the guide, over the pond — the most-seen element of the most-seen stop of the
+  one surface built for strangers. The trap is structural rather than careless:
+  a fallback is the branch whose trigger condition nobody enumerated, so nobody
+  knows its frequency is 100% on the case that matters. Wherever a comment in
+  this project says *and otherwise, do the simple thing*, the simple thing has
+  never been costed against the alternatives. Grep for those, and for each one
+  ask which real element on the page satisfies the condition.
+
+- **A layout rule written as a compass direction is a rule about one page.
+  Written as a cost, it is a rule about any page.** v1.159. *Below unless there
+  is no below* had to be patched the first time a target was taller than the room
+  around it, and my first patch — *too tall to flank, go beside* — was right
+  about six desktop windows and seven times **worse** than what it replaced on a
+  390 px phone (70,691 px² of the ring hidden against 9,720). What shipped is
+  **hide the least of it**: cost four clamped placements, take the cheapest. It
+  picks *beside* on a desktop and *above* on a phone without naming either, has
+  no width and no breakpoint in it, and it took a 7 px near miss to see why that
+  matters — the water leaves 357 px beside it at 1280 and card + gap + margin
+  wants 364, so *go beside if beside fits* fails at the commonest desktop width
+  there is while *hide the least* shrinks the gap to 7 px and gets zero overlap.
+  When I catch myself writing a placement rule as a direction, the question is
+  what quantity the direction was a proxy for.
+
+- **On screen is not the same as visible, and every test here checks the first
+  one.** v1.159. `test/tour.test.js` has swept four windows, every corner and
+  both preferences since v1.129 asking *is the card inside the window* — and
+  would have passed a card sitting in the middle of the pond forever. The
+  question a surface owes its subject is *how much of it am I hiding*, and it is
+  as cheap to compute as the edge check. Everything on this page that floats
+  over something else is unchecked in the same way: the toasts (one is on the
+  water in every screenshot I took this cycle), the name plates, the postcard,
+  the skip card.
 
 - **A portrait may wear a channel exactly as far as its subject really owns
   it.** Two figures here now draw the pond's own arrowhead and they take
