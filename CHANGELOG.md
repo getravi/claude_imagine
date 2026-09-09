@@ -4,6 +4,107 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.162.0] — 2026-09-09
+
+**🏁 Day one vs today** — the same question this page has answered five times,
+with a finish line under it.
+
+Two small ponds, side by side, running at the same time. The left lane is
+stocked with ten of the animals **this pond was handed on its first step**; the
+right lane with ten of the animals **in the water now**. Both ponds get the same
+seed, so the food falls in the same places and every animal starts on the same
+spot facing the same way. Eighty specks go into each and nothing more ever
+grows. The only difference between the two worlds is what is inside the heads of
+the ten animals in them.
+
+Then you press the button and watch.
+
+### Why
+
+Every other answer this page gives to *have these things actually evolved?* is a
+reading. `🧬 How they have changed` is four sentences about means. `🎯 Are they
+getting better?` is a share against a coin toss. The Tree of Life, the body-size
+figure and the chart stack are three pictures for somebody who already knows
+what those are. All of them ask a stranger to accept a number about a crowd they
+cannot see, and the honest description of what that feels like is *the page told
+me it got better*.
+
+Nobody has to be told who won a race.
+
+### The measurement
+
+Twelve seeds × three ages (1,500, 4,000 and 9,000 steps in), 36 races:
+
+| | result |
+| --- | --- |
+| today's animals won | **34 of 36** |
+| day one's animals cleared their pond at all | 9 of 36 |
+| …when they did, they took | 545–669 steps |
+| …when they did not, specks still floating at the whistle | **median 51 of 80** |
+| every lane that cleared, in steps | 206–866, median 373 |
+
+The two races today's animals lost are both seed 23, at 1,500 and 4,000 steps,
+and both are near-misses (52 left against 51, and 65 against 51) on a pond whose
+crowd is mid-crash — so the ten sampled out of it are ten survivors of a bad year
+rather than ten good foragers. By 9,000 steps that seed wins comfortably. The
+losing sentence is written and shipped, because a board that can only report the
+flattering answer is a decoration.
+
+### The rules of a lane
+
+- **Same everything but the brains.** Both lanes are built from one seed and
+  draw from their own generator in the same order, so the food, the starting
+  spots, the headings and the internal clocks are identical between them down to
+  the bit. The suite proves it the only way worth proving it: a team raced
+  against *itself* must dead-heat, step for step.
+- **Nothing hunts in a lane.** A carnivore in a race about finding food would be
+  scoring by eating the competition, and the two teams do not have the same
+  appetite for meat.
+- **The team is the team.** No reseeding, no top-ups. Ten animals go in, and all
+  ten starving is a real ending with its own sentence.
+- **The pond on the page is untouched.** The lanes are separate `World` objects
+  with their own generators. Not one number is drawn from the pond on screen, so
+  a visitor who races is watching bit for bit the same world as a visitor who
+  never finds the button — pinned by a fingerprint taken across a full race, and
+  by a thousand steps run afterwards against a pond that never raced.
+
+Press it on a pond nobody has run yet and it is a dead heat, and the panel says
+why: both lanes are holding the same ten animals. That is the fairness of the
+lanes proving itself in front of the visitor, and the sentence points at
+`⏩ Skip ahead` as the way out.
+
+### Two things a browser found that `node --test` could not
+
+- **Both lane captions had to go.** Each lane carried a line under its name —
+  *the animals this pond was handed*, *the animals in it now* — and at 390 px one
+  wrapped to three lines and the other to two, which put the two ponds at
+  different heights and cost the panel the one property that makes it read as a
+  race. They were also the panel's own subtitle said a second time an inch lower
+  down.
+- **`display` beats `[hidden]`.** The lanes are hidden until a race starts, and
+  they were not: a `display: grid` in the stylesheet outranks the user agent's
+  rule, so two empty ponds sat under the invitation. The third element in this
+  stylesheet to need that line said again.
+
+### Added
+
+- `src/race.js` — the lanes, the rules they run under, the words, the verdict
+  and the miniature drawing. Pure observer: no page, no random numbers of its
+  own, nothing written back to the pond.
+- `test/race.test.js` — fifteen tests, led by the two the panel rests on: a team
+  racing itself dead-heats, and a full race moves the pond by nothing.
+- The panel in `app/index.html`, directly under `🎯 Are they getting better?`,
+  and deliberately not behind the view switch.
+
+### Changed
+
+- `src/viewstate.js` holds the founding stock, the race in flight and the
+  panel's key, all world-scoped: a race must not outlive the pond that started
+  it, and stock carried across a reset would put the *last* pond's founders in a
+  lane labelled with this one's first moments.
+- `src/targetsize.js` names `#btn-race` as a control shipped after the last
+  pointer walk went out.
+
 ## [1.161.0] — 2026-09-09
 
 **👁 What it can see** — the pond as the animal has it, which is almost none of

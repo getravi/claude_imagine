@@ -498,6 +498,82 @@
           <p class="aim-why" id="aim-why"></p>
         </section>
 
+        <!-- The race (v1.162). The board above answers *are they any good?* with
+             a share against a coin toss, and the one above that answers *have
+             they changed?* with four sentences about means. Both are readings,
+             and a reading asks a stranger to take my word for it. This is the
+             same question settled in front of them: ten animals from this pond's
+             first moments in one small pond, ten from right now in an identical
+             one, eighty specks of food in each and nothing hunting — and a
+             finish line. Nobody has to be told who won a race.
+
+             Directly under `🎯 Are they getting better?` because it is that
+             panel's claim with the evidence swapped from a number to a picture,
+             and not behind the view switch for that panel's own reason: it is
+             the most persuasive thing this page can put in front of somebody
+             who has never heard of neuroevolution.
+
+             `src/race.js` owns the lanes, the rules, the words and the drawing.
+             The two lanes are separate `World` objects with their own
+             generators, so a visitor who races is watching bit for bit the same
+             pond as one who never presses the button. -->
+        <section class="race" aria-labelledby="race-h">
+          <div class="race-head">
+            <h2 id="race-h">🏁 Day one vs today</h2>
+            <span class="race-sub">the animals this pond started with, against the ones in it now</span>
+          </div>
+          <!-- Written from `race.js#RACE_INVITE` on the first frame, like every
+               other constant sentence on this page: a line typed into the markup
+               is a copy of a constant, and a copy is a stale sentence waiting to
+               happen. This is what shows before any script runs. -->
+          <p class="race-invite" id="race-invite">
+            Ten animals from this pond's first moments, ten from right now, and
+            eighty specks of food in each of two identical ponds. Who clears
+            theirs first?
+          </p>
+          <button id="btn-race" class="race-btn">🏁 Start the race</button>
+          <!-- Two lanes, static rather than built, so the canvases survive every
+               frame of a race: a panel that rebuilt its own markup would be
+               throwing away the picture it is drawing. The ids are
+               `lane-<id>-*`, and `race.js#LANES` holds the same ids — the test
+               reads this document back and fails if a lane has no place to be
+               drawn in. -->
+          <div class="race-lanes" id="race-lanes" hidden>
+            <figure class="lane" id="lane-then">
+              <figcaption class="lane-name">Day one</figcaption>
+              <canvas
+                id="lane-then-water"
+                class="lane-water"
+                width="720"
+                height="500"
+                role="img"
+                aria-label="Day one's lane."
+              ></canvas>
+              <div class="lane-bar" aria-hidden="true"><span id="lane-then-fill"></span></div>
+              <p class="lane-line" id="lane-then-line"></p>
+            </figure>
+            <figure class="lane" id="lane-now">
+              <figcaption class="lane-name">Today</figcaption>
+              <canvas
+                id="lane-now-water"
+                class="lane-water"
+                width="720"
+                height="500"
+                role="img"
+                aria-label="Today's lane."
+              ></canvas>
+              <div class="lane-bar" aria-hidden="true"><span id="lane-now-fill"></span></div>
+              <p class="lane-line" id="lane-now-line"></p>
+            </figure>
+          </div>
+          <p class="race-verdict" id="race-verdict" hidden></p>
+          <p class="race-why" id="race-why" hidden></p>
+          <!-- The small print, written once from `race.js#RACE_RULES`. It is
+               true of every race ever run here, so it is a constant rather than
+               a reading — the division `#eyeview`'s note is drawn on. -->
+          <p class="race-rules" id="race-rules" hidden></p>
+        </section>
+
         <!-- The book of records (v1.124). Everything else named on this page is
              about *now*; this is the only surface that remembers an animal after
              it sinks. Three all-time bests — the most young one animal has

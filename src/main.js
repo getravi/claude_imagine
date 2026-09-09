@@ -109,6 +109,27 @@ import {
 import { evolvedHTML, evolvedRows, evolvedSignature, foundingSnapshot } from "./evolved.js";
 import { portraitHTML, portraitPair, portraitSignature } from "./portrait.js";
 import { AimWatch, aimHTML, aimSignature, aimVerdict } from "./aim.js";
+import {
+  LANES,
+  RACE_AGAIN,
+  RACE_GO,
+  RACE_INVITE,
+  RACE_NO_LIFE,
+  RACE_NO_STOCK,
+  RACE_RULES,
+  RACE_RUNNING,
+  drawLane,
+  foundingStock,
+  laneLine,
+  laneProgress,
+  laneSay,
+  pumpRace,
+  raceOver,
+  raceSignature,
+  raceVerdict,
+  startRace,
+  winner,
+} from "./race.js";
 import { nameTags } from "./nametag.js";
 import {
   HAND_HINT,
@@ -358,6 +379,18 @@ function adoptWorld() {
   // running — `📂 Load` pours a saved run into a fresh `World` — has no
   // beginning here to record, gets `null`, and the board says so.
   view.founding = foundingSnapshot(world);
+  // And the animals themselves, for the lane on the left (v1.162). The same
+  // instant and the same `tick === 0` argument as the line above — a pond
+  // restored from a file has no first moments to race, gets `null`, and the
+  // panel says so. Held rather than rebuilt from the seed on demand: the
+  // generator lays down the biomes, the ground and the crop before it deals an
+  // animal, so a rebuild after a visitor flips one of those switches would come
+  // back with founders this pond never had. See `race.js`.
+  view.raceStock = foundingStock(world);
+  // The panel goes back to its invitation with the pond it was about. The
+  // roster has already dropped the race itself; this is the markup it was
+  // drawing into, which no state of its own describes.
+  restRacePanel();
   // A new pond, and creature ids come from a counter at module scope — so a
   // life left in the book would sooner or later answer for somebody else. The
   // family records are cleared for the same reason and one more: a line whose
@@ -721,6 +754,11 @@ function loop(now) {
   // Straight after them, because the two boards are one thought: that one says
   // what has changed and this one says whether any of it was an improvement.
   updateAim();
+  // And straight after it, the same claim with a finish line under it (v1.162).
+  // Here rather than up with the stepping because the two lanes are not the
+  // pond: a race runs on the browser's clock whatever the pond is doing, and
+  // this is the pass that owns the panels it draws into.
+  pumpRacePanel();
   updateMilestones(world);
   updateRecords(world);
   updateChronicle(world);
@@ -1182,6 +1220,105 @@ function updateAim() {
   $("aim-verdict").textContent = `${said.mark} ${said.verdict}`;
   $("aim-list").innerHTML = aimHTML(reading);
   $("aim-why").textContent = said.why;
+}
+
+// ---- Day one vs today (v1.162) ----
+//
+// The usual division: `race.js` owns the two little worlds, the rules they run
+// under, every word and every mark, and this file is the adapter onto the DOM
+// and onto the browser's clock. Nothing below reads the pond except to take a
+// copy of who is in it at the moment somebody presses the button.
+
+/** The lane's canvas, its bar, its line — one lookup helper for four ids. */
+const raceEl = (lane, part) => $(`lane-${lane.id}-${part}`);
+
+/** Put the panel back to its invitation: no lanes, no verdict, no result. */
+function restRacePanel() {
+  const btn = $("btn-race");
+  btn.textContent = RACE_GO;
+  btn.disabled = !view.raceStock;
+  $("race-invite").textContent = view.raceStock ? RACE_INVITE : RACE_NO_STOCK;
+  $("race-lanes").hidden = true;
+  $("race-verdict").hidden = true;
+  $("race-why").hidden = true;
+  $("race-rules").hidden = true;
+  view.raceSig = "";
+  for (const meta of LANES) $(`lane-${meta.id}`).classList.remove("won");
+}
+
+/** One lane's picture. `fresh` paints the deep opaque; see `drawLane`. */
+function drawRaceLane(lane, fresh) {
+  const canvas = raceEl(lane, "water");
+  drawLane(canvas.getContext("2d"), canvas.width, canvas.height, lane, fresh);
+}
+
+/** Stock two lanes out of this pond's beginning and its present, and go. */
+function startRaceNow() {
+  if (view.raceRun && !raceOver(view.raceRun)) return;
+  // The two little worlds are bound to `view` and never to a name of their own:
+  // `viewstate.js` owns every field that belongs to a pond, and a second home
+  // for one in this file is what its scan exists to catch.
+  const contest = startRace(config, view.raceStock, world);
+  if (!contest) {
+    // The stock is there and the water is empty — a state the button cannot be
+    // disabled for, because it is true for as long as it takes the pond to
+    // reseed itself and false again afterwards.
+    $("race-invite").textContent = view.raceStock ? RACE_NO_LIFE : RACE_NO_STOCK;
+    return;
+  }
+  view.raceRun = contest;
+  view.raceSig = "";
+  const btn = $("btn-race");
+  btn.textContent = RACE_RUNNING;
+  btn.disabled = true;
+  $("race-lanes").hidden = false;
+  $("race-verdict").hidden = true;
+  $("race-why").hidden = true;
+  $("race-rules").hidden = false;
+  $("race-rules").textContent = RACE_RULES;
+  for (const lane of contest.lanes) {
+    $(`lane-${lane.id}`).classList.remove("won");
+    drawRaceLane(lane, true);
+  }
+  writeRace();
+}
+
+/**
+ * A race in flight takes a fixed number of steps per frame rather than the
+ * speed slider's, for `skip.js`'s reason: it is a thing to watch, so every
+ * press has to go at the pace every other press goes at. It runs whether or not
+ * the pond is paused, because the two lanes are not the pond.
+ */
+function pumpRacePanel() {
+  const contest = view.raceRun;
+  if (!contest || raceOver(contest)) return;
+  pumpRace(contest);
+  for (const lane of contest.lanes) drawRaceLane(lane, false);
+  writeRace();
+}
+
+/** The four numbers and, once the whistle has gone, the result. */
+function writeRace() {
+  const contest = view.raceRun;
+  const sig = raceSignature(contest);
+  if (sig === view.raceSig) return;
+  view.raceSig = sig;
+  for (const lane of contest.lanes) {
+    raceEl(lane, "line").textContent = laneLine(lane);
+    raceEl(lane, "fill").style.width = `${Math.round(laneProgress(lane) * 100)}%`;
+    raceEl(lane, "water").setAttribute("aria-label", laneSay(lane));
+  }
+  if (!raceOver(contest)) return;
+  const said = raceVerdict(contest);
+  $("race-verdict").hidden = false;
+  $("race-verdict").textContent = `${said.mark} ${said.verdict}`;
+  $("race-why").hidden = false;
+  $("race-why").textContent = said.why;
+  const won = winner(contest);
+  for (const lane of contest.lanes) $(`lane-${lane.id}`).classList.toggle("won", won === lane);
+  const btn = $("btn-race");
+  btn.textContent = RACE_AGAIN;
+  btn.disabled = false;
 }
 
 // ---- How far this pond has got (v1.131) ----
@@ -3449,6 +3586,7 @@ function closeSkipCard() {
 
 function wireSkip() {
   $("btn-skip").addEventListener("click", startSkip);
+  $("btn-race").addEventListener("click", startRaceNow);
   $("skipcard-close").addEventListener("click", closeSkipCard);
   $("skipcard-scrim").addEventListener("click", closeSkipCard);
   // The card's primary button, and the reason it is the primary one: a visitor

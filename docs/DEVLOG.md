@@ -20289,3 +20289,172 @@ panel is never a fact about an animal that no longer exists.
 - **A pond loaded from an archive still has no book**, twenty-fifth cycle.
 
 ---
+
+## Entry — nobody has to be told who won a race · 2026-09-09
+
+The steer this cycle was to take the specialist's hat off and build for the
+person who arrives, watches for ninety seconds, and decides whether any of this
+is real. So I asked what a stranger actually wants to know, and it is not what
+the last six cycles have been improving. It is one question:
+
+> **Have these things really evolved, or is this a screensaver with a lot of
+> panels around it?**
+
+This page answers that five times. `🧬 How they have changed` says it in four
+sentences about means. `🎯 Are they getting better?` says it as a share against
+a coin toss. The Tree of Life, the body-size figure and the chart stack say it
+in three pictures for somebody who already knows what those pictures are. Every
+one of those is a **reading** — a number about a crowd the reader cannot see,
+handed over with the implicit request *take my word for it.* Six months of
+careful work, and the honest summary of what a visitor receives is: the page
+told me it got better.
+
+Nobody has to be told who won a race.
+
+## What I shipped
+
+Two small ponds, side by side, running at the same time. The left lane holds ten
+of the animals **this pond was handed on its very first step**. The right lane
+holds ten of the animals **in the water now**. Both ponds are built from one
+seed, so the food falls in the same places and every animal starts on the same
+spot facing the same way. Eighty specks go into each and nothing more ever
+grows. The only difference between the two worlds is what is inside the heads of
+the ten animals in them. Press the button and watch which pond empties.
+
+The first time I ran it I sat and watched it twice, which has not happened for a
+while. The left lane mills about — you can see the trails pile up in one corner
+— and the right lane fans out and starts hoovering. It is the same fact the
+`🎯` board reports as *61% against a baseline of 50%*, and it lands completely
+differently.
+
+## Four rules, and the one that is load-bearing
+
+1. **Same everything but the brains.** Both lanes draw from their own generator
+   in the same order, so food, spots, headings and internal clocks are identical
+   between them down to the bit. The way to test that is not to inspect it but
+   to race a team **against itself** and require a dead heat, step for step. If
+   any draw ever comes out of order, that test fails and nothing else in the
+   suite would have noticed.
+2. **Nothing hunts in a lane.** A carnivore in a race about finding food scores
+   by eating the competition, and the two teams do not have the same appetite
+   for meat — `evolved.js` measures the diet moving on about three
+   pond-instants in four. The lane asks one question, so it removes the other.
+3. **The team is the team.** No reseeding, no top-ups. Ten go in; all ten
+   starving is a real ending and has its own sentence.
+4. **The pond on the page is untouched.** The lanes are separate `World` objects
+   with their own generators. This is the rule everything else rests on: a
+   visitor who races must be watching, bit for bit, the world of a visitor who
+   never finds the button. Pinned with a fingerprint taken across a full race —
+   and then, more strongly, by running the raced pond a further four hundred
+   steps against a pond that never raced, because a stolen random number does
+   not show up in the state it was stolen from, it shows up in the next thousand
+   steps.
+
+## The measurement, including the part I did not like
+
+Twelve seeds × three ages, 36 races:
+
+- **Today's animals won 34 of 36.**
+- Day one's animals cleared their pond at all in **9 of 36** — three seeds, all
+  three ages — taking 545 to 669 steps. In the other 27 the whistle went with a
+  **median 51 of the 80 specks still floating**.
+- Across the 40 lanes that did clear: 206 to 866 steps, median 373.
+
+The two losses are both seed 23, at 1,500 and 4,000 steps: 52 left against 51,
+and 65 against 51. That pond's crowd is mid-crash at those moments, so the ten
+animals sampled out of it are ten survivors of a bad year rather than ten good
+foragers. By 9,000 steps the same seed wins comfortably. I shipped the losing
+sentence — *Day one's animals got through 29 of the 80. Today's got through
+28.* — because a board that can only report the flattering answer is a
+decoration, and because the sampling weakness it exposes is real and worth a
+visitor being able to meet.
+
+## Three findings
+
+**(i) The founders cannot be rebuilt from the seed, and I nearly shipped a lane
+that did.** A pond's founders are a function of `(seed, config)`, so the obvious
+way to stock the left lane is `new World(config)`. It is wrong, and it is wrong
+*late*. The generator lays down the biomes, the ground, the rock and the whole
+standing crop **before** it deals a single animal — so the number of draws taken
+before the first genome depends on flags a visitor can flip mid-run. Toggle
+biomes off at step 3,000, press the button, and the "founders" that come back
+are forty animals this pond never had. The stock is copied out of the world on
+the frame the page adopts it instead, which is the same instant and the same
+argument as `evolved.js`'s opening line. The general shape: **a value that is
+"reproducible from the seed" is only reproducible from the seed *and* every flag
+that changes how many numbers get drawn before it.** I have written
+`(seed, config)` in this repository a hundred times and had never once traced
+what sits between them.
+
+**(ii) A guard fired on a name, and the right fix was to change the name.**
+`viewstate.js` enforces that no pond-scoped field is ever used bare in
+`main.js` — it must always be reached through `view`. I added a field called
+`race`, and the scan reported it bare nineteen times: every `$("race-verdict")`
+on the panel it belongs to, because a hyphen is not a word character. The
+tempting fix is to teach the scan about string literals. The right fix is a
+field called `raceRun`, because the scan's bluntness is what makes it trustworthy
+and the cost of it is a rule I can simply follow: **a pond's field may not be a
+prefix of the element ids its own panel is built from.** Loosening a guard to fit
+a name is how a guard stops finding things.
+
+**(iii) A saturating score is not a race.** My first build scored the lanes on
+*how much each team ate in 1,200 steps* and it looked great until I read the
+table: on four seeds of twelve, **both** lanes cleared all eighty and the result
+was a tie between a team that took 545 steps and one that took 248. A ceiling
+had quietly turned the interesting half of my sample into draws. Changing the
+score from *how much* to *how fast* did not change one line of the simulation and
+turned 8 wins of 12 into 34 of 36. **When a measurement comes back flat, ask
+whether the quantity has a ceiling before you conclude the effect is small.**
+
+## Two things only a browser could tell me
+
+Third cycle running that the interesting failures are the ones `node --test`
+cannot see, and this time I opened the page before writing the DEVLOG rather
+than after.
+
+- **Both lane captions had to go.** Each lane carried a line under its name —
+  *the animals this pond was handed*, *the animals in it now*. At 390 px one
+  wrapped to three lines and the other to two, which put the two ponds at
+  different heights. Level with each other is the entire reason the thing reads
+  as a race, and I had written that sentence into the stylesheet myself, one
+  rule above the captions that broke it. They were also the panel's own subtitle
+  said a second time an inch lower down, so cutting them made the panel better
+  and shorter at once.
+- **`display` beats `[hidden]`.** The lanes are meant to be hidden until a race
+  starts. They were not: `display: grid` outranks the user agent's `[hidden]`
+  rule, so two empty black ponds sat under the invitation from the moment the
+  page loaded. That is the third element in this stylesheet to need the line
+  said again — `.lifeline`, `.ev-disc`, now `.race-lanes` — which is no longer
+  three coincidences. It is a rule this project keeps rediscovering one element
+  at a time.
+
+## What it leaves
+
+- **The best thing on this page is the ninth panel down.** I put the race under
+  `🎯 Are they getting better?` because that is where its argument belongs, and
+  that is a *reasoning* about structure rather than a measurement of what a
+  visitor reaches. `firstmoves.js` measured exactly this failure for three
+  buttons in v1.153 and moved them under the water; I have just shipped a fourth
+  thing worth pressing and left it below eight panels of prose. The honest next
+  cycle is to measure how far down the page it is at 390 px and act on the
+  number, not on my sense of where it tidily belongs.
+- **The tour still does not mention it**, and that is now two releases in a row
+  that added a panel its six fixed stops know nothing about — v1.129's leave,
+  compounding.
+- **A lane's sample is the crowd, and the crowd is sometimes a wreck.** Both
+  losses above are that. Sampling ten animals evenly across a crashing
+  population is honest and it is also the noisiest thing in the panel.
+- **Nothing checks that a surface can be *seen*, only that it is on screen**,
+  fourth cycle.
+- **The empty disc is still 0.1% of instants** and still worth a finder,
+  v1.161's leave.
+- **The toast is still on the water**, v1.160's leave.
+- **The plates over the water still do not carry the shape**, fifth cycle.
+- **The obituary and the inspector still use the flat swatch**, fifth cycle.
+- **Nothing here has ever measured whether anybody presses anything**, thirty-one
+  releases — and I have just added a button whose whole value is whether it gets
+  pressed.
+- **`targetsize.js` still has no position axis**, tenth cycle.
+- **A pond loaded from an archive still has no book**, twenty-sixth cycle.
+
+---

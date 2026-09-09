@@ -252,6 +252,28 @@ const FRESH = Object.freeze({
   // for as long as the tab was open. It also carries the tick it went in on,
   // and a new pond's clock starts again at zero.
   handful: null,
+  // The race (v1.162), in three parts. `raceStock` is the animals this pond was
+  // handed, copied out on the frame the page adopted it — `founding`'s argument
+  // exactly, and world-scoped for a reason stronger than `founding`'s own:
+  // stock carried across a reset would put the *last* pond's founders in a lane
+  // labelled with this pond's first moments, which is not a stale reading but a
+  // false one. `race` is the two little worlds in flight, which must not outlive
+  // the pond that started them — they are stepped every frame while they run,
+  // and a race inherited across a reset would go on running a contest nobody
+  // asked for, in a panel now sitting under a different pond. `raceSig` is the
+  // usual key on what the panel has written, world-scoped with them because a
+  // key held over an empty panel is a frame of somebody else's result.
+  //
+  // `raceRun` rather than the obvious `race`, and the reason is the scan below
+  // rather than the field: `every world-scoped name in main.js is reached
+  // through the owner` looks for the name on a word boundary in stripped code,
+  // and a hyphen is not a word character — so a field called `race` would be
+  // reported bare by every `$("race-verdict")` on the page it belongs to. The
+  // guard is right to be that blunt; what it costs is that a pond's field may
+  // not be a prefix of the element ids its panel is built from.
+  raceStock: null,
+  raceRun: null,
+  raceSig: "",
 });
 
 /** The names `ViewState` owns, in the order they are declared. */
