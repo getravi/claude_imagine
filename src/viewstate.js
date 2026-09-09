@@ -171,6 +171,15 @@ const FRESH = Object.freeze({
   // actually changed costs no DOM write at all.
   eyeSig: "",
   eyeWordsAt: 0,
+  // What the steering figure under that disc is saying (v1.163). Two fields for
+  // `eyeSig`'s two reasons and on the same two clocks: the marks are redrawn
+  // every frame because a turn command really does change every step, and the
+  // sentence is held, because a caption rewritten sixty times a second is a
+  // strobe. The running share itself is not here — it is a machine rather than
+  // a cache, so it lives beside `lineage` and `aim` in `main.js` and is
+  // forgotten in the same funnel they are.
+  decideSig: "",
+  decideWordsAt: 0,
   // The book of records (v1.124). Keyed on the board's own sentences, which is
   // the strongest key any surface here uses and the only one that has to be:
   // a record's line changes when its holder dies while the record itself holds
@@ -322,6 +331,12 @@ export const PAGE_SCOPED = Object.freeze({
     "beside the two above, and the odd one of the three: what it must not inherit is not " +
     "ids but a *control* — a founder baseline carried into a new pond would measure this " +
     "pond's crowd against the last pond's opening line",
+  steer:
+    "how often the animal you picked turns towards the food it can see (v1.163). Forgotten " +
+    "by `adoptWorld` beside the three above, and the only one of the four that would be " +
+    "right anyway: it holds an id and forgets everything the moment it is handed a " +
+    "different one. It is emptied there because a reset that left an animal selected would " +
+    "leave it scoring an animal that is in no pond at all",
   config: "the subject, not a view of it — replaced alongside the world",
   world: "the subject itself; `adopt` is keyed on this object's identity",
   renderer: "one canvas, built once at boot and re-pointed at each new config",

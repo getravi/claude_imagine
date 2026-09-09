@@ -24,6 +24,7 @@ import { DOING_INVITE, doingInvite } from "../src/doing.js";
 import { EMPTY_HINT, emptyHint } from "../src/inspectorview.js";
 import { MARKS, keyHTML, keySignature } from "../src/key.js";
 import { SCENARIOS } from "../src/scenarios.js";
+import { numberWord } from "./support/numberword.js";
 import { makeConfig } from "../src/config.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -194,4 +195,35 @@ test("no curated world's blurb names an input device", () => {
       assert.ok(!KEY_VERBS.test(copy), `${scn.id} names a key: ${copy}`);
     }
   }
+});
+
+// ---- the count in the header ----
+
+test("the header's count of these sentences is the count of these sentences", () => {
+  // v1.163 found the header saying **eight** over a table of nine, two releases
+  // after `eyeInvite` was added beside a comment about how a sentence belongs in
+  // this table the moment it is written. The sentence went in; the number
+  // describing the table did not. That is `prosecounts.test.js`'s subject
+  // exactly — a number stated in prose about a collection in code — and this
+  // collection was outside its domain, so the drift was nobody's to catch.
+  //
+  // The other number in the same paragraph is derived rather than counted: the
+  // places on the page that name a device are these sentences plus the seven
+  // named beside them, so it is checked as that sum rather than as a second
+  // hand-typed total.
+  const src = readFileSync(join(here, "..", "src", "hand.js"), "utf8");
+  const header = src.slice(0, src.indexOf("export const PHRASES"));
+  const n = phraseKeys().length;
+  assert.match(
+    header,
+    new RegExp(`the ${numberWord(n)} sentences this file now holds`),
+    `the header should say the table holds ${numberWord(n)} sentences`
+  );
+  const places = n + 7;
+  assert.match(
+    header,
+    new RegExp(`${numberWord(places).replace(/^./, (c) => c.toUpperCase())} places on this page name an input device`),
+    `the header should count ${numberWord(places)} places`
+  );
+  assert.match(header, new RegExp(`One pair of the ${numberWord(places)} had ever`));
 });

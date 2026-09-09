@@ -292,9 +292,22 @@ export function stateFingerprint(world) {
     // The brain is three arrays, not one: the extra input weights signalling
     // and the ground sense are wired through, and the per-weight plasticity
     // coefficients. Hashing only `w` was the same omission one level down.
+    //
+    // The third of those was named wrong from the day it was added, and the
+    // sentence above is what makes it a bug rather than a typo: `plastic` is a
+    // **boolean** (`!!(plasticity && learn)`) and `plast` is the coefficient
+    // array. So `array()` took its not-an-array branch on every creature in
+    // every world, and the one thing this line exists to reach — how much each
+    // connection is allowed to learn — has never been in the hash. Nothing
+    // failed, because `array(false)` and `array(undefined)` mix the same
+    // marker: a fixed-brain pond's fingerprint is unchanged by the correction,
+    // which is exactly why nothing could have caught it. **A field name that is
+    // one letter from another field name is not checked by the test that reads
+    // it; it is checked by the test that fails when it is wrong, and there was
+    // none.** (v1.163.)
     h.array(c.brain && c.brain.w);
     h.array(c.brain && c.brain.auxW);
-    h.array(c.brain && c.brain.plastic);
+    h.array(c.brain && c.brain.plast);
   }
   for (const f of world.food.items) h.num(f.x).num(f.y).flag(f.eaten);
   for (const k of world.corpses || []) h.num(k.x).num(k.y).num(k.energy);

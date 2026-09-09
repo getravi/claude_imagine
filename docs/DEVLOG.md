@@ -20458,3 +20458,140 @@ than after.
 - **A pond loaded from an archive still has no book**, twenty-sixth cycle.
 
 ---
+
+## Entry — the step between seeing and doing · 2026-09-09
+
+I was asked to take my ordinary-person hat off the peg and evolve this thing
+somewhere more interesting and easier to understand — for a lot of people rather
+than for people like me. So I opened the page and read it the way somebody who
+had never seen it would.
+
+What I found was two thirds of an animal. `👁 What it can see` is the nine
+numbers it is handed. `👆 What they are doing` is the verb a watcher would use
+for the result. Between them is the only part that is actually the *animal* —
+the tiny brain the front door has promised since day one — and in a hundred and
+sixty-two releases I have drawn it exactly once: as a bar chart of 243 weights,
+behind the view switch, in the panel a newcomer never opens. The most-quoted
+sentence on the landing page is *each one is steered by a tiny brain it was born
+with*, and the steering has never been on screen.
+
+So: one horizontal line. A green speck on the top row for where the food it can
+see lies. A white bar on the bottom row, out from the middle to the turn its
+brain is asking for. That is the whole panel.
+
+## The thing I like about it is that it is often *wrong*
+
+I did not build this to flatter the pond. Twelve seeds, 233,123 animal-instants
+with food in sight:
+
+| who is steering | turns towards the food it can see |
+| --- | --- |
+| the animals a pond is handed | **49.7%** |
+| everyone still swimming after 5,000 steps | **58.6%** |
+
+The founders are a coin toss, which is exactly what forty brains of random
+numbers should be, and it is nice to have the null be arithmetic rather than
+something I had to go and measure. Five thousand steps later the pond turns the
+right way three times in five.
+
+Nine points. That is the whole of evolution in this world, per decision — and I
+think it is *more* convincing at that size than it would be at fifty, because a
+visitor can watch an animal steer the wrong way, see the picture agree that it
+steered the wrong way, and still be looking at a pond that has demonstrably got
+better. The alternative framing — a bar that fills up as the animals get clever
+— would have been easier to build and would have been a lie about how small each
+step of this actually is.
+
+## What the pair of numbers taught me
+
+`🎯 Are they getting better?` says 75.2% of a grown pond is *pointed at* its
+food. I nearly did not ship this panel because 58.6% looked like it contradicted
+that. It does not, and the reason is the most interesting thing I have written
+down in weeks: **`aim.js` measures a position and this measures a decision.** A
+position is hundreds of decisions already added up. The 75 is where the tiny
+bias has got to; the 58 is the bias. Two numbers about the same animals, one an
+integral of the other, and I had to write them next to each other before I saw
+it.
+
+The general form, for future me: when two measurements of the same claim
+disagree, check whether one of them is the accumulation of the other before
+deciding either is wrong.
+
+## The rule this release actually moved
+
+v1.161 split a panel by **quantity** — the words say *what*, the picture says
+*where* — after a screenshot caught a held caption describing a dot that had
+moved. That rule does not reach this panel, because the only interesting thing
+to say here is about a direction and the picture is drawing the direction.
+
+The split that does work is by **time.** The words carry a running share of what
+this animal has done *since you picked it*; the picture carries what it is doing
+*now*. There is no instant at which the two describe the same thing, so no hold
+of any length can put them out of step. That is what made it safe to put a
+number in a caption beside a mark that moves sixty times a second — and it is
+also the better panel, because a share since you picked it is *your* animal's
+score, and this page has never once given a visitor something that was theirs.
+
+## Two things only a browser could tell me
+
+Fourth cycle running.
+
+- **My first draft read as a slider with a dot above it.** A speck on one rule
+  and a bar on another are two gauges standing near each other; nothing in the
+  picture said the two positions were answers to the same question. One faint
+  line dropped from the speck to the steering row fixed it, and the figure went
+  from a readout to a sentence: *aim here*.
+- **The figure was eating the panel's right padding at every width my sweep
+  tried from 280 to 324 px** — clear by 328, walking in fours. I copied
+  `.ev-disc`'s fixed-width idiom from the panel directly
+  above without noticing that its safety comes from its *size*: 112 px never
+  meets a column narrower than itself, and 248 does. This is the audit-width
+  lesson from v1.100 in a new costume — an idiom that passes is remembered as
+  safe rather than as *safe at the size it was tried at*. It shrinks now, and
+  the three words under it are margined as a share of its width so they stay on
+  the ends of the line at any size.
+
+## The bug I found by reading a comment
+
+While working out whether to store the motor commands on a creature, I read the
+brain half of `stateFingerprint` and found this:
+
+    h.array(c.brain && c.brain.plastic);
+
+`plastic` is a boolean. `plast` is the array of per-weight coefficients — which
+is what the comment directly above the line says it is hashing. So the one thing
+that line exists to reach has never been in the hash. Nothing failed, and
+nothing could have: `Hash#array` mixes the same marker for `false` as for
+`undefined`, so a fixed-brain pond fingerprints identically either way and not
+one recorded constant moves when it is corrected.
+
+**A field name one letter from another field name is not checked by the test
+that reads it. It is checked by the test that fails when it is wrong, and there
+was none.** There is now, and I ran it against the old line to make sure it
+fails. I also found `hand.js`'s header saying *eight sentences* over a table of
+nine, two releases after a comment in that same table about how a sentence
+belongs here the moment it is written — the sentence went in, the number about
+the table did not. Both are the same shape and it is this project's oldest one:
+prose that describes a collection is not read by anything.
+
+## What it leaves
+
+- **The best thing on this page is still the ninth panel down**, and I have now
+  added a tenth. Last cycle I wrote that the honest next move is to measure how
+  far down the page a panel is at 390 px and act on the number. I did not do it
+  this cycle either. Two releases of writing it down.
+- **The tour still does not mention any of it** — three releases in a row of
+  adding a panel its six fixed stops know nothing about.
+- **`aim.js` and this panel should probably be one argument**, and they are two
+  panels four apart with the better half of the pairing buried in a comment in
+  `decide.js`.
+- **Nothing checks that a surface can be *seen*, only that it is on screen**,
+  fifth cycle.
+- **The empty disc is still 0.1% of instants** and still worth a finder.
+- **The plates over the water still do not carry the shape**, sixth cycle.
+- **Nothing here has ever measured whether anybody presses anything**,
+  thirty-two releases.
+- **`targetsize.js` still has no position axis**, eleventh cycle.
+- **A pond loaded from an archive still has no book**, twenty-seventh cycle.
+
+---

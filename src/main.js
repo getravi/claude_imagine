@@ -61,6 +61,14 @@ import { nextHeadline, pondHeadline } from "./headline.js";
 import { lifelineSeries, lifelineCaption, lifelineSay, drawLifeline } from "./lifeline.js";
 import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
 import { WORD_HOLD_MS, drawEye, eyeInvite, eyeLine, eyeSay, eyeSight } from "./eyeview.js";
+import {
+  SteerTally,
+  decideInvite,
+  decideLine,
+  decideSay,
+  drawSteer,
+  steerMark,
+} from "./decide.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -325,6 +333,16 @@ const lineage = new Lineage();
 // `aim.js`.
 const aim = new AimWatch();
 
+// And the same question asked of one animal instead of the pond (v1.163). A
+// fourth pure observer on the step loop, holding two integers and an id: of the
+// decisions the animal a visitor has picked has taken with food in sight, how
+// many turned towards it. On the tick for `aim`'s reason, and world-scoped for
+// `lineage`'s — it forgets on its own the moment the id it is handed is not the
+// id it holds, and it is *also* forgotten in the funnel below, because a reset
+// that left an animal selected would leave the tally holding an object that is
+// no longer in any pond. See `decide.js`.
+const steer = new SteerTally();
+
 // Track FPS for the HUD.
 let lastFrame = performance.now();
 let fpsSmooth = 60;
@@ -403,6 +421,10 @@ function adoptWorld() {
   // wants and for the same reason: the frame's top, before anything is stepped,
   // is the one moment `tick === 0` means "these are the animals it was handed".
   aim.begin(world);
+  // And one animal's own share starts again with it (v1.163), for the reason
+  // `lineage.forget()` is two lines up: a score is about an animal in a pond,
+  // and neither of them survives a reset.
+  steer.forget();
   // And the strip says where this is (v1.154). Here, in the one funnel every
   // world change passes through, rather than in `launchScenario` — which is what
   // used to light the chip and had no idea when to put it out. A press is a
@@ -434,6 +456,11 @@ function witnessStep() {
   // `AimWatch#sample`, on the tick, and every step site that calls this hands
   // it every tick to choose from.
   aim.sample(world);
+  // The fourth (v1.163), and the narrowest: one animal, one brain pass, on the
+  // step rather than the frame — so a skip of 2,600 steps adds 2,600 decisions
+  // to the tally rather than the forty frames it happened to take, and two
+  // people who picked the same animal in the same pond read the same share.
+  steer.sample(renderer.selected);
 }
 
 function boot() {
@@ -747,6 +774,11 @@ function loop(now) {
   // sentence, for the reason the lifeline sits after the headline: the words
   // and the figure about one subject are read as one statement.
   updateEyeview(now);
+  // And the step between the two of them (v1.163): what it is told, then what
+  // it decides, then what it ends up doing. Immediately after the disc because
+  // the two figures share a subject and a frame of reference — the disc's nose
+  // is up, and this line's middle is that same *ahead*.
+  updateDecide(now);
   updateKey();
   updateCast(world);
   updateEvolved(world);
@@ -1022,6 +1054,71 @@ function updateEyeview(now) {
   view.eyeSig = line;
   $("eyeview-line").textContent = line;
   canvas.setAttribute("aria-label", eyeSay(seen, name));
+}
+
+// ---- What it decides (v1.163) ----
+//
+// The figure under the disc: where the food this animal can see lies, and which
+// way its brain is asking it to turn, on one line. `src/decide.js` owns the
+// marks, the words and the running share; this is the adapter onto the DOM, and
+// it runs on `updateEyeview`'s two clocks for `updateEyeview`'s two reasons —
+// the marks move every step because that is the content, and the sentence is
+// held because a caption that rewrote itself sixty times a second could not be
+// read.
+//
+// The one thing this panel does that the disc does not: **its sentence is about
+// a different stretch of time from its picture.** The share is what this animal
+// has done since it was picked and the marks are what it is doing now, so the
+// hold cannot put the two out of step — there is no instant at which they are
+// describing the same thing. That is v1.161's *the words say what, the picture
+// says where*, taken one turn further on a quantity that would otherwise have
+// needed it most.
+function updateDecide(now) {
+  const c = renderer.selected;
+  const alive = c && !c.dead;
+  const el = $("decide");
+  const fig = $("decide-fig");
+  const canvas = $("decide-canvas");
+  if (!alive) {
+    // Put out rather than dimmed, and the whole figure rather than the canvas:
+    // the scale under it names positions on a line that is no longer drawn, and
+    // three labels under an empty box is the same lamp nobody turned off
+    // (v1.154), in the register that reads as a fact about a living animal.
+    const idle = `invite:${hand}`;
+    if (view.decideSig === idle) return;
+    view.decideSig = idle;
+    view.decideWordsAt = 0;
+    el.classList.add("waiting");
+    fig.hidden = true;
+    $("decide-line").textContent = decideInvite(hand);
+    return;
+  }
+  const mark = steerMark(c);
+  if (fig.hidden) {
+    fig.hidden = false;
+    el.classList.remove("waiting");
+    // The hold is dropped on the way in, never carried across the gap — a newly
+    // picked animal must not read under the last one's sentence.
+    view.decideWordsAt = 0;
+  }
+  drawSteer(canvas.getContext("2d"), canvas.width, canvas.height, mark);
+  if (now - view.decideWordsAt < WORD_HOLD_MS) return;
+  view.decideWordsAt = now;
+  const name = givenName(c.id);
+  const share = steer.share();
+  // The label is rewritten on every beat of the hold, and the visible line only
+  // when it has actually changed. `updateEyeview` keys both on the one
+  // signature, which is right there because its sentence turns over with what
+  // is in sight — and would be wrong here: this sentence is a name, a coarse
+  // state and a rounded percent, so it can stand still for a minute while the
+  // two positions the label describes have moved a hundred times. A listener's
+  // only copy of a picture may not be cached on a sentence that is about
+  // something else.
+  canvas.setAttribute("aria-label", decideSay(name, mark, share));
+  const line = decideLine(name, mark, share, hand);
+  if (line === view.decideSig) return;
+  view.decideSig = line;
+  $("decide-line").textContent = line;
 }
 
 // ---- The key to the water (v1.122) ----

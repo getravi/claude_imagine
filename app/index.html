@@ -351,6 +351,63 @@
           </div>
         </section>
 
+        <!-- What it decides (v1.163). The middle third of the animal, and the
+             last one this page was missing: the disc above says what it is
+             told, the line above that says what it ends up doing, and until now
+             nothing anywhere showed the step between them — the brain the front
+             door has promised since day one.
+
+             One horizontal line, read left to right as *which way*. A green
+             speck for the food it can see; a white bar for the turn its brain
+             is asking for. Both marks are borrowed from the water, so
+             `🔍 What you are looking at` is already this figure's legend.
+
+             Not behind `data-expert`, for `#eyeview`'s reason: it is a picture
+             rather than an instrument, and it is the picture the tagline has
+             been making a claim about for a hundred and sixty-two releases.
+
+             `src/decide.js` owns the marks, the words and the tally; main.js
+             only writes them here. -->
+        <section id="decide" class="decide waiting" aria-labelledby="decide-h">
+          <h2 id="decide-h">🧠 What it decides</h2>
+          <div class="dc-body">
+            <figure class="dc-fig" id="decide-fig" hidden>
+              <canvas
+                id="decide-canvas"
+                class="dc-canvas"
+                width="248"
+                height="72"
+                role="img"
+                aria-label="Nobody is picked yet."
+              ></canvas>
+              <!-- The scale in the document rather than on the canvas: three
+                   words that promise a reader a size belong in text the page
+                   can grow, not in canvas pixels that shrink with the picture
+                   (v1.160). `aria-hidden` because the canvas's own label
+                   already says both positions in words. -->
+              <figcaption class="dc-scale" aria-hidden="true">
+                <span>its left</span><span>straight ahead</span><span>its right</span>
+              </figcaption>
+            </figure>
+            <div class="dc-words">
+              <!-- The pointer register of `hand.js`'s `decideInvite`; main.js
+                   rewrites it for a thumb on the first frame. -->
+              <p class="dc-line" id="decide-line">
+                Pick an animal — click one, or press M — and this shows what it
+                decides to do.
+              </p>
+              <p class="dc-note">
+                Nobody wrote a rule that says swim towards food. The animals a
+                pond is handed turn towards the food they can see about half the
+                time — a coin toss. Five thousand steps later, the ones still
+                swimming manage it nearly three times in five. That small edge,
+                taken again every step of every life, is the whole of what has
+                happened here.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <!-- The life of the animal you were watching (v1.121, moved here in
              v1.151). The card `src/obituary.js` writes has lived inside the
              fact grid since it was built, on the reasoning that the panel

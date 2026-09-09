@@ -19,12 +19,12 @@
 //                                                        ← 104 px of keys, on a
 //                                                          device with none
 //
-// Fifteen places on this page name an input device, and they account for
-// themselves: the eight sentences this file now holds in two registers, the
+// Seventeen places on this page name an input device, and they account for
+// themselves: the ten sentences this file now holds in two registers, the
 // pan-and-zoom pair, the two paragraphs of accelerators above, the minimap's
 // tooltip and the pond's screen-reader help — both deliberately left in the
 // mouse-and-keyboard register, for reasons given below — and one world's blurb
-// that has stopped naming a device at all. **One pair of the fifteen had ever
+// that has stopped naming a device at all. **One pair of the seventeen had ever
 // asked which device you had**: the pan-and-zoom hint, which has carried a
 // `.fine-only` and a `.coarse-only` copy since the gestures landed. The fix went
 // where the defect was *noticed*, and stopped there; every other sentence kept
@@ -123,6 +123,19 @@ export const PHRASES = Object.freeze({
   eyeInvite: Object.freeze({
     pointer: "Pick an animal — click one, or press M — and this shows what that animal can see.",
     touch: "Tap an animal — any of them — and this shows what that animal can see.",
+  }),
+
+  /**
+   * The steering figure under the disc, before anybody has been picked
+   * (v1.163).
+   *
+   * The third of these, and the first one written without anybody having to
+   * decide it belonged here — which is the only evidence that v1.155's lesson
+   * actually took.
+   */
+  decideInvite: Object.freeze({
+    pointer: "Pick an animal — click one, or press M — and this shows what it decides to do.",
+    touch: "Tap an animal — any of them — and this shows what it decides to do.",
   }),
 
   /** The inspector before anything is selected. */

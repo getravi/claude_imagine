@@ -591,6 +591,97 @@ body.simple [data-expert] {
   min-height: 0;
 }
 
+/* What it decides (v1.163). The same plate and the same two-column body as
+   `.eyeview` directly above it, on purpose: the two panels are one idea in two
+   halves — what it is told, and what it does with that — and a reader should
+   not have to notice a join. Every rule here that is not about the figure's own
+   shape is the eyeview rule said again for the sibling class, so this adds no
+   ink/ground pair `test/legibility.test.js` has not already walked. */
+.decide {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px 14px;
+}
+.decide h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.dc-body {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+/* Shrinkable, not fixed. `.ev-disc` above is 112 px and never meets a column
+   narrower than itself; this figure is 248, and a width sweep found it eating
+   the panel's right padding at every viewport under 326 px — the v1.109 rule
+   that a constraint which is not declared gets discovered by a visitor. So the
+   basis is the size it wants and the shrink factor is 1, and `min-width: 0`
+   lets a flex item actually go below its content's intrinsic width. */
+.dc-fig {
+  flex: 0 1 248px;
+  min-width: 0;
+  margin: 0;
+  width: 248px;
+}
+.dc-fig[hidden] {
+  display: none;
+}
+/* `height: auto` against the canvas's own 248 × 72 backing store, so the
+   picture keeps its shape at any width the column can give it.
+
+   This is the one figure here that lets a canvas pixel stop being a page pixel,
+   and the reason it may is that **nothing in it promises a reader a size**
+   (v1.160's question, asked and answered rather than inherited): every mark is
+   a position on a line, and a position is a ratio. The one thing under it that
+   *is* a promise — the three words naming the ends and the middle — is document
+   text, and its own margin is a percentage below for exactly this reason. */
+.dc-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* The three words under the line. Spread to the ends and the middle so each one
+   sits under the part of the scale it names — the figure's own margin is the
+   padding here, so "its left" starts where the line does. */
+.dc-scale {
+  display: flex;
+  justify-content: space-between;
+  /* The figure's own side margin as a share of its width (12 of 248), so "its
+     left" starts exactly where the line does and the middle word stays on the
+     middle rule at every width the figure is drawn at. A fixed 12 px here
+     would drift off the line the moment the canvas scaled. */
+  padding: 0 4.839%;
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.dc-words {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.dc-line {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  /* Three lines' worth: the longest of these sentences carries a name, a verb
+     and a percentage, and a column that resized under a reader when the tally
+     crossed 100 samples would be the nudge `.ev-line` was padded against. */
+  min-height: 4.35em;
+}
+.dc-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.decide.waiting .dc-line {
+  color: var(--ink-dim);
+  min-height: 0;
+}
+
 /* The life of the animal you were watching (v1.151). The card `obituary.js`
    writes, in a place a reader can see it: `.obit`'s own paragraphs and swatch,
    unchanged, in a plate under the water instead of a block inside the fact grid

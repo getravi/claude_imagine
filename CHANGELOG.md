@@ -4,6 +4,148 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.163.0] — 2026-09-09
+
+**🧠 What it decides** — the animal's own steering, on the same line as the
+food it is steering by.
+
+One horizontal line under the disc. A green speck on the top row for where the
+nearest food lies, with a line dropped from it. A white bar on the bottom row,
+out from the middle to the turn its brain is asking for. Line the two up and the
+animal is going for its lunch. Do not, and you are looking at the honest answer
+to *why is that one being so stupid* — which is that nobody wrote the rule and
+this one has not inherited it.
+
+Sees → **decides** → does. The page has had the first and the last since v1.161
+and v1.148. This is the middle, and until now the only picture of it anywhere
+here was a bar chart of 243 weights, behind the view switch, in the panel a
+newcomer never opens.
+
+### The number
+
+Twelve seeds across each pond's first six thousand steps — 233,123
+animal-instants with food in sight:
+
+| who is steering | turns towards the food it can see |
+| --- | --- |
+| the animals a pond is handed | **49.7%** (n = 24,721) |
+| everyone, over the whole run | 57.5% |
+| everyone still swimming after 5,000 steps | **58.6%** |
+
+The founders are a coin toss — not close to one, 49.7% on 24,721 samples, which
+is the arithmetic null that needs no measuring: a brain of random weights has no
+opinion about which way food is. Five thousand steps later the pond turns the
+right way three times in five, and the whole of the difference is that the ones
+that happened to turn the right way had more young.
+
+**Nine points is a small edge, and that is the point of putting it on a screen
+rather than in a sentence.** It is taken once a step, by every animal alive, for
+as long as it lives. What it compounds into is the number `🎯 Are they getting
+better?` reports one panel down: **75.2%** of the animals in a grown pond are
+*pointed at* their food. The two figures are not in tension and the pair is the
+most interesting thing here — `aim.js` measures a **position**, which is hundreds
+of decisions already added up, and this measures **one decision**. The position
+is where the tiny bias has got to. The decision is the bias.
+
+### Your animal's score
+
+The line beside the figure carries a running share: *Nim is swimming hard, and
+has turned towards food it could see 62% of the time since you picked it.*
+Sampled on the **step**, from the same per-step observer `aim.js` uses and for
+the same reason — two people who pick the same animal in the same pond read the
+same number, on a phone and on a desktop, and a 2,600-step skip adds 2,600
+decisions rather than the forty frames it took.
+
+`MIN_SAMPLES = 120` is measured, not chosen. Following 110 animals for their
+next 900 steps, the median gap between the share at N samples and the share that
+animal finishes on is **5.0 points at 60, 3.8 at 120, 1.9 at 300**. Two seconds
+of watching buys a number good to about four points; the next 1.9 points cost
+three times as long. Below that the line says it is still watching rather than
+printing a share made of nine samples.
+
+### The rule this release is actually about
+
+v1.161 split a panel by **quantity**: the words say *what*, the picture says
+*where*. This one splits the same panel by **time**. The words are about what
+this animal has done since you picked it; the picture is about what it is doing
+now. There is no instant at which the two are describing the same thing, so no
+hold, however long, can put them out of step — which is what made it safe to
+give a caption a number at all beside a mark that moves every step.
+
+Two consequences, both of them the whole design rather than trimmings:
+
+- **The visible line never names a direction.** Not once, in any state, and
+  `test/decide.test.js` sweeps every combination and fails on the word. The
+  figure is drawing both directions an inch away.
+- **The spoken label does**, because a listener has no figure — and it is
+  rewritten on every beat of the hold rather than cached on the sentence. The
+  sibling panel keys both on one signature, which is right there and would be
+  wrong here: this sentence is a name, a coarse state and a rounded percent, so
+  it can stand still for a minute while the positions the label describes move a
+  hundred times. **A listener's only copy of a picture may not be cached on a
+  sentence that is about something else.**
+
+### Two things a browser found that `node --test` could not
+
+- **The first draft read as a slider with a dot above it.** A speck on one rule
+  and a bar on another are two gauges; a reader has to be *shown* that the two
+  positions are the same question. The fix is one faint line dropped from the
+  speck to the steering row, and it turns the figure into a sentence: **aim
+  here**.
+- **The figure was eating the panel's right padding at every width the sweep
+  tried from 280 to 324 px** (clear by 328; the sweep walks in fours).
+  `.ev-disc` one panel up is 112 px and never meets a column narrower
+  than itself, so the fixed-width idiom it established was safe only for its own
+  size — this figure is 248. It now shrinks, and the three words under it are
+  margined as a *share* of its width (12 of 248), so "its left" stays on the end
+  of the line at every size. This is the one figure here that lets a canvas pixel
+  stop being a page pixel, and the reason it may is that nothing in it promises
+  a reader a size: every mark is a position on a line, and a position is a ratio.
+  The page's own floor is unchanged and was measured rather than assumed — the
+  document overflows below 296 px on the commit before this one and on this one,
+  by the same pixel counts.
+
+### Added
+
+- `src/decide.js` — the marks, the words, the two registers, the running share
+  and the drawing. Pure observer: it reads the input buffer the brain was handed
+  and re-runs the pass with `learning: false` (the argument `nn.js` has carried
+  since plasticity landed, for exactly this), writes nothing to any creature,
+  adds no field to anything, and draws no random number.
+- `test/decide.test.js` — 25 tests, led by the one everything rests on: what is
+  drawn is bit-for-bit what the brain told the body, pinned against a real
+  `think()` with the extra senses on and off.
+- `🧠 What it decides` in `app/index.html`, under `👁 What it can see` and not
+  behind `data-expert` — a picture rather than an instrument.
+- `hand.decideInvite`, in both registers, on the way in.
+
+### Fixed
+
+- **The state hash has never reached the per-weight plasticity coefficients.**
+  `stateFingerprint` mixed `brain.plastic` — the boolean saying *is this brain
+  plastic at all* — where the comment beside the line describes `brain.plast`,
+  the coefficient array. One letter, and `Hash#array` mixes the same marker for
+  `false` as for `undefined`, so a fixed-brain pond hashes identically either
+  way and **no recorded constant moves**. That is why nothing could have caught
+  it: the omission was invisible by construction. A field name one letter from
+  another field name is not checked by the test that reads it; it is checked by
+  the test that fails when it is wrong, and there was none. There is now
+  (`test/plasticity.test.js`), and it fails on the old line.
+- **`hand.js`'s header counted eight sentences over a table of nine**, two
+  releases after a comment in that very table about how a sentence belongs here
+  the moment it is written. The sentence went in; the number describing the
+  table did not. `prosecounts.test.js` exists for exactly this and this
+  collection was outside its domain, so `test/hand.test.js` now checks the
+  header's count — and the derived one in the same paragraph — against the table
+  itself.
+
+### Changed
+
+- `src/viewstate.js` holds the panel's signature and its word clock, world-scoped
+  for `eyeSig`'s reason. The tally itself is a machine rather than a cache, so it
+  lives beside `lineage` and `aim` in `main.js` and is forgotten in the same
+  funnel.
+
 ## [1.162.0] — 2026-09-09
 
 **🏁 Day one vs today** — the same question this page has answered five times,

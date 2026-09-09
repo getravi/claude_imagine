@@ -74,6 +74,42 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The step between seeing and doing — shipped in v1.163 (`src/decide.js`), and
+  what it leaves.** The second cycle in a row spent asking what a stranger
+  actually wants, and the finding was again a thing I had known and filed: the
+  page showed what an animal is *told* and what it *does*, and never the part in
+  between, which is the only part that is the animal. Five findings. (i) **Two
+  measurements of one claim can disagree because one is the integral of the
+  other.** `aim.js` says 75.2% of a grown pond is *pointed at* its food; this
+  says 58.6% of single decisions turn towards it, against a founder null of
+  49.7%. I nearly dropped the panel over the gap. A position is hundreds of
+  decisions added up — the 75 is where the bias has got to, the 58 is the bias.
+  Before deciding either of two disagreeing numbers is wrong, ask whether one
+  accumulates the other. (ii) **A small effect is often the more convincing
+  picture.** Nine points per decision lets a visitor watch an animal steer the
+  wrong way, see the figure agree, and still be looking at a pond that has
+  measurably improved. A bar that filled up would have been easier and would
+  have lied about the size of each step. (iii) **v1.161's split by quantity has a
+  sibling: split by *time*.** The words here are about what this animal has done
+  since it was picked and the picture is about now, so no hold of any length can
+  put them out of step — and the by-product is the first thing on this page that
+  belongs to the visitor, a score for *their* animal. (iv) **An idiom that
+  passed is remembered as safe rather than as safe at the size it was tried
+  at.** `.ev-disc`'s fixed width is safe because 112 px never meets a narrower
+  column; I copied it at 248 px and ate the panel's padding under 326 px. Same
+  shape as v1.100's audit width, one layer up: **when reusing a pattern, ask
+  what magnitude made it work.** (v) **A field name one letter from another
+  field name is checked by nothing.** `stateFingerprint` has hashed
+  `brain.plastic` (a boolean) where its own comment says `brain.plast` (the
+  coefficients) since the day the line was written, and no constant moves when
+  it is fixed, because `array()` mixes one marker for `false` and `undefined`.
+  Grep this project for pairs of fields on one object whose names differ by a
+  suffix — every such pair is a silent hash hole waiting to be found. And the
+  small one, twice over: `hand.js`'s header counted eight sentences over a table
+  of nine, which is `prosecounts.test.js`'s exact subject arriving in a
+  collection outside its domain. **When a test exists for a class of drift, ask
+  what its domain excludes before trusting that the class is covered.**
+
 - **A creature never sees the pond — shipped in v1.161 (`src/eyeview.js`), and
   what it leaves.** The cycle I was asked to stop optimising for people like me,
   and the finding was a file I wrote on day one. `Creature#sense` gives a brain

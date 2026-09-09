@@ -5,6 +5,7 @@ import { Genome, genomeLength, BRAIN } from "../src/genome.js";
 import { World } from "../src/world.js";
 import { makeConfig } from "../src/config.js";
 import { RNG } from "../src/rng.js";
+import { stateFingerprint } from "../src/fingerprint.js";
 
 const WLEN = NeuralNet.weightCount(BRAIN.inputs, BRAIN.hidden, BRAIN.outputs);
 
@@ -92,4 +93,21 @@ test("plasticity worlds are deterministic for a fixed seed", () => {
   }
   assert.equal(a.creatures.length, b.creatures.length);
   assert.equal(a.stats.births, b.stats.births);
+});
+
+test("the state hash reaches the per-weight plasticity coefficients", () => {
+  // v1.163. `stateFingerprint` has hashed `brain.plastic` since the day the
+  // brain got three arrays instead of one, and `plastic` is the boolean saying
+  // *is this brain plastic at all* — `plast` is the array of coefficients the
+  // comment beside the line describes. `Hash#array` mixes the same marker for
+  // `false` and for `undefined`, so a fixed-brain pond hashed identically
+  // either way and no recorded constant ever moved: the omission was invisible
+  // by construction, which is the only kind worth writing a test for.
+  const w = new World(makeConfig({ seed: 5, plasticity: true }));
+  for (let i = 0; i < 50; i++) w.step();
+  const alive = w.creatures.find((c) => !c.dead && c.brain.plast);
+  assert.ok(alive, "a plastic world should hold a brain with coefficients");
+  const before = stateFingerprint(w);
+  alive.brain.plast[0] += 0.5;
+  assert.notEqual(stateFingerprint(w), before, "moving a coefficient must move the hash");
 });
