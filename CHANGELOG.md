@@ -4,6 +4,110 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.161.0] — 2026-09-09
+
+**👁 What it can see** — the pond as the animal has it, which is almost none of
+the pond.
+
+A disc under the line about the animal you picked. The animal at the centre with
+its nose pointing up, and up to three dots on it: the nearest speck of food, the
+nearest animal it could eat, the nearest animal that could eat it. That is
+everything a creature here is ever told about the world outside its own body —
+nine numbers out of the sixteen its brain is run on — and until this release
+nothing on the page said so.
+
+### The number
+
+Twelve seeds, six thousand ticks each, sampled every fifty — 264,780
+pond-instants:
+
+| what one animal can see | share of instants |
+| --- | --- |
+| nothing at all | 0.1% |
+| one thing | 70.6% |
+| two things | 27.6% |
+| all three | 1.7% |
+
+And the one that made this worth building:
+
+> **Of the animals that can see food at all, 28.3% have it behind them.**
+
+More than one in four of the arrowheads on screen is steering by a speck the
+visitor can see plainly and it cannot reach without turning round. A visitor who
+watches that happen concludes the simulation is broken. It is not broken — it is
+what it is like to be a creature with three numbers and no eyes, and this is the
+first surface here that can show it.
+
+### Every mark is borrowed
+
+Nothing in the figure is a new mark, so the placard two panels down
+(`🔍 What you are looking at`) is already this figure's legend:
+
+- **food** is the pond's own mote, drawn twice the way `key.js`'s swatch draws
+  it, because the water composites food additively;
+- **an animal it could eat** is a body in one of that placard's stand-in hues,
+  now shared rather than re-chosen;
+- **an animal that could eat it** wears `predatorOutline()`, the warm line on
+  every hunter in every frame;
+- **the reach** is `visionReach()` — literally the ring `V` puts around a
+  creature in the water.
+
+Nose up rather than north up: every bearing in the input vector is relative to
+the animal's own heading, so a picture with north at the top would draw a frame
+of reference the animal does not have.
+
+### The rule this release is actually about
+
+The first draft put the bearing in the sentence and held the sentence for 900 ms
+while redrawing the disc every frame — v1.157's *the words carry the scale, the
+ink carries the moment*. A browser walk photographed the result: the caption read
+*a speck of food behind it on its left* beside a disc with the speck up and to
+the left. Both correct, 900 ms apart.
+
+> **The words say what. The picture says where.**
+
+Split by *quantity*, not by refresh rate. What is in sight changes 0.36 times a
+second at 1× (about once every three seconds, same twelve seeds), so the line is
+steady because of what it is about rather than because anything is steadying it,
+and nothing it says can go stale against the figure beside it. `WORD_HOLD_MS`
+stops being a source of disagreement and becomes what it should have been: a
+floor under churn at 20×, where the same quantity turns over about seven times a
+second.
+
+The `aria-label` is the one place bearings and distances are still put into
+words, and it keeps them — a listener has no disc to read them off, and nothing
+to catch the label out against.
+
+### Added
+
+- `src/eyeview.js` — the marks, the compass, the two registers and the drawing.
+  Pure observer: reads the input buffer the brain was already handed, writes
+  nothing, draws no random number. `test/eyeview.test.js` runs a watched pond
+  against an unwatched one and fingerprints both.
+- `👁 What it can see` in `app/index.html`, under `👆 What they are doing` and
+  not behind `data-expert` — it is a picture rather than an instrument, and
+  v1.157's finding was that the quiet side of v1.149's switch had seven panels
+  of prose and no figures.
+- `hand.eyeInvite`, in both registers. A phone is never told to click or to
+  press a key it does not have — v1.155's rule, applied at the site rather than
+  a release later.
+
+### Changed
+
+- `doing.js#SENSE` gains `foodSin`, `preySin` and `threatSin`, and is now the
+  page's shared account of what an animal perceives rather than a list of what
+  one file happened to need. `test/doing.test.js` pins the sign of all three
+  against a real `sense()` call: `sin` is positive to the animal's right, and a
+  flip there would draw a coherent mirrored world and look entirely right.
+- `key.js#SAMPLE_HUES` is exported, so two placards cannot disagree about what a
+  generic creature looks like.
+
+### Fixed
+
+- A held sentence outliving its subject: the panel is put back to its invitation
+  when the animal you were watching dies, rather than going on describing what a
+  dead animal can see. Same shape as v1.154's lamp that no path turned off.
+
 ## [1.160.0] — 2026-09-07
 
 Press the button the page tells you to press, on a phone, and half the pond

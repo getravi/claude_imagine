@@ -526,6 +526,71 @@ body.simple [data-expert] {
   font-weight: 600;
 }
 
+/* ---- The pond as the animal has it (v1.161) ----
+   The panel's own box and the panel's own inks, so this adds no ink/ground pair
+   `test/legibility.test.js` has not already walked. The disc and the words sit
+   side by side and wrap to a stack when there is no room, which on a phone puts
+   a 112 px picture above two short paragraphs rather than squeezing the
+   sentence into a gutter beside it — `flex-wrap` and a `min-width` on the words
+   is the whole rule, and it needs no breakpoint because the number that decides
+   it is the sentence's own comfortable width (v1.157's finding: a flex basis is
+   a wrap point, not a width). */
+.eyeview {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px 14px;
+}
+.eyeview h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.ev-body {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+/* The canvas carries its own size as an attribute; this stops the flex row from
+   ever shrinking the backing store's worth of picture into fewer pixels than it
+   was drawn at. */
+.ev-disc {
+  flex: none;
+  width: 112px;
+  height: 112px;
+}
+.ev-disc[hidden] {
+  display: none;
+}
+.ev-words {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.ev-line {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  /* Two lines' worth, so a held sentence that lengthens does not nudge the
+     column under a reader mid-paragraph — `.doing .d-text`'s rule. */
+  min-height: 2.9em;
+}
+/* The constant claim under the live one, quieter because it is not a reading of
+   this pond: it is true of every animal in every world here. */
+.ev-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+/* Nobody picked: the line is the only thing in the panel and it is an
+   instruction rather than a fact, which is the register `.doing.waiting` sets
+   one band up. */
+.eyeview.waiting .ev-line {
+  color: var(--ink-dim);
+  min-height: 0;
+}
+
 /* The life of the animal you were watching (v1.151). The card `obituary.js`
    writes, in a place a reader can see it: `.obit`'s own paragraphs and swatch,
    unchanged, in a plate under the water instead of a block inside the fact grid

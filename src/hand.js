@@ -110,6 +110,21 @@ export const PHRASES = Object.freeze({
     touch: "Tap an animal — any of them — and this line will follow it.",
   }),
 
+  /**
+   * The disc under that line, before anybody has been picked (v1.161).
+   *
+   * The second instruction on this page whose whole content is *the thing you
+   * have not done yet*, and it is here from the start rather than a release
+   * later because the lesson one entry up is the file's own: a conditional
+   * written at one site is a decision, and a sentence about a device belongs in
+   * the table the moment it is written, not the moment somebody notices it on a
+   * phone.
+   */
+  eyeInvite: Object.freeze({
+    pointer: "Pick an animal — click one, or press M — and this shows what that animal can see.",
+    touch: "Tap an animal — any of them — and this shows what that animal can see.",
+  }),
+
   /** The inspector before anything is selected. */
   inspectorEmpty: Object.freeze({
     pointer:

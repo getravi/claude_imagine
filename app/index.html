@@ -294,6 +294,63 @@
           </p>
         </section>
 
+        <!-- The pond as the animal has it (v1.161). The band above says what
+             the animal you picked is *doing*; this says what it is doing it
+             *with*, which turns out to be almost nothing: a direction and a
+             distance to the nearest speck of food, to the nearest animal it
+             could eat, and to the nearest one that could eat it. Nine numbers.
+             Not the pond — nine numbers.
+
+             It is here, straight under `#doing`, because the two are one
+             thought about one animal, and because this is the panel that
+             explains the other one's failures: an animal that swims past a
+             pellet looks like a bug until you can see that the pellet was
+             behind it.
+
+             Deliberately *not* behind `data-expert`. It is a picture rather
+             than an instrument — v1.157's finding was that the quiet side of
+             the switch had seven panels of prose and no figures at all — and it
+             is the only surface on this page that shows a mind rather than a
+             body. `src/eyeview.js` owns the marks, the words and the drawing;
+             the marks are all borrowed from the water so the placard under it
+             is already the legend for this one.
+
+             The note below the line is fixed prose and lives in the document
+             rather than in the module, because it is not a reading of any
+             pond: it is true of every animal in every world here, and a
+             constant claim generated per frame is a constant claim nobody can
+             find. -->
+        <section id="eyeview" class="eyeview waiting" aria-labelledby="eyeview-h">
+          <h2 id="eyeview-h">👁 What it can see</h2>
+          <div class="ev-body">
+            <canvas
+              id="eyeview-canvas"
+              class="ev-disc"
+              width="112"
+              height="112"
+              role="img"
+              aria-label="Nobody is picked yet."
+              hidden
+            ></canvas>
+            <div class="ev-words">
+              <!-- The pointer register of `hand.js`'s `eyeInvite`, which is
+                   what this page says on the hardware most of its own walks are
+                   taken on. `main.js` rewrites it for a thumb on the first
+                   frame; this is what a reader sees before any script runs. -->
+              <p class="ev-line" id="eyeview-line">
+                Pick an animal — click one, or press M — and this shows what
+                that animal can see.
+              </p>
+              <p class="ev-note">
+                A creature never sees the pond. It is told which way the nearest
+                speck of food lies and how far, the same for the nearest animal
+                it could eat and the nearest one that could eat it, and how full
+                it is. That is all. Everything it ever does, it does from that.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <!-- The life of the animal you were watching (v1.121, moved here in
              v1.151). The card `src/obituary.js` writes has lived inside the
              fact grid since it was built, on the reasoning that the panel

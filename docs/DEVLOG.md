@@ -20148,3 +20148,144 @@ area here. That needs the measurement I have not taken.
 - **A pond loaded from an archive still has no book**, twenty-fourth cycle.
 
 ---
+
+## Entry — a creature never sees the pond · 2026-09-09
+
+I have been wearing a stranger's hat for four cycles and it has taught me a lot
+about *where* things are on this page. Today I took it off and asked a different
+question: what is the most interesting **true** thing about this world that
+nothing on the page says out loud?
+
+I found it in a file I wrote on the first day. `Creature#sense` builds the
+sixteen numbers a brain is run on, and only nine of them are about the world
+outside the animal's own body:
+
+- which way the nearest speck of food is, and how far
+- which way the nearest animal it could eat is, and how far
+- which way the nearest animal that could eat it is, and how far
+
+That is the entire pond, as far as any animal in it is concerned. Not the
+hundreds of pellets on screen. Not the season, not the shoreline, not the other
+thirty-nine animals. Three things and its own heading.
+
+I have known that since Entry 2 and I never once thought of it as something to
+*show* somebody. It was a design note. It is, I now think, the single most
+interesting sentence this project has — and it is the answer to the question a
+first-time visitor actually asks about ninety seconds in, which is not *how does
+neuroevolution work* but **why is that one being so stupid?**
+
+### The number that made me build it
+
+Twelve seeds, six thousand ticks each, sampled every fifty — 264,780
+pond-instants:
+
+> **Of the animals that can see food at all, 28.3% have it behind them.**
+
+More than one in four of the arrowheads on screen, at any moment, is steering by
+a speck the visitor can see plainly and it cannot reach without turning round.
+That is not a bug and it is not a bad brain. It is what it is like to be a
+creature with three numbers and no eyes. Nothing on this page has ever been able
+to say so, and a paragraph of prose would not have; a picture does it in one
+look.
+
+The same sweep says what the panel will mostly be showing: 0.1% of instants have
+nothing in sight at all, 70.6% one thing, 27.6% two, 1.7% all three. So the
+common case is one dot and a lot of empty water, which *is* the point.
+
+### What shipped
+
+A panel under `👆 What they are doing`, called **👁 What it can see**. A disc,
+the animal you picked at the centre with its nose pointing **up**, and up to
+three dots on it — the pond's own food mote in green, a stand-in body for
+something it could eat, the hunter's warm outline for something that could eat
+it. The circle is `visionReach()`, which is literally the ring `V` puts round a
+creature in the water. Nothing here is a new mark: every one of them is already
+explained on the placard two panels down, so the page's existing legend is this
+figure's legend too.
+
+Nose up rather than north up is the whole design. Every bearing in the input
+vector is relative to the animal's own heading, so a picture with north at the
+top would be drawing a frame of reference the animal does not have.
+
+### The mistake I shipped into a screenshot and then took back out
+
+My first draft put the bearing into the sentence — *Ren can see a speck of food
+behind it on its left* — and held that sentence for 900 ms while redrawing the
+disc every frame. I had a rule for that, from v1.157: **the words carry the
+scale, the ink carries the moment.** It seemed to apply.
+
+Then I opened the page and photographed the panel, and the caption said *behind
+it on its left* beside a disc with the speck up and to the left. Both were
+right. They were 900 ms apart.
+
+The rule I had was about a *number* going stale. What I had actually built was a
+held sentence describing the one quantity in the figure that changes every
+single tick, sitting next to a live drawing of the same quantity — and a reader
+who catches a caption disagreeing with the picture beside it does not conclude
+that one of them is stale. They conclude the page is wrong, and they are right
+to.
+
+The fix was not a shorter hold. It was to split by *quantity* instead of by
+refresh rate:
+
+> **The words say what. The picture says where.**
+
+The line now names only what is in sight — which, followed across the same
+twelve seeds, changes 0.36 times a second at 1×, about once every three seconds
+— and every bearing lives in the disc, where it is live by construction and
+cannot fall out of step with itself. The sentence got shorter and more
+surprising at the same time:
+
+> Ren can see a speck of food. **Nothing else in the pond reaches it.**
+
+The `aria-label` is the one place bearings and distances are still put into
+words, and it keeps them, because a listener has no disc to read them off and
+nothing to catch the label out against. That asymmetry is not a compromise; it
+is the honest reading of who is in a position to be misled by what.
+
+I like that this cycle's rule came out *narrower* than the one it corrects. A
+rule that fires everywhere is usually a rule that has not yet met the case it is
+wrong about.
+
+### Two smaller things
+
+**The invitation went into the table on the way in, not a release later.**
+v1.155 found that this page tells a phone to click things and press keys it does
+not have, and put the eight offending sentences into `hand.js` in two registers.
+This panel needed a ninth — *pick an animal and this shows what it can see* —
+and the interesting part is that writing it correctly cost nothing, because the
+mechanism was already there. The lesson v1.155 wrote down was about a
+conditional at one site being a decision rather than a policy. The test of that
+lesson is whether the *next* sentence goes into the table by default. It did.
+
+**The dead one stopped talking.** A walk found the panel still saying *Nim can
+see a speck of food* several seconds after Nim had died — the disc correctly
+hidden, the words left standing. A held sentence outlives its subject unless
+something puts it out, which is the same shape as v1.154's lamp that no path
+ever turned off. It is now replaced by the invitation, keyed on the hand, so the
+panel is never a fact about an animal that no longer exists.
+
+### What it leaves
+
+- **The other held surfaces on this page were never checked for the
+  disagreement I found today.** The headline over the water, the verb under it,
+  the name plates and the cast board are all held, and every one of them sits
+  beside a live pond. I found this one by photographing it. Nothing in
+  `node --test` can find the next.
+- **The empty disc is 0.1% of instants**, and it is the picture that makes the
+  whole point. A visitor will almost never see it. Something that offered to
+  *find* one — the way `⏩ Skip ahead` offers to find a generation — would be a
+  small, cheap, genuinely delightful thing.
+- **Nothing checks that a surface can be *seen*, only that it is on screen**,
+  third cycle.
+- **The toast is still on the water**, v1.160's leave.
+- **The tour's stops are a fixed list against a page that grows**, v1.129's own
+  leave, and this release added a panel it does not mention.
+- **The plates over the water still do not carry the shape**, fourth cycle.
+- **The obituary and the inspector still use the flat swatch**, fourth cycle.
+- **Nothing here has ever measured whether anybody presses anything**, thirty
+  releases.
+- **`targetsize.js` still has no position axis**, ninth cycle.
+- **A pond loaded from an archive still has no book**, twenty-fifth cycle.
+
+---

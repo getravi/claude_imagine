@@ -62,8 +62,17 @@ import {
  */
 export const NOSE = Object.freeze({ prey: 1.4, hunter: 2.1 });
 
-/** The hues the swatches borrow. Three shades far enough apart to read as three families. */
-const SAMPLE_HUES = Object.freeze([190, 330, 95]);
+/**
+ * The hues the swatches borrow. Three shades far enough apart to read as three
+ * families.
+ *
+ * Exported since v1.161 because `eyeview.js` draws an animal too, and a second
+ * stand-in hue chosen in a second file is how two placards on one page come to
+ * disagree about what a generic creature looks like. A stand-in is not a fact
+ * about any animal, so there is nothing to measure — which is exactly why it
+ * has to be shared rather than re-decided.
+ */
+export const SAMPLE_HUES = Object.freeze([190, 330, 95]);
 
 /** The swatch box, in its own units. Every swatch is drawn to this and scaled by the stylesheet. */
 export const SWATCH = Object.freeze({ w: 30, h: 18, cx: 13, cy: 9, r: 5 });

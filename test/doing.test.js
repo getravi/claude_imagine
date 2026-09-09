@@ -111,6 +111,35 @@ test("the slots doing.js names are the slots sense() writes", () => {
   near(c._in[SENSE.threatCos], -1, "a threat directly behind reads cos -1");
 });
 
+test("the sin slots hold which side a thing is on, and the sign is the animal's", () => {
+  // Added with the slots themselves in v1.161. `sin` is the half of a bearing
+  // no reader of this table had ever needed, and a sign error in it is the
+  // dangerous kind: every surface that used it would draw a coherent, mirrored
+  // world and look entirely right. The world's y grows downward, so an animal
+  // facing +x has its right hand at +y — asserted here rather than argued.
+  const config = makeConfig({ seed: 7, predation: true });
+  const world = new World(config);
+  const c = world.creatures[0];
+  c.x = 100;
+  c.y = 100;
+  c.heading = 0;
+
+  const R = config.visionRadius;
+  c.sense(
+    { x: 100, y: 100 + R * 0.5 }, // food: off to its right
+    R * 0.5,
+    { x: 100, y: 100 - R * 0.5 }, // prey: off to its left
+    R * 0.5,
+    { x: 100 + R * 0.5, y: 100 }, // threat: dead ahead
+    R * 0.5,
+  );
+
+  const near = (a, b, why) => assert.ok(Math.abs(a - b) < 1e-5, `${why}: ${a} vs ${b}`);
+  near(c._in[SENSE.foodSin], 1, "to the animal's right reads sin +1");
+  near(c._in[SENSE.preySin], -1, "to its left reads sin -1");
+  near(c._in[SENSE.threatSin], 0, "dead ahead reads sin 0");
+});
+
 test("nothing in sight reads zero on every slot this module uses", () => {
   const world = new World(makeConfig({ seed: 7 }));
   const c = world.creatures[0];

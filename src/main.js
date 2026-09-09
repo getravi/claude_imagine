@@ -60,6 +60,7 @@ import {
 import { nextHeadline, pondHeadline } from "./headline.js";
 import { lifelineSeries, lifelineCaption, lifelineSay, drawLifeline } from "./lifeline.js";
 import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
+import { WORD_HOLD_MS, drawEye, eyeInvite, eyeLine, eyeSay, eyeSight } from "./eyeview.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -709,6 +710,10 @@ function loop(now) {
   // one says what the water is doing and the other what the animal you picked
   // is doing in it.
   updateDoing();
+  // And the picture of what that animal is doing it *with*, straight after the
+  // sentence, for the reason the lifeline sits after the headline: the words
+  // and the figure about one subject are read as one statement.
+  updateEyeview(now);
   updateKey();
   updateCast(world);
   updateEvolved(world);
@@ -909,6 +914,76 @@ function updateDoing() {
   el.classList.remove("waiting");
   $("doing-icon").textContent = doingIcon(key);
   $("doing-text").innerHTML = doingHTML(givenName(c.id), key);
+}
+
+// ---- What it can see (v1.161) ----
+//
+// The disc under that line: the nine numbers this animal is actually given
+// about the world outside itself, drawn in its own frame with its nose up.
+// `src/eyeview.js` owns the marks, the words and the drawing; this is the
+// adapter onto the DOM, and it is the one on this page that runs on two clocks.
+//
+// **The ink is redrawn every frame and the words are held.** A blip really does
+// move every tick — that is the content — so a picture throttled the way the
+// lifeline's is would stutter instead of swim. A *sentence* that rewrote itself
+// as often would be unreadable at 1× and a strobe at 20×, so it is held for
+// `WORD_HOLD_MS` of wall clock, which is `doing.js`'s unit and for its reason.
+// The split is `lifeline.js`'s rule about a held caption, applied to a figure
+// whose ink moves faster than any other on the page: the words carry what is
+// there, the picture carries where it is.
+//
+// The `aria-label` rides the words rather than the ink, because it *is* words:
+// a live region-free label rewritten sixty times a second is a label a screen
+// reader can never finish reading.
+function updateEyeview(now) {
+  const c = renderer.selected;
+  const alive = c && !c.dead;
+  const el = $("eyeview");
+  const canvas = $("eyeview-canvas");
+  if (!alive) {
+    // Hidden rather than drawn empty: with nobody picked there is no frame to
+    // draw in, and a bare circle beside an instruction is a picture of nothing
+    // (`updateLifeline`'s rule).
+    //
+    // The line is *put out*, not merely dimmed. A held sentence outlives its
+    // subject unless something replaces it, and a walk caught this panel saying
+    // "Nim can see a speck of food ahead on its left" for as long as the tab
+    // was open after Nim had died — the same shape as a lamp nobody turns off
+    // (v1.154), in the one register where it reads as a fact about a living
+    // animal. The idle key carries the hand for `doingSig`'s reason: the one
+    // state whose entire content is an instruction is the one that can least
+    // afford to be in the wrong register.
+    const idle = `invite:${hand}`;
+    if (view.eyeSig === idle) return;
+    view.eyeSig = idle;
+    view.eyeWordsAt = 0;
+    el.classList.add("waiting");
+    canvas.hidden = true;
+    $("eyeview-line").textContent = eyeInvite(hand);
+    return;
+  }
+  const seen = eyeSight(c, world.config);
+  if (canvas.hidden) {
+    canvas.hidden = false;
+    el.classList.remove("waiting");
+    // The hold is dropped on the way in, not carried across the gap: a newly
+    // picked animal must not read under the previous one's sentence for most of
+    // a second, and `WORD_HOLD_MS` exists to steady a line that is changing
+    // rather than to delay the first one.
+    view.eyeWordsAt = 0;
+  }
+  drawEye(canvas.getContext("2d"), canvas.width, canvas.height, seen);
+  // The words, on their own clock. Keyed on the sentence itself as well as on
+  // the hold, so an animal whose surroundings have not changed *in kind* costs
+  // no DOM write however long it has been looked at.
+  if (now - view.eyeWordsAt < WORD_HOLD_MS) return;
+  view.eyeWordsAt = now;
+  const name = givenName(c.id);
+  const line = eyeLine(seen, name);
+  if (line === view.eyeSig) return;
+  view.eyeSig = line;
+  $("eyeview-line").textContent = line;
+  canvas.setAttribute("aria-label", eyeSay(seen, name));
 }
 
 // ---- The key to the water (v1.122) ----

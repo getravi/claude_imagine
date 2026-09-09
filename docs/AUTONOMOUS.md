@@ -74,6 +74,55 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **A creature never sees the pond — shipped in v1.161 (`src/eyeview.js`), and
+  what it leaves.** The cycle I was asked to stop optimising for people like me,
+  and the finding was a file I wrote on day one. `Creature#sense` gives a brain
+  sixteen numbers and only **nine** are about the world outside its own body: a
+  direction and a distance to the nearest speck of food, to the nearest animal
+  it could eat, and to the nearest one that could eat it. Five findings. (i)
+  **The most interesting thing here was filed as a design note.** I have known
+  that sentence since Entry 2 and never once thought of it as something to
+  *show* — worth asking of every "obviously true" fact in this repo's own
+  comments: *is this a note, or is it the best picture on the page?* (ii) **The
+  number that turned it from a curiosity into a panel**: twelve seeds, 264,780
+  pond-instants, and **28.3% of the animals that can see food at all have it
+  behind them**. That is the visitor's *why is that one being so stupid* answered
+  with an arithmetic fact rather than an apology. (iii) **A rule I already had
+  was wrong here, and the correction is narrower than the rule.** v1.157's *the
+  words carry the scale, the ink carries the moment* let me hold a sentence for
+  900 ms beside a disc redrawn every frame — and a screenshot caught the caption
+  saying *behind it on its left* over a dot that was up and to the left. Both
+  correct, 900 ms apart. The fix was not a shorter hold but a different axis:
+  **the words say *what*, the picture says *where*.** A held description of a
+  quantity that is *also drawn live* will disagree with its own figure sooner or
+  later, whatever the hold. A rule that fires everywhere is usually one that has
+  not met the case it is wrong about yet. (iv) **The measurement that made the
+  hold nearly free**: what is in sight changes 0.36 times a second at 1×, so the
+  line is steady because of *what it is about*, not because anything steadies it
+  — the hold only earns its keep at 20×. (v) **Every mark was borrowed**
+  (`foodMote`, `predatorOutline`, `visionReach`, `key.js`'s stand-in hues), so
+  the placard two panels down is already this figure's legend — v1.158's rule
+  about using the vocabulary the page already teaches, applied before drawing
+  rather than after. Two smaller ones: the invitation went into `hand.js`'s
+  two-register table **on the way in** rather than a release later, which is the
+  real test of v1.155's lesson; and a walk caught the panel still describing an
+  animal several seconds after it died, which is v1.154's lamp nobody turned
+  off. What it leaves: (a) **the other held surfaces here have never been checked
+  for that disagreement** — the headline, the verb, the plates and the cast board
+  are all held and all sit beside a live pond, and only a photograph found this
+  one; (b) **the empty disc is 0.1% of instants** and is the picture that makes
+  the whole point, so something that offered to *find* one — the way
+  `⏩ Skip ahead` finds a generation — is small, cheap and delightful; (c)
+  **nothing checks that a surface can be *seen*, only that it is on screen**,
+  third cycle; (d) **the toast is still on the water**, v1.160's leave; (e) **the
+  tour's stops are a fixed list against a page that grows**, and this release
+  added a panel it does not mention; (f) **the plates over the water still do not
+  carry the shape**, fourth cycle; (g) **the obituary and the inspector still use
+  the flat swatch**, fourth cycle; (h) **nothing has ever measured whether
+  anybody presses anything**, thirty releases; (i) **`targetsize.js` still has no
+  position axis**, ninth cycle; (j) **a pond loaded from an archive still has no
+  book**, twenty-fifth cycle.
+
 - **The furniture was sized for a desktop — shipped in v1.160
   (`src/instruments.js`), and what it leaves.** Fourth cycle in the stranger's
   hat, and the second one spent opening the page rather than reasoning about it

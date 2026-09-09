@@ -118,11 +118,21 @@ import { POINTER, say } from "./hand.js";
 /**
  * Where the three bearings this file reads live in `Creature#_in`.
  *
- * The layout is declared in `Creature#sense` and these are the four slots of it
+ * The layout is declared in `Creature#sense` and these are the nine slots of it
  * that describe *the world around this animal*: how near the nearest pellet is
- * and whether it lies ahead (`cos` of the relative bearing is positive in front
- * and negative behind), and the same pair for prey and for a threat. The
- * proximities are 1 at the nose and 0 at the edge of sight.
+ * and which way it lies, and the same triple for prey and for a threat. A
+ * bearing is carried as a `(sin, cos)` pair relative to the animal's own
+ * heading — `cos` is positive in front and negative behind, `sin` is positive
+ * to its right — and the proximities are 1 at the nose and 0 at the edge of
+ * sight.
+ *
+ * **This table is the one declaration and every other reader is a second reader
+ * of it, not a second opinion about it.** `aim.js` takes `foodCos` from here;
+ * `eyeview.js` (v1.161) takes all nine. The three `sin` slots were added for
+ * that release, which is what turned this from a list of what one file happened
+ * to need into the page's shared account of what an animal perceives — a copy
+ * of an index in a second module is the bug that cannot be caught by reading
+ * either file.
  *
  * A comment cannot keep two files in step, so `test/doing.test.js` runs
  * `sense()` on a creature with a known pellet, a known prey and a known threat
@@ -131,10 +141,13 @@ import { POINTER, say } from "./hand.js";
  * quietly describing the wrong sense.
  */
 export const SENSE = Object.freeze({
+  foodSin: 2,
   foodCos: 3,
   foodProx: 4,
+  preySin: 5,
   preyCos: 6,
   preyProx: 7,
+  threatSin: 8,
   threatCos: 9,
   threatProx: 10,
 });

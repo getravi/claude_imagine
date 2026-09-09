@@ -161,6 +161,16 @@ const FRESH = Object.freeze({
   // id it is holding is not the id it is handed — so this is the cache and that
   // is the machine, filed on the two sides of the line each one earns.
   doingSig: "",
+  // What the disc under that line is saying (v1.161). Two fields because the
+  // panel updates on two clocks on purpose: the ink is redrawn every frame
+  // because a blip really is moving, and the words are held for
+  // `WORD_HOLD_MS` because a sentence that rewrote itself sixty times a second
+  // would be unreadable. `eyeWordsAt` is the wall clock the hold is counted on
+  // — the unit `doing.js` settled on, so a hold is the same length at 20× as at
+  // 1× — and `eyeSig` is what was last written, so a held line that has not
+  // actually changed costs no DOM write at all.
+  eyeSig: "",
+  eyeWordsAt: 0,
   // The book of records (v1.124). Keyed on the board's own sentences, which is
   // the strongest key any surface here uses and the only one that has to be:
   // a record's line changes when its holder dies while the record itself holds
