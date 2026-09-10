@@ -386,10 +386,23 @@ export function obituaryHTML(record, config = DEFAULT_CONFIG, family = null) {
   // it is how a reader knows this card is about the animal they were watching
   // and not about somebody else.
   const sw = inspectorSwatch(record.hue);
+  // The title is an `<h2>` as of v1.167, and it is the only heading on this page
+  // that is written rather than typed. Everything else in the contents
+  // (`contents.js`) is a label — *Pond records*, *Worth watching* — and this one
+  // is a name: `🕯️ Rill`. So the moment the animal a visitor has been watching
+  // dies, the page's own table of contents grows a chapter with their name on
+  // it, and shrinks back when the next pick clears the card. That is a reading
+  // of the page rather than a second copy of it, which is the only kind of
+  // navigation this project has found that cannot go stale.
+  //
+  // It replaced a `<strong>` in the same row and keeps that row's class, so the
+  // swatch still sits beside the name and the name is still the same size it
+  // was — `.obit h2` in `style.css` undoes the document's heading metrics
+  // rather than the panel growing a title bar it never had.
   return `
     <div class="obit">
-      <div class="insp-row"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
-        <strong title="creature ${record.id}">${title}</strong></div>
+      <h2 class="insp-row" title="creature ${record.id}"><span class="swatch" style="background:${sw.fill};color:${sw.glow}"></span>
+        ${title}</h2>
       ${sentences.map((s) => `<p>${s}</p>`).join("\n      ")}
       ${kin.length ? `<p class="obit-kin">${kin.join(" ")}</p>` : ""}
       ${meetHeir}

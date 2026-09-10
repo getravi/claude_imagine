@@ -49,6 +49,7 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const page = readFileSync(join(ROOT, "app/index.html"), "utf8");
+const main = readFileSync(join(ROOT, "src/main.js"), "utf8");
 
 /** v1.164's page at 390 × 844: eleven headings, 5,638 px, the water ending at 786. */
 const MEASURED = {
@@ -109,7 +110,13 @@ test("every heading the shipped page carries survives the split", () => {
   // an `<h2>` inside a `<section>`. The overlays — the guide, the postcard, the
   // skip card — carry headings too and are `div`s, which is why they are not in
   // the contents and why this scan has to see the difference.
-  const sections = page.split(/<section\b/).slice(1);
+  // The comments go first. This page explains itself in the margin, and one of
+  // those explanations is *about* headings and says the word `<h2>` out loud —
+  // which this scan read as a heading whose name was four lines of prose. The
+  // DOM `main.js` reads has never been able to make that mistake, so a scan
+  // standing in for it must not either (v1.167, and the third sighting of the
+  // rule: strip the comments before scanning source as if it were markup).
+  const sections = page.replace(/<!--[\s\S]*?-->/g, "").split(/<section\b/).slice(1);
   const headings = [];
   for (const chunk of sections) {
     const end = chunk.indexOf("</section>");
@@ -134,6 +141,85 @@ test("every heading the shipped page carries survives the split", () => {
   // mean somebody added a panel and forgot the mark every other one carries.
   const bare = list.filter((c) => c.icon === UNMARKED_ICON);
   assert.ok(bare.length <= 1, `${bare.length} headings on this page carry no mark of their own`);
+});
+
+test("the three panels about one animal each hand the contents a chapter", () => {
+  // The reason this is a test and not a note: for nineteen releases `#doing`
+  // had no `<h2>`, and so the first panel a visitor meets under the water — the
+  // one that says what the animal they just picked is *doing* — was the only
+  // member of that trio the contents could not offer, could not scroll to, and
+  // could not say you were inside of. Nothing failed. A list assembled from the
+  // headings cannot notice a panel that declines to have one, which is the one
+  // blind spot a reading of the page has and the reason it needs naming here.
+  //
+  // Named panels rather than a count, because the claim is about these three:
+  // they are one thought in three boxes, they are consecutive on the page, and
+  // a contents that offers two thirds of a thought is worse than one that
+  // offers none of it.
+  const html = page.replace(/<!--[\s\S]*?-->/g, "");
+  const trio = ["doing", "eyeview", "decide"];
+  const seen = [];
+  for (const id of trio) {
+    const box = html.match(new RegExp(`<section[^>]*\\bid="${id}"[\\s\\S]*?</section>`));
+    assert.ok(box, `app/index.html has no <section id="${id}">`);
+    const h2 = box[0].match(/<h2[^>]*>([\s\S]*?)<\/h2>/);
+    assert.ok(h2, `#${id} carries no <h2>, so no reading of this page can name it`);
+    const text = h2[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+    const chapter = chapters([text])[0];
+    assert.ok(chapter, `#${id}'s heading "${text}" is not a chapter`);
+    assert.notEqual(chapter.icon, UNMARKED_ICON, `#${id}'s heading carries no mark of its own`);
+    seen.push({ id, at: html.indexOf(box[0]), name: chapter.name });
+  }
+  // Consecutive, and in this order: what it is doing, what it can see, what it
+  // decides. The page may grow a panel between any two of them one day and this
+  // is the assertion that will ask whether that was meant.
+  for (let i = 1; i < seen.length; i += 1) {
+    assert.ok(seen[i].at > seen[i - 1].at, `#${seen[i].id} is above #${seen[i - 1].id}`);
+  }
+  const names = seen.map((s) => s.name);
+  assert.equal(new Set(names).size, 3, `two of the trio share a name: ${names.join(" / ")}`);
+  // The panel labelled by its own heading rather than by a second copy of it.
+  // An `aria-label` beside an `<h2>` is two strings that say the same thing
+  // until somebody edits one of them (v1.165's rule about typed copies).
+  for (const id of trio) {
+    const open = html.match(new RegExp(`<section[^>]*\\bid="${id}"[^>]*>`))[0];
+    assert.ok(
+      /aria-labelledby=/.test(open),
+      `#${id} is not labelled by its own heading`,
+    );
+    assert.ok(!/aria-label=/.test(open), `#${id} carries a heading and a typed copy of one`);
+  }
+});
+
+test("a section that comes and goes re-reads the contents when it does (v1.167)", () => {
+  // The whole claim this feature rests on is that the list is a *reading* of the
+  // page and therefore cannot drift from it. That is only true while something
+  // re-reads whenever the set of shown headings changes. Until v1.167 there were
+  // exactly two such moments — the Simple/Everything switch and a resize — and
+  // both were wired. Then the obituary card grew a heading, and it is the first
+  // section here that appears and disappears on its own, in the middle of a
+  // visit, with no resize and no flip: an animal dies and the page has a chapter
+  // it did not have a second ago.
+  //
+  // So the invariant is about the *pair*, not about either line: wherever
+  // `main.js` shows or hides that card, a re-read is within arm's reach. A line
+  // that toggles it and quietly does not is the exact shape of the staleness
+  // this whole module was written to be immune to.
+  const lines = main.split("\n");
+  const toggles = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (/\b(life|lifeCard)\.hidden\s*=/.test(lines[i])) toggles.push(i);
+  }
+  assert.equal(toggles.length, 2, `${toggles.length} places show or hide the obituary, not 2`);
+  const REACH = 8;
+  for (const at of toggles) {
+    const near = lines.slice(Math.max(0, at - REACH), at + REACH + 1).join("\n");
+    assert.match(
+      near,
+      /rebuildContents\(\)/,
+      `main.js:${at + 1} shows or hides the obituary and no re-read follows it`,
+    );
+  }
 });
 
 test("the reading line starts a third down the screen and ends at the last pixel", () => {

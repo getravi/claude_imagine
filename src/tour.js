@@ -252,6 +252,13 @@ export const TOUR_LENGTH = STOPS.length;
  */
 export const UNTOURED = Object.freeze({
   "pond-name": "the name is written above the water the first stop already rings",
+  // New in v1.167, and the only excuse in this map written the same release as
+  // the heading it excuses. The panel is not new — it has been under the water
+  // since v1.148 — but it had no `<h2>`, so until now it was a panel this audit
+  // could not see: `panels()` walks headings, and a panel with none is in
+  // neither list and fails nothing. That is the hole this map had, exactly the
+  // shape of the two panels the devlog kept saying were missing from it.
+  "doing-h": "the stop at 👋 Meet somebody is one press from filling this line, and a guide that rings its own answer spoils the press",
   "decide-h": "the stop before it rings the eye, and one sentence carries both halves",
   "milestones-h": "a list of things a pond has not done yet is a reward for staying, not a reason to",
   "whoswho-h": "a board asking you to choose an animal, when the stop at 👋 Meet somebody hands you one",

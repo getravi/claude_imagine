@@ -489,15 +489,30 @@ body.simple [data-expert] {
    the selection halo and the zoom badge already draw in the same blue. It sits
    under the water rather than over it, where the eye goes after it has looked
    at the thing the line is about. */
+/* The panel is a heading over a row now (v1.167), not a bare row: it grew the
+   name every other panel under the water already had. The box, the accent edge
+   and the icon-beside-words arrangement are all exactly what they were — the
+   flex that used to sit on the section itself moved down one level onto
+   `.d-body`, so the sentence and its mark still share a line and still centre
+   on each other. `.eyeview h2`'s numbers to the letter, because this heading and
+   that one are read as a pair and a pair that disagrees about its own size
+   reads as two different kinds of thing. */
 .doing {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   background: var(--bg-panel);
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
-  padding: 10px 15px;
+  padding: 10px 15px 12px;
+}
+.doing h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.doing .d-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .doing .d-icon {
   font-size: 18px;
@@ -2222,6 +2237,19 @@ details .field {
    just watching. Only the paragraphs are new, and they are the panel's own
    quiet ink at the size the rest of the column is set in, so this adds no
    ink/ground pair `test/legibility.test.js` has not already walked. */
+/* The title row became an `<h2>` in v1.167, so that the page's contents
+   (`src/contents.js`) can offer a dead animal's name as a chapter of the
+   document — the one entry in that list that is a name and not a label. The
+   card must not look any different for it: a browser's own heading metrics
+   would put a title bar on a plate that has never had one, so the size and the
+   weight here are exactly the `<strong>` this replaced, and the only thing that
+   changed is which tag a reading of the page can see. The row's bottom margin
+   is `.insp-row`'s already; the top one is a default that has to go. */
+.obit h2 {
+  margin-top: 0;
+  font-size: inherit;
+  font-weight: 700;
+}
 .obit p {
   margin: 0 0 8px;
   font-size: 13px;

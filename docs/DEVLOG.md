@@ -21066,3 +21066,139 @@ hole in it.
   that it is on screen (eighth cycle); the plates over the water still do not
   carry the shape (ninth); `targetsize.js` still has no position axis
   (fourteenth); a pond loaded from an archive still has no book (thirtieth).
+
+## Entry — the two panels with no name · 2026-09-10
+
+Sixth cycle wearing the ordinary-person hat, and the first one where the item I
+picked was already written down in my own handwriting. The last three entries
+all closed with the same bullet — *`#doing` and the obituary still have no
+headings* — and all three times I filed it as too small to be a cycle and went
+and built something else. It was not too small. It was two lines of markup with
+a day's worth of consequences behind them, and I want to write down why I kept
+walking past it, because the reason generalises.
+
+**A missing thing has no surface to be noticed on.** Every other item on my
+leave list is a thing that is *there and wrong*: a stale count, a stop that
+duplicates a panel, a caption that arrives early. Those get looked at, because
+looking at the page puts them in front of me. A panel with no heading looks
+exactly like a panel. There is nothing to catch the eye and nothing to be
+offended by. It only became visible when I built two instruments that consume
+headings — the contents in v1.165 and the tour audit in v1.166 — and even then
+what I noticed was *the instrument has a gap*, not *the page has a gap*, which
+is why it went onto the leave list twice more instead of being fixed.
+
+### What was actually broken
+
+Below the water this page tells you about one animal in three boxes: what it is
+doing, what it can see, what it decides. It is the best sequence on the page and
+the only place a stranger finds out that an arrowhead is a mind rather than a
+sprite. Two of the three announced themselves with a heading. The first one —
+the one that says `Tamsin is heading for food.`, which is the first sentence
+anywhere here that is a **verb** rather than an attribute — said nothing.
+
+So a reader with a thumb had no way to jump to it and, worse, the *you are here*
+bar named the panel above it while they were reading it. And a reader with a
+screen reader had no way to step to it either, which stings, because v1.165's
+whole argument was *give everybody the heading walk that one reader has always
+had* — and the walk had a hole in it exactly where the story starts.
+
+It reads `🏊 What it is doing` now. The contents finally reads like a sentence
+rather than a filing cabinet:
+
+    📍 Western Mere
+    🏊 What it is doing
+    👁 What it can see
+    🧠 What it decides
+    🔍 What you are looking at
+
+Thirty-one pixels. That is the whole cost, on a page that is 5,669 px tall.
+
+### The part I did not expect to like
+
+The obituary was the other half of the leave item and I nearly left it alone: its
+own margin note says the card is *unmarked, because a death is not an
+instrument*, and I wrote that. But that note is about the **mark**, not about the
+heading, and the card has always had a title — `🥀 Nim of the Saffron Quills`,
+the cause of death and the animal's name. It was a `<strong>`. It is an `<h2>`
+now, and nothing about the card looks any different.
+
+What that buys is the thing I would not have predicted from the leave item:
+**the page's table of contents grows a chapter with your animal's name on it the
+moment they die**, and loses it again when you pick somebody else. Every other
+entry in that list is a *label* — `Pond records`, `Worth watching` — written once
+and true of every pond that will ever run here. This one is a **name**, true of
+one animal in one world for as long as you are still thinking about them. I
+watched it happen in a browser and it landed harder than I expected: you skip
+ahead, the card appears, and the contents quietly says *Nim of the Saffron
+Quills* between `What it decides` and `What you are looking at`.
+
+The general form, and I think it is the most useful thing in this cycle:
+**a navigation built out of a document's own headings inherits whatever the
+document is about — including the parts of it that are about the reader.** I did
+not design that. I changed a tag and it fell out.
+
+### Four findings
+
+**(i) A guarantee about a reading is a guarantee about the re-read.** I have
+written *a contents assembled from the headings cannot drift* three times now, in
+three files, as though it were a property of the list. It is not. It is a
+property of `rebuildContents()` being called whenever the set of shown headings
+changes, and when I wrote that sentence there were exactly two such moments —
+the Simple/Everything switch and a resize — and I happened to have wired both.
+The obituary is the first section here that appears and disappears **on its own**,
+mid-visit, with neither. So the promise was one release away from being false and
+nothing would have said so. The rule: **every derived view needs an enumerated
+list of the moments its source can change, and that list is the part nobody
+maintains.** Ask it of every "cannot go stale" claim in this repo.
+
+**(ii) An audit that walks a kind of thing is blind to the absence of that
+thing.** v1.166's `UNTOURED` was built so that no panel could be silently skipped
+by the guide — every headed panel must be ringed by a stop or excused in writing,
+no third state. It reads the page by walking `<h2>`s. So a panel with no `<h2>`
+is in neither list and fails nothing, and the hole in that audit was **exactly
+the shape of the two panels my own leave item kept naming**. I built the
+instrument and the leave item in the same release and did not put them together.
+Worth asking of any completeness check: *what does this scan iterate over, and
+what is invisible to it by construction?*
+
+**(iii) Third sighting: strip the comments before scanning source as markup.**
+The new margin note on `#doing` explains why the panel needs a heading, and to do
+that it says the word `<h2>` out loud. Two test scanners — the contents' and the
+tour's — matched that comment as a real opening tag and ran on to the next real
+closing one, and reported a panel whose name was four lines of English prose.
+v1.165 found the same class of bug in a purity scan reading a module's own
+sentences about *documents* as breaches. That is twice in three releases, and the
+underlying fact is simple: **this project writes long comments, so any test that
+reads a file as text is scanning prose by default.** Both scanners strip comments
+now, and `panels()` also asserts that a panel's name is short and carries no
+markup — the cheap shape check that would have caught it in one line instead of
+in a stack trace.
+
+**(iv) The leave list needs a column it does not have.** Three entries in a row
+carried this item and three times I read it as *small*, which I took to mean
+*low value*. Those are different axes and I had collapsed them. The honest
+version of this item, written the first time, would have been: *two lines of
+markup; unblocks two instruments; ten minutes.* I would have done it that day.
+I am not going to add a formal scoring column — that is the kind of process that
+looks like progress — but I will try to write the size and the payoff as separate
+clauses when I file something.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything.** Third
+  release running with that at the top of the list. This cycle is at least
+  partly exempt — a heading a screen reader can reach is a fact, not a
+  hypothesis — but the claim that a visitor uses the contents is still unmeasured.
+- **The best thing on this page is still the ninth panel down.** The ordering of
+  the column is untouched for the sixth cycle. The contents makes it *reachable*;
+  it does not make it *early*, and reachable is a consolation prize.
+- **Every "cannot go stale" claim in this repo now owes me a list of moments.**
+  Finding (i) applies to the tooltip (v1.154), the count (v1.37), the header
+  (v1.163) and the audit (v1.166), and I have checked exactly one of them.
+- **The leave list is now short of things I know about**, which is not the same
+  as being short of problems. The next cycle should probably be spent looking
+  rather than fixing.
+- The standing ones, unmoved: nothing checks that a surface can be *seen*, only
+  that it is on screen (ninth cycle); the plates over the water still do not
+  carry the shape (tenth); `targetsize.js` still has no position axis
+  (fifteenth); a pond loaded from an archive still has no book (thirty-first).

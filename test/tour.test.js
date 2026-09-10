@@ -516,7 +516,16 @@ function sections(html) {
  * the guide's own card, the postcard, the skip card — are not panels: they are
  * in `<div>`s. Two surfaces reading the page by the same rule is the point.
  */
-function panels(html) {
+function panels(source) {
+  // Comments out first, and this is the third time this project has been caught
+  // by the same thing: v1.165's purity scan read a module's own prose about
+  // *documents* as a breach, and v1.167's scan read a comment that mentions the
+  // tag `<h2>` as an actual heading — running the match on to the *next* real
+  // `</h2>` and reporting a panel whose name was four lines of English. A
+  // scanner that reads the page as text has to throw away the part of the page
+  // that is not markup, every time, before it does anything else. The browser
+  // this scan is imitating has never had this bug: a comment is not a node.
+  const html = source.replace(/<!--[\s\S]*?-->/g, "");
   const boxes = sections(html);
   const out = [];
   for (const m of html.matchAll(/<h2\b([^>]*)>([\s\S]*?)<\/h2>/g)) {
@@ -545,6 +554,17 @@ test("the panels of this page all name themselves", () => {
   }
   const ids = found.map((p) => p.id);
   assert.equal(new Set(ids).size, ids.length, "two panels share a heading id");
+  // A name, not a paragraph. This is the assertion that would have caught what
+  // v1.167 found the hard way: the scan above read the page as text, an HTML
+  // comment on this page mentions the tag `<h2>` in passing, and the match ran
+  // from inside that comment to the next real closing tag — handing this test a
+  // panel whose "name" was four lines of English and whose id was nothing.
+  // Every reading of a document as a string can be fooled like that, so the
+  // cheap defence is to say out loud what shape the answer has to be.
+  for (const p of found) {
+    assert.ok(p.words.length <= 48, `"${p.words}" is a paragraph, not a panel's name`);
+    assert.ok(!/[\n<>]/.test(p.words), `#${p.id}'s name carries markup or a line break`);
+  }
 });
 
 test("every headed panel is either toured or excused in writing", () => {

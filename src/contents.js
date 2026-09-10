@@ -52,6 +52,23 @@
 // and the Tree of Life leaves the contents with them, because `main.js` reads
 // only the headings a browser is actually showing.
 //
+// The catch, and v1.167 is where it came due: *cannot drift* is a promise about
+// the re-read, not about the list. Two things could change the set of shown
+// headings when this was written — the switch and a resize — and `main.js` was
+// wired to both. Then the obituary grew a heading of its own, and it is the
+// first section here that comes and goes in the middle of a visit with neither:
+// an animal dies and the page has a chapter it did not have a second ago. A
+// section that appears on its own has to say so, and `test/contents.test.js`
+// now holds that pair together. **Every reading needs a list of the moments its
+// subject can change, and that list is the part nobody maintains.**
+//
+// That obituary chapter is also the one entry in this list that is a *name*.
+// Every other heading on the page is a label — *Pond records*, *Worth watching*
+// — written once and true of every pond. `🕯️ Rill` is true of one animal in one
+// world for as long as the visitor has not picked somebody else, and it is the
+// closest this page comes to a table of contents that knows who you were
+// watching.
+//
 // ## Where you are, and the one bit of arithmetic
 //
 // A contents that only jumps is half an instrument. The other half is *you are

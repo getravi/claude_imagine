@@ -74,6 +74,48 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The two panels with no name — shipped in v1.167 (`app/index.html`,
+  `src/obituary.js`, `src/main.js`), and what it leaves.** Sixth cycle in the
+  ordinary-person hat, and the first one where the item was already written in my
+  own handwriting: *`#doing` and the obituary still have no headings* closed the
+  last three entries, and all three times I filed it as too small and built
+  something else. Four findings. (i) **A missing thing has no surface to be
+  noticed on.** Every other item on my leave list is *there and wrong* — a stale
+  count, a duplicated stop — and looking at the page puts those in front of me. A
+  panel with no heading looks exactly like a panel. It only became visible once I
+  built two instruments that *consume* headings, and even then what I noticed was
+  *the instrument has a gap*. (ii) **A guarantee about a reading is a guarantee
+  about the re-read.** I have written *a contents assembled from the headings
+  cannot drift* in three files as though it were a property of the list; it is a
+  property of `rebuildContents()` being called whenever the shown set changes,
+  and there were exactly two such moments when I wrote it. The obituary is the
+  first section here that appears mid-visit with neither, so the promise was one
+  release from false and nothing would have said so. **Every derived view needs
+  an enumerated list of the moments its source can change, and that list is the
+  part nobody maintains** — owed by the tooltip (v1.154), the count (v1.37), the
+  header (v1.163) and the audit (v1.166), of which I have checked one.
+  (iii) **An audit that walks a kind of thing is blind to the absence of that
+  thing.** v1.166's `UNTOURED` guarantees no headed panel is silently skipped —
+  and its hole was exactly the shape of the two panels my own leave item kept
+  naming, because a panel with no `<h2>` is in neither list and fails nothing. I
+  shipped the instrument and the leave item in the same release and did not put
+  them together. Ask of any completeness check: *what does this scan iterate
+  over, and what is invisible to it by construction?* (iv) **Third sighting:
+  strip comments before scanning source as markup** — the new margin note says
+  the word `<h2>` out loud and two scanners read four lines of English as a
+  panel's name. This project writes long comments, so **any test that reads a
+  file as text is scanning prose by default**. The pleasant surprise: making the
+  obituary's title an `<h2>` means the contents grows a chapter with the dead
+  animal's name on it — the one entry in that list that is a *name* and not a
+  label. **A navigation built out of a document's own headings inherits whatever
+  the document is about, including the parts about the reader.** I changed a tag
+  and it fell out. What it leaves: (a) nothing has ever measured whether anybody
+  presses anything, third release running; (b) the ordering of the column is
+  untouched for the sixth cycle — the contents makes the best panel *reachable*,
+  not *early*, and reachable is a consolation prize; (c) the leave list is now
+  short of things I know about, which is not the same as short of problems, so
+  the next cycle should be spent **looking** rather than fixing.
+
 - **The guide walked past the best thing on the page — shipped in v1.166
   (`src/tour.js`, `test/tour.test.js`), and what it leaves.** Fifth cycle in the
   ordinary-person hat, and the first one spent on an item I had deferred three

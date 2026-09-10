@@ -287,19 +287,38 @@
 
              Outside `.stage`, like the headline and the key: the stage is the
              pond, and this is a caption on the page. -->
-        <section id="doing" class="doing waiting" aria-label="What the animal you are watching is doing">
-          <span class="d-icon" id="doing-icon" aria-hidden="true">👆</span>
-          <div class="d-words">
-            <p class="d-text" id="doing-text">
-              Pick an animal — click one, or press M — and this line will follow it.
-            </p>
-            <!-- Shown only while the animal in the seat is the one `onstage.js`
-                 sat down for the visitor, and gone for good the moment they
-                 pick anybody themselves. It is `hand.js`'s `seatSwap`, written
-                 by `main.js` on the first frame; there is no copy of it here
-                 because — unlike the three invitations it replaces — it is
-                 never the state a reader arrives on. -->
-            <p class="d-swap" id="doing-swap" hidden></p>
+        <section id="doing" class="doing waiting" aria-labelledby="doing-h">
+          <!-- The name it went a hundred and eighteen releases without (v1.167).
+               This is the first panel under the water and the first of the three
+               that are one thought about one animal — what it is doing, what it
+               can see, what it decides — and it was the only one of the three
+               with no heading on it. That cost two things at once, and both of
+               them were flagged in the devlog three cycles running before
+               anybody fixed them. A reader with a thumb could not find it,
+               because `contents.js` builds its list out of `<h2>`s and this
+               panel had none to give; and a reader with a screen reader could
+               not step to it, for the same reason, which is the instrument
+               v1.165 was built to hand to everybody else.
+
+               `aria-labelledby` rather than the `aria-label` that stood here, so
+               the two readings are the same string rather than two strings that
+               have to be kept in step — v1.165's rule about typed second
+               copies, applied to the label of the panel it was written about. -->
+          <h2 id="doing-h">🏊 What it is doing</h2>
+          <div class="d-body">
+            <span class="d-icon" id="doing-icon" aria-hidden="true">👆</span>
+            <div class="d-words">
+              <p class="d-text" id="doing-text">
+                Pick an animal — click one, or press M — and this line will follow it.
+              </p>
+              <!-- Shown only while the animal in the seat is the one `onstage.js`
+                   sat down for the visitor, and gone for good the moment they
+                   pick anybody themselves. It is `hand.js`'s `seatSwap`, written
+                   by `main.js` on the first frame; there is no copy of it here
+                   because — unlike the three invitations it replaces — it is
+                   never the state a reader arrives on. -->
+              <p class="d-swap" id="doing-swap" hidden></p>
+            </div>
           </div>
         </section>
 

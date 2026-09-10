@@ -3139,8 +3139,20 @@ function updateInspector() {
       // picture of an instant that has passed.
       const family = view.obitCard ? familyOf(view.obitCard, world.creatures) : null;
       const life = $("obituary");
+      // The card's title is an `<h2>` as of v1.167, so putting this card on the
+      // page adds a chapter to the contents and taking it off removes one. The
+      // contents is a *reading* of the headings the browser is showing, and a
+      // reading is only true if something re-reads when that set changes: the
+      // switch and a resize were the only two things that could change it until
+      // now, and this is the first section on the page that comes and goes on
+      // its own. Guarded on the transition, not run on the write — the innerHTML
+      // beneath this line is rebuilt whenever the subject changes, and rebuilding
+      // eleven rows for a card that was already there would be a list flickering
+      // under a reader's thumb every time somebody's animal died.
+      const wasShown = !life.hidden;
       life.hidden = !view.obitCard;
       life.innerHTML = view.obitCard ? obituaryHTML(view.obitCard, config, family) : "";
+      if (!life.hidden !== wasShown) rebuildContents();
       const again = document.getElementById(OBITUARY_MEET_ID);
       if (again) again.addEventListener("click", meetSomebody);
       const heir = document.getElementById(OBITUARY_CHILD_ID);
@@ -3157,6 +3169,9 @@ function updateInspector() {
   if (!lifeCard.hidden) {
     lifeCard.hidden = true;
     lifeCard.innerHTML = "";
+    // The other half of the pair above: the card's chapter leaves the contents
+    // with the card.
+    rebuildContents();
   }
 
   const chain = world.phylogeny.ancestry(c.speciesId);

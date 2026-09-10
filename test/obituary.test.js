@@ -46,6 +46,7 @@ import { DEATH_CAUSES } from "../src/stats.js";
 import { nameSpecies } from "../src/speciesnames.js";
 import { stateFingerprint } from "../src/fingerprint.js";
 import { OMNIVORE_FROM, dietBand, givenName } from "../src/cast.js";
+import { splitHeading } from "../src/contents.js";
 import {
   CAUSES,
   DIET_PAST,
@@ -293,6 +294,30 @@ test("the line only goes on while somebody is still swimming", () => {
   const html = obituaryHTML(rec, config, familyOf(rec, []));
   assert.equal(/line goes on/.test(html), false, "the card contradicted itself");
   assert.match(html, /None of their young/);
+});
+
+test("the card's title is a heading, so a dead animal becomes a chapter (v1.167)", () => {
+  const rec = obituaryFor(corpse({ id: 3, age: 400 }), null, [{ age: 200 }, { age: 300 }]);
+  const html = obituaryHTML(rec, config, null);
+  const h2 = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/);
+  assert.ok(h2, "the card's title is not a heading, so no reading of the page can name it");
+  // Exactly one: the card is a life, not a document with sections in it.
+  assert.equal(html.match(/<h2\b/g).length, 1, "the card grew a second heading");
+  // The heading is the same string the card has always shown — the tag changed
+  // and nothing else did. `<strong>` is gone for the same reason: two bold
+  // names in one row would be the card saying its subject twice.
+  assert.equal(h2[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(), obituaryLines(rec, config).title);
+  assert.doesNotMatch(html, /<strong\b/);
+  // And it splits the way every other heading on this page does: a mark, then a
+  // name. This one's mark is how the animal died and this one's name is the
+  // animal — the only chapter in the contents that is a who rather than a what.
+  const { icon, name } = splitHeading(obituaryLines(rec, config).title);
+  assert.equal(icon, causeOf(rec).icon);
+  assert.equal(name, rec.label);
+  assert.ok(name.length > 0, "a chapter with no words is a blank row");
+  // The swatch stays inside the row so the colour still arrives with the name,
+  // and it carries no text, so the chapter reads as the name alone.
+  assert.match(h2[0], /class="swatch"/);
 });
 
 test("a long family is named up to a point and then counted", () => {

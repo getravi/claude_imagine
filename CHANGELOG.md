@@ -4,6 +4,94 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.167.0] — 2026-09-10
+
+**🏊 The panel that starts the whole story finally has a name** — and when the
+animal you were watching dies, the page's contents grows a chapter with their
+name on it.
+
+Scroll past the water and the page tells you about one animal in three boxes:
+what it is doing, what it can see, what it decides. Two of them said so at the
+top in plain words. The first one — the one that says **`Tamsin is heading for
+food.`**, the first sentence on this page that is a verb rather than a fact —
+had no heading at all, and had not had one since it shipped nineteen releases
+ago.
+
+### What a missing heading costs
+
+Nothing looked broken, which is why it lasted. The cost was that two instruments
+built to help a stranger could not see the panel:
+
+- **The contents** (v1.165) is a list of the page's own `<h2>`s, so a reader
+  with a thumb could not jump to it, and the *you are here* bar named the panel
+  above while you were looking at this one.
+- **A screen reader's heading walk** is the same instrument, and it had the same
+  hole — in the panel v1.165's whole argument was that everybody deserves it.
+
+It now reads **🏊 What it is doing**, and the contents finally reads like a
+sentence:
+
+    📍 Western Mere
+    🏊 What it is doing
+    👁 What it can see
+    🧠 What it decides
+    🔍 What you are looking at
+    …
+
+The panel is 31 px taller and the page is 5,669 px instead of 5,638. That is the
+whole bill.
+
+### A chapter with somebody's name on it
+
+The obituary — the card that appears when the animal you have been following
+dies — had no heading either, for the same nineteen releases. Its title is now
+an `<h2>`, and it is **the only heading on this page that is a name rather than
+a label**. Everything else in the contents is written once and true of every
+pond: *Pond records*, *Worth watching*. This one is true of one animal, in one
+world, for as long as you have not picked somebody else:
+
+    📍 Western Mere
+    🏊 What it is doing
+    👁 What it can see
+    🧠 What it decides
+    🥀 Nim of the Saffron Quills        ← appears the moment they die
+    🔍 What you are looking at
+
+The card itself looks exactly as it did — same swatch, same name, same size. The
+only thing that changed is which tag a reading of the page can see.
+
+### The catch that came with it
+
+*A contents assembled from the headings cannot drift* is a promise about the
+**re-read**, not about the list. Two things could change the set of shown
+headings when that was written — the Simple/Everything switch and a resize — and
+both were wired. The obituary is the first section here that comes and goes in
+the middle of a visit with neither, so `main.js` now re-reads on the transition
+(and only on the transition, or the list would flicker under a thumb every time
+somebody's animal died). **Every reading needs a list of the moments its subject
+can change, and that list is the part nobody maintains.**
+
+### Details
+
+- **Two page-scanning tests were reading comments as markup.** This page
+  explains itself in the margin, and one of those new margins mentions the tag
+  `<h2>` in passing — so the scanners in `test/tour.test.js` and
+  `test/contents.test.js` matched from inside a comment and reported a panel
+  whose name was four lines of English. Third sighting of this exact trap
+  (v1.165 found it in a purity scan): **strip the comments before scanning
+  source as if it were markup.** Both scanners now do, and `panels()` also
+  asserts that a panel's name is a *name* — short, and free of markup — which is
+  the cheap check that would have caught it.
+- **`aria-labelledby` replaces `aria-label` on the panel**, so the two readings
+  are one string instead of two that have to be kept in step.
+- **`UNTOURED` gained the entry it could never have been given.** v1.166's audit
+  requires every headed panel to be toured or excused in writing — but it walks
+  headings, so a panel with none was in neither list and failed nothing. That
+  hole was exactly the shape of the two panels the devlog kept saying were
+  missing from it. `doing-h` is now excused with a reason.
+- No new dials, no new random draws, nothing in the simulation. A pond is
+  bit-for-bit what it was. 1,863 tests pass.
+
 ## [1.166.0] — 2026-09-10
 
 **🧠 The guide now shows you the mind** — the tour's fifth stop moved from a row
