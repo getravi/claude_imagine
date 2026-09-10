@@ -4,6 +4,85 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.166.0] — 2026-09-10
+
+**🧠 The guide now shows you the mind** — the tour's fifth stop moved from a row
+of other worlds to the two panels that say what an arrowhead actually is, and
+every panel the guide walks past is now written down with a reason.
+
+`🧭 Show me around` is the button a stranger presses when they want this page
+explained. It has six stops. This page has **twelve panels with headings on
+them**, and until this release the guide stopped at one of them.
+
+### What a stop is for
+
+Headless Chromium at 390 × 844, the phone this project has been sizing for since
+v1.160:
+
+    the row of other worlds     176 px      on screen before you touch anything
+    👁 What it can see        1,097 px      313 px past the bottom of the first screen
+    🧠 What it decides        1,440 px      a screen and a half down
+
+The guide was spending a stop on the one thing a visitor could not miss, and
+none on the pair of panels that answer *what is that little arrow thinking* —
+which is the question everybody actually has, and the answer that turns a
+screensaver of dots into evolution.
+
+So the fifth stop is now **👁 What it can see**, with **🧠 What it decides**
+carried in its sentence. The rule it leaves: **a stop is spent on what a visitor
+would not find alone.**
+
+And the row of worlds had stopped needing one two releases before it lost one.
+It earned its stop in v1.129, when a chip was a bare noun and pressing it was
+the only way to learn what `Nomad's Land` was; v1.154 gave every chip a sentence
+of its own, and nobody went back to ask whether the guide was now a second copy
+of something the page said for itself. **When a panel learns to explain itself,
+the guide's stop on it is the thing to re-cost.**
+
+### The leave item that kept coming back
+
+Three releases in a row closed with the same line — *this release added a panel
+the tour does not mention*. No test could say so: a guide that points at six
+real things is not lying about the seventh.
+
+`UNTOURED` in `src/tour.js` now names **every headed panel the guide walks past,
+and why** — keyed by the `id` on the panel's own `<h2>`, because one of those
+headings is the pond's name and changes with the world. `test/tour.test.js`
+reads the shipped page, works out which panel each stop rings, and fails on any
+panel in neither list. A panel added next release arrives as a red build with a
+question attached: *does the newcomer's guide mention this, and if not, say why
+not.* Half the excuses are not *not worth a stop* — the record book and the race
+are the best things here, and the guide meets a pond forty seconds old.
+
+### Details
+
+- **The words went in twice.** The first draft of the new card was true, was the
+  best sentence in the feature, and was a paraphrase of the note printed four
+  lines under its own ring — because both those panels already explain
+  themselves in plain words, which is *why* they were worth a stop. A screenshot
+  caught it; no test could have. **A stop beside a panel that explains itself
+  has to say the thing the panel does not**, which here is why any of it matters.
+- **It only works because of v1.164.** That release seated an animal nobody
+  picked, so the panels this stop rings are alive on a first visit. A ring drawn
+  around a grey box reading *pick an animal* would have been worse than no stop.
+- **Two panels did not name themselves.** Nine of the eleven carry
+  `aria-labelledby` pointing at their own heading; the Chronicle and the Tree of
+  Life carried neither that nor an `id` to point at. Both now do — a screen
+  reader says where it has landed, and the audit above has a handle to key on.
+- **The card had to be told to sit above.** This is the first stop whose
+  sentence points at something its ring does not enclose — *underneath is what
+  it decided to do* — and `cardPlacement` costs overlap against the ring, so the
+  card kept the pond clear and sat on **🧠 What it decides**: 63% of that panel
+  at 390 × 844, 47% at 768 × 1024, 38% at 1280 × 800, 36% at 1920 × 1080. Above
+  it is 0% at all five viewports, with the ringed panel no more covered than
+  before. v1.159's rule is about the ring; a stop that talks about a second
+  panel has to keep off it by hand.
+- The card never covers what it rings on a 390, 1280 or 1920 px window; at
+  320 × 568 nothing fits anywhere and `cardPlacement` takes the cheapest
+  overlap, as it has since v1.159.
+- Determinism untouched: `tour.js` still imports nothing, reads no world and
+  draws no random number.
+
 ## [1.165.0] — 2026-09-10
 
 **📖 A page that says what is in it** — the pond's panels are now a contents you

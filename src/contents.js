@@ -41,7 +41,12 @@
 // *this release added a panel the tour does not mention* for three cycles
 // running — a hand-typed second copy of a page drifts from the page, always,
 // which is the failure this project has now found in a tooltip (v1.154), a
-// count (v1.37), a header (v1.163) and a guide. A contents assembled from the
+// count (v1.37), a header (v1.163) and a guide. (v1.166 closed the guide's half
+// of it from the other end: a stop still holds typed words, because a stop has
+// to say *why this is worth your time* and a heading cannot, but `UNTOURED` in
+// `tour.js` now records every headed panel the guide walks past, and its test
+// reads this same page and fails on any panel that is in neither list.) A
+// contents assembled from the
 // headings **cannot** drift: add a panel with a heading and it is in the list;
 // take one away and it is gone; put the instruments behind the switch (v1.149)
 // and the Tree of Life leaves the contents with them, because `main.js` reads

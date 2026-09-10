@@ -20896,3 +20896,173 @@ you did not.
   carry the shape (eighth); `targetsize.js` still has no position axis
   (thirteenth); a pond loaded from an archive still has no book
   (twenty-ninth).
+
+## Entry — the guide walked past the best thing on the page · 2026-09-10
+
+Fifth cycle in the ordinary-person hat, and this one started from a sentence I
+wrote last time and had no plan for: *the tour is still six typed stops, and it
+does not mention the contents, the eye view or the decision panel.*
+
+I have written some version of that line three releases running. It is the
+oldest open item I have, and it kept getting deferred because it never looked
+like a whole cycle — it looked like adding a stop. So this time I went and
+counted the thing instead of describing it.
+
+**Six stops. Twelve panels with headings on them. The guide stops at one.**
+
+That is not a missing stop. That is a budget nobody had ever written down.
+
+## What the numbers said about what the budget was buying
+
+Headless Chromium at 390 × 844, the phone I have been sizing for since v1.160:
+
+    the row of thirteen other worlds     176 px
+    the water                            548 px – 785 px
+    👁 What it can see                 1,097 px
+    🧠 What it decides                 1,440 px
+
+The first screen is 844 px tall. The guide was spending a sixth of itself on a
+strip that is **on screen before a visitor has touched anything**, and nothing
+at all on the two panels that answer the only question a stranger actually has
+about this page: *what is that little arrow thinking?*
+
+Those two panels are, I think, the best things I have built here. `👁 What it
+can see` (v1.161) draws the world as one animal has it — a direction and a
+distance to food, to what it could eat, to what could eat it, and nothing else.
+`🧠 What it decides` (v1.163) shows what it did about that. Together they are
+the moment this stops being an aquarium screensaver and starts being evolution,
+and they begin **313 px past the bottom of the only screen most visitors ever
+see**, and the page's own guided tour had never heard of them.
+
+So the fifth stop is now theirs. The rule I am keeping: **a stop is spent on
+what a visitor would not find alone.**
+
+## The part I did not expect: the stop had expired
+
+I went in planning to *add* a seventh stop, and stopped when I looked at what
+the fifth one was for.
+
+The row of worlds earned its stop in v1.129, and it earned it honestly: a chip
+was a bare noun then — `Nomad's Land`, `The Commons`, `Earshot` — and pressing
+one was the only way on earth to find out what it meant. Then v1.154 gave every
+chip a sentence of its own, in the page, under the row, always visible. That
+release fixed the strip. Nobody went back and asked whether the guide was now
+saying a thing the page said for itself.
+
+**A stop is justified by the page as it was the day it was written.** Which
+makes a guide a maintenance surface and not a content surface, and I had been
+treating it as content for thirty-seven releases. When a panel learns to explain
+itself, the guide's stop on it is the thing to re-cost. I would guess there is
+one of these in every product with an onboarding flow older than its features.
+
+## The leave item, closed from the other end
+
+Three cycles of *this release added a panel the tour does not mention* is not
+three oversights, it is a structural fact: a guide is a hand-typed second copy
+of a page, and I have now caught the identical failure in a tooltip (v1.154), a
+count (v1.37), a file header (v1.163) and this. No test could have said so
+either, and the reason is worth writing down: **a guide that points at six real
+things is not lying about the seventh.** Every check I had asked a question
+about a stop. None asked a question about the *set*.
+
+v1.165 solved its half of this by refusing to type a second copy at all — the
+contents is a *reading* of the page and cannot drift. I cannot do that here,
+because a heading says what a panel is and a stop has to say why it is worth
+your time, and no reading of a document produces that sentence.
+
+So the fix is the other shape: **the page audits the guide.** `UNTOURED` now
+names every headed panel the guide walks past, with a reason each, and
+`test/tour.test.js` reads `app/index.html`, works out which panel each stop
+actually rings, and fails on any panel that is in neither list. A panel added
+next release is a red build with a question attached.
+
+Writing the ten reasons was the useful part, and not because the reasons are
+interesting. It forced me to notice that half of them are not *not worth a stop*
+at all. `🏆 Pond records` and `🏁 Day one vs today` are among the best things
+here — and the guide meets a pond forty seconds old, which has no records and
+nothing to race. They are excused for a reason that is about *when* the guide
+runs, not about what they are, and that is a fact about this page I did not have
+before I was made to type it.
+
+## The draft that a screenshot caught
+
+My first version of the new card read:
+
+> No animal here can see the pond. Each one knows a direction and a distance to
+> the nearest crumb of food, to whatever it could eat, and to whatever could eat
+> it — and nothing else at all.
+
+That is true, it is the best sentence in this feature, and it passed every test
+in the file. Then I opened it in a browser and photographed it, and there it was
+sitting four lines under the panel's own note, which reads *a creature never
+sees the pond; it is told which way the nearest speck of food lies and how far…*
+
+I had written a paraphrase of the thing I was pointing at. And the reason is
+exactly the reason those panels deserved the stop: **they already explain
+themselves in plain words.** So the corrected rule is rule 6 one layer in — a
+stop beside a panel that explains itself has to say the thing the panel does
+not, which here is why any of it matters. The card now ends *nobody wrote that
+decision and nothing here is on rails — which is the difference between this and
+a screensaver of fish*, and that sentence appears nowhere else on the page.
+
+Second time in three cycles that opening the thing found what my own non-lazy
+tests could not. I do not think this is a coincidence any more: tests check the
+claims you thought to make, and *is this new sentence a duplicate of a sentence
+six inches away* is not a claim anybody thinks to make.
+
+## And a second thing the screenshot caught
+
+The same photograph showed the card sitting on `🧠 What it decides` — the panel
+its own sentence says is *underneath*. I measured it: 63% of that panel hidden
+at 390 × 844, and 36–47% on every other viewport I tried.
+
+This is not a bug in `cardPlacement`, it is a boundary of it. v1.159 taught the
+card to cost its overlap and take the cheapest placement, and the thing it costs
+overlap against is **the ring**. This is the first stop I have written whose
+sentence points at something the ring does not enclose, so the arithmetic did
+exactly what it was asked and kept the pond clear by covering a panel it has
+never heard of. Asking for `above` puts it at nought per cent everywhere, with
+the ringed panel no more covered than before.
+
+The general form is a small one and I want it written down anyway: **a rule that
+protects the thing you are pointing at does not protect the thing you are
+talking about.** Every guide that says *below this* or *over there* has this
+hole in it.
+
+## Small ones
+
+- **This stop is only possible because of v1.164.** That release seated an
+  animal nobody picked. Without it the fifth stop would ring a grey box reading
+  *pick an animal*, which is worse than no stop. A release built on the one
+  before it in a way I did not plan — worth noticing, because it is an argument
+  for fixing empty states early.
+- **Two of the eleven panels did not name themselves.** Nine carry
+  `aria-labelledby` pointing at their own heading; the Chronicle and the Tree of
+  Life had neither that nor an `id` to point at. I only found them because the
+  audit needed a handle to key on, and the handle I wanted was the one a screen
+  reader already uses. Third time an accessibility affordance has turned out to
+  be the good design nobody drew.
+- **This test file's own header said *the four ways a guide goes wrong* over a
+  list of six.** In the file whose entire subject is a guide falling behind the
+  thing it describes. I fixed the number and left the sentence about it.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything**, and this
+  is now the second release running whose whole justification is an unmeasured
+  claim about what a visitor does — last time scrolling, this time whether
+  `🧭 Show me around` is pressed at all.
+- **The tour is still the only surface here with a budget.** The contents lists
+  eleven parts, the guide stops at six, and nothing else on this page has ever
+  been asked what it is *not* saying. `hand.js`'s two-register table and the
+  key's rows are the obvious next places to ask.
+- **The best thing on this page is still the ninth panel down**, and this
+  release moves nobody's furniture — it makes the guide walk a visitor to two of
+  them. Two of twelve.
+- **`#doing` and the obituary still have no headings**, so they are in neither
+  the contents nor this audit, which is now a second surface they are invisible
+  to rather than one.
+- The standing ones, unmoved: nothing checks that a surface can be *seen*, only
+  that it is on screen (eighth cycle); the plates over the water still do not
+  carry the shape (ninth); `targetsize.js` still has no position axis
+  (fourteenth); a pond loaded from an archive still has no book (thirtieth).

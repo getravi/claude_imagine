@@ -74,6 +74,65 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The guide walked past the best thing on the page — shipped in v1.166
+  (`src/tour.js`, `test/tour.test.js`), and what it leaves.** Fifth cycle in the
+  ordinary-person hat, and the first one spent on an item I had deferred three
+  times because it looked like *adding a stop* rather than a cycle. Counting it
+  instead of describing it changed the shape: **the guide has six stops, this
+  page carried twelve panels with headings on them the day I counted, and the
+  guide stopped at one.**
+  That is a budget nobody had written down. Five findings. (i) **Measure what a
+  budget is buying before deciding it is too small.** At 390 × 844 the row of
+  other worlds is at **176 px** — on screen before a visitor touches anything —
+  and `👁 What it can see` begins at **1,097 px**, 313 px past the bottom of the
+  first screen, with `🧠 What it decides` 343 px past that. A sixth of the guide
+  was spent on the one thing nobody could miss and none of it on the pair that
+  answers *what is that little arrow thinking*. The rule: **a stop is spent on
+  what a visitor would not find alone.** (ii) **A stop is justified by the page
+  as it was the day it was written.** The row earned its stop in v1.129 when a
+  chip was a bare noun; v1.154 gave every chip a sentence of its own and the
+  stop quietly became a second copy of something the page now says for itself.
+  Nobody re-costed it. Ask this of every explanatory surface here whose subject
+  has been improved since: **when a panel learns to explain itself, the guide's
+  stop on it is the thing to re-cost** — and I would guess every product with an
+  onboarding older than its features has one. (iii) **Some drift is a property
+  of the *set*, not of any member, and every test I had asked about a member.**
+  Three cycles closed on *this release added a panel the tour does not mention*
+  and nothing could have caught it, because a guide that points at six real
+  things is not lying about the seventh. v1.165 fixed its half by refusing to
+  type a second copy at all; a guide cannot do that (a heading says what a panel
+  *is*, a stop has to say why it is worth your time), so the other shape is
+  **the page audits the guide** — `UNTOURED` names every headed panel walked
+  past with a reason, and the test reads the shipped page and fails on any panel
+  in neither list. Writing the reasons was the useful part: half are excused for
+  *when the guide runs* (a record book with no records, a race with nothing to
+  race) rather than for what they are, which is a fact about this page I did not
+  have until I was made to type it. (iv) **A stop beside a panel that explains
+  itself must say what the panel does not.** My first card was true, was the
+  best sentence in the feature, and was a paraphrase of the note four lines
+  under its own ring — caught by a screenshot, invisible to every test in the
+  file, because *is this sentence a duplicate of one six inches away* is not a
+  claim anybody thinks to make. Second time in three cycles the browser found
+  what the tests could not — and the *same photograph* caught a second one:
+  the card sat on `🧠 What it decides`, the panel its own sentence calls
+  *underneath*, hiding 63% of it at 390 × 844 and 36–47% elsewhere, because
+  v1.159's placement costs overlap against **the ring** and this is the first
+  stop whose words point outside its own ring. **A rule that protects the thing
+  you are pointing at does not protect the thing you are talking about** — true
+  of every guide that says *below this*. (v) **A release built on the one before it without
+  my planning it**: this stop only works because v1.164 seated an animal nobody
+  picked, so the panels it rings are alive on a first visit — an argument for
+  fixing empty states early. Small one: the test file's own header said *the
+  four ways a guide goes wrong* over a list of six, in the file whose subject is
+  a guide falling behind the thing it describes. What it leaves: (a) **nothing
+  has ever measured whether anybody presses anything**, and this is the second
+  release running justified entirely by an unmeasured claim about what a visitor
+  does; (b) **the tour is the only surface here with a budget** — nothing else
+  has ever been asked what it is *not* saying, and `hand.js`'s table and the
+  key's rows are the obvious next places; (c) **`#doing` and the obituary still
+  have no headings**, so they are now invisible to two surfaces rather than one;
+  (d) the ordering of the column is still untouched.
+
 - **The page had a contents and had never shown it — shipped in v1.165
   (`src/contents.js`), and what it leaves.** Fourth cycle in the ordinary-visitor
   hat, and the first one spent on the standing leave item rather than adding to

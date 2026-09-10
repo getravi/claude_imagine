@@ -37,9 +37,9 @@
 //   3. **It is six stops and it ends.** The stops are ordered as a story rather
 //      than as a reading order — *here is the thing, here is what is happening
 //      in it, here is how to read it, here is one animal to care about, here
-//      are other worlds to try, now watch a year go by.* The last stop is a
-//      call to action, because the visitor most likely to stay is the one who
-//      pressed something.
+//      is what that animal is thinking, now watch a year go by.* The last stop
+//      is a call to action, because the visitor most likely to stay is the one
+//      who pressed something.
 //   4. **The last stop can be pressed** (v1.143). A call to action that is only
 //      a sentence asks a visitor who has been reading for thirty seconds to now
 //      go and find the thing being described, and the ring is around it but the
@@ -52,6 +52,31 @@
 //      on every desktop window measured the card was sitting on the arrowheads.
 //      See `cardPlacement`: when a target is too tall to flank, the card is
 //      placed where it hides the least of it rather than under it by default.
+//   6. **A stop is spent on what a visitor would not find alone** (v1.166).
+//      Six stops against a page that carried, the day this was written, twelve
+//      panels with headings on them is a budget, and until this release nobody
+//      had written down what it was being spent on. Measured in a headless
+//      Chromium at 390 × 844, the phone this project has been sizing for since
+//      v1.160: the strip of other worlds sits at **176 px** and is on screen before a visitor has
+//      touched anything, while `👁 What it can see` begins at **1,097 px** —
+//      313 px *past* the bottom of the only screen most people ever see, and
+//      `🧠 What it decides` 343 px past that. So the guide gave the strip's
+//      stop to the pair of panels that say what an arrowhead actually is. The
+//      general form, and it is about maintenance rather than layout: **a stop
+//      is justified by the page as it was the day it was written.** The strip
+//      earned one in v1.129 because a chip was a bare noun and pressing it was
+//      the only way to learn what `Nomad's Land` meant; v1.154 gave every chip
+//      a sentence of its own and the stop quietly became a second copy of
+//      something the page now says for itself. When a panel learns to explain
+//      itself, the guide's stop on it is the thing to re-cost.
+//   7. **Every panel is toured or excused, in writing** (v1.166). Three
+//      releases running closed with the same leave item — *this release added a
+//      panel the tour does not mention* — because a guide is a hand-typed
+//      second copy of a page and those always drift (v1.37, v1.154, v1.163).
+//      `UNTOURED` below names every headed panel the guide deliberately walks
+//      past and why, and `test/tour.test.js` fails on any panel that is in
+//      neither list. Silence about a panel is now a decision somebody has to
+//      make rather than one nobody noticed making.
 //
 // Determinism: this module holds text, an ordering and two integers of
 // arithmetic. It never touches the world, never reads the config, and draws no
@@ -141,14 +166,47 @@ export const STOPS = Object.freeze(
       prefer: "below",
     },
     {
-      id: "worlds",
-      target: "scenario-chips",
-      icon: "🌍",
-      title: "Other worlds to try",
+      // The swap of v1.166 — a swap and not an addition, because a seventh stop
+      // is a longer greeting and this page's trouble has never been that its
+      // guide was too short. See rule 6 for what it replaced and why the strip
+      // of other worlds stopped needing a stop two releases before this one.
+      //
+      // It rings `#eyeview` and its sentence carries `#decide` as well, which is
+      // the one place this guide describes something it is not drawing a ring
+      // around. That is deliberate and it is the cheaper of two honest options:
+      // the two panels are one idea in two halves — what reaches an animal, and
+      // what the animal does about it — and a stop each would cost the story its
+      // shape to say a thing twice. `UNTOURED` records the choice rather than
+      // leaving it to be rediscovered.
+      //
+      // The words went in twice. The first draft read *no animal here can see
+      // the pond; each one knows a direction and a distance to the nearest
+      // crumb of food…*, which is true, is the best sentence in this feature,
+      // and is a paraphrase of the note printed four lines under the ring —
+      // both panels already explain themselves in the same plain words, which
+      // is *why* they were worth a stop. A screenshot caught it; no test could
+      // have. Rule 6 again, one layer in: **a stop beside a panel that explains
+      // itself has to say the thing the panel does not**, which here is why any
+      // of it matters.
+      //
+      // `above`, and it is the only stop here where the side is a measurement
+      // rather than a taste. This is the first stop whose sentence points at
+      // something its ring does not enclose — *underneath is what it decided to
+      // do* — and `cardPlacement` costs overlap against the **ring**, so with
+      // `below` it kept the pond clear and sat on `🧠 What it decides`: 63% of
+      // that panel at 390 × 844, 38% at 1280 × 800, 47% at 768 × 1024, 36% at
+      // 1920 × 1080. `above` is nought per cent at all five viewports measured,
+      // with the eye view no more covered than before. Rule 5 is about the ring, and a
+      // stop that talks about a second panel has to keep off it by hand.
+      id: "mind",
+      target: "eyeview",
+      icon: "🧠",
+      title: "What it is thinking",
       line:
-        "An island. A drought. A pond with hunters in it. Every world here runs on the same handful " +
-        "of rules — change one, press play, and see what the animals turn into.",
-      prefer: "below",
+        "Here is the whole of what one animal knows about the pond: a handful of directions and " +
+        "distances. Underneath is what it decided to do about them. Nobody wrote that decision and " +
+        "nothing here is on rails — which is the difference between this and a screensaver of fish.",
+      prefer: "above",
     },
     {
       // The finale, and until v1.143 it was a board of drift figures under the
@@ -174,6 +232,36 @@ export const STOPS = Object.freeze(
 
 /** How many stops the tour has. One place, so the card's "3 of 6" cannot drift. */
 export const TOUR_LENGTH = STOPS.length;
+
+/**
+ * The headed panels the guide walks past, and why (rule 7).
+ *
+ * Keyed by the `id` on the panel's own `<h2>`, which is the handle the page
+ * already uses to name itself to a screen reader — not by the heading's words,
+ * because one of these headings is the pond's name and changes with the world.
+ * `test/tour.test.js` reads `app/index.html`, works out which panel each stop
+ * rings, and fails if any headed panel is in neither this map nor that set. A
+ * panel added next release therefore arrives as a red build with a question
+ * attached: *does the newcomer's guide mention this, and if not, say why.*
+ *
+ * Half of these are not "not worth a stop" — they are the best things on the
+ * page and the guide meets a pond forty seconds old. A record book with no
+ * records in it and a verdict a visitor has no way to check are worse than
+ * silence, and `⏩ Skip ahead` is the last stop precisely because it is what
+ * fills them.
+ */
+export const UNTOURED = Object.freeze({
+  "pond-name": "the name is written above the water the first stop already rings",
+  "decide-h": "the stop before it rings the eye, and one sentence carries both halves",
+  "milestones-h": "a list of things a pond has not done yet is a reward for staying, not a reason to",
+  "whoswho-h": "a board asking you to choose an animal, when the stop at 👋 Meet somebody hands you one",
+  "evolved-h": "was the finale until v1.143 and lost the seat for being a readout where a sentence would do",
+  "aim-h": "a verdict about a pond, offered to somebody who has watched one for forty seconds",
+  "race-h": "the best answer on the page to *is it really evolving*, and it needs a grown pond to answer with",
+  "records-h": "a record book is worth opening once the pond has some records in it",
+  "chronicle-h": "its news is the sentence the second stop rings, with the older lines kept",
+  "phylo-h": "behind the switch, and a first visit is a Simple one — rule 2 of `simpleview.js`",
+});
 
 /**
  * Move `index` by `delta`, staying inside the tour.

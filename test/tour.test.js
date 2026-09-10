@@ -1,4 +1,4 @@
-// tour.test.js — the guide, and the four ways a guide goes wrong.
+// tour.test.js — the guide, and the seven ways a guide goes wrong.
 //
 // A tour is the one feature on this page whose subject is the page itself, and
 // that is the whole of its risk. Everything else here is checked against the
@@ -6,7 +6,10 @@
 // the animals disagree with it. A tour is wrong if the *document* disagrees with
 // it, and the document is edited by hand, so nothing but a test can notice.
 //
-// Four failures, in the order they are likely:
+// Seven failures, in the order they are likely — and the header of this file
+// said *four* while listing six of them for two releases, which is the drift
+// this project keeps finding in its own prose (v1.163) arriving in the file
+// whose whole subject is a guide falling behind the thing it describes:
 //
 //   1. **It points at something that is not there.** Every stop names an `id`;
 //      the page is read back and every one of them has to exist in it. A ring
@@ -32,6 +35,15 @@
 //      pond has hidden the one thing the stop exists to show. The sweep below
 //      is the same corners-and-windows sweep as (3), asking the other question —
 //      *is there a placement that hides less of this ring than the one chosen?*
+//   7. **It falls behind the page** (v1.166). The five above are all failures
+//      of a stop; this is a failure of the *set* of them, and it is the one
+//      that actually kept happening — three releases running closed with the
+//      words *this release added a panel the tour does not mention*, and no
+//      test could have said so, because a guide that points at six real things
+//      is not lying about the seventh. So the last test below reads every
+//      headed panel out of the shipped page and requires each to be ringed by
+//      a stop or named in `UNTOURED` with a reason. There is no third state a
+//      new panel can arrive in.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -42,6 +54,7 @@ import { dirname, join } from "node:path";
 import {
   STOPS,
   TOUR_ACTS,
+  UNTOURED,
   TOUR_LENGTH,
   TOUR_SEEN_KEY,
   cardPlacement,
@@ -82,11 +95,15 @@ test("the stops are six distinct things in a fixed order", () => {
   const targets = new Set(STOPS.map((s) => s.target));
   assert.equal(targets.size, STOPS.length, "two stops ring the same element");
   // The story: the pond, then what is happening in it, then how to read it, then
-  // one animal, then other worlds, then a year going past in three seconds. The
-  // last stop is the call to action and is the reason anybody stays.
+  // one animal, then what that animal is thinking, then a year going past in
+  // three seconds. The last stop is the call to action and is the reason anybody
+  // stays. The fifth was *other worlds to try* until v1.166 — see rule 6 in
+  // `src/tour.js`: it rang a strip that is on screen before a visitor touches
+  // anything, and the two panels that say what an arrowhead is begin 313 px
+  // below the fold on the phone this project sizes for.
   assert.deepEqual(
     STOPS.map((s) => s.id),
-    ["pond", "now", "read", "meet", "worlds", "skip"],
+    ["pond", "now", "read", "meet", "mind", "skip"],
   );
 });
 
@@ -464,4 +481,123 @@ test("every route out of the guide marks it seen", () => {
     assert.match(main, wire, "a route out of the guide does not close it");
   }
   assert.match(main, /case "Escape":\n\s*closeTour\(\);/, "Escape must leave the guide");
+});
+
+// ---- the guide against the page it is a guide to (v1.166) ----
+
+/**
+ * Every `<section>` in the shipped page, as a start and end offset.
+ *
+ * Depth-matched rather than regex-matched, because this page nests sections
+ * three deep (a `.switchgroup` inside the control panel inside the layout) and
+ * the first `</section>` after an opening tag is not that tag's own.
+ */
+function sections(html) {
+  const tags = /<(\/?)section\b[^>]*>/g;
+  const open = [];
+  const out = [];
+  for (let m = tags.exec(html); m; m = tags.exec(html)) {
+    if (m[1]) {
+      const start = open.pop();
+      if (start !== undefined) out.push({ start, end: m.index + m[0].length });
+    } else {
+      open.push(m.index);
+    }
+  }
+  return out;
+}
+
+/**
+ * The page's headed panels: one row per `<h2>` that lives in a `<section>`,
+ * carrying the innermost section around it.
+ *
+ * The `<h2>` in a section is exactly `main.js`'s own rule for what goes in the
+ * contents (`pageHeadings`), which is why the three `<h2>`s in the overlays —
+ * the guide's own card, the postcard, the skip card — are not panels: they are
+ * in `<div>`s. Two surfaces reading the page by the same rule is the point.
+ */
+function panels(html) {
+  const boxes = sections(html);
+  const out = [];
+  for (const m of html.matchAll(/<h2\b([^>]*)>([\s\S]*?)<\/h2>/g)) {
+    const inside = boxes
+      .filter((b) => m.index > b.start && m.index < b.end)
+      .sort((a, b) => b.start - a.start)[0];
+    if (!inside) continue;
+    const id = m[1].match(/\bid\s*=\s*"([^"]*)"/);
+    out.push({
+      id: id ? id[1] : null,
+      words: m[2].replace(/<[^>]*>/g, "").trim(),
+      markup: html.slice(inside.start, inside.end),
+    });
+  }
+  return out;
+}
+
+test("the panels of this page all name themselves", () => {
+  // The handle `UNTOURED` is keyed by, and the one a screen reader reads out
+  // when it lands inside the panel. Nine of eleven had it and two did not,
+  // which is how a map keyed by it could have silently missed them.
+  const found = panels(page);
+  assert.ok(found.length >= 10, `only ${found.length} headed panels found — the reader is broken`);
+  for (const p of found) {
+    assert.ok(p.id, `the panel headed "${p.words}" has no id on its <h2> to be named by`);
+  }
+  const ids = found.map((p) => p.id);
+  assert.equal(new Set(ids).size, ids.length, "two panels share a heading id");
+});
+
+test("every headed panel is either toured or excused in writing", () => {
+  // The failure this exists for: a release adds a panel, the guide says nothing
+  // about it, and no test can tell — a guide pointing at six real things is not
+  // lying about the seventh. Three cycles closed on that leave item before this
+  // test existed. Now a new panel is a red build with a question attached.
+  const found = panels(page);
+  const toured = new Map();
+  for (const stop of STOPS) {
+    const home = found.find((p) => p.markup.includes(`id="${stop.target}"`));
+    if (home) toured.set(home.id, stop.id);
+  }
+
+  for (const p of found) {
+    const why = Object.prototype.hasOwnProperty.call(UNTOURED, p.id);
+    assert.ok(
+      toured.has(p.id) || why,
+      `"${p.words}" (#${p.id}) is a panel the guide neither stops at nor explains ` +
+        "walking past — add a stop, or a line to UNTOURED in src/tour.js saying why not",
+    );
+    assert.ok(
+      !(toured.has(p.id) && why),
+      `"${p.words}" (#${p.id}) is excused in UNTOURED and also ringed by stop "${toured.get(p.id)}"`,
+    );
+  }
+
+  // The other direction: an excuse for a panel that is no longer here is a
+  // sentence nobody will ever read and a decision nobody has to make again.
+  const ids = new Set(found.map((p) => p.id));
+  for (const id of Object.keys(UNTOURED)) {
+    assert.ok(ids.has(id), `UNTOURED excuses #${id}, which is not a panel on this page`);
+  }
+  for (const [id, why] of Object.entries(UNTOURED)) {
+    assert.ok(why.length > 24, `#${id} is excused with a label rather than a reason`);
+  }
+});
+
+test("the guide spends its stops below the fold", () => {
+  // Rule 6, as far as a test without a browser can hold it: the ring is on the
+  // panels a thumb has to go looking for. Two stops are the exception and say so
+  // — the pond and the line over it are the first screen, and a guide that
+  // started somewhere else would be introducing a page by pointing off it.
+  const FIRST_SCREEN = new Set(["pond", "now"]);
+  const found = panels(page);
+  for (const stop of STOPS) {
+    if (FIRST_SCREEN.has(stop.id)) continue;
+    const home = found.find((p) => p.markup.includes(`id="${stop.target}"`));
+    const control = /^btn-/.test(stop.target);
+    assert.ok(
+      home || control,
+      `stop "${stop.id}" rings #${stop.target}, which is neither a panel nor one of the buttons ` +
+        "under the water — see rule 6: a stop is spent on what a visitor would not find alone",
+    );
+  }
 });

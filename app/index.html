@@ -661,9 +661,14 @@
              the event's `who` rather than stored in its text — see
              `EVENT_UNHASHED` in `src/fingerprint.js` — so every line about
              somebody is written subject-first here and verb-first there. -->
-        <section class="chronicle">
+        <!-- `aria-labelledby` and the heading's `id` arrived in v1.166. Nine of
+             the eleven panels on this page name themselves to a screen reader
+             and two did not, which is the same omission twice: this one and the
+             Tree of Life. The guide's own audit needs the handle too — see
+             `UNTOURED` in `src/tour.js`, which is keyed by it. -->
+        <section class="chronicle" aria-labelledby="chronicle-h">
           <div class="chronicle-head">
-            <h2>📜 Chronicle</h2>
+            <h2 id="chronicle-h">📜 Chronicle</h2>
             <span class="chronicle-sub">the natural history of this pond, as it happens</span>
           </div>
           <ol id="chronicle-feed" class="chronicle-feed">
@@ -1214,9 +1219,9 @@
       </aside>
     </main>
 
-    <section class="phylo" data-expert="tree">
+    <section class="phylo" data-expert="tree" aria-labelledby="phylo-h">
       <div class="phylo-head">
-        <h2>🌳 Tree of Life</h2>
+        <h2 id="phylo-h">🌳 Tree of Life</h2>
         <span class="phylo-info" id="phylo-info"></span>
         <button id="btn-clear-highlight" class="mini hidden">✕ Clear highlight</button>
       </div>
