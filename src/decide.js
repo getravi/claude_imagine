@@ -366,6 +366,23 @@ function pct(share) {
 }
 
 /**
+ * What the running share is counted from, in words.
+ *
+ * Two of them since v1.164, because there are now two ways to end up in the
+ * seat. *Since you picked it* was the only clause here for one release and it
+ * was about to become this page's first outright false statement: `onstage.js`
+ * seats somebody on the first frame of every pond, and telling a visitor a
+ * number is counted from a press they never made is worse than not printing it.
+ *
+ * The page's own pick is seated on the frame the pond is adopted, so **the two
+ * instants really are the same one** — which is why the second clause can be a
+ * plain fact about the world rather than a hedge about who did what.
+ */
+export const SINCE_PICKED = "since you picked it";
+/** The same tally, for the animal the page seated itself (`onstage.js`). */
+export const SINCE_OPENING = "since the pond began";
+
+/**
  * The line beside the figure.
  *
  * Two clauses at most, and neither of them names a direction — that is the
@@ -376,12 +393,14 @@ function pct(share) {
  * @param {string} name the animal's given name
  * @param {{turn:number, thrust:number, food:number|null}|null} mark
  * @param {number|null} share from `SteerTally#share`
+ * @param {"pointer"|"touch"} [hand]
+ * @param {string} [since] `SINCE_PICKED` or `SINCE_OPENING`
  */
-export function decideLine(name, mark, share, hand = POINTER) {
+export function decideLine(name, mark, share, hand = POINTER, since = SINCE_PICKED) {
   if (!mark) return decideInvite(hand);
   const effort = effortWord(mark.thrust);
   if (share !== null) {
-    return `${name} is ${effort}, and has turned towards food it could see ${pct(share)} of the time since you picked it.`;
+    return `${name} is ${effort}, and has turned towards food it could see ${pct(share)} of the time ${since}.`;
   }
   if (mark.food === null) return `${name} is ${effort}, with no food in sight to steer by.`;
   return `${name} is ${effort}. Watch a moment and this will say how often it turns towards its food.`;
@@ -392,7 +411,7 @@ export function decideLine(name, mark, share, hand = POINTER) {
  * register that puts the two positions into words, `eyeview.js`'s rule for the
  * same reason.
  */
-export function decideSay(name, mark, share) {
+export function decideSay(name, mark, share, since = SINCE_PICKED) {
   if (!mark) return "Nobody is picked yet.";
   const parts = [`${name} is steering ${sideWord(mark.turn)}`];
   parts.push(
@@ -401,7 +420,7 @@ export function decideSay(name, mark, share) {
       : `and the food it can see is ${foodSideWord(mark.food)}`
   );
   let s = `${parts.join(", ")}. It is ${effortWord(mark.thrust)}.`;
-  if (share !== null) s += ` It has turned towards food it could see ${pct(share)} of the time since you picked it.`;
+  if (share !== null) s += ` It has turned towards food it could see ${pct(share)} of the time ${since}.`;
   return s;
 }
 

@@ -287,11 +287,20 @@
 
              Outside `.stage`, like the headline and the key: the stage is the
              pond, and this is a caption on the page. -->
-        <section id="doing" class="doing waiting" aria-label="What the animal you have picked is doing">
+        <section id="doing" class="doing waiting" aria-label="What the animal you are watching is doing">
           <span class="d-icon" id="doing-icon" aria-hidden="true">👆</span>
-          <p class="d-text" id="doing-text">
-            Pick an animal — click one, or press M — and this line will follow it.
-          </p>
+          <div class="d-words">
+            <p class="d-text" id="doing-text">
+              Pick an animal — click one, or press M — and this line will follow it.
+            </p>
+            <!-- Shown only while the animal in the seat is the one `onstage.js`
+                 sat down for the visitor, and gone for good the moment they
+                 pick anybody themselves. It is `hand.js`'s `seatSwap`, written
+                 by `main.js` on the first frame; there is no copy of it here
+                 because — unlike the three invitations it replaces — it is
+                 never the state a reader arrives on. -->
+            <p class="d-swap" id="doing-swap" hidden></p>
+          </div>
         </section>
 
         <!-- The pond as the animal has it (v1.161). The band above says what

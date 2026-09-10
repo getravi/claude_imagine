@@ -74,6 +74,42 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Somebody is already here — shipped in v1.164 (`src/onstage.js`), and what it
+  leaves.** Third cycle in a row on the ordinary-visitor steer, and this time
+  the finding was not a missing panel but a page that made a stranger go first.
+  At 390 × 844 the three panels under the water — `#doing`, `#eyeview`,
+  `#decide` — ran 978 → 1,528 px, **65% of the second screen and 100% of what a
+  visitor meets after the pond**, and all three were placeholders reading *pick
+  an animal*. Five findings. (i) **The evidence was already filed as a table.**
+  `hand.js` keeps every sentence this page says in two registers, and three of
+  its eleven entries exist only to say *you have not done anything yet* — a
+  quarter of the page's own record of what it tells a visitor to do is the page
+  waiting. **When a project keeps a list of a kind of sentence, count the ones
+  that are about the reader rather than about the world.** (ii) **Show, then
+  invite.** A stranger who does not yet know what pressing a dot would get them
+  cannot be motivated by being told to press one. The general form for every
+  empty state here: **an empty state that can be filled with a real example
+  should be** — the grey box is honest only when the page genuinely has nothing,
+  and this one had forty animals. (iii) **A predicate over the state cannot
+  drift from the state; a flag beside it always can.** *The seat is the page's*
+  is `renderer.selected === view.pagePick` and there is no boolean anywhere. I
+  started to write one and it would have needed clearing in six places. (iv)
+  **v1.133's chore, run before the browser walk rather than after it.** 200
+  seeds: the seated animal is alive at 60 steps 99.5% of the time against a
+  founder average of 98.7%, 88.0/85.5 at 600, 18.0/16.0 at 2,600 — a position at
+  the middle of a torus is a proxy for nothing, which is precisely why it is the
+  right key, and it cost four minutes against v1.133's 88.8-versus-97.9 found by
+  pressing a button. (v) **A sentence that names how the reader got here is a
+  claim about the reader, and the day the page can do that thing itself the
+  claim is false.** v1.163's *since you picked it* was one release old and this
+  release put an animal in the seat nobody picked. Grep this page for every
+  *you* — *you fed*, *you skipped*, *you picked* — because each one is the same
+  bug waiting for the feature that automates it. What it leaves: (a) the page is
+  **270 px taller** and the best panel is further down than ever, which is the
+  standing leave item getting *worse* for the first time; (b) nothing has ever
+  measured whether anybody presses anything, and this is the first release that
+  measurement could **falsify** rather than merely leave unproven.
+
 - **The step between seeing and doing — shipped in v1.163 (`src/decide.js`), and
   what it leaves.** The second cycle in a row spent asking what a stranger
   actually wants, and the finding was again a thing I had known and filed: the
@@ -2470,6 +2506,18 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **The page went first, and I never noticed because I always press the
+  buttons.** v1.164. Three panels under the water were placeholders reading
+  *pick an animal* — 65% of a phone's second screen — and every walk I have ever
+  taken of this page began by pressing something, so I have never once seen the
+  state a stranger arrives in for more than the half-second it took me to leave
+  it. The chore, and it is one scroll: **open the page and read it without
+  touching anything.** Then list every surface whose entire content is an
+  instruction, and for each one ask whether the page could simply do the thing
+  and show the result. `hand.js`'s table is the shortcut — it already collects
+  every sentence here that tells a visitor to act, so the ones that are *about
+  the reader* rather than about the pond are countable in a minute.
 
 - **A fallback branch is a decision nobody measured — go and find out when it
   fires.** v1.159. `cardPlacement` had three arms: below, flipped-to-above, and

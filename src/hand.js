@@ -19,12 +19,12 @@
 //                                                        ← 104 px of keys, on a
 //                                                          device with none
 //
-// Seventeen places on this page name an input device, and they account for
-// themselves: the ten sentences this file now holds in two registers, the
+// Eighteen places on this page name an input device, and they account for
+// themselves: the eleven sentences this file now holds in two registers, the
 // pan-and-zoom pair, the two paragraphs of accelerators above, the minimap's
 // tooltip and the pond's screen-reader help — both deliberately left in the
 // mouse-and-keyboard register, for reasons given below — and one world's blurb
-// that has stopped naming a device at all. **One pair of the seventeen had ever
+// that has stopped naming a device at all. **One pair of the eighteen had ever
 // asked which device you had**: the pan-and-zoom hint, which has carried a
 // `.fine-only` and a `.coarse-only` copy since the gestures landed. The fix went
 // where the defect was *noticed*, and stopped there; every other sentence kept
@@ -136,6 +136,23 @@ export const PHRASES = Object.freeze({
   decideInvite: Object.freeze({
     pointer: "Pick an animal — click one, or press M — and this shows what it decides to do.",
     touch: "Tap an animal — any of them — and this shows what it decides to do.",
+  }),
+
+  /**
+   * The line under the water while the animal in the seat is the page's own
+   * pick rather than the visitor's (v1.164, `onstage.js`).
+   *
+   * It is the *replacement* for the three invitations above rather than a
+   * fourth one: those three said what you had not done, and this says what has
+   * been done for you and how to take it back. Which is why it is the one
+   * sentence in this table that appears **beside** live content instead of
+   * instead of it — and why it may name no key. `M` is `👋 Meet somebody`,
+   * which follows with the camera as well as picking; offering it here as the
+   * way to swap would be teaching a different act under the same word.
+   */
+  seatSwap: Object.freeze({
+    pointer: "Picked for you, as the one nearest the middle — click any other animal to watch that one instead.",
+    touch: "Picked for you, as the one nearest the middle — tap any other animal to watch that one instead.",
   }),
 
   /** The inspector before anything is selected. */

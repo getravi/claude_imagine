@@ -55,6 +55,8 @@ import {
   MIN_SAMPLES,
   MOTOR,
   PUSH,
+  SINCE_OPENING,
+  SINCE_PICKED,
   SteerTally,
   decideInvite,
   decideLine,
@@ -298,6 +300,21 @@ test("the share is printed as a whole percent, and only once it exists", () => {
   assert.match(decideLine("Nim", m, 0.618), /62%/);
   assert.doesNotMatch(decideLine("Nim", m, null), /%/);
   assert.match(decideLine("Nim", { ...m, food: null }, null), /no food in sight/);
+});
+
+test("the share says what it is counted from, and never a press nobody made", () => {
+  // v1.164 put somebody in the seat before the visitor has touched anything
+  // (`onstage.js`), which made *since you picked it* — the only clause this
+  // panel had — false on the first frame of every pond. Both registers carry
+  // the phrase now, and the default is still the one a click earns.
+  const m = { turn: 0.1, thrust: 1, food: 0.4 };
+  assert.match(decideLine("Nim", m, 0.618), new RegExp(`${SINCE_PICKED}\\.$`));
+  assert.match(decideLine("Nim", m, 0.618, POINTER, SINCE_OPENING), new RegExp(`${SINCE_OPENING}\\.$`));
+  assert.match(decideSay("Nim", m, 0.618), new RegExp(`${SINCE_PICKED}\\.$`));
+  assert.match(decideSay("Nim", m, 0.618, SINCE_OPENING), new RegExp(`${SINCE_OPENING}\\.$`));
+  // Neither clause may claim a press on a page where nobody has pressed
+  // anything: the page's own seat is the one that must not say *you*.
+  assert.doesNotMatch(SINCE_OPENING, /\byou\b/);
 });
 
 test("the three effort words are the three measured states", () => {

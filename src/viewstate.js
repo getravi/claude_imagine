@@ -161,6 +161,16 @@ const FRESH = Object.freeze({
   // id it is holding is not the id it is handed — so this is the cache and that
   // is the machine, filed on the two sides of the line each one earns.
   doingSig: "",
+  // Who the page sat in the seat itself, on the frame this pond was adopted
+  // (v1.164, `onstage.js`). Not a cache: it is the *identity* of the borrowed
+  // seat, and everything that follows from it — the swap line under the water,
+  // the clause the steering figure counts its share from — is spelled
+  // `renderer.selected === view.pagePick`, so there is no second flag that can
+  // fall out of step with the selection. World-scoped and it could not be
+  // anything else: a creature object from the pond before this one would make
+  // that comparison false forever, and the page would go on narrating an animal
+  // it had seated while telling the visitor they had chosen it.
+  pagePick: null,
   // What the disc under that line is saying (v1.161). Two fields because the
   // panel updates on two clocks on purpose: the ink is redrawn every frame
   // because a blip really is moving, and the words are held for

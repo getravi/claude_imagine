@@ -525,6 +525,25 @@ body.simple [data-expert] {
   color: var(--ink);
   font-weight: 600;
 }
+/* The card holds two lines now (v1.164), so the sentence and the note under it
+   stack in a wrapper rather than sitting in the icon's row. `min-width: 0` for
+   the reason every flex child holding prose needs it: without it a long given
+   name refuses to wrap and pushes the icon off the card. */
+.doing .d-words {
+  flex: 1;
+  min-width: 0;
+}
+/* The borrowed seat (`onstage.js`): the animal being narrated is the page's own
+   opening pick, and this is where a visitor finds out the dots were theirs to
+   choose all along. `--ink-dim` for `.doing.waiting`'s reason — it is the one
+   line in the card that is about the reader rather than about the pond — and it
+   is removed, not merely dimmed, the moment they pick somebody. */
+.doing .d-swap {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
 
 /* ---- The pond as the animal has it (v1.161) ----
    The panel's own box and the panel's own inks, so this adds no ink/ground pair

@@ -4,6 +4,105 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.164.0] — 2026-09-10
+
+**👋 Somebody is already here** — the page picks an animal for you, so the three
+best panels on it are alive before you have touched anything.
+
+`hand.js` holds eleven sentences this page says in two registers. **Three of
+them exist only to say that you have not done anything yet:**
+
+    #doing     Pick an animal — click one, or press M — and this line will follow it.
+    #eyeview   Pick an animal … and this shows what that animal can see.
+    #decide    Pick an animal … and this shows what it decides to do.
+
+Three panels, stacked, straight under the water. `#doing` narrates a life,
+`#eyeview` is the only picture here of a mind rather than a body, and `#decide`
+is the step between them — and all three were switched off until a visitor
+guessed that the dots were clickable.
+
+### The number
+
+Headless Chromium at 390 × 844, the phone this project has been sizing for since
+v1.160. The three panels ran from **978 px to 1,528 px**, which is 65% of the
+second screen of this page and **the whole of what a stranger meets after the
+pond**. Scroll once, and the page hands you three grey boxes each asking you to
+scroll back up and press something.
+
+They now run 978 → 1,799 px and every pixel of it is about a named animal. The
+page is 270 px taller for it, which is the honest cost and is written down in
+the devlog rather than around.
+
+### Who it seats, and why not `pickStar`
+
+The living animal **nearest the middle of the water**. Not `👋 Meet somebody`'s
+star, for a reason `cast.js` states about itself: at tick zero its whole ladder
+is empty — nobody has young, nobody is a giant, nobody has outlived anybody — so
+it falls through to *the best-fed animal in the pond right now*, a claim that is
+false a tick later and which that module deliberately keeps off the cast board
+for exactly that reason. At tick zero the only thing that is true about any of
+these animals is **where it is**.
+
+v1.133's chore — *ask what else the quantity predicts* — run over 200 seeds,
+because the last rule that picked an extreme handed a first-time visitor an
+animal that died a third of a second later:
+
+| how far in | the animal the page seats | any founder |
+| --- | --- | --- |
+| 60 steps | **99.5%** still swimming | 98.7% |
+| 600 steps | 88.0% | 85.5% |
+| 2,600 steps | 18.0% | 16.0% |
+
+A position at the middle of a torus is a proxy for nothing, which is the whole
+of why it was chosen. Compare v1.133's *oldest living member*: 88.8% against
+97.9%, sorted on exactly the axis that kills it.
+
+### The seat is borrowed, not taken
+
+- **No camera rides along.** That is the entire difference between this and
+  `👋 Meet somebody`, which follows and zooms. A page that pulled a stranger
+  into one animal before they had looked at the pond would be answering a
+  question nobody asked — and would light the minimap, the ruler and the zoom
+  badge that v1.160 spent a release shrinking.
+- **One line says so, once.** *Picked for you, as the one nearest the middle —
+  tap any other animal to watch that one instead.* In `hand.js`'s table in both
+  registers, and gone for good the moment the visitor picks anybody. It is the
+  replacement for the three invitations rather than a fourth: those said what
+  you had not done, this says what has been done for you and how to take it
+  back, and it is the only sentence in that table that appears *beside* live
+  content instead of instead of it.
+- **There is no flag.** *The seat is the page's* is spelled
+  `renderer.selected === view.pagePick`, so a click, a tap, an arrow key, `M` or
+  a row on the cast board releases it and nothing can fall out of step with the
+  selection it describes.
+- **It does not pick again when its animal dies.** That instant belongs to
+  `obituary.js` — the card under the water is this page's best minute and it
+  offers its own two next steps. A page that seated a stranger over a life it
+  had just narrated would be stepping on the one thing it does well.
+
+### The sentence this would have made false
+
+`🧠 What it decides` printed *has turned towards food it could see 62% of the
+time **since you picked it***, and there is now an animal in the seat nobody
+picked. `decide.js` carries both clauses; the page-seated one reads **since the
+pond began**, which is not a hedge — `adoptWorld` seats the opening pick on the
+frame the pond arrives, so the two instants really are the same one.
+
+### Added
+
+- `src/onstage.js` — `openingPick`, the opening seat. Pure observer: reads
+  positions, returns one of the animals it was handed, draws no random number.
+- `test/onstage.test.js` — the rule beaten against a brute-force scan of five
+  real ponds at five depths, the tie beaten against a re-ordered creature list,
+  a dead animal never seated, one seed seating one animal, and the pure-observer
+  fingerprint pair.
+- `hand.js#seatSwap`, `decide.js#SINCE_OPENING`, `viewstate.js`'s `pagePick`.
+
+### Unchanged
+
+Every world, bit for bit. Nothing here steps, writes or samples anything: the
+default pond's fingerprint is the one it has carried since v1.3.0.
+
 ## [1.163.0] — 2026-09-09
 
 **🧠 What it decides** — the animal's own steering, on the same line as the

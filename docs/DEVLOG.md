@@ -20595,3 +20595,153 @@ prose that describes a collection is not read by anything.
 - **A pond loaded from an archive still has no book**, twenty-seventh cycle.
 
 ---
+
+## Entry — somebody is already here · 2026-09-10
+
+Same steer as last cycle: ordinary-person hat, mass appeal, not people like me.
+So I did the thing the playbook tells me to do and did not do often enough — I
+opened the page on a phone and scrolled it once, without measuring anything, to
+see what a stranger gets.
+
+Screen one is the pond. Screen two was **three grey boxes in a row**, each of
+them telling me to scroll back up and press something:
+
+    #doing     Pick an animal — click one, or press M — and this line will follow it.
+    #eyeview   Pick an animal … and this shows what that animal can see.
+    #decide    Pick an animal … and this shows what it decides to do.
+
+Those are the three best panels on this page. `#doing` narrates a life,
+`#eyeview` is the only picture here of a mind rather than a body, and `#decide`
+— which I shipped *yesterday* and called the middle third of the animal — is the
+step between them. All three sit behind a guess: that the dots are clickable.
+
+And I had the evidence filed, in the neatest possible form. `hand.js` holds
+eleven sentences this page says in two registers, and **three of them exist only
+to say that you have not done anything yet.** More than a quarter of the table
+this project keeps of *what the page tells a visitor to do* is the page waiting.
+
+## The number, which is worse than the sentence
+
+390 × 844, headless Chromium, the phone v1.160 sized the furniture for. The
+three panels ran from **978 px to 1,528 px** — 65% of the second screen, and
+100% of what a visitor meets after the pond. There is no way to read that as
+anything other than *the page's answer to "what now?" is "you first"*.
+
+So: when a pond begins, the page picks somebody. `src/onstage.js`, one function.
+
+## Show, then invite — which is the order round the right way
+
+The part I want to remember is not the feature, it is that I had the invitation
+and the example **the wrong way round for a hundred and sixty releases**. A
+stranger who does not yet know what pressing a dot would get them cannot be
+motivated by being told to press one. Show them a named animal, narrated, with a
+live picture of what it can see and what it has decided — *then* say that any
+other dot would do the same. The invitation survives, once, in the best place
+for it, under a working example.
+
+The general form, and I think it applies to every empty state I will ever write
+here: **an empty state that can be filled with a real example should be.** The
+grey box is only honest when the page genuinely has nothing to show, and this
+page had forty animals in it.
+
+## Who to seat, and the chore that nearly picked the wrong one
+
+My first instinct was `pickStar` — this project already has a ranked answer to
+*which of these should I watch*, so reuse it. `cast.js` talks me out of it in
+its own comments: at tick zero the whole ladder is empty (nobody has young,
+nobody is a giant, nobody has outlived anybody), so it falls through to *the
+best-fed animal in the pond right now*, which is a claim that is false a tick
+later and which that module deliberately keeps off the cast board for exactly
+that reason.
+
+At tick zero the only thing that is true about any of these animals is **where
+it is**. So: the living animal nearest the middle of the water. No merit in it,
+the page says so, and the ring lands where a reader is already looking.
+
+Then v1.133's chore, because the last time I picked an extreme for a stranger it
+was the *oldest living member* of a bloodline and the first press in a real
+browser read an obituary a third of a second later. 200 seeds:
+
+| how far in | the animal the page seats | any founder |
+| --- | --- | --- |
+| 60 steps | **99.5%** still swimming | 98.7% |
+| 600 steps | 88.0% | 85.5% |
+| 2,600 steps | 18.0% | 16.0% |
+
+A position at the middle of a torus is a proxy for nothing, which is the whole
+of why it is the right key. Against v1.133's 88.8% versus 97.9%, that is what a
+neutral rule looks like, and it took four minutes to find out rather than a
+browser walk to find out the hard way.
+
+## The seat is borrowed
+
+Four decisions, and the third is the one I would defend hardest.
+
+1. **No camera.** `👋 Meet somebody` follows and zooms; this does not. A page
+   that pulled a stranger into one animal before they had looked at the pond
+   would be answering a question nobody asked — and would light the minimap, the
+   ruler and the zoom badge that v1.160 spent a whole release shrinking.
+2. **One line says so.** *Picked for you, as the one nearest the middle — tap
+   any other animal to watch that one instead.* In `hand.js`'s table in both
+   registers, on the way in rather than a release later, which is the only test
+   of v1.155's lesson that means anything.
+3. **There is no flag.** *The seat is the page's* is spelled
+   `renderer.selected === view.pagePick`. I started to write a boolean and
+   stopped: a flag would have to be cleared by the click handler, the arrow
+   keys, `M`, the cast board and the obituary's two buttons, and the first one I
+   forgot would leave the page telling a visitor they had not chosen the animal
+   they had just chosen. **A predicate over the state itself cannot drift from
+   the state; a flag beside it always can.**
+4. **It never picks again.** When the page's own animal dies, the seat empties
+   and stays empty. That instant belongs to `obituary.js`, which is this page's
+   best minute and has its own two next steps in it.
+
+## The sentence I would have made false
+
+Yesterday's panel prints *has turned towards food it could see 62% of the time
+since you picked it*, and this release puts an animal in the seat that nobody
+picked. One release old and already load-bearing on an assumption I broke the
+next day.
+
+`decide.js` carries both clauses now, and the page-seated one is **since the
+pond began** — which is not a hedge, because `adoptWorld` seats the pick on the
+frame the pond arrives, so the two instants are the same instant. Worth writing
+down as a rule: **a sentence that names how the reader got here is a claim about
+the reader, and the day the page can do that thing itself, the claim is false.**
+There will be more of these. *You picked*, *you fed*, *you skipped* — I should
+go and look.
+
+## Two things only a browser could tell me
+
+- The page is **270 px taller**. The three panels went from 550 px of
+  placeholder to 821 px of live content, and everything below them — the ladder,
+  the cast board, the records, the Chronicle — moved down by that much. That is
+  a real cost on the exact axis I have been writing about for three cycles, and
+  I am not going to pretend the trade is free. What I will say for it is that
+  550 px of *scroll back up and press something* is not a page a phone visitor
+  was reading anyway.
+- **The plate is the feature.** I built this for the panels and the best of it
+  turned out to be over the water: a white ring in the middle of the pond with
+  `Tamsin · searching` beside it, on the first frame, with nobody having done
+  anything. The pond has a protagonist now the way an aquarium does.
+
+## What it leaves
+
+- **The best thing on this page is still the ninth panel down** and I have just
+  pushed it 270 px further. Three releases of writing that sentence and this is
+  the first cycle it got *worse*. Next cycle is the ordering, or the sentence
+  stops meaning anything.
+- **Every other sentence here that says *you*** is the same class of claim I had
+  to fix in `decide.js` today, and I have not swept for them.
+- **The tour still does not mention any of it** — four releases in a row.
+- **Nothing checks that a surface can be *seen*, only that it is on screen**,
+  sixth cycle.
+- **The plates over the water still do not carry the shape**, seventh cycle.
+- **Nothing here has ever measured whether anybody presses anything**, and this
+  release is the first one that would be *falsified* by that measurement rather
+  than merely unproven: if a visitor picks their own animal in the first ten
+  seconds anyway, the seat is furniture.
+- **`targetsize.js` still has no position axis**, twelfth cycle.
+- **A pond loaded from an archive still has no book**, twenty-eighth cycle.
+
+---

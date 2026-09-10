@@ -62,6 +62,8 @@ import { lifelineSeries, lifelineCaption, lifelineSay, drawLifeline } from "./li
 import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
 import { WORD_HOLD_MS, drawEye, eyeInvite, eyeLine, eyeSay, eyeSight } from "./eyeview.js";
 import {
+  SINCE_OPENING,
+  SINCE_PICKED,
   SteerTally,
   decideInvite,
   decideLine,
@@ -69,6 +71,7 @@ import {
   drawSteer,
   steerMark,
 } from "./decide.js";
+import { openingPick } from "./onstage.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -397,6 +400,16 @@ function adoptWorld() {
   // running — `📂 Load` pours a saved run into a fresh `World` — has no
   // beginning here to record, gets `null`, and the board says so.
   view.founding = foundingSnapshot(world);
+  // And somebody in the seat (v1.164). Here rather than in `boot` because this
+  // is the one funnel every new pond comes through — reset, load, a new seed
+  // and a scenario chip all land here — and because `view.adopt` has just
+  // cleared the selection two lines up, so the seat is empty by construction
+  // and this can never be taking one the visitor is sitting in. No camera: a
+  // page that zoomed a stranger into one animal before they had looked at the
+  // pond would be answering a question nobody asked, which is exactly the
+  // difference between this and `👋 Meet somebody`.
+  view.pagePick = openingPick(world);
+  renderer.selected = view.pagePick;
   // And the animals themselves, for the lane on the left (v1.162). The same
   // instant and the same `tick === 0` argument as the line above — a pond
   // restored from a file has no first moments to race, gets `null`, and the
@@ -971,10 +984,17 @@ function updateDoing() {
   // The idle key carries the hand, so the invitation is rewritten if the pointer
   // changes under it — the one state on this page whose entire content is an
   // instruction is the one that can least afford to be in the wrong register.
-  const sig = key ? `${c.id}:${key}` : `invite:${hand}`;
+  // The borrowed seat carries it for the same reason and only while it is
+  // borrowed: once the visitor has picked somebody the line is gone, so the
+  // hand cannot change anything about this card and does not belong in its key.
+  const own = ownSeat();
+  const sig = key ? `${c.id}:${key}:${own ? hand : ""}` : `invite:${hand}`;
   if (sig === view.doingSig) return;
   view.doingSig = sig;
   const el = $("doing");
+  const swap = $("doing-swap");
+  swap.hidden = !own;
+  swap.innerHTML = own ? say("seatSwap", hand) : "";
   if (!key) {
     el.classList.add("waiting");
     $("doing-icon").textContent = INVITE_ICON;
@@ -984,6 +1004,22 @@ function updateDoing() {
   el.classList.remove("waiting");
   $("doing-icon").textContent = doingIcon(key);
   $("doing-text").innerHTML = doingHTML(givenName(c.id), key);
+}
+
+/**
+ * Is the animal on screen the one the page sat down, or the one the visitor
+ * chose? (v1.164, `onstage.js`.)
+ *
+ * Asked of the selection itself rather than of a flag anybody has to remember
+ * to clear: every path that picks somebody — a click, a tap, an arrow key, `M`,
+ * a row on the cast board — writes `renderer.selected`, so a seat that is no
+ * longer the page's cannot go on saying it is. A dead pick is nobody's seat:
+ * the card the page shows then is an obituary, and `onstage.js` deliberately
+ * does not seat anybody over it.
+ */
+function ownSeat() {
+  const c = renderer.selected;
+  return !!c && !c.dead && c === view.pagePick;
 }
 
 // ---- What it can see (v1.161) ----
@@ -1114,8 +1150,13 @@ function updateDecide(now) {
   // two positions the label describes have moved a hundred times. A listener's
   // only copy of a picture may not be cached on a sentence that is about
   // something else.
-  canvas.setAttribute("aria-label", decideSay(name, mark, share));
-  const line = decideLine(name, mark, share, hand);
+  // Which press the tally is counted from, and it is the seat that decides:
+  // *since you picked it* is this page's one sentence that a page-seated animal
+  // would make false, and the instant it is counted from is the same one either
+  // way — `adoptWorld` seats the opening pick on the frame the pond arrives.
+  const since = ownSeat() ? SINCE_OPENING : SINCE_PICKED;
+  canvas.setAttribute("aria-label", decideSay(name, mark, share, since));
+  const line = decideLine(name, mark, share, hand, since);
   if (line === view.decideSig) return;
   view.decideSig = line;
   $("decide-line").textContent = line;
