@@ -400,6 +400,20 @@ export const PAGE_SCOPED = Object.freeze({
     "animals get new entries however their ids fall, and `nameTags` drops everybody who is " +
     "not wearing a plate this frame",
   tourAt: "which stop of the guide is showing — a fact about the reader, not about the pond",
+  contentsNodes:
+    "the headings the contents is a list of (v1.165), as elements. The clearest page-scoped " +
+    "thing on this list: what it holds is the shape of the *document*, which no pond has " +
+    "ever had an opinion about. It is rebuilt when the view switch changes how many parts " +
+    "the page has, and by nothing else",
+  contentsChapters: "the mark and the name `contents.js` made of each of those headings",
+  contentsAt:
+    "the chapter last written onto the bar — a memo of where the reader is, kept only so " +
+    "that a scroll, which fires far more often than a chapter changes, writes to the page " +
+    "on the frames where something moved",
+  contentsOpen: "whether the reader has the list open, which is a reader's choice like pause",
+  contentsPending:
+    "set while a scroll is waiting for a frame, so a flick of a thumb costs one measurement " +
+    "rather than one per scroll event. Wall-clock machinery, like `flashTimer`",
   tourReturn: "the element focus came from when the guide opened, to put it back on the way out",
   postcardReturn: "the same, for the postcard — where focus was when `🔗 Share` opened the card",
   postcardOnCard:

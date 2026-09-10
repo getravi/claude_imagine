@@ -74,6 +74,46 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The page had a contents and had never shown it — shipped in v1.165
+  (`src/contents.js`), and what it leaves.** Fourth cycle in the ordinary-visitor
+  hat, and the first one spent on the standing leave item rather than adding to
+  it. `app/index.html` is **5,638 px** at 390 x 844 — six and two-thirds screens,
+  the water ending at 786 px, so **86% of this page is below the pond** — and the
+  only instrument a visitor had for any of it was a thumb. Five findings.
+  (i) **Before designing a navigation for a document, check whether the document
+  already has one and is not showing it.** I spent ten minutes naming the
+  sections before noticing that eleven `<h2>`s already name them, in plain
+  English, with a mark on the front, written by me one line at a time over thirty
+  releases. Long pages nearly always have this. Ask it of every collection in
+  this repo that nobody has ever treated as a collection. (ii) **A screen reader
+  has offered the heading walk since day one.** Reframing the feature as *give
+  everybody the instrument one reader already has* settled the design in a
+  sentence and is worth reaching for again: the accessibility affordance is
+  often the good UI nobody drew. (iii) **A surface that is a *reading* of the
+  page cannot drift from it, and a typed copy always does** — a tooltip (v1.154),
+  a count (v1.37), a header (v1.163), and the tour's six stops, whose leave item
+  has been the same sentence for four cycles. The test that follows is different
+  in kind too: there is no *does the page still have this?* to ask, so
+  `test/contents.test.js` asks about the reading instead. (iv) **A quantity that
+  must reach a value by the end will, if you let it, spend the whole journey
+  arriving.** The reading line has to reach the document's last pixel or the
+  chapters in the final screenful are unreachable; sliding it evenly across the
+  scroll passed every test I wrote and read `11 of 11 · Chronicle` at 3,700 px in
+  a browser, with 372 px of two other panels in between. Make it late rather than
+  smooth. And the meta-finding: **the walk found what my own non-lazy tests could
+  not** — a property held while the experience was bad. Tests check the claims
+  you thought to make. (v) **Two source-scanning traps in one cycle**: a purity
+  scan that read the module's own prose about *documents* and *windows* as
+  breaches (strip comments first — a whole class of these tests is quietly
+  wrong), and a heading that is *only* an emoji arriving at the splitter as a
+  name made of an emoji, because there is no space to split at. What it leaves:
+  (a) **nothing has ever measured whether anybody presses anything**, thirty-one
+  releases, and this is the first release whose entire justification is an
+  unmeasured claim about scrolling; (b) **the tour could now read the page the
+  way this does**, and the remedy is sitting in the repo; (c) **`#doing` and the
+  obituary have no headings**, so the two panels a visitor most wants are the two
+  the list cannot offer; (d) the ordering of the column is still untouched.
+
 - **Somebody is already here — shipped in v1.164 (`src/onstage.js`), and what it
   leaves.** Third cycle in a row on the ordinary-visitor steer, and this time
   the finding was not a missing panel but a page that made a stranger go first.

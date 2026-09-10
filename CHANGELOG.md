@@ -4,6 +4,88 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.165.0] — 2026-09-10
+
+**📖 A page that says what is in it** — the pond's panels are now a contents you
+can open from anywhere, and it is assembled from the page's own headings.
+
+`app/index.html` is **5,638 px tall** at 390 × 844 — six and two-thirds screens.
+The water ends at 786 px, so **86% of this page is below the pond**, and the
+Chronicle, which is where a visitor finds out what has actually happened in the
+world they are watching, starts five screens down. Thirty releases have each
+added one more good panel to the bottom of one column, and the only instrument a
+visitor had for any of it was a thumb.
+
+### The contents was already written
+
+The page has eleven headings in it, and every one of them is already a
+plain-English name with a mark on the front:
+
+    🔍 What you are looking at     🏅 Worth watching
+    🧬 How they have changed       🎯 Are they getting better?
+    🏁 Day one vs today            🏆 Pond records
+
+Read as a list that *is* a table of contents — written over thirty releases, one
+line at a time, by whoever added the panel. It had never been shown to anybody
+as a list.
+
+And one reader has had it all along: a screen reader offers a heading walk on
+every page ever written. This release gives everybody the heading walk.
+
+Nothing in `src/contents.js` names a panel. `main.js` reads the headings the
+browser is actually showing, the module splits each into its mark and its words,
+and the list is those headings in order — so it cannot drift from the page the
+way `tour.js`'s six typed stops can, and *have*, three cycles running. Add a
+panel with a heading and it appears in the contents. Put the instruments away
+with the switch in the top bar and the Tree of Life leaves the list with them:
+eleven parts in **Simple**, twelve in **Everything**, and this file does not
+know that the Tree of Life exists.
+
+### Where you are, and the number a browser walk changed
+
+The bar names the chapter you are in, which needs a reading line — and the
+obvious rule for one is right in the middle of a document and wrong at its end,
+because scrolling stops while the line still has a screenful of page below it.
+Every chapter beginning inside that last screen can then never be current, and
+this page has **three** headings in its last screen.
+
+So the line slides to the document's last pixel as the scroll runs out. The
+first version of that slid it evenly across the whole scroll, passed every test
+in the file, and was caught in a headless browser reading
+
+    11 of 11 · 📜 Chronicle
+
+at 3,700 px down — with 372 px of two other panels standing between the reader
+and the Chronicle, which was clinging to the bottom 29% of the screen. **A
+quantity that must reach a value by the end will, if you let it, spend the whole
+journey arriving.** The line now runs at the reader's own speed until the
+scroll remaining is exactly what it has left to make up, and covers that last
+stretch at twice the speed. At the same 3,700 px it now reads `9 of 11 · 🏁 Day
+one vs today`, and the named chapter is provably one that has begun on screen.
+
+`test/contents.test.js` sweeps every scroll offset of four page shapes rather
+than sampling three, for the three properties that make a contents trustworthy:
+the mark never goes backwards, every chapter can be reached, and the chapter
+named is never one the reader cannot see.
+
+### Details
+
+- **It waits for the water.** The bar does not appear until the pond has left
+  the middle of the screen — the one thing on this page nobody needs help
+  finding — and it is never up over the guide, the postcard or the skip card.
+- **Bottom right, opening upward**, so the press and the thing pressed are never
+  under the same thumb. Verified at 320, 390 and 1440 px: no horizontal
+  overflow, the list capped at 60% of the window and scrolling.
+- **The pin.** Exactly one heading here carries no mark of its own, and it is
+  the pond's name — which is a name, not a label, so the contents supplies a
+  📍 rather than the page inventing an emoji. A heading that is *only* a mark is
+  not listed at all: the row would be a blank button that still went somewhere.
+- Escape closes it and hands the keyboard back; a press anywhere else closes it;
+  the chapter you are in is where focus lands when it opens, and it is marked in
+  the list as well as on the bar.
+- Determinism untouched: `contents.js` imports nothing, reads no world and draws
+  no random number — a test asserts all three against the shipped source.
+
 ## [1.164.0] — 2026-09-10
 
 **👋 Somebody is already here** — the page picks an animal for you, so the three

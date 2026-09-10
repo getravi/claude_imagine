@@ -1250,6 +1250,47 @@
       <div class="legend" id="species-legend"></div>
     </section>
 
+    <!-- The contents (v1.165). This page is 5,638 px tall on a phone — six and
+         two-thirds screens, 86% of it below the water — and until this release
+         the only instrument a visitor had for it was a thumb.
+
+         Nothing here is written by hand. `main.js` reads the headings the
+         browser is actually showing, `src/contents.js` splits each one into the
+         mark on its front and the words after it, and the list is those
+         headings in order. That is the whole design: the page has been writing
+         its own contents for thirty releases, one `<h2>` at a time, and nobody
+         had ever shown them as a list. It cannot go stale the way a typed copy
+         does — add a panel with a heading and it appears here; put the
+         instruments away with the switch in the top bar and the Tree of Life
+         leaves the list with them.
+
+         Fixed to the window and at the end of the body, for the guide's reason
+         one comment down. Bottom right because the two things it competes with
+         are a thumb's reach and nothing else: it is out from under the reading
+         column at every width, and it is where every "back to the top" control
+         a visitor has ever met already lives.
+
+         `<nav>` and an ordered list, because that is what this is — the
+         document's own outline, offered to somebody who cannot press a screen
+         reader's heading key. -->
+    <nav id="contents" class="contents" aria-label="Contents" hidden>
+      <button
+        id="contents-toggle"
+        class="contents-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="contents-list"
+      >
+        <span class="ct-icon" id="contents-icon" aria-hidden="true">📖</span>
+        <span class="ct-words">
+          <span class="ct-where" id="contents-where"></span>
+          <span class="ct-name" id="contents-name"></span>
+        </span>
+        <span class="ct-caret" aria-hidden="true">▾</span>
+      </button>
+      <ol class="contents-list" id="contents-list" hidden></ol>
+    </nav>
+
     <!-- The guide's overlay (v1.129). Deliberately at the end of the body and
          outside `main.layout`: it is fixed to the window rather than placed in
          the column, and every mark inside `.stage` is anchored to the pond's own

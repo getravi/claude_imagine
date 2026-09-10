@@ -163,6 +163,14 @@ import {
   stopCounter,
 } from "./tour.js";
 import {
+  CONTENTS_MIN,
+  barShown,
+  chapterAt,
+  chapterCount,
+  chapters,
+  toggleTitle,
+} from "./contents.js";
+import {
   EXPERT_ATTR,
   SIMPLE_CLASS,
   prefersSimple,
@@ -513,6 +521,7 @@ function boot() {
   wireMilestoneList();
   wireChronicleFeed();
   wireTour();
+  wireContents();
   wirePostcard();
   wireSkip();
   buildScenarioChips();
@@ -1817,6 +1826,11 @@ function applySimpleView(simple) {
   $("btn-simple").title = switchTitle(simple);
   $("simple-label").textContent = switchLabel(simple);
   $("simple-note").textContent = switchNote(simple, instrumentTally());
+  // The switch changes how many parts this page has, so it changes the contents
+  // (v1.165). Rebuilt rather than filtered: the list is only ever a reading of
+  // the headings the browser is showing, and that reading is the whole reason it
+  // cannot go stale.
+  rebuildContents();
 }
 
 function wireViewSwitch() {
@@ -1875,6 +1889,215 @@ function wireTour() {
   };
   window.addEventListener("resize", refit);
   window.addEventListener("scroll", refit, { passive: true });
+}
+
+// ---- The contents (v1.165) ----
+//
+// `contents.js` owns the words and the arithmetic; this is the adapter, and its
+// whole job is to read the page rather than to describe it. Nothing below names
+// a panel, a heading or a count — a second hand-typed copy of this page is the
+// thing the module was written to avoid.
+//
+// Three states are kept here and nowhere else: the headings currently on the
+// page, whether the list is open, and which chapter was last marked. The last
+// one is only there to keep the DOM writes off the frames where nothing moved —
+// a scroll fires far more often than a chapter changes.
+
+/** The chapter headings, in document order. Parallel to `contentsChapters`. */
+let contentsNodes = [];
+/** What `contents.js` made of them: a mark and a name each. */
+let contentsChapters = [];
+/** The chapter last written to the bar, or `-1` for "nothing yet". */
+let contentsAt = -1;
+let contentsOpen = false;
+/** Set while a scroll is waiting for a frame, so a flick fires one measurement. */
+let contentsPending = false;
+
+/**
+ * Every heading this page is showing, which is the definition of a chapter.
+ *
+ * Two exclusions, and both are about what a heading *is* rather than about any
+ * particular panel:
+ *
+ *   **A heading outside a `<section>` is a card's title, not a part of the
+ *   page.** The guide, the postcard and the skip card each carry an `<h2>`, and
+ *   all three are overlays fixed to the window — a contents that offered to
+ *   scroll to one would be offering to scroll to something that does not move.
+ *
+ *   **A heading the browser is not showing is not on the page.** `offsetParent`
+ *   is the cheapest true answer to that and it costs one layout read per
+ *   heading, which is why this runs on a rebuild and not on a scroll. It is
+ *   what takes the Tree of Life out of the list when the instruments are put
+ *   away, without this file knowing that the Tree of Life exists.
+ */
+function pageHeadings() {
+  const out = [];
+  for (const h of document.querySelectorAll("h2")) {
+    if (!h.closest("section")) continue;
+    if (h.offsetParent === null) continue;
+    out.push(h);
+  }
+  return out;
+}
+
+/**
+ * Read the page's headings and draw the list.
+ *
+ * The rows are built here rather than by `contents.js` for the reason every
+ * other panel here splits the same way: the module writes the words, the page
+ * owns the elements. Each row carries its index, and the handler is on the list
+ * rather than on eleven buttons.
+ */
+function rebuildContents() {
+  contentsNodes = pageHeadings();
+  contentsChapters = chapters(contentsNodes.map((h) => h.textContent));
+  const nav = $("contents");
+  const enough = contentsChapters.length >= CONTENTS_MIN;
+  if (!enough) {
+    closeContents();
+    nav.hidden = true;
+  }
+  const list = $("contents-list");
+  list.replaceChildren();
+  for (let i = 0; i < contentsChapters.length; i += 1) {
+    const chapter = contentsChapters[i];
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.chapter = String(i);
+    const icon = document.createElement("span");
+    icon.className = "cl-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = chapter.icon;
+    const name = document.createElement("span");
+    name.className = "cl-name";
+    name.textContent = chapter.name;
+    button.append(icon, name);
+    li.append(button);
+    list.append(li);
+  }
+  contentsAt = -1;
+  updateContents();
+}
+
+/**
+ * Put the bar where the reader is: up or away, and which chapter it says.
+ *
+ * Runs on a scroll (coalesced into a frame), on a resize, and whenever the list
+ * is rebuilt. The tops are re-measured every time rather than cached, because
+ * every panel on this page changes height as the pond runs — a cached top is a
+ * contents that is right about a page that has since moved.
+ */
+function updateContents() {
+  const nav = $("contents");
+  if (contentsChapters.length < CONTENTS_MIN) return;
+  const scroll = {
+    y: window.scrollY,
+    viewport: window.innerHeight,
+    docHeight: document.documentElement.scrollHeight,
+  };
+  const stage = document.querySelector(".stage");
+  const pondBottom = stage ? stage.getBoundingClientRect().bottom + scroll.y : 0;
+  // Never over a card. The guide, the postcard and the skip card each ask for
+  // the whole window, and a pill in the corner during a six-stop tour is the
+  // page interrupting its own introduction.
+  const show =
+    barShown(scroll, pondBottom) && !tourIsOpen() && !postcardIsOpen() && !skipIsOpen();
+  if (!show) {
+    if (!nav.hidden) closeContents();
+    nav.hidden = true;
+    return;
+  }
+  nav.hidden = false;
+  const tops = contentsNodes.map((h) => h.getBoundingClientRect().top + scroll.y);
+  const at = chapterAt(tops, scroll);
+  if (at === contentsAt) return;
+  contentsAt = at;
+  const chapter = contentsChapters[at] || null;
+  $("contents-icon").textContent = chapter ? chapter.icon : "📖";
+  $("contents-where").textContent = chapterCount(at, contentsChapters.length);
+  $("contents-name").textContent = chapter ? chapter.name : "";
+  $("contents-toggle").title = toggleTitle(chapter, at, contentsChapters.length);
+  const rows = $("contents-list").children;
+  for (let i = 0; i < rows.length; i += 1) rows[i].classList.toggle("at", i === at);
+}
+
+function openContents() {
+  if (contentsOpen) return;
+  contentsOpen = true;
+  $("contents-list").hidden = false;
+  $("contents-toggle").setAttribute("aria-expanded", "true");
+  // Onto the chapter you are in, not the top of the list: a reader who opens a
+  // contents to find out where they are should land on the answer.
+  const here = $("contents-list").children[Math.max(0, contentsAt)];
+  const button = here && here.querySelector("button");
+  if (button) button.focus();
+}
+
+function closeContents(returnFocus = false) {
+  if (!contentsOpen) return;
+  contentsOpen = false;
+  $("contents-list").hidden = true;
+  $("contents-toggle").setAttribute("aria-expanded", "false");
+  if (returnFocus) $("contents-toggle").focus();
+}
+
+/** Go to a chapter: the whole panel into view, not just its heading. */
+function goToChapter(index) {
+  const heading = contentsNodes[index];
+  if (!heading) return;
+  const target = heading.closest("section") || heading;
+  closeContents();
+  // The OS preference rather than `renderer.reducedMotion`, which a visitor can
+  // flip from the controls: that switch is about comet trails in the water, and
+  // somebody who has turned the trails back on has not asked the *page* to start
+  // sliding about under them.
+  target.scrollIntoView({
+    behavior: motionQuery.matches ? "auto" : "smooth",
+    block: "start",
+  });
+}
+
+function wireContents() {
+  const nav = $("contents");
+  $("contents-toggle").addEventListener("click", () => {
+    if (contentsOpen) closeContents(true);
+    else openContents();
+  });
+  $("contents-list").addEventListener("click", (e) => {
+    const button = e.target instanceof Element ? e.target.closest("button") : null;
+    if (!button) return;
+    goToChapter(Number(button.dataset.chapter));
+  });
+  nav.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    closeContents(true);
+    e.stopPropagation();
+  });
+  // A list left open behind a reader who has gone back to reading is clutter
+  // they did not ask for. Both doors: a press anywhere else, and a keyboard
+  // that has walked out of it.
+  document.addEventListener("click", (e) => {
+    if (contentsOpen && e.target instanceof Node && !nav.contains(e.target)) closeContents();
+  });
+  nav.addEventListener("focusout", (e) => {
+    if (contentsOpen && !nav.contains(e.relatedTarget)) closeContents();
+  });
+
+  const restack = () => {
+    if (contentsPending) return;
+    contentsPending = true;
+    requestAnimationFrame(() => {
+      contentsPending = false;
+      updateContents();
+    });
+  };
+  window.addEventListener("scroll", restack, { passive: true });
+  // A resize can change which headings are shown as well as where they are —
+  // the stylesheet folds this page at 960 px and again at 560 — so it rebuilds
+  // rather than re-measures.
+  window.addEventListener("resize", rebuildContents);
+  rebuildContents();
 }
 
 // ---- Chronicle feed (natural-history timeline) ----

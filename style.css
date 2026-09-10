@@ -3522,3 +3522,159 @@ button.skip-btn[aria-disabled="true"] {
     order: 1;
   }
 }
+
+/* ---- The contents (v1.165) ----
+
+   A page 5,638 px tall on a phone had one instrument for getting about it, and
+   it was a thumb. This is the document's own outline — see `src/contents.js`
+   for why it is assembled from the headings rather than typed, and `main.js`
+   for the reading.
+
+   Two rules decide every number below.
+
+   **It must not compete with the pond.** It is small, it is one corner, and
+   `main.js` does not put it up at all until the water has left the middle of
+   the screen. The closed pill is a line of eleven-pixel type over a line of
+   thirteen — about the footprint of the season badge over the water — and it
+   is the only thing on this page that sits on top of the page.
+
+   **It must be reachable and readable at 390 px.** Bottom right for a right
+   thumb; the list opens *upward* from it, so the press and the thing pressed
+   are never under the hand that pressed them; and the list is capped at 60% of
+   the window and scrolls, because eleven chapters at a comfortable row height
+   is taller than a phone. */
+.contents {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 40;
+  display: flex;
+  /* The control is first in the source and last down the screen, because the
+     list opens *upward*: the reading order a keyboard and a screen reader walk
+     is control-then-list, and the paint order a thumb meets is list-then-
+     control. `column-reverse` buys that without a second element and without
+     moving anything. */
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: 6px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+}
+.contents[hidden] {
+  display: none;
+}
+.contents-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  text-align: left;
+  background: var(--bg-panel-2);
+  border: 1px solid #2a4258;
+  border-radius: 999px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  min-width: 0;
+}
+.contents-toggle:hover {
+  background: var(--bg-panel);
+  border-color: var(--accent);
+}
+.ct-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.ct-words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+/* The count, in the mono face every other counter on this page uses (the tour's
+   `1 of 6`, the Chronicle's clock) — a number that changes as you scroll should
+   not also change width as it does. */
+.ct-where {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  line-height: 1.15;
+}
+/* One line, ellipsised. A chapter name that wrapped would change the height of
+   a fixed pill as the reader scrolled past it, which is a corner of the screen
+   moving on its own. */
+.ct-name {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-caret {
+  font-size: 11px;
+  color: var(--ink-dim);
+  flex: 0 0 auto;
+  transition: transform 0.15s;
+}
+.contents-toggle[aria-expanded="true"] .ct-caret {
+  transform: rotate(180deg);
+}
+.contents-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: var(--bg-panel-2);
+  border: 1px solid #2a4258;
+  border-radius: var(--radius);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.contents-list[hidden] {
+  display: none;
+}
+.contents-list li {
+  display: block;
+}
+.contents-list button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 9px;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.contents-list button:hover {
+  background: var(--bg-panel);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.contents-list .cl-icon {
+  font-size: 15px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.contents-list .cl-name {
+  min-width: 0;
+}
+/* Where you are, in the list as well as on the pill. `here.js` made the same
+   move for the same reason: a reader who opens a contents to find out where
+   they are should not have to read the closed control they just covered up. */
+.contents-list li.at button {
+  color: var(--ink);
+  background: var(--bg-panel);
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ct-caret {
+    transition: none;
+  }
+}

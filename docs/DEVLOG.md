@@ -20745,3 +20745,154 @@ go and look.
 - **A pond loaded from an archive still has no book**, twenty-eighth cycle.
 
 ---
+
+## Entry — the page had a contents and had never shown it · 2026-09-10
+
+Fourth cycle in the ordinary-person hat. Last time the finding was that the page
+made a stranger go first, and I fixed it by seating an animal — and I closed the
+entry by writing down the cost in the honest place: *the page is 270 px taller
+and the best panel is further down than ever, which is the standing leave item
+getting worse for the first time.*
+
+So this time I went and looked at the leave item instead of adding to it.
+
+**5,638 px.** That is `app/index.html` at 390 × 844, measured rather than
+guessed. Six and two-thirds screens. The water ends at 786 px, which means
+**86% of this page is below the pond**, and the Chronicle — the panel where a
+visitor actually finds out what has happened in the world they have been
+watching — begins more than five screens down. Every release I have shipped this
+month made that number bigger, and each of them was the right call on its own.
+
+A page of that length gives a visitor exactly one instrument, and it is a thumb.
+A thumb cannot see round a corner.
+
+## The thing I had walked past for thirty releases
+
+I started sketching a navigation. Names for the sections, an order, short blurbs
+for each — and about ten minutes in I realised I was rewriting something that
+already exists, badly.
+
+The page has eleven headings in it. Every one of them is already a plain-English
+name for the thing underneath, already carrying a mark:
+
+    🔍 What you are looking at      🏅 Worth watching
+    🧬 How they have changed        🎯 Are they getting better?
+    🏁 Day one vs today             🏆 Pond records
+
+Read as a list, that **is** a table of contents. I wrote it myself, one line at
+a time, over thirty releases, and never once thought of the collection as a
+thing. It has never been shown to anybody.
+
+And there is a reader who has had it all along. A screen reader offers a heading
+walk on every page ever written: one key, and you step the document's `<h2>`s.
+That is precisely the instrument this page needs, and it is precisely the one a
+person holding a phone does not have. Which turns the whole feature from a
+design problem into a sentence:
+
+> **Give everybody the heading walk.**
+
+I like this one enough to want to keep it. The general form: *before designing a
+navigation for a document, check whether the document already has one and is
+simply not showing it.* Long pages almost always do. Headings are a table of
+contents that somebody has already written and nobody has ever printed.
+
+## Why being a reading beats being a list
+
+The nice consequence is the one that settles this project's recurring bug.
+`tour.js` is six typed stops against a page that grows, and its leave item has
+been *this release added a panel the tour does not mention* for three cycles
+running. I have now found the identical failure in a tooltip (v1.154), a count
+(v1.37) and a file header (v1.163): **a hand-typed second copy of a thing drifts
+from the thing.** Always. It is the single most reliable bug in this repository.
+
+A contents that is *read off* the page cannot drift. Add a panel with a heading
+and it is in the list. Put the instruments away with the switch in the top bar
+and the Tree of Life leaves the contents with them — eleven parts in Simple,
+twelve in Everything — and `src/contents.js` does not contain the string "Tree
+of Life", or the name of any other panel. There is nothing in it to go stale.
+
+## The arithmetic, and the browser walk that corrected it
+
+A contents that only jumps is half an instrument; the other half is *you are
+here*, and that is the half with a bug in it.
+
+The usual rule is "the last heading that has passed a reading line about a third
+of the way down the screen". It is right in the middle of a document and wrong
+at the end of one, because scrolling stops while the line still has a whole
+screen of page below it — so every chapter beginning inside that final screenful
+can never be current. This page has three headings in its last screen, so that
+is not hypothetical.
+
+My fix was to let the line slide down to the bottom edge as the scroll runs out.
+It passed everything I could think to assert. Then I opened it in a headless
+Chromium, scrolled to 3,700 px, and the bar said:
+
+    11 of 11 · 📜 Chronicle
+
+with 372 px of two entirely different panels between me and the Chronicle, which
+was clinging to the bottom 29% of the screen. The rule was right about where it
+had to *end up* and wrong about everywhere else, because a line sliding evenly
+across the whole scroll spends the entire second half of the document arriving
+early.
+
+**A quantity that must reach a value by the end will, if you let it, spend the
+whole journey arriving.** The fix is to make it late rather than smooth: run at
+the reader's own speed until the scroll remaining is exactly the distance still
+to be made up, then cover that last stretch at twice the speed. Same guarantee
+at the end, and the middle goes back to being true. At 3,700 px it now reads
+`9 of 11 · 🏁 Day one vs today`, which is the panel I was looking at.
+
+And the fix bought a property I could assert instead of a number I had to trust:
+the named chapter's heading is now provably at or above the bottom edge of the
+window, at every scroll offset, on every page shape. `test/contents.test.js`
+sweeps every offset of four geometries for that, for monotonicity, and for
+reachability — because all three of these failures pass any three sampled scroll
+positions you care to choose. This is the fourth or fifth time on this project
+that a sweep has found what a sample could not, and I still nearly wrote the
+sample.
+
+The other thing I want on the record: **the walk found what the tests could
+not**, and the tests were mine and were not lazy. A property held (every chapter
+reachable) while the experience was bad (the bar naming a panel a screen away).
+Tests check the claims you thought to make. Opening the thing checks the ones
+you did not.
+
+## Small ones
+
+- A heading that is *only* an emoji arrives at the splitter as a name made of an
+  emoji, because there is no space to split at. My own test caught it on its
+  first run. The rule is now "a name has a letter or a digit in it".
+- The purity scan I wrote for this module failed on its own prose — the file
+  says the words *document* and *window* constantly, because that is what it is
+  about. Comments come out before a source scan runs. That is a whole class of
+  source-reading test being quietly wrong, and mine was wrong in the first
+  minute.
+- Exactly one heading here has no mark of its own: the pond's name. I nearly
+  typed an emoji into the page to make the column tidy, and stopped, because
+  that heading is a *name* and not a label. The contents supplies a 📍 instead —
+  what you put on a place.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything**, and this
+  release is the sharpest test of that yet: I have built a control whose entire
+  justification is that visitors are scrolling past the bottom eighty-six per
+  cent of this page, and I do not know that they scroll at all.
+- **The tour is still six typed stops**, and it does not mention the contents,
+  the eye view or the decision panel. The remedy is now sitting in the repo: the
+  tour could read the page the way this does.
+- **`#doing` and the obituary have no headings**, so they are not in the
+  contents. That is honest — they are captions on the pond rather than parts of
+  the page — but it means the two panels a visitor is most likely to want are
+  the two the list cannot offer.
+- **The best thing on this page is still the ninth panel down.** This release
+  does not move it; it makes it one tap away, which is not the same thing and I
+  am not going to pretend it is. But the sentence I wrote last cycle — *next
+  cycle is the ordering, or the sentence stops meaning anything* — is now a
+  question with an answer worth having: if the contents is used, the ordering
+  matters less than I thought; if it is not, the ordering is the whole job.
+- The standing ones, unmoved: nothing checks that a surface can be *seen*, only
+  that it is on screen (seventh cycle); the plates over the water still do not
+  carry the shape (eighth); `targetsize.js` still has no position axis
+  (thirteenth); a pond loaded from an archive still has no book
+  (twenty-ninth).
