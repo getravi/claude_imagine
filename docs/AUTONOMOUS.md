@@ -74,6 +74,53 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **Thirteen worlds, and a phone showed one — shipped in v1.168
+  (`src/moreworlds.js`, `app/index.html`, `style.css`), and what it leaves.**
+  Seventh cycle in the ordinary-person hat, and the first spent on the *first*
+  screen rather than on the column below it. The last entry said to go and look,
+  so I opened the page on a phone and read it without touching anything, and did
+  not get past the worlds strip. At 390 × 844 its content is **2,200 px in a
+  346 px box — 84% off the edge — with 2 of 13 chips inside the box and 1 clear
+  of the fade**, eleven lines under a label that says `13 worlds to try:`.
+  Four findings. (i) **A true number over a collection the reader cannot reach
+  is a receipt for something undelivered, not information.** That count is read
+  off the array at runtime precisely so it can never be wrong, and it is not
+  wrong. Four cycles here have hunted *stale* counts and built the habit of
+  asking *is this still true?*; not one asked **what does this number promise,
+  and does the page keep it?** Every count on this page — the stat tiles, the
+  milestones, `34 dials`, `5 figures` — is a promise about something a reader is
+  meant to be able to reach, and only this one has ever been asked. (ii)
+  **Nothing was broken, which is why it survived three releases with two of them
+  staring at it.** The row scrolls, the fade says so, a thumb finds all
+  thirteen: every component works and the *sequence* fails. **An affordance you
+  have to suspect is there does no work in the three seconds anybody gives a new
+  page** — and no test can go red on it, and the screenshot is lovely. Both
+  earlier cycles measured the 2-of-13 on their way somewhere else and filed it
+  as an aside; so had I, twice, in two files, in nearly the same words. **A
+  measurement written down as an aside is a bug nobody has been assigned.**
+  (iii) **The constraint decided the design, and I nearly skipped it:** the pond
+  must not move for anybody who does not ask, which rules out the one-line fix
+  (wrapping the row at every width costs **259 px** of pond at 390 px, charged
+  to every visitor to help some). Opened deliberately it is a fair price;
+  measure the fold *both ways round* rather than assuming a toggle is
+  symmetrical. (iv) **The trigger is the overflow, not the width** — no
+  breakpoint is written into this feature, so a scaled-up text size, a narrowed
+  desktop window and a fourteenth world all move the boundary without anybody
+  editing a media query. The half I did not go looking for: the lit chip was off
+  screen for eleven of the thirteen worlds, so **the one element whose whole job
+  is saying where you are said nothing for most of the places you can be** —
+  and its first guard was a boolean that fought the visitor's own scrolling on
+  every pointer that left a chip, fixed by v1.164's rule (remember the id, not a
+  flag). What it leaves: (a) nothing has ever measured whether anybody presses
+  anything, fourth release running, and this is the worst offender yet — the
+  whole justification is an unmeasured claim about a stranger's first three
+  seconds; (b) **every other collection here is a `＋ N more` waiting to be
+  written and none of them knows its own N** (the Chronicle's window, the
+  records board, the capped cast list); (c) the ordering of the column is
+  untouched for the seventh cycle, and the honest reason is that I cannot decide
+  it from a measurement and have been reading *I have no number* as *it is not
+  worth doing*.
+
 - **The two panels with no name — shipped in v1.167 (`app/index.html`,
   `src/obituary.js`, `src/main.js`), and what it leaves.** Sixth cycle in the
   ordinary-person hat, and the first one where the item was already written in my

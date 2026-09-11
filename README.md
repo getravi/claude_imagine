@@ -168,7 +168,7 @@ could have fixed it.
 
 | Control | What it does |
 | --- | --- |
-| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Lay of the Land, The Four Rooms, Earshot, One Big Family, The Thinking Pond, Augmented Minds, The Whole World). |
+| **Scenarios** (top strip) | One-click curated worlds — a seed + feature combo chosen to showcase a particular character (Genesis, The Savanna, Nomad's Land, The Long Night, The Plague, The Commons, The Lay of the Land, The Four Rooms, Earshot, One Big Family, The Thinking Pond, Augmented Minds, The Whole World), grouped by how much of the dying is done by hunting and captioned with what each one promises. On a narrow screen the row scrolls sideways and most of it is off the edge, so the label carries a **`＋ N more worlds`** button that opens the whole collection as a grid and folds it away again — N is the count minus what the page can actually see, re-derived every time the page is laid out, and the button is absent on a window wide enough to show everything. The world you are in is lit, and the row scrolls itself so that the lit chip is never off screen. |
 | **Pause / Play** | Freeze or resume time (you can still click to inspect while paused). |
 | **Reset** | Rebuild the world from the current seed. |
 | **Feed** | Scatter a burst of extra food. |

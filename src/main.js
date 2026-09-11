@@ -14,6 +14,7 @@ import { buildBrainFor } from "./creature.js";
 import { creatureFacts } from "./inspect.js";
 import { SCENARIOS } from "./scenarios.js";
 import { worldsLabel, worldCaption, previewCaption, captionText, worldGroups } from "./worlds.js";
+import { readableChips, stripState, centreScroll } from "./moreworlds.js";
 import { MIN_ZOOM, ZOOM_STEP } from "./camera.js";
 import { Gestures } from "./gestures.js";
 import { Trail } from "./trail.js";
@@ -524,6 +525,7 @@ function boot() {
   wireContents();
   wirePostcard();
   wireSkip();
+  wireMoreWorlds();
   buildScenarioChips();
   // Before the first frame, so the tab a visitor opened in the background is
   // already a place by the time they look at it. The return is dropped: the
@@ -601,6 +603,93 @@ function buildScenarioChips() {
 }
 
 /**
+ * Which world the row was last scrolled to show. Not a flag saying *has it been
+ * centred* — the id itself, so that it cannot disagree with the lit chip.
+ */
+let centredOn = null;
+
+/**
+ * The strip's door, and the lit chip's place in the row (v1.168).
+ *
+ * Runs wherever the lit chip is re-derived — after the chips are built, on
+ * every world change, and on every pointer that leaves one — plus on a resize,
+ * which is the one moment the row's shape can move without the lamp doing
+ * anything. Everything it decides comes out of `moreworlds.js`; what lives here
+ * is the measuring, because a rectangle is a thing only a browser knows.
+ *
+ * The row is measured **shut** even while it is open: the question the button
+ * answers is *how much of this would be hidden if it were closed*, and asking
+ * it of an open row would always get zero. Removing the class and putting it
+ * back inside one task costs a reflow and paints nothing — a browser lays out
+ * when the task ends, not when a class list changes.
+ */
+function syncMoreWorlds() {
+  const box = $("scenario-chips");
+  const btn = $("btn-more-worlds");
+  const wasOpen = box.classList.contains("open");
+  box.classList.remove("open");
+  const view = box.getBoundingClientRect();
+  const chips = [...box.querySelectorAll("button")];
+  const readable = readableChips(
+    chips.map((c) => c.getBoundingClientRect()),
+    view,
+  );
+  // A row wide enough for everything cannot be open, whatever it was before a
+  // window got dragged: the state and the thing it is a state of have to agree,
+  // and this is the one moment they can disagree without anybody pressing.
+  const open = wasOpen && box.scrollWidth > box.clientWidth + 1;
+  box.classList.toggle("open", open);
+  const state = stripState({ total: chips.length, readable, open });
+  btn.hidden = !state.needed;
+  btn.textContent = state.label;
+  btn.setAttribute("aria-label", state.announce);
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) return;
+  // Shut, and pointed at where you are — but only when *where you are* has
+  // moved. This runs on every pointer that crosses a chip, and a row that
+  // scrolled itself back to the middle each time a hand left one would be
+  // taking the strip away from the visitor every time they used it. The guard
+  // is the world's own id rather than a flag, for v1.164's reason: a fact about
+  // the page cannot fall out of step with the page.
+  const lit = box.querySelector("button.active");
+  const here = lit ? lit.dataset.world : null;
+  if (!lit || here === centredOn) return;
+  centredOn = here;
+  // A chip's distance along the row's content is its screen position plus
+  // however far the row is already scrolled — a subtraction that stays true
+  // whatever the visitor has flicked.
+  const r = lit.getBoundingClientRect();
+  box.scrollLeft = centreScroll(
+    r.left - view.left + box.scrollLeft,
+    r.width,
+    box.clientWidth,
+    box.scrollWidth,
+  );
+}
+
+/**
+ * The two events the strip's door listens to (v1.168).
+ *
+ * A resize is in here for the reason `rebuildContents` is: this stylesheet
+ * folds at 960 px and again at 560, and how much of a row is off the edge is a
+ * different number on either side of both. Unthrottled on purpose — the work is
+ * one pass over thirteen rectangles and the alternative, a frame-coalesced
+ * queue, would be more machinery than the thing it defers.
+ */
+function wireMoreWorlds() {
+  $("btn-more-worlds").addEventListener("click", () => {
+    const box = $("scenario-chips");
+    box.classList.toggle("open");
+    // The chip that was being centred is no longer where it was, and the row it
+    // was centred in may not exist any more. Forgetting is what lets shutting
+    // the strip put the lamp back on screen.
+    centredOn = null;
+    syncMoreWorlds();
+  });
+  window.addEventListener("resize", syncMoreWorlds);
+}
+
+/**
  * Put a caption in the strip. `preview` is what separates *where you could go*
  * from *where you are*, and it is a class rather than different words because
  * the words are the world's and belong to it either way.
@@ -631,6 +720,9 @@ function syncWorldCaption() {
     // listener is owed too (v1.51's sweep, in its usual shape).
     b.setAttribute("aria-pressed", mine ? "true" : "false");
   }
+  // The lamp and the row that has to show it are one thought (v1.168): a lit
+  // chip a visitor cannot see is the same as no lamp at all.
+  syncMoreWorlds();
 }
 
 function launchScenario(scn) {

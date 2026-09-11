@@ -147,10 +147,46 @@ body.simple [data-expert] {
      `min-width: 0`. */
   flex-wrap: wrap;
 }
+/* The label and its button on one line (v1.168). Above 960 px this box sits
+   exactly where the bare label used to, inline with the chips; below that width it
+   inherits the label's own trick of taking the whole line, and the button goes
+   to the far end of it. Either way it costs the strip no height and the chips
+   no width — see `src/moreworlds.js` for why that constraint decided the
+   design. */
+.scenarios-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .scenarios-label {
   color: var(--ink-dim);
   font-size: 13px;
   flex: 0 0 auto;
+}
+/* The door into the worlds the row is not showing. Quiet on purpose: it is a second
+   control in the same breath as the label and must not compete with the chips
+   it opens, so it borrows the label's size and ink and earns its pressability
+   from the underline and the pointer rather than from a chip's border.
+   `min-height` is WCAG 2.2 AA's 24 px, declared here rather than discovered
+   short later — `src/targetsize.js` names it in `HIT_RULES` and says why a
+   control that is only on the page at some widths is excused a measured row. */
+.moreworlds {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.moreworlds:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .scenario-chips {
   display: flex;
@@ -3492,8 +3528,13 @@ button.skip-btn[aria-disabled="true"] {
      third whole chip — the first three are 98, 127 and 133 px wide — and the
      point is not the count anyway. It is that the row now visibly *has* a next
      thing in it, which two chips ending in a clean edge did not. */
-  .scenarios-label {
+  /* v1.168 moves the `flex` onto the box that now holds the label, and adds
+     the only thing that box needed at this width: the button at the far end of
+     the line, where the eye finishes reading `13 worlds to try:` and is owed
+     the answer to the question that count has just raised. */
+  .scenarios-head {
     flex: 1 0 100%;
+    justify-content: space-between;
   }
   .scenario-chips {
     flex-wrap: nowrap;
@@ -3516,6 +3557,18 @@ button.skip-btn[aria-disabled="true"] {
        their thumb. */
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  /* Open (v1.168). The row stops being a row and becomes the grid a desktop has
+     always had: every chip on screen, every group heading over its own worlds,
+     nothing behind an edge and so no edge to fade. It is the only state on this
+     page that makes the page taller by a visitor's own press, and the press
+     that made it gives it back. */
+  .scenario-chips.open {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 8px;
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 

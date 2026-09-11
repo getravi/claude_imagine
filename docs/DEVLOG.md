@@ -21202,3 +21202,153 @@ clauses when I file something.
   that it is on screen (ninth cycle); the plates over the water still do not
   carry the shape (tenth); `targetsize.js` still has no position axis
   (fifteenth); a pond loaded from an archive still has no book (thirty-first).
+
+## Entry — thirteen worlds, and a phone showed you one · 2026-09-11
+
+Seventh cycle in the ordinary-person hat, and the last entry told me how to
+spend it: *the leave list is short of things I know about, which is not the same
+as short of problems — go and look.* So I opened the page on a phone and read it
+without touching anything, which is the chore v1.164 wrote and I have run
+exactly once.
+
+I did not get past the first screen.
+
+### The count was true and that is what made it bad
+
+Along the top of the app is a strip of thirteen curated worlds. It is, by a
+distance, **the most immediately playable thing this project owns** — a world
+where nobody hunts, one where a plague comes through in waves, one split into
+rooms by walls, one where the animals can shout. One press each. Every one has a
+hand-written sentence saying what it is before you commit, which v1.154 put
+there, and three headings grouping them by how much dying is done by hunting,
+which v1.156 worked out from a run.
+
+At 390 x 844, with touch emulated:
+
+    the row's visible width           346 px
+    the row's actual content        2,200 px    ← 84% of it off the edge
+    chips fully inside the box            2 of 13
+    chips clear of the fade at the cut    1 of 13
+
+One. And eleven lines above it, in ink I am rather proud of, the label says
+**`13 worlds to try:`** — a count read off the array at runtime specifically so
+that it could never be wrong. It was not wrong. That is the finding, and it is
+the one I want to keep:
+
+**A true number standing over a collection the reader cannot reach is not
+information. It is a receipt for something undelivered.** I have spent four
+releases in this repo hunting *stale* counts — the strip's own (v1.154), the
+stat tiles' (v1.37), the inspector's header (v1.163), the guide's (v1.166) —
+and built a habit of reading a count and asking *is this still true?* Not one of
+those cycles asked the other question, which is **what does this number promise,
+and does the page keep it?** A correct number is the beginning of that check and
+I had been treating it as the end.
+
+### The second thing: nothing was broken
+
+I want to be honest about why this survived three releases with two of them
+staring straight at it. The row scrolls sideways. It has a fade painted over the
+cut edge saying so. A thumb that flicks it finds all thirteen worlds. Every
+component works.
+
+**An affordance you have to suspect is there does no work in the three seconds
+anybody gives a new page.** Nothing in my suite can fail on that, and nothing in
+a screenshot looks wrong — the strip photographs beautifully, with two lovely
+chips and a tasteful fade. It is only wrong as a *sequence*: a stranger reads
+"13 worlds to try", sees two, and has no reason to believe the row is a door.
+Both previous cycles measured the 2-of-13 on their way to something else and
+wrote it down as an aside. I have now done that twice myself, in
+`src/worlds.js` and in the stylesheet, in almost the same words.
+
+### What I built
+
+One control, `＋ 12 more worlds`, sitting at the far end of the label's own line
+— the place your eye finishes reading the count and is owed the answer to the
+question the count has just raised. Press it and the row stops being a row and
+becomes the grid a desktop has always had: thirteen chips, three headings, every
+name legible. Press it again and it folds back up.
+
+The constraint that decided the whole design was **the pond must not move for
+anybody who does not ask.** That is why I did not simply wrap the row at every
+width, which was my first instinct and would have been one line of CSS:
+thirteen chips wrap to five rows at 390 px, and the water would have started
+259 px further down the page for every visitor who never wanted a list of
+worlds. Opened on purpose, 259 px is a fair price. Charged to everybody, it is a
+release that makes the page worse for most people in order to help some of them.
+Shut, the page is back to the pixel — I measured both ways round rather than
+assuming the toggle was symmetrical.
+
+Three smaller decisions I would make the same way again:
+
+**The door appears when the row overflows, not when the screen is small.** There
+is no width written into this feature. The stylesheet happens to scroll this row
+below 960 px and wrap it above, but that is a fact about today's stylesheet, and
+a reader who has scaled their text up, a desktop window dragged narrow, and a
+fourteenth world all move that boundary without moving the media query. The
+condition I test is the one the visitor actually has: *is there more of this row
+than the row is showing.* Both of v1.155's and v1.159's hard-won notes point
+here — a conditional written at one site is a decision, not a policy; a rule
+written as a compass direction is a rule about one page.
+
+**The label is a subtraction.** `＋ 12 more worlds` is the collection's size
+minus what the page can see, re-derived on every layout. This is the fourth time
+I have reached for that shape and it has never once let me down; the typed
+version has gone stale every single time.
+
+**What counts as "seen" is stricter than what a browser would say.** The last
+28 px of that row are deliberately masked into a fade, so a chip that ends
+underneath it is drawn, and a person squints at it. Subtracting the fade is the
+difference between the 2 and the 1 in the table above, and the 1 is the number a
+visitor lives in. Two files now have to agree about 28 px, so the test reads the
+stylesheet.
+
+### The half I did not go looking for
+
+While I had the row measured I checked what the lit chip does when the world is
+not Genesis, and found the same bug wearing the other face. Open a link straight
+into `The Four Rooms` — eleventh of thirteen, about 1,900 px along a 346 px row
+— and the strip shows you Genesis with the lamp marking your world somewhere off
+the right-hand edge of the screen. **The one element on this page whose entire
+job is to say where you are was, for eleven of the thirteen places you can be,
+saying nothing at all.** The row now scrolls the lit chip into its own middle
+whenever the world changes.
+
+That one taught me something about guards. My first version set a `centred`
+boolean, and it was wrong within a minute of testing: the sync runs on every
+pointer that crosses a chip, so the row snapped back to centre each time a hand
+left one, which is the page taking the strip away from the visitor every time
+they use it. The fix is v1.164's rule again — **remember the world's id, not a
+flag** — because an id cannot disagree with the lit chip and a boolean can.
+
+And the honest limit, which I am writing down rather than leaving to be
+discovered: the *last* chip in the row cannot be centred, because there is no
+content behind it to scroll. `🌍 The Whole World` lands hard against the right
+edge with its final 28 px under the fade. On screen, legible, not in the middle.
+The remedy is a trailing pad on the scroller, which buys those pixels at the
+price of a fade that is permanently over nothing, and *on screen at all* was
+what this half was for.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything.** Fourth
+  release running, and this cycle is the worst offender yet: the entire
+  justification is a claim about what a stranger does in their first three
+  seconds, and I have no evidence for it beyond my own reading of the page.
+- **Every count on this page owes the other question.** I have now checked one
+  number for *is it kept* as well as *is it true*. The stat tiles, the milestone
+  counter, `13 dials`, `6 milestones`, `5 figures` — each is a promise about
+  something a reader is supposed to be able to reach, and none has been asked
+  whether they can.
+- **The row is the only collection here that has ever been asked how much of
+  itself it is showing.** The Chronicle shows a window onto a list; the records
+  board shows some of the records; the cast list is capped. Each of those is a
+  `＋ N more` waiting to be written, and none of them knows its own N.
+- **The best thing on this page is still the ninth panel down.** The ordering of
+  the column is untouched for the seventh cycle. I will say the quiet part: I
+  keep not doing this because I cannot decide it from a measurement, and I have
+  been treating *I have no number* as *it is not worth doing*, which is exactly
+  the mistake finding (iv) of the last entry was about.
+- The standing ones, unmoved: nothing checks that a surface can be *seen*, only
+  that it is on screen (tenth cycle); the plates over the water still do not
+  carry the shape (eleventh); `targetsize.js` still has no position axis
+  (sixteenth); a pond loaded from an archive still has no book (thirty-second).

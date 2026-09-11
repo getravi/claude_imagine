@@ -287,6 +287,8 @@ export const UNMET = Object.freeze({
     "shipped in v1.149, after the last probe went out — and it is the one control here whose *own* row would not be the interesting number, because it changes how many of the other seventy-seven are on the page at all. The walk that measures it has to be run twice, once on each side of the switch, and the second pass is the first time this inventory would have a page with a different set of targets on it rather than the same set at a different width. It is given a `min-height` in `HIT_RULES` below so it clears the bar by size while it waits",
   "#btn-race":
     "shipped in v1.162, after the last probe went out. It is a `display:block; width:100%` button in the left column rather than in the panel, which is a place no row here describes — the walk read nothing full-width outside the control stack — so it is named rather than assumed to match `#btn-picture`. The lane canvases beside it are pictures and not targets: nothing on this panel is pressable but the button",
+  "#btn-more-worlds":
+    "shipped in v1.168, and the first control in this inventory that is **not on the page at every width**. It exists exactly while the worlds strip has more in it than it is showing, which at 1280 px it never does — so a measured row would be a row at one viewport and an absence at the other, and the completeness sum below is written per viewport on the stated assumption that both hold the same set. Naming it is the honest half of that: it is given `.moreworlds` in `HIT_RULES` so it clears the bar by size rather than by the spacing of neighbours it shares a line with, and the walk that would give it a row is the same two-pass walk `#btn-simple` has been waiting for — a page whose target *set* changes, measured on both sides of the thing that changes it. The cycle that shipped it did read it in a browser — 109.5 × 24 shut and 83.1 × 24 open at 390 px, and absent at 1280 — so the bar is cleared on the axis a thumb misses in; what it has not got is a row, because a row here is a promise about both columns",
   "#btn-hand":
     "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-gif`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. (It was `#btn-skip` named here until v1.153 took that button out of the stack, which is the hazard of describing one control by its neighbours.) v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
 });
@@ -308,6 +310,11 @@ export const HIT_RULES = Object.freeze({
   // happens to wrap to, and a control in the top bar has nothing below it to
   // borrow the spacing exemption from.
   ".viewswitch": TARGET_MIN,
+  // v1.168's door into the rest of the worlds strip, sized on arrival for the
+  // switch's reason one line up and one of its own: it is a line of 13 px text
+  // sharing a row with the strip's label, which is not a target at all, so
+  // there is nothing beside it to borrow the spacing exemption from.
+  ".moreworlds": TARGET_MIN,
 });
 
 /**

@@ -364,6 +364,11 @@ export const PAGE_SCOPED = Object.freeze({
     "the water's laid-out size the last time the marks standing on it were re-sized " +
     "(v1.160). Page-scoped for `miniSig`'s reason and more plainly: what it remembers is a " +
     "number the stylesheet chose, and no world has ever had an opinion about it",
+  centredOn:
+    "which world the worlds strip was last scrolled to show (v1.168) — a fact about a row " +
+    "of chips rather than about any pond, and the reason it is an id and not a boolean is " +
+    "that a new world has to move the row without anybody clearing anything: the id stops " +
+    "matching the lit chip and the strip re-centres itself on the next sync",
   mullerCtx: "the Tree of Life's drawing context, sized once against its column",
   chartCtx: "the population chart's drawing context, held so it is fetched once",
   deathsCtx: "the death strip's drawing context, which also caches the canvas's own size",

@@ -4,6 +4,82 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.168.0] — 2026-09-11
+
+**🗺 The page said thirteen worlds and a phone was showing you one.** There is
+now a button beside that count that opens the whole collection, and it tells you
+how much you are missing: **＋ 12 more worlds**.
+
+The strip along the top is the most immediately playable thing here. Thirteen
+curated ponds, one press apart: a world where nobody hunts, one where a plague
+sweeps through in waves, one split into rooms by walls, one where the animals
+can shout to each other. Each has a hand-written line under it saying what it is
+before you commit.
+
+On a phone you could see one of them.
+
+### The count was right and that made it worse
+
+    the row's visible width          346 px
+    the row's actual content       2,200 px   ← 84% of it off the edge
+    chips fully inside the box           2 of 13
+    chips clear of the fade at the cut   1 of 13
+
+The label above the row has read **`13 worlds to try:`** since v1.154, and it is
+read off the array at runtime so that it can never be wrong. It was not wrong.
+It was a true number standing over a collection a visitor could not reach, which
+is not information — it is a receipt for something undelivered.
+
+Nothing was broken, either, and that is why it lasted three releases. The row
+scrolls sideways. It has a fade at the cut edge saying so. A thumb that flicks
+it finds all thirteen. The trap is that **an affordance you have to suspect is
+there does no work in the three seconds anybody gives a new page.**
+
+### One press, and the row becomes a menu
+
+Press it and the strip stops being a row and becomes the grid a desktop has
+always had — every world on screen, under its own heading:
+
+    Nobody hunts          🌱 Genesis   🌾 The Commons
+    Hunting is rare       🧭 Nomad's Land   🦠 The Plague   🧠 The Thinking Pond
+    Hunters and hunted    🦁 The Savanna   🌙 The Long Night   ⛰ The Lay of the Land
+                          🧱 The Four Rooms   📣 Earshot   👨‍👩‍👧 One Big Family
+                          🧬 Augmented Minds   🌍 The Whole World
+
+Press it again and it folds back up. **The pond does not move for anybody who
+does not ask.** That constraint is what ruled out simply wrapping the row at
+every width: thirteen chips wrap to five rows on a phone and would have pushed
+the water 259 px down the page for every visitor, including the ones who never
+wanted the list. Opened deliberately, those 259 px are a fair trade; shutting it
+gives the page back to the pixel.
+
+### Small things that come with it
+
+- **The button counts rather than remembers.** `＋ 12 more worlds` is the
+  collection's size minus what the page can actually see, measured every time
+  the page is laid out. A fourteenth world changes that sentence the day it
+  lands. On a tablet it reads `＋ 10 more worlds`; on a desktop, where nothing
+  is hidden, there is no button at all.
+- **It appears when the row overflows, not when the screen is small.** No width
+  is written into it — drag a desktop window narrow and the door appears.
+- **The lit chip is no longer allowed off screen.** Open a link straight into
+  *The Four Rooms* and the strip used to show you Genesis, with the lamp marking
+  your world 1,900 px off the right-hand edge. The row now scrolls to put the
+  world you are in in the middle of itself.
+- **A screen reader gets words instead of punctuation.** `＋` and `−` mean
+  *open* and *shut* to an eye and nothing at all to an ear, so the button
+  announces itself as "Show all 13 worlds" and carries a proper `aria-expanded`.
+
+### Under the hood
+
+- `src/moreworlds.js` — new, and pure: rectangles and a count in, words and a
+  scroll offset out. No DOM, no world, no random draw.
+- `test/moreworlds.test.js` — 19 tests, including a sweep proving the centring
+  can never scroll past either end of the row, and a check that the fade width
+  this module subtracts is still the one the stylesheet paints.
+- Determinism untouched: a pond with the strip open and a pond with it shut are
+  bit-for-bit identical.
+
 ## [1.167.0] — 2026-09-10
 
 **🏊 The panel that starts the whole story finally has a name** — and when the

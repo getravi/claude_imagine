@@ -80,7 +80,27 @@
          that grew when the pointer moved would push the water down the page
          under a moving hand. `HOOK_MAX` is what keeps it honest. -->
     <section class="scenarios">
-      <span class="scenarios-label" id="scenarios-label">Try a world:</span>
+      <!-- The label and the door it needed (v1.168). The count beside the row
+           has been read off the array since v1.154 so that it could never be
+           wrong, and a browser walk this cycle found it correct and unkept: at
+           390 px the label says thirteen and one chip is clear of the fade.
+           They share a line because the button has to cost the row nothing —
+           put beside the chips it would have eaten a chip's worth of a strip
+           that was already the thing being rationed. `src/moreworlds.js` owns
+           the arithmetic and every word on the button; it is `hidden` until the
+           page is laid out, because whether it is needed is a measurement of
+           this row rather than a fact about the screen. -->
+      <div class="scenarios-head">
+        <span class="scenarios-label" id="scenarios-label">Try a world:</span>
+        <button
+          id="btn-more-worlds"
+          class="moreworlds"
+          type="button"
+          aria-expanded="false"
+          aria-label="Show every world"
+          hidden
+        ></button>
+      </div>
       <div id="scenario-chips" class="scenario-chips"></div>
       <p class="scenarios-caption" id="scenarios-caption">
         <span class="sc-icon" id="scenarios-caption-icon" aria-hidden="true"></span>
