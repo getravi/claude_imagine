@@ -204,6 +204,25 @@ export function verdicts(controls, min = TARGET_MIN) {
  * visitor could reach. The `nearestCentre` warning above says a target's
  * verdict depends on its neighbourhood; this says its *worth* depends on its
  * queue position, and `firstmoves.js#WALK` is where that number now lives.
+ *
+ * **v1.169 measured a row this file had spent twenty-two releases predicting.**
+ * `#btn-hand` was named in `UNMET` rather than given a row because it was
+ * *expected* to match `#btn-picture` and `#btn-gif` exactly, and expected is not
+ * measured. A probe finally read it: **316 × 35 at 390 px and 290 × 35 at
+ * 1280** — the prediction, to the pixel, on both axes, at both widths. That is
+ * the pleasant half and the smaller one. The expensive half is that a correct
+ * prediction is still not a measurement, and the thing being predicted here was
+ * never the number: it was **which stack the control was standing in**, and that
+ * was the fact about it worth knowing. The same probe found it at 4,665 px of a
+ * 5,678 px document, and `src/firstmoves.js` says what that cost.
+ *
+ * So its rows are fresh, and so are the other three in that row: joining them
+ * makes the grid four across at 1280 px rather than three, which takes every one
+ * of them from 292 × 44 to **216.5 × 44** — the first time a row in this table
+ * has moved because a *neighbour arrived*, which is the `nearestCentre` warning
+ * above turning up on the width axis. At 390 px all four stack at 346 × 44 and
+ * nothing moved. `WALKED.app` goes 77 → 78: one control, two rows, one per
+ * viewport, and the sum is per viewport.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -229,6 +248,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "#btn-picture", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
   { page: "app", vp: "390x844", sel: "#btn-skip", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "⏩ Skip ahead" },
   { page: "app", vp: "390x844", sel: "#btn-tour", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "🧭 Show me around" },
+  { page: "app", vp: "390x844", sel: "#btn-hand", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "🥣 Feed by hand" },
   { page: "app", vp: "390x844", sel: ".btn-row button", n: 4, w: 73, h: 65, own: "73x65", via: "self", nearestCentre: 67.5, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "390x844", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 111.3, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "390x844", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 774.6, inline: false, short: 1, sample: "recent" },
@@ -243,11 +263,12 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
   { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
-  { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 302, inline: false, short: 0, sample: "👋 Meet somebody" },
+  { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 216.5, h: 44, own: "217x44", via: "self", nearestCentre: 226.5, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "1280x900", sel: "#btn-gif", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
   { page: "app", vp: "1280x900", sel: "#btn-picture", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "📸 Take a picture" },
-  { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 302, inline: false, short: 0, sample: "⏩ Skip ahead" },
-  { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 292, h: 44, own: "292x44", via: "self", nearestCentre: 284, inline: false, short: 0, sample: "🧭 Show me around" },
+  { page: "app", vp: "1280x900", sel: "#btn-skip", n: 1, w: 216.5, h: 44, own: "217x44", via: "self", nearestCentre: 226.5, inline: false, short: 0, sample: "⏩ Skip ahead" },
+  { page: "app", vp: "1280x900", sel: "#btn-tour", n: 1, w: 216.5, h: 44, own: "217x44", via: "self", nearestCentre: 226.5, inline: false, short: 0, sample: "🧭 Show me around" },
+  { page: "app", vp: "1280x900", sel: "#btn-hand", n: 1, w: 216.5, h: 44, own: "217x44", via: "self", nearestCentre: 226.5, inline: false, short: 0, sample: "🥣 Feed by hand" },
   { page: "app", vp: "1280x900", sel: ".btn-row button", n: 4, w: 66.5, h: 65, own: "67x65", via: "self", nearestCentre: 65.6, inline: false, short: 0, sample: "💾 Save" },
   { page: "app", vp: "1280x900", sel: "button.chip", n: 2, w: 101.9, h: 24, own: "102x24", via: "self", nearestCentre: 92, inline: false, short: 0, sample: "species 0" },
   { page: "app", vp: "1280x900", sel: "#chart-scope", n: 1, w: 48.6, h: 16, own: "49x16", via: "self", nearestCentre: 796.6, inline: false, short: 1, sample: "recent" },
@@ -267,7 +288,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 77 });
+export const WALKED = Object.freeze({ "front door": 19, app: 78 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as
@@ -289,8 +310,6 @@ export const UNMET = Object.freeze({
     "shipped in v1.162, after the last probe went out. It is a `display:block; width:100%` button in the left column rather than in the panel, which is a place no row here describes — the walk read nothing full-width outside the control stack — so it is named rather than assumed to match `#btn-picture`. The lane canvases beside it are pictures and not targets: nothing on this panel is pressable but the button",
   "#btn-more-worlds":
     "shipped in v1.168, and the first control in this inventory that is **not on the page at every width**. It exists exactly while the worlds strip has more in it than it is showing, which at 1280 px it never does — so a measured row would be a row at one viewport and an absence at the other, and the completeness sum below is written per viewport on the stated assumption that both hold the same set. Naming it is the honest half of that: it is given `.moreworlds` in `HIT_RULES` so it clears the bar by size rather than by the spacing of neighbours it shares a line with, and the walk that would give it a row is the same two-pass walk `#btn-simple` has been waiting for — a page whose target *set* changes, measured on both sides of the thing that changes it. The cycle that shipped it did read it in a browser — 109.5 × 24 shut and 83.1 × 24 open at 390 px, and absent at 1280 — so the bar is cleared on the axis a thumb misses in; what it has not got is a row, because a row here is a promise about both columns",
-  "#btn-hand":
-    "shipped in v1.147, after the last probe went out. It is a `display:block; width:100%` button in the same stack as `#btn-picture` and `#btn-gif`, which the walk read at 316×35 and 290×35, so it is *expected* to match them exactly — and expected is not measured, which is the whole reason it is named here rather than given a row. (It was `#btn-skip` named here until v1.153 took that button out of the stack, which is the hazard of describing one control by its neighbours.) v1.142 found the completeness check sums the rows against a number this same file holds, so an omission from both sides balances and reports nothing: a control added between probes has to say so itself",
 });
 
 /**

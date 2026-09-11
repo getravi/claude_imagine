@@ -19,17 +19,26 @@
 //                                                        ← 104 px of keys, on a
 //                                                          device with none
 //
-// Eighteen places on this page name an input device, and they account for
-// themselves: the eleven sentences this file now holds in two registers, the
+// Nineteen places on this page name an input device, and they account for
+// themselves: the twelve sentences this file now holds in two registers, the
 // pan-and-zoom pair, the two paragraphs of accelerators above, the minimap's
 // tooltip and the pond's screen-reader help — both deliberately left in the
 // mouse-and-keyboard register, for reasons given below — and one world's blurb
-// that has stopped naming a device at all. **One pair of the eighteen had ever
+// that has stopped naming a device at all. **One pair of the nineteen had ever
 // asked which device you had**: the pan-and-zoom hint, which has carried a
 // `.fine-only` and a `.coarse-only` copy since the gestures landed. The fix went
 // where the defect was *noticed*, and stopped there; every other sentence kept
 // the wording it was born with, including the two that are the page's actual
 // invitations to act.
+//
+// That census read **eighteen** from v1.155 to v1.169 and the true number was
+// nineteen the whole time. The nineteenth is `handInvite` below, and what hid it
+// is worth more than the correction: every other sentence in this table was
+// found by *reading the page*, and that one is never on the page — it is spoken
+// once, into the banner, the first time somebody arms the feeding mode. **An
+// audit that walks a document cannot see a string the document only says after
+// a press**, which is `targetsize.js`'s own blind spot (a walk of a page nobody
+// has pressed anything on) arriving in the prose.
 //
 // That is the general shape, and it is worth more than the strings: **a
 // conditional written at one site is a decision, not a policy.** The moment this
@@ -153,6 +162,26 @@ export const PHRASES = Object.freeze({
   seatSwap: Object.freeze({
     pointer: "Picked for you, as the one nearest the middle — click any other animal to watch that one instead.",
     touch: "Picked for you, as the one nearest the middle — tap any other animal to watch that one instead.",
+  }),
+
+  /**
+   * What the page says the first time somebody arms `🥣 Feed by hand` (v1.169,
+   * and the sentence is older — it was written into `handfeed.js` in v1.147 and
+   * has said **Touch the water** to every mouse in the world since).
+   *
+   * It is the clearest case in this table of the rule two paragraphs up: the
+   * sentence is *teaching a gesture*, which is the one job a neutral verb cannot
+   * do, so it cannot be fixed by writing *press* and moving on. And it is the
+   * one that the file's own census missed — the header counted eighteen places
+   * on this page that name a device and there were nineteen, because a sentence
+   * a page only ever says **after a press** is invisible to a reader walking the
+   * markup, which is how every other one of these was found. **A string that is
+   * only ever spoken in a state is outside the reach of an audit that reads the
+   * page at rest.**
+   */
+  handInvite: Object.freeze({
+    pointer: "Click the water to drop food where you point. Press the button again to stop.",
+    touch: "Tap the water to drop food where you point. Press the button again to stop.",
   }),
 
   /** The inspector before anything is selected. */

@@ -74,6 +74,52 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The one thing you can do to the pond — shipped in v1.169
+  (`app/index.html`, `src/firstmoves.js`, `src/hand.js`), and what it leaves.**
+  Eighth cycle in the ordinary-person hat, and the first spent asking what a
+  visitor can *do* rather than what they understand. The list is four items long
+  and three of them are ways of being shown something; the fourth,
+  `🥣 Feed by hand`, is the only control here that changes the world in a place
+  the visitor picked — and it was at **4,665 px of a 5,678 px page, 82% of the
+  way down, the 28th target a thumb reaches**, filed in the settings drawer
+  under `✦ Feed` because it is the same action aimed. Five findings. (i) **A fix
+  applied to the instances in front of me is not a policy, however general the
+  sentence I wrote about it was.** `firstmoves.js` is a module whose whole
+  subject is this defect, it says *a surface that tells a visitor to press
+  something owes that control a place in the main column* in bold, and the note
+  in the markup recording v1.153's move is written **four lines below the button
+  that did not go**. Third sighting of this shape (v1.151, v1.160), so it is a
+  rule now: after fixing a class of thing, sweep for the class, not the
+  instances. (ii) **A list of three real things is not lying about a fourth.**
+  Ten tests existed to prevent exactly this and all ten walked `FIRST_MOVES`, a
+  hand-typed list, asking whether each member was in the main column — which it
+  always was. Same shape as v1.166's guide and v1.111's filter: **a completeness
+  check must iterate over the domain, never over the answer.** `DRAWER` now
+  names every button in the aside with a reason, read off the shipped page.
+  (iii) **The reasons were the payload, not the test.** I expected to find the
+  drawer excused as *advanced*; not one of the twelve is. Every one acts on the
+  **run** rather than the pond, or is a **second** press that means nothing
+  until something has happened — and the test refuses the word *advanced* in as
+  many words, so the excuse that caused this cannot be typed again. (iv) **An
+  audit that walks a document cannot see a string the document only says in a
+  state.** The mode's one sentence said *Touch the water* to every mouse since
+  v1.147, two releases before `hand.js` existed to prevent that, and the census
+  in that file's own header said eighteen places name a device when there were
+  nineteen. It hid because every other entry was found by *reading the page* and
+  this one is never on the page. `targetsize.js` and `legibility.js` both write
+  down the same blind spot about themselves and neither knew the other two had
+  it: **everything this project says only after a press is unaudited by
+  construction.** (v) **A prediction that comes true has told you about your
+  assumption, not about the world.** `targetsize.js` had predicted this
+  button's size for twenty-two releases rather than walking it, and the probe
+  matched to the pixel — and the fact worth knowing was never the size, it was
+  which stack the control was standing in. What it leaves: (a) nothing has ever
+  measured whether anybody presses anything, fifth release running, and this
+  time the feature itself is countable; (b) **the banner is unaudited** — every
+  sentence `flash()` can carry is a string no walk has seen; (c) the ordering of
+  the column is untouched for the eighth cycle, and moving a *control* is the
+  neighbouring problem, not this one.
+
 - **Thirteen worlds, and a phone showed one — shipped in v1.168
   (`src/moreworlds.js`, `app/index.html`, `style.css`), and what it leaves.**
   Seventh cycle in the ordinary-person hat, and the first spent on the *first*

@@ -1,4 +1,4 @@
-// firstmoves.test.js — the three presses a stranger is offered (v1.153).
+// firstmoves.test.js — the presses a stranger is offered (v1.153, v1.169).
 //
 // The bug this release fixed could not have failed a test in this suite, and
 // that is the thing worth building a test around. `👋 Meet somebody` existed,
@@ -17,8 +17,17 @@
 // `firstmoves.js#WALK`, which is a recording and says so.
 //
 // The second half checks the two places this row is described from somewhere
-// else: the guide, which points at two of these three by id, and the stylesheet,
-// which is where the 44 px lives.
+// else: the guide, which points at two of these by id, and the stylesheet, which
+// is where the 44 px lives.
+//
+// v1.169 added the half that was missing, and the hole was the shape of this
+// file's own subject. Every test below walked `FIRST_MOVES` and asked whether
+// each of *those* controls was in the main column; all of them always were, and
+// `🥣 Feed by hand` sat in the drawer for sixteen releases at 4,665 px of a
+// 5,678 px page with nothing here able to notice, because **a completeness check
+// that iterates over its own answer cannot find what is missing from it.** The
+// new test iterates over the page instead: every button in the aside must be
+// named in `DRAWER` with a reason, or the build is red.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -27,13 +36,16 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import {
+  AIMED_WALK,
   ASIDE_OPENS,
+  DRAWER,
   FIRST_MOVES,
   ROW_CLASS,
   ROW_RULE,
   TOUCH_ENHANCED,
   WALK,
   depthShare,
+  drawerButtons,
   firstMoveIds,
   inMainColumn,
 } from "../src/firstmoves.js";
@@ -46,10 +58,10 @@ const css = readFileSync(join(here, "..", "style.css"), "utf8");
 
 // ---- the module ----
 
-test("the inventory names three controls, once each, with a question apiece", () => {
+test("the inventory names four controls, once each, with a question apiece", () => {
   const ids = firstMoveIds();
-  assert.equal(ids.length, 3);
-  assert.equal(new Set(ids).size, 3, "an id listed twice");
+  assert.equal(ids.length, 4);
+  assert.equal(new Set(ids).size, 4, "an id listed twice");
   for (const move of FIRST_MOVES) {
     assert.match(move.id, /^btn-/, `${move.id} is not a button id`);
     assert.ok(move.label.length > 3, `${move.id} has no label`);
@@ -104,6 +116,52 @@ test("the row sits under the water and above the line that narrates it", () => {
   assert.ok(row < doing, "the row has come between #doing and the obituary that answers it");
 });
 
+// ---- the half that walks the page rather than the list (v1.169) ----
+
+test("every control left in the drawer is named, with a reason that is not `advanced`", () => {
+  const inDrawer = drawerButtons(page);
+  assert.ok(inDrawer.length > 5, "the drawer scan found almost nothing — it is measuring the wrong thing");
+  for (const id of inDrawer) {
+    const why = DRAWER[id];
+    assert.ok(
+      why,
+      `#${id} is in the drawer of settings and nothing says why. Either it is a first move — ` +
+        `see src/firstmoves.js for what that cost the last two times — or it belongs in DRAWER ` +
+        `with a sentence saying what it does.`,
+    );
+    assert.ok(why.length > 20, `#${id}'s reason is too short to be one`);
+    // The bar from the module's own comment: a control is excused for what it
+    // does, never for who it is imagined to be for. "Advanced" is the judgement
+    // that filed the aimed control under the unaimed one.
+    assert.doesNotMatch(
+      why,
+      /\b(advanced|expert|power user|nerd|for beginners)\b/i,
+      `#${id} is excused for the kind of person it is for, which is not a reason`,
+    );
+  }
+});
+
+test("the drawer's list has nothing in it that is not in the drawer", () => {
+  // The other direction, and the one that rots: a control promoted out of the
+  // panel leaves its excuse behind, and an excuse for a control that is no
+  // longer there reads exactly like coverage.
+  const inDrawer = new Set(drawerButtons(page));
+  for (const id of Object.keys(DRAWER)) {
+    assert.ok(inDrawer.has(id), `DRAWER excuses #${id}, which is not in the drawer any more`);
+  }
+  for (const move of FIRST_MOVES) {
+    assert.ok(!(move.id in DRAWER), `${move.label} is both a first move and excused from being one`);
+  }
+});
+
+test("drawerButtons reads the aside and stops at the end of it", () => {
+  const doc = `<main><button id="btn-main"></button></main>${ASIDE_OPENS}` +
+    `<button id="btn-in">x</button><button\n  id="btn-wrapped"\n  class="mini">y</button></aside>` +
+    `<button id="btn-overlay"></button>`;
+  assert.deepEqual(drawerButtons(doc), ["btn-in", "btn-wrapped"]);
+  assert.deepEqual(drawerButtons("<main></main>"), [], "a page with no drawer has nothing in it");
+});
+
 test("the guide's stops still point at controls a phone visitor can reach", () => {
   // The reason this test is here and not in tour.test.js: the tour is the
   // surface that *tells* a visitor to press these, and v1.151's lesson was that
@@ -129,7 +187,7 @@ test("the row's controls clear the enhanced target bar, in the stylesheet", () =
   assert.ok(TOUCH_ENHANCED > TARGET_MIN, "the enhanced bar is not above the minimum one");
 });
 
-test("the walk agrees with the inventory about how big these three are now", () => {
+test("the walk agrees with the inventory about how big these are now", () => {
   for (const move of FIRST_MOVES) {
     const rows = CONTROLS.filter((c) => c.sel === `#${move.id}`);
     assert.equal(rows.length, 2, `${move.label} is not recorded at both viewports`);
@@ -159,4 +217,27 @@ test("the walk records a before and an after at both viewports, and the phone is
     depthShare(phone.before.firstPress, phone.before.doc) > 0.7,
     "the before-number no longer describes the page this release was written about",
   );
+});
+
+test("the aimed control's walk is a phone win bought with a desktop scroll", () => {
+  const phone = AIMED_WALK["390x844"];
+  const desk = AIMED_WALK["1280x900"];
+  assert.ok(
+    depthShare(phone.before.top, phone.before.doc) > 0.8,
+    "the before-number no longer describes a button in the drawer",
+  );
+  assert.ok(
+    depthShare(phone.after.top, phone.after.doc) < 0.2,
+    "on a phone the pond's only aimed control is no longer in the first fifth of the page",
+  );
+  assert.ok(phone.after.rank < phone.before.rank, "it is no later in the queue than it was");
+  // The cost, asserted rather than described, so a later release cannot quietly
+  // decide the trade was free.
+  assert.ok(desk.after.top > desk.before.top, "the desktop cost has been written out of the record");
+  for (const pass of [phone, desk]) {
+    for (const side of ["before", "after"]) {
+      assert.ok(pass[side].top < pass[side].doc, "a control past the end of its own document");
+      assert.ok(pass[side].rank > 0, "a control nothing comes before, including itself");
+    }
+  }
 });

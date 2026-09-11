@@ -21352,3 +21352,155 @@ what this half was for.
   that it is on screen (tenth cycle); the plates over the water still do not
   carry the shape (eleventh); `targetsize.js` still has no position axis
   (sixteenth); a pond loaded from an archive still has no book (thirty-second).
+
+## Entry — the one thing you can do to the pond · 2026-09-11
+
+Eighth cycle in the ordinary-person hat. The last entry said to go and look
+rather than to fix what I already knew about, and it was right twice: I went and
+looked again, and what I found was not on the first screen this time but in a
+drawer, and it had been there for sixteen releases with my own handwriting on
+the note explaining why everything around it had left.
+
+### What a stranger can actually do here
+
+I made a list. After eight cycles of asking what a visitor *understands*, I
+asked instead what they can **do**, and the list is short: pick an animal, skip
+ahead, open the guide, choose a different world. Every one of those is a way of
+being shown something. There is exactly one control on this page that changes
+the world in a place the visitor chose — `🥣 Feed by hand` — and it puts ten
+specks of food wherever you point.
+
+That is not a small feature. The claim this entire project rests on is on the
+front door in forty-point letters: **nobody programmed them to look for food.**
+A handful of pellets dropped on empty water is the only place on either page
+where that sentence stops being something you read and becomes something you
+*check*. v1.147 measured it properly — the first pellet goes in a median of 47
+steps, the handful clears in 198, and a handful dropped on the crowd is gone in
+69 — and then filed the button under `✦ Feed`, in the settings drawer, because
+it is the same action aimed.
+
+    #btn-hand, at 390 x 844        top 4,665 px
+    of a document of                   5,678 px   <- 82% of the way down it
+    targets a thumb passes first          27
+
+### The finding is that I had already written the fix down
+
+`src/firstmoves.js` is a module I wrote in v1.153 whose entire subject is this
+defect. It says, in bold, *a surface that tells a visitor to press something owes
+that control a place in the main column*. It contains the measurement that moved
+`👋 Meet somebody` out of that same panel. And in `app/index.html` the note
+recording that move is written **four lines below the button that did not go**.
+
+I have three of these now and they are the same shape. v1.151's *the hazard of
+describing one control by its neighbours*. v1.160's *a lesson learned about a
+symptom stays about that symptom unless something forces it wider*. This one:
+**a fix applied to the instances I had in front of me is not a policy, however
+general the sentence I wrote about it was.** The sentence was general. The sweep
+was three buttons long, because three buttons were what I was annoyed about that
+afternoon.
+
+### Why no test could see it, and this is the half worth keeping
+
+`test/firstmoves.test.js` exists to prevent exactly this and has ten tests in
+it. Every one of them walks `FIRST_MOVES` — a hand-typed list of three — and
+asks whether each of those three appears before the aside opens. All three did,
+every run, for sixteen releases.
+
+**A list of three real things is not lying about a fourth.**
+
+That is v1.166's finding arriving in a different file (a guide that points at six
+real panels is not lying about the seventh) and v1.111's in a third (a filter
+that returns the wrong set still returns a set). Three sightings is a rule:
+**a completeness check must iterate over the domain, never over the answer.**
+So the domain is now read off the shipped page — every `<button id=...>` between
+`<aside class="panel">` and the `</aside>` that closes it — and every one of them
+must be named in `DRAWER` with a sentence saying what it does, or `node --test`
+goes red.
+
+Writing those twelve sentences was worth more than the test. I expected to find
+that the drawer holds things "for advanced users", which is the excuse that put
+the aimed control under the unaimed one. Not one of the twelve is that. Every
+one is either an act on the **run** rather than on the pond (save, load, export,
+reset, the seed die) or a **second** press that is meaningless until something
+has already happened (take a picture of what? share a link to a pond nobody has
+looked at?). So the
+test refuses the word: a reason that excuses a control for the kind of person it
+is imagined to be for fails, in as many words. If I ever reach for that excuse
+again I will have to delete an assertion to do it.
+
+### The sentence that was never on the page
+
+One thing fell out that I did not go looking for, and it is the better finding.
+
+Arming the mode says a sentence into the banner: *Touch the water to drop food
+where you point.* It has said **Touch** to every mouse in the world since
+v1.147 — two releases before v1.155 built `hand.js`, the table that holds every
+sentence on this page in two registers precisely so that this cannot happen, and
+sixteen releases after it too, because nothing ever went back for this one.
+
+The header of that file counts the places on this page that name an input
+device. It has said **eighteen** since v1.155 and the answer was nineteen.
+
+Why it hid: every other sentence in that table was found by *reading the page*.
+This one is never on the page. It exists for four seconds, in a banner, after a
+press. **An audit that walks a document cannot see a string the document only
+says in a state** — which is the identical blind spot `targetsize.js` writes
+down about itself (its walk is of a page nobody has pressed anything on) and
+`legibility.js` too (one pond, one viewport, nothing pressed). Three instruments
+here share one hole and none of them had noticed the others had it. Anything
+this project only says after a press is, as of today, unaudited by construction.
+
+### The prediction that was right, which is the cheap way to be wrong
+
+`targetsize.js` had `#btn-hand` in its `UNMET` list rather than in its
+inventory, with an honest note: it is expected to match the two buttons it
+stands between, and *expected is not measured*. I finally ran the probe. The
+prediction was right to the pixel, on both axes, at both widths.
+
+And it did not matter at all, because the thing worth knowing about that button
+was never its size — it was **which stack it was standing in**, and no amount of
+being right about the number would have said so. A measurement that confirms
+what you assumed has told you about your assumption, not about the world. The
+row it has now is fresh, and so are the three beside it: a fourth button makes
+the grid four across at 1280 px instead of three, which takes all four from
+292 x 44 to 216.5 x 44. First time a row in that table has moved because a
+*neighbour arrived*.
+
+### What it cost
+
+The desktop, and I am writing the number down rather than calling it a wash.
+At 1280 x 900 the button moves from 363 px to 1,034 — the panel is a column
+*beside* the water there, so anything leaving it moves down. That is the same
+bill v1.153 paid and the same reason it is worth paying: the pond itself ends
+below the fold at that height, so the scroll that reaches the row is the scroll
+that reaches the water. On a phone — the width most people arrive at — the same
+move is worth 3,688 px.
+
+I opened it in a browser at both widths, armed it, and dropped a handful in the
+middle of the water. *Ten pellets, right there. Eight animals are close enough to
+see them.* On the phone the banner says **Tap**; on the desktop it says
+**Click**.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything.** Fifth
+  release running. This one is at least falsifiable in principle by the feature
+  it is about — a handful dropped is an event the page could count — and I have
+  not counted it.
+- **Anything this page says only after a press is unaudited.** Three instruments
+  (`hand.js`'s census, `targetsize.js`'s walk, `legibility.js`'s inventory) all
+  read a page at rest, all say so about themselves, and none of them knew the
+  other two had the same hole. The banner is the obvious place to start: every
+  sentence `flash()` can carry is a string no walk has ever seen.
+- **The other two audits are now the odd ones out.** `DRAWER` makes the drawer's
+  contents a thing somebody has to argue for. Nothing does that for the
+  stylesheet's orphan rules or for the keyboard accelerators, and both are lists
+  that grew the same way.
+- **The best thing on this page is still the ninth panel down.** The ordering of
+  the column is untouched for the eighth cycle. This release moved a *control*
+  rather than a panel, which is the neighbouring problem solved and not this one.
+- The standing ones, unmoved: every collection here is a `+ N more` waiting to be
+  written and none knows its own N; nothing checks that a surface can be *seen*,
+  only that it is on screen (eleventh cycle); the plates over the water still do
+  not carry the shape (twelfth); a pond loaded from an archive still has no book
+  (thirty-third).

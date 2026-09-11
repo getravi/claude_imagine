@@ -35,10 +35,10 @@ import { torusDist2 } from "../src/vec.js";
 import { WORLD_SCOPED, PAGE_SCOPED } from "../src/viewstate.js";
 import { parseColour } from "../src/legibility.js";
 import { WCAG_AA_TEXT, contrastRatio } from "../src/palette.js";
+import { POINTER, TOUCH, say } from "../src/hand.js";
 import {
   HANDFUL,
   HANDFUL_RADIUS,
-  HAND_HINT,
   HAND_LABEL,
   clearedLine,
   dropHandful,
@@ -267,7 +267,11 @@ test("the watcher count is the pond's own reach, not a number I picked", () => {
 test("every sentence a hand-feeder reads is one a stranger could read aloud", () => {
   const JARGON =
     /\b(carnivor\w*|herbivor\w*|lineage|genome|genotype|allele|gene|tick|ticks|px|pixels?|metabolis\w*|predation|fitness|phenotype|RNG|seed|species|radius|torus)\b/i;
-  const said = [HAND_HINT, HAND_LABEL.off, HAND_LABEL.on];
+  // The mode's one explanatory sentence moved to `hand.js` in v1.169, where it
+  // is held in two registers. Both of them are read here: a sweep that checked
+  // the copy this module used to own and not the copy the page now says would be
+  // a sweep over a string nobody reads.
+  const said = [say("handInvite", POINTER), say("handInvite", TOUCH), HAND_LABEL.off, HAND_LABEL.on];
   for (const watchers of [0, 1, 2, 7, 40]) {
     said.push(dropLine({ placed: HANDFUL, asked: HANDFUL }, watchers));
     said.push(dropLine({ placed: 1, asked: HANDFUL }, watchers));

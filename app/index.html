@@ -254,7 +254,7 @@
              not belong in the drawer of settings. So they sit under the water,
              which is the one thing on this page everybody looks at.
 
-             The row is deliberately not labelled. It is three verbs beside the
+             The row is deliberately not labelled. It is four verbs beside the
              thing they act on, and a caption over them would be the page
              explaining its own buttons — the failure `simpleview.js` was built
              to undo. The `aria-label` is for a listener, who has no "beside the
@@ -262,7 +262,8 @@
 
              Order is the order of a visitor's first minute, and it is the order
              `tour.js` already walks its stops in: who is that, then why should I
-             keep watching, then show me the rest. -->
+             keep watching, then show me the rest — and then, since v1.169, what
+             may I do to it. -->
         <section class="firstmoves" aria-label="What to try first">
           <!-- The only control here that answers "which of these should I
                watch?" — the one button on this page a first-time visitor should
@@ -285,6 +286,22 @@
                lives here afterwards, because the visitor who wants it a second
                time is the one who came back with a friend. -->
           <button id="btn-tour" class="tour-open">🧭 Show me around</button>
+          <!-- Feeding by hand (v1.147), here since v1.169. The other three
+               buttons in this row left the drawer of settings in v1.153 and this
+               one stayed behind, which is the same defect that release fixed,
+               one button wide: at 390 × 844 it stood at 4,665 px of a 5,678 px
+               document — 82% of the way down, the 28th target a thumb could
+               reach — because one column puts the aside last.
+
+               It is the only control on this page that is *aimed*. Everything
+               else that changes this world does it to the whole of it; this puts
+               ten pellets on the one square inch a person pointed at, which is
+               the only way the claim on the front door — nobody taught them to
+               find food — becomes something a stranger can check rather than
+               read. `src/handfeed.js` owns the spiral, the counting and the
+               words; main.js owns the mode, because arming it changes what a
+               press on the water means. -->
+          <button id="btn-hand" class="hand-btn" aria-pressed="false">🥣 Feed by hand</button>
         </section>
 
         <!-- What they are doing (v1.148). The headline above the water is the
@@ -726,22 +743,22 @@
             <button id="btn-feed">✦ Feed</button>
             <button id="btn-seedlife">✚ Seed life</button>
           </div>
-          <!-- Feeding by hand (v1.147). `✦ Feed` above puts sixty pellets
-               across the whole pond, and food that is everywhere is not a test
-               of anything. This arms the water: touch it and ten pellets go
-               exactly where you pointed, which turns the project's one big
-               claim — nobody taught them to find food — into something a
-               stranger can check in three seconds. It sits under Feed because
-               it is the same action aimed, and it wears Feed's own mark for the
-               same reason. `src/handfeed.js` owns the spiral, the words and the
-               arithmetic; main.js is the adapter onto the pointer. -->
-          <button id="btn-hand" class="hand-btn" aria-pressed="false">🥣 Feed by hand</button>
           <!-- `👋 Meet somebody`, `⏩ Skip ahead` and `🧭 Show me around` stood
                here until v1.153, and the measurement that moved them is in
                `src/firstmoves.js`: on a 390 px phone this panel begins 3,527 px
                down the page, so the one button this page recommends to a
                stranger was the eighteenth thing they could reach. They are now
-               a row under the water, where the pond is. -->
+               a row under the water, where the pond is.
+
+               `🥣 Feed by hand` stood here until v1.169 and went the same way,
+               for the same reason and sixteen releases later. It had sat under
+               `✦ Feed` because it is the same action aimed — a good argument
+               about which *drawer* to file it in, and the wrong question, which
+               is the whole of what v1.153 found. What is left in this stack is
+               apparatus: things done to the run rather than to the pond, and
+               `DRAWER` in `src/firstmoves.js` now says so of each one by name,
+               so the next control to arrive here has to argue its case in the
+               suite rather than in a comment. -->
           <!-- The picture (v1.141). Full width and here rather than in the file
                row below, for two reasons. The row is four buttons wide and
                already two lines tall on a phone, so a fifth would put "Export

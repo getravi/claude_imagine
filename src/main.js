@@ -144,7 +144,6 @@ import {
 } from "./race.js";
 import { nameTags } from "./nametag.js";
 import {
-  HAND_HINT,
   HAND_LABEL,
   clearedLine,
   dropHandful,
@@ -4102,7 +4101,10 @@ function setHandFeeding(on) {
   // people learn to look past.
   if (on && !handHinted) {
     handHinted = true;
-    flash(HAND_HINT);
+    // The sentence is `hand.js`'s since v1.169: it teaches a gesture, and which
+    // gesture depends on the hand. It said *Touch the water* to every mouse
+    // between v1.147 and then.
+    flash(say("handInvite", hand));
   }
 }
 

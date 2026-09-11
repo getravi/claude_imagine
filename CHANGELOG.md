@@ -4,6 +4,78 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.169.0] — 2026-09-11
+
+**🥣 The one button that lets you touch the pond was 82% of the way down the
+page.** It is now the fourth press in the row under the water, beside
+`👋 Meet somebody`.
+
+Arm it and the water changes under your finger. Point at a patch of empty pond
+and ten specks of food land exactly there — and then you watch whether anybody
+comes. Usually somebody does: the first pellet goes in about 47 steps, and the
+whole handful is gone in about 200.
+
+That is the only place on this site where the claim the whole thing rests on —
+**nobody taught these animals to find food** — is something you can *check*
+rather than something you read.
+
+### Where it was
+
+    #btn-hand, at 390 × 844      top 4,665 px
+    of a document                    5,678 px    ← 82% of the way down
+    targets a thumb passes first        27
+
+It was filed in the settings drawer, under `✦ Feed`, because it is the same
+action aimed. That is a sound argument about which drawer — and the wrong
+question, which is exactly what v1.153 found when it moved `👋 Meet somebody`,
+`⏩ Skip ahead` and `🧭 Show me around` out of that same panel for that same
+reason. This button stayed behind. Sixteen releases later it was still there.
+
+### Where it is
+
+    #btn-hand, at 390 × 844      top   977 px of 5,677    ← 17%
+
+Four buttons under the pond instead of three. On a desktop the row goes from
+three across to four, and the button moves *down* the page — 363 px to 1,034 —
+which is the same cost v1.153 paid and is written into the record rather than
+waved away: the pond already ends below the fold at that height, so the scroll
+that reaches the row is the scroll that reaches the water.
+
+### The reason nothing noticed for sixteen releases
+
+`test/firstmoves.test.js` exists to prevent precisely this, and it could not
+see it. It walked a hand-typed list of the three controls it already knew about
+and asked whether each was in the main column. All three were. **A list of three
+real things is not lying about a fourth.**
+
+So the check now iterates over the page instead of over its own answer: every
+button in the settings drawer must be named in `firstmoves.js#DRAWER` with a
+sentence saying what it does, or the build fails. Writing those twelve sentences
+was the useful part — not one of them turned out to be excused for being
+*advanced*. Every one is either an act on the run rather than on the pond (save,
+load, export, reset) or a second press that means nothing until something has
+happened first (take a picture of what?).
+
+### Small things that come with it
+
+- **"Touch the water" no longer says that to a mouse.** The sentence the page
+  speaks the first time you arm the mode has been in one register since v1.147.
+  It has joined the two-register table `hand.js` has kept since v1.155, so a
+  desktop reads *Click the water* and a phone reads *Tap the water*. That table's
+  own census of the page said eighteen sentences name an input device; the true
+  number was nineteen, and the one it missed is the only one that is **never on
+  the page** — it exists only after a press, where a reader walking the markup
+  cannot find it.
+- **The control is measured rather than assumed.** `targetsize.js` had predicted
+  its size for twenty-two releases instead of walking it. The prediction was
+  right to the pixel — and the thing worth knowing about it was never its size,
+  it was which stack it was standing in.
+- **It is held to the enhanced target bar now.** 35 px tall in the drawer,
+  44 × 44 in the row, which is the bar this project spends only on the presses it
+  recommends to a stranger.
+- Determinism untouched: a handful is a golden-angle spiral, so hand-feeding has
+  never drawn a random number — not while off, and not while on either.
+
 ## [1.168.0] — 2026-09-11
 
 **🗺 The page said thirteen worlds and a phone was showing you one.** There is

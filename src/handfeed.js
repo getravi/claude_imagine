@@ -250,6 +250,12 @@ export const HAND_LABEL = Object.freeze({
   on: "🥣 Feeding by hand",
 });
 
-/** The sentence that explains the mode the first time somebody arms it. */
-export const HAND_HINT =
-  "Touch the water to drop food where you point. Press the button again to stop.";
+// The sentence that explains the mode the first time somebody arms it used to
+// live here, as `HAND_HINT`, and said **Touch the water** to every hand that
+// read it. It is `hand.js#PHRASES.handInvite` since v1.169 — one of the two
+// registers this project has kept since v1.155 for exactly this kind of
+// sentence, and the only one of them that was written after that table existed
+// and went somewhere else anyway. The rule that catches the next one: **a
+// sentence teaching a gesture belongs in the table even when the module that
+// speaks it owns every other word it says.** This file still owns all of those;
+// what it does not own is which hand is holding the page.

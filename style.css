@@ -504,10 +504,15 @@ body.simple [data-expert] {
    supposed to be. A selector that has to win an argument should say so. */
 .firstmoves button.meet,
 .firstmoves button.skip-btn,
-.firstmoves button.tour-open {
+.firstmoves button.tour-open,
+.firstmoves button.hand-btn {
   /* Undoing `display: block; width: 100%; margin-top: 8px` from the panel stack
-     these three used to stand in — those declarations are still right for
-     `🥣 Feed by hand` and the two file buttons that are still up there. */
+     these used to stand in — those declarations are still right for the two file
+     buttons that are still up there. `.hand-btn` joined the row in v1.169 and is
+     named here for the reason the note above gives: `button.hand-btn` has its own
+     rule later in this file, so a short selector would lose to it silently. The
+     one that matters is `min-height`, which takes this control from 35 px to the
+     enhanced 44 — it is a first move now, and it is held to a first move's bar. */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2752,12 +2757,15 @@ details .field {
    ranks when there are two. And a new ground is a new pair for
    `legibility.js` to measure: reusing one already in the inventory is the
    cheapest possible honesty about a colour, which is not to add one. */
-/* The three full-width controls that address a person rather than a file. They
-   share one plate on purpose: `👋 Meet somebody` above them is green because it
-   is the one press this page recommends to a stranger, and a second recommended
-   colour would recommend nothing. v1.142's `⏩ Skip ahead` joins the group
-   rather than inventing a fourth — same ink on the same ground, so it adds no
-   pair to `legibility.js`'s inventory. */
+/* One plate, shared by every control that addresses a person rather than a
+   file, wherever on the page it has ended up standing. Shared on purpose:
+   `👋 Meet somebody` is green because it is the one press this page recommends
+   to a stranger, and a second recommended colour would recommend nothing.
+   v1.142's `⏩ Skip ahead` joined the group rather than inventing a fourth —
+   same ink on the same ground, so it adds no pair to `legibility.js`'s
+   inventory — and v1.169's move of `🥣 Feed by hand` out of the panel changed
+   nothing here, which is the point of a plate that is about the *address* and
+   not about the neighbourhood. */
 button.tour-open,
 button.picture-btn,
 button.skip-btn,

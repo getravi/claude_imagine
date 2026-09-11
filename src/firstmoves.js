@@ -1,4 +1,4 @@
-// firstmoves.js — the three presses a stranger is offered, and where they sit.
+// firstmoves.js — the presses a stranger is offered, and where they sit.
 //
 // Every release since v1.123 has added a control to the panel on the right and
 // argued, carefully, about where in that panel it should go. `👋 Meet somebody`
@@ -50,6 +50,41 @@
 // scroll that brings the *water* into view, and nobody looks at this page
 // without doing it. On a phone the same move is worth three thousand pixels.
 //
+// ## v1.169: the list of three was not lying about the fourth
+//
+// Sixteen releases later, on the same page, at the same width, the same defect
+// was still standing — one button wide:
+//
+//   #btn-hand            top 4,665   of a 5,678 px document: 82% of the way down
+//                                    it, and the 28th target a thumb can reach
+//
+// `🥣 Feed by hand` is the only control on this page that is **aimed**. Every
+// other lever changes the whole pond — sixty pellets everywhere, twelve
+// strangers anywhere, a slider — and this one puts ten pellets on the square
+// inch a person pointed at. The claim the whole project rests on is *nobody
+// taught them to find food*, it is on the front door in forty-point letters, and
+// this button is the only place on either page where a stranger can **check** it
+// instead of reading it. It was filed under `✦ Feed`, because it is the same
+// action aimed — which is a good argument about *which drawer*, and the wrong
+// question, which is precisely what the walk above found in v1.153.
+//
+// **Why nothing caught it, and this is the part worth keeping.** The test that
+// exists to prevent exactly this walked `FIRST_MOVES`, a hand-typed list of
+// three, and asked whether each of those three was in the main column. All three
+// were. A list of three real things is not lying about a fourth — the same shape
+// `tour.js` found in v1.166 (a guide that points at six real panels is not lying
+// about the seventh) and `levers.js` in v1.111 (a filter that returns the wrong
+// set still returns a set). **A completeness check has to iterate over the
+// domain, never over the answer.** So `DRAWER` below names every control left in
+// the panel and why it belongs there, and the test reads the shipped page: a
+// button in the aside that is in neither list fails the build. The reason each
+// one had to be *typed* is the useful half, as it was for the guide: not one of
+// the twelve is excused for being **advanced**. Every one of them is excused
+// for acting on the *run* rather than on the pond, or for being a **second**
+// press — a control that means nothing until something else has happened. Both
+// are facts about this page I did not have until I was made to write them down,
+// and both are things somebody who disagrees with me can check.
+//
 // PURE OBSERVER. No DOM, no simulation state, no random numbers — an inventory,
 // one string search and the arithmetic that compares two walks.
 
@@ -59,12 +94,20 @@
  *
  * `asks` is the visitor's question rather than the button's function, because
  * the question is what decides the order and the function is what decided the
- * old one. Two of these three were placed by an argument about their function.
+ * old one. Three of these four were placed by an argument about their function,
+ * and the fourth by an argument about which *other* button it resembled, which
+ * is the same mistake with a neighbour in it.
  */
 export const FIRST_MOVES = Object.freeze([
   Object.freeze({ id: "btn-meet", label: "👋 Meet somebody", asks: "which of these should I watch?" }),
   Object.freeze({ id: "btn-skip", label: "⏩ Skip ahead", asks: "why should I keep looking?" }),
   Object.freeze({ id: "btn-tour", label: "🧭 Show me around", asks: "what is the rest of this?" }),
+  // v1.169. Last because it is the only one of the four that asks the visitor to
+  // *do* something to the world rather than to be shown it, and a page that
+  // offers that before it has said what the world is has offered a stranger a
+  // lever on a thing they cannot name. The three above are the order of a first
+  // minute; this is what a first minute ends in.
+  Object.freeze({ id: "btn-hand", label: "🥣 Feed by hand", asks: "can I touch it?" }),
 ]);
 
 /** The class on the row that holds them, in `app/index.html`. */
@@ -75,11 +118,19 @@ export const ASIDE_OPENS = '<aside class="panel">';
 
 /**
  * The selector the row's size rule is written under, for a test that wants to
- * read the number rather than trust this file. It is the *last* of the three
- * grouped selectors in `style.css`, which is the one `targetsize.js`'s reader
- * can find: that function matches a selector immediately followed by `{`.
+ * read the number rather than trust this file. It is the *last* of the grouped
+ * selectors in `style.css`, which is the one `targetsize.js`'s reader can find:
+ * that function matches a selector immediately followed by `{`.
+ *
+ * Which makes this constant a small trap, and it sprang in v1.169: adding a
+ * fourth selector to that group moved the `{` off `.firstmoves button.tour-open`
+ * and this line had to move with it. **A constant that names "the last member of
+ * a list" is a position, not a name** — it is correct exactly until the list
+ * grows, and the failure is a lookup that silently finds nothing rather than a
+ * mismatch that argues. The test below reads a number back, so it fails loudly;
+ * that is the only reason this is a note and not a bug.
  */
-export const ROW_RULE = ".firstmoves button.tour-open";
+export const ROW_RULE = ".firstmoves button.hand-btn";
 
 /**
  * WCAG 2.2 SC 2.5.5 (Target Size (Enhanced), Level AAA): 44 CSS pixels.
@@ -118,9 +169,94 @@ export const WALK = Object.freeze({
   }),
 });
 
+/**
+ * Every control left in the drawer, and why it is not a first move (v1.169).
+ *
+ * The same shape as `tour.js`'s `UNTOURED` and `targetsize.js`'s `UNMET`: a gap
+ * named is a gap a later cycle can close, and a gap unnamed is a claim of
+ * coverage nobody made on purpose. What makes this one different from those two
+ * is the direction it is read in — `UNTOURED` excuses panels a guide walks past,
+ * and this excuses controls a *visitor* walks past, which is the list that was
+ * missing when `🥣 Feed by hand` sat here for sixteen releases with nothing able
+ * to notice.
+ *
+ * The bar a reason has to clear: it must say what the control does, not who it
+ * is *for*. "Advanced" is not a reason — it is the same judgement that put the
+ * aimed control under the unaimed one, and every entry below was written by
+ * asking *would a stranger's first minute be worse without this?* rather than
+ * *is this for beginners?*
+ */
+export const DRAWER = Object.freeze({
+  "btn-pause": "stops the clock. A control on the *run* rather than on the pond, and the one press here a visitor finds without being offered it — the pond is the only thing on the page that moves",
+  "btn-reset": "throws this world away and starts another. The undo for everything in this drawer, which is what makes it belong with them and not beside the water",
+  "btn-feed": "sixty pellets over the whole pond. The unaimed twin of `🥣 Feed by hand`, and food that is everywhere demonstrates nothing — it is a lever for a run being steered, where the handful is a gesture for a question being asked",
+  "btn-seedlife": "twelve strangers dropped in anywhere. The same lever one kingdom up, and the same reason: it changes the experiment rather than showing it",
+  "btn-picture": "takes a copy home. A second press by construction — nobody photographs a pond they have not looked at yet",
+  "btn-gif": "the same, moving. Second press, for the same reason, and the heavier of the two",
+  "btn-randomseed": "the die beside the seed field. It is not a control in its own right but the other half of one, and a text input is not a first move",
+  "btn-save": "writes the world to a file",
+  "btn-load": "reads one back. A pair with Save, and both are acts on a *file*: the first minute this row is sized for has nothing yet to keep",
+  "btn-share": "copies a link to this exact pond. A second press with a person on the other end of it",
+  "btn-export-csv": "hands the run's numbers to a spreadsheet. The one control on this page addressed to somebody who has left it",
+  "chart-scope": "switches a figure between the whole run and its recent window. A setting on an instrument, and the instrument is on the far side of `🔬 Everything`",
+});
+
+/**
+ * The v1.169 walk: what moving the aimed control out of the drawer bought, and
+ * what it cost, at the two viewports the rest of this project's browser work
+ * uses.
+ *
+ * Same shape as `WALK` above and deliberately a *second* record rather than an
+ * edit of the first: that one is what v1.153 measured, and a recording somebody
+ * overwrites is a recording of nothing. `depth` is the share of the document the
+ * button sits down, which is the number this is really about — 4,665 px would be
+ * nothing at all down a forty-thousand pixel page.
+ *
+ * The desktop column is the cost, and it is the same cost v1.153 paid and for
+ * the same reason: the panel is a column *beside* the water at 1280 px, so
+ * anything leaving it moves **down**. The pond already ends below the fold at
+ * this height, so the scroll that reaches the row is the scroll that reaches the
+ * water — and the phone, where the button was at 82% of the page, is the width
+ * most visitors arrive at.
+ */
+export const AIMED_WALK = Object.freeze({
+  "390x844": Object.freeze({
+    before: Object.freeze({ doc: 5678, top: 4665, rank: 28 }),
+    after: Object.freeze({ doc: 5677, top: 977, rank: 22 }),
+  }),
+  "1280x900": Object.freeze({
+    before: Object.freeze({ doc: 3568, top: 363, rank: 22 }),
+    after: Object.freeze({ doc: 3568, top: 1034, rank: 31 }),
+  }),
+});
+
 /** Just the ids, for a caller that only wants to look them up. */
 export function firstMoveIds() {
   return FIRST_MOVES.map((m) => m.id);
+}
+
+/**
+ * Every `<button id="…">` in the drawer of settings, in document order.
+ *
+ * The domain of the completeness check, and it is deliberately read off the
+ * shipped page rather than listed here: a hand-typed domain is the bug this
+ * function exists to catch, one level up. A string scan for the same reason
+ * `inMainColumn` is one — the claim is about the markup as written.
+ *
+ * The aside ends at the first `</aside>`, which is why the overlays that live
+ * after it (the guide's card, the postcard, the skip card, the contents) are
+ * outside this: they are fixed to the viewport, so where they sit in document
+ * order says nothing at all about where a thumb finds them.
+ *
+ * @param {string} html the shipped page
+ * @returns {string[]}
+ */
+export function drawerButtons(html) {
+  const from = html.indexOf(ASIDE_OPENS);
+  if (from < 0) return [];
+  const to = html.indexOf("</aside>", from);
+  const drawer = html.slice(from, to < 0 ? html.length : to);
+  return [...drawer.matchAll(/<button[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
 }
 
 /**
