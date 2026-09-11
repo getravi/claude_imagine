@@ -210,7 +210,16 @@ export function chapters(headings) {
  * been laid out) would otherwise put the line at the origin and report chapter
  * one forever.
  *
- * @param {{y: number, viewport: number, docHeight: number}} scroll
+ * `obscured` is how many pixels of the *top* of the window a reader cannot read
+ * through — since v1.171 that is the pinned pond, and it is 28% of a phone. A
+ * third of the way down the window is 56 px below the water there, so a line
+ * measured from the window's own top would spend the whole page naming the
+ * chapter that is behind the pond while the reader looks at the next one. So
+ * the fraction is taken over what is left: **a third of the way down the part
+ * of the screen that has words on it.** Absent or zero it is arithmetically the
+ * line this function has always drawn.
+ *
+ * @param {{y: number, viewport: number, docHeight: number, obscured?: number}} scroll
  * @returns {number}
  */
 export function readingLine(scroll) {
@@ -218,7 +227,8 @@ export function readingLine(scroll) {
   const docHeight = Math.max(viewport, num(scroll && scroll.docHeight));
   const maxY = docHeight - viewport;
   const y = Math.min(Math.max(num(scroll && scroll.y), 0), maxY);
-  const start = READING_LINE * viewport;
+  const obscured = Math.min(Math.max(num(scroll && scroll.obscured), 0), viewport - 1);
+  const start = obscured + READING_LINE * (viewport - obscured);
   // What the line has to gain by the last scroll offset, and the stretch of
   // scroll it gains it over — the *last* screenful of it, never sooner.
   const makeUp = viewport - start;

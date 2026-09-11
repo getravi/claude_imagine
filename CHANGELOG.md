@@ -4,6 +4,96 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.171.0] — 2026-09-11
+
+**🌊 The pond comes with you.** On a phone the water now stays at the top of the
+screen while you read the rest of the page, instead of scrolling away after the
+first screenful.
+
+Every panel on this page is about the pond, and until today you could read
+almost none of them while the pond was in view. Measured at 390 × 844, default
+world, guide dismissed:
+
+    how much of this page you can read with water on screen
+    before      32.9%   (1,638 px of 4,977)
+    after        97.9%   (4,871 px of 4,977)
+
+`👁 What it can see` draws the speck of food an animal is swimming for. The
+speck was a screen and a half above the drawing of it. `🏊 What it is doing`
+says *Tamsin is heading for food*, and you could not look at Tamsin. Sixteen
+panels, all of them describing a thing that was no longer there.
+
+### This is the thing nine releases called "the ordering of the column"
+
+Nine *what it leaves* notes in a row have said the order of this page is
+untouched, each with the honest admission that there was no number to sort on.
+There isn't one, and there was never going to be: any order at all puts sixteen
+panels below the pond, because the pond is one panel and there are sixteen. The
+best a reordering can buy is *which two of them* get to sit near the water.
+
+The measurement that makes it obvious is not *where is each panel*. It is **how
+much of this page can be read with the pond in view** — and once you ask that,
+sticking the pond to the top of the screen is the only answer that moves it,
+and it moves it by a factor of three. Nothing was reordered. Nothing was hidden.
+Nothing moved at all.
+
+### When it does not happen, and why that is arithmetic
+
+A pond pinned to the top of the screen is a gift at a quarter of the screen and
+a prison at three quarters. Turn a phone sideways and this page is still in its
+one-column layout — 844 px wide is under the 960 px fold — while the window is
+390 px tall and the pond wants 550 of them.
+
+A stylesheet can ask how wide a window is and how tall, but it cannot divide one
+by the other, so the guard is a media query on the **aspect ratio**, and that
+ratio is derived rather than tried until it looked right: asking for a pond no
+more than 45% of the screen gives `vw ≤ 0.45 × aspect × vh`, which is 13/20.
+`src/pondstick.js` holds the derivation and `test/pondstick.test.js` sweeps
+every window between 240 × 320 and 1600 × 1600 for one that pins the pond and
+gives it more than 45% of the screen. Of 436,521 windows, 122,379 pin it and the
+worst of those gives the pond **42.7%**. There is none over the cap.
+Every phone in portrait is far under the cap (390 × 844 gives the pond 28.3%);
+a sideways phone, a tablet and every desktop keep the page exactly as it was.
+
+### What a pinned pond owes the rest of the page
+
+Two things, and the second is the interesting one.
+
+- **Every jump has to clear the water.** The contents' chapter links, the
+  guide's ring and a plain `#id` in the address bar all scroll a target to the
+  top of the window, and the top of the window is now the pond. `main.js`
+  writes the height the stylesheet is actually displaying the canvas at into
+  `--pond-h` — on the same per-frame measurement that already scales the marks
+  on the water, so there is no second listener to keep in step — and one
+  `scroll-padding-top` puts every jump on this page underneath the pond rather
+  than behind it. Walked in a browser: all twelve chapters and all six of the
+  guide's stops land in the clear.
+- **"You are here" was reading a part of the screen nobody can see.** The
+  contents bar names the last chapter to pass a line a third of the way down
+  the window. A third of 844 px is 295 px, and the pond's bottom edge is at
+  239 — so the line sat 56 px into a 605 px band of readable screen, and spent
+  the whole page naming the chapter behind the water while the reader looked at
+  the next one. The line is now taken over **what is left of the screen after
+  the pond**: a third of the way down the part that has words on it. Given no
+  pond it is arithmetically the line this page has drawn since v1.165, which is
+  what keeps the desktop layout untouched.
+
+### Small things that come with it
+
+- **Determinism untouched.** `src/pondstick.js` is a pure observer over four
+  numbers a browser reports about its own window and two constants from
+  `config.js`. No world, no DOM, no random draw. A pond read on a phone and a
+  pond read on a desk are bit-for-bit the same pond.
+- **The pond's shape is imported, not retyped.** The aspect ratio the whole
+  derivation rests on comes from `DEFAULT_CONFIG`, so a world that changed shape
+  would move the threshold with it rather than leaving a stale `13/20` behind.
+- **The stylesheet is read back.** Both thresholds and the pin itself are
+  asserted against `style.css` in `node --test`, the same way `key.test.js`
+  holds the renderer's nose lengths — a second copy of a number is not left to
+  trust.
+- **If `main.js` never runs, nothing moves.** `--pond-h` falls back to `0px`,
+  which is the page exactly as it was.
+
 ## [1.170.0] — 2026-09-11
 
 **🏷 On a phone, the pond was writing its animals' names underneath its own

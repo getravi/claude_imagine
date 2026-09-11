@@ -239,6 +239,30 @@ test("the reading line starts a third down the screen and ends at the last pixel
   }
 });
 
+test("the reading line reads the screen it can see, not the one it has (v1.171)", () => {
+  const { viewport, docHeight } = MEASURED;
+  // The pinned pond covers the top 239 px of a 390 x 844 phone. A third of the
+  // way down the *window* is 295 px — 56 px of readable screen — so a line that
+  // ignored it would spend the page naming the chapter behind the water.
+  const pond = 239;
+  const plain = readingLine({ y: 1000, viewport, docHeight });
+  const under = readingLine({ y: 1000, viewport, docHeight, obscured: pond });
+  assert.ok(under > plain, "an obscured window did not push the line down");
+  assert.equal(under - 1000, pond + READING_LINE * (viewport - pond));
+  // A third of the way into what is left, which on this phone is a little over
+  // half the window rather than a third of it.
+  assert.ok((under - 1000) / viewport > 0.45 && (under - 1000) / viewport < 0.55);
+
+  // Absent, zero or nonsense, it is arithmetically the line this page has drawn
+  // since v1.165 — the whole point of taking it as an input rather than a
+  // constant is that the desktop layout does not pin anything.
+  for (const same of [undefined, 0, -50, NaN, "239"]) {
+    assert.equal(readingLine({ y: 1000, viewport, docHeight, obscured: same }), plain, `${same}`);
+  }
+  // A window claiming to be wholly obscured still leaves a pixel to read by.
+  assert.ok(Number.isFinite(readingLine({ y: 0, viewport, docHeight, obscured: viewport + 500 })));
+});
+
 test("the reading line only ever moves down the page", () => {
   let last = -Infinity;
   sweep(MEASURED, (_y, scroll) => {
@@ -246,6 +270,17 @@ test("the reading line only ever moves down the page", () => {
     assert.ok(line > last, `the line went back up at y=${scroll.y}`);
     last = line;
   });
+  // And with the pond over the top of it, which is the state every phone is in
+  // since v1.171: monotone is the property that makes the mark trustworthy, and
+  // it is a property of the whole family of lines rather than of one of them.
+  for (const obscured of [120, 239, 400]) {
+    last = -Infinity;
+    sweep(MEASURED, (_y, scroll) => {
+      const line = readingLine({ ...scroll, obscured });
+      assert.ok(line > last, `the line went back up at y=${scroll.y} under ${obscured} px of pond`);
+      last = line;
+    });
+  }
 });
 
 test("you are here never goes backwards, and every chapter can be reached", () => {

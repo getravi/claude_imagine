@@ -2088,7 +2088,15 @@ function updateContents() {
     docHeight: document.documentElement.scrollHeight,
   };
   const stage = document.querySelector(".stage");
-  const pondBottom = stage ? stage.getBoundingClientRect().bottom + scroll.y : 0;
+  const stageRect = stage ? stage.getBoundingClientRect() : null;
+  const pondBottom = stageRect ? stageRect.bottom + scroll.y : 0;
+  // How much of the top of the window has water over it (v1.171). Only when the
+  // pond is actually pinned there — a stage whose top edge is still on screen is
+  // being scrolled past in the ordinary way, and the words beside it are words a
+  // reader can read. Asking the rectangle rather than the media query is what
+  // keeps this true of a window somebody is in the middle of turning.
+  scroll.obscured =
+    stageRect && stageRect.top <= 0 ? Math.max(0, Math.min(scroll.viewport, stageRect.bottom)) : 0;
   // Never over a card. The guide, the postcard and the skip card each ask for
   // the whole window, and a pill in the corner during a six-stop tour is the
   // page interrupting its own introduction.
@@ -2383,6 +2391,14 @@ function refitInstruments() {
   for (const [prop, value] of Object.entries(markProperties(w, h))) {
     stage.style.setProperty(prop, value);
   }
+  // And the one number the *page* needs about the pond (v1.171). The stage is
+  // pinned to the top of the window on a phone, so every jump on this page has
+  // to clear it, and `scroll-padding-top` is the only way to say that — but it
+  // needs a length, and the pond's height is a consequence of the window's
+  // width rather than a constant anybody typed. It is measured here because
+  // this is already the place that knows: the same per-frame read, written only
+  // when the answer changes, with no second listener to keep in step.
+  document.documentElement.style.setProperty("--pond-h", `${stage.offsetHeight}px`);
 }
 
 // ---- Scale bar ----

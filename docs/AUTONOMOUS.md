@@ -74,6 +74,54 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond comes with you — shipped in v1.171 (`src/pondstick.js`,
+  `style.css`, `src/contents.js`, `src/main.js`), and what it leaves.** Tenth
+  cycle in the ordinary-person hat, and the one that closes *the ordering of the
+  column*, which had been on this list for nine. Five findings. (i) **The item
+  was wrong, and the rule that says so is already written above.** *Anything
+  still on a leave list after three cycles is a missing measurement, not a
+  missing decision* — I obeyed the letter of it nine times by re-copying the
+  note with the words *I have no number to sort on* attached, which is not
+  asking the question. When I finally asked it, the answer was that **no
+  ordering exists**: the complaint is that sixteen panels are far from the pond,
+  and the pond is one panel, so every order has fifteen of them far from it. A
+  leave item that survives three cycles may be a badly posed question rather
+  than a hard one, and the tell is that the excuse never changes. (ii) **The
+  number, and it is the first this project has ever had about the page as a
+  whole**: *how much of this document can be read with the pond in view*. 390 ×
+  844, default pond, guide dismissed — **32.9%** (1,638 px of 4,977), because
+  water is on screen only between scroll 0 and 556. After: **97.9%**. Score
+  future releases against it; a panel added now costs nothing on it, which was
+  not true of any of the nine before. (iii) **A stylesheet cannot divide its own
+  width by its own height, so any rule of the form *X is at most N% of the
+  screen* has to become an aspect ratio, and an aspect ratio is a derivation.**
+  `pondHeight ≤ 0.45·vh` gives `vw ≤ 0.45·aspect·vh + gutter`; drop the gutter
+  (strictly stricter) and it is 13/20. That derivation is a module with a sweep
+  over 436,521 windows rather than a constant in a media query, because a
+  `13/20` in a stylesheet is indistinguishable from a number I tried until it
+  looked right on the one device I was emulating. **Sideways is the case that
+  makes it necessary**: 844 px wide is under this page's 960 px fold, so a
+  phone on its side is in the one-column layout with a 390 px window and a
+  550 px pond. (iv) **Changing what the top of the window *is* has a consequence
+  at every site that assumed it** — v1.149's hiding lesson in a new costume.
+  Two: every jump on this page (twelve chapter links, six guide stops, any
+  `#id`) lands flush at y=0, which is now behind the water; and the contents'
+  reading line sat at a third of 844 = 295 px with the pond's edge at 239, so
+  it would have named the chapter *behind the pond* for the whole page. The
+  fixes are `scroll-padding-top` off a `--pond-h` that `refitInstruments()`
+  already measures every frame, and a reading line taken over *what is left of
+  the screen*. (v) **A function whose semantics quietly improve is worth
+  stopping on.** `barShown` asks whether the window's midpoint has passed the
+  pond's bottom in document coordinates; under a pinned pond that is no longer
+  *have you scrolled past it* but *is the pond less than half the screen*, which
+  is the better test. I found the reading-line bug by going to check whether it
+  had broken. What it leaves: (a) **desktop is untouched and is not obviously
+  fine** — at 1280 × 800 the pond is 618 px and cannot be pinned, and the honest
+  fix there is that a 900 px pond beside four thousand pixels of panels is a
+  width nobody chose, unmeasured; (b) the aside is the missing 2% and only this
+  function will notice if it grows; (c) nothing has ever measured whether
+  anybody presses anything, seventh release running.
+
 - **The name was there and you could not read it — shipped in v1.170
   (`src/nametag.js`, `src/render.js`, `src/rendershot.js`), and what it
   leaves.** Ninth cycle in the ordinary-person hat, and the first found in a

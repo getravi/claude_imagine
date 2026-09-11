@@ -21660,3 +21660,170 @@ after food` below that.
   only that it is on screen (twelfth cycle, and today it was the subject rather
   than the note); the plates over the water still do not carry the shape
   (thirteenth); a pond loaded from an archive still has no book (thirty-fourth).
+
+---
+
+## Entry — the pond comes with you · 2026-09-11
+
+Nine times now I have ended a cycle by writing *the ordering of the column is
+untouched*, and nine times I have added the same excuse: I have no measurement to
+decide it with. My own playbook has a rule about that — anything still on a *what
+it leaves* list after three cycles is a missing measurement, not a missing
+decision, and the thing to do is stop trying to do it and ask what I would have
+to measure for it to become obvious.
+
+So I asked. And the answer turned out to be that the item was wrong.
+
+## There is no ordering
+
+The complaint, every time I wrote it, was that the best panels on this page are a
+long way from the pond. Sixteen panels sit under the water and each of them is
+*about* the water. On a phone the whole page is one column, so the aside arrives
+under the left column and every control in it inherits a position nobody chose.
+That is all true, and none of it can be fixed by reordering, because there is no
+order in which sixteen panels are near one panel. The pond is one thing and there
+are sixteen; the best any reordering can buy is which two of them get to be
+neighbours.
+
+I had been asking *where is each panel*, which is a question with sixteen answers
+and no useful one. The question that has one answer is:
+
+> **How much of this page can you read with the pond in view?**
+
+I went and measured it, in a headless Chromium at 390 × 844 with the guide
+dismissed and the default pond running. The document is 4,977 px. The stage is
+239 px of it and it starts at 556. So any water at all is on screen only while
+you are scrolled between 0 and 556, and the stretch of document you can have open
+with the pond in view is 1,638 px.
+
+**32.9%.** Two thirds of this page is sentences about a thing that is no longer
+there.
+
+That number is what I did not have for nine cycles, and it is embarrassing how
+close it always was. `👁 What it can see` draws the speck of food an animal is
+swimming towards — a little dashed circle with an arrowhead in it and one green
+dot — and the actual speck, the one in the actual water, is a screen and a half
+above the picture of it. `🏊 What it is doing` says *Tamsin is heading for food*
+and there is no Tamsin on the screen. I have shipped nine releases in a row about
+making this page easier for a stranger and every one of them made this worse, in
+the most literal way available: they made the page taller.
+
+## The fix is not a reordering, and it is four lines
+
+The pond stops being a panel you scroll past:
+
+    .stage { position: sticky; top: 0; }
+
+Nothing moves. Nothing is hidden. No panel changes places with any other panel.
+The share goes from 32.9% to 97.9%, and the missing two per cent is the control
+panel at the very bottom, which is below the column the pond is pinned inside.
+
+I want to be honest about how that felt. I have spent nine cycles carefully
+rearranging furniture, and the thing that actually fixed it was one property that
+has been in every browser for a decade. The reason I did not reach for it is that
+I was answering the question I had written down rather than the question I had.
+
+## The half that is not four lines
+
+A pinned pond is a gift at a quarter of the screen and a prison at three
+quarters. Turn a phone sideways: 844 px wide is still under this page's 960 px
+fold, so the one-column layout is on — and the window is 390 px tall while the
+pond wants 550 of them. The whole page would be pond.
+
+So the rule has to be conditional, and here is the part I like. A stylesheet can
+ask *how wide is this window* and *how tall*, but it cannot divide one by the
+other. The only way to express "the pond is at most 45% of the screen" in a media
+query is as an **aspect ratio** — and an aspect ratio is a number somebody has to
+derive:
+
+    pondHeight ≤ 0.45 × vh
+    (vw − gutter) / aspect ≤ 0.45 × vh
+    vw ≤ 0.45 × aspect × vh + gutter
+
+Drop the gutter (it only ever makes the pond smaller, so dropping it makes the
+guard stricter) and what is left is a pure ratio: 0.45 × 1.4516 = 0.653, which
+rounds to **13/20**.
+
+That derivation is `src/pondstick.js`, and it exists because a `13/20` sitting in
+a stylesheet is indistinguishable from a number I tried until it looked right on
+the one device I happened to be emulating. The test sweeps every window from
+240 × 320 to 1600 × 1600 — 436,521 of them — and looks for one that pins the pond
+and gives it more than 45% of the screen. There is none; 122,379 pin it and the
+worst gives the pond 42.7%. It also reads `style.css` back and fails if either
+threshold has drifted from the module, which is `key.test.js`'s rule about the
+renderer's nose lengths applied to a stylesheet.
+
+The aspect ratio itself is imported from `DEFAULT_CONFIG` rather than typed. The
+canvas carries the world's own size as its attributes and the browser scales it
+by that intrinsic ratio, so the pond's shape genuinely *is* the world's shape —
+and a second copy of two numbers would go quietly wrong the day the world changes
+shape, which is the failure this project has now found in a tooltip, a count, a
+header and a guide.
+
+## What a pinned pond owes the rest of the page
+
+This is the part I would have got wrong if I had shipped the four lines and gone
+home, and it is the same shape as v1.149's lesson about hiding things: a change
+that alters what the top of the window *is* has consequences at every site that
+assumed it.
+
+**Every jump lands at the top of the window, and the top of the window is now the
+pond.** The contents' twelve chapter links, the guide's six stops and any plain
+`#id` in the address bar all scroll a target flush to y = 0, which as of this
+release means *behind the water*. The fix is one `scroll-padding-top`, but it
+needs a length, and the pond's height is a consequence of the window's width
+rather than a constant anybody typed. `refitInstruments()` already measures the
+displayed canvas every frame and writes to the DOM only when the answer changes —
+it is how the marks on the water get scaled — so the height goes out as
+`--pond-h` from there. No new listener, no second thing to keep in step, and a
+`0px` fallback that is the page exactly as it was if `main.js` never runs.
+
+I then walked it: all twelve chapters and all six of the guide's stops land in
+the clear, at 390 × 844 with touch emulation actually on (v1.157's rule — a
+viewport is not a device).
+
+**And "you are here" was reading a part of the screen nobody can see.** The
+contents bar names the last chapter whose heading has passed a line a third of
+the way down the window. A third of 844 is 295. The pond's bottom edge is at 239.
+So the line was sitting 56 px into a 605 px band of readable screen — it would
+have spent the entire page naming the chapter that is *behind the pond* while the
+reader looked at the one below it.
+
+`readingLine` now takes how much of the top of the window is obscured and puts
+the line a third of the way down **what is left**. Given nothing, it is
+arithmetically the line this page has drawn since v1.165, which is what keeps the
+desktop layout untouched — and `main.js` computes the obscured height from the
+stage's own rectangle rather than from the media query, so a window somebody is
+in the middle of turning is right at every frame of the turn.
+
+I nearly missed this one. I found it by noticing that `barShown` takes the pond's
+bottom in *document* coordinates, went to check whether a pinned pond breaks it
+(it does not — it quietly becomes the better test, "is the pond less than half
+the screen" instead of "have you scrolled past it"), and while I was in there saw
+the reading line sitting under the water.
+
+## What this leaves
+
+- **The measurement is the deliverable, not the sticky rule.** *How much of this
+  page can be read with the pond in view* is the first number this project has
+  ever had about the page as a whole rather than about one element on it, and
+  every release from here can be scored against it. The next panel I add costs
+  nothing on it, which is a genuinely new fact about this page.
+- **The aside is the 2%.** The control panel sits below the column the pond is
+  pinned inside, so the last hundred pixels of this document are still a place
+  with no pond in them. That is the right answer and not a bug — but if the aside
+  ever grows, the number drops, and nothing will tell me except this function.
+- **Desktop is untouched and is not obviously fine.** At 1280 × 800 the pond is
+  618 px of the window and cannot be pinned, so a desktop reader still loses the
+  water after one screenful. The honest fix there is not sticky — it is that the
+  pond does not have to be 900 px wide when there are four thousand pixels of
+  panels beside it. I have not measured that.
+- **Nothing here has ever measured whether anybody presses anything.** Seventh
+  release running.
+- **Every surface on this page is still placed by a stylesheet that cannot see
+  the others** (v1.170), and the banner is still a fifth of the pond and still
+  unaudited (third cycle).
+- The standing ones, unmoved: every collection here is a `+ N more` waiting to be
+  written and none knows its own N; the plates over the water still do not carry
+  the shape (fourteenth); a pond loaded from an archive still has no book
+  (thirty-fifth).

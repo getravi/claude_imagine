@@ -3580,6 +3580,49 @@ button.skip-btn[aria-disabled="true"] {
   }
 }
 
+/* ---- The pond comes with you (v1.171) ----
+
+   Every panel on this page is about the water, and until now a reader could
+   have 32.9% of the page open with any water on screen. Measured at 390 × 844:
+   the document is 4,977 px, the stage is 239 px of it starting at 556, and the
+   1,638 px window either side of that is the whole of it. `👁 What it can see`
+   draws the speck an animal is swimming for, and the speck is a screen and a
+   half above the drawing of it.
+
+   So the stage stops being a panel you scroll past. `src/pondstick.js` holds
+   the argument and the arithmetic; the two numbers in the query below are its
+   `STICK_MAX_WIDTH` and `STICK_MAX_RATIO`, and `test/pondstick.test.js` reads
+   this file back and fails if either drifts from the module.
+
+   The ratio is the part that needs saying out loud. This page folds to one
+   column at 960 px, and 960 px of window is *also* a phone held sideways — a
+   844 × 390 window is under the fold and wants 550 px of pond in a 390 px
+   screen. A stylesheet can ask how wide and how tall but cannot divide one by
+   the other, so the guard is a ratio: below 13/20 the pond is at most 45% of
+   the screen, which is derived in the module rather than tried until it looked
+   right. Every phone in portrait is far under it (390 × 844 is 0.46). */
+@media (max-width: 960px) and (max-aspect-ratio: 13/20) {
+  .stage {
+    position: sticky;
+    top: 0;
+    /* Well under the 40 the contents bar sits at and the 60 the guide, the
+       postcard and the skip card each take: a pinned pond belongs over the
+       page it is being read against and under every card that asks for the
+       whole window. */
+    z-index: 2;
+  }
+  /* Every jump on this page lands at the top of the window, and the top of the
+     window is now the pond. `main.js` writes `--pond-h` from the height the
+     stylesheet is actually displaying the canvas at — the same per-frame
+     measurement that scales the marks on the water — so the contents' chapter
+     jumps, the guide's `scrollIntoView` and a plain `#id` in the address bar
+     all land under the water rather than behind it. The `0px` fallback is the
+     page as it was: if main.js never runs, nothing here moves. */
+  :root {
+    scroll-padding-top: calc(var(--pond-h, 0px) + 12px);
+  }
+}
+
 /* The Chronicle on a phone (v1.135). The date column grew from `t244` to
    `244 steps in` — the right words, and about ninety pixels of a three-hundred
    and ninety pixel screen, which pushed every sentence into four wrapped lines
