@@ -207,7 +207,12 @@ export const STACK_STEPS = Object.freeze([0, -1, -2, 1, 2]);
  * as they were actually laid down, so the hit test and the picture keep sharing
  * one geometry — the whole point of recording them.
  *
- * @param {Array<{x: number, y: number, w: number, h: number}>} laid plates already placed
+ * @param {Array<{x: number, y: number, w: number, h: number}>} laid everything
+ *   already standing on this patch of water: the plates placed so far, and
+ *   since v1.170 the page's own marks over the pond — see `marksOverWater`,
+ *   which is what fills the front of this list. The function does not care
+ *   which is which, and that is the reason the fix was four lines: a plate
+ *   dodging a badge is the problem it already solved, handed a longer list.
  * @param {number} x the plate's left edge, already decided
  * @param {number} y where it would go with nothing in the way
  * @param {number} w
@@ -217,19 +222,107 @@ export const STACK_STEPS = Object.freeze([0, -1, -2, 1, 2]);
  * @returns {number} the y to draw at — `y` itself when nothing clears
  */
 export function stackY(laid, x, y, w, h, gap, viewH) {
+  const clearAt = (ty) => {
+    if (ty < 0 || ty + h > viewH) return false;
+    for (const b of laid) {
+      if (x < b.x + b.w && b.x < x + w && ty < b.y + b.h && b.y < ty + h) return false;
+    }
+    return true;
+  };
   for (const step of STACK_STEPS) {
     const ty = y + step * (h + gap);
-    if (ty < 0 || ty + h > viewH) continue;
-    let clear = true;
-    for (const b of laid) {
-      if (x < b.x + b.w && b.x < x + w && ty < b.y + b.h && b.y < ty + h) {
-        clear = false;
-        break;
-      }
-    }
-    if (clear) return ty;
+    if (clearAt(ty)) return ty;
   }
-  return y;
+  // The rows are all taken, which before v1.170 meant *draw it under whatever
+  // is there*. That answer was right while everything in this list was another
+  // plate: two plates are the same height, so a column of rows is every spot
+  // there is, and the fifth failure means the water really is full.
+  //
+  // A mark is not that shape. The banner is three and a half plates tall and
+  // half the pond wide, so an animal under the middle of it has no row within
+  // two that clears — and the browser walk that found this release's 35% still
+  // read 8.8% after the rows were checked against marks, every one of them that
+  // one banner. So: fall off the edge of whatever is in the way. The candidates
+  // are the mark's own top and bottom, which is the nearest a plate can get to
+  // its animal *and* be read, and the nearest of those to where it wanted to be
+  // wins. Tried only after the rows, so a pond with nothing on the water paints
+  // the frame it painted before.
+  let best = y;
+  let bestGap = Infinity;
+  for (const b of laid) {
+    if (!(x < b.x + b.w && b.x < x + w)) continue;
+    for (const ty of [b.y - gap - h, b.y + b.h + gap]) {
+      const d = Math.abs(ty - y);
+      if (d >= bestGap || !clearAt(ty)) continue;
+      bestGap = d;
+      best = ty;
+    }
+  }
+  return best;
+}
+
+/**
+ * The marks the page has put on the water, as boxes in the plate's own pixels
+ * (v1.170).
+ *
+ * **The plates dodged each other and nothing else.** `stackY` above has moved a
+ * plate out from under another plate since v1.150, and the stage it draws on
+ * carries five other marks — the season badge, the zoom badge, the minimap, the
+ * ruler and the banner — none of which was in the list it checks against. A
+ * browser walk over twelve seeds, twenty samples each, counting the ink left
+ * under a mark: at 390 × 844 a name is drawn underneath one on **35.0% of
+ * frames**, a mean of 1,982 covered pixels, against 2.9% at 1280 × 800. That is
+ * four times the 8.6% overlap `stackY` was built to fix, and it lands on the
+ * half of the plate that matters — the badge sits at the top-left of the water,
+ * so what a stranger loses is the **name** and what survives is the verb.
+ *
+ * The list is read off the stage every frame rather than typed, and the rule is
+ * *everything in the stage that is not the water itself*. That is v1.166's rule
+ * about completeness applied to a layout: a check that walks a hand-written
+ * list of marks is a check that goes stale the day somebody adds a sixth, and
+ * this project has now found that shape four times. A mark added to the stage
+ * tomorrow is dodged tomorrow, by nobody's decision.
+ *
+ * Two things keep it honest. A mark smaller than a letter cannot hide a name,
+ * so `letter` drops the screen-reader paragraphs (1 × 1 px) without naming
+ * them; and the *caller* decides what counts as seen, because a box is
+ * arithmetic and an opacity is the browser's business — `.flash` keeps its box
+ * at `opacity: 0` between banners, so a reading that trusted rectangles alone
+ * would have every plate dodging a toast that is not there.
+ *
+ * @param {Array<{x: number, y: number, width: number, height: number}>} marks
+ *   the marks' boxes, in page pixels — `getBoundingClientRect` order, already
+ *   filtered down to the ones a visitor can see
+ * @param {{x: number, y: number, width: number, height: number}} water the name
+ *   layer's own box in the same pixels, which is what the two are mapped through
+ * @param {number} cw the layer's backing-store width — the pixels a plate is
+ *   laid out in
+ * @param {number} ch
+ * @param {number} letter the smallest mark that could hide part of a name, in
+ *   those same pixels
+ * @returns {Array<{x: number, y: number, w: number, h: number}>} boxes clipped
+ *   to the layer, in the order they were given
+ */
+export function marksOverWater(marks, water, cw, ch, letter = 0) {
+  if (!marks || !marks.length || !water) return [];
+  const sx = cw / water.width;
+  const sy = ch / water.height;
+  if (!Number.isFinite(sx) || !Number.isFinite(sy) || sx <= 0 || sy <= 0) return [];
+  const out = [];
+  for (const m of marks) {
+    if (!m) continue;
+    // Clipped to the layer *before* the size check, so a badge half off the
+    // water is judged on the half a plate could actually collide with.
+    const x0 = Math.max(0, (m.x - water.x) * sx);
+    const y0 = Math.max(0, (m.y - water.y) * sy);
+    const x1 = Math.min(cw, (m.x + m.width - water.x) * sx);
+    const y1 = Math.min(ch, (m.y + m.height - water.y) * sy);
+    const w = x1 - x0;
+    const h = y1 - y0;
+    if (w < letter || h < letter || w <= 0 || h <= 0) continue;
+    out.push({ x: x0, y: y0, w, h });
+  }
+  return out;
 }
 
 /**

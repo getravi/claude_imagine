@@ -4,6 +4,80 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.170.0] — 2026-09-11
+
+**🏷 On a phone, the pond was writing its animals' names underneath its own
+badges — a third of the time.** The names now step out of the way of anything
+the page has put on the water.
+
+A handful of animals in this pond wear a little plate over them with a name on
+it: `▲ Nim · drifting`, `Tamsin · after food`. It is the one mark on the water
+that turns a glowing dart into somebody — you can read it, you can press it, and
+the same name is a row on the board underneath. And the season badge sits in the
+top-left corner of the water, which is where a plate lands whenever the animal
+wearing it swims up there. The badge won. What a stranger saw was a nameless
+half-plate that read `…m · after food`.
+
+### Measured before and after
+
+Twelve seeds, twenty samples of each, counting the plate ink left underneath a
+mark:
+
+    a name drawn under a mark      before      after
+    at 390 x 844                    35.0%       0.0%
+    at 1280 x 800                    2.9%       0.0%
+    pixels of name covered, mean     1,982          0
+
+For scale: the plates have dodged *each other* since v1.150, and the overlap
+that fix was built for was 8.6%. The one nobody was looking at was four times
+larger, and it lands on the half of the plate that matters — the badge is at the
+top-left, so what you lose is the **name** and what survives is the verb.
+
+### Why it took twenty releases to see
+
+Because it is not a bug in anything. Every part works: the badge is where it
+should be, the plate is above its animal, and the code that moves one plate off
+another does exactly what it says. The plates checked themselves against a list
+of **plates**, and the water has five other things standing on it — the season
+badge, the zoom badge, the minimap, the ruler and the banner — none of which was
+ever in that list.
+
+So the list is no longer a list. The page reads its own stage every frame and
+treats *everything over the water that is not the water* as something to step
+around. Add a sixth mark tomorrow and the names dodge it tomorrow, by nobody's
+decision. This is the fourth time this project has found the same shape: a
+completeness check must iterate over the domain, never over its own answer.
+
+### And a plate can now get out from under something taller than it is
+
+Half the remaining collisions were the banner, which is three and a half plates
+tall and half the pond wide. The old rule moved a plate by whole rows, up to
+two, and then gave up and drew it where it wanted to go — right, while
+everything in the way was another plate of the same height, and wrong for a mark
+that is bigger than the whole ladder. A plate with nowhere to stand now falls off
+the near edge of whatever is blocking it, which is the closest it can get to its
+animal and still be read. That took the last 8.8% to zero.
+
+### Small things that come with it
+
+- **It costs 0.0125 ms a frame** — nine elements measured, 0.075% of a frame at
+  60 Hz. Written down rather than assumed, because reading layout inside a draw
+  loop is the kind of thing that is fine until it is not.
+- **A mark that has faded out hides nothing.** The banner keeps its box at
+  `opacity: 0` between messages, so a fix that trusted rectangles alone would
+  have had every name on the page dodging a toast that was not there.
+- **A mark smaller than a letter is not in the way**, which is how the two
+  screen-reader paragraphs on this stage — 1 × 1 px, present on every page — stay
+  out of it without anybody maintaining a list of exceptions.
+- **The suite can see this now.** A headless recording has no page around it, so
+  the plates' new manners were a property only a browser could check.
+  `src/rendershot.js` can stage a mark on the water, and `node --test` asserts
+  the plate moves, keeps its animal's column, stays out from under, and does not
+  become a thing you can press.
+- Determinism untouched: names are a pure observer and always have been. Nothing
+  here reads a random number, and a pond with names on it is bit-for-bit a pond
+  with none.
+
 ## [1.169.0] — 2026-09-11
 
 **🥣 The one button that lets you touch the pond was 82% of the way down the

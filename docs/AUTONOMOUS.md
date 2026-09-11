@@ -74,6 +74,53 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The name was there and you could not read it — shipped in v1.170
+  (`src/nametag.js`, `src/render.js`, `src/rendershot.js`), and what it
+  leaves.** Ninth cycle in the ordinary-person hat, and the first found in a
+  photograph I had already taken twenty times: at the top of the water, the
+  season badge and a name plate in the same place, arriving at a stranger as
+  `🌱 Spring · year 1 m · after food`. Measured over 960 frames, twelve seeds:
+  **a name is drawn underneath one of this stage's five marks on 35.0% of frames
+  at 390 × 844**, 2.9% at 1280 × 800, and **0.0% once the camera is following
+  somebody** — so the whole defect lives in the first thirty seconds, which is
+  the only time anybody is a stranger. Five findings. (i) **Nothing was broken.**
+  The badge is where the stylesheet puts it, the plate is above its animal, and
+  `stackY` was doing its job perfectly against the list it was handed. The list
+  was *plates*, and the water carries five other marks. Fourth sighting of the
+  shape (v1.111, v1.166, v1.167) and the first outside a test: **anything that
+  decides where to put something needs to iterate over what is there, not over
+  what it remembers** — a layout has the same completeness problem a check does.
+  The fix therefore reads the stage's children every frame and names no mark
+  anywhere. (ii) **A rectangle is not a thing you can see, and a thing you can
+  see is not necessarily big enough to matter.** `.flash` holds its box at
+  `opacity: 0` between banners, so version one had every plate on the page
+  dodging a toast that was not there; and the two screen-reader paragraphs on
+  this stage are visible to every API and 1 × 1 px. Two rules, no list of
+  exceptions: the browser answers *is it seen*, arithmetic answers *is it a
+  letter tall*. (iii) **A constant justified by a property of the things it was
+  written for stops being justified the day a different kind of thing joins the
+  list.** `STACK_STEPS` gives up after two rows because *two plates are the same
+  height*, so five rows is every spot there is — and the banner is three and a
+  half plates tall, so the ladder is shorter than the thing it climbs. Reading
+  the marks alone got 35.0% → 8.8% and I nearly shipped it; the last resort
+  (fall off the near edge of whatever blocks you, tried only after the rows) got
+  it to 0.0%. (iv) **A property only a browser can check is one the suite should
+  be taught to stage.** `rendershot.js` grew a box on the water and a box on each
+  mark — v1.50's `strokeRect` lesson again — and the test now asserts the plate
+  moves, keeps its animal's column, is not lost, and does not become pressable.
+  (v) **Measure the cost of reading layout in a draw loop rather than reasoning
+  about it**: nine elements, 0.0125 ms a frame, 0.075% of a frame at 60 Hz.
+  What it leaves: (a) **the marks over the water are each positioned from their
+  own corner with no knowledge of the others** — the badge and the plate collided
+  because one of them is painted, and the toast, minimap, ruler and zoom badge
+  are the same defect with the canvas taken out of it; (b) the banner is still a
+  fifth of the pond (v1.160) and this release taught the *names* to be polite
+  about it, which is the opposite of the honest fix; (c) nothing has ever
+  measured whether anybody presses anything, sixth release running; (d) the
+  ordering of the column is untouched for the ninth cycle, and the honest note
+  is that this cycle found its subject by looking at a photograph, which is also
+  not a measurement.
+
 - **The one thing you can do to the pond — shipped in v1.169
   (`app/index.html`, `src/firstmoves.js`, `src/hand.js`), and what it leaves.**
   Eighth cycle in the ordinary-person hat, and the first spent asking what a

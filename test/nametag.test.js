@@ -59,6 +59,7 @@ import {
   stackY,
   tagAt,
   tagDoing,
+  marksOverWater,
   tagFullText,
   tagSignature,
   tagText,
@@ -679,12 +680,108 @@ test("two plates over one patch of water stack instead of piling up", () => {
   // No room above, so it goes below instead.
   const top = [{ x: 0, y: 0, w: 80, h }];
   assert.equal(stackY(top, 0, 0, 80, h, gap, 620), h + gap);
-  // Nowhere at all clears: the plate keeps its own spot rather than being
-  // flung somewhere it does not belong. An honest overlap beats a label over
-  // the wrong animal.
+  // Every row taken (v1.170). This used to leave the plate where it wanted to
+  // be, on the argument that an honest overlap beats a label over the wrong
+  // animal — true while everything in the list was another plate, because two
+  // plates are the same height and the rows are therefore every spot there is.
+  // A *mark* is not that shape: the banner is three and a half plates tall, so
+  // the fifth failure no longer means the water is full. The plate now falls off
+  // the near edge of whatever is blocking it, and the test asserts the property
+  // rather than the number — that it clears everything, and that it is the
+  // nearest spot that does.
   const walled = [];
   for (const step of STACK_STEPS) walled.push({ x: 0, y: 100 + step * (h + gap), w: 80, h });
-  assert.equal(stackY(walled, 0, 100, 80, h, gap, 620), 100);
+  const off = stackY(walled, 0, 100, 80, h, gap, 620);
+  const hits = (ty) => walled.some((b) => ty < b.y + b.h && b.y < ty + h);
+  assert.ok(!hits(off), "the fallback put a plate on top of something");
+  assert.equal(off, 100 - 2 * (h + gap) - (gap + h), "the plate did not take the nearest clear edge");
+  // Nearest of the candidates, which are the edges and not every pixel: the gap
+  // is there so that a plate pushed off something still reads as the next line
+  // of a column rather than as a label wedged against it.
+  for (const b of walled) {
+    for (const ty of [b.y - gap - h, b.y + b.h + gap]) {
+      if (Math.abs(ty - 100) < Math.abs(off - 100)) assert.ok(hits(ty), "a nearer edge was free");
+    }
+  }
+  // A tall mark — the banner's shape — deep enough that no row escapes it. The
+  // rows are tried first and usually win: an animal near either edge of a mark
+  // steps clear of it in one, which is why this case needs a plate in the
+  // middle of one eight plates tall. It comes out on the near side, not under.
+  const banner = [{ x: 0, y: 200, w: 400, h: h * 8 }];
+  const out = stackY(banner, 0, 260, 80, h, gap, 620);
+  assert.ok(out + h <= 200 || out >= 200 + h * 8, "a plate inside a tall mark stayed inside it");
+  assert.equal(out, 200 + h * 8 + gap, "it did not take the nearer edge of the mark");
+  // And below it, when above would leave the water.
+  const topBanner = [{ x: 0, y: 0, w: 400, h: h * 4 }];
+  assert.equal(stackY(topBanner, 0, 20, 80, h, gap, 620), h * 4 + gap);
+  // Nothing in this column: a mark the plate is beside is not a mark in its way.
+  assert.equal(stackY(banner, 500, 260, 80, h, gap, 620), 260);
+});
+
+test("a mark on the water arrives in the pixels a plate is laid out in", () => {
+  // The pond is 900 canvas pixels wide and a phone shows it at 346, so every
+  // rectangle the page can hand over is in the wrong unit until this runs. The
+  // badge below is the real one, measured on a 390 px phone.
+  const water = { x: 22, y: 557, width: 344, height: 237 };
+  const k = 900 / 344;
+  const badge = { x: 38, y: 568, width: 122, height: 30 };
+  const [box] = marksOverWater([badge], water, 900, 620, 0);
+  assert.ok(Math.abs(box.x - (38 - 22) * k) < 1e-9, "the mark did not arrive where it is");
+  assert.ok(Math.abs(box.w - 122 * k) < 1e-9, "the mark did not arrive at the size it is");
+  assert.ok(box.h > nameTag().height, "the badge came out shorter than a plate");
+  // A mark too small to hide a letter is not in the way. This is what drops the
+  // screen reader's paragraphs — 1 x 1 px, on this stage, on every page — with
+  // no list of exceptions to keep.
+  assert.equal(marksOverWater([{ x: 30, y: 570, width: 1, height: 1 }], water, 900, 620, 28).length, 0);
+  assert.equal(marksOverWater([{ x: 30, y: 570, width: 1, height: 1 }], water, 900, 620, 0).length, 1);
+  // Clipped to the layer, and judged on what is left: half a mark off the edge
+  // is half a mark of collision.
+  const [half] = marksOverWater([{ x: 22 - 60, y: 557, width: 120, height: 40 }], water, 900, 620, 0);
+  assert.equal(half.x, 0, "a mark off the left edge was not clipped to the water");
+  assert.ok(Math.abs(half.w - 60 * k) < 1e-9, "the clipped mark kept its whole width");
+  // Wholly off the water: nothing at all, rather than a box behind the pond.
+  assert.equal(marksOverWater([{ x: 22 - 500, y: 557, width: 120, height: 40 }], water, 900, 620, 0).length, 0);
+  // No layout to read. A page that has not been laid out yet hands over zeroes,
+  // and the honest answer is no marks rather than a division by one of them.
+  assert.equal(marksOverWater([badge], { x: 0, y: 0, width: 0, height: 0 }, 900, 620, 0).length, 0);
+  assert.equal(marksOverWater([], water, 900, 620, 0).length, 0);
+  assert.equal(marksOverWater(null, water, 900, 620, 0).length, 0);
+});
+
+test("a plate moves off a mark the page has put on the water", () => {
+  // The whole of v1.170, end to end: the plates come out of a real pond, a mark
+  // is put over the first one, and the recording says where they went. Measured
+  // in a browser first — a name was drawn under one of this stage's five marks
+  // on 35.0% of frames at 390 x 844 — and this is that property in the suite,
+  // which could not see it because a recording has no page around it.
+  const { world, config, names } = stepped(314, 900);
+  const crowd = new DoingCrowd();
+  const tags = nameTags(world, config, names, world.creatures.find((c) => !c.dead), crowd, 0);
+  assert.ok(tags.length >= 2, "this pond has too few plates to test placement with");
+  const plates = (marks) =>
+    renderOps(world, null, (r) => { r.nameTags = tags; }, marks)
+      .filter((o) => o[0] === "names" && o[1] === "fillRect")
+      .filter((_, i) => i % 2 === 0)
+      .map((o) => ({ x: o[2], y: o[3], w: o[4], h: o[5] }));
+
+  const bare = plates(null);
+  assert.ok(bare.length >= 2, "the bare stage drew no plates to move");
+  // A mark exactly over the first plate, and wider than it, so no nudge sideways
+  // could be mistaken for the fix.
+  const first = bare[0];
+  const mark = { x: first.x - 40, y: first.y - 4, width: first.w + 80, height: first.h + 8 };
+  const moved = plates([mark]);
+  assert.equal(moved.length, bare.length, "a mark on the water cost the pond a name");
+  const overlaps = (b) =>
+    b.x < mark.x + mark.width && mark.x < b.x + b.w && b.y < mark.y + mark.height && mark.y < b.y + b.h;
+  for (const b of moved) assert.ok(!overlaps(b), "a plate was drawn underneath the mark");
+  assert.notEqual(moved[0].y, first.y, "the plate under the mark did not move");
+  assert.equal(moved[0].x, first.x, "the plate left its animal's column");
+  // And the marks are the page's, not the pond's: nothing new became pressable.
+  const boxes = [];
+  renderOps(world, null, (r) => { r.nameTags = tags; boxes.push(r); }, [mark]);
+  assert.equal(boxes[0].nameTagBoxes.length, moved.length, "a mark became a name you can press");
+  for (const b of boxes[0].nameTagBoxes) assert.ok(b.id !== undefined, "a box with no animal got into the hit test");
 });
 
 test("the plates a real pond draws do not land on each other", () => {

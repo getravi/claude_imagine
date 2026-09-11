@@ -236,23 +236,56 @@ function withStubDom(ops, fn) {
 }
 
 /**
+ * A stage with marks on it, for `renderOps`' `marks` option (v1.170).
+ *
+ * `render.js#_marksOverWater` reads the water's siblings out of the DOM every
+ * frame, and a recording with no page around it reads none — correctly, and
+ * therefore blindly: before this the plates' new manners were a thing only a
+ * browser could see, which is the same shape as the offscreen surfaces v1.50
+ * had to teach this stub about. So the stub grows the two methods that reading
+ * calls: a box on the water, and a box on each mark.
+ *
+ * The water is placed at the origin at its own size, so a mark's rectangle and
+ * the pixels a plate is laid out in are one unit here. The mapping between
+ * those two is `nametag.js#marksOverWater`'s arithmetic and is tested there, on
+ * its own, where the numbers can be chosen rather than staged.
+ *
+ * @param {RecordingCanvas} canvas the pond
+ * @param {RecordingCanvas} names the name layer
+ * @param {object} config
+ * @param {Array<{x: number, y: number, width: number, height: number}>} marks
+ */
+function stageMarks(canvas, names, config, marks) {
+  const box = (r) => ({ getBoundingClientRect: () => r });
+  names.getBoundingClientRect = () => ({ x: 0, y: 0, width: config.width, height: config.height });
+  canvas.parentElement = { children: [canvas, names, ...marks.map(box)] };
+}
+
+/**
  * Draw a world once and return the drawing commands it produced.
  *
  * @param {import('./world.js').World} world
  * @param {object} [config] the config to draw with (defaults to the world's own)
  * @param {(r: Renderer) => void} [tune] set renderer state — `showVision`,
  *   `selected`, `reducedMotion`, `highlightSpeciesId` — before the frame
+ * @param {Array<{x: number, y: number, width: number, height: number}>} [marks]
+ *   what the page has put on the water (v1.170), in the layer's own pixels — see
+ *   `stageMarks`. Absent, the recording is made with a bare stage, which is what
+ *   every test written before this release gets.
  * @returns {Array} one entry per command: [canvasId, name, ...args]
  */
-export function renderOps(world, config = null, tune = null) {
+export function renderOps(world, config = null, tune = null, marks = null) {
   const ops = [];
+  const cfg = config || world.config;
   withStubDom(ops, () => {
     const canvas = new RecordingCanvas("pond", ops);
-    const renderer = new Renderer(canvas, config || world.config);
+    const renderer = new Renderer(canvas, cfg);
     // The names are drawn on a layer of their own (v1.126), so a recording made
     // without one would be blind to every word on the page — the same gap the
     // offscreen surfaces had before v1.50, one release after the feature.
-    renderer.attachNameLayer(new RecordingCanvas("names", ops));
+    const names = new RecordingCanvas("names", ops);
+    renderer.attachNameLayer(names);
+    if (marks) stageMarks(canvas, names, cfg, marks);
     if (tune) tune(renderer);
     renderer.draw(world);
   });

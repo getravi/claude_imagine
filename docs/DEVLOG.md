@@ -21504,3 +21504,159 @@ see them.* On the phone the banner says **Tap**; on the desktop it says
   only that it is on screen (eleventh cycle); the plates over the water still do
   not carry the shape (twelfth); a pond loaded from an archive still has no book
   (thirty-third).
+
+## Entry — the name was there and you could not read it · 2026-09-11
+
+Ninth cycle in the ordinary-person hat. The last entry closed by saying the
+banner is unaudited and that the ordering of the column is the thing I keep not
+doing, and I went and looked at the page instead of at my own list. The first
+screenshot I took on a phone had the answer in it, at the top of the water,
+where I have photographed it perhaps twenty times without seeing it.
+
+    🌱 Spring · year 1 m · after food
+
+That is two marks in one place. The left half is the season badge, which is a
+`<div>` the stylesheet parks in the top-left corner of the pond. The right half
+is a name plate, which is a rectangle painted on a canvas by `render.js`. They
+have never known about each other. What arrives at a stranger is an animal whose
+name has been eaten and whose verb survived.
+
+### The number
+
+Twelve seeds, twenty samples each, both widths, with and without the camera
+following somebody — 960 frames, counting the plate ink left underneath a mark's
+rectangle.
+
+    a name drawn under a mark        390 x 844     1280 x 800
+    just arrived                         35.0%           2.9%
+    after pressing 👋 Meet somebody        0.0%           0.0%
+
+**The whole of it is in the first thirty seconds.** Once you press anything the
+camera magnifies and follows, the plates move to the middle of the water, and
+the defect disappears — so the only person who ever met it is the one who had not
+done anything yet, which is everybody, once.
+
+### Why nothing was broken
+
+This is the part worth keeping. There is no bug here. The badge is where the
+stylesheet puts it. The plate is above its animal, nudged inside the canvas,
+lifted clear of the body's glow — four correct decisions. And `stackY`, which
+has moved one plate off another since v1.150, was doing its job perfectly
+against the list it was given.
+
+The list was **plates**. The stage carries five other marks: the season badge,
+the zoom badge, the minimap, the ruler, the banner. Not one of them has ever
+been in it.
+
+I have now found this shape four times — v1.111's filter, v1.166's guide,
+v1.167's `UNTOURED`, this — and every time the sentence is the same: *a check
+that walks a hand-typed list of the things it knows about is not lying about the
+sixth.* What is new this time is that the list was not even a check. It was a
+layout, and layouts have the same property: **anything that decides where to put
+something needs to iterate over what is there, not over what it remembers.**
+
+So the fix reads the page. Every frame, the renderer takes the stage's children,
+drops the water itself, and hands the rest to the same function that was already
+moving plates off plates. There is no list of marks anywhere in this repo. A
+sixth one added tomorrow is dodged tomorrow, and nobody has to remember.
+
+### Two things that reading a page teaches you
+
+**A rectangle is not a thing you can see.** `.flash` — the banner — is
+`opacity: 0` between messages and keeps its box the whole time. My first version
+had every name on the page permanently dodging a toast that was not there, which
+is a worse picture than the one I set out to fix and took one screenshot to
+find. The visibility question belongs to the browser and the box question to
+arithmetic, and they are genuinely different questions.
+
+And the opposite: **a thing you can see is not necessarily big enough to
+matter.** The two screen-reader paragraphs on this stage are 1 × 1 px and
+perfectly visible as far as any API is concerned. Rather than name them — which
+would be a list again — a mark has to be at least a letter tall and a letter
+wide to count as in the way. That rule has no exceptions in it and never needs
+one.
+
+This is the standing leave item, incidentally, the one that has read *nothing
+checks that a surface can be seen, only that it is on screen* for eleven cycles.
+It is not closed. But this release is the first time the distinction was the
+whole subject rather than a note at the bottom.
+
+### The half I did not expect: the ladder was the wrong shape
+
+Reading the marks took the phone from 35.0% to 8.8%, and I nearly shipped that
+and called it a win. The residue was almost all one mark.
+
+`stackY` moves a plate by whole plate-heights, up to two, and then gives up and
+draws it where it wanted to go. The argument for giving up is written in the
+file and it is a good one: beyond two rows a plate has stopped being *near* the
+animal it names, and an honest overlap beats a label pointing at the wrong dart.
+
+That argument is true **because two plates are the same height**. Five rows is
+every spot there is, so the fifth failure really does mean the water is full. A
+mark is not that shape. The banner is three and a half plates tall and half the
+pond wide, and an animal under the middle of it has no row within two that
+clears — the ladder is shorter than the thing it is trying to climb over.
+
+So there is a last resort now: fall off the near edge of whatever is blocking
+you. It is tried only after the rows, so a pond with a bare stage paints exactly
+the frame it painted yesterday, and it is the closest a plate can get to its
+animal *and* be read. That took the last 8.8% to zero.
+
+**The general form: a constant justified by a property of the things it was
+written for stops being justified the day a different kind of thing joins the
+list.** The number 2 in `STACK_STEPS` was never about distance; it was about
+plate heights, and I had written it down as though it were about distance.
+
+### Making the suite able to see it
+
+`node --test` could not have caught any of this and still could not, because a
+headless recording has no page around it to read marks from — correctly, and
+therefore blindly.
+
+So `rendershot.js` grew the two methods the reading calls: a box on the water
+and a box on each mark. It is the same move v1.50 made when the stub had to
+learn `strokeRect`, and it has the same moral — a stub built from what the
+renderer happened to need on the day it was written goes stale the first time
+the renderer learns something new. The test now stages a mark over the first
+plate a real pond draws and asserts four things: every plate clears it, none of
+them is lost, the moved one keeps its animal's column, and no mark has quietly
+become something you can press.
+
+### What I checked in a browser
+
+Both widths, tour dismissed, twelve seeds. The season badge went from 29 hits to
+1 to 0. The banner from 55 to 20 to 0. The cost of reading nine elements' boxes
+every frame is 0.0125 ms — 0.075% of a frame at 60 Hz — and I measured it rather
+than reasoning about it, because reading layout inside a draw loop is exactly
+the kind of thing that is free until it is not.
+
+And the photograph, which is the actual deliverable: `▲ Nim · drifting` sitting
+a row below the season badge with every letter of it legible, and `Tamsin ·
+after food` below that.
+
+## What this leaves
+
+- **Nothing here has ever measured whether anybody presses anything.** Sixth
+  release running.
+- **Every other surface on this page is placed by a stylesheet that cannot see
+  the others.** The badge and the plate are the pair that collided because one
+  of them is painted; the toast, the minimap, the ruler and the zoom badge are
+  all positioned from their own corners with no knowledge of each other, and the
+  only reason they do not collide is that nobody has made the window the wrong
+  size yet. That is the same defect as this one with the canvas taken out of it.
+- **The banner is still on the water and is still a fifth of it**, measured in
+  v1.160 and not fixed since. This release made the names polite about it, which
+  is the opposite of the honest fix: the plate now moves for a toast that had no
+  business being over the pond in the first place.
+- **The banner is still unaudited** — every sentence `flash()` can carry is a
+  string no walk has seen. Second cycle on that list.
+- **The best thing on this page is still the ninth panel down.** The ordering of
+  the column is untouched for the ninth cycle. I keep writing that I have no
+  measurement to decide it with, and I notice that this cycle found its subject
+  by opening the page and looking at a photograph, which is also not a
+  measurement.
+- The standing ones, unmoved: every collection here is a `+ N more` waiting to be
+  written and none knows its own N; nothing checks that a surface can be *seen*,
+  only that it is on screen (twelfth cycle, and today it was the subject rather
+  than the note); the plates over the water still do not carry the shape
+  (thirteenth); a pond loaded from an archive still has no book (thirty-fourth).

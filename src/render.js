@@ -32,7 +32,42 @@ import {
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
 import { creatureReaches } from "./reach.js";
-import { tagText, tagDoing, tagAt, stackY, STACK_GAP, TAG_TOUCH_PAD } from "./nametag.js";
+import {
+  tagText,
+  tagDoing,
+  tagAt,
+  stackY,
+  marksOverWater,
+  STACK_GAP,
+  TAG_TOUCH_PAD,
+} from "./nametag.js";
+
+/**
+ * Whether an element is something a visitor can actually see (v1.170).
+ *
+ * Used by `_marksOverWater`, and the whole question is `opacity`: a mark that
+ * has faded out keeps its box, so *is there a rectangle here* and *is there
+ * anything to look at* are different questions and only the second one matters
+ * to a name that is deciding where to sit.
+ *
+ * `checkVisibility` answers it in one call where the browser has it; the
+ * computed style is the same answer assembled by hand. Neither available means
+ * there is no page here at all — a test harness, an embedding with no layout —
+ * and the honest answer there is *yes*, because the only marks such a caller
+ * has are the ones it put there on purpose.
+ *
+ * @param {Element} el
+ * @returns {boolean}
+ */
+function seenOnPage(el) {
+  if (typeof el.checkVisibility === "function") {
+    return el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+  }
+  if (typeof globalThis.getComputedStyle !== "function") return true;
+  const st = globalThis.getComputedStyle(el);
+  if (!st) return true;
+  return st.visibility !== "hidden" && Number(st.opacity) > 0;
+}
 
 /**
  * Directions sampled when drawing what opaque rock leaves visible. This is a
@@ -432,6 +467,15 @@ export class Renderer {
     const padX = t.padX * k;
     const barW = t.barW * k;
     const height = t.height * k;
+    // What else is standing on the water (v1.170). The plates have dodged each
+    // other since v1.150 and dodged nothing else since, so the badge over the
+    // top-left corner of the pond has been erasing names — 35% of frames on a
+    // phone, measured in `nametag.js#marksOverWater`, which owns the arithmetic
+    // and the reading. Seeded into the list `stackY` already checks against, so
+    // a mark and a plate are one kind of obstacle from here on; the plates go
+    // into this list *and* into `nameTagBoxes`, and only `nameTagBoxes` is the
+    // hit test's, because a badge is not a name you can press.
+    const laid = this._marksOverWater(t.fontPx * k);
     ctx.save();
     ctx.font = font;
     ctx.textAlign = "left";
@@ -467,7 +511,7 @@ export class Renderer {
       // patch of water is the picture `MAX_TAGS` exists to prevent — see
       // `stackY`, which holds the measurement and the arithmetic.
       const y = stackY(
-        this.nameTagBoxes,
+        laid,
         x,
         Math.max(0, p.y - lift - height),
         w,
@@ -497,9 +541,51 @@ export class Renderer {
       // animal. Recorded here rather than computed anywhere else: the layout
       // has four terms and every one of them is a chance for a hit test to
       // disagree with the picture.
-      this.nameTagBoxes.push({ id: tag.id, x, y, w, h: height });
+      const box = { id: tag.id, x, y, w, h: height };
+      this.nameTagBoxes.push(box);
+      // The same object in both lists: the next plate has to clear this one,
+      // and a copy is a second opinion about where it went.
+      laid.push(box);
     }
     ctx.restore();
+  }
+
+  /**
+   * The page's own marks over the pond, in the pixels a plate is laid out in
+   * (v1.170).
+   *
+   * The rule is *every child of the stage that is not the water* — see
+   * `nametag.js#marksOverWater` for why it is a rule and not a list. Visibility
+   * is decided here because it is the browser's answer rather than arithmetic:
+   * `.flash` holds its box at `opacity: 0` between banners, so rectangles alone
+   * would have every plate for the life of the page dodging a toast nobody can
+   * see.
+   *
+   * Returns `[]` wherever there is no layout to read — every test in this suite,
+   * and any embedding that has not put this canvas in a document. That is the
+   * same guard `shown` above has: a renderer with no page around it draws the
+   * frame it drew before this release.
+   *
+   * @param {number} letter the smallest mark that could hide part of a name
+   * @returns {Array<{x: number, y: number, w: number, h: number}>}
+   */
+  _marksOverWater(letter) {
+    const water = this._nameCanvas;
+    const stage = this.canvas && this.canvas.parentElement;
+    if (!stage || !stage.children || !water || typeof water.getBoundingClientRect !== "function") {
+      return [];
+    }
+    const marks = [];
+    for (const el of stage.children) {
+      if (el === this.canvas || el === water) continue;
+      if (typeof el.getBoundingClientRect !== "function") continue;
+      const r = el.getBoundingClientRect();
+      if (!r || !(r.width > 0) || !(r.height > 0)) continue;
+      if (!seenOnPage(el)) continue;
+      marks.push(r);
+    }
+    const box = water.getBoundingClientRect();
+    return marksOverWater(marks, box, this.config.width, this.config.height, letter);
   }
 
   /**
