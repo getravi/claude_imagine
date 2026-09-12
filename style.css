@@ -390,11 +390,71 @@ body.simple [data-expert] {
    recorded for `h1 'Vivarium'` (34 px) and `h2 '🌳 Tree of Life'` (17 px, 600).
    A colour this page has never shown would need the browser walk again; a pair
    it already carries does not. */
+/* A row since v1.175, when the plate grew the door out of this pond: the name
+   and its sentence on the left, what you can do about them on the right.
+   `flex-wrap` rather than a breakpoint — the two sides ask for what they need
+   and the row breaks where it has to, which is a phone. */
 .pondplate {
   padding: 0 2px;
   /* Against the column's 20 px, so the title and the sentence under it read as
      one thing rather than as two of the seven cards in this column. */
   margin-bottom: -8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+/* The heading and its caption, kept as one column. v1.172's lesson, one page
+   over: a phrase dropped straight into a flex row becomes a column of its own,
+   and this one is two elements that would have become two. `min-width: 0` so a
+   long pond name shrinks the block rather than pushing the row's other half off
+   a 390 px screen. */
+.pp-who {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.pp-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* The enhanced bar, 44 px, for the same reason `.firstmoves` clears it: these
+   are controls a stranger is offered rather than settings they went looking
+   for. No new pair for `legibility.js` to price: the door is the panel button
+   exactly — `--ink` on `--bg-panel-2` at 13 px, the row recorded as
+   `button '↻ Reset'` — and the way back is `--ink-dim` on the page's own glow
+   at 13 px, which is the row recorded as `p.tagline`. */
+.pondplate button.another,
+.pondplate button.pondback {
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 13px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+/* And the one line that makes `hidden` mean hidden. The rule above sets
+   `display`, and an author's `display` beats the user agent's
+   `[hidden] { display: none }` — so the way back shipped its first browser walk
+   as an empty 28 × 44 button standing beside the door, on the page a stranger
+   arrives at. Nothing could see it: every probe in this project filters targets
+   on `el.hidden`, which was `true` the whole time. The attribute said hidden and
+   the element was on the page. */
+.pondplate button[hidden] {
+  display: none;
+}
+/* The way back is the quieter of the two: it is an undo, and an undo that
+   competes with the thing it undoes reads as a choice between two doors. */
+.pondplate button.pondback {
+  background: transparent;
+  color: var(--ink-dim);
+}
+.pondplate button.pondback:hover {
+  background: var(--bg-panel-2);
+  color: var(--ink);
 }
 .pp-name {
   margin: 0;

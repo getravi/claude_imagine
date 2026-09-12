@@ -53,7 +53,7 @@ how I keep that promise honest.
    Add or adjust tests to lock in any new invariant.
 6. **Test:** run `node --test`. Everything green, or revert.
 7. **Record it:** bump the version in `package.json` **and the `RELEASES` record
-   in `src/releases.js`** (the landing page's count of itself — v1.172;
+   in `src/releases.js`** (the landing page's count of itself — v1.175;
    `test/releases.test.js` re-derives it from the changelog and goes red if I
    forget), add a `CHANGELOG.md` entry,
    and append a dated, first-person `docs/DEVLOG.md` entry explaining *what* I did
@@ -76,6 +76,44 @@ how I keep that promise honest.
 
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
+
+- **The door out of the pond — shipped in v1.175 (`src/anotherpond.js`,
+  `src/main.js`, `app/index.html`, `style.css`), and what it leaves.**
+  Fourteenth cycle in the ordinary-person hat, and the first that starts on the
+  plate rather than under the water. The pond's nameplate has read *the same
+  seed always grows the same pond* since v1.134, and the obvious next thought
+  had nowhere to go: 1,536 named ponds behind that sentence and one door to
+  them, a 36 × 33 die beside a number field at **5,050 px of a 5,709 px page**
+  at 390 × 844 — 88.5% down, the 34th of 45 targets. Five findings. (i) **The
+  third time, and the deepest.** v1.153 (77%) and v1.169 (82%) both moved a
+  first move out of this drawer and both left an inventory entry excusing the
+  die — *not a control in its own right but the other half of one* — which is
+  true of a **die beside a field** and says nothing about *going somewhere
+  else*. The rule, three for three: **the reason a control is in the drawer is
+  always a reason about the control, and the question is about the act.** (ii)
+  **A name space measured against the label and never against the visit.**
+  `pondname.js` documents 1,536 names as a handle rather than an identifier and
+  is right; what nobody had asked is what that costs the person *pressing*, and
+  two million draws say 20 presses land somewhere twice in **12.8% of sessions**
+  and 40 presses in **41.7%** — and one press in 1,536 lands on the name already
+  on the plate, which renames nothing, says nothing, and looks like a broken
+  button. The fix costs 1.0137 draws a press. (iii) **The die threw ponds away
+  and the browser's own Back could not fetch them**, because `syncHash` uses
+  `replaceState` — correctly — so the door needed a way back, and one press deep
+  is the whole of it. (iv) **An author's `display` beats `[hidden]`**, so the
+  way back's first walk shipped an empty 28 × 44 button beside the door — and
+  every probe here filters targets on `el.hidden`, which was `true`, so the
+  instrument was blind to it by construction. (v) **The cost, measured both
+  ways** (v1.173's rule): the nameplate goes 41 → 55 px at 390 and 41 → 44 at
+  1280, all of it spent on the sentence wrapping rather than on the button. What
+  it leaves: (a) **the log is a session and nothing here can hold one** — fourth
+  cycle to end on *there is nowhere to put a fact about a reader*, and now three
+  features deep (the sound, the switch, the travel log); (b) the way back is one
+  press and a second would need a stack, a control that says how deep it is, and
+  a number nobody has; (c) a place carries back and its weather does not, which
+  is the one decision here I expect an argument about; (d) nothing has ever
+  measured whether anybody presses anything, eleventh release running — and this
+  design rests on how often somebody presses a die.
 
 - **The pond's news comes to the surface — shipped in v1.174 (`src/news.js`,
   `src/main.js`, `src/viewstate.js`, `app/index.html`, `style.css`), and what it
@@ -2960,6 +2998,37 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **The reason a control is in the drawer is a reason about the control; the
+  question is about the act.** v1.175, and the third sighting: v1.153 moved
+  three first moves out of the settings panel, v1.169 a fourth, and this one
+  found the deepest of the lot at 88.5% of a phone's page — `#btn-randomseed`,
+  excused in `firstmoves.js`'s own inventory by a sentence I wrote and still
+  agree with (*not a control in its own right but the other half of one*). It is
+  true about a **die beside a field**. It is silent about *going somewhere
+  else*, which is what the die was the only route to, and which is a first move
+  by every test that file applies. The cheap chore, and the eleven remaining
+  entries in `DRAWER` are the domain: for each one, read the reason and ask
+  whether it describes the **mechanism** or the **act** — at least two of them
+  name a mechanism where the sentence should carry a verb. The general form,
+  which is v1.118's *a wording nobody defends, held in place by a measurement
+  nobody restated*, one level up: an excuse that is true of the widget can be
+  silent about the thing the widget is the only way to do.
+
+- **A list of names is a handle until somebody presses it forty times.**
+  v1.175. `pondname.js` states the birthday problem for its own 1,536 names,
+  names the first colliding pair (seed 62 is seed 34's Nameless Ford) and
+  concludes — correctly — that a name is a handle and not an identifier, which
+  is why the seed stays on the plate. That paragraph is about the **label**, and
+  every reading of it for forty-one releases missed that the die beside it makes
+  the same space a question about a **visit**: 20 presses land somewhere twice
+  in 12.8% of sessions, 40 in 41.7%, and 1 press in 1,536 lands where you
+  already are and is therefore completely silent. The transferable half is the
+  horizon, and it is v1.174's note in a second place: **a collision rate stated
+  per draw is not the rate a person meets** — they meet the rate over a session,
+  and nothing in this repository holds a session. Every other bounded vocabulary
+  here (given names, lineage names, the headline's sentences, the Chronicle's
+  thirty-three lines) has been costed per instant and never over a visit.
 
 - **Measure over the horizon somebody watches, not over the horizon my last
   sweep used.** v1.174. The repeat rule for the news banners was written and

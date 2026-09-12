@@ -85,6 +85,20 @@
 // are facts about this page I did not have until I was made to write them down,
 // and both are things somebody who disagrees with me can check.
 //
+// ## v1.175: the third one, and the deepest
+//
+// `#btn-randomseed` at **5,050 px of a 5,709 px page** at 390 × 844 — 88.5% of
+// the way down, the 34th of 45 targets — which is 385 px below where the aimed
+// control had been when v1.169 called *that* the bottom of the page. It is
+// excused in `DRAWER` below and the excuse is sound about a **die beside a
+// field**; what it never covered is that the die was the only route to *going
+// somewhere else*, which is a first move by every test this file applies. The
+// door now stands on the nameplate, beside the sentence it answers, and
+// `src/anotherpond.js` carries that walk and the arithmetic behind it.
+//
+// The pattern, three for three: **the reason a control is in the drawer is
+// always a reason about the control, and the question is about the act.**
+//
 // PURE OBSERVER. No DOM, no simulation state, no random numbers — an inventory,
 // one string search and the arithmetic that compares two walks.
 
@@ -193,7 +207,7 @@ export const DRAWER = Object.freeze({
   "btn-seedlife": "twelve strangers dropped in anywhere. The same lever one kingdom up, and the same reason: it changes the experiment rather than showing it",
   "btn-picture": "takes a copy home. A second press by construction — nobody photographs a pond they have not looked at yet",
   "btn-gif": "the same, moving. Second press, for the same reason, and the heavier of the two",
-  "btn-randomseed": "the die beside the seed field. It is not a control in its own right but the other half of one, and a text input is not a first move",
+  "btn-randomseed": "the die beside the seed field. It is not a control in its own right but the other half of one, and a text input is not a first move — true of the die, and quietly untrue for sixteen releases of the thing the die was the only route to. **Going somewhere else** is a first move; it stood at 88.5% of a phone's page for as long as this list has existed, and since v1.175 it stands on the nameplate as `🎲 Another pond` (`src/anotherpond.js`). The die stays here, still the field's other half, and picks its seed through the same chooser now",
   "btn-save": "writes the world to a file",
   "btn-load": "reads one back. A pair with Save, and both are acts on a *file*: the first minute this row is sized for has nothing yet to keep",
   "btn-share": "copies a link to this exact pond. A second press with a person on the other end of it",

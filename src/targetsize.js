@@ -238,6 +238,16 @@ export function verdicts(controls, min = TARGET_MIN) {
  * first screen for a count in the eyebrow and argued the trade was worth it;
  * this one had no trade to argue, and the only reason I know that is that the
  * probe was told to measure the page twice. `WALKED.app` goes 78 → 79.
+ *
+ * **v1.175's door arrived with the measurement its own release is about.** The
+ * probe read the page twice in one state — with `.pp-moves` shown and hidden —
+ * because the number that decides whether a control belongs above the water is
+ * what it costs the water: the nameplate goes **41 → 55 px at 390 px and 41 →
+ * 44 at 1280**, so the pond starts 14 px lower on a phone and 3 px lower on a
+ * desktop. All fourteen of those go on the sentence rather than on the button,
+ * which wraps to two lines beside it. `WALKED.app` goes 79 → 80; the way back
+ * is in `UNMET` with a reading of its own, because it is not on the page until
+ * the door beside it has been pressed.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -270,6 +280,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "details.levers summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "390x844", sel: ".more-stats > summary", n: 1, w: 316, h: 24, own: "316x24", via: "self", nearestCentre: 343.1, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "390x844", sel: "canvas#world", n: 1, w: 344, h: 237, own: "344x237", via: "self", nearestCentre: 155.1, inline: false, short: 0, sample: "the pond itself" },
+  { page: "app", vp: "390x844", sel: "#btn-another", n: 1, w: 125.2, h: 44, own: "125x44", via: "self", nearestCentre: 99.5, inline: false, short: 0, sample: "🎲 Another pond" },
   { page: "app", vp: "390x844", sel: "#btn-sound", n: 1, w: 96.2, h: 40, own: "96x40", via: "self", nearestCentre: 97.5, inline: false, short: 0, sample: "🔈 Sound" },
   { page: "app", vp: "390x844", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 60.4, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "390x844", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 33.4, inline: false, short: 1, sample: "← Vivarium — the experiment" },
@@ -291,6 +302,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "details.levers summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "1280x900", sel: ".more-stats > summary", n: 1, w: 290, h: 24, own: "290x24", via: "self", nearestCentre: 338.3, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "1280x900", sel: "canvas#world", n: 1, w: 894, h: 615.9, own: "894x616", via: "self", nearestCentre: 345.6, inline: false, short: 0, sample: "the pond itself" },
+  { page: "app", vp: "1280x900", sel: "#btn-another", n: 1, w: 125.2, h: 44, own: "125x44", via: "self", nearestCentre: 137.6, inline: false, short: 0, sample: "🎲 Another pond" },
   { page: "app", vp: "1280x900", sel: "#btn-sound", n: 1, w: 96.2, h: 40, own: "96x40", via: "self", nearestCentre: 86.3, inline: false, short: 0, sample: "🔈 Sound" },
   { page: "app", vp: "1280x900", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 67.7, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "1280x900", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 92, inline: false, short: 1, sample: "← Vivarium — the experiment" },
@@ -305,7 +317,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 79 });
+export const WALKED = Object.freeze({ "front door": 19, app: 80 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as
@@ -325,6 +337,8 @@ export const UNMET = Object.freeze({
     "shipped in v1.149, after the last probe went out — and it is the one control here whose *own* row would not be the interesting number, because it changes how many of the other seventy-seven are on the page at all. The walk that measures it has to be run twice, once on each side of the switch, and the second pass is the first time this inventory would have a page with a different set of targets on it rather than the same set at a different width. It is given a `min-height` in `HIT_RULES` below so it clears the bar by size while it waits",
   "#btn-race":
     "shipped in v1.162, after the last probe went out. It is a `display:block; width:100%` button in the left column rather than in the panel, which is a place no row here describes — the walk read nothing full-width outside the control stack — so it is named rather than assumed to match `#btn-picture`. The lane canvases beside it are pictures and not targets: nothing on this panel is pressable but the button",
+  "#btn-back":
+    "v1.175's way back, and the second control here that is not on the page at every *reading* — `#btn-more-worlds` was the first, and its excuse was a width. This one's is a press: it does not exist until the door beside it has been used, so a row for it would be a measurement of a page nobody arrives at. The probe read it in both states anyway, because a bar cleared only in the state you happened to walk is not cleared: **123.9 × 44 at 390 px and 123.9 × 44 at 1280**, nearest centre 132.5 at both, and its width is the pond's name rather than a constant — 120.8 for `↩ Western Weir`, 130.7 for `↩ Wintering Mere`. It passes by size at every name, because the only thing a name can change is the axis with 80 px of room to spare. It shares `HIT_RULES`'s 44 with the door",
   "#btn-more-worlds":
     "shipped in v1.168, and the first control in this inventory that is **not on the page at every width**. It exists exactly while the worlds strip has more in it than it is showing, which at 1280 px it never does — so a measured row would be a row at one viewport and an absence at the other, and the completeness sum below is written per viewport on the stated assumption that both hold the same set. Naming it is the honest half of that: it is given `.moreworlds` in `HIT_RULES` so it clears the bar by size rather than by the spacing of neighbours it shares a line with, and the walk that would give it a row is the same two-pass walk `#btn-simple` has been waiting for — a page whose target *set* changes, measured on both sides of the thing that changes it. The cycle that shipped it did read it in a browser — 109.5 × 24 shut and 83.1 × 24 open at 390 px, and absent at 1280 — so the bar is cleared on the axis a thumb misses in; what it has not got is a row, because a row here is a promise about both columns",
 });
@@ -351,6 +365,14 @@ export const HIT_RULES = Object.freeze({
   // sharing a row with the strip's label, which is not a target at all, so
   // there is nothing beside it to borrow the spacing exemption from.
   ".moreworlds": TARGET_MIN,
+  // v1.175's door out of the pond and the way back beside it, both held to the
+  // *enhanced* 44 rather than to this file's 24: they are first moves, and
+  // `firstmoves.js` spends the same on the four in the row under the water.
+  // Keyed on `.pondplate button.pondback` because that is the selector standing
+  // immediately before the `{` — the trap `firstmoves.js` sprang in v1.169, one
+  // group over, and the reason it is only a note is that the lookup below fails
+  // loudly rather than quietly finding nothing.
+  ".pondplate button.pondback": 44,
 });
 
 /**

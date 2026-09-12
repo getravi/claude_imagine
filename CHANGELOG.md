@@ -4,6 +4,99 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.175.0] — 2026-09-12
+
+**🎲 Another pond.** The plate over the water has said the same thing since
+v1.134 — *Western Mere, seed 314 — the same seed always grows the same pond* —
+and the obvious next thought has had nowhere to go. There are 1,536 named ponds
+behind that sentence and the only way to reach one was a 36 × 33 die tucked
+beside a number field in the drawer of settings, **5,050 px down a 5,709 px
+page** on a phone. It is a button beside the sentence now, and when you press it
+the water says *🪷 Welcome to Whispering Vale*.
+
+Beside it, once you have moved: **↩ Western Mere**, the way back. One press,
+always, to the place you just left.
+
+### The third time, and the deepest
+
+v1.153 found three controls a stranger is told to press sitting below sixteen
+panels of prose and moved them under the water. v1.169 found a fourth. Both
+releases wrote an inventory of what was left in the drawer and why, and the die
+has an entry in it that is entirely true:
+
+> the die beside the seed field. It is not a control in its own right but the
+> other half of one, and a text input is not a first move
+
+True of a **die beside a field**, and it never covered what the die was the only
+route to. At 390 × 844, on the page as it loads:
+
+    #btn-randomseed    top 5,050 of a 5,709 px document    88.5%, 34th of 45
+    🎲 Another pond    top   308 of a 5,723 px document     5.4%, 20th of 46
+
+Three for three, the same shape: **the reason a control is in the drawer is
+always a reason about the control, and the question is about the act.**
+
+### Two ponds can share a name, and the die never knew
+
+`pondname.js` mixes a seed into 48 adjectives and 32 landforms, and says — 
+correctly — that a name is a handle and never an identifier. What nobody had
+asked is what that costs the person *pressing the die*. Two million draws:
+
+    names the die can hand out          1,536, and it reaches every one
+    flattest to commonest               0.905× to 1.096× of expectation
+    20 presses land somewhere twice     12.8% of sessions
+    40 presses land somewhere twice     41.7% of sessions
+    a press that lands where you are     1 in 1,536
+
+The last row is the one with teeth. The page says hello only when the *name*
+moves, so one press in 1,536 rebuilt the world, renamed nothing, said nothing,
+and looked exactly like a button that was broken. The door now keeps a log of
+where this visitor has been and will not offer any of it again — a rule that
+costs **1.0137 draws a press** and never once exhausted its twelve tries in two
+million presses. The die in the drawer picks through the same chooser.
+
+### What it costs the water, measured both ways
+
+The probe read the page twice in one state, with the plate's new row shown and
+hidden, because the number that decides whether a control belongs above the
+water is what it costs the water:
+
+    390 × 844     nameplate 41 → 55 px     the pond starts 14 px lower
+    1280 × 900    nameplate 41 → 44 px     the pond starts  3 px lower
+
+All fourteen of those go on the sentence, not on the button: at 390 px the door
+takes 137 of the row's 342 and *the same seed always grows the same pond* wraps
+to two lines beside it. That is the trade, and it buys the one press on the page
+that answers the sentence it just wrapped.
+
+### And one that no probe here could have seen
+
+The way back ships `hidden`, and the rule that sizes it sets `display` — which
+an author's stylesheet wins over the browser's own `[hidden] { display: none }`.
+Its first browser walk rendered **an empty 28 × 44 button** standing beside the
+door on the page a stranger arrives at, and every probe in this project filters
+targets on `el.hidden`, which was `true` the whole time. The attribute said
+hidden and the element was on the page. One line of CSS fixes it; the lesson is
+that a walk which trusts the DOM's own account of visibility is a walk that
+cannot see this class of defect at all.
+
+### Changed
+
+- `src/anotherpond.js` (new): the chooser, both labels, the greeting for a
+  return, and the three records — the sweep, the walk and what the door costs
+  the first screen. Pure: it draws no random number of its own, the die is
+  handed in, and a test holds it to that.
+- `src/main.js`: the door, the way back, and one `travelTo` that every route to
+  a different pond now goes through — the plate, the die and the `N` key. A
+  greeting is the caller's to choose; the rule that a rebuilt pond says nothing
+  stays where it was.
+- `src/viewstate.js`: three page-scoped names, because where a *reader* has been
+  is not a fact a new world may empty.
+- `src/targetsize.js`, `src/firstmoves.js`: the inventories learn about the
+  door, and the die's entry in the drawer says what moved out of it.
+- `app/index.html`, `style.css`: the nameplate becomes a row.
+- `test/anotherpond.test.js` (new): 20 tests.
+
 ## [1.174.0] — 2026-09-12
 
 **📜 The pond's news comes to the surface.** The Chronicle has been the best

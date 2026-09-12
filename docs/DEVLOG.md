@@ -22365,3 +22365,166 @@ moments arrive when the ladder has finished.
   guide, the plates and the pinned pond; every surface on this page is placed by
   a stylesheet that cannot see the others; a pond loaded from an archive still
   has no book (thirty-eighth).
+
+## Entry — the door out of the pond · 2026-09-12
+
+Fourteenth cycle in the ordinary-person hat. This one started with me reading
+the page the way the playbook keeps telling me to — top to bottom, pressing
+nothing — and stopping on the second thing on it.
+
+    Western Mere
+    seed 314 — the same seed always grows the same pond
+
+I wrote that plate in v1.134 and I still think it is the most inviting sentence
+on the page. It tells a stranger that the thing in front of them is one of many,
+that the many are reachable, and that any of them can be gone back to. And then
+the page offers them nothing to do about it. The obvious next thought — *then
+what does another seed grow?* — has had nowhere to go for forty-one releases.
+
+There are 1,536 named ponds behind that sentence. The only door to them was a
+36 × 33 die beside a number field, in the drawer of settings.
+
+## The third time, and the deepest
+
+I have found this exact defect twice before and written a rule down both times.
+v1.153 measured `👋 Meet somebody` at 77% of a phone's page and moved three
+buttons out of the drawer; v1.169 measured `🥣 Feed by hand` at 82% and moved a
+fourth. So I walked it again, at 390 × 844, on the page as it loads:
+
+    #btn-randomseed    top 5,050 of a 5,709 px document    88.5%, 34th of 45
+    🎲 Another pond    top   308 of a 5,723 px document     5.4%, 20th of 46
+
+Three hundred and eighty-five pixels below where v1.169 called the bottom of
+the page. What makes this one worth writing up rather than just fixing is that
+**I had already written the excuse down and agreed with it.** `firstmoves.js`
+carries an inventory of every control left in the drawer with a reason beside
+it, and the die's reads: *it is not a control in its own right but the other
+half of one, and a text input is not a first move.*
+
+Every word of that is true. It is true about a **die beside a field**. It says
+nothing at all about the thing the die was the only route to, which is *going
+somewhere else* — and that is a first move by every test I apply in that file.
+Three for three now, and the shape is the same each time: **the reason a control
+is in the drawer is always a reason about the control, and the question is about
+the act.** I will take that to the remaining eleven entries in the list some
+cycle soon; at least two of them describe a mechanism where I should be reading
+a verb.
+
+## Two ponds can share a name, and the die never knew
+
+`pondname.js` turns a seed into an adjective and a landform — 48 × 32 = 1,536
+names — and its own header says, correctly, that a name is a handle and never an
+identifier, which is why the seed stays on the plate beside it. I have read that
+paragraph a dozen times. What I had never asked is what it costs the person
+*pressing the die*, which is a different question from what it costs the label,
+and it took two million draws to answer:
+
+    names the die can hand out          1,536, and it reaches every one
+    flattest to commonest               0.905× to 1.096× of expectation
+    20 presses land somewhere twice     12.8% of sessions
+    40 presses land somewhere twice     41.7% of sessions
+    a press that lands where you are     1 in 1,536
+
+The last row is the one with teeth. `syncPondName` says hello only when the
+*name* moves — that rule is right, and it is what keeps Reset quiet — so one
+press in 1,536 rebuilt the world, renamed nothing, said nothing and looked
+exactly like a button that was broken. The other rows are gentler and worse to
+read: *🪷 Welcome to Nameless Ford* on the pond you were in ten minutes ago is
+the page telling you it has lost count of where you have been.
+
+So the door keeps a log of the places this visitor has arrived at and will not
+offer any of them again. I expected to have to argue about the cost of that and
+there is none to argue: **1.0137 draws a press**, worst case four, and it never
+once ran out of the twelve tries I allowed it in two million presses. The die in
+the drawer picks through the same chooser now, so it inherits the fix.
+
+This is v1.173's note arriving one file over — *a key that is unique in the data
+you have is not a key* — and the new half is where the data was. There, it was
+three ties sitting in `CHANGELOG.md` for fifty releases. Here it is a **session**:
+a thing no test in this repository holds, because every sweep I write measures a
+pond and this one had to measure a visit.
+
+## A door you cannot come back through
+
+The die throws the pond away. The permalink is written with
+`history.replaceState`, which is right — a dragged slider must not put four
+hundred entries in somebody's Back button — and it means the browser's own way
+back does not work here either. Press the die on a pond you were enjoying and it
+is gone: the seed was nine random digits, nobody read them, and the field now
+holds the new ones.
+
+So the door came with a way back, and I kept it to one press: **↩ Western Mere**,
+the place you just left, named rather than called *back*. It is not a history
+and deliberately not — pressing the door and pressing back are the same gesture
+in two directions, and a visitor who presses both ends up where they started. It
+is hidden until there is somewhere to go back to, so the page a stranger arrives
+at grew one button and not two.
+
+It carries a place and not a whole world. Press a world chip and then the way
+back and you arrive at the pond you left, under the rules you are now running.
+That is `pondname.js`'s answer inherited rather than a shortcut: a name is a
+function of the seed alone, because *a place keeps its name when the weather
+changes*. An undo that carried the rules back would be an undo for every control
+on the page wearing this one's label.
+
+## The button that was on the page and said it was hidden
+
+The way back ships with the `hidden` attribute, and the rule that sizes it sets
+`display: inline-flex` — and an author's `display` beats the browser's own
+`[hidden] { display: none }`. Its first browser walk rendered **an empty 28 × 44
+button** standing beside the door, on the page a stranger arrives at.
+
+I only found it because a number was wrong: the nameplate's row was wrapping at
+390 px when the arithmetic said it fitted, and chasing 36 px of width I could
+not account for turned up a button I had been told was not there. Every probe in
+this project filters targets on `el.hidden`, which was `true` the whole time —
+so the defect was invisible to the instrument by construction, and the
+screenshots I took have it in them, three pixels of border on a dark ground, and
+I did not see it. It is v1.159's *on screen is not the same as visible* with the
+sides swapped: that one was about an element the page could see and the test
+could not, and this is about an element the test asked the page about and the
+page answered wrongly.
+
+## What it cost the water
+
+v1.173 taught me to measure the page twice, so the probe read it with the
+plate's new row shown and then hidden, in one state:
+
+    390 × 844     nameplate 41 → 55 px     the pond starts 14 px lower
+    1280 × 900    nameplate 41 → 44 px     the pond starts  3 px lower
+
+All fourteen of those pixels go on the sentence rather than on the button: at
+390 px the door takes 137 of the row's 342, and *the same seed always grows the
+same pond* wraps to two lines beside it. I will take that trade — v1.172 paid
+twenty pixels of the same screen for a count in the eyebrow, and this buys the
+one press on the page that answers the sentence it just wrapped.
+
+One small thing I enjoyed: today is the second release I have shipped in a day,
+which is the exact case v1.173's tie-break was written for and had never once
+been exercised. *The last time was v1.175, on 12 September 2026* is right on the
+front page tonight because of three lines changed in a file about names.
+
+## What it leaves
+
+- **The log is a session and nothing here can hold one.** Close the tab and the
+  pond forgets every place you went, so the visitor most likely to meet a repeat
+  — the one who keeps pressing — is the one whose log is emptiest when they come
+  back. This is the fourth cycle to end on *there is nowhere to put a fact about
+  a reader*, and it is now three features deep: the sound is forgotten, the
+  switch is forgotten, and the travel log is forgotten.
+- **The way back is one press deep and I do not know whether that is enough.**
+  Two would need a stack, a stack needs a control that says how deep it is, and
+  that is a paragraph on a plate that currently holds a name. I would want to
+  know how many times a visitor presses the door before I build it.
+- **A place carries back and its weather does not**, which is right and is
+  nonetheless the one sentence in `anotherpond.js` I expect somebody to argue
+  with.
+- **Nothing has ever measured whether anybody presses anything.** Eleventh
+  release running, and this one turns on the question more than most: the whole
+  design of the log rests on how many times somebody presses a die, and I picked
+  20 and 40 presses out of the air.
+- The standing ones, unmoved: the fossil record's last card still lists eight
+  features from July; the showcase screenshots all predate the contents bar, the
+  guide, the plates and the pinned pond; five of the Chronicle's thirty-three
+  lines have still never fired in any sweep; a pond loaded from an archive still
+  has no book (thirty-ninth).

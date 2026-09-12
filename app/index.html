@@ -149,11 +149,46 @@
              below it, and it puts the pond into the document outline where a
              screen reader's heading walk starts. -->
         <section class="pondplate" aria-labelledby="pond-name">
-          <h2 class="pp-name" id="pond-name">Western Mere</h2>
-          <p class="pp-sub">
-            seed <span id="pond-seed">314</span> — the same seed always grows the
-            same pond
-          </p>
+          <div class="pp-who">
+            <h2 class="pp-name" id="pond-name">Western Mere</h2>
+            <p class="pp-sub">
+              seed <span id="pond-seed">314</span> — the same seed always grows the
+              same pond
+            </p>
+          </div>
+          <!-- The door (v1.175). The sentence above ends *the same seed always
+               grows the same pond*, and for forty-one releases the only place a
+               visitor could act on the obvious next thought was a 36 × 33 die
+               beside a number field, at 5,072 px of a 5,710 px page on a phone
+               — the 38th of 49 targets a thumb passes, and the deepest a first
+               move has been found in that drawer in three tries. The die stays
+               there; it is the field's other half. This is a different control
+               with a different promise, and it stands beside the sentence it
+               answers. `src/anotherpond.js` owns the words, the draw and the
+               measurements.
+
+               The two of them are wrapped so the plate is a row of two things
+               rather than a row of four: `.pp-who` is a name with a caption
+               under it and must stay one column when the row wraps. -->
+          <div class="pp-moves">
+            <button
+              id="btn-another"
+              class="another"
+              type="button"
+              aria-label="Take me to a pond I have not seen"
+            ></button>
+            <!-- Hidden until there is somewhere to go back to, which is never
+                 true of the page a stranger arrives at. Its label is the place
+                 rather than the word "back": the complaint it answers is that
+                 the die threw away a pond whose nine digits nobody read. -->
+            <button
+              id="btn-back"
+              class="pondback"
+              type="button"
+              aria-label="Back to the pond before this one"
+              hidden
+            ></button>
+          </div>
         </section>
 
         <!-- The one line above the water (v1.117). Everything else on this page

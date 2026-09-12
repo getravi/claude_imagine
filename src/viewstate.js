@@ -403,6 +403,21 @@ export const PAGE_SCOPED = Object.freeze({
     "what the nameplate currently reads — a fact about the page, and deliberately not " +
     "reset with the world: it is how `syncPondName` tells arriving somewhere new from " +
     "rebuilding where you already are, and a pond adopted afresh would say hello to itself",
+  pondSeedHere:
+    "the seed the nameplate currently shows (v1.175) — `pondNamed`'s other half, and needed " +
+    "for the same reason it is: by the time the way back is written, `config.seed` has " +
+    "already become the pond being arrived at, so the one a visitor is leaving has to be " +
+    "held somewhere that is not the world",
+  pondBefore:
+    "the pond before this one, which is what `↩ Western Mere` takes you to (v1.175). " +
+    "Page-scoped by definition: it is a fact about where this *reader* has been, and a " +
+    "world that replaced it would be deleting the only record of the place it replaced",
+  pondsSeen:
+    "every pond this visitor has arrived at, by name (v1.175) — what `🎲 Another pond` " +
+    "refuses to hand out twice. Emphatically not reset with the world, because a log a new " +
+    "pond empties is a log that can only ever hold the pond you are in; `anotherpond.js` " +
+    "carries the sweep that says twenty presses of the old die land somewhere twice in " +
+    "12.8% of sessions",
   hand:
     "which register this page is speaking in (v1.155) — pointer or touch, read off the one " +
     "media query `hand.js` and `style.css` share. A fact about the hardware in front of the " +

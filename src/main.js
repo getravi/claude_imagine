@@ -181,6 +181,14 @@ import {
   switchTitle,
 } from "./simpleview.js";
 import { pondName, pondTitle, shareLine, welcomeTo } from "./pondname.js";
+import {
+  ANOTHER_HINT,
+  ANOTHER_LABEL,
+  backHint,
+  backLabel,
+  pickSeed,
+  welcomeBack,
+} from "./anotherpond.js";
 import { postcard, postcardText } from "./postcard.js";
 import { hashFor } from "./permalink.js";
 import {
@@ -3532,12 +3540,9 @@ function wireKeyboard() {
         startMovie();
         break;
       case "n":
-      case "N": {
-        const seed = Math.floor(Math.random() * 1e9);
-        $("seed-input").value = seed;
-        resetWorld(seed);
+      case "N":
+        goSomewhereNew();
         break;
-      }
       case "v":
       case "V": {
         const box = $("toggle-vision");
@@ -3581,11 +3586,15 @@ function wireControls() {
 
   $("btn-reset").addEventListener("click", () => resetWorld(config.seed));
 
-  $("btn-randomseed").addEventListener("click", () => {
-    const seed = Math.floor(Math.random() * 1e9);
-    $("seed-input").value = seed;
-    resetWorld(seed);
+  // The door and the way back (v1.175), and the die beside the seed field now
+  // goes through the same chooser: the die is still the field's other half and
+  // still lives in the drawer, but there is no reason for it to be the one
+  // press on this page that can hand a visitor a pond they have already left.
+  $("btn-another").addEventListener("click", goSomewhereNew);
+  $("btn-back").addEventListener("click", () => {
+    if (pondBefore !== null) travelTo(pondBefore, welcomeBack);
   });
+  $("btn-randomseed").addEventListener("click", goSomewhereNew);
 
   $("seed-input").value = config.seed;
   $("seed-input").addEventListener("change", (e) => {
@@ -3933,17 +3942,51 @@ function bindSlider(configKey, elId, fmt) {
 // v1.132's finding read from the other end — a banner that fires on every press
 // of a button is a banner a reader stops seeing.
 let pondNamed = null;
+// The travel log (v1.175), and it is deliberately two facts and not a history.
+// `pondsSeen` is what the door refuses to hand out again — a session's worth of
+// places, which is the data `src/anotherpond.js` measured and nothing here had:
+// twenty presses of the old die land somewhere twice in 12.8% of sessions, and
+// one press in 1,536 lands where you already are and then says nothing at all.
+// `pondBefore` is the one press back, kept here rather than in `viewstate.js`
+// because that file is scoped to a *world* and this is a fact about a reader
+// who has now left two of them.
+const pondsSeen = new Set();
+let pondBefore = null;
+// The seed the plate is currently showing. `config.seed` is not a substitute:
+// by the time the way back is written, this frame's seed has already replaced
+// it, and a button offering to take you back to where you are is the same dead
+// press the die has been making once every 1,536 rolls.
+let pondSeedHere = null;
 function syncPondName() {
   const { name } = pondName(config.seed);
   const moved = name !== pondNamed;
+  // Only on a move, and that guard is what makes the way back mean something:
+  // Reset rebuilds this pond, so it is not a place you have left.
+  if (moved && pondSeedHere !== null) pondBefore = pondSeedHere;
   pondNamed = name;
+  pondSeedHere = config.seed;
+  pondsSeen.add(name);
   $("pond-name").textContent = name;
   $("pond-seed").textContent = String(config.seed);
   document.title = pondTitle(config.seed);
+  syncPondMoves();
   return moved;
 }
 
-function resetWorld(seed) {
+/** The door's label, and the way back's, written from wherever we now are. */
+function syncPondMoves() {
+  $("btn-another").textContent = ANOTHER_LABEL;
+  $("btn-another").setAttribute("aria-label", ANOTHER_HINT);
+  const back = $("btn-back");
+  back.hidden = pondBefore === null;
+  if (pondBefore !== null) {
+    back.textContent = backLabel(pondBefore);
+    back.setAttribute("aria-label", backHint(pondBefore));
+    back.title = backHint(pondBefore);
+  }
+}
+
+function resetWorld(seed, hello = welcomeTo) {
   // Preserve any live-tuned parameters, just change the seed and rebuild.
   config = makeConfig({ ...config, seed });
   world = new World(config);
@@ -3953,8 +3996,30 @@ function resetWorld(seed) {
   // the water now, and an obituary for an animal in a world that no longer
   // exists would be the page's one outright false statement.
   view.obitCard = null;
-  if (syncPondName()) flash(welcomeTo(config.seed));
+  // Which greeting is the caller's business, because only the caller knows
+  // whether this is somewhere new or somewhere you are coming back to. The
+  // *rule* stays here: a pond that was rebuilt rather than arrived at says
+  // nothing at all.
+  if (syncPondName()) flash(hello(config.seed));
   syncHash();
+}
+
+// ---- Going somewhere else (v1.175) ----
+// Every route to a different pond lands here: the door on the plate, the way
+// back beside it, the die in the drawer and the `N` key. The seed field is
+// written as well as the world, because a control that changes a thing and
+// leaves the readout of that thing stale is the page disagreeing with itself —
+// v1.119's finding, one surface over.
+function travelTo(seed, hello) {
+  $("seed-input").value = seed;
+  resetWorld(seed, hello);
+}
+
+// Somewhere this visitor has not been. `Math.random` is handed in rather than
+// reached for inside the module, so the only random draw in this feature is on
+// this line and a default pond is bit-for-bit what it always was.
+function goSomewhereNew() {
+  travelTo(pickSeed(Math.random, pondsSeen));
 }
 
 // ---- The postcard (v1.140) ----

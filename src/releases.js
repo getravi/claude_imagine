@@ -62,9 +62,9 @@
  * stretch and had no number in it at all.
  */
 export const RELEASES = {
-  total: 180,
-  autonomous: 168,
-  latest: "1.174.0",
+  total: 181,
+  autonomous: 169,
+  latest: "1.175.0",
   latestDate: "2026-09-12",
   firstDate: "2026-07-22",
 };
