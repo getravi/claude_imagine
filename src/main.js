@@ -152,6 +152,7 @@ import {
   watchersNear,
 } from "./handfeed.js";
 import { CheerWatch } from "./cheer.js";
+import { NewsWatch } from "./news.js";
 import {
   cardPlacement,
   hasSeenTour,
@@ -908,6 +909,10 @@ function loop(now) {
   updateMilestones(world);
   updateRecords(world);
   updateChronicle(world);
+  // Before the narration and after the panel, for `watchForCheers`' reason: a
+  // line is written on a step, and noticing it must not depend on a frame that
+  // happens to redraw the feed.
+  watchForNews(world);
   updateNarration(world);
   // The receipt for the last handful anybody dropped (v1.147). After the panels
   // because it is not one: it is a banner, and the pass above is what has just
@@ -916,6 +921,10 @@ function loop(now) {
   // Last, and on the browser's clock: the panel pass above is what notices a
   // rung being climbed, and this is what puts the banner up and takes it down.
   pumpCheers(now);
+  // Then the Chronicle's own moments (v1.174), which yield to the ladder's:
+  // `pumpNews` will not speak until the gap after the last banner has run out,
+  // and `pumpCheers` above has just taken that gate if it had anything to say.
+  pumpNews(now);
   // And the one thing on this page that is not on it (v1.173). On the browser's
   // clock for the banner's reason and one of its own: a beat is a tempo, so it
   // belongs to the wall and not to the pond, whatever the speed slider says.
@@ -1673,6 +1682,97 @@ function pumpCheers(now) {
   cheerGlow = setTimeout(() => panel.classList.remove("cheering"), CHEER_MS);
 }
 
+// ---- The Chronicle, over the water (v1.174) ----
+//
+// v1.132's leaving note: *only the ladder gets a fuss — the Chronicle narrates
+// extinctions, crashes and takeovers and none of them makes the page do
+// anything.* `news.js` owns which of those lines deserve the water and every
+// word they are given there; these two functions are the adapter, split for the
+// same reason the ladder's two are — `watchForNews` runs on the pond's clock,
+// because a moment happens on a step, and `pumpNews` runs on the browser's,
+// because how long a sentence stays up is a fact about reading.
+//
+// Between them sits `view.newsHold`: one line, not a queue. The ladder can
+// afford a queue because it climbs six rungs in a lifetime; the Chronicle
+// writes 23.6 lines per six thousand steps, which is one every 4.2 seconds at
+// the speed the page opens, and a queue of those would be a feed scrolling over
+// the pond it is about. So the water takes the best moment of each quiet
+// stretch and forgets the rest — they are all still in the panel.
+function watchForNews(world) {
+  if (!view.newsWatch) {
+    view.newsWatch = new NewsWatch();
+    // A pond that arrived with a past — 📂 Load, or a reset that hands the page
+    // a world mid-life — starts here rather than at zero. `cheer.js` solves the
+    // same problem with a settling window; this one can be exact, because the
+    // feed a pond arrives with *is* the list of what happened before anybody
+    // was watching.
+    view.newsSeen = world.chronicle.events.length;
+  }
+  const feed = world.chronicle.events;
+  if (feed.length <= view.newsSeen) return;
+  const fresh = feed.slice(view.newsSeen);
+  view.newsSeen = feed.length;
+  const names = namesForTree(world.phylogeny);
+  const said = view.newsWatch.best(fresh, world.tick, {
+    familyName: (id) => speciesPlural(names, id),
+  });
+  // The better of what is already waiting and what has just happened. A held
+  // line is not a promise: it has not been read yet, and a bigger moment
+  // arriving before the water frees up is exactly the case where the smaller
+  // one should be dropped rather than shown first.
+  if (said && (!view.newsHold || said.rank > view.newsHold.rank)) view.newsHold = said;
+}
+
+// How long the water stays quiet after saying something, before the Chronicle
+// may speak again.
+//
+// The banner is up for `CHEER_MS` and this is the gap after it, so the most of
+// a visitor's watching this feature can occupy is 5.2 in 17.2 seconds — and
+// that is a ceiling nothing measured comes near, because the moments this table
+// keeps are a mean of six per six thousand steps against a feed of 23.6. The
+// gap counts from the *end* of anything said over the water, the ladder's
+// banners included: two surfaces speaking over one pond is one voice, and a
+// visitor who has just been congratulated on a dynasty is still reading it.
+const NEWS_GAP_MS = 12000;
+let newsGlow = null;
+function pumpNews(now) {
+  if (!view.newsHold || now < cheerFree + NEWS_GAP_MS) return;
+  const said = view.newsHold;
+  view.newsHold = null;
+  // The ladder's own gate, moved forward by this banner, so a rung landing
+  // mid-sentence waits its turn rather than wiping the line being read.
+  cheerFree = now + CHEER_MS;
+  flash(said.line, CHEER_MS, "cheer");
+  // And, on the lines that are about somebody, the shortest distance there has
+  // ever been between a sentence and its subject (v1.133's argument, arriving
+  // at a second source). Resolved at the moment of the press rather than now:
+  // a five-second banner cannot promise that an animal is still alive, and a
+  // family is looked up in the pond as it stands then too.
+  if (said.who >= 0) offerToWatch(`Watch ${said.whoIs}`, () => watchNamed(said.who));
+  else if (said.sp >= 0) offerToWatch("Light up this family in the water", () => lightFamily(said.sp));
+  announce(said.line);
+  // The panel the line came from lights up, exactly as the ladder's does, so a
+  // visitor who has never scrolled past the water learns that this page keeps a
+  // written history of it.
+  const panel = $("chronicle");
+  panel.classList.add("cheering");
+  clearTimeout(newsGlow);
+  newsGlow = setTimeout(() => panel.classList.remove("cheering"), CHEER_MS);
+}
+
+// Light a family up in the water and say so — the Chronicle panel's own press
+// (v1.136), reached from the banner instead of from the row. Shared rather than
+// copied, so the two cannot come to mean different things.
+function lightFamily(id) {
+  toggleHighlight(id);
+  const label = speciesPlural(namesForTree(world.phylogeny), id);
+  flash(
+    renderer.highlightSpeciesId === id
+      ? `🌿 The ${label}, lit up in the water.`
+      : `The ${label} go back into the crowd.`
+  );
+}
+
 // ---- The book of records (v1.124) ----
 //
 // The all-time board: the most young anybody has raised here, the fullest the
@@ -2329,17 +2429,12 @@ function wireChronicleFeed() {
     }
     const sp = e.target.closest(`[${FEED_SP_ATTR}]`);
     if (!sp) return;
-    const id = Number(sp.getAttribute(FEED_SP_ATTR));
     // Highlighting is a toggle everywhere else on this page and stays one here,
     // so a second press on the line that turned it on turns it off — otherwise
-    // the only way back is a control in a different panel.
-    toggleHighlight(id);
-    const label = speciesPlural(namesForTree(world.phylogeny), id);
-    flash(
-      renderer.highlightSpeciesId === id
-        ? `🌿 The ${label}, lit up in the water.`
-        : `The ${label} go back into the crowd.`
-    );
+    // the only way back is a control in a different panel. `lightFamily` is
+    // shared with the banner over the water (v1.174), which offers the same
+    // press on the same lines one surface up.
+    lightFamily(Number(sp.getAttribute(FEED_SP_ATTR)));
   });
 }
 
@@ -4658,14 +4753,25 @@ function flash(msg, ms = FLASH_MS, kind = "") {
 // than written into the banner's markup, because `flash` sets `textContent` and
 // this page has kept its one toast free of `innerHTML` since it was written.
 function offerToShow(key, whoIs) {
+  offerToWatch(`Watch ${whoIs}`, () => watchMilestone(key));
+}
+
+/**
+ * The offer itself, shared by the ladder's banner and the Chronicle's (v1.174).
+ *
+ * One promise per mechanism (`feed.js`'s second rule): both of these put
+ * something in the water, so both wear `👀 Show me` and differ only in the name
+ * a screen reader is given — *Show me* is two words a person says out loud and
+ * names nobody, which is right on a row a reader can see and wrong read alone
+ * out of a live region.
+ */
+function offerToWatch(label, onPress) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "flash-go";
   btn.textContent = WATCH_LABEL;
-  // *Show me* is two words a person says out loud and names nobody, which is
-  // right on a row a reader can see and wrong read alone out of a live region.
-  btn.setAttribute("aria-label", `Watch ${whoIs}`);
-  btn.addEventListener("click", () => watchMilestone(key));
+  btn.setAttribute("aria-label", label);
+  btn.addEventListener("click", onPress);
   $("flash").append(btn);
 }
 

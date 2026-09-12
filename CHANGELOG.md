@@ -4,6 +4,119 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.174.0] — 2026-09-12
+
+**📜 The pond's news comes to the surface.** The Chronicle has been the best
+writing on this page since v1.3 and it lives in the sixteenth panel. A family
+takes the whole water, the hunters die out, a sickness burns itself out, a new
+family splits off that this pond grew itself — all of it written down four
+thousand pixels below the animal it happened to, in a feed you reach by
+scrolling past everything else. From this release the biggest of those moments
+come up **over the water**, in a sentence written for somebody who has scrolled
+nowhere, and the ones about somebody carry **👀 Show me** — press it and the
+page goes and finds them.
+
+v1.132 gave this page a way to say a thing out loud over the pond and gave it to
+exactly one source: the six-rung ladder. Its own leaving note asked which of the
+Chronicle's lines deserve the same water. This is that question answered, and
+the answer is a table of twenty-two moments that do and eleven that do not.
+
+### The feed has no budget and the water has one
+
+Twenty-eight runs — the default pond and all thirteen worlds, two seeds each,
+six thousand steps — write a mean of **23.6 lines**. At the speed the page
+opens, six thousand steps is **100 seconds**:
+
+    a Chronicle line every            4.2 seconds
+    a banner stays up for             5.2 seconds
+    lines that are about somebody     39.8%
+    the young record alone            9.39 lines a run
+
+Piped straight through, the feed would cover the pond it is about and never come
+off. So the water takes **the best moment of each quiet stretch and forgets the
+rest** — one line, ranked, never a queue, because a moment reported twenty
+seconds late is not a moment. The banner is up for 5.2 seconds and the water
+stays quiet for 12 after it, the ladder's banners included: two surfaces
+speaking over one pond is one voice.
+
+### A sentence written for a feed cannot be lifted onto the water
+
+The feed's reader has scrolled to the sixteenth panel and is reading a history.
+The water's reader has scrolled nowhere and is watching animals. So every line
+is written again rather than quoted — the panel keeps *An epidemic — 34
+creatures are sick (21% of the pond)* and the water gets *The sickness has taken
+hold, and much of this pond is ill.* Same moment, different reader, and the
+number stays where a reader can check it.
+
+### The vocabulary bar was a list of words I had already been caught using
+
+v1.132's test holds every banner to a list of words a first-time visitor would
+not know. Run that list over all thirty-three of the Chronicle's lines and only
+**two** fail it — and the feed is nonetheless full of *pathogen*, *herd
+immunity*, *selective sweep*, *hidden neurons*, *scavengers* and *detritus*. The
+bar was never a readability measure. It is now one list, `WATER_JARGON` in
+`src/news.js`, widened by everything reading the Chronicle end to end added, and
+both surfaces that speak over this pond are held to it. The ladder's six
+sentences clear the wider bar unchanged.
+
+### Said once, unless a role changes hands
+
+A key speaks once per pond, unless the line is about a **role somebody holds** —
+the pond's best parent, the family that holds the water — in which case it
+speaks again when the role changes hands. That rule is the young record: 9.39
+lines a run, eight in nine of them one champion beating their own number, folded
+down to the two or three days it changes hands.
+
+The word *role* is doing work there, and it cost a second measurement to find.
+The rule was first written as *again for somebody new*, which is no rule at all
+on a line whose subject is new by construction: every family that splits off
+carries an id no family has ever had. Measured over a hundred seconds it looked
+right; measured over five minutes it shipped **twelve of fourteen banners
+reading "a new family has appeared" with a different name in it**, which is
+precisely the stutter `streak.js` was written to fix in the panel, on the
+surface that can least afford it. A repeat rule keyed on a subject only means
+anything where the subject can repeat.
+
+### What the water actually carries, simulated at 1×
+
+Six seeds, both gates and both surfaces, stepped a frame at a time:
+
+    first 100 seconds     8.5 banners — 6.0 the ladder's, 2.3 the Chronicle's
+    first five minutes    9.3 banners — 6.0 the ladder's, 3.3 the Chronicle's
+    the feed, meanwhile   24.8 lines in 100 seconds, 50.5 in five minutes
+
+And the number nobody had taken before: the banner is up **31.2% of a new
+visitor's first hundred seconds with the ladder alone**, because all six rungs
+are climbed early and the queue runs them back to back. This release takes that
+to 43.3% in the busiest stretch of a pond's life and 16.2% over five minutes.
+
+### The table is a design, and the half that says no is the half that matters
+
+Eleven of the Chronicle's thirty-three lines stay in the panel, each with its
+reason written down: the first kill and the tenth generation because the ladder
+already says them; the leading cause of death because a change in a running
+average is not a moment; a selective sweep because the sentence cannot be said
+in the water's words; dawn because *the first nightfall earns a sentence — a
+pond that has gone dim looks broken; the light coming back explains itself*.
+`test/news.test.js` reads all thirty-three out of `src/chronicle.js` and proves
+every one of them is in exactly one of the two tables, so a line added later
+cannot arrive in a third state where nobody asked the question.
+
+### Changed
+
+- `src/news.js` (new): the table, the words, the ranks, the repeat rule and the
+  staleness window. Pure observer — no world, no config, no random draw.
+- `src/main.js`: `watchForNews` on the pond's clock and `pumpNews` on the
+  browser's, the shared gate that keeps the two banners one voice, and
+  `offerToWatch`/`lightFamily`, shared with the ladder's banner and the
+  Chronicle panel's own press rather than copied.
+- `src/viewstate.js`: three world-scoped fields, so a reset takes the pond's
+  unread news with it.
+- `app/index.html`, `style.css`: the Chronicle panel gets a handle and the same
+  quiet border the ladder's panel lights with.
+- `test/news.test.js` (new): 14 tests. `test/cheer.test.js` now imports the
+  water's vocabulary bar instead of holding a second copy of it.
+
 ## [1.173.0] — 2026-09-12
 
 **🔊 The pond has a pulse.** A hundred and seventy-eight releases have gone into

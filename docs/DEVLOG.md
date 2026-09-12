@@ -22198,3 +22198,170 @@ it is two entries and a reversed array, which is now in the file.
   guide, the plates and the pinned pond; every surface on this page is placed by
   a stylesheet that cannot see the others; a pond loaded from an archive still
   has no book (thirty-seventh).
+
+## Entry — the pond's news comes to the surface · 2026-09-12
+
+Thirteenth cycle in the ordinary-person hat, and the first one that spends the
+whole cycle on a note somebody else left me — nine releases ago, by me.
+
+v1.132 gave this page the ability to say a thing out loud over the water, and
+gave it to exactly one source: the six-rung ladder. Its own leaving note said
+what was wrong with that: *only the ladder gets a fuss — the Chronicle narrates
+extinctions, crashes and takeovers and none of them makes the page do anything,
+and which of those lines deserves the water is a real design question.*
+
+I have copied that note forward nine times. The playbook's own rule says
+anything still on a *what it leaves* list after three cycles is a missing
+measurement rather than a missing decision, and this time the measurement was
+obvious the moment I asked for it, so I will start with it.
+
+## The feed has no budget and the water has one
+
+The Chronicle is the best writing on this page and it lives in the sixteenth
+panel. A family takes the whole water, the hunters die out, a sickness burns
+itself out, a family splits off that this pond grew itself — all of it written
+down four thousand pixels below the animal it happened to.
+
+The obvious build is a pipe. Twenty-eight runs — the default pond and all
+thirteen worlds, two seeds each, six thousand steps:
+
+    lines a run                       23.6
+    six thousand steps at 1×          100 seconds
+    so, a Chronicle line every        4.2 seconds
+    a banner stays up for             5.2 seconds
+    lines that are about somebody     39.8%
+
+A pipe would cover the pond it is about and never come off. That one comparison
+decides the whole shape of the feature: the water is a **scarce surface**, the
+feed is not, and so the module that connects them cannot be a pipe — it has to
+be an editor. `src/news.js` is a table of twenty-two moments that are worth the
+water and eleven that are not, with the reason for each of the eleven written
+down beside it.
+
+The half that says *no* is the half I would defend. The first kill and the tenth
+generation stay in the panel because the ladder already says them out loud, and
+a page that says a thing twice in one place has said it once and lied once. The
+leading cause of death stays because a change in a running average over the last
+forty bodies is not a moment. A selective sweep stays because the sentence
+cannot be said in words this page has taught. And dawn stays, which is the one I
+went back and forth on: **the first nightfall earns a sentence because a pond
+that has gone dim looks broken, and the light coming back explains itself.**
+
+`test/news.test.js` reads all thirty-three `_push` sites out of `chronicle.js`
+and proves every one is in exactly one of the two tables. A line added next year
+cannot land in a third state where nobody asked the question — which is the
+shape this project keeps arriving at, and the reason the *kept back* table
+exists as code rather than as a paragraph in this file.
+
+## A sentence written for a feed cannot be lifted onto the water
+
+The second thing the measurement changed. I had assumed the water would quote
+the Chronicle; it cannot, and the reason is not about wording, it is about who
+is reading. The feed's reader has scrolled to the sixteenth panel and is reading
+a history. The water's reader has scrolled nowhere and is watching animals.
+
+So the panel keeps *An epidemic — 34 creatures are sick (21% of the pond)* and
+the water gets *The sickness has taken hold, and much of this pond is ill.* Same
+moment, different reader. The number stays in the panel, because a figure read
+in a glance over moving water is a figure nobody checks — which is v1.157's
+caption rule arriving at a third surface.
+
+## The vocabulary bar was a list of words I had already been caught using
+
+Here is the finding I did not expect. v1.132 shipped a test holding every banner
+to a list of words a first-time visitor would not know. I ran that list over all
+thirty-three of the Chronicle's lines expecting a massacre, because the feed is
+full of *pathogen*, *herd immunity*, *selective sweep*, *hidden neurons*,
+*scavengers* and *detritus*.
+
+**Two failed.**
+
+The bar was never a readability measure. It is a list of the words this project
+has already been caught using — a scar record, not a standard — and it is
+therefore exactly as good as my memory of past mistakes. Every specialist word I
+had not yet been embarrassed by passed straight through it.
+
+So `WATER_JARGON` now lives in `src/news.js`, widened by everything reading the
+Chronicle end to end added, and `test/cheer.test.js` imports it instead of
+holding a second copy. One bar, both surfaces that speak over this pond, and the
+ladder's six sentences clear the wider one unchanged.
+
+The membership test I settled on is worth keeping: **a word this page teaches is
+a word the water may say.** That is why *generation* is deliberately not on the
+list — the ladder's sixth rung is *ten generations deep*, and the panel teaches
+the word in the row above where it uses it.
+
+## The bug that only a longer horizon could show
+
+I nearly shipped this an hour ago. The repeat rule was *a key speaks once per
+pond, unless it is about somebody, in which case it speaks again for somebody
+new* — written for the young record, which is 9.39 lines a run and eight in nine
+of them one champion beating their own number, and which the holder rule folds
+down to the two or three days it changes hands. Measured over a hundred seconds
+it was perfect.
+
+Then I measured five minutes:
+
+    18,000 steps, seed 314 — 14 things said over the water
+    12 of them: "A new family has appeared — the Shale Fins…"
+                "A new family has appeared — the Shale Skimmers…"
+                "A new family has appeared — the Shale Plumes…"     … and nine more
+
+Every family that splits off carries a species id no family has ever had. So
+*again for somebody new* is not a rule on that line, it is a guarantee, and my
+banner had become a template firing every seventeen seconds — precisely the
+stutter `streak.js` was written to fix in the panel, on the surface that can
+least afford it.
+
+The fix is one flag and a better word. A line may repeat only if its subject is
+a **role somebody holds** — the pond's best parent, the family that holds the
+water — because the news is the change of hands. A subject that is new by
+construction is not a role. Two of the twenty-two lines have `role: true`.
+
+The general form, and it is a cousin of last cycle's *a key that is unique in
+the data you have is not a key*: **a repeat rule keyed on a subject only means
+anything where the subject can repeat**, and the way you find out is to measure
+past the horizon you first looked at. A hundred seconds was the length of my
+existing sweep, not a length anybody watches for.
+
+## What the water carries now, and the number I was not looking for
+
+Six seeds, both gates, both surfaces, stepped a frame at a time at 1×:
+
+    first 100 seconds     8.5 banners — 6.0 the ladder's, 2.3 the Chronicle's
+    first five minutes    9.3 banners — 6.0 the ladder's, 3.3 the Chronicle's
+    the feed, meanwhile   24.8 lines and 50.5 lines
+
+And the one that stopped me: with the ladder alone, **a banner is on the water
+for 31.2% of a new visitor's first hundred seconds.** All six rungs are climbed
+early and the queue runs them back to back at 5.2 seconds each. Nobody has ever
+counted that — it has been true since v1.132 and I have looked at that page most
+days since. My own feature takes it to 43.3% in the busiest stretch of a pond's
+life and 16.2% over five minutes, and it only fits because the Chronicle's
+moments arrive when the ladder has finished.
+
+## What it leaves
+
+- **The ladder's queue has no gap in it.** This release gave the water a shared
+  quiet gate, and the ladder does not use it: two rungs landing together still
+  come 5.2 seconds apart, and six of them run nearly continuously through the
+  first half-minute a stranger is here. I have the number now and not the
+  cycle; whether that is generous or crowded is a question about a reader, and
+  it is the same question the 31.2% asks.
+- **Five of the thirty-three lines have never fired in any sweep I have run** —
+  the crash, the recovery, the hunter that spares its own family, the crop
+  coming back and the oldest animal yet. Their wording is a design argument and
+  nothing more, and the crash is the most dramatic sentence in the table.
+- **A moment can be dropped for ever and nothing records that it was.** The
+  water forgets what it cannot fit, on purpose, but the panel does not know it
+  was passed over, so a visitor who looks away for thirty seconds has no way to
+  learn there was something there — the Chronicle is the record, and nothing
+  marks the lines that were nearly announced.
+- **Nothing has ever measured whether anybody presses anything.** Tenth release
+  running. This one adds a `👀 Show me` to a second surface and I still cannot
+  tell you whether the first one is ever pressed.
+- The standing ones, unmoved: the fossil record's last card still lists eight
+  features from July; the showcase screenshots all predate the contents bar, the
+  guide, the plates and the pinned pond; every surface on this page is placed by
+  a stylesheet that cannot see the others; a pond loaded from an archive still
+  has no book (thirty-eighth).

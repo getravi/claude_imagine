@@ -244,6 +244,22 @@ const FRESH = Object.freeze({
   // which is also where it learns whether the pond arrived newborn or restored.
   cheerWatch: null,
   cheerQueue: [],
+  // The Chronicle's own moments, over the same water (v1.174), in three parts.
+  // `newsWatch` is what this pond has already been told about — world-scoped
+  // for `cheerWatch`'s reason exactly, and one sharper: the watch is keyed on
+  // *subjects*, so a watch inherited across a reset would hold the last pond's
+  // champion as already-announced and go quiet the first time this pond's
+  // champion happened to share their id. `newsSeen` is how far into the feed
+  // this page has read, and it must start again at zero with the feed itself —
+  // a count carried into a new pond would skip that pond's opening moments and
+  // then, once the new feed grew past it, announce lines out of the middle.
+  // `newsHold` is the one moment waiting for the water to be free; it is
+  // deliberately a single line rather than a queue (see `news.js`), and it goes
+  // with its pond because a banner about a world that no longer exists is the
+  // one thing this surface must never say.
+  newsWatch: null,
+  newsSeen: 0,
+  newsHold: null,
   // The fast-forward in flight (v1.142), in three parts: how many steps it
   // still owes, how far it was going, and the pond it is measuring against.
   // `skipFrom` is `founding`'s argument with a shorter horizon — a snapshot of
@@ -379,6 +395,10 @@ export const PAGE_SCOPED = Object.freeze({
   cheerFree:
     "wall-clock, the moment the banner over the water is free for the next celebration",
   cheerGlow: "a `setTimeout` handle for the ladder's glow, likewise real time rather than pond time",
+  newsGlow:
+    "the same handle for the Chronicle panel's glow (v1.174). Page-scoped rather than " +
+    "world-scoped for `cheerGlow`'s reason: it is a timer on a class the browser owns, and " +
+    "a pond replaced mid-glow must still have that class taken off the panel it was put on",
   pondNamed:
     "what the nameplate currently reads — a fact about the page, and deliberately not " +
     "reset with the world: it is how `syncPondName` tells arriving somewhere new from " +

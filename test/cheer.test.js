@@ -32,6 +32,7 @@ import { World } from "../src/world.js";
 import { stateFingerprint } from "../src/fingerprint.js";
 import { MILESTONE_KEYS, milestoneRows } from "../src/milestones.js";
 import { CHEER_KEYS, CheerWatch, SETTLE_STEPS, cheerLine } from "../src/cheer.js";
+import { WATER_JARGON } from "../src/news.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(join(root, p), "utf8");
@@ -215,8 +216,13 @@ test("two rungs landing together are two banners, in ladder order", () => {
 // ---- 6. the vocabulary bar ----
 
 test("nothing said over the water uses a word only somebody already here knows", () => {
-  const JARGON =
-    /\b(carnivor\w*|herbivor\w*|lineage|genome|genotype|allele|tick|ticks|px|pixels?|predation|neuroevolution|fitness|phenotype|RNG|seed|species)\b/i;
+  // The bar itself moved to `src/news.js` in v1.174, when a second surface
+  // started speaking over the same water. It is wider than the list this test
+  // used to hold — reading the Chronicle end to end added *pathogen*, *herd
+  // immunity*, *hidden neurons* and the rest — and the ladder's sentences clear
+  // the wider one unchanged, which is the argument for there being one bar
+  // rather than one per surface.
+  const JARGON = WATER_JARGON;
   const lines = new Set();
   for (const seed of [3, 42, 128, 314]) {
     const p = pond(seed);

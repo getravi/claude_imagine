@@ -1614,6 +1614,16 @@ button.race-btn:hover {
   display: flex;
   flex-direction: column;
   min-height: 200px;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+/* The same answer the ladder's panel gives (v1.132), from the panel the banner
+   over the water now also speaks for (v1.174): a visitor who has never scrolled
+   past the pond is shown, once, where this page keeps the written history of
+   it. Border and shadow only, for the reason `.milestones.cheering` states —
+   nothing here may reflow a panel somebody is mid-sentence in. */
+.chronicle.cheering {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 22px rgba(90, 220, 150, 0.14);
 }
 .chronicle-head {
   display: flex;

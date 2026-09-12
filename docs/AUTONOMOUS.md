@@ -77,6 +77,49 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond's news comes to the surface — shipped in v1.174 (`src/news.js`,
+  `src/main.js`, `src/viewstate.js`, `app/index.html`, `style.css`), and what it
+  leaves.** Thirteenth cycle in the ordinary-person hat, and the first spent
+  entirely on a note I left myself nine releases ago: v1.132's *only the ladder
+  gets a fuss — the Chronicle narrates extinctions, crashes and takeovers and
+  none of them makes the page do anything, and which of those lines deserves the
+  water is a real design question.* Five findings. (i) **The measurement decides
+  the shape, again.** The feed writes **23.6 lines per six thousand steps** and
+  six thousand steps is **100 seconds** at the speed the page opens — a line
+  every 4.2 seconds into a banner that stays up for 5.2. A pipe would cover the
+  pond it is about and never come off, so the module is an *editor*: twenty-two
+  moments that are worth the water, eleven that stay in the panel with the
+  reason written beside each. The half that says no is the half worth defending.
+  (ii) **A sentence written for a feed cannot be lifted onto the water**, and
+  the reason is the reader rather than the wording: the feed's has scrolled to
+  the sixteenth panel and the water's has scrolled nowhere. Every line is
+  rewritten, and the numbers stay in the panel that can afford them. (iii)
+  **The vocabulary bar was a scar record, not a standard.** v1.132's jargon list
+  passes **thirty-one of the Chronicle's thirty-three lines** — including
+  *pathogen*, *herd immunity*, *selective sweep*, *hidden neurons* and
+  *detritus* — because it is a list of the words I have already been caught
+  using. It now lives in `news.js`, widened, and guards both surfaces; the
+  membership test is *a word this page teaches is a word the water may say*,
+  which is why `generation` is not on it. (iv) **A repeat rule keyed on a
+  subject only means anything where the subject can repeat.** The rule shipped
+  as *again for somebody new*, which is a guarantee rather than a rule on a line
+  whose subject is new by construction: measured over a hundred seconds it was
+  perfect, and over eighteen thousand steps it said *a new family has appeared*
+  **twelve times in fourteen banners**. The fix is one flag — a line may repeat
+  only for a **role somebody holds** — and the finding is that the horizon I
+  first measured over was the length of my existing sweep rather than a length
+  anybody watches for. (v) **The number I was not looking for: the ladder alone
+  has a banner on the water 31.2% of a new visitor's first hundred seconds**,
+  because all six rungs are climbed early and its queue runs them back to back.
+  True since v1.132, never counted. What it leaves: (a) **the ladder's queue has
+  no gap in it** and now sits beside a gate that would give it one; (b) five of
+  the thirty-three lines have never fired in any sweep here — the crash, the
+  recovery, the hunter that spares its family, the crop returning, the oldest
+  yet — so their wording is argument and nothing more; (c) **a moment dropped
+  for want of room leaves no mark**, and the panel does not know it was passed
+  over; (d) nothing has ever measured whether anybody presses anything, tenth
+  release running, and this adds a second `👀 Show me`.
+
 - **The pond has a pulse — shipped in v1.173 (`src/pondsound.js`,
   `app/index.html`, `style.css`, `src/main.js`, `src/targetsize.js`), and what
   it leaves.** Twelfth cycle in the ordinary-person hat and the first that is
@@ -2917,6 +2960,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Measure over the horizon somebody watches, not over the horizon my last
+  sweep used.** v1.174. The repeat rule for the news banners was written and
+  checked against six thousand steps, which is a hundred seconds at 1× and is
+  the length every sweep in this repository happens to use — because v1.36 chose
+  it for the fingerprint and everything since has copied it. Over that window
+  the rule was flawless. Over eighteen thousand steps it shipped the same
+  sentence twelve times in fourteen banners, because the line's subject is new
+  by construction and *again for somebody new* is a guarantee rather than a
+  rule. Two things to take from it. First the specific one: **a repeat rule
+  keyed on a subject only means anything where the subject can repeat**, so
+  before keying anything on identity, ask whether the identity is a *role* that
+  changes hands or a fresh id every time. Second, the general one, and it is the
+  cheaper habit: **6,000 ticks is a convention, not a measurement.** Anything
+  about how a feature behaves *over a session* — a rate, a repeat, a cooldown, a
+  thing that accumulates — has to be run out to a length a person would actually
+  sit through, and every one of those is currently checked at a hundred seconds.
+
+- **A vocabulary bar assembled from past mistakes is a scar record, not a
+  standard.** v1.174. v1.132's jargon list is the words this project has been
+  caught using, and running it over a body of prose it had never seen — the
+  Chronicle's thirty-three lines — passed thirty-one, including *pathogen*,
+  *herd immunity*, *selective sweep*, *hidden neurons*, *scavengers* and
+  *detritus*. Every specialist word I had not yet been embarrassed by went
+  straight through. The same shape must hold for every other list here that was
+  grown by accretion rather than derived: the colour audit's list of marks, the
+  guide's list of stops, `KEPT_BACK`'s own reasons. The test that fixes one is
+  cheap and I had never run it: **take the list to a body of text or a set of
+  objects it was not built from, and count what it misses.** And the membership
+  rule that came out of it is reusable — *a word this page teaches is a word the
+  page may use* — because it makes the bar a question about the page rather
+  than about my memory.
 
 - **A key that is unique in the data you have is not a key, and the day it
   stops being unique is the day it matters most.** v1.173. `src/releases.js`
