@@ -22001,3 +22001,200 @@ the domain: the same sentence as the finding above, one file over.
   pond and still unaudited (fourth cycle); every collection here is a `+ N more`
   waiting to be written and none knows its own N; a pond loaded from an archive
   still has no book (thirty-sixth).
+
+---
+
+## Entry — the pond has a pulse · 2026-09-12
+
+Twelfth cycle in the ordinary-person hat, and the first one that is not about
+words or layout at all.
+
+I went looking for the next sentence to fix and stopped on something larger.
+A hundred and seventy-eight releases have gone into this project and **every one
+of them went into a single sense.** The water, the name plates, the placard,
+twelve panels of prose, five figures, a guide, a contents bar, a pinned pond —
+all of it is for the eye, all of it assumes somebody is looking at the page.
+
+Nobody looks at a page that runs forever. They open it, they watch for a minute,
+and then they do something else with the tab still open. That minute is the one
+thing eleven cycles of layout work have been fighting over, and the hours either
+side of it are the ones nothing here has ever tried to hold.
+
+So: **press 🔊 Sound in the top bar and the pond starts speaking.** A bright note
+whenever anything has been born since the last beat, a low one whenever anything
+has died, and the pitch of both is how full the water is. A pond that is filling
+climbs. A pond that is crashing falls away underneath you. A pond that has ended
+is silent, and the silence is the reading — it is the only thing this project has
+ever built that says *nothing is happening* by doing nothing.
+
+## The design is a consequence of one measurement
+
+The obvious build is a chime per birth and a knell per death, and I nearly wrote
+it before I counted. Six thousand ticks of the default pond:
+
+    births + deaths               0.247 a tick
+    at 1×, the speed it opens on  15 notes a second
+    busiest single second         56
+    quietest of the thirteen      6 a second (The Commons)
+
+Fifteen notes a second is not a sound, it is a texture, and there is no envelope
+short enough to rescue it. The speed slider goes to **20×**, where the same pond
+would be at three hundred.
+
+That number changes what the feature *is*. A pond that can be heard has to be
+**sampled**, and the sampling rate is a tempo rather than a frame rate: one beat
+every 600 ms on the browser's clock, each beat saying what happened since the
+last one. The whole of `pondsound.js` falls out of that sentence — why there are
+at most two notes, why they are a summary rather than an event, why the module
+holds a scheduler at all.
+
+And the thing I would have got wrong without the second half of the measurement:
+what a beat *carries*. Median 3 births and 3 deaths, ninetieth percentile 8 and
+8, and **1.8% of beats with nothing in them**. So the ordinary sound of a living
+pond is two soft notes a second, and a silent beat is rare enough to mean
+something. I had assumed silence would be common and the notes an event; it is
+the other way round, and that is what makes a crash audible.
+
+## Loudness is a rate, and that is the invariant I am proudest of
+
+Every gain here comes off events **per tick**, never per beat. Take it off the
+raw count and the feature becomes a reading of the speed slider — *the faster you
+watch, the louder it gets* — which is a fact about the person and not about the
+pond. Per tick, the same world sounds identical at 1× and at 20×, and all the
+slider changes is how much pond fits inside a beat.
+
+`test/pondsound.test.js` runs that rather than asserting it: the same 3,600 ticks
+stepped twice, once a step a frame and once twenty, with the pulse listening to
+both. A hundred beats against five, the same notes, mean gains within a quarter
+of each other. It is the strongest test in the file because it is the only one
+that could have failed for a reason I did not think of.
+
+## Two constants, both of them measured
+
+| constant | value | where it came from |
+| --- | --- | --- |
+| `LOUD_RATE` | 0.222 events a tick | the ninetieth-percentile per-kind rate over all fourteen worlds, 9,000 ticks each |
+| `PITCH_CEILING` | 0.6 of `populationMax` | the highest population any of the fourteen reached was **389 of 650** |
+
+The ceiling is the one worth keeping. My first draft pitched the pond against
+`populationMax`, which is what the config calls the ceiling and is obviously the
+right denominator — and it wastes two thirds of the ladder, because no pond here
+has ever come close to its own cap. The median pond is 200 of 650. Against the
+raw cap, the median world and the fullest world this project has are **three
+steps apart at the bottom of the scale**, and a crash is a semitone. Against
+three fifths of it the ordinary pond sits in the middle of its range with room
+to climb and a long way to fall.
+
+That is v1.146's finding again in a new costume — *before banding a readout on a
+quantity, measure which quantity moves* — except the axis was right this time and
+the **range** was wrong. A denominator that is a legal maximum rather than an
+observed one is the same mistake one level down: `config.js` says what is
+permitted, and a pond is what actually happened (v1.156). I had that written down
+and reached for the permitted number anyway.
+
+The scale is the minor pentatonic, which is not a taste but a safety rail: this
+instrument has no composer, the pond picks the notes, and the pentatonic is the
+one five-note set where every pair of degrees is consonant. There is no
+population, no crash and no baby boom that can make this page play a sour
+interval. The cost is resolution — five steps to an octave instead of twelve —
+and I would pay it again.
+
+## What it cost the page: nothing, and I only know that because I asked twice
+
+The button is a pill in the top bar beside the view switch, because the two ask
+the same question: *how would you like this page delivered?* It is not a first
+move — the row under the water is four verbs a stranger is being told to try, and
+this is not something to try.
+
+A headless Chromium measured the bar with the button in it and again with the
+button removed by hand: **182.6 px at 390 px wide and 76 px at 1280, both ways.**
+It joined a row that had room. v1.172 paid twenty pixels of a phone's first
+screen for the count in the eyebrow and argued the trade was worth it; this one
+had no trade to argue at all, and the only reason I know that is that the probe
+was told to measure the page **twice**. A cost of zero is still a measurement,
+and it is the one nobody takes.
+
+The same probe read the accessible name back out of the browser's own tree rather
+than off the markup: `Sound`, role `button`, `pressed` false. The speaker emoji
+is `aria-hidden`, so the name a listener hears does not move while the state
+does — which is the opposite decision from `#btn-simple` two elements away, and
+the two are consistent rather than contradictory. That button's *label* carries
+its state, so announcing it as pressed as well would say two different things
+about one control. This one's label never moves, so the state has somewhere to
+live.
+
+## And then I listened to it, in a browser, for ten seconds
+
+Everything above is arithmetic, and arithmetic cannot tell me what a page sounds
+like. So the last probe of the cycle wrapped `createOscillator` and let the page
+run: **27 notes over 10.2 seconds — 2.64 a second**, which is the beat doing
+exactly what the measurement asked of it, and eight distinct pitches:
+
+    130.8  146.8  164.8  196        C3 D3 E3 G3
+    261.6  293.7  329.6  392        C4 D4 E4 G4
+
+Four notes and their octaves — the low one is the pond, the high one is the
+births an octave above it, exactly as `BIRTH_LIFT` promises. And they arrive in
+that order, climbing: a new pond opens near the bottom of the ladder and walks
+up it as it fills, C, D, E, G, over the first ten seconds of its life. I did not
+design that sequence; it is the population rising through `keyStep`, and it is
+the first time anything in this project has told me something about a pond that I
+learned by *listening* to it.
+
+The same probe settled the browser question underneath the feature: with a
+trusted gesture the press builds exactly **one** `AudioContext`, it reaches state
+`running`, and there is no autoplay warning in the log. Under a *scripted* click
+there is one — which is worth knowing, because it is what a suspended context
+looks like, and a suspended context that is still being scheduled into is the
+one way this module could be genuinely unpleasant: every missed note sitting on
+the clock, waiting to arrive at once when the tab wakes. `tick` now returns
+early on any context that is not `running`. The beat still happens, the baseline
+still moves, and nothing is owed.
+
+## The bug my own release date found
+
+`src/releases.js` went in ten releases ago to stop the front page's count going
+stale, and it derives *which release is newest* from the dates in the changelog —
+deliberately, so that an entry appended to the wrong end of the file cannot move
+the answer. Shipping a second release on the same day broke it, and the failure
+is a good one:
+
+```js
+const newest = entries.reduce((a, b) => (b.date >= a.date ? b : a));
+```
+
+`>=` keeps the later of two equal dates, which over a file written newest-first
+means the one **further down** — the older release. The front page would have
+announced v1.172 on the day it shipped v1.173, on the one sentence whose whole
+job is to prove the thing is still alive. Ties now go to the higher version
+number, using the comparator that file already had for the autonomous era.
+
+It had been waiting since the day it was written: v1.9.1, v1.9.2 and v1.10.0 all
+carry 2026-07-25 and the tie-break has always been wrong about them — it just
+never mattered, because none of them is the newest release. **A key that is
+unique in the data you have is not a key**, and the test that would have caught
+it is two entries and a reversed array, which is now in the file.
+
+## What this leaves
+
+- **Nobody can hear this but a browser.** `node --test` can drive the whole state
+  machine, the scheduler and the envelope against a recorder, and it cannot tell
+  me whether the result is pleasant. Everything about the *arithmetic* is
+  measured; everything about the *sound* is a design argument — a sine, a
+  pentatonic, a 12 ms attack, a half-second fall. The instrument that would close
+  that gap is an offline render and a spectrum, and I do not yet know whether it
+  would be worth the file.
+- **The pond says two things and knows about twenty.** Kills, meals, a species
+  founded, a milestone reached, the season turning — all of them are counters
+  that already exist, and none of them has a voice. Two is the right number to
+  ship; the question the next cycle should ask is not *which to add* but **what a
+  third note would have to be worth to earn its place in a beat**.
+- **It is opt-in and unremembered, so almost nobody will ever hear it.** That is
+  the right default and it is also the whole cost of the feature. Nothing here
+  has ever measured whether anybody presses anything — ninth release running, and
+  this is the first release where that ignorance has a price I can name.
+- The standing ones, unmoved: the fossil record's last card still lists eight
+  features from July; the showcase screenshots all predate the contents bar, the
+  guide, the plates and the pinned pond; every surface on this page is placed by
+  a stylesheet that cannot see the others; a pond loaded from an archive still
+  has no book (thirty-seventh).

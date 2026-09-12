@@ -230,6 +230,7 @@ import {
   skipSnapshot,
   trackEvery,
 } from "./skip.js";
+import { PondPulse, SOUND_ICON, SOUND_INTRO } from "./pondsound.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -915,6 +916,10 @@ function loop(now) {
   // Last, and on the browser's clock: the panel pass above is what notices a
   // rung being climbed, and this is what puts the banner up and takes it down.
   pumpCheers(now);
+  // And the one thing on this page that is not on it (v1.173). On the browser's
+  // clock for the banner's reason and one of its own: a beat is a tempo, so it
+  // belongs to the wall and not to the pond, whatever the speed slider says.
+  pumpSound(now);
 
   requestAnimationFrame(loop);
 }
@@ -3496,6 +3501,12 @@ function wireControls() {
   $("btn-feed").addEventListener("click", () => world.addFood(60));
   $("btn-seedlife").addEventListener("click", () => world.addRandomCreatures(12));
   $("btn-hand").addEventListener("click", () => setHandFeeding(!handFeeding));
+  // The pond's voice (v1.173). Read off the button rather than held in a second
+  // variable: `aria-pressed` is where the state already lives, and a mode with
+  // two copies of itself is a mode that gets out of step.
+  $("btn-sound").addEventListener("click", () =>
+    setSound($("btn-sound").getAttribute("aria-pressed") !== "true"),
+  );
   $("btn-meet").addEventListener("click", meetSomebody);
 
   // Speed control.
@@ -4087,6 +4098,59 @@ function wireSkip() {
     e.preventDefault();
     e.stopPropagation();
   });
+}
+
+// ---- The pond's voice (v1.173) ----
+// `src/pondsound.js` owns the scale, the envelope and the arithmetic; what is
+// here is the press, the frame, and one reading of the pond per beat.
+//
+// The context is built inside the press rather than at load, and that is a
+// browser rule rather than a preference: a page may not make a noise until
+// somebody has asked it to, and a context built before the gesture arrives
+// suspended and stays there. `PondPulse` takes the factory so that the whole of
+// it can be tested without one.
+//
+// Nothing about this is remembered between visits. A page that starts talking
+// because of something you did yesterday is the reason people mute tabs, and
+// the press costs one second.
+const pulse = new PondPulse(() => {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  return Ctx ? new Ctx() : null;
+});
+let soundHinted = false;
+
+/** What the pulse is handed every frame: five numbers the pond keeps anyway. */
+function soundReading() {
+  return {
+    births: world.stats.births,
+    deaths: world.stats.deaths,
+    tick: world.tick,
+    population: world.creatures.length,
+    capacity: config.populationMax,
+  };
+}
+
+function setSound(on) {
+  const btn = $("btn-sound");
+  // A browser with no Web Audio at all: the press is refused rather than
+  // pretended, so the button never claims a state the page cannot hold.
+  let took = false;
+  if (on) took = pulse.start(performance.now(), soundReading());
+  else pulse.stop();
+  btn.setAttribute("aria-pressed", took ? "true" : "false");
+  $("sound-icon").textContent = took ? SOUND_ICON.on : SOUND_ICON.off;
+  // Once. The sentence explains an instrument that explains itself within a few
+  // seconds of being switched on, and a banner on every press is a banner
+  // people learn to look past (see `setHandFeeding` below, same rule).
+  if (took && !soundHinted) {
+    soundHinted = true;
+    flash(SOUND_INTRO, MEET_FLASH_MS);
+  }
+}
+
+/** Per frame: the pulse decides for itself whether a beat is due. */
+function pumpSound(now) {
+  pulse.tick(now, soundReading());
 }
 
 // ---- Feeding by hand (v1.147) ----

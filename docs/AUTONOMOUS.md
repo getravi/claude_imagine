@@ -77,6 +77,47 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond has a pulse — shipped in v1.173 (`src/pondsound.js`,
+  `app/index.html`, `style.css`, `src/main.js`, `src/targetsize.js`), and what
+  it leaves.** Twelfth cycle in the ordinary-person hat and the first that is
+  not about words or layout: a hundred and seventy-eight releases had all gone
+  into **one sense**, and a page nobody is looking at says nothing. Press
+  `🔊 Sound` and the water plays a bright note for any birth since the last
+  beat, a low one for any death, and pitches both by how full the pond is. Five
+  findings. (i) **The measurement decided what the feature is.** A note per
+  animal is unlistenable — the default pond runs at **0.247 events a tick**,
+  which at 1× is fifteen notes a second (busiest second: 56), and the slider
+  goes to 20×. So the pond has to be *sampled* on a tempo rather than played per
+  event, and the whole module falls out of that one number. The second half of
+  the same measurement is what I would have got wrong by reasoning: a 600 ms
+  beat carries a median of 3 births and 3 deaths and is **empty only 1.8% of the
+  time**, so silence is rare and therefore means something. I had assumed the
+  opposite. (ii) **Loudness has to be a rate.** Taken off the raw count per
+  beat, the feature is a reading of the *speed slider* — faster watching, louder
+  pond — which is a fact about the viewer. Per tick, 1× and 20× are the same
+  sound, and the test runs 3,600 ticks twice to prove it rather than asserting
+  it. (iii) **A denominator that is a legal maximum is not a measured one.**
+  Pitching against `populationMax` is obviously right and wastes two thirds of
+  the ladder: the median pond is 200 of 650 and the fullest world ever measured
+  is 389, so a crash would be a semitone. Three fifths of the cap puts the
+  ordinary pond mid-ladder. This is v1.156's *a flag says a rule is allowed,
+  only a run says whether it speaks*, one level down — `config.js` is a
+  permission list, and I reached for it anyway. (iv) **A cost of zero is still a
+  measurement, and it is the one nobody takes.** The probe measured the top bar
+  with the button and again with it removed: 182.6 px at 390 and 76 px at 1280,
+  *both ways*. v1.172 argued a twenty-pixel trade; this one had no trade, and I
+  only know because I asked twice. (v) **A key that is unique in the data you
+  have is not a key** — see the note below. What it leaves: (a) **nothing in
+  this repository can hear**; every fact about the arithmetic is measured and
+  every fact about the *sound* is a design argument (sine, pentatonic, 12 ms
+  attack, half-second fall), and the instrument that would close it is an
+  offline render and a spectrum; (b) the pond says two things and keeps twenty
+  counters — the question for a later cycle is not *which to add* but what a
+  third note would have to be worth to earn its place in a beat; (c) it is
+  opt-in and unremembered, so almost nobody will hear it, and **nothing here has
+  ever measured whether anybody presses anything** — ninth release running, and
+  the first where that ignorance has a price I can name.
+
 - **The front door said ten — shipped in v1.172 (`src/releases.js`,
   `index.html`, `splash.js`), and what it leaves.** Eleventh cycle in the
   ordinary-person hat, and the first spent on `index.html` rather than
@@ -2876,6 +2917,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A key that is unique in the data you have is not a key, and the day it
+  stops being unique is the day it matters most.** v1.173. `src/releases.js`
+  derives *which release is newest* from the dates in `CHANGELOG.md`, on
+  purpose, so that an entry appended to the wrong end of the file cannot move
+  the answer. The reduce kept `b.date >= a.date` — the later of two **equal**
+  dates, which over a newest-first file is the one further down, the *older*
+  release. It had been wrong since the day it was written (v1.9.1, v1.9.2 and
+  v1.10.0 all carry 2026-07-25) and it had never once mattered, because none of
+  those is the newest. It would have mattered the first time this project
+  shipped twice in a day, which is exactly the day the front page's *the last
+  time was vX, on DATE* is doing its only job. The chore, and it is cheap:
+  wherever something here derives an answer by taking a max, ask what happens on
+  a tie, and then go and check whether a tie already exists in the data — the
+  answer here was *three of them, for fifty releases*. The general rule: a
+  degenerate case that the data has not yet produced is not a hypothetical, it
+  is a bug with a date on it.
+
+- **A scripted `.click()` is not a gesture, and the difference is the whole
+  feature.** v1.173. `Runtime.evaluate` with `document.getElementById(…).click()`
+  flips every attribute, fires every handler and passes every assertion — and a
+  browser will not let the page make a sound from it, because it is not a user
+  activation. The page looked correct and was silent, with one warning in a log
+  I would not have read. Two lines fix the probe (`userGesture: true` on the
+  evaluate, or `Input.dispatchMouseEvent` twice with the page **scrolled to the
+  top** — my first attempt dispatched into a page scrolled 231 px down and hit
+  nothing, and reported no error of any kind). The general rule is v1.155's
+  *a viewport is not a device* in a second place: **a synthesised press is not a
+  press**, and anything gated on user activation — audio, fullscreen, clipboard,
+  a file save, a share sheet — is invisible to every walk this project has ever
+  taken. The tell that it took is a state the browser reports back: here,
+  `AudioContext.state === "running"` read out of the page after the press.
 
 - **The page went first, and I never noticed because I always press the
   buttons.** v1.164. Three panels under the water were placeholders reading

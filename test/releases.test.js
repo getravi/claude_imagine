@@ -98,6 +98,31 @@ test("the record is what the changelog says", () => {
   assert.deepEqual(tally(parseReleases(CHANGELOG)), RELEASES);
 });
 
+// v1.173's finding, and it was waiting from the day this file was written: two
+// releases can land on the same day, and a reduce that kept the later of two
+// *equal* dates kept the one further down a newest-first file — the older one.
+// The front page would have announced the release before the one it shipped
+// with, on the one day of the year anybody would be looking.
+test("two releases on one day are separated by their version, not by their place in the file", () => {
+  const day = "2026-09-12";
+  const pair = [
+    { version: "1.173.0", date: day },
+    { version: "1.172.0", date: day },
+  ];
+  assert.equal(tally(pair).latest, "1.173.0");
+  assert.equal(tally([...pair].reverse()).latest, "1.173.0", "the answer moved with the file order");
+  // And a patch on the same day as its own minor, which is the shape this
+  // project has already shipped three times over (v1.9.1, v1.9.2, v1.10.0).
+  assert.equal(
+    tally([
+      { version: "1.9.2", date: "2026-07-25" },
+      { version: "1.9.1", date: "2026-07-25" },
+      { version: "1.9.0", date: "2026-07-25" },
+    ]).latest,
+    "1.9.2",
+  );
+});
+
 test("the record's latest release is the version being shipped", () => {
   assert.equal(RELEASES.latest, PKG.version);
   assert.equal(parseReleases(CHANGELOG)[0].version, PKG.version);

@@ -175,6 +175,7 @@ could have fixed it.
 | **Seed life** | Drop in fresh random creatures (handy after a crash). |
 | **Seed** | The number that determines the entire history of a world. Same seed → same world, every time. Share a seed to share a world. 🎲 picks a random one. |
 | **Speed** | Simulation steps per frame (1×–20×). Crank it up to fast-forward evolution. |
+| **Sound** (top bar) | Give the pond a voice. Off until you ask for it; once you do, the water plays a bright note whenever anything has been born since the last beat, a low one whenever anything has died, and pitches both by how full the pond is — so a pond that is filling climbs, a pond that is crashing falls away underneath you, and a pond that has ended is silent. It is sampled rather than played per animal, because the default pond runs at **0.247 events a tick** — fifteen notes a second at 1×, and the speed slider goes to 20×. Every note's loudness is computed from events *per tick*, so the slider is inaudible: the same pond sounds the same however fast you watch it. Nothing is remembered between visits. |
 | **Rules & settings** | Tune food rate, metabolism, and mutation rate *while it runs* and watch the ecosystem respond, then work down the thirty-one switches under them. Sectioned since v1.120, and the last section is the one worth knowing about: six of those switches change only the *picture* — the trail, the reach, the vision cone, the refuge line, follow and reduced motion — and leave the pond running bit for bit as it would have. Everything above them rewrites the world. |
 | **Predation** | Toggle whether carnivores can hunt. On by default — turn it off for a pure-herbivore world. |
 | **Scavenging** | Toggle whether dead creatures leave corpses that carnivores can feed on — a nutrient cycle and a scavenger niche. Off by default. |
@@ -521,6 +522,9 @@ src/
   tour.js           the guide: six stops that introduce the page to a newcomer,
                     the last of them a button that presses the thing it names,
                     and the written record of every panel it walks past
+  pondsound.js      the pond's voice: births and deaths as notes, pitched by how
+                    full the water is, sampled on a tempo rather than played
+                    per animal — off until it is asked for
   world.js          the simulation: steps everything forward
   camera.js         the viewer's lens: zoom, pan, follow one creature
   minimap.js        the whole pond in a corner, with the viewport on it

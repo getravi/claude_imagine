@@ -395,6 +395,16 @@ export const PAGE_SCOPED = Object.freeze({
   handHinted:
     "whether the one-line explanation of that mode has been shown yet — once per visit " +
     "rather than once per pond, because it explains the button and not the water",
+  pulse:
+    "the pond's voice (v1.173) — the beat's schedule, the counters it last read, and the " +
+    "audio context once somebody has asked for one. Page-scoped and deliberately not " +
+    "adopted: a new world moves its counters *backwards*, which `since` reads as a pond " +
+    "that was replaced and answers with silence, so the first beat of a fresh pond is a " +
+    "rest rather than a bang. Nothing about it is remembered between visits",
+  soundHinted:
+    "whether the sentence that explains the pond's voice has been shown yet (v1.173) — " +
+    "`handHinted`'s reason exactly: it explains a control rather than a world, and a " +
+    "banner that returns on every press is a banner people learn to look past",
   doingCrowd:
     "the holds under the verbs — the line about the animal you picked (v1.148) and the same " +
     "words on the plates over the water (v1.150), which are one object precisely so that the " +

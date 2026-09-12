@@ -223,6 +223,21 @@ export function verdicts(controls, min = TARGET_MIN) {
  * above turning up on the width axis. At 390 px all four stack at 346 × 44 and
  * nothing moved. `WALKED.app` goes 77 → 78: one control, two rows, one per
  * viewport, and the sum is per viewport.
+ *
+ * **v1.173's control arrived with its rows and with the measurement this table
+ * has no column for.** `#btn-sound` is **96.2 × 40 at both viewports** — the
+ * first control in this inventory whose size does not change with the width of
+ * the page, because it is a pill in a wrapping bar rather than a block in a
+ * column. It passes on size at both, and its nearest neighbour's centre is
+ * 97.5 px away at 390 and 86.3 at 1280, so it would pass on spacing too.
+ *
+ * The number worth keeping is the one the same probe took *without* it: the top
+ * bar is **182.6 px tall at 390 px and 76 px at 1280 with the button in it, and
+ * 182.6 and 76 with it removed**. It cost the first screen nothing at either
+ * width — it joined a row that had room. v1.172 paid twenty pixels of a phone's
+ * first screen for a count in the eyebrow and argued the trade was worth it;
+ * this one had no trade to argue, and the only reason I know that is that the
+ * probe was told to measure the page twice. `WALKED.app` goes 78 → 79.
  */
 export const CONTROLS = Object.freeze([
   // ---- the front door (index.html, splash.css) ----
@@ -255,6 +270,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "details.levers summary", n: 1, w: 316, h: 15, own: "316x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "390x844", sel: ".more-stats > summary", n: 1, w: 316, h: 24, own: "316x24", via: "self", nearestCentre: 343.1, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "390x844", sel: "canvas#world", n: 1, w: 344, h: 237, own: "344x237", via: "self", nearestCentre: 155.1, inline: false, short: 0, sample: "the pond itself" },
+  { page: "app", vp: "390x844", sel: "#btn-sound", n: 1, w: 96.2, h: 40, own: "96x40", via: "self", nearestCentre: 97.5, inline: false, short: 0, sample: "🔈 Sound" },
   { page: "app", vp: "390x844", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 60.4, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "390x844", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 33.4, inline: false, short: 1, sample: "← Vivarium — the experiment" },
   { page: "app", vp: "390x844", sel: ".appfoot-links a", n: 5, w: 42, h: 15, own: "43x15", via: "self", nearestCentre: 7.6, inline: true, short: 4, sample: "Source" },
@@ -275,6 +291,7 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "details.levers summary", n: 1, w: 290, h: 15, own: "290x15", via: "self", nearestCentre: 38, inline: false, short: 1, sample: "Rules & settings" },
   { page: "app", vp: "1280x900", sel: ".more-stats > summary", n: 1, w: 290, h: 24, own: "290x24", via: "self", nearestCentre: 338.3, inline: false, short: 0, sample: "More numbers ▾" },
   { page: "app", vp: "1280x900", sel: "canvas#world", n: 1, w: 894, h: 615.9, own: "894x616", via: "self", nearestCentre: 345.6, inline: false, short: 0, sample: "the pond itself" },
+  { page: "app", vp: "1280x900", sel: "#btn-sound", n: 1, w: 96.2, h: 40, own: "96x40", via: "self", nearestCentre: 86.3, inline: false, short: 0, sample: "🔈 Sound" },
   { page: "app", vp: "1280x900", sel: "nav.links a", n: 3, w: 43.6, h: 17, own: "44x17", via: "self", nearestCentre: 67.7, inline: false, short: 3, sample: "Devlog" },
   { page: "app", vp: "1280x900", sel: "a.home-link", n: 1, w: 191.1, h: 15, own: "191x15", via: "self", nearestCentre: 92, inline: false, short: 1, sample: "← Vivarium — the experiment" },
   { page: "app", vp: "1280x900", sel: ".appfoot-links a", n: 5, w: 42, h: 15, own: "43x15", via: "self", nearestCentre: 54.4, inline: true, short: 5, sample: "Source" },
@@ -288,7 +305,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 78 });
+export const WALKED = Object.freeze({ "front door": 19, app: 79 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

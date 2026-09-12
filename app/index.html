@@ -42,6 +42,32 @@
         <span class="vs-label" id="simple-label">🔬 Everything</span>
         <span class="vs-note" id="simple-note">34 dials · 5 figures</span>
       </button>
+      <!-- The pond's voice (v1.173). Every release before this one went into a
+           single sense, and a page you have to be looking at is a page you stop
+           looking at. This is off until it is asked for, and once it is asked
+           for the pond plays two soft notes a second: a bright one if anything
+           was born since the last beat, a low one if anything died, both of them
+           pitched by how full the water is.
+
+           In the top bar rather than in the row under the pond, which is four
+           verbs a visitor is being told to try; this is not something to try,
+           it is how you would like the page delivered — the same question the
+           switch beside it asks, which is why the two stand together.
+
+           `aria-pressed` here and not on `#btn-simple` above, and the two are
+           consistent rather than contradictory: that button's *label* carries
+           its state, so announcing it twice would say two things. This one's
+           accessible name is the single word `Sound` at every moment — the
+           speaker is `aria-hidden`, so it is decoration a listener never hears
+           — and the state lives in the one place ARIA has for it.
+
+           `src/pondsound.js` owns the scale, the arithmetic, the envelope and
+           every word here; main.js owns the press and feeds it one reading of
+           the pond per frame. -->
+      <button id="btn-sound" class="soundswitch" type="button" aria-pressed="false">
+        <span class="snd-icon" id="sound-icon" aria-hidden="true">🔈</span>
+        <span class="snd-label">Sound</span>
+      </button>
       <nav class="links">
         <a href="https://github.com/getravi/claude_imagine" target="_blank" rel="noopener">Source</a>
         <a

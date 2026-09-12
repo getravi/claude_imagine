@@ -104,6 +104,42 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* The pond's voice (v1.173). The same pill as the switch beside it, one line
+   instead of two, and it does not take the `margin-left: auto` — the switch
+   above has already pushed the pair of them to the end of the bar, and a second
+   auto margin would split them apart. */
+.soundswitch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  flex: 0 0 auto;
+  width: fit-content;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-panel-2);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.soundswitch:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Lit while it is on, because a control whose only visible state is an emoji is
+   a control people press twice to find out. */
+.soundswitch[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.snd-icon {
+  font-size: 15px;
+  line-height: 1;
+}
 .vs-label {
   font-size: 13px;
   font-weight: 600;

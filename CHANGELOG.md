@@ -4,6 +4,91 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.173.0] — 2026-09-12
+
+**🔊 The pond has a pulse.** A hundred and seventy-eight releases have gone into
+a single sense. Everything this page knows, it tells you with a picture or a
+sentence — which is fine while you are looking at it, and useless the moment you
+are not. Press **🔊 Sound** in the top bar and the water starts speaking: a
+bright note for anything born since the last beat, a low one for anything that
+died, and the pitch of both is how full the pond is. A pond that is filling
+climbs. A pond that is crashing falls away underneath you. A pond that has ended
+is silent, and that silence is the reading.
+
+Off until it is asked for, forgotten again when you leave, and it draws no
+random number — a pond you listen to is bit-for-bit the pond you watch.
+
+### A note per animal is unlistenable, and the number says so
+
+The obvious build is a chime per birth and a knell per death. Measured over
+6,000 ticks of the default pond:
+
+    events (births + deaths)      0.247 a tick
+    at the speed the page opens   15 notes a second
+    busiest single second         56
+    quietest of the 13 worlds     6 a second (The Commons)
+
+There is no envelope short enough to make fifteen notes a second a sound rather
+than a texture, and the speed slider goes to **20×**, where it would be three
+hundred. So the pond is **sampled** rather than played: one beat every 600 ms on
+the browser's clock, and each beat says what happened since the last one. What a
+beat carries was measured too — a median of 3 births and 3 deaths, a ninetieth
+percentile of 8 and 8, and 1.8% of beats with nothing in them at all.
+
+### Loudness is a rate, so the speed slider is inaudible
+
+Every gain comes off events **per tick**, never per beat. A gain taken off the
+raw count would simply mean *the faster you watch, the louder it gets*, which is
+a reading of the slider and not of the water. `test/pondsound.test.js` steps the
+same 3,600 ticks at 1× and at 20× and asserts the two runs play the same notes
+at the same loudness — twenty times the beats at 1×, the same pond in both.
+
+### Two constants, both measured rather than chosen
+
+| constant | value | where it comes from |
+| --- | --- | --- |
+| `LOUD_RATE` | 0.222 events a tick | the ninetieth-percentile per-kind rate across all fourteen worlds, 9,000 ticks each |
+| `PITCH_CEILING` | 0.6 of `populationMax` | the highest population any of the fourteen reached was **389 of 650** |
+
+The ceiling is the interesting one. Pitched against the raw cap, every pond here
+would live in the bottom third of the ladder and a crash would be a semitone;
+against three fifths of it the ordinary pond sits in the **middle** of its range,
+with room to climb and a long way to fall. The scale is the minor pentatonic, so
+there is no population, crash or baby boom that can make this page play a sour
+interval.
+
+### What it sounds like, measured in a browser rather than argued
+
+A probe wrapped `createOscillator` and let the page run for ten seconds: **27
+notes over 10.2 s — 2.64 a second**, and eight pitches, which are four notes and
+their octaves — `C3 D3 E3 G3` under `C4 D4 E4 G4`. They arrive in that order,
+climbing, because a new pond opens near the bottom of the ladder and walks up it
+as it fills. With a trusted gesture the press builds exactly one `AudioContext`,
+it reaches state `running`, and nothing is logged. A context that is *not*
+running is now skipped rather than scheduled into — notes queued onto a
+suspended clock would all arrive at once when the tab woke.
+
+### What it cost the page: nothing
+
+A headless Chromium measured the top bar with the button in it and again with
+the button removed: **182.6 px at 390 px wide and 76 px at 1280, both ways**. It
+joined a row that had room. v1.172 paid twenty pixels of a phone's first screen
+for the count in the eyebrow and argued the trade was worth it; this one had no
+trade to argue, and the only reason that is known is that the probe was told to
+measure the page twice.
+
+### Changed
+
+- `src/pondsound.js` (new): the scale, the ladder, the envelope, the beat and
+  every word of the button. Pure observer — no world, no config, no random draw.
+- `app/index.html`, `style.css`: the `🔈 Sound` pill in the top bar, beside the
+  view switch, because the two ask the same question — how would you like this
+  page delivered? Its accessible name is the single word `Sound` at every
+  moment; the speaker is decoration and the state is on `aria-pressed`.
+- `src/main.js`: the press, and one reading of the pond per frame.
+- `src/targetsize.js`: two measured rows and `WALKED.app` 78 → 79.
+- `test/pondsound.test.js` (new): 24 tests, including the 1×-against-20× run.
+
 ## [1.172.0] — 2026-09-12
 
 **🔢 The front door said ten.** The landing page — the page every shared link

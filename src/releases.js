@@ -62,9 +62,9 @@
  * stretch and had no number in it at all.
  */
 export const RELEASES = {
-  total: 178,
-  autonomous: 166,
-  latest: "1.172.0",
+  total: 179,
+  autonomous: 167,
+  latest: "1.173.0",
   latestDate: "2026-09-12",
   firstDate: "2026-07-22",
 };
@@ -141,13 +141,25 @@ function atLeast(version, floor) {
  * on that convention would quietly follow the day somebody appends an entry to
  * the wrong end.
  *
+ * **A date is not a key, and v1.173 is the first release to prove it.** Two
+ * entries can share a day — this project has shipped twice in a day before
+ * (v1.9.1, v1.9.2 and v1.10.0 all carry 2026-07-25) and did it again the day
+ * this paragraph was written. The reduce below used to keep the *later* of two
+ * equal dates, which over a file written newest-first means the **older** of
+ * the two releases, so the front page would have announced the version before
+ * the one it was shipping with. Ties go to the higher version number, using the
+ * comparator this file already owns: no appeal to file order, and no second
+ * convention to keep.
+ *
  * @param {{version: string, date: string}[]} entries
  * @returns {typeof RELEASES}
  */
 export function tally(entries) {
   if (!entries.length) throw new RangeError("tally: no releases");
   const dates = entries.map((e) => e.date).sort();
-  const newest = entries.reduce((a, b) => (b.date >= a.date ? b : a));
+  const newest = entries.reduce((a, b) =>
+    b.date !== a.date ? (b.date > a.date ? b : a) : atLeast(b.version, a.version) ? b : a,
+  );
   return {
     total: entries.length,
     autonomous: entries.filter((e) => atLeast(e.version, FIRST_AUTONOMOUS)).length,
