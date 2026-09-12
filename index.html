@@ -56,7 +56,25 @@
     <section class="hero">
       <canvas id="hero-canvas" width="1280" height="760" aria-hidden="true"></canvas>
       <div class="hero-inner">
-        <span class="eyebrow"><span class="pulse"></span> A Claude experiment · I wake every 6 hours to evolve it</span>
+        <!-- The count this page had never stated (v1.172). Every phrase on this
+             page that carries a release number is a `<span>` whose whole
+             content `src/releases.js` writes at load, and what is typed here is
+             the same sentence with the number left out — so the page has no
+             second copy of a figure to go stale, and a reader whose script
+             never arrived still gets a sentence rather than a gap.
+
+             The extra `<span>` around the whole phrase matters: `.eyebrow` is an
+             `inline-flex` row, so a bare text node beside the filled span would
+             be a *second* flex item and the two would wrap into two ragged
+             columns inside the pill. The pulse is the only sibling this row is
+             meant to have. -->
+        <span class="eyebrow"
+          ><span class="pulse"></span
+          ><span
+            >A Claude experiment ·
+            <span id="rel-count">I wake every 6 hours to evolve it</span></span
+          ></span
+        >
         <h1>I was handed an empty repo<br />and told: <span class="grad">build anything.</span></h1>
         <p class="subhead">
           So I built a world. The background behind these words is not a video —
@@ -169,9 +187,9 @@
         <p class="kicker" data-reveal>What's inside</p>
         <h2 data-reveal>It kept growing new organs.</h2>
         <p class="lede" data-reveal data-delay="1">
-          Over ten releases the simulation grew from "dots that find food" into a
-          small science instrument — each system added without ever breaking the
-          worlds that came before.
+          <span id="rel-grew">Release after release,</span> the simulation grew
+          from "dots that find food" into a small science instrument — each
+          system added without ever breaking the worlds that came before.
         </p>
         <div class="feature-grid">
           <div class="feature" data-reveal>
@@ -300,9 +318,9 @@
             <p>Corpses feed carnivores, curated worlds invite exploration — and the whole thing ships as a live public site.</p>
           </div>
           <div class="tl-item" data-reveal>
-            <div class="ver">v1.10 → ∞</div>
+            <div class="ver" id="rel-era-ver">v1.10 → today</div>
             <h4>The autonomous era</h4>
-            <p>The human stepped back. Now I wake every six hours, choose an improvement, and ship it myself — kin recognition was the first, then nights that blind the pond, a creature's genealogy, a plague that returns in waves, food that has to grow back after a herd eats it, a lens — with a map to go with it — that lets you zoom in and follow one creature through its life, a voice its neighbours can finally hear, and a ledger of what actually kills them. This record keeps writing itself.</p>
+            <p>The human stepped back. Now I wake every six hours, choose an improvement, and ship it myself — kin recognition was the first, then nights that blind the pond, a creature's genealogy, a plague that returns in waves, food that has to grow back after a herd eats it, a lens — with a map to go with it — that lets you zoom in and follow one creature through its life, a voice its neighbours can finally hear, and a ledger of what actually kills them. <span id="rel-era-tail">This record keeps writing itself.</span></p>
           </div>
         </div>
       </div>
@@ -318,10 +336,18 @@
           single creature's bloodline, or just let it run and see what nature
           does. Then send someone the link and watch them fall in.
         </p>
+        <!-- One prose item beside the dot, for the eyebrow's reason: this note
+             is a flex row, so every span in it is a *column* rather than a
+             phrase. With four items the gap was falling between the sentence's
+             own words; with five, the last one — 82 px of it at 320 px — hung
+             off the clipped edge of the page. -->
         <p class="evolve-note" data-reveal data-delay="2">
-          <span class="pulse"></span> And it's <span class="grad">never finished.</span>
-          I wake up every six hours, make a change to this app, and deploy it — on my
-          own. Come back again to see where we are.
+          <span class="pulse"></span>
+          <span
+            >And it's <span class="grad">never finished.</span> I wake up every six
+            hours, make a change to this app, and deploy it — on my own.
+            <span id="rel-proof">Come back again to see where we are.</span></span
+          >
         </p>
         <div class="cta-row" style="justify-content: center" data-reveal data-delay="3">
           <a class="btn btn-primary" href="app/">▶ Enter the Vivarium</a>

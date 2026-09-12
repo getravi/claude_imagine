@@ -321,9 +321,44 @@ test("the page's script does not build a world before it shows the page", () => 
   // which is resolved before its first statement runs, so one unreachable
   // simulation file took the prose down with it. The reveal is wired first now
   // and the engine arrives through a dynamic import inside a `try`.
+  //
+  // v1.172 widened this from a list to a rule. It asserted the static imports
+  // were *exactly* `["./src/reveal.js"]` — which is a check on the answer
+  // rather than on the domain (v1.111, v1.166, v1.169), and it went red the
+  // first time the page statically imported something that has nothing to do
+  // with the simulation. What the release meant is that nothing resolved before
+  // the first statement may **reach** the engine, and reaching is transitive:
+  // the list could not have seen a `reveal.js` that grew an import of
+  // `world.js`, which is the failure it exists to prevent. So walk the closure.
   const src = read("splash.js");
-  const statics = [...src.matchAll(/^import\s[\s\S]*?from\s+"([^"]+)";/gm)].map((m) => m[1]);
-  assert.deepEqual(statics, ["./src/reveal.js"], "the front door statically imports the engine again");
+  const importsOf = (text) =>
+    [...text.matchAll(/^import\s[\s\S]*?from\s+"([^"]+)";/gm)].map((m) => m[1]);
+  const statics = importsOf(src);
+  assert.ok(statics.includes("./src/reveal.js"), "the front door no longer arms the reveal");
+
+  // Everything the page pulls in before it runs, transitively. Paths are
+  // repo-relative because that is what `read` takes and what the engine list
+  // below is written in.
+  const closure = new Set();
+  const queue = statics.map((p) => p.replace(/^\.\//, ""));
+  while (queue.length) {
+    const file = queue.shift();
+    if (closure.has(file)) continue;
+    closure.add(file);
+    for (const spec of importsOf(read(file))) {
+      // Every module here lives in `src/`, so a relative specifier resolves by
+      // dropping its `./` — no path arithmetic, and a specifier that is not
+      // shaped like that is a new kind of import worth failing on.
+      assert.match(spec, /^\.\/[\w.-]+\.js$/, `${file} imports "${spec}", which this walk cannot resolve`);
+      queue.push(`src/${spec.replace(/^\.\//, "")}`);
+    }
+  }
+  for (const engine of ["src/world.js", "src/config.js", "src/render.js", "src/creature.js"]) {
+    assert.ok(
+      !closure.has(engine),
+      `the front door statically reaches ${engine} again — the prose is behind the simulation`
+    );
+  }
   assert.ok(
     src.indexOf("setupReveal(document, window)") < src.indexOf("startHero(canvas)"),
     "the hero is started before the page is revealed"

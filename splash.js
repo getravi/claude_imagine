@@ -15,9 +15,20 @@
 // simulation module is now allowed to fail without taking the prose with it.
 
 import { setupReveal } from "./src/reveal.js";
+import { applyReleases } from "./src/releases.js";
 
 // ---- Scroll reveal ----
 setupReveal(document, window);
+
+// ---- What this page had never said about itself ----
+//
+// Five phrases on this page carry a release count and every one of them ships
+// with the number left out, because a number typed into the markup is a second
+// copy of a figure that moves every six hours — and the one that was typed here
+// said *ten* for a hundred and fifty-nine releases. Static, synchronous and
+// above the hero on purpose: this is prose, the hero is decoration, and v1.88's
+// lesson is that the decoration must never be in front of the words.
+applyReleases(document);
 
 // ---- Living hero ----
 const canvas = document.getElementById("hero-canvas");
