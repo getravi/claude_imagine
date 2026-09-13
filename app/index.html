@@ -640,6 +640,25 @@
                 Pick an animal — click one, or press M — and this shows how full
                 they are.
               </p>
+              <!-- One press, for the animal this panel is about (v1.179). The
+                   bar says *they are nearly out* for a fifth of a five-minute
+                   visit and, until now, that was the whole of the page's
+                   answer. `🥣 Feed by hand` four panels up would fix it and is
+                   a mode: arm it, find your animal among three hundred darts,
+                   touch the right square inch. This drops the same ten pellets
+                   exactly where the named animal already is.
+
+                   Fed at the starving mark it is alive ten seconds later in
+                   70.0% of ponds against 17.5% unfed — the same seed, the same
+                   instant, twice. `src/feedthem.js` owns the words, the rule
+                   about when it is offered and that measurement;
+                   `src/handfeed.js` still owns the handful.
+
+                   Hidden by the `hidden` attribute and by nothing else: v1.178
+                   shipped a gauge in this same panel wearing two hiding
+                   mechanisms and spent a whole release invisible behind the
+                   stale one. -->
+              <button class="f-feed" id="btn-feedthem" hidden>🥣 Feed them</button>
               <p class="f-note">
                 Food is the only thing that fills them. Swimming empties them, and
                 so does sitting still. Reach the mark and they split in two, and

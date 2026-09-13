@@ -113,12 +113,27 @@ export function fuelBand(frac, lineFrac) {
  * animal it is four meals from having young would be inventing a route out.
  */
 export function mealFor(c, cfg) {
-  const licensed = !cfg.licensedDietCost || c.carnivory >= cfg.carnivoreThreshold;
-  const forgone = licensed ? cfg.plantPenaltyFromDiet * c.carnivory : 0;
-  const plant = cfg.foodEnergy * (1 - forgone);
   const hunter = cfg.predation && c.carnivory >= cfg.carnivoreThreshold;
   const flesh = hunter ? cfg.biteEnergy * cfg.meatEfficiency * c.carnivory : 0;
-  return Math.max(0, plant, flesh);
+  return Math.max(0, plantMealFor(c, cfg), flesh);
+}
+
+/**
+ * What one *pellet* is worth to this animal, in energy — the grazing half of
+ * `mealFor`, on its own.
+ *
+ * It is separate because a second surface asks a different question of it.
+ * `mealFor` asks *how far is this animal from having young*, and the answer is
+ * the best meal it can go and get. `feedthem.js` asks *is a handful of pellets
+ * worth offering this animal at all*, and a hunter's answer to that is the
+ * plant line whatever its bite is worth. One copy of `world.js`'s `plantGain`,
+ * read by both, because two copies of an arithmetic this page quotes in a
+ * sentence is two sentences that can disagree.
+ */
+export function plantMealFor(c, cfg) {
+  const licensed = !cfg.licensedDietCost || c.carnivory >= cfg.carnivoreThreshold;
+  const forgone = licensed ? cfg.plantPenaltyFromDiet * c.carnivory : 0;
+  return Math.max(0, cfg.foodEnergy * (1 - forgone));
 }
 
 /** How many, in words, mid-sentence — this bar's counts are never larger. */

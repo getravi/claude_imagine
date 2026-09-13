@@ -4,6 +4,61 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.179.0] — 2026-09-13
+
+**🥣 Feed them.** The bar this page grew last release says *they are nearly out*
+for **a fifth of a five-minute visit**, and until today the whole of the page's
+answer to that was a sentence: *Without a meal very soon, they starve.* The one
+control that could do something about it has been here since v1.147, four panels
+further up, and it is a mode — arm it, find your animal among three hundred
+darts, touch the water on the right square inch.
+
+Now there is a button under the bar. One press, no aiming, no mode: ten pellets
+land exactly where the animal the panel is about is standing, and the bar starts
+climbing while you watch.
+
+### It is the difference between living and not
+
+Two runs of the same seed, both following the animal the page seats: one presses
+at the first instant that animal is starving, the other never presses. A handful
+draws nothing from the world's random stream, so until the pellets land the two
+ponds are **the same pond** — which makes this a control rather than two
+anecdotes. Forty seeds, ten seconds of watching after the press:
+
+| ten seconds after the starving mark | pressed | not pressed |
+| --- | --- | --- |
+| still alive | **70.0%** | 17.5% |
+| went from nearly dead to having young | **10.0%** | 0.0% |
+
+Every one of the forty ponds reached a starving moment, a median of **918 steps**
+in — about half a minute after the page loads. So this is not a rare button for a
+rare moment; it is the answer to the commonest thing that happens to the animal
+you are watching.
+
+### You cannot feed one animal
+
+Of the ten pellets, the animal you pressed for eats a median of **four**. A
+median of five go to whoever else happens to be passing. That is not a bug to
+design away, it is the pond telling the truth about itself — so the banner says
+it out loud every time: *Ten pellets for Tamsin of the Silver Quills. Eight other
+animals can see them too.* The handful is cleared in a median of 126 steps, about
+two seconds, and the page already had a sentence for that moment: **Ten pellets,
+all found — 125 steps.**
+
+### Small print
+
+- The button only appears when somebody is picked **and** a pellet is actually
+  worth something to them: in a world built in the drawer where plant food is
+  worthless to a pure carnivore, offering it *feed them* would be a promise this
+  pond does not keep.
+- One hiding mechanism and one only — the `hidden` attribute — which is the bug
+  v1.178 shipped in this very panel, now a test.
+- `src/fuel.js` grew `plantMealFor`, so what a pellet is worth is written once
+  and read by both the sentence above the button and the button itself.
+- **Determinism is untouched.** The drop is `handfeed.js`'s golden-angle spiral:
+  not one random number, pressed or unpressed. A pond nobody feeds is bit-for-bit
+  the pond it always was.
+
 ## [1.178.0] — 2026-09-13
 
 **🍽️ How full they are.** Three panels under the water say what the animal you

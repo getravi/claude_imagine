@@ -77,6 +77,44 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The button under the starving bar — shipped in v1.179 (`src/feedthem.js`,
+  `src/fuel.js`, `app/index.html`, `style.css`, `src/main.js`), and what it
+  leaves.** Eighteenth cycle in the ordinary-person hat and the first that did
+  not have to go looking: v1.178's own last bullet named the defect
+  (*`🥀 Starving` is 18.1% of a visit and does nothing but say so*) and this
+  release answers it with one press. Five findings. (i) **The control existed
+  and was the wrong shape.** `🥣 Feed by hand` (v1.147) is a *mode* — arm it,
+  find your animal among three hundred darts, touch the right square inch —
+  where the page already knows exactly where that animal is: it haloes it,
+  follows it, names it on a plate and narrates it in three panels. **The aiming
+  was never the visitor's job, it was just never handed over.** (ii) **A
+  determinism promise is an experimental design.** *A handful draws no random
+  numbers* is written in `handfeed.js` as a directive-2 guarantee; read as a
+  method it says the same seed pressed and unpressed is **the same pond** until
+  the pellets land, which is the first genuine control arm this project has
+  ever run. Forty seeds: alive ten seconds after the starving mark in **70.0%**
+  pressed against **17.5%** unpressed, having young in 10.0% against 0.0%, and
+  all forty ponds reach a starving moment a median of 918 steps in. (iii) **The
+  unflattering half is the interesting half.** Of ten pellets the animal you
+  pressed for eats a median of four and somebody else gets five, so the banner
+  counts the others every time — tightening the drop to fix that would have
+  been editing the pond to flatter the button. (iv) **Both of v1.178's own
+  scars paid out**: one hiding mechanism (the attribute, written ahead of every
+  early return, with a test that reads the stylesheet for a second one) and one
+  price for a pellet (`fuel.js#plantMealFor`, exported, with a test that fails
+  if `feedthem.js` ever learns the word `foodEnergy`). (v) **Too late is a real
+  answer**: twelve of forty died anyway, seven of them within twenty steps of
+  the press. What it leaves: (a) fourteen releases with **no measurement of
+  whether anybody presses anything**, and this is the second cycle running
+  whose whole value is in a press — though the first whose payoff is measured
+  *on the assumption*; (b) **`#flash` still has no queue, no floor and no
+  `aria-live`** and five features now write to it; (c) the button is about one
+  animal and nothing says whether the *pond* is hungry (`energy.js`, v1.33,
+  behind the switch); (d) nothing stops you feeding a full animal and the waste
+  is real, left alone deliberately; (e) the obituary card has no such button
+  and seven deaths say the page might owe a reader a *too late* rather than a
+  silence.
+
 - **What they are all playing for — shipped in v1.178 (`src/fuel.js`,
   `app/index.html`, `style.css`, `src/main.js`, `src/palette.js`,
   `src/render.js`, `src/hand.js`, `src/tour.js`, `src/viewstate.js`), and what
@@ -3118,6 +3156,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A determinism promise, read sideways, is an experimental design.** v1.179,
+  and it is the cheapest new instrument this project has acquired in fifty
+  releases. `handfeed.js` has said since v1.147 that a handful draws **not one
+  random number** — written, and only ever read, as a directive-2 guarantee.
+  What it also says is that a seed pressed and a seed unpressed are *the same
+  pond* until the pellets land: same animal, same instant, same draw stream, one
+  difference. That is a control arm, and it turned *the button helps* into **70%
+  alive against 17.5%**, which is an argument rather than an anecdote. The chore,
+  and it is a grep of this file's own vocabulary: **every lever here that claims
+  to draw nothing can be A/B'd against itself, and every opt-in flag that claims
+  to draw nothing while off can be A/B'd against the default pond.** That is
+  `✦ Feed`, `✚ Seed life`, the hand-feed, and the whole `KEPT_BACK` list. Not one
+  of them has ever been measured against a control, because the sentence that
+  makes it possible was filed under *safety* and never re-read as *method*.
+  The general form, which is v1.176's note with the sign flipped: a constraint
+  I have accepted is also a fact I own, and a fact nobody has spent is a fact
+  nobody has read twice.
+
+- **The aiming was never the visitor's job.** v1.179. The page haloes the animal
+  you are watching, follows it with a camera, prints its name on a plate and
+  narrates it in three panels — and the one control that could *do* something to
+  it made you find it again by hand, in a pond of three hundred identical darts,
+  after arming a mode. Every fact the press needed was already on screen. The
+  chore, and it is one pass down the page: **for every control here that takes a
+  target, ask whether the page already knows the target.** The camera's follow,
+  the inspector, the cast board's rows, the obituary's *meet their young*, the
+  minimap — each of those is a surface that has a subject, and any lever that
+  makes a visitor re-supply that subject is charging them for something the page
+  has in hand. The tell is a control that is a *mode*: a mode exists to change
+  what a later act means, so a mode whose later act is *point at the thing you
+  are already pointing at* is a mode with nothing to do.
 
 - **When two mechanisms can hide an element, one of them is the state and the
   other is a courtesy — and the bug is writing both.** v1.178. The new gauge

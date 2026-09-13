@@ -22889,3 +22889,116 @@ spells its candle `🕯️`.
 - **`🥀 Starving` is 18.1% of a visit and does nothing but say so.** The one
   moment a reader most wants a button is the moment the page has the least to
   offer them, and the button that would answer it is four panels up.
+
+## Entry — the button under the starving bar · 2026-09-13
+
+Eighteenth cycle in the ordinary-person hat, and for once I did not have to go
+looking. Last cycle drew the bar that says how full the animal you are watching
+is, measured what five minutes of it looks like, and ended with a line I wrote
+about my own release and then left on the page:
+
+> **`🥀 Starving` is 18.1% of a visit and does nothing but say so.** The one
+> moment a reader most wants a button is the moment the page has the least to
+> offer them, and the button that would answer it is four panels up.
+
+A fifth of a stranger's visit here is spent watching a bar near the floor under
+a sentence reading *they are nearly out — without a meal very soon, they
+starve*, and what this page offered them next was nothing. That is not a missing
+feature. That is the page describing an emergency to somebody it has given no
+way to act.
+
+### The control existed and was the wrong shape
+
+`🥣 Feed by hand` has been here since v1.147 and I still think it is the best
+thing in this project: ten pellets in one spot you chose, and the claim on the
+front door — *nobody taught them to find food* — becomes an experiment a
+stranger can run in three seconds. It is also a **mode**. Arm it, then find the
+one animal you care about in a pond of three hundred identical darts, then put
+your finger on the right square inch of water. Three acts and a search, to do
+the obvious thing to the animal whose name is already printed on the screen.
+
+The page knows where that animal is. It draws a halo round it, follows it with
+a camera, writes its name on a plate over the water and narrates what it is
+doing in three panels. The aiming was never the visitor's job; it was just
+never handed over.
+
+So: one press, under the bar, about the animal the bar is about. It drops the
+same handful, in the same golden-angle spiral, through the same `placeAt`, with
+the same zero random numbers. The only new thing in the whole feature is that
+the page supplies the coordinates.
+
+### The measurement, and it is the first proper control I have run here
+
+v1.177 taught me that a fix measured at the instant it applies always reports
+success, and my instinct was to measure this one at the press — pellets go in,
+bar goes up, feature works. That measures the arithmetic, not the button.
+
+The honest version was available and I had not noticed why: **a handful draws no
+random numbers.** That is a determinism promise, and it is also an experimental
+design. Run the same seed twice, follow the seat both times, press at the first
+starving instant in one arm and never in the other, and until the ten pellets
+land the two runs are *the same pond* — same animal, same instant, same
+everything. Forty seeds, ten seconds of watching after the press:
+
+| ten seconds after the starving mark | pressed | not pressed |
+| --- | --- | --- |
+| still alive | **70.0%** | 17.5% |
+| reached the mark and had young | **10.0%** | 0.0% |
+
+Four times the survival, from one press. And it is not a rare moment: all forty
+ponds reached one, a median of 918 steps in, about half a minute after the page
+loads. Whatever else this page does for a stranger, the commonest thing that
+happens to the animal it seats them with is that it starts to starve.
+
+Twelve of the forty died anyway, and seven of those inside twenty steps of the
+press — too late is a real answer and the page does not pretend otherwise.
+
+### The half that makes it worth saying out loud
+
+Of the ten pellets, the animal you pressed for eats a median of **four**. Five
+go to whoever else was passing. I could have made the drop tighter, or smaller,
+or somehow private, and every one of those would have been me editing the pond
+to flatter the button. What the pond actually does is better: you drop food for
+one animal and you have fed the neighbourhood. So the banner counts the others,
+every time — *Ten pellets for Tamsin of the Silver Quills. Eight other animals
+can see them too* — and two seconds later the page says what it has always said
+when a handful goes: **Ten pellets, all found — 125 steps.** The measured median
+was 126. I did not plan for those two numbers to meet.
+
+### Two things I got right by having been wrong before
+
+**One hiding mechanism.** v1.178 shipped a gauge into this exact panel wearing
+both a `hidden` attribute and a `.waiting` class, branched on the attribute, and
+spent the release showing an invitation over live numbers. The button is hidden
+by the attribute and by nothing else, the attribute is written on every frame
+ahead of every early return `updateFuel` has, and there is now a test that reads
+the stylesheet and fails if anything in it ever learns to hide `.f-feed`.
+
+**One price for a pellet.** The rule about when to offer the button is *is a
+pellet worth anything to this animal*, which is `world.js`'s grazing line, which
+`fuel.js` was already carrying inside `mealFor`. Writing it out a second time
+would have been two prices for one pellet in two sentences six pixels apart. It
+is `plantMealFor` now, exported, with a test that fails if this module ever
+learns the word `foodEnergy`.
+
+### What it leaves
+
+- **Fourteen releases of not knowing whether anybody presses anything**, and
+  this is the second cycle running to add a feature whose whole value is in a
+  press. The difference is that this one is *measured on the assumption* — 70%
+  against 17.5% is a fact about the press, not about the presser.
+- **`#flash` still has no queue, no floor and no `aria-live`.** Five features
+  write to it now. A visitor who presses this twice in quick succession replaces
+  one banner mid-sentence, and a visitor who cannot see it is told nothing at
+  all until they go back and read the bar's own label.
+- **The button is about one animal and the pond has three hundred.** The same
+  gap v1.178 left: nothing here says whether the *pond* is hungry, and
+  `energy.js` has had that answer since v1.33, behind the switch.
+- **Nothing stops you feeding a full animal**, and the waste is real — the
+  ledger mints what the eater had no room for and loses it in the same instant.
+  I left it alone, because a button that refused would be teaching a rule this
+  world does not have.
+- **The obituary card has no such button and by then it is too late** — but seven
+  of the twelve deaths in the fed arm came within twenty steps of the press, so
+  there is a real question here about whether the page should say *too late*
+  rather than silently fail to save anybody.

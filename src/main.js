@@ -73,6 +73,7 @@ import {
   steerMark,
 } from "./decide.js";
 import { fuelInvite, fuelOf } from "./fuel.js";
+import { canFeed, feedLine } from "./feedthem.js";
 import { SEAT_PHRASE, nextSeat, openingPick } from "./onstage.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -1343,6 +1344,11 @@ function updateFuel() {
   const alive = c && !c.dead;
   const el = $("fuel");
   const gauge = $("fuel-gauge");
+  // The press (v1.179), written on both sides of the branch below and behind no
+  // condition of its own — the attribute is this button's only hiding
+  // mechanism, which is the whole of what the gauge above it got wrong.
+  const offer = alive && canFeed(c, world.config);
+  $("btn-feedthem").hidden = !offer;
   if (!alive) {
     // Put away rather than emptied, for `updateEyeview`'s reason: a bar at zero
     // beside an invitation is a picture of an animal that starved, and this
@@ -3777,6 +3783,7 @@ function wireControls() {
   $("btn-feed").addEventListener("click", () => world.addFood(60));
   $("btn-seedlife").addEventListener("click", () => world.addRandomCreatures(12));
   $("btn-hand").addEventListener("click", () => setHandFeeding(!handFeeding));
+  $("btn-feedthem").addEventListener("click", feedTheOneOnScreen);
   // The pond's voice (v1.173). Read off the button rather than held in a second
   // variable: `aria-pressed` is where the state already lives, and a mode with
   // two copies of itself is a mode that gets out of step.
@@ -4541,6 +4548,34 @@ function feedByHand(wx, wy) {
   // (the pond already at its food ceiling) has said so in the banner already.
   view.handful = drop.pellets.length > 0 ? drop : null;
   flash(dropLine(progress, watchersNear(world, wx, wy)));
+}
+
+// ---- Feed the one on screen (v1.179) ----
+//
+// The same handful, with the aiming taken out. `🥣 Feed by hand` above is a
+// mode and this is a press: the animal is already named on the page, the panel
+// is already about how full it is, and the spot is wherever it happens to be
+// standing. `src/feedthem.js` owns the words and the rule about when the button
+// is offered; the drop is `handfeed.js`'s, unchanged and still drawing nothing
+// from the world's random stream.
+//
+// It deliberately does **not** arm the aimed mode, move the camera or change the
+// selection. One press, one consequence, and the consequence is the bar right
+// above the button starting to climb.
+function feedTheOneOnScreen() {
+  const c = renderer.selected;
+  if (!canFeed(c, world.config)) return;
+  const drop = dropHandful(world, c.x, c.y);
+  const progress = handfulProgress(drop, world);
+  view.handful = drop.pellets.length > 0 ? drop : null;
+  // Everyone who can see the drop except the animal it was for: an animal
+  // standing on its own dinner is not a rival for it, and the count is only
+  // interesting as *how many others*. A median of five of these ten go to
+  // somebody else, which is the honest half of this button and the reason the
+  // sentence carries the number at all.
+  const others = Math.max(0, watchersNear(world, c.x, c.y) - 1);
+  const name = creatureLabel(c, namesForTree(world.phylogeny));
+  flash(feedLine(name, progress.placed, others));
 }
 
 /** Per frame: has the last handful gone? Say so once, then stop watching. */

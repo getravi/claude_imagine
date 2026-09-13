@@ -1024,6 +1024,37 @@ body.simple [data-expert] {
      cannot happen. */
   min-height: 2.9em;
 }
+/* The one press this panel offers (v1.179). The plate is `button.hand-btn`'s,
+   declaration for declaration, and that is the point rather than a shortcut:
+   this page has one blue plate meaning *a thing you can do to the pond*, and
+   the control this button shortens is wearing it four panels up. A colour
+   chosen here would be a second word for one idea, and `legibility.test.js`
+   would have a new ink/ground pair to walk for no reason at all.
+
+   Sized rather than stretched. `button` is `flex: 1; display: block; width:
+   100%` for the column of file actions it was written for, and a full-width
+   plate under a sentence reads as a banner instead of as a press — so this is
+   `inline-flex` at its own width, at the 44 px `.firstmoves` holds its three
+   presses to (SC 2.5.5). It is not a first move and does not sit in that row,
+   but it is the one control on this page a visitor reaches for at the moment
+   they are least inclined to aim carefully. */
+.f-feed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  margin: 2px 0 0;
+  padding: 9px 14px;
+  font-size: 14px;
+  border-color: #35485e;
+  background: #131d2a;
+}
+.f-feed:hover {
+  background: #1a2737;
+  border-color: #47617f;
+}
 .f-note {
   margin: 6px 0 0;
   font-size: 13px;

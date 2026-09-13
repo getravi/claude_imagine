@@ -51,6 +51,7 @@ import {
   fuelSay,
   mealFor,
   mealWord,
+  plantMealFor,
 } from "../src/fuel.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -116,6 +117,23 @@ test("the licence that waives the plant penalty is the one creature.js charges",
     cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * 0.9),
     "a licensed one pays in full"
   );
+});
+
+test("the grazing half stands on its own, and the whole is built from it", () => {
+  // `plantMealFor` is the pellet's line, split out in v1.179 because a second
+  // surface asks a different question of it: the bar asks how far this animal is
+  // from having young (the best meal it can get), and the button under the bar
+  // asks whether a handful of pellets is worth offering at all (the pellet line,
+  // whatever the bite is worth). Two copies would be two prices for one pellet.
+  const cfg = makeConfig({ predation: true });
+  assert.equal(plantMealFor(animal(100, 0), cfg), cfg.foodEnergy);
+  const hunter = animal(100, 0.9);
+  const pellet = cfg.foodEnergy * (1 - cfg.plantPenaltyFromDiet * 0.9);
+  assert.equal(plantMealFor(hunter, cfg), pellet, "a hunter's pellet is still worth a hunter's pellet");
+  assert.ok(mealFor(hunter, cfg) > pellet, "the whole meal is the better of the two routes");
+  assert.equal(mealFor(animal(100, 0), cfg), plantMealFor(animal(100, 0), cfg));
+  // Never negative, on the side a hunter's own gate cannot reach.
+  assert.equal(plantMealFor(animal(100, 1), makeConfig({ plantPenaltyFromDiet: 1.2 })), 0);
 });
 
 test("nothing to eat is zero rather than a negative meal", () => {
