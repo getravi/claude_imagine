@@ -204,6 +204,14 @@ const FRESH = Object.freeze({
   // forgotten in the same funnel they are.
   decideSig: "",
   decideWordsAt: 0,
+  // What the bar under that figure is showing (v1.178). One field rather than
+  // the two above it, because this panel has no hold: the quantity it draws
+  // moves about one per cent of the track every forty ticks, so the value and
+  // the sentence turn over together and the signature is the whole of the
+  // machine. World-scoped for `doingSig`'s reason and a little more sharply —
+  // it names a creature id *and* a percentage of `energyMax`, and both of those
+  // belong to the config that was in force when they were written.
+  fuelSig: "",
   // The book of records (v1.124). Keyed on the board's own sentences, which is
   // the strongest key any surface here uses and the only one that has to be:
   // a record's line changes when its holder dies while the record itself holds

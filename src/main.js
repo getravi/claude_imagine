@@ -72,6 +72,7 @@ import {
   drawSteer,
   steerMark,
 } from "./decide.js";
+import { fuelInvite, fuelOf } from "./fuel.js";
 import { SEAT_PHRASE, nextSeat, openingPick } from "./onstage.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
@@ -924,6 +925,11 @@ function loop(now) {
   // the two figures share a subject and a frame of reference — the disc's nose
   // is up, and this line's middle is that same *ahead*.
   updateDecide(now);
+  // And what all of that is being spent on (v1.178). After the trio rather than
+  // among them: those three are a mind — told, decided, done — and this is the
+  // body the mind is keeping alive. It is also the panel directly above the
+  // card that ends the story, which is the order the pond itself takes.
+  updateFuel();
   updateKey();
   updateCast(world);
   updateEvolved(world);
@@ -1311,6 +1317,67 @@ function updateDecide(now) {
   if (line === view.decideSig) return;
   view.decideSig = line;
   $("decide-line").textContent = line;
+}
+
+// ---- How full they are (v1.178) ----
+//
+// The bar under the steering figure: how much this animal has left to spend,
+// against the level at which it splits in two. `src/fuel.js` owns the bands,
+// the arithmetic and every word; this is the adapter onto the DOM.
+//
+// **One clock, not the two `updateEyeview` needs.** The disc's ink moves every
+// tick because a blip really does move every tick; this quantity is a slow one
+// — the default pond drains about one per cent of the bar every forty ticks —
+// so the value and the sentence turn over together, on a signature, with no
+// wall-clock hold anywhere. A meal is the exception and it is the reason the
+// bar has a CSS transition rather than a hold: a bite arrives as a tenth of the
+// track in a single step, which is a jump a quarter of a second of animation
+// turns into something an eye can follow, and holding the *number* for a second
+// and a half would have been a bar that lies for as long as it is held.
+//
+// The per cent is rounded into the signature on purpose: it is the smallest
+// step the bar can actually draw at any width this page is read at, so every
+// write here moves at least one pixel of ink.
+function updateFuel() {
+  const c = renderer.selected;
+  const alive = c && !c.dead;
+  const el = $("fuel");
+  const gauge = $("fuel-gauge");
+  if (!alive) {
+    // Put away rather than emptied, for `updateEyeview`'s reason: a bar at zero
+    // beside an invitation is a picture of an animal that starved, and this
+    // panel's own bottom band is exactly that picture.
+    const idle = `invite:${hand}`;
+    if (view.fuelSig === idle) return;
+    view.fuelSig = idle;
+    el.classList.add("waiting");
+    gauge.hidden = true;
+    $("fuel-line").textContent = fuelInvite(hand);
+    return;
+  }
+  const f = fuelOf(c, world.config);
+  const pct = Math.round(f.frac * 100);
+  const sig = `${c.id}:${pct}:${f.band.key}:${f.meals}`;
+  if (sig === view.fuelSig) return;
+  view.fuelSig = sig;
+  // Both of these every time, and never behind `if (gauge.hidden)` — the first
+  // browser walk of this panel found it filled in, correct and invisible,
+  // because the gauge does not *start* hidden in the markup, so the attribute
+  // read false on the first frame and the class the stylesheet actually obeys
+  // was never taken off. That is v1.175's `display` beats `[hidden]` from the
+  // other side: there the author rule won and the attribute was believed; here
+  // both were written and only one of them was ever checked. The class is the
+  // state; the attribute is what a reader with no stylesheet gets.
+  el.classList.remove("waiting");
+  gauge.hidden = false;
+  // Both properties on the gauge rather than on the fill, because the mark and
+  // its label are positioned from `--fuel-line` too and a level written twice
+  // is a level that can disagree with its own caption.
+  gauge.style.setProperty("--fuel", `${pct}%`);
+  gauge.style.setProperty("--fuel-line", `${(f.lineFrac * 100).toFixed(2)}%`);
+  gauge.style.setProperty("--fuel-ink", f.fill);
+  gauge.setAttribute("aria-label", f.say);
+  $("fuel-line").textContent = f.line;
 }
 
 // ---- The key to the water (v1.122) ----

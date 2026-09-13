@@ -4,6 +4,126 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.178.0] — 2026-09-13
+
+**🍽️ How full they are.** Three panels under the water say what the animal you
+are watching is doing, what it can see and what it decides. Between them they
+never once named the thing every animal in this pond is actually playing for.
+
+A creature here does exactly two things with energy. It **burns** it — swimming
+costs, existing costs, being a predator costs — and when it has **enough** of it,
+it splits in two and hands half of it to a brand-new animal. That is the whole
+economy of this world, it is the reason anything here ever evolves, and in a
+hundred and seventy-seven releases the page had never drawn it.
+
+Now it does: one bar, in the animal's own colour, with a mark across it where
+they have young, and one sentence under it — **Another three meals and they can
+have young.** Watch it fill. Watch it touch the mark. Watch a new dart appear in
+the water and the bar drop back to half.
+
+### What a visitor actually sees
+
+Forty seeds, eighteen thousand steps each — five minutes at the speed the page
+opens on — following the animal the page seats and every animal it hands the
+seat on to. 720,000 instants of the bar:
+
+| what the bar said | share of a five-minute visit |
+| --- | --- |
+| 🍽️ Peckish | 38.0% |
+| 🥣 Hungry | 24.0% |
+| 😋️ Well fed | 19.9% |
+| 🥀 Starving | 18.1% |
+| 🥚 Full up | **0.0%** |
+
+And the payoff, which is the number this release was worth building for: the
+animal in the seat **reaches the mark and splits a median of seven times** in
+those five minutes, in **39 of 40** seeds, the first of them a median of 1,944
+steps in — about **half a minute** after the page loads.
+
+### The top of the bar is a place nobody is ever seen standing
+
+That 0.0% is not a gap in the instrument. v1.148 found the same thing about a
+*verb*: `doing.js` tried to ship a **ready to breed** state and measured it
+firing on 0.0% of 52,841 sampled animals, because crossing the line **is** the
+split — the energy is gone in the tick it arrives. Drawn as a quantity instead
+of as a word, that stops being an unobservable state and becomes the most
+legible fact on the page: the bar climbs to the mark and is immediately spent.
+Over 3,000 steps of a pond with room in it, **not one animal** was ever over the
+line. In a pond capped at forty, where `world.js` refuses the birth, they queue
+there — which is why the panel still has a word for it.
+
+### A meal is not the same size for everybody
+
+The easy version of *another three meals* divides by `foodEnergy` and is wrong
+for half the pond. A pellet is worth `foodEnergy × (1 − plant penalty × diet
+gene)` to the animal eating it, so a hunter gets almost nothing from one; a bite
+of prey is worth `biteEnergy × meatEfficiency × diet gene`, and only to a body
+licensed to hunt in a world where predation is on. `mealFor` is both of
+`world.js`'s own lines, and the count divides by the larger — the meal **this**
+animal can go and get. It ignores what they burn on the way, which makes it a
+floor rather than a forecast: another three meals is the *fewest* that will do.
+Over the sweep the count ran from one to nine.
+
+### The bar is the water's own ink
+
+The fill is not a colour anybody chose. `render.js` has drawn every creature at
+`30 + 45 × how full it is` per cent lightness since v1.0, and the placard has
+explained it in words since v1.122 — *lightness rises with what it has left to
+spend, so a fading one is starving.* True, and never once calibrated: a reader
+was given a rule about brightness and nothing to check it against. The ramp has
+moved out of the renderer into `palette.js#bodyFill` and both surfaces call it,
+so the bar is **the colour of the dart in the water, at the same brightness**.
+One value, drawn twice, in one ink. Thirty seconds of the page at Fast, sampled
+four times a second: 98 distinct fills, 17 meals, two births, eight different
+sentences.
+
+### And the walk found it filled in, correct, and invisible
+
+`node --test` passed everything; the first browser walk found the panel showing
+its invitation with the real numbers already written underneath it. The gauge
+does not *start* hidden in the markup, so `if (gauge.hidden)` read false on the
+very first frame and the class the stylesheet actually obeys was never taken
+off. That is v1.175's *an author's `display` beats `[hidden]`* from the other
+side — there the attribute was believed and the rule won; here **both were
+written and only one of them was ever checked**. The class is the state now, and
+it is written every time.
+
+### The cost, measured both ways
+
+| | before | after |
+| --- | --- | --- |
+| the page, at 390 × 844 | 5,648 px | 5,913 px |
+| `🔍 What you are looking at` | 2,034 px | 2,299 px |
+| the page, at 1280 × 900 | 3,645 px | 3,851 px |
+
+Nothing above it moves: the water, the pace row, the four first moves and the
+three panels about a mind are all exactly where they were. The panel itself is
+245 px on a phone and 187 on a desktop, and the bar is on a line of its own
+rather than beside the words — `.aim`'s rule from v1.152, learned again by a
+screenshot of 407 px of bar over 130 px of empty panel.
+
+### Added
+- `src/fuel.js` — the bands, the meal arithmetic, the sentence and the spoken
+  label for the bar under the water. Pure observer: three fields and a config
+  in, words and two numbers out.
+- `🍽️ How full they are` in `app/index.html`, under the three panels about a
+  mind and over the card that ends the story — the bottom of this bar and the
+  obituary's commonest first line are the same event, and they wear the same 🥀.
+- `palette.js#bodyLightness` and `#bodyFill`, the renderer's own body ramp, now
+  in one place because two surfaces draw it.
+- `hand.js#fuelInvite`, the fourth of this page's invitations, in both registers.
+- `test/fuel.test.js` — 27 tests: the meal against `world.js`'s two lines with
+  each of the three gates open and shut, the bands over a thousand fullnesses,
+  the count as a floor, the ink against the renderer's, both registers, the
+  jargon sweep, and the pure-observer fingerprint.
+
+### Changed
+- `render.js` calls the shared ramp instead of its own copy of it — the same
+  arithmetic, so every pond is drawn exactly as it was.
+- `tour.js#UNTOURED` says why the guide walks past this one, and it is the first
+  excuse in that map about a *clock* rather than about words: the bar says what
+  it means by moving, and a card holds a reader still.
+
 ## [1.177.0] — 2026-09-13
 
 **The pond keeps you company.** Since v1.164 this page has sat somebody in the

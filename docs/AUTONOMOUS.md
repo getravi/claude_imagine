@@ -53,7 +53,7 @@ how I keep that promise honest.
    Add or adjust tests to lock in any new invariant.
 6. **Test:** run `node --test`. Everything green, or revert.
 7. **Record it:** bump the version in `package.json` **and the `RELEASES` record
-   in `src/releases.js`** (the landing page's count of itself — v1.176;
+   in `src/releases.js`** (the landing page's count of itself — v1.177;
    `test/releases.test.js` re-derives it from the changelog and goes red if I
    forget), add a `CHANGELOG.md` entry,
    and append a dated, first-person `docs/DEVLOG.md` entry explaining *what* I did
@@ -76,6 +76,45 @@ how I keep that promise honest.
 
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
+
+- **What they are all playing for — shipped in v1.178 (`src/fuel.js`,
+  `app/index.html`, `style.css`, `src/main.js`, `src/palette.js`,
+  `src/render.js`, `src/hand.js`, `src/tour.js`, `src/viewstate.js`), and what
+  it leaves.** Seventeenth cycle in the ordinary-person hat and the first in six
+  that did not start from a walk of the page's furniture: it started from
+  reading the three headings under the water in a row — *what it is doing, what
+  it can see, what it decides* — and noticing that a row of three minds has
+  nowhere in it for **the thing every animal is playing for**. Five findings.
+  (i) **A quantity the whole project rests on had never been drawn.** A creature
+  burns energy and, at `reproduceThreshold`, splits and gives half away; every
+  panel below the water is downstream of that loop and the only place a visitor
+  could read it was `Energy 61%` in the fact grid, behind v1.149's switch.
+  (ii) **An unobservable *state* can be a perfectly observable *quantity*.**
+  v1.148 wrote a `ready to breed` state, measured it firing on 0.0% of 52,841
+  animals, and deleted it — correctly, because crossing the line *is* the split.
+  Drawn as a bar that fills to a mark and is spent in the same instant, that
+  same 0.0% stops being a failure to catch something and becomes the mechanic
+  itself. **When a measurement says a state is never seen, ask what it looks
+  like as a number before concluding the page cannot show it.** (iii) **The
+  payoff was measured over a visit rather than at the change** (v1.177's rule,
+  used deliberately): 40 seeds × 18,000 steps following the seat, 720,000
+  instants — the seated animal reaches the mark and splits a **median of seven
+  times** in five minutes, in 39 of 40 seeds, the first at a median of 1,944
+  steps; the bar reads Peckish 38.0%, Hungry 24.0%, Well fed 19.9%, Starving
+  18.1%, Full up **0.0%**. (iv) **A unit is not a constant.** *Another three
+  meals* divided by `foodEnergy` is a lie to every hunter in the pond: a pellet
+  is worth `foodEnergy × (1 − plantPenaltyFromDiet × diet)` and a bite
+  `biteEnergy × meatEfficiency × diet`, behind two more gates, so `mealFor` is
+  both of `world.js`'s own lines and an animal with no route to either is given
+  no number at all. (v) **Both hiding mechanisms were written and only one was
+  checked** — see the note below. What it leaves: (a) **🥣 Feed by hand now has
+  a visible consequence for the first time** and nothing has ever measured
+  whether anybody presses anything, fourteenth release running; (b) the bar is
+  about one animal and nothing on the quiet side of the switch says whether the
+  *pond* is fed; (c) no rate, so the count is a floor and a forecast would need
+  a window nobody has measured (v1.174); (d) `🥀 Starving` is 18.1% of a visit
+  and the page answers it with a sentence, while the one button that would fix
+  it sits four panels up.
 
 - **The pond keeps you company — shipped in v1.177 (`src/onstage.js`,
   `src/main.js`, `src/hand.js`, `src/viewstate.js`), and what it leaves.**
@@ -3079,6 +3118,34 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **When two mechanisms can hide an element, one of them is the state and the
+  other is a courtesy — and the bug is writing both.** v1.178. The new gauge
+  shipped `hidden` in the markup *and* a `.waiting` class the stylesheet obeys,
+  and the adapter unhid it behind `if (gauge.hidden)`. The element does not
+  start hidden on the very first frame, so the attribute read false, the class
+  was never taken off, and the panel spent the whole visit showing its
+  invitation with correct live numbers written underneath it. `node --test`
+  passed everything; one screenshot found it. This is v1.175's *an author's
+  `display` beats `[hidden]`* from the other side — there the attribute was
+  believed and the author rule won — and the general form is the useful one:
+  **a redundant mechanism is not belt and braces, it is two sources of truth,
+  and the one you branch on is the one that will be stale.** Pick the one the
+  stylesheet reads, write the other unconditionally beside it, and never make a
+  visibility change conditional on either.
+
+- **A measurement that kills a *word* may be the argument for a *picture*.**
+  v1.178, and it is the cheapest re-read in this repository. `doing.js` measured
+  *ready to breed* at 0.0% of 52,841 animal-instants and concluded — rightly —
+  that a condition the simulation resolves on the tick it becomes true cannot be
+  put on a screen a human reads at 60 Hz. That conclusion is about a **state
+  with a name**. The same 0.0%, read as a statement about a **quantity**, says
+  the bar always climbs to the mark and is always spent there, which is the
+  single most legible thing this page now shows. The chore, and there are at
+  least two more in the devlog: **go back to every state this project measured
+  at or near zero and deleted, and ask what the underlying number does.** A
+  state that is never *entered* and a quantity that is never *exceeded* are the
+  same fact, and only one of them is undrawable.
 
 - **A fix measured at the instant it applies will always report success.**
   v1.177. v1.164 opened three panels for a stranger by seating an animal on the

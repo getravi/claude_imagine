@@ -28,6 +28,8 @@ import {
   lineageFill,
   nameTag,
   nameTagFont,
+  bodyLightness,
+  BODY_SATURATION,
 } from "./palette.js";
 import { hazardSources } from "./contagion.js";
 import { refugeRadius, inRefuge } from "./refuge.js";
@@ -773,11 +775,14 @@ export class Renderer {
   _drawCreature(ctx, c) {
     const cfg = this.config;
     const energyFrac = Math.max(0, Math.min(1, c.energy / cfg.energyMax));
-    // Lightness rises with energy so starving creatures visibly dim.
-    const light = 30 + energyFrac * 45;
+    // Lightness rises with energy so starving creatures visibly dim. The ramp
+    // moved into `palette.js` in v1.178, when the bar under the water started
+    // drawing the same value in the same ink: a rule a reader is asked to
+    // calibrate by eye cannot be written down twice.
+    const light = bodyLightness(energyFrac);
     // The brain's "signal" output shifts saturation, letting creatures evolve
     // to flash — a channel selection can co-opt for signalling if it ever pays.
-    const sat = 60 + c.signal * 25;
+    const sat = BODY_SATURATION + c.signal * 25;
 
     ctx.save();
     // Lineage highlighting: fade creatures that aren't in the highlighted

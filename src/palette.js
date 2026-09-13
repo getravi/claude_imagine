@@ -59,6 +59,39 @@ export function hslToRgb(h, s, l) {
 }
 
 /**
+ * How light a creature's body is drawn, from how full it is.
+ *
+ * The ramp `render.js` has used since v1.0 and `key.js` has explained since
+ * v1.122 — *lightness rises with what it has left to spend, so a fading one is
+ * starving.* It is here rather than inline in the renderer because v1.178 put
+ * the same value on a bar under the water (`fuel.js`), and a rule a reader is
+ * asked to calibrate by eye has to be one number in one place: two copies of
+ * `30 + 45 × frac` is a bar that stops matching the water the first time either
+ * one is tuned.
+ *
+ * @param {number} energyFrac energy as a share of `energyMax`, clamped here
+ */
+export function bodyLightness(energyFrac) {
+  const f = energyFrac > 0 ? Math.min(1, energyFrac) : 0;
+  return 30 + f * 45;
+}
+
+/**
+ * That body's colour as a CSS string, at rest.
+ *
+ * *At rest* is the saturation: the water shifts it with the brain's signal
+ * output, so a calling creature is briefly more vivid than this. The bar is a
+ * ruler for the one channel it is about, and borrowing a second live quantity
+ * would make it a worse ruler for the first.
+ */
+export function bodyFill(hue, energyFrac) {
+  return `hsl(${hue}, ${BODY_SATURATION}%, ${bodyLightness(energyFrac)}%)`;
+}
+
+/** The saturation a creature is drawn at while its signal output is zero. */
+export const BODY_SATURATION = 60;
+
+/**
  * Composite `src` over `dst` the way the canvas does with
  * `globalCompositeOperation = "lighter"`: additive, clamped. Nearly everything
  * bright in this scene is drawn that way, and the clamp is the whole reason the

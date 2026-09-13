@@ -260,6 +260,12 @@ export const UNTOURED = Object.freeze({
   // shape of the two panels the devlog kept saying were missing from it.
   "doing-h": "the stop at 👋 Meet somebody is one press from filling this line, and a guide that rings its own answer spoils the press",
   "decide-h": "the stop before it rings the eye, and one sentence carries both halves",
+  // v1.178, and it is the first excuse here that is about a *clock* rather than
+  // about what a panel says. Every other panel on this page is legible in a
+  // still; this one's entire content is a quantity moving — filling, emptying,
+  // and halving itself the instant it touches the mark. A card is a thing that
+  // holds a reader's eye on words while it happens.
+  "fuel-h": "the bar says what it means by moving, and a card that holds a reader still is the one thing that can stop them watching it",
   "milestones-h": "a list of things a pond has not done yet is a reward for staying, not a reason to",
   "whoswho-h": "a board asking you to choose an animal, when the stop at 👋 Meet somebody hands you one",
   "evolved-h": "was the finale until v1.143 and lost the seat for being a readout where a sentence would do",

@@ -584,6 +584,72 @@
           </div>
         </section>
 
+        <!-- How full they are (v1.178). The three panels above are one thought
+             about one animal — what it is doing, what it can see, what it
+             decides — and between them they never once said what every animal
+             here spends its whole life on. A creature does exactly two things
+             with energy: it burns it, on swimming and on simply existing, and
+             when it has enough it splits in two and gives half away. That is
+             the economy of this entire world and the page had never drawn it.
+
+             So: one bar, in the animal's own colour at the animal's own
+             brightness — `palette.js#bodyFill`, the same ramp the water draws
+             them with, which makes this a ruler for a rule `🔍 What you are
+             looking at` has stated in words since v1.122 and never once
+             calibrated. The mark across it is where they have young.
+
+             Under the trio rather than inside it, and the trio stays
+             consecutive: those three are a mind, and this is a body. Directly
+             above the card that ends the story on purpose — the bottom of this
+             bar is what the obituary's commonest first line *is*, and the two
+             wear the same 🥀.
+
+             `src/fuel.js` owns the bands, the arithmetic and every word here,
+             including how big a meal is for the animal in question, which is
+             not `foodEnergy` for anything that hunts. -->
+        <section id="fuel" class="fuel waiting" aria-labelledby="fuel-h">
+          <h2 id="fuel-h">🍽️ How full they are</h2>
+          <div class="f-body">
+            <!-- The gauge carries the value for a listener in its own label:
+                 it is the only place the number exists, since the sentence
+                 beside it is about what the number *buys*. -->
+            <div
+              class="f-gauge"
+              id="fuel-gauge"
+              role="img"
+              aria-label="Nobody is picked yet."
+              hidden
+            >
+              <div class="f-track">
+                <span class="f-fill" id="fuel-fill"></span>
+                <span class="f-mark" id="fuel-mark"></span>
+              </div>
+              <!-- One label rather than a scale, and it stands under the mark
+                   rather than at the end of the bar: where a pond splits is a
+                   number out of its own config (72.7% of the default one), and
+                   a caption at the right edge would be pointing at the wrong
+                   place in every world that moves it. `--fuel-line` is what
+                   both the mark and this label are positioned from, so they
+                   cannot disagree. -->
+              <p class="f-scale" aria-hidden="true"><span>they split here</span></p>
+            </div>
+            <div class="f-words">
+              <!-- The pointer register of `hand.js`'s `fuelInvite`; main.js
+                   rewrites it for a thumb on the first frame. -->
+              <p class="f-line" id="fuel-line">
+                Pick an animal — click one, or press M — and this shows how full
+                they are.
+              </p>
+              <p class="f-note">
+                Food is the only thing that fills them. Swimming empties them, and
+                so does sitting still. Reach the mark and they split in two, and
+                half of everything they have goes with the new one — which is why
+                nothing here is ever full for long.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <!-- The life of the animal you were watching (v1.121, moved here in
              v1.151). The card `src/obituary.js` writes has lived inside the
              fact grid since it was built, on the reasoning that the panel

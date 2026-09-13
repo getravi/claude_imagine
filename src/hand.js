@@ -19,12 +19,12 @@
 //                                                        ← 104 px of keys, on a
 //                                                          device with none
 //
-// Twenty-one places on this page name an input device, and they account for
-// themselves: the fourteen sentences this file now holds in two registers, the
+// Twenty-two places on this page name an input device, and they account for
+// themselves: the fifteen sentences this file now holds in two registers, the
 // pan-and-zoom pair, the two paragraphs of accelerators above, the minimap's
 // tooltip and the pond's screen-reader help — both deliberately left in the
 // mouse-and-keyboard register, for reasons given below — and one world's blurb
-// that has stopped naming a device at all. **One pair of the twenty-one had ever
+// that has stopped naming a device at all. **One pair of the twenty-two had ever
 // asked which device you had**: the pan-and-zoom hint, which has carried a
 // `.fine-only` and a `.coarse-only` copy since the gestures landed. The fix went
 // where the defect was *noticed*, and stopped there; every other sentence kept
@@ -145,6 +145,20 @@ export const PHRASES = Object.freeze({
   decideInvite: Object.freeze({
     pointer: "Pick an animal — click one, or press M — and this shows what it decides to do.",
     touch: "Tap an animal — any of them — and this shows what it decides to do.",
+  }),
+
+  /**
+   * The bar under the steering figure, before anybody has been picked (v1.178).
+   *
+   * The fourth of these and the third written without anybody having to decide
+   * it belonged here, which is the only evidence that v1.155's lesson keeps
+   * taking. It is the shortest of the four because the thing it promises is the
+   * shortest: the other three offer a sentence about an animal, and this offers
+   * a bar you can watch move.
+   */
+  fuelInvite: Object.freeze({
+    pointer: "Pick an animal — click one, or press M — and this shows how full they are.",
+    touch: "Tap an animal — any of them — and this shows how full they are.",
   }),
 
   /**

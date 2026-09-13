@@ -22774,3 +22774,118 @@ wants to argue the strobe is worse than the silence.
   release running. This cycle is the first that reduces how much it matters
   rather than adding to the pile: the whole point of it is a page that works for
   somebody who presses nothing at all.
+
+## Entry — what they are all playing for · 2026-09-13
+
+Seventeenth cycle in the ordinary-person hat, and this one started by reading
+the page's own table of contents out loud. Under the water there are three
+panels: **🏊 What it is doing**, **👁 What it can see**, **🧠 What it decides**.
+Written down in a row like that they are obviously one thing — a mind, in three
+frames — and it took me an embarrassing minute to notice what a row of three
+minds does not have anywhere near it: **what the animal is playing for.**
+
+A creature in this pond does exactly two things with energy. It burns it —
+swimming, existing, carrying a predator's upkeep, running a fever — and when it
+has enough, it splits in two and gives half away. Everything this project has
+ever claimed about evolution rests on that one loop. Every panel below the water
+is downstream of it: the cast board ranks animals by it, the obituary's
+commonest first line is *They ran out of food*, `🧬 How they have changed` is a
+readout of who managed it. And a visitor could sit here for five minutes and
+never be shown the loop itself, because it lives in a field called `energy`
+inside an expert panel behind a switch, as **61%**.
+
+So: a bar. Full-width under the three panels, with a mark across it at the level
+where they have young, in the animal's own colour, and one sentence under it
+saying how far off that is in a unit anybody has: **Another three meals and they
+can have young.**
+
+### The two questions I made myself answer before building it
+
+**Is the mark ever reached?** This was the release-killer, and v1.148 had already
+half-answered it. When `doing.js` was written it had a state called *ready to
+breed* and threw it away, because it fired on **0.0%** of 52,841 sampled
+animals: crossing the threshold *is* the split, so nothing is ever seen sitting
+above the line. A bar whose top nobody ever touches is a bar with a broken
+promise painted on it.
+
+Then I turned the number over. What that 0.0% says about a *word* — a state you
+cannot sample — is the opposite of what it says about a *quantity*: the bar goes
+up to the mark and is spent in the same instant, which is not an instrument
+failing to catch something, it is the mechanic itself, in a shape that takes a
+person half a second. The unobservable state was never unobservable. It was
+unsayable. Drawn, it is the clearest thing on the page.
+
+**Does a visitor actually see it happen?** v1.177's lesson was that a fix
+measured at the instant it applies always reports success, so I measured this
+one over a visit: forty seeds, eighteen thousand steps — five minutes at the
+pace the page opens on — following the seat the way the page does, hand-overs
+and all. 720,000 instants of the bar. The animal in the seat reaches the mark and
+splits a **median of seven times** in those five minutes, in 39 of 40 seeds,
+first one at a median of 1,944 steps ≈ half a minute. And the bar spends its
+time where a reader would want it to: 38.0% Peckish, 24.0% Hungry, 19.9% Well
+fed, 18.1% Starving, and — exactly as predicted — **0.0% Full up.**
+
+### The bit I nearly got wrong: a meal is not a number
+
+My first draft of the sentence divided the gap by `config.foodEnergy`, which is
+the kind of thing that passes a test suite and lies to half the pond. A pellet
+is worth `foodEnergy × (1 − plantPenaltyFromDiet × diet gene)` to the animal
+eating it, so a hunter gets nearly nothing from one, and a bite of prey is worth
+`biteEnergy × meatEfficiency × diet gene` — and only to a body over
+`carnivoreThreshold`, in a world where predation is switched on, with a third
+gate (`licensedDietCost`) that changes which of those two prices it pays. So
+`mealFor` is both of `world.js`'s own lines rather than a paraphrase of one, and
+the count divides by the larger: the meal *this* animal can go and get. A pure
+carnivore in a pond with hunting off gets no number at all, because it has no
+route to one and inventing one would be a lie with arithmetic on it.
+
+### The colour is the point, and it cost the renderer a line
+
+I did not want to choose a colour for the fill. The water already encodes this
+exact quantity — `render.js` has drawn bodies at `30 + 45 × frac` per cent
+lightness since v1.0, and the placard has explained it in words since v1.122:
+*lightness rises with what it has left to spend, so a fading one is starving.*
+A true sentence a reader has never had anything to calibrate against. So the
+ramp moved into `palette.js#bodyFill` and both surfaces call it, and the bar is
+the colour of the dart, at the same brightness, by construction rather than by
+resemblance. A test asserts the renderer no longer carries its own copy, because
+that is the one edit that would quietly break the only reason the bar is
+coloured at all.
+
+### And then the browser laughed at me
+
+Everything green. First walk: the panel showing its invitation — *Pick an
+animal…* — with the real bar values already written into it underneath. The
+gauge does not *start* hidden in the markup, so my `if (gauge.hidden)` read
+false on the first frame and the `waiting` class the stylesheet actually obeys
+was never taken off. v1.175 wrote down *an author's `display` beats `[hidden]`*
+and I hit the same wall from the other side: there the attribute was believed
+and the author rule won; here I wrote **both** and only ever checked one. The
+fix is three lines and the lesson is one: **when two mechanisms can hide an
+element, exactly one of them is the state and the other is a courtesy.**
+
+The same walk paid for itself twice more. At 1,280 px the two-column body put
+407 px of bar over 130 px of nothing, because a bar has no height to fill beside
+two paragraphs — which is `.aim`'s finding from v1.152, written in this
+stylesheet, in a comment I had read that morning. It is a column now. And the
+heading's 🍽 rendered as a monochrome outline, because U+1F37D is text-default
+and needs a variation selector; the obituary has known that since v1.121 and
+spells its candle `🕯️`.
+
+### What it leaves
+
+- **The page still cannot tell a reader what *they* did.** Fourteenth release
+  running with no measurement of whether anybody presses anything — and this one
+  adds a feedback loop that only pays off if they do: **🥣 Feed by hand** now
+  has a visible consequence for the first time (drop pellets, watch the bar
+  climb), and I have no idea whether anybody has ever pressed it.
+- **The bar is about one animal and the pond has three hundred.** *How full they
+  are* is the seat's fullness; nothing says whether that is a good pond or a
+  starving one. `energy.js` has had the whole answer since v1.33 and it is
+  behind the switch.
+- **Nothing here says how fast it is draining.** The count is a floor by
+  construction — a forecast would need a rate over a window, and every window in
+  this repository is 6,000 ticks because v1.36 chose one (v1.174).
+- **`🥀 Starving` is 18.1% of a visit and does nothing but say so.** The one
+  moment a reader most wants a button is the moment the page has the least to
+  offer them, and the button that would answer it is four panels up.

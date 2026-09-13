@@ -916,6 +916,131 @@ body.simple [data-expert] {
   min-height: 0;
 }
 
+/* How full they are (v1.178). The plate and the two-column body are `.eyeview`
+   and `.decide` said again for a third sibling — the same box, the same inks,
+   the same wrap point — so this adds no ink/ground pair
+   `test/legibility.test.js` has not already walked. What is new is the gauge,
+   and it is deliberately not an instrument: a track, a fill and a hairline, at
+   the height of the ladder's bar (`.msbar`) doubled, because this one is the
+   subject of its panel rather than a progress note above a list.
+
+   The fill carries **no colour of its own**. `fuel.js` hands it the creature's
+   own `hsl()` at the creature's own lightness, so the bar is the colour of the
+   dart in the water — which is the whole of why it is here. A colour chosen in
+   this file would break that and no test would see it. */
+.fuel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px 14px;
+}
+.fuel h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+/* Stacked, where `.ev-body` and `.dc-body` above it are two columns — and the
+   difference is the figure rather than the taste. A disc and a steering line
+   are pictures with a *shape*, so they sit beside their words and leave nothing
+   behind them. A bar is only a length: put it in a column beside two paragraphs
+   and the first browser walk of this panel found 407 px of bar over 130 px of
+   empty panel at 1,280 wide, because the words were three times its height.
+   `.aim`'s rule, which this project already wrote down once — *a bar on a line
+   of its own cannot have the bug at any width, and it is much the better bar on
+   a phone.* */
+.f-body {
+  display: block;
+}
+/* Capped rather than full-width: the mark at 72.7% has to read as a *place on a
+   scale*, and at 864 px the eye stops taking the bar in as one object. 560 is
+   the widest this one still reads as a gauge; under that it is the column. */
+.f-gauge {
+  max-width: 560px;
+  margin-bottom: 10px;
+}
+.f-track {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+/* `width` rather than a transform, so the fill's own rounded end stays round at
+   every value. The transition is a quarter of a second — long enough to read as
+   movement, short enough that a bite landing at 20× is still a jump rather than
+   a slide. */
+.f-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fuel, 0%);
+  border-radius: 6px;
+  background: var(--fuel-ink, var(--ink-dim));
+  transition: width 0.25s linear, background-color 0.25s linear;
+}
+/* Where they split. A hairline across the whole track rather than a notch on
+   top of the fill, so it reads as a *level* the fill is climbing towards — and
+   it is drawn in the panel's ink rather than in an accent, because the one
+   coloured thing here has to be the animal. */
+.f-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fuel-line, 73%);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  opacity: 0.75;
+}
+/* The label under that hairline, positioned from the same property so the two
+   cannot point at different places. `translateX(-50%)` centres it on the line;
+   at the default pond's 72.7% of a 248 px gauge that is 180 px in, and the
+   words are 78 px wide, so it sits clear of both ends. */
+.f-scale {
+  position: relative;
+  height: 14px;
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.f-scale span {
+  position: absolute;
+  left: var(--fuel-line, 73%);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.f-words {
+  min-width: 0;
+}
+.f-line {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  /* Two lines' worth, `.ev-line`'s number rather than `.dc-line`'s three: the
+     longest thing this panel can say is the starving sentence, and at 390 px —
+     where this column is 312 px of text — it wraps to two. A reserve of three
+     was measured on a browser walk as a 22 px hole under a one-line sentence in
+     every other state, which is a panel that looks broken to buy a jump that
+     cannot happen. */
+  min-height: 2.9em;
+}
+.f-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+/* Nobody picked: the gauge is put away rather than drawn empty (`.ev-disc`'s
+   rule — an empty bar beside an instruction is a picture of nothing), and the
+   line is the register every invitation on this page is written in. */
+.fuel.waiting .f-gauge {
+  display: none;
+}
+.fuel.waiting .f-line {
+  color: var(--ink-dim);
+  min-height: 0;
+}
+
 /* The life of the animal you were watching (v1.151). The card `obituary.js`
    writes, in a place a reader can see it: `.obit`'s own paragraphs and swatch,
    unchanged, in a plate under the water instead of a block inside the fact grid
