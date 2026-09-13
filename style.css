@@ -562,6 +562,69 @@ body.simple [data-expert] {
   text-align: right;
 }
 
+/* ---- How fast the pond runs (v1.176) ---- */
+
+/* Four tracks, and the first of them wider than the other three, because the
+   play button is the only one of the four carrying a glyph and a word that
+   changes length under it — `⏸ Pause` is eight characters and `▶ Play` is six.
+   A fixed fraction rather than `auto`, for the reason the row below this one
+   gives at length: a track sized to its contents moves its neighbours sideways
+   the moment its label is rewritten, and this label is rewritten by every
+   press.
+
+   No `auto-fit` here, and that is the difference between this row and the first
+   moves. Those are four separate offers and stack happily into four full-width
+   buttons on a phone; these four are one question with one answer, and a
+   question whose options are stacked vertically at 390 px and laid out
+   horizontally at 1280 is two different controls. Four across at every width,
+   which at 346 px of column gives the three stops about 70 px each — over the
+   24 px bar on both axes with the 44 px height below doing the rest.
+
+   `min-height` is the enhanced 44 for the first moves' reason, one row down:
+   this is a control a stranger presses on a phone, and `⏸` is the press they
+   make while their eye is still on the water. */
+.pacerow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.pacerow button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin-top: 0;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: 14px;
+  border-color: #35485e;
+  background: #131d2a;
+}
+.pacerow button:hover {
+  background: #1a2737;
+  border-color: #47617f;
+}
+/* The lit stop. The same green plate `button.hand-btn[aria-pressed="true"]`
+   wears two rows down, deliberately: this page has exactly one meaning for that
+   colour — *this mode is on right now* — and a second palette for a second
+   pressed state would be the page teaching two words for one idea. */
+.pacerow button.pace-stop[aria-pressed="true"] {
+  border-color: #6f8f4e;
+  background: #202c18;
+}
+.pacerow button.pace-stop[aria-pressed="true"]:hover {
+  background: #28371e;
+  border-color: #86a862;
+}
+/* Nothing lit says *paused*, and the play button says it in a word, so the row
+   does not also shout it. This is the one state where the pond is not running
+   at any of the three, and the plate under the glyph is what tells a glance
+   which end of the row is the odd one. */
+.pacerow button.pace-play {
+  font-weight: 600;
+}
+
 /* ---- The first moves (v1.153) ---- */
 
 /* Three buttons in a row directly under the pond. They keep the colours they

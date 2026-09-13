@@ -266,7 +266,9 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "390x844", sel: "label.check", n: 31, w: 316, h: 24, own: "13x13", via: "label", nearestCentre: 24, inline: false, short: 21, sample: "Seasons ☀︎❄︎" },
   { page: "app", vp: "390x844", sel: "label.field", n: 5, w: 316, h: 41, own: "274x33", via: "label", nearestCentre: 30, inline: false, short: 0, sample: "Speed 1×" },
   { page: "app", vp: "390x844", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
-  { page: "app", vp: "390x844", sel: "button.primary, #btn-reset", n: 2, w: 154, h: 36, own: "154x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
+  { page: "app", vp: "390x844", sel: "#btn-reset", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 93.6, inline: false, short: 0, sample: "↻ Reset" },
+  { page: "app", vp: "390x844", sel: ".pacerow button.pace-play", n: 1, w: 104.9, h: 44, own: "105x44", via: "self", nearestCentre: 96.6, inline: false, short: 0, sample: "⏸ Pause" },
+  { page: "app", vp: "390x844", sel: ".pacerow button.pace-stop", n: 3, w: 72.4, h: 44, own: "72x44", via: "self", nearestCentre: 68.3, inline: false, short: 0, sample: "Slow" },
   { page: "app", vp: "390x844", sel: "#btn-feed, #btn-seedlife", n: 2, w: 154, h: 35, own: "154x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "390x844", sel: "#btn-meet", n: 1, w: 346, h: 44, own: "346x44", via: "self", nearestCentre: 54, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "390x844", sel: "#btn-gif", n: 1, w: 316, h: 35, own: "316x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
@@ -288,7 +290,9 @@ export const CONTROLS = Object.freeze([
   { page: "app", vp: "1280x900", sel: "label.check", n: 31, w: 290, h: 24, own: "13x13", via: "label", nearestCentre: 24, inline: false, short: 15, sample: "Seasons ☀︎❄︎" },
   { page: "app", vp: "1280x900", sel: "label.field", n: 5, w: 290, h: 41, own: "248x33", via: "label", nearestCentre: 30, inline: false, short: 0, sample: "Speed 1×" },
   { page: "app", vp: "1280x900", sel: ".scenario-chips button", n: 13, w: 95, h: 29, own: "98x29", via: "self", nearestCentre: 37, inline: false, short: 0, sample: "🌱 Genesis" },
-  { page: "app", vp: "1280x900", sel: "button.primary, #btn-reset", n: 2, w: 141, h: 36, own: "141x36", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "⏸ Pause" },
+  { page: "app", vp: "1280x900", sel: "#btn-reset", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 88.1, inline: false, short: 0, sample: "↻ Reset" },
+  { page: "app", vp: "1280x900", sel: ".pacerow button.pace-play", n: 1, w: 284.1, h: 44, own: "284x44", via: "self", nearestCentre: 72.4, inline: false, short: 0, sample: "⏸ Pause" },
+  { page: "app", vp: "1280x900", sel: ".pacerow button.pace-stop", n: 3, w: 196, h: 44, own: "196x44", via: "self", nearestCentre: 64.8, inline: false, short: 0, sample: "Fast" },
   { page: "app", vp: "1280x900", sel: "#btn-feed, #btn-seedlife", n: 2, w: 141, h: 35, own: "141x35", via: "self", nearestCentre: 47.5, inline: false, short: 0, sample: "✦ Feed" },
   { page: "app", vp: "1280x900", sel: "#btn-meet", n: 1, w: 216.5, h: 44, own: "217x44", via: "self", nearestCentre: 226.5, inline: false, short: 0, sample: "👋 Meet somebody" },
   { page: "app", vp: "1280x900", sel: "#btn-gif", n: 1, w: 290, h: 35, own: "290x35", via: "self", nearestCentre: 55, inline: false, short: 0, sample: "🎞 Make a GIF" },
@@ -317,7 +321,7 @@ export const CONTROLS = Object.freeze([
  * so. (Both pages hold the same controls at both viewports — what changes with
  * width is their size, which is the whole subject.)
  */
-export const WALKED = Object.freeze({ "front door": 19, app: 80 });
+export const WALKED = Object.freeze({ "front door": 19, app: 83 });
 
 /**
  * What the walk could not put in front of a pointer, and why. The same shape as

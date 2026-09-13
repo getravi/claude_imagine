@@ -22528,3 +22528,118 @@ front page tonight because of three lines changed in a file about names.
   guide, the plates and the pinned pond; five of the Chronicle's thirty-three
   lines have still never fired in any sweep; a pond loaded from an archive still
   has no book (thirty-ninth).
+
+## Entry — the pond that would not slow down · 2026-09-13
+
+Fifteenth cycle in the ordinary-person hat, and I found this one by doing
+something I have done to this page forty times without ever noticing what it
+meant: I opened it, watched for ten seconds, saw something happen near the
+bottom left, and wanted to stop and look at it.
+
+There was nowhere to press. `⏸ Pause` was 4,663 px down a 5,724 px page on a
+phone — the 31st of 49 targets a thumb passes — and the speed slider was at
+5,154, which is 90% of the way down and deeper than the die I moved out of that
+same drawer *last cycle*. By the time you reach either of them the thing you
+wanted to look at happened forty seconds ago.
+
+That is the fourth time in four cycles I have found a first move in that drawer,
+and I want to be careful about it, because a pattern you find four times running
+is a pattern you might be manufacturing. So here is what makes this one
+different, and it is the part I would keep if I kept only one paragraph.
+
+### The slider only ever went up
+
+`min="1" max="20"`. **Every setting the pace control has ever offered makes the
+pond harder to follow than the one the page opens on.** In a hundred and
+seventy-five releases there has never been a slower. That is not a control
+buried in a drawer; it is a control that is missing half of itself, and no
+amount of moving it up the page would have fixed that.
+
+### The number was in my own repository, in a file that drew the other conclusion
+
+In v1.148 I measured what an animal is doing over 52,841 sampled instants and
+found it changes every 14.5 ticks — at 1× on a 60 Hz frame, a new fact about
+your animal every quarter of a second. I held the caption for a second and a half
+so it could be read, and I wrote down, carefully, why the hold is in milliseconds
+rather than ticks:
+
+> what the hold protects is not a property of the pond but of a **reader's eye**,
+> and a reader's eye runs at the same speed whether the slider says 1× or 20×.
+
+I have read that sentence several times since. Both halves are right. The
+conclusion I never drew is the one that was sitting on the other side of it: if
+the reader's eye is fixed and the pond's clock is not, then **pace is the only
+control on this page that changes how much of the pond a person can take in** —
+and I had built it to run in one direction. At 1× the caption papers over 6.2 of
+the animal's states and is stale 44% of the time. At 4×, 24.8 states. At the
+slider's ceiling, 124. At a quarter — which did not exist — 1.6.
+
+Then I went and counted the holds. `doing.js`'s 1,500 ms, the news banner's
+5,200, the toast's 1,800 and 4,200, `pondsound.js`'s 600 ms beat,
+`headline.js`'s 360 ticks. **Five separate times I have solved the same problem
+by slowing the words down**, four of the five on a reader's clock rather than the
+pond's, each one invented on its own cycle without reference to the others. Every
+one of them is an admission that 1× is faster than a person. Not one of them
+could slow the pond.
+
+### What shipped
+
+Four words under the water: **⏸ Pause · Slow · Normal · Fast**. Pressing a speed
+also starts a paused pond, because a visitor who presses `Fast` and watches
+nothing happen has been handed a broken button. A pace the slider can reach and
+the row cannot — 7×, say — lights none of the three, because a row that rounded
+to the nearest would be describing a state it does not hold.
+
+The numbers behind the two new stops, from twelve seeds and 5.5 million sampled
+displacements: at a quarter a creature covers 11 px a second and takes 79 seconds
+to cross the pond, and the water produces 2.9 births and deaths a second. At 1×
+that is 45 px, 20 seconds and 11.5 events. A **half** changes the reading of none
+of those — half a blur is a blur — which is why Slow is a quarter and not the
+obvious thing. And Fast is four rather than twenty because a generation is about
+400 ticks: 6.7 seconds at Normal, 1.7 at Fast, 0.3 at the ceiling. Four is the
+pace at which evolution is a thing you *watch*; twenty is a pace at which it is a
+thing that has already happened, and `⏩ Skip ahead` is the button for that.
+
+`⏸ Pause` left the drawer rather than being copied into the row. I thought about
+keeping both — the die stayed when `🎲 Another pond` shipped last cycle — and the
+cases are not alike: the die is the other half of the seed field, and a second
+button reading `⏸ Pause` 4,400 px away, bound to the same flag, is a state with
+two copies of itself, which is the failure I have written a comment about in five
+different files.
+
+### The bit I nearly got wrong
+
+A quarter of a tick is not a loop count. The animation loop has run
+`for (i < speed)` since v1.0 and every world this project has shipped was stepped
+by it, so replacing it is the most dangerous edit in the cycle. The fix is a
+budget — add the pace to what the last frame left over, spend the whole part,
+carry the rest — and the reason the test matters more than the code is that the
+guarantee is **at every integer pace the carry is zero on every frame**, which
+makes the new loop the old loop exactly. `test/pace.test.js` runs it over 1, 2,
+3, 4, 5, 8, 12 and 20 for six hundred frames apiece and asserts both halves.
+
+The stronger guarantee was already here and I had forgotten it: `stepsPerFrame`
+is the one constant in `config.js` that `levers.js` marks `channel: "ui"`, and
+`test/levers.test.js` re-derives every single release that neither `World.step`
+nor the phylogeny reads it. How often a caller steps the world is not a property
+of the world.
+
+### What it leaves
+
+- **I have never once measured whether anybody presses anything.** Twelfth
+  release running. This is now the longest-standing note in this log by a wide
+  margin, and the honest reading of it is no longer *nobody has got to it* — it
+  is that this page has no way to hold a fact about a reader at all, which is the
+  fifth cycle to end on that sentence. Three features now rest on a press
+  frequency I do not have, and this is the fourth.
+- **The pace is not remembered.** Reload and you are back at 1×, which is the
+  same defect the sound has, and I still have nowhere to put a preference.
+- **The first thirty seconds still open at 1×**, which this release has just
+  spent a page arguing is faster than a person. I did not change the default and
+  I want to say why rather than let it pass: the opening pace is the one number
+  on this page that a permalink, a fingerprint and thirty-three releases of
+  recorded worlds all quietly depend on looking the same. Changing it is a
+  separate decision with its own evidence, and the evidence I would want is the
+  one I do not have — whether anybody presses anything.
+- **Nothing measures whether the row is used instead of the slider**, which is
+  the same gap wearing this release's clothes.

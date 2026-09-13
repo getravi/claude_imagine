@@ -99,6 +99,30 @@
 // The pattern, three for three: **the reason a control is in the drawer is
 // always a reason about the control, and the question is about the act.**
 //
+// ## v1.176: the fourth, and the first where the act is not a going but a seeing
+//
+// One release later, and the two deepest controls left on the page were both
+// about the same thing:
+//
+//   #btn-pause    top 4,663 of a 5,724 px document   81.5%, the 31st of 49
+//   #speed        top 5,154                          90.0%, the 39th of 49
+//
+// The excuse read *stops the clock. A control on the run rather than on the
+// pond, and the one press here a visitor finds without being offered it — the
+// pond is the only thing on the page that moves.* It is the rule above twice
+// over. *Stops the clock* is a **mechanism**; the act is **hold on, let me look
+// at that**, and it is the one press a visitor makes with their eye still on the
+// water. And *the one press a visitor finds without being offered it* is a claim
+// about **discovery** — the only kind of claim this list has ever made that
+// could be checked and never was. It is false on a phone by construction: the
+// `Space` hint that would offer it lives in `.keys-only`, which a coarse pointer
+// does not render, so the only route to it was eleven panels of scrolling.
+//
+// Four for four, and the transferable half is new again: the first three acts
+// were all *going somewhere* or *doing something*. This one is **seeing** — the
+// question a control answers can be about the reader's eye rather than about
+// the world, and no inventory here had a way to say so.
+//
 // PURE OBSERVER. No DOM, no simulation state, no random numbers — an inventory,
 // one string search and the arithmetic that compares two walks.
 
@@ -201,7 +225,15 @@ export const WALK = Object.freeze({
  * *is this for beginners?*
  */
 export const DRAWER = Object.freeze({
-  "btn-pause": "stops the clock. A control on the *run* rather than on the pond, and the one press here a visitor finds without being offered it — the pond is the only thing on the page that moves",
+  // `btn-pause` stood here until v1.176, excused as *stops the clock — a
+  // control on the run rather than on the pond, and the one press here a
+  // visitor finds without being offered it*. Both halves are the shape below:
+  // a sentence about a **mechanism** (a clock) and a claim about a **discovery**
+  // nobody had measured. The act is *hold on, let me look at that*, which is a
+  // first move by every test this file applies, and on a phone the control was
+  // at 81.5% of the page with its only hint inside `.keys-only`, which a coarse
+  // pointer never renders. It is the left-hand end of the pace row under the
+  // water now; `src/pace.js` carries that walk.
   "btn-reset": "throws this world away and starts another. The undo for everything in this drawer, which is what makes it belong with them and not beside the water",
   "btn-feed": "sixty pellets over the whole pond. The unaimed twin of `🥣 Feed by hand`, and food that is everywhere demonstrates nothing — it is a lever for a run being steered, where the handful is a gesture for a question being asked",
   "btn-seedlife": "twelve strangers dropped in anywhere. The same lever one kingdom up, and the same reason: it changes the experiment rather than showing it",

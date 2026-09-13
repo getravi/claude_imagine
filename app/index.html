@@ -304,6 +304,56 @@
           <p id="pond-say" class="sr-only" role="status"></p>
         </section>
 
+        <!-- How fast the pond runs (v1.176). For a hundred and seventy-five
+             releases this page ran at one speed unless a visitor went and found
+             the slider, and the slider is `min="1" max="20"` — every setting it
+             has ever offered makes the pond *harder* to follow than the one the
+             page opens on. There has never been a slower. The two controls that
+             touch the pace were also the deepest things here: at 390 × 844,
+             `⏸ Pause` stood at 4,663 px of a 5,724 px document (81.5%, the 31st
+             of 49 targets) and the slider at 5,154 (90.0%, the 39th) — deeper
+             than the die v1.175 moved. On a phone there was no hint of either,
+             because the `Space` reminder lives in `.keys-only` and a coarse
+             pointer never renders it.
+
+             `src/pace.js` owns the stops, the arithmetic and the measurements.
+             The short version of why a quarter and a four: the animal you are
+             watching changes what it is doing every 14.5 ticks, so at 1× the
+             caption under the water has to paper over 6.2 of its states and is
+             stale 44% of the time — `doing.js` measured all of that in v1.148
+             and drew the other conclusion, which was to slow the *words* down.
+             Four more holds have been written since, four of the five on a
+             reader's clock rather than the pond's. This is the same admission
+             with a button on it.
+
+             Above the first moves rather than below them, and the cost is real
+             and measured: `👋 Meet somebody` goes from 862 px to 936 on a phone
+             and from 1,037 to 1,111 on a desktop — 74 px, this row's height plus
+             its gap, at both. The reason it is the right trade is that this row
+             is about the thing directly above it — the one press here you make
+             *while looking at the water* — and 74 px off the button this page
+             recommends buys 3,791 off the control a visitor reaches for when
+             something happens and they want it to stop.
+
+             The play button's *label* carries its state and nothing else does
+             (`#btn-simple`'s rule, v1.149); the three stops carry theirs in
+             `aria-pressed`, which is the one place ARIA has for it. A pace the
+             slider can reach and this row cannot — 7×, say — lights none of
+             them, because a row that rounded to the nearest stop would be a
+             control describing a state it does not hold. -->
+        <section class="pacerow" role="group" aria-label="How fast the pond runs">
+          <button id="btn-play" class="pace-play" type="button">⏸ Pause</button>
+          <button id="btn-pace-slow" class="pace-stop" type="button" aria-pressed="false">
+            Slow
+          </button>
+          <button id="btn-pace-normal" class="pace-stop" type="button" aria-pressed="true">
+            Normal
+          </button>
+          <button id="btn-pace-fast" class="pace-stop" type="button" aria-pressed="false">
+            Fast
+          </button>
+        </section>
+
         <!-- The first moves (v1.153). These three buttons lived in the panel on
              the right, and on a phone that panel is *below the whole page*: the
              walk in `src/firstmoves.js` measured `👋 Meet somebody` at 3,692 px
@@ -800,9 +850,16 @@
 
       <aside class="panel">
         <div class="controls">
+          <!-- `⏸ Pause` stood here beside Reset until v1.176 and is now the
+               left-hand end of the pace row under the water. It is not moved
+               twice over: two buttons reading `⏸ Pause` on one page, 4,400 px
+               apart, both bound to the same flag, is a second copy of a state
+               and this project has spent five releases arguing that a state
+               with two copies is a state that gets out of step. Reset keeps the
+               row and fills it, which is the right shape for it: it is the undo
+               for everything else in this drawer. -->
           <div class="btn-row">
-            <button id="btn-pause" class="primary">⏸ Pause</button>
-            <button id="btn-reset">↻ Reset</button>
+            <button id="btn-reset" class="primary">↻ Reset</button>
           </div>
           <div class="btn-row">
             <button id="btn-feed">✦ Feed</button>
@@ -882,9 +939,17 @@
             </span>
           </label>
 
+          <!-- The floor came down in v1.176. This slider has been `min="1"`
+               since v1.0, so the only pace it could name below the one the page
+               opens at was the one it opens at — and the row under the water
+               needs a quarter. A quarter step all the way up keeps the row and
+               the slider able to say the same thing about the same pond: every
+               stop the row offers is a value this control can hold, which is
+               what lets the plate beside it stay honest at 0.25× instead of
+               reading `1×` while the pond runs at a quarter of it. -->
           <label class="field">
             <span>Speed <b id="speed-label">1×</b></span>
-            <input id="speed" type="range" min="1" max="20" step="1" value="1" />
+            <input id="speed" type="range" min="0.25" max="20" step="0.25" value="1" />
           </label>
 
           <!-- Classed since v1.118, when a second disclosure joined the panel:

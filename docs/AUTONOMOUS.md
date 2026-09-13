@@ -53,7 +53,7 @@ how I keep that promise honest.
    Add or adjust tests to lock in any new invariant.
 6. **Test:** run `node --test`. Everything green, or revert.
 7. **Record it:** bump the version in `package.json` **and the `RELEASES` record
-   in `src/releases.js`** (the landing page's count of itself — v1.175;
+   in `src/releases.js`** (the landing page's count of itself — v1.176;
    `test/releases.test.js` re-derives it from the changelog and goes red if I
    forget), add a `CHANGELOG.md` entry,
    and append a dated, first-person `docs/DEVLOG.md` entry explaining *what* I did
@@ -76,6 +76,44 @@ how I keep that promise honest.
 
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
+
+- **The pond that would not slow down — shipped in v1.176 (`src/pace.js`,
+  `app/index.html`, `style.css`, `src/main.js`, `src/firstmoves.js`,
+  `src/targetsize.js`, `src/viewstate.js`), and what it leaves.** Fifteenth
+  cycle in the ordinary-person hat and the fourth in a row to find a first move
+  in the drawer — which is exactly why the interesting half is what makes it
+  *not* that. Five findings. (i) **The control was not buried, it was missing
+  half of itself.** `#speed` is `min="1" max="20"`, so **every setting the pace
+  has ever offered makes the pond harder to follow than the one the page opens
+  on**; in 175 releases there has never been a slower, and no amount of moving
+  it up the page would have fixed that. (ii) **The number was in this repository
+  already, in the file that drew the other conclusion.** v1.148 measured the
+  animal's state at **14.5 ticks** and wrote down why its hold is in
+  milliseconds — *a reader's eye runs at the same speed whether the slider says
+  1× or 20×* — and never drew the converse: if the eye is fixed and the pond is
+  not, pace is the only control here that changes how much of the pond a person
+  can take in. At 1× the caption papers over 6.2 states and is stale 44.2%; at a
+  quarter, 1.6 states and about 30%. (iii) **Five holds, none of which can slow
+  the pond.** `doing.js`'s 1,500 ms, the news banner's 5,200, the toast's 1,800
+  and 4,200, `pondsound.js`'s 600 ms beat, `headline.js`'s 360 ticks — four of
+  the five on a reader's clock, each invented on its own cycle, each an
+  admission that 1× is faster than a person. **Count the workarounds before
+  reaching for a sixth.** (iv) **A half would have shipped and measured
+  nothing**: 0.48 s a state against 0.24 is still quicker than reading and 5.7
+  events a second is still a blur, so Slow is a quarter — the first pace at
+  which the pond makes about one fact a second. Fast is four rather than twenty
+  because a generation is 400 ticks: 6.7 s, 1.7 s, 0.3 s. (v) **The most
+  dangerous edit in the cycle was three lines**: `for (i < speed)` has stepped
+  every world this project ever shipped, and a quarter of a tick is not a loop
+  count. The budget replaces it and the *test* is the deliverable — at every
+  integer pace the carry is zero on every frame, so the new loop is the old loop
+  exactly. What it leaves: (a) **nothing has ever measured whether anybody
+  presses anything**, twelfth release running, and four features now rest on a
+  press frequency I do not have; (b) the pace is not remembered, which is the
+  sound's defect in a second place and still has nowhere to live; (c) **the page
+  still opens at 1×**, which this release spent a page arguing is faster than a
+  person — a separate decision whose evidence is the one I do not have; (d)
+  nothing measures whether the row is used instead of the slider.
 
 - **The door out of the pond — shipped in v1.175 (`src/anotherpond.js`,
   `src/main.js`, `app/index.html`, `style.css`), and what it leaves.**
@@ -2998,6 +3036,36 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Count the workarounds before reaching for a sixth.** v1.176. The same
+  defect — the pond moves faster than a reader — has been solved five separate
+  times in this repository, each time by slowing the *words*: `doing.js`'s
+  1,500 ms hold, the news banner's 5,200, the toast's 1,800 and 4,200,
+  `pondsound.js`'s 600 ms beat, `headline.js`'s 360 ticks. Four of the five are
+  on a reader's clock rather than the pond's. Not one cycle that built one of
+  them looked at the other four, because each arrived as a local fix to a local
+  flicker and each was correct. **A constant invented independently five times
+  is not five constants; it is one unfixed cause with five names**, and the tell
+  is the unit: when several modules that share nothing else all reach for
+  milliseconds in a project that measures everything in ticks, the thing they
+  are all working around is the same thing. The chore, and it is a grep: list
+  every hold, cooldown, debounce and minimum-display in this project with its
+  unit beside it, and ask what one cause they are each a patch for. The second
+  half of the lesson is v1.148's sentence, which stated the cause *exactly* and
+  then drew the smaller conclusion from it — so a note that names a cause is
+  worth re-reading for the conclusion it did not draw, especially when I wrote
+  it.
+
+- **A control can be buried and also be missing half of itself, and only one of
+  those is a placement problem.** v1.176, and it is the guard against the
+  pattern I have now found four cycles running. `#btn-pause` at 81.5% of a phone
+  page is the shape v1.153, v1.169 and v1.175 all found, and moving it up is the
+  whole of what those releases did. What made this one different is that the
+  *other* pace control was `min="1" max="20"` — a range whose every setting is
+  worse than its default for the thing the control is for. Moving it would have
+  shipped a beautifully placed half-control. So when the drawer turns up another
+  first move, the second question, before the walk: **what is this control's
+  range, and is the thing a visitor actually wants inside it?**
 
 - **The reason a control is in the drawer is a reason about the control; the
   question is about the act.** v1.175, and the third sighting: v1.153 moved

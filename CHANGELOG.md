@@ -4,6 +4,121 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.176.0] — 2026-09-13
+
+**▶ Slow · Normal · Fast.** For a hundred and seventy-five releases this pond
+ran at exactly one speed unless you went looking for the slider, and the slider
+is `min="1" max="20"` — **every setting it has ever offered makes the pond harder
+to follow than the one the page opens on.** There has never been a slower. Under
+the water there is now a row of four words: pause it, or watch it at a quarter
+speed, at the speed it has always run, or at four times.
+
+### The number was already here, in the file that drew the other conclusion
+
+`doing.js` measured the animal you are watching over 52,841 sampled instants in
+v1.148 and found that what it is doing changes **every 14.5 ticks** — at 1× on a
+60 Hz frame, a new fact about your animal every quarter of a second. So it holds
+the caption for a second and a half, and it wrote down exactly why the hold is in
+milliseconds rather than in ticks:
+
+> what the hold protects is not a property of the pond but of a **reader's eye**,
+> and a reader's eye runs at the same speed whether the slider says 1× or 20×.
+
+Both halves of that are right. The conclusion nobody drew is the other one: if
+the eye is fixed and the pond is not, the pace is the only control on this page
+that changes how much of the pond a person can actually take in — and it only
+ever went up. Every stop it offered asked the caption to paper over more.
+
+| pace | 1,500 ms of hold covers | the shown line is stale |
+| --- | --- | --- |
+| 0.25× | 22.5 ticks ≈ 1.6 states | about 30% |
+| 1× | 90 ticks ≈ 6.2 states | 44.2% ← where the page opens |
+| 4× | 360 ticks ≈ 24.8 states | over 49% |
+| 20× | 1,800 ticks ≈ 124 states | off the end of the table |
+
+The staleness column is read off `doing.js`'s own recorded table and interpolated
+between its points. Nothing here was ever measured below 1×, because below 1×
+did not exist.
+
+### Five holds, and not one of them could slow the pond down
+
+The same defect has been solved five separate times, each time by slowing the
+*words* instead: `doing.js`'s 1,500 ms, the news banner's 5,200, the toast's
+1,800 and 4,200, `pondsound.js`'s 600 ms beat, `headline.js`'s 360 ticks. Four
+of the five are on a reader's clock rather than the pond's — each invented
+independently, each one an admission that 1× is faster than a person. A row of
+four words under the water is the version of that admission a visitor can act on.
+
+### Where the two pace controls actually were
+
+The walk, at 390 × 844, on the app as it loads:
+
+```
+#btn-pause   top 4,663 of a 5,724 px document   81.5%, the 31st of 49 targets
+#speed       top 5,154                          90.0%, the 39th of 49
+```
+
+Deeper than the die v1.175 moved. The excuse in `firstmoves.js` read *stops the
+clock. A control on the run rather than on the pond, and the one press here a
+visitor finds without being offered it* — which is the fourth sighting of that
+release's rule: *stops the clock* is a **mechanism**, and the act is **hold on,
+let me look at that**. The second half is a claim about **discovery** that
+nothing had ever checked, and it is false on a phone by construction, because
+the `Space` hint that would offer it lives in `.keys-only` and a coarse pointer
+never renders it. Four for four, and the new half is that the first three acts
+were all *going somewhere*; this one is **seeing**.
+
+The row stands at **872 px** now — 15.0% of the page, the 25th of 52 targets.
+The cost is measured too and it is real: `👋 Meet somebody` moves down 74 px at
+both widths, and on a desktop the row itself lands 787 px lower than the button
+it replaces, because the drawer is a column beside the water there.
+
+### Why a quarter and a four
+
+Twelve seeds, 3,000 ticks each after a 400-tick warm-up, 5.5 million sampled
+displacements:
+
+| stop | ticks/s | a creature covers | crosses the pond in | births + deaths |
+| --- | --- | --- | --- | --- |
+| Slow ¼× | 15 | 11 px/s | 79 s | 2.9 /s |
+| Normal 1× | 60 | 45 px/s | 20 s | 11.5 /s |
+| Fast 4× | 240 | 182 px/s | 5 s | 45.8 /s |
+
+**A half changes the reading of none of them** — 0.48 s a state is still quicker
+than anything a person reads, and 5.7 births and deaths a second is still a blur.
+A quarter is the first pace at which the pond produces about one fact a second.
+And **fast is four, not twenty**: a generation is about 400 ticks, which is 6.7 s
+at Normal, 1.7 s at Fast and 0.3 s at the slider's ceiling. Four is the pace at
+which evolution is a thing you watch.
+
+### Determinism
+
+Untouched, and the guarantee is stronger than a promise. `stepsPerFrame` is the
+one constant in `config.js` that `levers.js` marks `channel: "ui"`, and
+`test/levers.test.js` re-derives every release that neither `World.step` nor the
+phylogeny ever reads it: how often a caller steps the world is not a property of
+the world. Pace changes how much wall time passes between two ticks and nothing
+else. The loop now spends a budget rather than a loop count, so that a quarter of
+a tick is expressible at all — and `test/pace.test.js` runs that budget over
+every integer pace the old loop was ever handed and asserts the carry never
+leaves zero and the counts are the counts. The default pond is where
+`test/fingerprint.test.js` left it.
+
+### Also
+
+- `⏸ Pause` **left the drawer** rather than being copied into the row. Two
+  buttons bound to one flag, 4,400 px apart, is a state with two copies of
+  itself. `↻ Reset` keeps that row and fills it, which is the right shape for the
+  undo of everything else in there.
+- The speed slider's floor came down from `1` to `0.25`, in quarter steps, so
+  that every stop the row offers is a value the slider can hold and the plate
+  beside it never reads `1×` over a pond running at a quarter of it.
+- A pace the slider can reach and the row cannot — 7×, say — lights **none** of
+  the three, rather than the nearest. A row that rounded would be a control
+  describing a state it does not hold.
+- The slider and its plate are now written from `speed` at boot. `#stepsPerFrame=4`
+  has been a legal permalink since v1.71 and arrived at a page whose dial said one.
+
 ## [1.175.0] — 2026-09-12
 
 **🎲 Another pond.** The plate over the water has said the same thing since

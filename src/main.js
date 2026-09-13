@@ -240,6 +240,17 @@ import {
   trackEvery,
 } from "./skip.js";
 import { PondPulse, SOUND_ICON, SOUND_INTRO } from "./pondsound.js";
+import {
+  PACE_STOPS,
+  PAUSE_LABEL,
+  PLAY_LABEL,
+  paceLabel,
+  paceSentence,
+  stepBudget,
+  stepsFor,
+  stopFor,
+  stopId,
+} from "./pace.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -320,6 +331,12 @@ let running = true;
 // Same value, so nothing about the page moves — but the number is now the one
 // `config.js` says it is, and a permalink can set it.
 let speed = config.stepsPerFrame;
+// What the last frame could not spend (v1.176). A pace below one tick a frame
+// cannot be a loop count, so the frame carries a budget and spends its whole
+// part — `pace.js#stepBudget` owns the arithmetic and the guarantee that comes
+// with it: at every integer pace this stays 0 on every frame, so the loop below
+// runs exactly the count it ran before the pace row existed.
+let stepCarry = 0;
 const uiRng = new RNG(UI_RNG_SEED); // separate RNG for UI-side sampling (diversity)
 // Where the selected creature has been (v1.84). Recorded whenever there is a
 // selection, whether or not the overlay is drawing it, so ticking the box shows
@@ -829,7 +846,12 @@ function loop(now) {
     // speed, so every press goes exactly as far as every other one.
     pumpSkip();
   } else if (running) {
-    for (let i = 0; i < speed; i++) {
+    // v1.176: `speed` may now be a quarter, so the count comes off a budget
+    // rather than out of the variable. At 1×, 4× or any other whole pace the
+    // carry is zero every frame and this is the loop that has always been here.
+    const spend = stepBudget(stepCarry, speed);
+    stepCarry = spend.carry;
+    for (let i = 0; i < spend.steps; i++) {
       world.step();
       // Inside the step loop, not once a frame: at 20× a frame is twenty ticks
       // and a path sampled per frame would be a fifth of the corners. The book
@@ -3451,11 +3473,55 @@ function updateInspector() {
   }
 }
 
-// Toggle the simulation between running and paused, keeping the button label in
-// sync. Shared by the Pause button and the Space keyboard shortcut.
+// ---- How fast the pond runs (v1.176) ----
+// Three surfaces and one number. `speed` and `running` are the state; the pace
+// row under the water, the slider in the drawer and its plate are three
+// readings of it, and this is the only place any of them is written. A mode with
+// two copies of itself is a mode that gets out of step — the reason `⏸ Pause`
+// left the drawer in this release rather than being duplicated into the row.
+//
+// The row lights a stop only when the pace *is* that stop, so a slider left at
+// 7× lights nothing. That is `pace.js#stopFor` returning null, on purpose: a row
+// that rounded to the nearest would be claiming to describe a state it does not
+// hold, and the true pace is on the plate beside the control that set it.
+function syncPace() {
+  const play = $("btn-play");
+  if (play) play.textContent = running ? PAUSE_LABEL : PLAY_LABEL;
+  const here = running ? stopFor(speed) : null;
+  for (const stop of PACE_STOPS) {
+    const el = $(stopId(stop.key));
+    if (el) el.setAttribute("aria-pressed", String(Boolean(here) && here.key === stop.key));
+  }
+  const slider = $("speed");
+  if (slider) slider.value = String(speed);
+  const plate = $("speed-label");
+  if (plate) plate.textContent = paceLabel(speed);
+}
+
+// Toggle the simulation between running and paused. Shared by the row's play
+// button and the Space keyboard shortcut, which is why it is a toggle and the
+// three stops beside it are not: `Space` has meant *the other one of these two*
+// since v1.0 and a keyboard has no way to say "the third of four".
 function togglePause() {
   running = !running;
-  $("btn-pause").textContent = running ? "⏸ Pause" : "▶ Play";
+  syncPace();
+  announce(paceSentence(speed, running));
+}
+
+// Press a stop. It starts the pond as well as setting the pace, because a
+// visitor who presses `Fast` on a paused pond has asked for something to happen
+// and a row that answered by changing a number they cannot see would look
+// broken — v1.175's press-that-does-nothing, one control over.
+function setPace(steps) {
+  if (!Number.isFinite(steps) || steps <= 0) return;
+  speed = steps;
+  // The leftover belongs to the pace that earned it. Carrying a quarter-tick
+  // into a 4× frame would spend it immediately, which is harmless, and carrying
+  // it across a *pause* would step the world on the frame play was pressed.
+  stepCarry = 0;
+  running = true;
+  syncPace();
+  announce(paceSentence(speed, running));
 }
 
 // ---- "Meet somebody" ----
@@ -3582,7 +3648,14 @@ function wireKeyboard() {
 
 // ---- Controls ----
 function wireControls() {
-  $("btn-pause").addEventListener("click", togglePause);
+  // The pace row (v1.176). Four buttons, one number: the play button flips
+  // `running` and the three stops set `speed` and start the pond. Both of them
+  // end in `syncPace`, which is the only writer of any of the four labels, the
+  // slider and its plate.
+  $("btn-play").addEventListener("click", togglePause);
+  for (const stop of PACE_STOPS) {
+    $(stopId(stop.key)).addEventListener("click", () => setPace(stepsFor(stop.key)));
+  }
 
   $("btn-reset").addEventListener("click", () => resetWorld(config.seed));
 
@@ -3613,17 +3686,30 @@ function wireControls() {
   );
   $("btn-meet").addEventListener("click", meetSomebody);
 
-  // Speed control.
-  const speedInput = $("speed");
-  speedInput.addEventListener("input", (e) => {
-    speed = parseInt(e.target.value, 10);
-    $("speed-label").textContent = speed + "×";
+  // The slider in the drawer. It sets the same number the row does and reads
+  // back through the same function, so a drag that lands on a quarter, on 1 or
+  // on 4 lights the matching stop and a drag that lands anywhere else lights
+  // none. It does *not* start a paused pond: a slider is a setting and the row
+  // is the press, and a dial that quietly started the clock would be the one
+  // control here with a side effect nobody asked for.
+  $("speed").addEventListener("input", (e) => {
+    const v = Number.parseFloat(e.target.value);
+    if (!Number.isFinite(v) || v <= 0) return;
+    speed = v;
+    stepCarry = 0;
+    syncPace();
   });
 
   // Live parameter sliders (each nudges the config and updates the permalink).
   bindSlider("foodSpawnRate", "food-rate", (v) => v.toFixed(1));
   bindSlider("metabolicBase", "metabolism", (v) => v.toFixed(3));
   bindSlider("mutationRate", "mutation", (v) => v.toFixed(2));
+
+  // The row, the slider and the plate, read off `speed` once before the first
+  // frame. This is also the release the slider stopped shipping a hand-typed
+  // `1×` that a permalink could contradict: `#stepsPerFrame=4` has been a legal
+  // link since v1.71 and arrived at a page whose dial said one.
+  syncPace();
 
   // Toggles.
   $("toggle-vision").addEventListener("change", (e) => {

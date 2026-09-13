@@ -368,6 +368,13 @@ export const PAGE_SCOPED = Object.freeze({
   renderer: "one canvas, built once at boot and re-pointed at each new config",
   running: "a visitor's play/pause choice, which a new pond does not overrule",
   speed: "a visitor's speed choice, likewise",
+  stepCarry:
+    "the fraction of a tick the last frame could not spend (v1.176). Wall-clock, like the " +
+    "two below it and not like `speed` above: it is a property of the *frame*, not of the " +
+    "pond and not of a choice anybody made. A new world inherits it harmlessly — at most " +
+    "one tick of one frame is in it — and `setPace` clears it anyway, because the leftover " +
+    "belongs to the pace that earned it and carrying it across a pause would step the " +
+    "world on the frame play was pressed",
   lastFrame: "wall-clock, for the frame delta",
   fpsSmooth: "wall-clock, a rolling mean of the browser's frame rate",
   miniCtx: "the little map's drawing context, fetched once and re-sized whenever the page is",
