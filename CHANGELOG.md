@@ -4,6 +4,96 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.177.0] — 2026-09-13
+
+**The pond keeps you company.** Since v1.164 this page has sat somebody in the
+seat the moment a pond begins, so that a visitor who has not yet worked out that
+the dots are clickable still gets a living animal in *🏊 What it is doing*,
+*👁 What it can see* and *🧠 What it decides*. Nobody asked how long that lasts.
+On the pond the page opens on, it is **nine seconds** — and then the animal dies,
+the three panels go back to *Pick an animal — click one, or press M*, and they
+stay that way for the rest of the visit.
+
+They don't any more. When the animal the page seated dies, the page hands the
+seat on — to **their eldest young** if the line goes on, and to the stand-out in
+the water if it does not — and says which, underneath: *The one you were watching
+died — this is their eldest young, carrying on.* The obituary stays up, in full,
+under the animal that inherited it.
+
+### Nine seconds, and nobody had counted them
+
+Forty seeds, eighteen thousand steps each — five minutes at the speed the page
+opens on:
+
+| | |
+| --- | --- |
+| the page's animal died in | **40 of 40 seeds** |
+| median death | 1,089 steps ≈ 18 s |
+| the default pond, seed 314 | 533 steps ≈ 9 s |
+| the earliest | 105 steps ≈ 2 s |
+| median share of a five-minute visit back at *Pick an animal* | **94.1%** |
+
+v1.164 measured those three panels at **65% of the second screen of a phone**
+and fixed the first frame. The first frame is the one instant in a run where the
+seat cannot be empty yet, so the measurement could not see the thing it was
+about — and the release that removed three grey boxes put them back, with an
+obituary under them, ninety-four per cent of the way through the visit it was
+written for.
+
+### The card was never the thing in the way
+
+The old rule said the death belongs to `obituary.js` — that a page which "quietly
+seated a stranger over the top of a life it had just narrated would be stepping
+on the one thing it does well". That is true of the **card**, and it had been
+implemented as a rule about the **panels**, which are a different surface with a
+different job: the card narrates a life that ended, the panels narrate an animal
+that is alive. Both are now true at once. The card survives its own replacement
+for exactly as long as the seat it was handed over from is still the page's, and
+goes the instant the visitor picks anybody themselves — which is unchanged.
+
+Who inherits is the card's own answer rather than a new one: the **eldest living
+young** is the animal behind the card's `meet their young`, measured in
+`obituary.js#familyOf` over 659 deaths to still be in the water sixty steps later
+93.0% of the time. And where there is
+none, `cast.js#pickStar` — whose only disqualification, written in `onstage.js`
+in v1.164, is that its ladder is empty *at tick zero*. A thousand steps in,
+somebody has young, somebody is a giant and somebody has outlived the rest, so
+the answer that was a coin toss at the opening is the best one on the page.
+**62.1%** of hand-overs go to the young.
+
+### No sixth hold, and the number to beat
+
+A seat that refills itself can refill itself twice in a blink, so the gaps were
+counted before any hold was reached for — v1.176 found five of those already in
+this repository and said to count them before inventing a sixth. Fourteen seeds,
+six thousand steps, 78 hand-overs: median gap **646 steps ≈ 11 s**, 25.6% land
+while the death's own banner is still up, 12.8% inside a second, **2.6%** inside
+a quarter of one. The shortest was five steps. Three quarters are further apart
+than the banner they replace, and the quarter that are not are the pond's
+crashes: the heir really did die a second after inheriting, and a page that held
+the seat back to spare a reader that news would be editing the pond rather than
+reporting it. So: no hold, and 2.6% is the number a later cycle has to beat to
+argue for one.
+
+### Determinism
+
+Untouched. `onstage.js` is still a pure observer — it reads positions, ages and
+parentage and returns one of the animals it was handed — and the suite runs two
+identical ponds, one of them handing the seat on every step, and fingerprints
+both. The default pond is where `test/fingerprint.test.js` left it.
+
+### Also
+
+- Two new sentences in `hand.js`, in both registers, and the seat's line is
+  chosen through `onstage.js#SEAT_PHRASE` rather than named at the call site — a
+  test holds `main.js` to that, because the defect it prevents is *picked for
+  you, as the one nearest the middle* appearing under an animal that inherited
+  the seat from its parent.
+- `view.seatHandover` carries the reason *and* the id of the life the seat was
+  handed over from. Both halves are load-bearing: the reason picks the sentence,
+  the id is what tells the card this seat came from apart from a card about an
+  animal the visitor picked and walked away from.
+
 ## [1.176.0] — 2026-09-13
 
 **▶ Slow · Normal · Fast.** For a hundred and seventy-five releases this pond

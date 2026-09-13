@@ -171,6 +171,20 @@ const FRESH = Object.freeze({
   // that comparison false forever, and the page would go on narrating an animal
   // it had seated while telling the visitor they had chosen it.
   pagePick: null,
+  // How that seat came to be filled, once it has been filled a second time
+  // (v1.177, `onstage.js#nextSeat`). `null` is the opening pick — the nearest to
+  // the middle, which is what `seatSwap` says — and anything else is a
+  // hand-over: `{ by: "heir" | "next", after: <the id of the life in the card> }`.
+  //
+  // One object rather than two fields, and it carries the card's id rather than
+  // only the reason, because both halves are needed and neither is derivable.
+  // The reason picks the sentence under the water. The id is what lets
+  // `updateInspector` tell *this* card — the one the page seated somebody in
+  // answer to, which must survive the living animal above it — from a card about
+  // an animal the visitor picked and then moved on from, which must not. Spelled
+  // as the pair that is written in the one place the hand-over happens, so it
+  // cannot describe a seat that was filled some other way.
+  seatHandover: null,
   // What the disc under that line is saying (v1.161). Two fields because the
   // panel updates on two clocks on purpose: the ink is redrawn every frame
   // because a blip really is moving, and the words are held for

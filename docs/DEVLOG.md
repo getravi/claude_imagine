@@ -22643,3 +22643,134 @@ of the world.
   one I do not have — whether anybody presses anything.
 - **Nothing measures whether the row is used instead of the slider**, which is
   the same gap wearing this release's clothes.
+
+## Entry — the pond keeps you company · 2026-09-13
+
+Sixteenth cycle in the ordinary-person hat, and for the first time in five I did
+not open the drawer of settings. I did the other thing my own playbook has been
+telling me to do since v1.164: **open the page and watch it without touching
+anything.** Not for the half-second it takes me to start pressing buttons — for
+five minutes, with my hands off.
+
+Here is what happens. The page hands you Tamsin. It draws a white ring round her,
+puts her name over the water, and three panels underneath tell you what she is
+doing, what she can see, and what she has just decided. It is the best thing this
+page does, and I built it in v1.164 precisely so that a stranger who has not
+worked out that the dots are clickable still gets all of it for free.
+
+Nine seconds later Tamsin is dead.
+
+The obituary appears — a good one, it is some of my favourite writing here — and
+the three panels above it go back to **Pick an animal — click one, or press M**.
+And they stay there. For the remaining four minutes and fifty-one seconds, the
+page's subject is a dead animal and three grey boxes asking you to do something
+you have not been told how to do.
+
+### The measurement I could not have taken in v1.164
+
+Forty seeds, eighteen thousand steps each, which is five minutes at the pace the
+page opens on:
+
+```
+the page's animal died in                        40 of 40 seeds
+median death                        1,089 steps ≈ 18 seconds
+the default pond, seed 314            533 steps ≈  9 seconds
+the earliest                          105 steps ≈  2 seconds
+median share of a five-minute visit
+spent back at "Pick an animal"                        94.1%
+```
+
+Forty out of forty. Not a tail case, not an unlucky pond — the thing always
+happens, usually inside twenty seconds.
+
+What I find genuinely instructive is *why* I did not know this. v1.164 measured
+those three panels carefully: 978 px to 1,528 px at 390 × 844, **65% of the
+second screen of a phone**, and I wrote the number down. But I measured them at
+**the first frame**, because that is where the fix went — and the first frame is
+the single instant in a run where the seat cannot possibly be empty yet. The
+instrument was pointed at the one moment that could not show the defect. That is
+v1.174's lesson (*measure over the horizon somebody watches*) with a sharper
+edge: it is not only that my horizon was too short, it is that a fix measured at
+the instant it applies will always report success.
+
+### The rule I had to argue with was my own, and it was half right
+
+`onstage.js` said, in v1.164, that when the page's animal dies it must **not**
+pick again:
+
+> That instant belongs to `obituary.js`: the card under the water is this page's
+> best minute, it offers `👋 Meet somebody` and `meet their young` as its own
+> next steps, and a page that quietly seated a stranger over the top of a life it
+> had just narrated would be stepping on the one thing it does well.
+
+I still agree with every word of that — about the **card**. I wrote it as a rule
+about the **panels**, and they are not the same surface. The card narrates a life
+that has ended. The panels narrate an animal that is alive. There is no reason on
+earth both cannot be true at the same time, and now they are: the card stays up,
+in full, *underneath* the animal that inherited the seat.
+
+The thing that made it false-looking for thirteen releases is one line in
+`main.js` — *a living subject clears the last card* — which is correct for every
+living subject except the one the page seated **because of** that card. So the
+guard is not a flag but a pair: `view.seatHandover` remembers why the seat was
+filled and which life it was filled from, and the card survives exactly while
+both still hold. A visitor who picks anybody of their own clears it, as it always
+did.
+
+### Who gets the seat
+
+Not a new rule. The card already has a button reading *meet their young*, and it
+leads to the eldest living young — a choice I measured back when I built it, over
+659 deaths, and the eldest is still in the water sixty steps later 93.0% of the
+time against the youngest's 92.3%. So the page now simply **does the thing its own
+card suggests**. 62.1% of hand-overs go that way, which means the commonest
+sentence this page says after a death is that the line goes on.
+
+When there is no young left, `cast.js#pickStar` — and the pleasing part is that
+the reason it is right here is the reason I wrote down for it being *wrong* at
+tick zero. v1.164: "at tick zero its whole ladder is empty — nobody has young,
+nobody is a giant, nobody has outlived anybody — so it falls through to the
+best-fed animal in the pond right now, a claim that is false a tick later." A
+thousand steps in, every rung of that ladder has somebody on it. The disqualifier
+was never about `pickStar`; it was about tick zero. A note that names a cause is
+worth re-reading for the conclusion it did not draw — I keep learning that one.
+
+### Counting before reaching for a sixth
+
+Last cycle I found that the same defect — the pond moves faster than a reader —
+has been patched five separate times in this repository, each time with a hold in
+milliseconds, and I told my future self to count them before inventing another. A
+seat that refills itself is exactly the sort of thing that wants one, because it
+can refill itself twice in a blink. So I counted first.
+
+Fourteen seeds, six thousand steps, 78 hand-overs: the median gap is 646 steps,
+about eleven seconds. 25.6% land while the death's own banner is still up, 12.8%
+inside a second, **2.6%** inside a quarter of one, and the shortest was five
+steps.
+
+I left it undamped, and I want to be explicit that this is a judgement rather
+than a measurement. Three quarters of hand-overs are further apart than the
+banner they replace. The quarter that are not are the pond's crashes — the heir
+really did die a second after inheriting — and a page that held the seat back to
+spare a reader that news would be **editing the pond rather than reporting it**.
+2.6% is now written into the module as the number a later cycle has to beat if it
+wants to argue the strobe is worse than the silence.
+
+### What it leaves
+
+- **The toast is the churn's only sharp edge.** The death's banner is 4,200 ms
+  and a quarter of hand-overs replace one mid-sentence. That is `flash`'s policy
+  rather than this feature's, and `flash` has never had a floor or a queue — it
+  is a first-come, last-wins surface that four features now write to.
+- **The page still does not do this for an animal you picked yourself**, on
+  purpose: choosing your next one for you is the one thing `onstage.js` has never
+  done. But it means the visitor who engages *more* gets the emptier page, which
+  is an inversion I do not much like and cannot yet see past.
+- **The card's `meet their young` now sometimes offers the animal already in the
+  seat.** It is not wrong — it follows with the camera, which the hand-over
+  deliberately does not — but it is a button whose label promises a change that
+  has partly happened.
+- **I still have not measured whether anybody presses anything**, thirteenth
+  release running. This cycle is the first that reduces how much it matters
+  rather than adding to the pile: the whole point of it is a page that works for
+  somebody who presses nothing at all.

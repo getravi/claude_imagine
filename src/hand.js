@@ -19,12 +19,12 @@
 //                                                        ← 104 px of keys, on a
 //                                                          device with none
 //
-// Nineteen places on this page name an input device, and they account for
-// themselves: the twelve sentences this file now holds in two registers, the
+// Twenty-one places on this page name an input device, and they account for
+// themselves: the fourteen sentences this file now holds in two registers, the
 // pan-and-zoom pair, the two paragraphs of accelerators above, the minimap's
 // tooltip and the pond's screen-reader help — both deliberately left in the
 // mouse-and-keyboard register, for reasons given below — and one world's blurb
-// that has stopped naming a device at all. **One pair of the nineteen had ever
+// that has stopped naming a device at all. **One pair of the twenty-one had ever
 // asked which device you had**: the pan-and-zoom hint, which has carried a
 // `.fine-only` and a `.coarse-only` copy since the gestures landed. The fix went
 // where the defect was *noticed*, and stopped there; every other sentence kept
@@ -162,6 +162,27 @@ export const PHRASES = Object.freeze({
   seatSwap: Object.freeze({
     pointer: "Picked for you, as the one nearest the middle — click any other animal to watch that one instead.",
     touch: "Picked for you, as the one nearest the middle — tap any other animal to watch that one instead.",
+  }),
+
+  /**
+   * The same line after the page has handed its seat on, because the animal it
+   * was holding died (v1.177, `onstage.js#nextSeat`).
+   *
+   * Two of them rather than one, and the split is the whole point of the
+   * release: *their eldest* is a fact about the animal on screen that a reader
+   * can act on — it is the young of the life in the card underneath — and
+   * flattening both cases into "the page has picked another" would throw away
+   * the only sentence here that says the line goes on.
+   */
+  seatHeir: Object.freeze({
+    pointer: "The one you were watching died — this is their eldest young, carrying on. Click any other animal to watch that one instead.",
+    touch: "The one you were watching died — this is their eldest young, carrying on. Tap any other animal to watch that one instead.",
+  }),
+
+  /** And when nothing of that family is left: the stand-out in the water now. */
+  seatNext: Object.freeze({
+    pointer: "The one you were watching died, and their family with them — this is the stand-out in the water now. Click any other animal to watch that one instead.",
+    touch: "The one you were watching died, and their family with them — this is the stand-out in the water now. Tap any other animal to watch that one instead.",
   }),
 
   /**

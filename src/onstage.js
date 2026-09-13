@@ -47,7 +47,7 @@
 //
 // ## The seat is only borrowed
 //
-// The page fills the seat **once per pond** and never argues about it again.
+// The page fills the seat and never argues with the visitor about it.
 // `main.js` remembers who it sat down, and the moment the visitor picks anybody
 // — a click, a tap, an arrow key, `M`, a row on the cast board — the selection
 // is no longer that creature and the borrowed-seat line disappears for good.
@@ -55,16 +55,80 @@
 // `renderer.selected === view.pagePick`, which cannot drift from the thing it
 // describes.
 //
-// And when the page's own animal dies, it does **not** pick again. That instant
-// belongs to `obituary.js`: the card under the water is this page's best minute,
-// it offers `👋 Meet somebody` and `meet their young` as its own next steps, and
-// a page that quietly seated a stranger over the top of a life it had just
-// narrated would be stepping on the one thing it does well.
+// ## The seat empties, and until v1.177 it stayed empty
 //
-// Determinism: PURE OBSERVER. This reads positions and returns one of the
-// animals it was handed. It writes nothing, steps nothing, and draws no random
-// number — a pond nobody is looking at and a pond with somebody in the seat are
-// bit-for-bit the same pond.
+// v1.164 seated somebody on the first frame and never asked how long that lasts.
+// The answer, over forty seeds run out to eighteen thousand steps — five minutes
+// at the speed the page opens on:
+//
+//   the seat's animal died in            40 of 40 seeds
+//   median death                          1,089 steps ≈ 18 seconds
+//   the default pond, seed 314              533 steps ≈ 9 seconds
+//   the earliest                            105 steps ≈ 2 seconds
+//   median share of a five-minute visit
+//   spent back at *Pick an animal*          94.1%   (mean 92.8%)
+//
+// So the fix that opened the three panels held them open for about nine seconds
+// of the visit it was built for, and then handed a stranger the exact three grey
+// boxes it was written to remove — with an obituary under them, which is a page
+// whose subject is now a dead animal for the remaining 97%. Nobody had measured
+// it because the measurement v1.164 took was of *the first frame*, and the first
+// frame is the one instant in a run where a seat cannot yet be empty.
+//
+// ## So the seat is handed on, and the card keeps its own moment
+//
+// The old note said the death instant belongs to `obituary.js` — that a page
+// which "quietly seated a stranger over the top of a life it had just narrated
+// would be stepping on the one thing it does well". That is right about the
+// *card* and it was implemented as a rule about the *panels*, which are a
+// different surface with a different job: the card narrates a life that ended,
+// the three panels narrate an animal that is alive. Both can be true at once,
+// and from v1.177 they are — the card stays up, in full, until the visitor picks
+// somebody of their own, and the panels carry on with whoever took the seat.
+//
+// Who takes it is the card's own answer rather than a new one: **the eldest
+// living young**, which is exactly the animal `obituary.js#familyOf` offers
+// behind *meet their young*, measured there to be still alive sixty steps later
+// 93.0% of the time. The page does the thing its own card suggests. Where there
+// is no young left, `cast.js#pickStar` — *which of these should I watch* — and
+// the reason it is right here is the reason the section above gives for it being
+// wrong at tick zero, read the other way round: its ladder is empty at the
+// opening because nobody has young, nobody is a giant and nobody has outlived
+// anybody *yet*. A thousand steps in, all three are true of somebody, so the
+// answer that was a coin toss at the opening is the best answer on the page.
+//
+// And no camera, for v1.164's reason. The ring moves; the water does not.
+//
+// ## What it costs, counted before deciding not to damp it
+//
+// A seat that refills itself can refill itself twice in a blink, so the gaps
+// between hand-overs were measured before any hold was reached for — v1.176's
+// note about the five that already exist. Over fourteen seeds and six thousand
+// steps, 78 hand-overs:
+//
+//   median gap              646 steps ≈ 11 seconds
+//   inside the 4,200 ms the death's own banner is still up   25.6%
+//   inside one second                                        12.8%
+//   inside a quarter of a second                              2.6%
+//   the shortest                                        5 steps
+//
+// Three quarters of them are further apart than the banner they replace, and the
+// quarter that are not are the pond's crashes rather than a defect in the rule:
+// the heir really did die a second after inheriting, and a page that held the
+// seat back to spare a reader that news would be editing the pond rather than
+// reporting it. So there is no sixth hold here. What there is instead is this
+// paragraph, and the number to beat if a later cycle decides the strobe is worse
+// than the silence: **2.6%**.
+//
+// Of the hand-overs themselves, **62.1%** go to the young — so the commonest
+// thing this page now says after a death is that the line goes on.
+//
+// Determinism: PURE OBSERVER. This reads positions, ages and parentage, and
+// returns one of the animals it was handed. It writes nothing, steps nothing,
+// and draws no random number — a pond nobody is looking at and a pond with
+// somebody in the seat are bit-for-bit the same pond.
+
+import { pickStar } from "./cast.js";
 
 /**
  * The living animal nearest the middle of the water, or `null` on an empty pond.
@@ -100,4 +164,63 @@ export function openingPick(world) {
     }
   }
   return winner;
+}
+
+/**
+ * The eldest living young of the animal whose life has just been written.
+ *
+ * Eldest is lowest id — ids come off a counter, so an animal born earlier is
+ * numbered lower — and it is the eldest rather than the youngest because that is
+ * the one `obituary.js#familyOf` already offers, on a measurement taken there:
+ * over 659 deaths that left two or more young, the eldest is still in the water
+ * sixty steps later 93.0% of the time and the youngest 92.3%, so there is
+ * nothing to choose between them and *their eldest* is what a person means.
+ *
+ * Read off the pond rather than off the card's remembered list, for
+ * `familyOf`'s reason: a name taken a minute ago may be a body now.
+ *
+ * @param {{id:number}} record a life, as `obituaryFor` wrote it
+ * @param {{creatures:Array<{id:number,parentId:?number,dead:boolean}>}} world
+ * @returns {object|null}
+ */
+export function eldestYoung(record, world) {
+  if (!record) return null;
+  let heir = null;
+  for (const c of world.creatures) {
+    if (c.dead || c.parentId !== record.id) continue;
+    if (!heir || c.id < heir.id) heir = c;
+  }
+  return heir;
+}
+
+/** How a seat came to be filled, and therefore which sentence sits under it. */
+export const SEAT_PHRASE = Object.freeze({
+  opening: "seatSwap",
+  heir: "seatHeir",
+  next: "seatNext",
+});
+
+/**
+ * Who takes the seat when the animal the page seated dies (v1.177).
+ *
+ * Two answers and they are in this order because the first one is a *story* and
+ * the second is a ranking: the line going on is the thing a reader who has just
+ * been told somebody died actually wants next, and it is only unavailable when
+ * there is no line to go on with.
+ *
+ * Returns `null` on a pond with nobody left in it — an empty pond has no seat to
+ * fill, and the panels go back to their invitation, which is then the truth.
+ *
+ * @param {{id:number}} record the life just written, from `obituaryFor`
+ * @param {object} world the pond, this frame
+ * @param {object} config
+ * @param {object|null} names the tree's family names, for `pickStar`
+ * @returns {{creature:object, by:"heir"|"next"}|null}
+ */
+export function nextSeat(record, world, config, names = null) {
+  const heir = eldestYoung(record, world);
+  if (heir) return { creature: heir, by: "heir" };
+  const star = pickStar(world, config, names);
+  const c = star && star.creature;
+  return c && !c.dead ? { creature: c, by: "next" } : null;
 }

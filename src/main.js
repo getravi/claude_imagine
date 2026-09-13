@@ -72,7 +72,7 @@ import {
   drawSteer,
   steerMark,
 } from "./decide.js";
-import { openingPick } from "./onstage.js";
+import { SEAT_PHRASE, nextSeat, openingPick } from "./onstage.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -1132,13 +1132,20 @@ function updateDoing() {
   // borrowed: once the visitor has picked somebody the line is gone, so the
   // hand cannot change anything about this card and does not belong in its key.
   const own = ownSeat();
-  const sig = key ? `${c.id}:${key}:${own ? hand : ""}` : `invite:${hand}`;
+  // Which of the three seat sentences, spelled off the record of how the seat
+  // was filled rather than off a flag anybody has to clear (v1.177). It is in
+  // the signature beside the hand for the hand's own reason: the line is a
+  // different sentence after a hand-over, and a cache keyed on the animal alone
+  // would hold the opening's *picked for you, as the one nearest the middle*
+  // over an animal that got the seat some other way.
+  const seatKey = SEAT_PHRASE[view.seatHandover ? view.seatHandover.by : "opening"];
+  const sig = key ? `${c.id}:${key}:${own ? hand + seatKey : ""}` : `invite:${hand}`;
   if (sig === view.doingSig) return;
   view.doingSig = sig;
   const el = $("doing");
   const swap = $("doing-swap");
   swap.hidden = !own;
-  swap.innerHTML = own ? say("seatSwap", hand) : "";
+  swap.innerHTML = own ? say(seatKey, hand) : "";
   if (!key) {
     el.classList.add("waiting");
     $("doing-icon").textContent = INVITE_ICON;
@@ -3350,6 +3357,20 @@ function updateInspector() {
       const kin = familyLines(view.obitCard, family);
       flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
       announce(`${title}. ${[...sentences, ...kin].join(" ")}`);
+      // And the seat is handed on, if the seat was the page's (v1.177). Only
+      // then: an animal the *visitor* chose leaves an empty seat on purpose,
+      // because the page choosing their next one for them is the one thing
+      // `onstage.js` has never done and is not starting now.
+      //
+      // The water is untouched — no camera, v1.164's rule — so what a reader
+      // sees is the white ring move and the three panels carry on, with the card
+      // they are carrying on from directly underneath.
+      if (c === view.pagePick) {
+        const taken = nextSeat(view.obitCard, world, config, namesForTree(world.phylogeny));
+        view.pagePick = taken ? taken.creature : null;
+        view.seatHandover = taken ? { by: taken.by, after: view.obitCard.id } : null;
+        renderer.selected = view.pagePick;
+      }
     }
     // The card is structure with a button in it, so it obeys the same rule the
     // living panel does: rebuilt on a key, never on a frame.
@@ -3401,9 +3422,20 @@ function updateInspector() {
   // the panel able to flip back to an obituary the visitor has moved on from —
   // and takes the card off the page with it, since it is about the animal this
   // page *was* following and there is a living one under it now.
-  view.obitCard = null;
+  //
+  // The one exception is the living subject this page seated *because* of that
+  // card (v1.177): the card and the animal above it are then two halves of one
+  // sentence — here is the life that ended, here is the young carrying it on —
+  // and clearing it would delete the page's best minute one frame after writing
+  // it. The test is the pair `seatHandover` holds rather than a flag: it survives
+  // only while the seat is still the page's *and* the card is still the one it
+  // was handed over from, so a visitor who picks somebody else, or a later death
+  // of an animal they picked themselves, clears it exactly as before.
+  if (!(ownSeat() && view.seatHandover && view.obitCard && view.seatHandover.after === view.obitCard.id)) {
+    view.obitCard = null;
+  }
   const lifeCard = $("obituary");
-  if (!lifeCard.hidden) {
+  if (!view.obitCard && !lifeCard.hidden) {
     lifeCard.hidden = true;
     lifeCard.innerHTML = "";
     // The other half of the pair above: the card's chapter leaves the contents

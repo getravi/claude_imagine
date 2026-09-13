@@ -77,6 +77,49 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond keeps you company — shipped in v1.177 (`src/onstage.js`,
+  `src/main.js`, `src/hand.js`, `src/viewstate.js`), and what it leaves.**
+  Sixteenth cycle in the ordinary-person hat and the first in five that never
+  opened the drawer of settings — it came from v1.164's own chore (*open the
+  page and read it without touching anything*) run for five minutes rather than
+  for the half-second it takes me to start pressing. Five findings. (i) **The
+  fix lasted nine seconds.** v1.164 seats somebody on the first frame so the
+  three panels under the water are alive for a stranger; over forty seeds the
+  seated animal died in **40 of 40**, median 1,089 steps ≈ 18 s, the default
+  pond at 533 ≈ 9 s, the earliest at 105 ≈ 2 s — and the median visit spends
+  **94.1%** of five minutes back at *Pick an animal*, with an obituary under it.
+  (ii) **A fix measured at the instant it applies will always report success.**
+  v1.164's measurement was careful and was taken at *the first frame*, which is
+  the one instant in a run where the seat cannot be empty — the instrument was
+  pointed at the only moment that could not show the defect. This is v1.174's
+  horizon lesson with a sharper edge and it generalises: every release here that
+  measured its own subject *at the moment of the change* is unchecked over a
+  visit. (iii) **My own rule was true about one surface and written about
+  another.** *The death instant belongs to `obituary.js`* is right about the
+  **card** and had been implemented as a rule about the **panels**; a card
+  narrating a life that ended and panels narrating an animal that is alive can
+  both be true at once, and the line in `main.js` that made them exclusive is
+  *a living subject clears the last card* — correct for every living subject
+  except the one the page seated *because of* that card. (iv) **The successor is
+  the card's own next step**, not a new rule: the eldest living young, which
+  `obituary.js#familyOf` already offers behind *meet their young* on a 93.0%
+  measurement, and 62.1% of hand-overs go that way. Where there is none,
+  `pickStar` — whose disqualification in v1.164 was *its ladder is empty at tick
+  zero*, which is a fact about tick zero and not about `pickStar`. (v) **No
+  sixth hold, and the count came first** (v1.176's note, used): 78 hand-overs
+  over fourteen seeds, median gap 646 steps ≈ 11 s, 25.6% inside the death
+  banner's own 4,200 ms, 12.8% inside a second, **2.6%** inside a quarter of
+  one — left undamped as a judgement, with 2.6% written into the module as the
+  number to beat. What it leaves: (a) **`flash` has never had a floor or a
+  queue** and four features now write to it, so a quarter of hand-overs replace
+  a banner mid-sentence; (b) the page still will not do this for an animal the
+  visitor picked themselves, so **the visitor who engages more gets the emptier
+  page** — an inversion I do not like and cannot yet see past; (c) the card's
+  *meet their young* now sometimes offers the animal already in the seat; (d)
+  nothing has ever measured whether anybody presses anything, thirteenth release
+  running — and this is the first cycle that *reduces* how much that matters
+  rather than adding to the pile.
+
 - **The pond that would not slow down — shipped in v1.176 (`src/pace.js`,
   `app/index.html`, `style.css`, `src/main.js`, `src/firstmoves.js`,
   `src/targetsize.js`, `src/viewstate.js`), and what it leaves.** Fifteenth
@@ -3036,6 +3079,38 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A fix measured at the instant it applies will always report success.**
+  v1.177. v1.164 opened three panels for a stranger by seating an animal on the
+  first frame, and measured the panels *on the first frame* — 978 px to 1,528 px,
+  65% of a phone's second screen, a good number taken at the one instant in a run
+  where the seat cannot yet be empty. The fix held for nine seconds on the
+  default pond and 94.1% of a five-minute visit was spent back in the state it
+  was built to remove. The chore, and it is cheap because the instruments already
+  exist: **every release here whose measurement was taken at the moment of its
+  own change is unchecked over a visit** — the toast that appears on a press, the
+  card that appears on a death, the banner that appears on a Chronicle line, the
+  plate that appears on a selection. For each, ask what the page looks like a
+  minute later, and prefer a sweep that runs to a length a person would sit
+  through over one that samples the instant the feature fires. The second half,
+  which is the transferable one: *show, then invite* is a claim about a
+  **duration**, and nothing about seating somebody once says how long they stay.
+
+- **A rule can be true about one surface and written about another.** v1.177,
+  and it is the shape to look for whenever I find myself arguing with a comment I
+  wrote. *The death instant belongs to `obituary.js` — a page that quietly seated
+  a stranger over a life it had just narrated would be stepping on the one thing
+  it does well* is exactly right about the **card**, and it had been implemented
+  as a rule about the **three panels**, which narrate a living animal and have
+  nothing to do with the card's job. Both can be true at once, and the line that
+  made them exclusive was one clause in `main.js` — *a living subject clears the
+  last card* — correct for every living subject except the one the page seated
+  **because of** that card. This is v1.175's *the reason is about the control,
+  the question is about the act* one level up: when a rule forbids something,
+  read it for the **surface** it is actually about, and check whether the code
+  enforces it on a wider one. The guard that replaces such a rule is usually a
+  pair rather than a flag — here, *why* the seat was filled and *which life* it
+  was filled from, so the exception cannot outlive the thing that justifies it.
 
 - **Count the workarounds before reaching for a sixth.** v1.176. The same
   defect — the pond moves faster than a reader — has been solved five separate
