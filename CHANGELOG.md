@@ -4,6 +4,74 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.180.0] — 2026-09-14
+
+**🌱 The ladder gets a second half.** `🌱 How far this pond has got` is the one
+panel on this page that points *forwards* — six things a pond does as it grows
+up, ticked as it does them, each unticked row carrying the live number it is
+standing at. It is the page's whole *stay a bit longer* argument in one list.
+
+Left running on the default pond, it says **`6 of 6 so far` after sixty
+seconds** — and then says it for the rest of the visit.
+
+So the list a visitor is still reading has already ended. Four more rungs, and
+the page has something to promise for as long as anybody is likely to sit there:
+
+| the new rungs | typical arrival | at the speed the page opens |
+| --- | --- | --- |
+| 🐣 **A new kind of animal** — a family that began here | 2,796 steps | ~1½ min |
+| 🍼 **Five hundred lives** — born into a pond handed 40 | 5,149 | ~3 min |
+| 🌳 **Fifteen generations** — every link made here | 7,380 | ~4½ min |
+| 🏆 **A thousand lives** | 10,511 | ~6 min |
+
+### What five minutes on the page now looks like
+
+The same browser, the same default pond, timed at the same marks:
+
+| after | before | now |
+| --- | --- | --- |
+| 1 minute | 6 of 6 — nothing ahead | **5 of 10**, five rows still counting |
+| 3 minutes | 6 of 6 | **8 of 10** |
+| 5 minutes | 6 of 6 | **8 of 10**, two rungs still to come |
+
+Three of the new rungs were climbed *while somebody was watching*, so the pond
+cheered three more times — `🐣 A new kind of animal — a family that started in
+this water, rather than one the pond was handed.` And the banner that used to
+end `That is the whole ladder.` now ends by naming what to wait for.
+
+### How the four were chosen
+
+Sixteen to twenty-two ponds, run 20,000–24,000 steps — five times the horizon
+v1.131's design sweep used — recording the first occurrence of twenty-seven
+candidates. Every rung that shipped fires on **every pond swept**, and three
+that did not are the useful part:
+
+- **Twenty generations is a wall, and only just.** It fires on 21 of 22 ponds;
+  seed 99 never gets there. v1.131 measured the same rung at 0 of 12 and
+  rejected it outright — *nearly* fair is worse, because it fails invisibly.
+  Fifteen is 22 of 22.
+- **One animal raising ten young** fires on 9 of 16; **half a pond descended
+  from a family it grew itself** on 11 of 16. Stories this water sometimes has,
+  and a ladder cannot ask for.
+- **A family dies out** fires on 16 of 16 and was cut for a reason that is not
+  arithmetic: it is a *loss*, and the one panel here whose job is to give
+  somebody a reason to stay should not tick to say something has gone. The
+  Chronicle already writes it.
+
+### Small print
+
+- Two of the new rungs lead somewhere: press **👀 Show me** on `A new kind of
+  animal` or `Fifteen generations` and the camera goes and finds the animal.
+  Five of the ten rows are controls now.
+- **A live counter is a reason to stay exactly once.** With all four still
+  ahead, the first browser run drew *326 have been born here of the five
+  hundred it takes* and *…of the thousand it takes* two rows apart. The later
+  of a pair now says what it is relative to the rung above until that rung is
+  ticked.
+- **Determinism is untouched.** The ladder is a pure observer of counters the
+  books already keep — four more latched integers, no random number, nothing
+  the simulation can read. A default pond is bit-for-bit the pond it always was.
+
 ## [1.179.0] — 2026-09-13
 
 **🥣 Feed them.** The bar this page grew last release says *they are nearly out*

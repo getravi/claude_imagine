@@ -43,7 +43,7 @@
 // gets no settling window at all — its first young can land on step 9 and that
 // is the most deserved banner on the list.
 //
-// **v1.133: a banner can lead somewhere.** Three of the six rungs are about an
+// **v1.133: a banner can lead somewhere.** Five of the ten rungs are about an
 // animal, and `milestones.js` now says which and whether the pond still holds
 // them. A banner carries that through as its rung's key and a flag — never as
 // an id, and never as a creature. The animal is looked up at the moment the
@@ -56,7 +56,11 @@
 // module draws a random number, touches a creature or writes anything a pond
 // can see. It cannot: it never receives a world.
 
-import { DEEP_GENERATIONS, DYNASTY_YOUNG } from "./milestones.js";
+// One line, and `test/cheer.test.js` is why: it reads this file's imports back
+// to prove the module is handed nothing but the ladder, and it reads them with
+// a line-anchored pattern.
+// prettier-ignore
+import { DEEPER_GENERATIONS, DEEP_GENERATIONS, DYNASTY_YOUNG, LIVES_FEW, LIVES_MANY } from "./milestones.js";
 
 /**
  * How long a restored pond is given to finish arriving, in steps of its own
@@ -74,7 +78,7 @@ export const SETTLE_STEPS = 60;
  * What each rung says the moment it is climbed, in the present tense.
  *
  * These are not the ladder's own `done` sentences. A row in the panel is read
- * by somebody scanning six of them and can afford to be a clause; a banner is
+ * by somebody scanning ten of them and can afford to be a clause; a banner is
  * read once, by somebody who was watching the water, and has to be a sentence
  * that stands on its own. The vocabulary bar is the ladder's — `test/cheer.js`
  * holds these to the same list of words a first-time visitor would not know.
@@ -86,6 +90,10 @@ const SAID = Object.freeze({
   dynasty: `one animal has raised ${DYNASTY_YOUNG} young, which is how a trait spreads`,
   crowd: "this water now holds twice what it was handed",
   deep: `${DEEP_GENERATIONS} generations of descent from the animals this pond began with`,
+  newkind: "a family that started in this water, rather than one the pond was handed",
+  lives: `${LIVES_FEW.toLocaleString()} animals have now been born in this water`,
+  deeper: `${DEEPER_GENERATIONS} generations of descent, and every link in that chain was made here`,
+  thousand: `${LIVES_MANY.toLocaleString()} animals have now been born here, all of them from the few this pond was handed`,
 });
 
 /** Every rung has a line, and no line belongs to a rung that has gone. */

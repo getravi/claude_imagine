@@ -710,21 +710,26 @@
 
         <!-- The ladder (v1.131). Every other panel on this page points at the
              present tense or at the past; this is the only one that says what to
-             *wait* for. Six things a pond does as it grows up, in the order the
-             sweep says it does them, each either ticked with the year it
+             *wait* for. Ten things a pond does as it grows up, in the order the
+             sweep says it does them, each either ticked with how far in it
              happened or still ahead with the live number it is standing at.
+             The last four arrived in v1.180, and the reason is one measurement:
+             the first six are all ticked by about sixty seconds, so for the
+             other four minutes of a five-minute visit the one panel here that
+             points forward was a finished list.
              `src/milestones.js` owns the rungs, the wording and the arithmetic;
              the latch itself lives in `World.step` beside the Chronicle's,
              because a rung's *tick* cannot be recovered at frame rate even
-             though its truth can. No row here is a control: there is no animal
-             behind a rung to go and look at. -->
+             though its truth can. Five of the ten rows are controls (v1.133,
+             v1.180): press one and the camera goes and finds the animal that
+             rung is about. -->
         <section id="milestones" class="milestones" aria-labelledby="milestones-h">
           <div class="milestones-head">
             <h2 id="milestones-h">🌱 How far this pond has got</h2>
-            <span class="milestones-count" id="milestone-count">none of 6 yet</span>
+            <span class="milestones-count" id="milestone-count">none of 10 yet</span>
           </div>
           <div class="msbar" aria-hidden="true"><span id="milestone-fill"></span></div>
-          <!-- The panel in one sentence, before the six rows a listener would
+          <!-- The panel in one sentence, before the ten rows a listener would
                otherwise have to walk to find the one that matters. It names
                what is still *ahead*, because that is what this panel is for and
                it is the half a sighted reader gets from the ink hierarchy at a

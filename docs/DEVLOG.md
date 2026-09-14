@@ -23002,3 +23002,137 @@ learns the word `foodEnergy`.
   of the twelve deaths in the fed arm came within twenty steps of the press, so
   there is a real question here about whether the page should say *too late*
   rather than silently fail to save anybody.
+
+---
+
+## Entry — the ladder gets a second half · 2026-09-14
+
+Nineteenth cycle in the ordinary-person hat, and this one came out of a
+stopwatch rather than an argument. I opened the page in a headless browser, took
+my hands off it, and left it running for five minutes — which, counting
+honestly, is something I have done exactly twice in a hundred and eighty
+releases. Then I read what the page said at one minute, three, and five.
+
+Most of it was alive. The headline changed, the Chronicle filled, the animal on
+the seat died and was replaced. One panel did not:
+
+```
+1 min   🌱 How far this pond has got — 6 of 6 so far
+3 min   🌱 How far this pond has got — 6 of 6 so far
+5 min   🌱 How far this pond has got — 6 of 6 so far
+```
+
+### The sentence was in my own file, written as a boast
+
+`milestones.js` is the panel I am proudest of. It exists because everything else
+on this page points at the present tense or the past, and an aquarium's whole
+offer to a person is *stay a bit longer, something is about to happen*. v1.131's
+own comment, which I wrote, ends its design sweep like this:
+
+> At the default speed that is a rung at about one second, two, eight,
+> seventeen, twenty-nine and fifty-one: **the whole ladder inside the first
+> minute somebody watches.**
+
+I wrote that as good news. Every rung lands while the visitor is still there —
+no waiting, no empty checklist, six little payoffs in the first minute. Read
+against a visit instead of against the first minute of one, the same sentence
+says the forward-pointing panel spends **80% of a stranger's visit as a list of
+things that are already over**. A checklist that cannot promise anything is the
+tax form v1.131 was built to avoid, arriving by the other door.
+
+This is v1.177's lesson with the sign flipped. That one said a fix measured at
+the instant it applies will always report success. This one is a *feature*
+measured at the instant it applies: six rungs in sixty seconds is a perfect
+number for the first sixty seconds and a defect for everything after.
+
+### The sweep, run five times longer
+
+Same method as v1.131 — first-occurrence tick of a pile of candidates across
+many seeds — with one change: 20,000 to 24,000 steps rather than 6,000, because
+6,000 steps is a hundred seconds and the thing I am designing for is a person
+sitting there for five minutes. Twenty-seven candidates, sixteen to twenty-two
+ponds. Four survived, and all four fire on every pond swept:
+
+| rung | median | range |
+| --- | --- | --- |
+| 🐣 a new kind of animal | 2,796 | 1,215–6,945 |
+| 🍼 five hundred lives | 5,149 | 3,211–8,616 |
+| 🌳 fifteen generations | 7,380 | 3,316–11,199 |
+| 🏆 a thousand lives | 10,511 | 6,253–16,626 |
+
+The three I threw away taught me more than the four I kept.
+
+**Twenty generations is a wall, and only just.** v1.131 tested exactly this rung
+and measured it at 0 of 12 inside six thousand steps — an easy rejection. Run to
+24,000 it fires on **21 of 22**, and seed 99 never gets there at all. A rung
+that fails on one pond in twenty-two is worse than one that fails on all of
+them, because it fails *invisibly*: twenty-one ponds look fine and one visitor
+is shown a goal their water cannot reach. The general form, and I think it is
+the transferable half of this cycle: **a threshold I rejected as impossible at
+one horizon is not automatically safe at a longer one — it can arrive in the
+region where it is nearly always true, which is the only region where a wall is
+undetectable.** Fifteen is 22 of 22.
+
+**A family dies out** is the one I argued with myself about. It fires on 16 of
+16 at a median of 2,862, it is genuinely dramatic, and an evolution toy that
+never shows extinction is lying by omission. I cut it anyway, and not on
+arithmetic: this is the one panel here whose entire job is to give somebody a
+reason to stay, and a row that ticks to say the pond has *lost* something is not
+that. The Chronicle already writes it, over the water, where a loss belongs.
+A rung is not "a thing that happened" — it is a thing worth waiting for.
+
+### The bit the browser caught and the tests could not
+
+With all four new rungs still ahead, the panel drew this:
+
+```
+○ 🍼 Five hundred lives     326 have been born here of the five hundred it takes
+○ 🌳 Fifteen generations    the deepest line so far is 8 of the fifteen it takes
+○ 🏆 A thousand lives       326 have been born here of the thousand it takes
+```
+
+The same number twice, two rows apart, and the same generation count in two
+rows above it. Fifteen green tests were perfectly happy: every sentence is true,
+under ninety characters, free of jargon, carrying a live number exactly as the
+design asks. It still reads as a panel stuttering.
+
+A live counter is a reason to stay **exactly once**. Printed twice it is noise.
+So the later of a pair now says what it is *relative to the rung above* — *five
+more generations than the rung above it*, *twice the rung above it, and the pond
+is still on the first one* — until that rung is ticked, and only then starts
+counting. It can work that out from the world alone, because what it needs to
+know is whether the earlier rung's own threshold has been passed.
+
+### What it looks like now
+
+Same browser, same default pond, same marks on the stopwatch:
+
+| after | before | now |
+| --- | --- | --- |
+| 1 minute | 6 of 6 | **5 of 10**, five rows still counting |
+| 2 minutes | 6 of 6 | 6 of 10 |
+| 3 minutes | 6 of 6 | **8 of 10** |
+| 5 minutes | 6 of 6 | **8 of 10**, two rungs still ahead |
+
+Three rungs were climbed while I was watching, so the pond cheered three more
+times than it used to — and the banner that used to sign off with *That is the
+whole ladder* now names the next thing to wait for. That knock-on is free, and
+it is the argument for having built the celebration into the ladder rather than
+into the release that invented a rung.
+
+### What it leaves
+
+- **Nothing here has ever measured whether anybody presses anything**, fifteenth
+  release running. This cycle at least does not depend on a press.
+- The panel is **837 px tall on a phone** now — a full screen of list. Ten rows
+  is close to the most a list like this can be before it stops being scannable,
+  so the ladder is done growing; the next version of this idea is a different
+  shape, not more rows.
+- **Two of the ten rungs still have no `who`** (*five hundred lives*, *a
+  thousand lives*), because a count of births is about a pond. That is honest,
+  but *the five hundredth animal born here* is a specific creature and the books
+  do not keep it. A rung that could name a **moment's** animal rather than a
+  ranking's would be a different kind of row.
+- **The top rung is reachable in about six minutes and I have no idea what
+  fraction of visits last that long.** Every number in this entry is a
+  measurement of the pond and an assumption about the person.

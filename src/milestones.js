@@ -1,4 +1,4 @@
-// milestones.js — the six things a pond does as it grows up, and how far this
+// milestones.js — the ten things a pond does as it grows up, and how far this
 // one has got.
 //
 // Every legible surface this project has built points backwards or at the
@@ -20,7 +20,7 @@
 // which is exactly wrong: the pond is nine ticks from its first birth and four
 // hundred from its first family.
 //
-// So: a ladder. Six things, in the order a pond does them, each one either
+// So: a ladder. A row per thing, in the order a pond does them, each one either
 // ticked with how far in it happened or still ahead with the number it is
 // currently standing at. The unticked rows are the point. A checklist is the
 // most widely understood thing in interface design and this page — dense,
@@ -44,14 +44,58 @@
 //     seeds** — the pond's opening event is a predation, not a starvation, and
 //     nothing on this page has ever said so. It is why the kill is rung two.
 //
-// The six milestones that survived, by median first tick over those twelve
-// ponds: first young **74**, first kill **66**, a family takes hold **458**,
+// The first six rungs, by median first tick over those twelve ponds:
+// first young **74**, first kill **66**, a family takes hold **458**,
 // a dynasty **1,004**, twice as full **1,724**, ten generations deep **3,070**.
 // Every one of them fires on 12 of 12, and the spread inside each is wide
 // enough that the ladder is about *this* pond and not about the rules — first
 // young ranges 9–120, ten generations 2,105–5,093. At the default speed that is
 // a rung at about one second, two, eight, seventeen, twenty-nine and fifty-one:
 // the whole ladder inside the first minute somebody watches.
+//
+// ## The second half (v1.180), and the sentence above is the whole argument
+//
+// *The whole ladder inside the first minute somebody watches* was written as a
+// boast and it is a defect, and the only reason it took forty-nine releases to
+// read it that way is that nobody sat with the page. A browser left on the
+// default pond for five minutes says `6 of 6 so far` at **sixty seconds** and
+// for the whole of the four minutes after it — so the one surface here that
+// points *forward*, on a page whose entire argument is *stay a bit longer*,
+// spends 80% of a visit as a tidy list of things that are already over. A
+// checklist that cannot promise anything is the tax form v1.131 was built to
+// avoid, arriving by the other door.
+//
+// So: four more rungs — ten milestones in all — chosen by the same sweep run to
+// a length somebody would actually sit through: 16 to 22 seeds, 20,000 to
+// 24,000 steps, first occurrence of twenty-seven candidates. Medians, and every
+// one of them fires on every pond swept: **a new kind 2,796** (1,215–6,945),
+// **five hundred lives 5,149** (3,211–8,616), **fifteen generations 7,380**
+// (3,316–11,199), **a thousand lives 10,511** (6,253–16,626). At the speed the
+// page opens — about 1,700 steps a minute, measured in the browser rather than
+// assumed — that is a rung at roughly one and a half minutes, three, four and a
+// half, and six. A five-minute visit now ends with something still ahead of it.
+//
+// Three candidates were deleted by the same two rules v1.131 wrote, which is
+// the useful part:
+//
+//   * **Twenty generations is a wall**, and only just: 21 of 22 ponds reach it
+//     inside 24,000 steps and seed 99 never does. v1.131 measured it at 0 of 12
+//     and rejected it outright; the honest reading five times longer is that it
+//     is *nearly* fair, which is worse — a rung that fails on one pond in
+//     twenty-two fails invisibly. Fifteen is 22 of 22.
+//   * **One animal raising ten young** fires on 9 of 16, and *half the pond
+//     descended from one line it grew itself* on 11 of 16. Both are stories
+//     this water sometimes has and a ladder cannot ask for.
+//   * **A family dies out** fires on 16 of 16 at a median of 2,862 and is the
+//     one candidate rejected on grounds other than arithmetic. It is true, it
+//     is dramatic, and it is a *loss*: a row that ticks to say the pond has
+//     lost something belongs in the Chronicle, which already writes it, and not
+//     on the one panel here whose job is to give somebody a reason to stay.
+//
+// The two counting rungs are deliberately not adjacent — `deeper` sits between
+// them — and neither is a bare score. Both say what the number is *against*:
+// this pond is handed forty animals and never another one, so *a thousand born,
+// from the forty this pond started with* is the same sentence as the tagline.
 //
 // The two openers are ordered on the *mean* rather than the median, and the
 // reason is the third finding above wearing a number: the first kill's median
@@ -72,8 +116,8 @@
 // **v1.133: a rung leads to somebody.** The ladder said *a dynasty — one animal
 // has raised five young* and gave a reader no way to find out which one, which
 // is the question anybody asks next and the one this page was worst at
-// answering. Three of the six rungs are about an animal rather than about a
-// pond, and those three are now pressable: press one and the camera goes and
+// answering. Three of the first six rungs are about an animal rather than about
+// a pond, and those three are now pressable: press one and the camera goes and
 // finds them. The other three stay text, because *twice as full* is about a
 // pond and neither the first birth nor the first kill leaves a name anywhere in
 // the books.
@@ -116,6 +160,34 @@ import { stepsIn } from "./pondclock.js";
  * the day the pond was made.
  */
 export const FAMILY_MIN_PEAK = MULLER_MIN_PEAK;
+
+/**
+ * Generations of descent before the ladder calls the pond *very* deep — the
+ * second half's answer to `DEEP_GENERATIONS`.
+ *
+ * Fifteen and not twenty, and the difference is the wall v1.131 warned about
+ * measured twice. Over twenty-two ponds run to twenty-four thousand steps,
+ * twenty generations fires on **21 of 22** (seed 99 never gets there) while
+ * fifteen fires on **22 of 22**, median 7,380 steps, range 3,316–11,199. A top
+ * rung that one pond in twenty-two can never climb is a scoreboard of failure
+ * for that pond, and the spread at fifteen is wide enough that the rung is
+ * still about *this* water rather than about the rules.
+ */
+export const DEEPER_GENERATIONS = 15;
+
+/**
+ * Animals born here before the pond has raised a crowd, and before it has
+ * raised a great many.
+ *
+ * The only two rungs on this ladder that count *lives* rather than describe
+ * one, and the reason they are worth a row is the comparison they carry: this
+ * pond is handed forty animals and nothing else, ever. Five hundred born is a
+ * median of 5,149 steps (3,211–8,616 over sixteen ponds) and a thousand is
+ * 10,511 (6,253–16,626 over twenty-two) — both on every pond swept, both far
+ * enough apart that neither is the other's echo.
+ */
+export const LIVES_FEW = 500;
+export const LIVES_MANY = 1000;
 
 /**
  * Young from one animal before it is a dynasty. Higher than the cast board's
@@ -248,18 +320,71 @@ function familyWho(world) {
  * out and the pond is left with cousins — which the sweep puts at 4.8% of
  * ticked instants.
  */
-function deepWho(world) {
+function deepestLiving(world) {
   let who = null;
   for (const c of world.creatures) {
     if (c.dead) continue;
     if (!who || c.generation > who.generation || (c.generation === who.generation && c.id < who.id))
       who = c;
   }
+  return who;
+}
+
+function deepWho(world) {
+  const who = deepestLiving(world);
   return who && who.generation >= DEEP_GENERATIONS ? who : null;
 }
 
+/** The same animal, held to the second half's deeper mark. */
+function deeperWho(world) {
+  const who = deepestLiving(world);
+  return who && who.generation >= DEEPER_GENERATIONS ? who : null;
+}
+
 /**
- * The six rungs, in the order a pond climbs them.
+ * The biggest bloodline this pond **grew**, rather than one it was handed.
+ *
+ * `birthTick === 0` is the tree's own mark for a founding line (`phylogeny.js`
+ * says so in as many words), so everything else on it began as a split inside
+ * this water. Held to `FAMILY_MIN_PEAK` for the reason the family rung is: the
+ * tree opens a line for every animal whose brain has drifted far enough, and a
+ * line of one is a curiosity rather than a kind of animal.
+ */
+function newKindFamily(world) {
+  const species = (world.phylogeny && world.phylogeny.species) || [];
+  let best = null;
+  for (const s of species) {
+    if (s.birthTick <= 0 || s.peak < FAMILY_MIN_PEAK) continue;
+    if (!best || s.peak > best.peak || (s.peak === best.peak && s.id < best.id)) best = s;
+  }
+  return best;
+}
+
+/** The largest a home-grown bloodline has ever been, read live off the tree. */
+function newKindPeak(world) {
+  const best = newKindFamily(world);
+  return best ? best.peak : 0;
+}
+
+/**
+ * The animal a new kind is about: the newest living member of it, on
+ * `familyWho`'s finding — the oldest of anything is sorted on the axis that
+ * kills it, and a rung that offers to introduce somebody should not pick the
+ * animal closest to dying.
+ */
+function newKindWho(world) {
+  const best = newKindFamily(world);
+  if (!best) return null;
+  let who = null;
+  for (const c of world.creatures) {
+    if (c.dead || c.speciesId !== best.id) continue;
+    if (!who || c.id > who.id) who = c;
+  }
+  return who;
+}
+
+/**
+ * The ten rungs, in the order a pond climbs them.
  *
  * `reached` is a predicate on latched state only — a counter that never goes
  * down, a maximum the books keep, a peak on the tree. That is what makes the
@@ -271,12 +396,24 @@ function deepWho(world) {
  * number wherever there is one, because "the busiest parent so far has raised
  * three" is a reason to keep watching and "not yet" is a reason to leave.
  *
+ * **Two rungs on one quantity, and the second waits its turn.** v1.180 put a
+ * second depth rung and a second counting rung on the ladder, and the first
+ * browser run showed what that costs: with all four still ahead, the panel drew
+ * *326 have been born here of the five hundred it takes* and *326 have been
+ * born here of the thousand it takes* two rows apart, and the same number again
+ * under two different generation rows. A live counter is a reason to stay
+ * exactly once; printed twice it reads as a panel repeating itself. So the
+ * later of a pair says what it is *relative to the rung above* until that rung
+ * is ticked, and only then starts counting — which it can decide from the world
+ * alone, because what it needs to know is whether the earlier rung's own
+ * threshold has been passed.
+ *
  * `blocked` is the one honest way a rung can be unreachable: a rule switched
  * off. Only the kill has one — every other rung is something a pond does under
  * any settings this page offers.
  *
  * `who` is the animal the rung is *about*, if the pond still holds them, and
- * `whoIs` is what to call them. Three of the six have one and three do not, and
+ * `whoIs` is what to call them. Five of the ten have one and five do not, and
  * the split is a fact about the rungs rather than a gap: *twice as full* is
  * about a pond, and neither the first birth nor the first kill leaves a name
  * behind anywhere in the books. A rung without a `who` is never a control —
@@ -357,6 +494,56 @@ export const MILESTONES = Object.freeze(
         `${DEEP_GENERATIONS} generations of descent from the animals this pond was handed`,
       standing: (w) =>
         `the deepest line so far is ${count(w.stats.maxGeneration || 0, "generation")} from the founders`,
+    },
+    {
+      key: "newkind",
+      mark: "🐣",
+      title: "A new kind of animal",
+      reached: (w) => newKindPeak(w) >= FAMILY_MIN_PEAK,
+      who: newKindWho,
+      whoIs: "the newest animal of that new kind",
+      done: () => "a family that began here, rather than one the pond was handed",
+      standing: (w) => {
+        const peak = newKindPeak(w);
+        return peak > 0
+          ? `the biggest family grown here is ${count(peak, "animal")} — ${FAMILY_MIN_PEAK} makes it a kind`
+          : `every family in this water is one of the ${w.config.populationStart} lines it was handed`;
+      },
+    },
+    {
+      key: "lives",
+      mark: "🍼",
+      title: "Five hundred lives",
+      reached: (w) => (w.stats.births || 0) >= LIVES_FEW,
+      done: (w) => `five hundred born into a pond that was handed ${w.config.populationStart}`,
+      standing: (w) =>
+        `${w.stats.births || 0} have been born here of the five hundred it takes`,
+    },
+    {
+      key: "deeper",
+      mark: "🌳",
+      title: "Fifteen generations",
+      reached: (w) => (w.stats.maxGeneration || 0) >= DEEPER_GENERATIONS,
+      who: deeperWho,
+      whoIs: "the animal furthest from the founders",
+      done: () => "fifteen links of parent and child, every one of them made here",
+      // Two rungs on one quantity, so the second waits its turn — see the
+      // note on `standing` above.
+      standing: (w) =>
+        (w.stats.maxGeneration || 0) >= DEEP_GENERATIONS
+          ? `the deepest line so far is ${w.stats.maxGeneration} of the fifteen it takes`
+          : "five more generations than the rung above it",
+    },
+    {
+      key: "thousand",
+      mark: "🏆",
+      title: "A thousand lives",
+      reached: (w) => (w.stats.births || 0) >= LIVES_MANY,
+      done: (w) => `a thousand born, from the ${w.config.populationStart} this pond started with`,
+      standing: (w) =>
+        (w.stats.births || 0) >= LIVES_FEW
+          ? `${w.stats.births} have been born here of the thousand it takes`
+          : "twice the rung above it, and the pond is still on the first one",
     },
   ].map(Object.freeze)
 );

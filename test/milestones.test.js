@@ -22,8 +22,11 @@
 //     sentences as well as the ticked ones, which is the half a first-time
 //     visitor actually reads.
 //
-// All six milestones fire on every pond the module swept, and the reachability
-// test below re-runs that claim on the fastest four of them.
+// All ten milestones fire on every pond the module swept, and the two
+// reachability tests below re-run that claim: the first six on the fastest four
+// seeds inside 2,400 steps, and the four v1.180 added on two seeds run out to
+// eleven thousand — which is the length the second half exists for and the
+// reason it costs the suite what it costs.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -44,6 +47,7 @@ import {
 } from "../src/fingerprint.js";
 import {
   CROWD_MULTIPLE,
+  DEEPER_GENERATIONS,
   DEEP_GENERATIONS,
   DYNASTY_YOUNG,
   FAMILY_MIN_PEAK,
@@ -175,26 +179,24 @@ test("latching and drawing the ladder move nothing and draw no random number", (
 
 // ---- 4. every rung is reachable, and none of them is a constant ----
 
-test("every rung fires on every pond, and not on the same step twice", () => {
-  // The sweep that designed this panel, run small: the two failure modes it
-  // found are a rung that lands on a constant (a fact about `config.js`, not
-  // about this pond) and a rung nobody reaches (a wall).
-  //
-  // The seeds are declared rather than arbitrary, and the reason is a weakness
-  // worth writing down: these are the four *fastest* of the twelve the module
-  // swept, chosen so the whole ladder is climbed inside 2,400 steps and this
-  // file does not add ten seconds to the suite. The slowest of the twelve needs
-  // 5,093 (`deep`) and 3,548 (`crowd`), so what runs here is the claim verified
-  // on a favourable sample and the module's comment carries the full twelve.
-  const seeds = [42, 99, 256, 1618];
+/**
+ * When each rung fired on each of these ponds, as a key → array of first ticks
+ * in ladder order. −1 for a rung this pond never climbed inside `ticks`.
+ */
+function firstTicks(seeds, ticks) {
   /** @type {Record<string, number[]>} */
   const firsts = {};
   for (const key of MILESTONE_KEYS) firsts[key] = [];
   for (const seed of seeds) {
-    const { world } = stepped(seed, 2400);
+    const { world } = stepped(seed, ticks);
     for (const key of MILESTONE_KEYS) firsts[key].push(world.milestones.at[key]);
   }
-  for (const key of MILESTONE_KEYS) {
+  return firsts;
+}
+
+/** Neither failure mode the design sweeps found, over the keys given. */
+function neitherWallNorConstant(firsts, keys, seeds) {
+  for (const key of keys) {
     const hits = firsts[key].filter((t) => t >= 0);
     assert.equal(hits.length, seeds.length, `"${key}" is a wall: it fired on ${hits.length} of ${seeds.length} ponds`);
     assert.ok(
@@ -202,10 +204,59 @@ test("every rung fires on every pond, and not on the same step twice", () => {
       `"${key}" fired on step ${hits[0]} on every pond — that is a fact about the settings, not about the water`
     );
   }
-  // And the ladder is in the order the sweep says a pond climbs it, on average.
-  const means = MILESTONE_KEYS.map((k) => firsts[k].reduce((a, b) => a + b, 0) / seeds.length);
+}
+
+/** The ladder is in the order the sweep says a pond climbs it, on average. */
+function inLadderOrder(firsts, keys, seeds) {
+  const means = keys.map((k) => firsts[k].reduce((a, b) => a + b, 0) / seeds.length);
   for (let i = 1; i < means.length; i++) {
-    assert.ok(means[i] > means[i - 1], `"${MILESTONE_KEYS[i]}" arrives before "${MILESTONE_KEYS[i - 1]}"`);
+    assert.ok(means[i] > means[i - 1], `"${keys[i]}" arrives before "${keys[i - 1]}"`);
+  }
+}
+
+test("every rung of the first half fires on every pond, and not on the same step twice", () => {
+  // The sweep that designed this panel, run small: the two failure modes it
+  // found are a rung that lands on a constant (a fact about `config.js`, not
+  // about this pond) and a rung nobody reaches (a wall).
+  //
+  // The seeds are declared rather than arbitrary, and the reason is a weakness
+  // worth writing down: these are the four *fastest* of the twelve the module
+  // swept, chosen so the first six rungs are climbed inside 2,400 steps and this
+  // file does not add ten seconds to the suite. The slowest of the twelve needs
+  // 5,093 (`deep`) and 3,548 (`crowd`), so what runs here is the claim verified
+  // on a favourable sample and the module's comment carries the full twelve.
+  const seeds = [42, 99, 256, 1618];
+  const half = MILESTONE_KEYS.slice(0, 6);
+  const firsts = firstTicks(seeds, 2400);
+  neitherWallNorConstant(firsts, half, seeds);
+  inLadderOrder(firsts, half, seeds);
+});
+
+test("the second half fires too, over the length it was designed for", () => {
+  // v1.180's four rungs are unreachable inside the 2,400 steps above **by
+  // construction** — the defect they answer is that the first six are all
+  // climbed in the first minute — so this is the same pair of claims run out to
+  // the horizon they were swept over. Two seeds and eleven thousand steps, which
+  // is about twenty seconds of suite: the module's comment carries the full
+  // sixteen-to-twenty-two-pond sweep, and what is checked here is that the
+  // rungs still fire, still differ from each other pond to pond, and still
+  // arrive in the order the ladder lists them — including against the six above,
+  // which is the claim a new rung inserted in the wrong place would break.
+  const seeds = [42, 1618];
+  const firsts = firstTicks(seeds, 11000);
+  // Wall-and-constant on the new rungs only: two ponds is too small a sample
+  // for the constant half of it, and the opening pair genuinely do land on the
+  // same step here — seed 42 and seed 1618 both breed on step 9. The four
+  // seeds above are where that claim is made about the first six.
+  neitherWallNorConstant(firsts, MILESTONE_KEYS.slice(6), seeds);
+  inLadderOrder(firsts, MILESTONE_KEYS, seeds);
+  // And the whole point of them: on a pond this long, the second half is what
+  // is still being climbed after the first is done.
+  for (const key of MILESTONE_KEYS.slice(0, 6)) {
+    assert.ok(Math.max(...firsts[key]) < 2400, `"${key}" is no longer an opening rung`);
+  }
+  for (const key of MILESTONE_KEYS.slice(6)) {
+    assert.ok(Math.min(...firsts[key]) > 1800, `"${key}" arrives inside the first minute like the rest`);
   }
 });
 
@@ -250,14 +301,14 @@ test("progress counts the ticked rungs and says so in words", () => {
   const none = milestoneProgress(milestoneRows(stepped(42, 0).world, makeConfig({ seed: 42 })));
   assert.equal(none.done, 0);
   assert.equal(none.fraction, 0);
-  assert.equal(none.text, "none of 6 yet");
+  assert.equal(none.text, "none of 10 yet");
   const { world, config } = stepped(42, 2000);
   const rows = milestoneRows(world, config);
   const some = milestoneProgress(rows);
   assert.equal(some.done, rows.filter((r) => r.done).length);
   assert.equal(some.total, MILESTONES.length);
   assert.ok(some.fraction > 0 && some.fraction <= 1);
-  assert.match(some.text, /^\d+ of 6 so far$/);
+  assert.match(some.text, /^\d+ of 10 so far$/);
   // The spoken form names what is still ahead, which is what the panel is for.
   const say = milestonesSay(rows);
   const next = rows.find((r) => !r.done && !r.blocked);
@@ -314,7 +365,7 @@ test("the rungs that are about an animal are the ones that name who", () => {
   const withWho = MILESTONES.filter((m) => m.who);
   assert.deepEqual(
     withWho.map((m) => m.key),
-    ["family", "dynasty", "deep"],
+    ["family", "dynasty", "deep", "newkind", "deeper"],
     "the set of rungs that lead somewhere has changed without a word being written"
   );
   for (const m of withWho) {
@@ -341,6 +392,10 @@ test("every subject a rung offers is alive, and is the animal that rung claims",
     for (const ticks of [1500, 3000, 4500]) checked += auditSubjects(seed, ticks);
   }
   assert.ok(checked >= 6, `only ${checked} subjects were offered across six ponds`);
+  // And once more past the far end of the ladder, because two of the five rungs
+  // that lead somewhere (v1.180) cannot be ticked at all inside 4,500 steps and
+  // would otherwise be audited on no pond at any depth.
+  assert.ok(auditSubjects(42, 10000) >= 4, "the second half offered nobody on a pond that has climbed it");
 });
 
 /** Every subject the ladder offers this pond, checked against its own rung. */
@@ -358,10 +413,26 @@ function auditSubjects(seed, ticks) {
       assert.equal(c.id, world.stats.recordYoungId, "the dynasty is not the record holder");
       assert.ok(world.stats.recordYoung.children >= DYNASTY_YOUNG);
     }
-    if (r.key === "deep") {
-      assert.ok(c.generation >= DEEP_GENERATIONS, "the deep rung offers a shallow animal");
+    if (r.key === "deep" || r.key === "deeper") {
+      const floor = r.key === "deep" ? DEEP_GENERATIONS : DEEPER_GENERATIONS;
+      assert.ok(c.generation >= floor, `the "${r.key}" rung offers a shallow animal`);
       const deepest = Math.max(...world.creatures.filter((x) => !x.dead).map((x) => x.generation));
       assert.equal(c.generation, deepest, "somebody living is further from the founders");
+    }
+    if (r.key === "newkind") {
+      // The same two claims the family row makes, on the half of the tree this
+      // pond grew rather than the half it was handed: `birthTick === 0` is
+      // `phylogeny.js`'s own mark for a founding line.
+      const grown = world.phylogeny.species.filter(
+        (s) => s.birthTick > 0 && s.peak >= MULLER_MIN_PEAK
+      );
+      const biggest = grown.reduce((a, s) => (a && a.peak >= s.peak ? a : s), null);
+      assert.ok(biggest, "the new-kind row offers somebody with no home-grown family behind them");
+      assert.equal(c.speciesId, biggest.id, "the new-kind rung offers somebody else's relative");
+      const newest = world.creatures
+        .filter((x) => !x.dead && x.speciesId === biggest.id)
+        .reduce((a, x) => (a && a.id >= x.id ? a : x), null);
+      assert.equal(c.id, newest.id, "the new kind offers somebody other than its newest member");
     }
     if (r.key === "family") {
       const species = world.phylogeny.species.filter((s) => s.peak >= MULLER_MIN_PEAK);

@@ -77,6 +77,41 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The ladder gets a second half — shipped in v1.180 (`src/milestones.js`,
+  `src/cheer.js`, `app/index.html`), and what it leaves.** Nineteenth cycle in
+  the ordinary-person hat, and the first that came from a **stopwatch** rather
+  than from a walk or an argument: open the page, take my hands off it, and read
+  what each panel says at one minute, three and five. Everything else on the
+  page moved. `🌱 How far this pond has got` said `6 of 6 so far` at sixty
+  seconds and for the whole four minutes after — so the one surface here that
+  points *forward*, on a page whose entire offer is *stay a bit longer*, spends
+  **80% of a visit as a list of things that are already over**. Four findings.
+  (i) **The defect was written in my own file as a boast.** v1.131's design
+  comment ends *the whole ladder inside the first minute somebody watches*,
+  which is a perfect sentence about the first minute and a damning one about the
+  fifth — v1.177's *a fix measured at the instant it applies always reports
+  success*, with the sign flipped onto a feature. (ii) **A horizon is a design
+  parameter, not a convention.** The same sweep run to 20,000–24,000 steps
+  rather than 6,000 (twenty-seven candidates, 16–22 ponds) yields four rungs
+  that all fire on every pond: a new kind of animal **2,796**, five hundred
+  lives **5,149**, fifteen generations **7,380**, a thousand lives **10,511**.
+  (iii) **A wall can hide in the region where it is nearly always true.**
+  *Twenty generations*, which v1.131 measured at 0 of 12 and rejected outright,
+  fires on **21 of 22** over the longer run — and failing on one pond in
+  twenty-two is *worse* than failing on all of them, because nothing shows it.
+  Fifteen is 22 of 22. (iv) **Not every true thing is a rung**: *a family dies
+  out* is 16 of 16 at a median of 2,862 and was cut because a row that ticks to
+  say the pond has **lost** something does not belong on the panel whose job is
+  to keep somebody here. What it leaves: (a) the panel is **837 px on a phone**
+  and ten rows is about the most a list like this can carry — the next version
+  of this idea is a different shape, not more rows; (b) **two rungs still have
+  no `who`** because a count of births is about a pond, though *the five
+  hundredth animal born here* is a specific creature the books do not keep;
+  (c) the top rung needs about six minutes and **nothing here knows what
+  fraction of visits last that long** — every number in the release is a
+  measurement of the pond and an assumption about the person; (d) fifteen
+  releases with **no measurement of whether anybody presses anything**.
+
 - **The button under the starving bar — shipped in v1.179 (`src/feedthem.js`,
   `src/fuel.js`, `app/index.html`, `style.css`, `src/main.js`), and what it
   leaves.** Eighteenth cycle in the ordinary-person hat and the first that did
@@ -3156,6 +3191,56 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **Sit with the page. Not walk it — sit with it, for as long as somebody
+  else would.** v1.180, and it is the cheapest instrument I have and the one I
+  keep not using. Every browser session in this repository has been a *walk*:
+  load, press, measure, screenshot, close — sixty seconds at the outside. This
+  cycle I loaded the page, did nothing at all, and read every panel at one
+  minute, three and five. One of them had stopped: the forward-pointing ladder
+  finishes in sixty seconds and then says `6 of 6 so far` for the rest of the
+  visit, which is 80% of it. No test could see that (every assertion about the
+  ladder is true on a finished ladder), no screenshot of a single instant could
+  argue it, and no sweep had ever been asked *what does this panel say later*.
+  The chore, and it is one unattended browser: **take the five-minute reading of
+  every panel on this page and write down which ones stop changing.** The
+  headline repeated one sentence at one, three and five minutes; the Chronicle's
+  three newest lines at three and five were the same sentence with a different
+  family in it. Both of those are on the list because I watched, not because I
+  looked. The general form is v1.174's horizon note grown a second half: it said
+  *measure a rule over the horizon somebody watches*; this says **a surface that
+  is correct at every instant can still be finished**, and finished is a state
+  only a clock can find.
+
+- **A threshold rejected as impossible is not automatically safe when it
+  becomes possible.** v1.180. v1.131 tested *twenty generations deep*, measured
+  it at **0 of 12** ponds inside six thousand steps, and rejected it as a wall —
+  correctly, and in a way that felt like the end of the question. Run to 24,000
+  steps it fires on **21 of 22**, and that is the dangerous number: a rung that
+  fails on one pond in twenty-two fails **invisibly**, where a rung that fails on
+  all of them fails the first time anybody looks. So a candidate's rejection
+  carries a horizon inside it, and re-running it at a new horizon can move it
+  from *obviously wrong* into *nearly always right*, which is the only region
+  where a wall cannot be seen. The chore: **every threshold in this project that
+  was rejected by a measurement should be re-read for the horizon that
+  measurement used**, and anything landing near-but-not-quite-always is worse
+  than the thing it replaced. The general form, and it is v1.173's tie-break
+  note in a second place: a degenerate case that fires on one seed in twenty-two
+  is not a hypothetical, it is a bug with a seed number on it — here, 99.
+
+- **A live number is a reason to stay exactly once.** v1.180, caught by a
+  browser after fifteen green tests. Two new rungs sat on quantities the ladder
+  already had a rung for, so the panel drew *326 have been born here of the five
+  hundred it takes* and *326 have been born here of the thousand it takes* two
+  rows apart, with the same generation count twice in the two rows above. Every
+  sentence was true, under the length cap, free of jargon and carrying the live
+  counter the design asks for — and the panel reads as though it is stuttering.
+  The fix is a rule worth reusing: **where two rows are about one quantity, the
+  later one says what it is *relative to* the earlier until the earlier is
+  spent.** The tell is structural and greppable: any two surfaces here whose
+  sentence is built from the same field of `stats` are candidates, and this page
+  has several (the record board and the ladder both count young; the headline
+  and the Chronicle both count deaths).
 
 - **A determinism promise, read sideways, is an experimental design.** v1.179,
   and it is the cheapest new instrument this project has acquired in fifty
