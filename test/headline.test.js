@@ -32,8 +32,10 @@ import {
   CRASH_MIN_PEAK,
   HEADLINE_HOLD,
   RANK,
+  REPEAT_COOLDOWN,
   nextHeadline,
   pondHeadline,
+  pondHeadlines,
 } from "../src/headline.js";
 
 /**
@@ -217,6 +219,141 @@ test("a reset does not leave the old pond's sentence holding the slot", () => {
   const fresh = nextHeadline(held, { rank: RANK.young, icon: "🥚", text: "new pond" }, 3);
   assert.equal(fresh.text, "new pond");
   assert.equal(fresh.since, 3);
+});
+
+// ---- The turn (v1.182) ----
+//
+// The defect these are about is not visible in any one sentence: every line the
+// banner said in the five-minute sit was true, plain, ranked correctly and
+// held for long enough to read. What was wrong was the *sequence* — two
+// sentences for 87% of a visit, because a cascade of early returns let a
+// standing condition own the slot for as long as it stayed true. So these
+// tests are all about the second thing said, and about the fifth.
+
+/** Drive `nextHeadline` down a list of candidate-sets, one call per step. */
+function saidOver(sets, { step = HEADLINE_HOLD, cooldown = REPEAT_COOLDOWN } = {}) {
+  let state = null;
+  const said = [];
+  sets.forEach((candidates, i) => {
+    const tick = i * step;
+    const next = nextHeadline(state, candidates, tick, HEADLINE_HOLD, cooldown);
+    if (next !== state) said.push(next.text);
+    state = next;
+  });
+  return said;
+}
+
+test("every rule a pond satisfies is offered, urgent first and calm last", () => {
+  const all = pondHeadlines(
+    pond({
+      pop: 40,
+      popHistory: [{ pop: 200 }],
+      deaths: died("starvation", 30),
+      species: [{ id: 0, parentId: null, count: 30 }],
+    }),
+    CONFIG,
+  );
+  const ranks = all.map((h) => h.rank);
+  assert.deepEqual([...ranks].sort((a, b) => a - b), ranks, "the list is its own ranking");
+  assert.ok(ranks.includes(RANK.crash) && ranks.includes(RANK.starving));
+  assert.equal(ranks.at(-1), RANK.calm, "there is always a next thing to say");
+  // The old question still has the old answer.
+  assert.deepEqual(pondHeadline(pond({ pop: 40, popHistory: [{ pop: 200 }] }), CONFIG), all[0]);
+});
+
+test("a pond with almost nothing left in it answers alone", () => {
+  // Not a defect in the turn-taking — the exemption it is built around. A
+  // handful of creatures is one piece of news, and the page changing the
+  // subject under it would be chattering through a funeral.
+  for (const pop of [0, 1, 5]) {
+    assert.equal(pondHeadlines(pond({ pop }), CONFIG).length, 1, `pop ${pop}`);
+  }
+});
+
+test("a rule that has just spoken steps aside while anything else is true", () => {
+  const crash = { rank: RANK.crash, icon: "📉", text: "crashing" };
+  const starve = { rank: RANK.starving, icon: "🍽️", text: "hungry" };
+  const calm = { rank: RANK.calm, icon: "🌊", text: "quiet" };
+  // The exact shape of the five-minute sit: two standing alarms and the calm
+  // line under them, offered over and over. Before v1.182 this said "crashing"
+  // for ever.
+  const said = saidOver(new Array(6).fill([crash, starve, calm]));
+  assert.deepEqual(said, ["crashing", "hungry", "quiet", "crashing", "hungry", "quiet"]);
+});
+
+test("when every rule has spoken, the one that spoke longest ago goes next", () => {
+  const crash = { rank: RANK.crash, icon: "📉", text: "crashing" };
+  const starve = { rank: RANK.starving, icon: "🍽️", text: "hungry" };
+  // Two true things and a cooldown longer than the run, so every turn after the
+  // second is the fallback branch. It must round-robin, not stick on the
+  // loudest: sticking on the loudest is the bug this release is named for.
+  const said = saidOver(new Array(6).fill([crash, starve]), { cooldown: 1e6 });
+  assert.deepEqual(said, ["crashing", "hungry", "crashing", "hungry", "crashing", "hungry"]);
+});
+
+test("a turn that comes back round does not cut the line on screen short", () => {
+  // The `fresh` half of the interruption rule. A round-robin pick can outrank
+  // what is on screen — the crash sentence coming back under a calm one — and
+  // if that jumped the hold the calm line would live for a single frame, which
+  // is exactly what `banner.js` spent v1.181 taking out of the strip below.
+  const crash = { rank: RANK.crash, icon: "📉", text: "crashing" };
+  const calm = { rank: RANK.calm, icon: "🌊", text: "quiet" };
+  let state = nextHeadline(null, [crash, calm], 0, HEADLINE_HOLD, 1e6);
+  state = nextHeadline(state, [crash, calm], HEADLINE_HOLD, HEADLINE_HOLD, 1e6);
+  assert.equal(state.text, "quiet");
+  for (let t = 1; t < HEADLINE_HOLD; t++) {
+    assert.equal(
+      nextHeadline(state, [crash, calm], HEADLINE_HOLD + t, HEADLINE_HOLD, 1e6),
+      state,
+      `the calm line was cut off ${t} ticks in`,
+    );
+  }
+});
+
+test("a genuinely more urgent line still interrupts", () => {
+  // The half that must survive the turn-taking: rank is still what urgency is
+  // for, and a pond that starts crashing while the banner is being chatty says
+  // so at once rather than at the end of somebody's turn.
+  const calm = { rank: RANK.calm, icon: "🌊", text: "quiet" };
+  const crash = { rank: RANK.crash, icon: "📉", text: "crashing" };
+  const state = nextHeadline(null, [calm], 1000);
+  assert.equal(nextHeadline(state, [crash, calm], 1001).text, "crashing");
+});
+
+test("a standing emergency says the same thing for as long as it is true", () => {
+  const dire = { rank: RANK.fragile, icon: "⚠️", text: "four left" };
+  let state = nextHeadline(null, [dire], 0);
+  for (let t = 0; t < 5 * REPEAT_COOLDOWN; t += HEADLINE_HOLD) {
+    state = nextHeadline(state, [dire], t);
+    assert.equal(state.text, "four left");
+  }
+});
+
+test("five minutes of a real pond is more than two sentences", () => {
+  // The release, as a number. The default pond, nobody touching it, the banner
+  // driven exactly as `main.js` drives it — and the measurement that started
+  // this cycle: 25 changes, 4 sentences, and 87% of the visit alternating two
+  // of them. Eighteen thousand steps is the five minutes v1.177 fixed as the
+  // length of a visit worth measuring.
+  const world = new World(makeConfig({ seed: 314 }));
+  let state = null;
+  const said = [];
+  for (let i = 0; i < 18000; i++) {
+    world.step();
+    if (i % 20 !== 0) continue;
+    const all = pondHeadlines(world, world.config, nameSpecies(world.phylogeny.species));
+    const next = nextHeadline(state, all, world.tick);
+    if (next !== state) said.push(next);
+    state = next;
+  }
+  const sentences = new Set(said.map((h) => h.text.replace(/[\d,]+/g, "#")));
+  const ranks = new Set(said.map((h) => h.rank));
+  assert.ok(sentences.size >= 6, `five minutes of pond said ${sentences.size} sentences`);
+  assert.ok(ranks.size >= 4, `only ${ranks.size} kinds of headline in a whole visit`);
+  // And the thing the sit actually found: no sentence follows itself.
+  for (let i = 1; i < said.length; i++) {
+    assert.notEqual(said[i].rank, said[i - 1].rank, `rank ${said[i].rank} followed itself`);
+  }
 });
 
 // ---- Plain words ----

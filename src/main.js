@@ -58,7 +58,7 @@ import {
   obituaryHTML,
   obituaryLines,
 } from "./obituary.js";
-import { nextHeadline, pondHeadline } from "./headline.js";
+import { nextHeadline, pondHeadlines } from "./headline.js";
 import { lifelineSeries, lifelineCaption, lifelineSay, drawLifeline } from "./lifeline.js";
 import { DoingCrowd, INVITE_ICON, doingHTML, doingIcon, doingInvite } from "./doing.js";
 import { WORD_HOLD_MS, drawEye, eyeInvite, eyeLine, eyeSay, eyeSight } from "./eyeview.js";
@@ -1054,12 +1054,19 @@ function updateNarration(world) {
 // every few hundred ticks does not need choosing sixty times a second. And the
 // DOM is written only when `nextHeadline` hands back a different object, which
 // it does not while the current line still holds the slot.
+//
+// Since v1.182 this hands over every line true of the pond rather than only the
+// most urgent, because the turn-taking that stops the page repeating itself has
+// to see what else there was to say. The cost is the rules below the winning
+// one, which are a handful of comparisons on numbers `stats` already holds —
+// the two walks this guard exists for (the history window, the species list)
+// happened either way.
 const HEADLINE_EVERY = 20;
 
 function updateHeadline(world) {
   if (view.headlineIn-- > 0) return;
   view.headlineIn = HEADLINE_EVERY;
-  const chosen = pondHeadline(world, config, namesForTree(world.phylogeny));
+  const chosen = pondHeadlines(world, config, namesForTree(world.phylogeny));
   const next = nextHeadline(view.headlineShown, chosen, world.tick);
   if (next === view.headlineShown) return;
   view.headlineShown = next;

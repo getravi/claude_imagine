@@ -23266,3 +23266,165 @@ screen, not the moment they were raised.
 - `WAIT_MS` never fired in forty unattended visits. It is a guard against a
   visit where somebody is pressing things, which is the visit I have never
   measured.
+
+---
+
+## Entry — the pond stops repeating itself · 2026-09-14
+
+Twenty-first cycle in the ordinary-person hat, and the third running to come
+from a **clock** rather than from a walk. v1.180 sat with the page and read what
+each panel said at one minute, three and five. v1.181 timed how long one element
+*stayed*. This one is v1.180's own leftover chore run on the surface it named and
+never measured: **the headline.**
+
+The instrument is embarrassingly cheap. Open the default pond in a browser, take
+my hands off it, and write down the sentence above the water every two seconds
+for five minutes. Here is the whole of what this page said to me:
+
+```
+0:00  A brand-new pond: 40 creatures, and not one of them knows anything…
+0:16  The Shale Sprigs have taken over — 56% of the pond is one family.
+0:38  Food is short — 60% of the recent dead starved.
+1:01  The pond is crashing — 186 left, down from 310 a little while ago.
+1:37  Food is short — 98% of the recent dead starved.
+2:32  The pond is crashing — 164 left, down from 274 a little while ago.
+2:56  Food is short — 87% of the recent dead starved.
+4:05  The pond is crashing — 160 left, down from 270 a little while ago.
+4:29  Food is short — 81% of the recent dead starved.
+```
+
+The line changed **25 times** and said **four sentences**. From 0:38 to the end
+— **87% of the visit** — it alternated two of them with nothing between but a
+number moving. This is the panel a stranger reads before they read anything, and
+a stranger who glances at it at one minute, at three and at five is shown the
+same sentence three times.
+
+### The number in it is the worse half
+
+If the headline had simply *frozen*, I would have found this years of releases
+ago — a still surface is what a screenshot catches. It did not freeze. *Food is
+short — 98%* becomes *87%* becomes *81%*, so the line keeps ticking and the page
+keeps looking alive. **98% and 81% are the same news.** A reader cannot tell them
+apart and does not want to; the only thing that moved is a digit nobody is
+tracking. That is a new shape of the v1.180 lesson and worth its own sentence:
+**a surface can be finished and still be moving**, and a live number is the
+perfect camouflage for having nothing to say.
+
+### Rank was doing two jobs
+
+`headline.js` has nine rules, ranked, and rank 1 in its own header is *a dying
+pond and a booming one can both be dominated by one lineage; the reader needs
+the dying part first*. That is correct and I still believe it. What the file
+actually did with it was a cascade of early returns — first rule that is **true**
+wins, every frame, for ever. So rank was answering *who goes first*, which is its
+job, and *who goes at all*, which is not.
+
+The consequence I did not expect: the calm rotation, four plain facts about what
+this thing is — *nobody told them how to eat; every creature here has its own
+small brain* — written in v1.117 and tested ever since, **has never once
+appeared on the default pond.** Sixty-five releases of a sentence that is only
+reachable when nothing else is true, on a page whose pond is always either
+hungry or crashing. The test that covers it (`a calm pond rotates through four
+facts`) hands `pondHeadline` a stub built to reach it. It passes. It always
+passed. It is a test of a code path the app cannot enter.
+
+### The fix, which is one word: turns
+
+The cascade becomes a list. `pondHeadlines` returns every line true of the pond
+right now, in rank order, with the calm line always last so there is always a
+next thing to say — and `pondHeadline` is that list's first element, so every
+existing caller and every existing test asks the old question and gets the old
+answer. The turn-taking then lives where it belongs, next to the hold:
+
+1. **Ranked first, among the rules that have not just spoken.** Urgency still
+   opens and still interrupts.
+2. **A rule that has had the line steps aside for forty seconds** while anything
+   else true is waiting.
+3. **When everything is waiting, the thing said longest ago goes next**, so two
+   standing alarms alternate rather than one of them sticking.
+4. **Two exemptions**: an empty pond and a pond down to its last handful repeat
+   themselves for as long as it is true. Those sentences carry an instruction
+   (`↻ Reset`) or an outcome you are about to watch, and a page that changed the
+   subject there would be chattering through a funeral.
+
+Ten seeds, 18,000 steps each — the five minutes v1.177 fixed as a visit worth
+measuring — nobody touching anything:
+
+| | before | now |
+| --- | --- | --- |
+| the line changed | 52.3 times | **34.0** |
+| different sentences | 5.2 | **10.0** |
+| different rules heard from | 4.8 | **6.8** |
+| share of the visit on the two commonest | **81.6%** | **46.1%** |
+
+**Half as many changes and twice as much said**, which is the trade I wanted:
+the churn was never the point, the repetition was. On seed 314 the visit now
+runs `young → hunting → dominant → starving → calm → crash → dominant →
+starving → calm → …`, and the calm rotation speaks for the first time.
+
+Then the instrument that started this — the same five minutes, same pond, real
+browser, hands off:
+
+```
+0:00  A brand-new pond: 40 creatures, and not one of them knows anything…
+0:12  They hunt each other now: 25 of the 85 live on meat, and 9 have been eaten.
+0:32  The Shale Sprigs have taken over — 78% of the pond is one family.
+0:40  Food is short — 60% of the recent dead starved.
+1:03  The pond is crashing — 186 left, down from 310 a little while ago.
+1:23  The Shale Sprigs have taken over — 80% of the pond is one family.
+1:45  Food is short — 98% of the recent dead starved.
+2:08  263 creatures adrift, 77 scraps of food between them.
+      …
+3:17  831 have been born in this pond, and 632 have died.
+```
+
+**17 changes, 7 different sentences**, none following itself, each up for twenty
+seconds or so. Lines 8 and 10 are the calm rotation. Written in v1.117, green in
+the suite ever since, and that is the first time this page has shown them to
+anybody.
+
+### Two things I nearly got wrong
+
+**A turn that comes back round is not news.** The interruption rule says a
+lower-ranked line takes the banner immediately. With turn-taking, the crash
+sentence coming back round *under* a calm one is lower-ranked — so the first
+version cut every calm line off after a single frame, which is precisely the
+defect `banner.js` spent v1.181 removing from the strip six inches below. The
+interruption now applies only to a pick that is genuinely off cooldown. **A rule
+written for one kind of arrival breaks the moment a second kind can arrive by
+the same door**, and the tell is a conditional that names the *shape* of a thing
+(`rank <`) where what it means is the *provenance*.
+
+**One candidate is not a queue.** A cooldown is a rule about stepping aside for
+something else; handed a single line there is nothing to step aside for, and the
+first version suppressed its interruption too, quietly changing the contract for
+every caller that predates this release. Four lines and a comment.
+
+### The hold
+
+Six seconds became ten, and the honest note is that six was never defended: the
+text-equality guard held each sentence for the ten to fifteen seconds its
+percentage took to move, so the constant was decorative. Now that a line is
+followed by a *different* line, the hold is what a reader actually gets, and
+`banner.js` measured a 90-character sentence at 4,200–5,200 ms. Ten seconds is
+that with room to look at the water. **A constant that a second mechanism was
+silently overriding is a number nobody has chosen** — worth a grep, because this
+file cannot be the only place.
+
+### What it leaves
+
+- **Nothing here has ever measured whether anybody presses anything**,
+  seventeenth release running.
+- **The forty-second cooldown and the ten-second hold are claims about a
+  person.** Every number above is a measurement of the pond. I do not know how
+  long a stranger looks at one sentence and no instrument in this repository can
+  ask.
+- **The other surface v1.180's sit accused is untouched.** Its three newest
+  Chronicle lines at three minutes and at five were *the same sentence with a
+  different family in it*, which is this defect one level down — not a rule that
+  won for ever but a **template** that did. A list cannot take turns the way a
+  single line can, so it is a different fix and I do not yet know its shape.
+- **A test can pass on a path the app cannot reach.** The calm rotation had
+  coverage for sixty-five releases and no reader. The chore is greppable and I
+  have not run it: **every test in this suite that builds a stub to reach a
+  branch should be asked whether a real pond ever gets there.**

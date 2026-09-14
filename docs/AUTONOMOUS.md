@@ -77,6 +77,48 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The pond stops repeating itself — shipped in v1.182 (`src/headline.js`,
+  `src/main.js`), and what it leaves.** Twenty-first cycle in the ordinary-person
+  hat and the third running from a **clock**: v1.180 read what each panel said at
+  one, three and five minutes; v1.181 timed how long one element stayed; this one
+  is v1.180's own leftover chore run on the surface it accused and never
+  measured. Five findings. (i) **The first sentence a visitor reads said four
+  things in five minutes and two of them for 87% of the visit** — *Food is
+  short — N%* and *The pond is crashing — N left*, alternating from 0:38 to 5:02,
+  with nothing between them but a digit. (ii) **The number in it is the worse
+  half.** A frozen surface is what a screenshot catches; this one kept ticking,
+  so it *looked* alive. 98% and 81% are the same news. This is v1.180's *a
+  surface correct at every instant can still be finished* with a second half:
+  **a live number is perfect camouflage for having nothing to say**, and the
+  instrument that sees it is a clock on the *words*, not on the element.
+  (iii) **Rank was doing two jobs.** `pondHeadline` was a cascade of early
+  returns, so the ranking that correctly answers *who goes first* was also
+  answering *who goes at all*, and a condition that stayed true owned the line
+  for ever. The cascade became a list (`pondHeadlines`), rank still opens and
+  still interrupts, and a rule that has spoken steps aside for 40 s while
+  anything else true waits; when everything waits, the thing said longest ago
+  goes next. Ten seeds × 18,000 steps: **52.3 → 34.0 changes, 5.2 → 10.0
+  sentences, 4.8 → 6.8 rules heard from, top-two share 81.6% → 46.1%.** Half as
+  many changes and twice as much said. (iv) **A test can pass on a path the app
+  cannot reach.** The calm rotation — four plain facts written in v1.117, tested
+  ever since — **had never once appeared on the default pond** in sixty-five
+  releases, because its test hands the picker a stub built to reach it. (v) **A
+  rule written for one kind of arrival breaks when a second kind uses the same
+  door**: the interruption (`rank <`) names a *shape* where it means a
+  *provenance*, and the first version let a round-robin turn cut a calm line off
+  after one frame — v1.181's own defect, re-created one panel up. What it
+  leaves: (a) seventeenth release running with **no measurement of whether
+  anybody presses anything**; (b) the 40 s cooldown and the 10 s hold are
+  **claims about a person** and every number above is about the pond; (c) the
+  **Chronicle** — v1.180's other accused surface — is the same defect one level
+  down, a *template* that wins for ever rather than a rule, and a list cannot
+  take turns the way a line can; (d) the chore from (iv), ungreppable by machine
+  but cheap by hand: **every test here that builds a stub to reach a branch
+  should be asked whether a real pond ever gets there**; (e) `HEADLINE_HOLD` was
+  six seconds that a second mechanism silently overrode for sixty-five releases
+   — **a constant another guard is overriding is a number nobody has chosen**,
+  and this file cannot be the only place.
+
 - **The page finishes its sentences — shipped in v1.181 (`src/banner.js`,
   `src/main.js`, `src/viewstate.js`), and what it leaves.** Twentieth cycle in
   the ordinary-person hat and the second running to come from a **stopwatch**:
@@ -3229,6 +3271,47 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A live number is perfect camouflage for having nothing to say.** v1.182, and
+  it is the reason this defect survived a hundred and eighty releases on the most
+  prominent sentence on the page. A surface that *freezes* is caught by the first
+  screenshot anybody takes; the headline never froze. *Food is short — 98%*
+  became *87%* became *81%*, a digit moving every few seconds on a line that had
+  said the same thing for four and a half minutes. Motion reads as liveness, and
+  a number is the cheapest motion there is. The chore is a grep with a question
+  attached: **for every surface here whose sentence contains a live quantity, ask
+  what is left when the quantity is replaced by `#`** — the headline, the
+  Chronicle's rows, the ladder's unticked rungs, the record board, the fact grid.
+  Where the answer is one template, the surface is finished and is pretending
+  otherwise. The general form is v1.180's *finished is a state only a clock can
+  find*, with the instrument moved: the clock goes on **the words**, not on the
+  element.
+
+- **Rank answers who goes first. Something else has to answer who goes at all.**
+  v1.182. `headline.js` had nine ranked rules and a cascade of early returns, and
+  the cascade quietly promoted a priority order into an exclusion order: the most
+  urgent *true* thing won every frame, so a standing condition owned the surface
+  for the rest of the visit and the eight rules under it were unreachable. Nobody
+  wrote that rule; it is what `if/return` means. The tell is structural and
+  greppable: **a chain of early returns whose predicates can all be true at
+  once** — that is a ranking implemented as a filter, and every branch below the
+  first is dead for as long as the first holds. It is v1.181's *a gate that
+  belongs to a feature protects that feature from itself* seen from the other
+  end: there the discipline lived at one writer of a shared surface, here the
+  discipline was the control flow itself.
+
+- **A test can pass on a path the app cannot reach.** v1.182. The headline's
+  calm rotation — four plain sentences about what this thing is, written in
+  v1.117 — has a test that has been green ever since, and **the sentences had
+  never once been on screen on the default pond.** The test hands the picker a
+  stub built to satisfy exactly that branch, which is the right way to test a
+  branch and says nothing whatever about whether a pond reaches it. Coverage and
+  reachability are different questions and this suite only ever asks the first.
+  The chore, by hand and cheap: **every test here that builds a stub to reach a
+  branch should be asked whether a real pond ever gets there** — `headline.js`
+  found one immediately, and `describe.js`, `doing.js` and `milestones.js` are
+  all shaped the same way. The general form of the fix is already in this file
+  (v1.108, v1.53): a claim measured once and re-derived from the *thing*.
 
 - **A gate that belongs to a feature protects that feature from itself and
   nothing else.** v1.181, and it is v1.176's *one unfixed cause with five names*

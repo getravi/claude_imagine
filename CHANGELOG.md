@@ -4,6 +4,70 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.182.0] — 2026-09-14
+
+**🗞️ The pond stops repeating itself.** The sentence above the water is the
+first thing anybody reads on this page. Opened on the default pond and left
+alone for five minutes, here is everything it said:
+
+| | |
+| --- | --- |
+| 0:00 – 0:38 | a new pond, then *the Shale Sprigs have taken over* |
+| **0:38 – 5:02** | ***Food is short — N% of the recent dead starved*** and ***The pond is crashing — N left, down from M***, alternating |
+
+Four sentences in five minutes, and **two of them for 87% of the visit**. Glance
+at the top of this page at one minute, at three and at five and you are shown
+the same line three times. The nastier half is the number in it: the percentage
+keeps ticking, so the headline *looks* alive while saying nothing new.
+
+### Why
+
+Rank was doing two jobs. Nine rules describe a pond — it is crashing, it is
+hungry, one family has taken it over, it is the biggest it has ever been — and
+they are ranked so the reader gets the urgent one first, which is right. But the
+picker stopped at the first rule that was **true**, so a condition that *stayed*
+true owned the line for the rest of the visit and the quieter rules under it
+never spoke again. Including the four plain facts written for a calm pond in
+v1.117 — *nobody told them how to eat; every brain here is different* — which,
+it turns out, **had never once appeared on the default pond.**
+
+### Now
+
+Everything true of the pond is offered, urgent first. The most urgent still
+opens and still interrupts. But a rule that has just had the line steps aside
+for forty seconds while anything else true is waiting, and when everything is
+waiting, the thing said longest ago goes next. News first, then a turn each.
+
+Ten seeds, five minutes each, nobody touching anything:
+
+| | before | now |
+| --- | --- | --- |
+| the line changed | 52 times | **34** |
+| different sentences said | 5.2 | **10.0** |
+| share of the visit on the two commonest | **81.6%** | **46.1%** |
+
+The page says something half as often and twice as much. A sentence now gets a
+floor of **ten seconds** rather than six, which is what the old one effectively
+had anyway — it was waiting for its own percentage to move — and is what
+`banner.js` measured a 90-character line needs.
+
+And the same five minutes in a real browser that produced the table at the top,
+re-run on the same pond: **17 changes, 7 different sentences**, none of them
+following itself, each on screen for twenty seconds or so. Two of them are the
+calm rotation, which this page had never shown anybody.
+
+### Small print
+
+- **Two sentences still repeat, deliberately.** An empty pond ("press ↻ Reset")
+  and a pond down to its last handful say the same thing for as long as it is
+  true. Those carry an instruction or an outcome you are about to watch, and a
+  page that changed the subject there would be chattering through a funeral.
+- **A turn that comes back round cannot cut the line on screen short** — the
+  same fix `banner.js` got for the strip six inches below in v1.181.
+- **Determinism is untouched.** `src/headline.js` is still a pure observer: it
+  reads the pond, writes nothing to it and draws no random number. The calm
+  rotation is arithmetic on the tick, as it has been since v1.117.
+
 ## [1.181.0] — 2026-09-14
 
 **💬 The page finishes its sentences.** One strip of text sits over the water
