@@ -75,6 +75,7 @@ import {
 import { fuelInvite, fuelOf } from "./fuel.js";
 import { canFeed, feedLine } from "./feedthem.js";
 import { SEAT_PHRASE, nextSeat, openingPick } from "./onstage.js";
+import { Banner } from "./banner.js";
 import { ENERGY_SINKS, energySeries } from "./energy.js";
 import { hudTiles, UI_RNG_SEED } from "./hud.js";
 import { barRows } from "./bars.js";
@@ -424,6 +425,11 @@ function adoptWorld() {
   // any more. Reset, load, a new seed and a scenario chip all land here, so
   // there is one place to say it rather than four (v1.142).
   restoreSkipButton();
+  // And a line still waiting for the strip is about a pond that has just been
+  // replaced (v1.181) — `newsHold`'s rule, at the one surface that cannot live
+  // on the roster. What is already up is left alone: it has been read by now,
+  // and the whole point of that release is not taking words away from a reader.
+  banner.forget();
   // And a recording is the same promise with pictures in it (v1.144): the frames
   // already captured are of a pond that has been replaced, so a file made of
   // them would be a cut between two different worlds. Dropped rather than
@@ -966,6 +972,10 @@ function loop(now) {
   // clock for the banner's reason and one of its own: a beat is a tempo, so it
   // belongs to the wall and not to the pond, whatever the speed slider says.
   pumpSound(now);
+  // Last of all, because everything above may have had something to say: the
+  // strip itself, which puts up whichever of them is next and takes the line
+  // down when its time is up (v1.181).
+  pumpBanner(now);
 
   requestAnimationFrame(loop);
 }
@@ -1481,8 +1491,7 @@ function meetTheirYoung(family) {
 function watchCreature(c, flashText, sayText) {
   renderer.selected = c;
   renderer.camera.setTarget(c);
-  flash(flashText, MEET_FLASH_MS);
-  announce(sayText);
+  flash(flashText, MEET_FLASH_MS, "", { say: sayText });
 }
 
 // The other half of meeting somebody: reading what became of them (v1.137).
@@ -1513,8 +1522,9 @@ function tellStory(id) {
   // one that lost is the one that says *how they died*. The offer wears the
   // book because a reader has to know what the press will do; the answer to it
   // is a life, and a life is titled by its ending.
-  flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
-  announce(`${title}. ${[...sentences, ...familyLines(card, family)].join(" ")}`);
+  flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS, "", {
+    say: `${title}. ${[...sentences, ...familyLines(card, family)].join(" ")}`,
+  });
 }
 
 // ---- How they have changed (v1.128) ----
@@ -1769,18 +1779,18 @@ function pumpCheers(now) {
   if (!view.cheerQueue.length || now < cheerFree) return;
   const { key, line, whoIs } = view.cheerQueue.shift();
   cheerFree = now + CHEER_MS;
-  flash(line, CHEER_MS, "cheer");
   // And, on the half of moments that are about an animal rather than about a
   // pond, a way to go and see them. The banner is the one place on this page
   // where a visitor is already looking at the water and has just been told that
   // somebody did something — the shortest distance there has ever been between
-  // a sentence and the animal it is about.
-  if (whoIs) offerToShow(key, whoIs);
-  // Said as well as shown. A listener gets the banner through the same live
-  // region a keystroke uses, so the moment is not a thing only sighted readers
-  // are told about — and the ladder's own spoken sentence, which names what is
-  // still ahead, is rewritten by the panel pass either way.
-  announce(line);
+  // a sentence and the animal it is about. Carried *with* the line since
+  // v1.181: a celebration that waits its turn would otherwise hang its offer on
+  // whatever banner was still up, pointing at the wrong animal.
+  //
+  // The pond's own voice, so it waits rather than interrupts — and it is said
+  // as well as shown, through the same live region a keystroke uses, so the
+  // moment is not a thing only sighted readers are told about.
+  flash(line, CHEER_MS, "cheer", { press: false, offer: whoIs ? offerToShow(key, whoIs) : null });
   // And the panel it came from lights up, so a visitor who has never scrolled
   // past the water learns where this page keeps its progress. The glow goes on
   // the section, which is static markup — the list inside it is rebuilt from
@@ -1852,15 +1862,16 @@ function pumpNews(now) {
   // The ladder's own gate, moved forward by this banner, so a rung landing
   // mid-sentence waits its turn rather than wiping the line being read.
   cheerFree = now + CHEER_MS;
-  flash(said.line, CHEER_MS, "cheer");
   // And, on the lines that are about somebody, the shortest distance there has
   // ever been between a sentence and its subject (v1.133's argument, arriving
   // at a second source). Resolved at the moment of the press rather than now:
   // a five-second banner cannot promise that an animal is still alive, and a
   // family is looked up in the pond as it stands then too.
-  if (said.who >= 0) offerToWatch(`Watch ${said.whoIs}`, () => watchNamed(said.who));
-  else if (said.sp >= 0) offerToWatch("Light up this family in the water", () => lightFamily(said.sp));
-  announce(said.line);
+  let offer = null;
+  if (said.who >= 0) offer = { label: `Watch ${said.whoIs}`, onPress: () => watchNamed(said.who) };
+  else if (said.sp >= 0)
+    offer = { label: "Light up this family in the water", onPress: () => lightFamily(said.sp) };
+  flash(said.line, CHEER_MS, "cheer", { press: false, offer });
   // The panel the line came from lights up, exactly as the ladder's does, so a
   // visitor who has never scrolled past the water learns that this page keeps a
   // written history of it.
@@ -3428,8 +3439,17 @@ function updateInspector() {
       const family = familyOf(view.obitCard, world.creatures);
       const { title, sentences } = obituaryLines(view.obitCard, config, family);
       const kin = familyLines(view.obitCard, family);
-      flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS);
-      announce(`${title}. ${[...sentences, ...kin].join(" ")}`);
+      // The pond's voice, not a press (v1.181): nobody asked for this death, so
+      // it waits for whatever is being read rather than erasing it. Over forty
+      // unattended visits **every one of the strip's 433 lost sentences had
+      // this line on one side of it or the other**, and 181 had it on both: a
+      // death cut off by the next death, which is v1.177's hand-over chain
+      // arriving as a cost. The ladder and the Chronicle had held each other
+      // back since v1.174 and neither of them had ever held back a funeral.
+      flash(`${title} — ${sentences[0]}`, MEET_FLASH_MS, "", {
+        press: false,
+        say: `${title}. ${[...sentences, ...kin].join(" ")}`,
+      });
       // And the seat is handed on, if the seat was the page's (v1.177). Only
       // then: an animal the *visitor* chose leaves an empty seat on purpose,
       // because the page choosing their next one for them is the one thing
@@ -3646,7 +3666,6 @@ function meetSomebody() {
   const { title, line } = introduceStar(star, config, names);
   if (!star) {
     flash(line);
-    announce(line);
     return;
   }
   watchCreature(star.creature, `${title} — ${star.why}.`, `${title}. ${line}`);
@@ -4726,8 +4745,9 @@ function wireCanvas(canvas) {
       if (c && !c.dead) {
         cam().setTarget(c);
         const who = creatureLabel(c, namesForTree(world.phylogeny));
-        flash(`Following ${who} — press Escape, or 0, to let go.`);
-        announce(`Following ${who}.`);
+        flash(`Following ${who} — press Escape, or 0, to let go.`, FLASH_MS, "", {
+          say: `Following ${who}.`,
+        });
       }
       e.preventDefault();
       return;
@@ -4997,7 +5017,10 @@ function restMovieButton() {
   btn.textContent = MOVIE_LABEL;
 }
 
-let flashTimer = null;
+// The strip over the water and its manners (v1.181). Page-scoped: most of what
+// it carries is a receipt for a press, which belongs to a visitor rather than
+// to any pond — `adoptWorld` is what drops the one thing on it that does not.
+const banner = new Banner();
 // An introduction is two clauses and a name; 1.8 seconds is a glance, which is
 // enough for "Whole-run data exported." and not enough to read a sentence about
 // an animal. So the banner takes a duration now, and the only caller that asks
@@ -5011,34 +5034,72 @@ const MEET_FLASH_MS = 4200;
  * second element for the reason the ladder's rows are text: two overlapping
  * banners would be two things to read at once. A celebration and a receipt
  * ("World saved to your browser.") look different and queue in the same place.
+ *
+ * Since v1.181 *queue* is the literal truth rather than a figure of speech.
+ * This function hands the line to `banner.js` and asks it what the strip should
+ * be doing; the policy — who waits for whom, and for how long — lives there,
+ * where it can be read by `node --test`. What is left here is the DOM.
+ *
+ * @param {string} msg the line itself
+ * @param {number} [ms] how long it asks for
+ * @param {string} [kind] `"cheer"` for a celebration
+ * @param {{press?:boolean, say?:string|null, offer?:{label:string, onPress:Function}}} [opts]
+ *   `press` is false for the pond's own voice, which waits its turn; `say` is
+ *   the longer form for a listener, or `null` for a line already spoken
+ *   elsewhere; `offer` is the banner's own control, carried with its line
+ *   rather than appended after it.
  */
-function flash(msg, ms = FLASH_MS, kind = "") {
+function flash(msg, ms = FLASH_MS, kind = "", opts = {}) {
+  const { press = true, say = msg, offer = null } = opts;
+  banner.post({ text: msg, ms, kind, press, say, offer }, performance.now());
+  // A press is answered on the frame it happened rather than the next one:
+  // 16 ms is not a delay anybody could see, and waiting for the loop would make
+  // every receipt on this page depend on a pond still being drawn.
+  pumpBanner(performance.now());
+}
+
+/**
+ * The strip itself: one `textContent`, one class, one optional button.
+ *
+ * Called on every frame and from `flash`, and it does nothing at all unless
+ * `banner.js` says the strip should change — which on a five-minute visit is
+ * about thirty times out of eighteen thousand frames.
+ */
+function pumpBanner(now) {
+  const act = banner.take(now);
+  if (!act) return;
   const el = $("flash");
-  // Text, not markup, and it takes any offer the last banner made with it: a
-  // receipt that inherited "👀 Show me" from the celebration before it would
-  // send a visitor to whoever the previous rung was about.
-  el.textContent = msg;
+  // The offer goes whenever the words do, rather than fading with them. An
+  // invisible control is still in the keyboard walk (v1.51) and still under a
+  // finger, and a banner is transparent for as long as the page is open.
+  const go = el.querySelector(".flash-go");
+  if (go) go.remove();
+  if (act.hide) {
+    el.classList.remove("show");
+    return;
+  }
+  const { text, kind, offer, say } = act.show;
+  // Text, not markup — this page has kept its one toast free of `innerHTML`
+  // since it was written.
+  el.textContent = text;
   el.classList.toggle("cheer", kind === "cheer");
   el.classList.add("show");
-  clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => {
-    el.classList.remove("show");
-    // The offer goes when the words do, rather than fading with them. An
-    // invisible control is still in the keyboard walk (v1.51) and still under a
-    // finger, and a banner is transparent for as long as the page is open.
-    const go = el.querySelector(".flash-go");
-    if (go) go.remove();
-  }, ms);
+  if (offer) offerToWatch(offer.label, offer.onPress);
+  // Said as well as shown, and said *here* (v1.181): a line that waited its
+  // turn must reach a listener at the moment it reaches a reader, not at the
+  // moment it was raised. Every banner on this page now goes out over the live
+  // region — until this release five of the forty did — and the ones with a
+  // longer form to speak hand it over as `say`.
+  if (say) announce(say);
 }
 
 // The banner's own control: press it and the camera goes and finds whoever the
 // rung was about. Built here rather than in `cheer.js` for the reason that
 // module states about itself — it is handed rows and never a world, so it can
 // name a subject and cannot resolve one — and appended as an element rather
-// than written into the banner's markup, because `flash` sets `textContent` and
-// this page has kept its one toast free of `innerHTML` since it was written.
+// than written into the banner's markup, because `flash` sets `textContent`.
 function offerToShow(key, whoIs) {
-  offerToWatch(`Watch ${whoIs}`, () => watchMilestone(key));
+  return { label: `Watch ${whoIs}`, onPress: () => watchMilestone(key) };
 }
 
 /**

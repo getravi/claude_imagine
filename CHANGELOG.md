@@ -4,6 +4,70 @@ All notable changes to Vivarium are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.181.0] — 2026-09-14
+
+**💬 The page finishes its sentences.** One strip of text sits over the water
+and five features write to it: the ladder's celebrations, the Chronicle's
+moments, the obituary of whoever you were watching, the receipt for every press,
+and the hand-feed's tally. Until now it had no manners at all — a new line wrote
+over whatever was there, **between two frames, mid-word**.
+
+Left running for five minutes on the default pond, in a real browser:
+
+| | before | now |
+| --- | --- | --- |
+| banners shown | 27 | 25 |
+| **cut off before they could be read** | **6** | **0** |
+| shortest one on screen | **633 ms** | 4,217 ms |
+
+Two lines on the left were on screen for under three-quarters of a second. You
+would see a shape appear over the pond and be gone before your eye got to it.
+
+### The rule
+
+1. **The pond takes turns.** A line the world raised — a death, a rung, a
+   Chronicle moment — never interrupts. It waits for the one in front of it to
+   have the whole of the time it asked for.
+2. **A press goes up now.** A receipt answers something you just did, so it
+   does not queue behind a celebration. Measured in the browser at **27 ms**.
+3. **One seat in the waiting room**, and of two moments the newer takes it.
+4. **Nothing is ever shown late.** A line that has waited longer than the
+   longest banner is dropped unread rather than shown about a pond that has
+   moved on.
+
+### What it cost to find
+
+Forty ponds run to 18,000 steps — five minutes each — with **nobody pressing
+anything**, replaying every banner the page would raise at the millisecond it
+would raise it. 1,321 banners, a median of 33 a visit:
+
+- **433 (32.8%) were erased before their own time was up**, 101 of them after
+  under a second on screen and 27 after under a quarter of one.
+- **Every single one of the 433 had an obituary on one side of it or the
+  other**, and 181 had one on both — a death cut off by the *next* death, which
+  is v1.177's hand-over chain arriving as a bill. The ladder and the Chronicle
+  have held each other back since v1.174; neither had ever held back a funeral,
+  and the funeral is the commonest thing this page says (752 of the 1,321).
+
+Replayed through the new rule, the same forty visits are cut short **zero**
+times. 417 lines wait, a median of 1.6 s; 120 are dropped unread. The trade, as
+a visitor meets it: **sentences read from beginning to end, 888 → 1,200**;
+sentences shown as a fragment, 433 → 0; sentences never shown at all, 0 → 120.
+Which is the right way round — a line nobody sees costs you nothing, and a line
+snatched away costs you it *and* the one that took it, because you were reading.
+
+### Small print
+
+- **Every banner is now spoken.** The strip writes to the same polite live
+  region the Chronicle uses, at the moment the words reach the screen rather
+  than the moment they were raised. Five of the page's forty banners were
+  announced before this release; all of them are now.
+- **The 👀 Show me button rides with its own line.** It used to be appended to
+  the strip straight after the text; a banner that waits would have hung its
+  offer on whatever was still up and sent you to the wrong animal.
+- **Determinism is untouched.** `src/banner.js` is a policy about reading
+  speed — no world, no random number, every clock in it the browser's.
+
 ## [1.180.0] — 2026-09-14
 
 **🌱 The ladder gets a second half.** `🌱 How far this pond has got` is the one

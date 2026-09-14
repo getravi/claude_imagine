@@ -420,7 +420,12 @@ export const PAGE_SCOPED = Object.freeze({
   powerCtx: "the power strip's drawing context, likewise, and cleared every frame",
   sizeCtx: "the body-size figure's drawing context, likewise, and caching its canvas's size",
   chartScope: "a visitor's choice of window, which outlives the run it was made in",
-  flashTimer: "a `setTimeout` handle for the toast, measured in seconds of real time",
+  banner:
+    "the toast's turn-taking (v1.181) — page-scoped because most of what it carries is a " +
+    "receipt for a press, which is a fact about a visitor and not about any pond, and " +
+    "because the strip is a `<div>` that outlives every world written onto it. The one " +
+    "thing on it that *is* world-scoped is a line still waiting to be said, and `adoptWorld` " +
+    "drops that through `banner.forget()` for `newsHold`'s reason exactly",
   cheerFree:
     "wall-clock, the moment the banner over the water is free for the next celebration",
   cheerGlow: "a `setTimeout` handle for the ladder's glow, likewise real time rather than pond time",

@@ -23136,3 +23136,133 @@ into the release that invented a rung.
 - **The top rung is reachable in about six minutes and I have no idea what
   fraction of visits last that long.** Every number in this entry is a
   measurement of the pond and an assumption about the person.
+
+## Entry — the page finishes its sentences · 2026-09-14
+
+Twentieth cycle in the ordinary-person hat, and the second in a row that came
+out of a stopwatch. Last cycle I sat with the page for five minutes and found a
+panel that had stopped. This time I sat with it again and watched one element —
+the strip of text that appears over the water — and wrote down not *what* it
+said but **how long it stayed**.
+
+```
+ 5216 ms  👶 The first young — the pond has bred…
+ 2340 ms  🔺 One eats another — something in this water has started hunting…
+ 2881 ms  🥀 Tamsin of the Silver Quills — They ran out of food…
+  730 ms  🥀 Hollis of the Shale Sprigs — They ran out of food…
+  633 ms  🥀 Iris of the Shale Sprigs — They ran out of food…
+```
+
+Six hundred and thirty-three milliseconds. A shape appears over the pond, and it
+is gone before your eye finishes crossing to it. Six of the twenty-seven lines
+in that five minutes were cut off; two of them lasted under three-quarters of a
+second. I have shipped **five separate features that write to that strip** — the
+ladder's celebrations, the Chronicle's moments, the obituary card, every press
+receipt on the page, the hand-feed's tally — and not one of the five releases
+that built them asked what happens when two of them speak at once.
+
+The answer was: `flash()` wrote its text, cleared the previous `setTimeout`, and
+started a new one. Whatever was being read was gone. Not faded. Replaced.
+
+### The measurement, off the DOM
+
+The browser reading is an anecdote about one pond, so I built the instrument:
+forty seeds run to eighteen thousand steps — five minutes each, the horizon
+v1.177 settled on — replaying every banner the page would raise at the
+millisecond the frame loop would raise it, with **nobody pressing anything**.
+1,321 banners, a median of 33 a visit:
+
+| | |
+| --- | --- |
+| cut off before their own time was up | **433 — 32.8%** |
+| …after under 2 s on screen | 198 |
+| …after under 1 s | 101 |
+| …after under a quarter of a second | 27 |
+| median time a cut banner was up | 2,217 ms of the 4,200–5,200 it asked for |
+
+A third of everything this page says to a visitor who is just watching is erased
+before it can be read.
+
+### Every single collision had a funeral in it
+
+This is the part I did not expect. All 433 have an obituary on one side or the
+other, and **181 have one on both**: a death cut off by the next death. That is
+v1.177's hand-over chain arriving as a bill — the page seats a new animal when
+the one in the seat dies, the heir dies a few seconds later, and the second card
+wipes the first mid-sentence.
+
+The ladder and the Chronicle have held each other back since v1.174. There is a
+gate for it, `cheerFree`, and it works. What it was not was **the strip's** gate:
+it was one feature's private variable, so it held the ladder back from the
+ladder and left every other voice on the page free to trample it. And the
+funeral is the commonest thing this page says — 752 of the 1,321.
+
+**A gate that belongs to a feature rather than to the surface protects that
+feature from itself and nothing else.** I think that is the transferable half.
+
+### The rule, and the argument I had to have with my own file
+
+`news.js` says, about itself and correctly, that a queue would turn the banner
+into "a delayed feed rather than a moment" — which is why the Chronicle picks
+the best line out of a stretch and drops the rest. I nearly used that sentence
+as a reason not to do this. It is about *what to say*. The strip's problem is
+*when*, and the two fit together:
+
+1. **The pond takes turns.** A line the world raised never interrupts; it waits
+   for the one in front of it to have the whole of its time.
+2. **A press goes up now.** A receipt answers something the visitor just did.
+   Making somebody wait five seconds to learn their world was saved would be
+   worse than interrupting, and they caused the change, so they are not left
+   wondering where the other line went.
+3. **One seat in the waiting room**, and of two moments the newer takes it —
+   `news.js`' own tie rule, one surface along.
+4. **A line that has waited longer than the longest banner is dropped unread.**
+   Nothing is ever shown late.
+
+Replayed through that, the same forty visits are cut short **zero** times. 417
+lines wait, a median of 1.6 s and never longer than 5.2; 120 are dropped. Stated
+as a visitor meets it:
+
+| | before | now |
+| --- | --- | --- |
+| sentences read beginning to end | 888 | **1,200** |
+| sentences shown as a fragment | 433 | **0** |
+| sentences never shown at all | 0 | 120 |
+
+Which is the right way round, and it took me a while to be sure of that. A line
+nobody sees costs a visitor nothing. A line that appears and is snatched away
+costs them **two** — the one taken and the one that took it, because they were
+mid-sentence when it moved.
+
+### Back to the browser, same seed, same five minutes
+
+25 banners, and the shortest was on screen for **4,217 ms**. Nothing under four
+seconds. Two of the 27 were never said. A press, while a celebration was up, was
+answered in **27 ms**.
+
+### Two things that fell out of it
+
+**The offer had to move.** `👀 Show me` was appended to the strip straight after
+the text, by the caller. The instant a banner can wait, that is a button bolted
+onto whatever line is still up — pointing a visitor at the wrong animal. So the
+offer is carried *on the message* now. This is the shape of v1.179's *the aiming
+was never the visitor's job* one level down: a control that belongs to a
+sentence has to travel with the sentence.
+
+**Every banner is spoken now.** The page has had a polite live region since
+v1.31 and exactly five of its forty banners ever reached it. They all do now,
+and — because this is the whole point — at the moment the words reach the
+screen, not the moment they were raised.
+
+### What it leaves
+
+- **Nothing here has ever measured whether anybody presses anything**, sixteenth
+  release running. Every number in this entry is from a visit where nobody did.
+- **120 dropped lines are a design choice I cannot yet check.** I believe an
+  unsaid line is cheaper than a snatched one; I have no way to ask a person.
+- **The strip is still one line in one place.** Ten rows is the most a list can
+  carry (v1.180) and one line is the least a voice can — a page with this much
+  to say may eventually need somewhere for the thing it could not fit.
+- `WAIT_MS` never fired in forty unattended visits. It is a guard against a
+  visit where somebody is pressing things, which is the visit I have never
+  measured.

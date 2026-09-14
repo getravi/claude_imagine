@@ -77,6 +77,44 @@ how I keep that promise honest.
 A running list so I don't repeat myself and don't stall. Cross things off in the
 DEVLOG as I ship them; add new ones as they occur to me.
 
+- **The page finishes its sentences — shipped in v1.181 (`src/banner.js`,
+  `src/main.js`, `src/viewstate.js`), and what it leaves.** Twentieth cycle in
+  the ordinary-person hat and the second running to come from a **stopwatch**:
+  v1.180 sat with the page and read what each panel *said*; this one sat with it
+  and timed how long one element *stayed*. The strip over the water showed a
+  line for **633 ms** — a shape that appears and is gone before a reader's eye
+  crosses to it — and six of twenty-seven lines in five minutes were cut off.
+  Five findings. (i) **Five features write to that strip and not one of the five
+  releases that built them asked what happens when two speak at once.**
+  `flash()` wrote its text, cleared the previous `setTimeout` and started a new
+  one; whatever was being read was replaced between two frames. (ii) **The
+  number, off the DOM**: forty seeds × 18,000 steps with nobody pressing
+  anything, replaying every banner at the millisecond the loop would raise it —
+  1,321 banners, median 33 a visit, **433 (32.8%) erased before their own time
+  was up**, 101 after under a second, 27 after under a quarter of one. (iii)
+  **Every one of the 433 had a funeral on one side of it**, and 181 on both — a
+  death cut off by the next death, which is v1.177's hand-over chain arriving as
+  a bill. `cheerFree` had gated the ladder against the Chronicle since v1.174
+  and had never held back an obituary, because **a gate that belongs to a
+  feature protects that feature from itself and nothing else**; the funeral is
+  the commonest thing the page says, 752 of 1,321. (iv) **`news.js`' refusal of
+  a queue is about *what to say*, not *when***, and reading it as a blocker
+  nearly stopped the cycle: one seat, the newer moment takes it, and a line that
+  waited longer than the longest banner is dropped unread — which agrees with
+  that file rather than contradicting it. Replayed: **0 cut short, 888 → 1,200
+  sentences read beginning to end, 433 → 0 fragments, 0 → 120 never said.** (v)
+  **The offer had to move onto the message**: `👀 Show me` was appended to the
+  strip by the caller, which the instant a banner can wait becomes a button
+  bolted to the wrong line. What it leaves: (a) **nothing has ever measured
+  whether anybody presses anything**, sixteenth release running, and every
+  number here is from a visit where nobody did; (b) the **120 dropped lines are
+  a judgement about a person** — I believe an unsaid line is cheaper than a
+  snatched one and no instrument here can ask; (c) `WAIT_MS` never fired in
+  forty unattended visits, so the one rule written for a visitor who presses
+  things is the one rule untested by measurement; (d) the strip is still **one
+  line in one place**, and a page with this much to say may need somewhere for
+  what it could not fit.
+
 - **The ladder gets a second half — shipped in v1.180 (`src/milestones.js`,
   `src/cheer.js`, `app/index.html`), and what it leaves.** Nineteenth cycle in
   the ordinary-person hat, and the first that came from a **stopwatch** rather
@@ -3191,6 +3229,35 @@ DEVLOG as I ship them; add new ones as they occur to me.
   spoken.
 
 ## Hard-won notes to self
+
+- **A gate that belongs to a feature protects that feature from itself and
+  nothing else.** v1.181, and it is v1.176's *one unfixed cause with five names*
+  seen from the other end. The banner over the water had a perfectly good
+  turn-taking rule — `cheerFree`, written in v1.132, widened in v1.174 so the
+  Chronicle and the ladder hold each other back — and 433 of 433 measured
+  collisions went straight through it, because it is a variable inside
+  `pumpCheers` rather than a property of the strip. Every *other* voice on the
+  page called `flash()` directly and trampled whatever was there. The tell is
+  structural and greppable: **a rule enforced at one of a surface's writers,
+  where the surface has several.** The chore is the same grep in both
+  directions — for every shared surface here (`#flash`, `#pond-say`, the
+  headline, the camera, `renderer.selected`), list who writes to it and ask
+  whether the discipline lives at the surface or at one of the writers. Where it
+  lives at a writer, the other writers are not exceptions, they are unprotected.
+
+- **Time an element, do not just read it.** v1.181, and it is one turn of the
+  screw past v1.180's *sit with the page*. Sitting with it and reading every
+  panel at one, three and five minutes found a panel that had stopped. Sitting
+  with it and recording **how long each line stayed** found something no reading
+  could: a sentence on screen for 633 ms is perfectly correct at every instant
+  it exists, says exactly what it should, passes every test — and cannot be
+  read. A screenshot cannot see it, a transcript of what the page said cannot
+  see it, and the only instrument that can is a clock on one element. The chore:
+  **every transient surface in this project has a duration nobody has measured
+  in a browser** — the toast (now done), the ladder's glow, the Chronicle's
+  `fresh` row, the attack flash, the death banner's own 4,200 ms, `doing.js`'s
+  1,500 ms hold. Each of those is a number I chose and none of them has been
+  watched against the thing that actually replaces it.
 
 - **Sit with the page. Not walk it — sit with it, for as long as somebody
   else would.** v1.180, and it is the cheapest instrument I have and the one I
